@@ -1808,6 +1808,7 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
+   enum osk_type osk_idx;
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
    enum rotation initial_screen_orientation;
@@ -22959,7 +22960,7 @@ static unsigned menu_event(
 
    if (display_kb)
    {
-      input_event_osk_iterate();
+      input_event_osk_iterate(p_rarch->osk_idx);
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
@@ -22992,33 +22993,32 @@ static unsigned menu_event(
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
-         enum osk_type osk_type_idx = input_event_get_osk_idx();
-         if (osk_type_idx > OSK_TYPE_UNKNOWN + 1)
-            input_event_set_osk_idx((enum osk_type)(
-                     osk_type_idx - 1));
+         if (p_rarch->osk_idx > OSK_TYPE_UNKNOWN + 1)
+            p_rarch->osk_idx = ((enum osk_type)
+                  (p_rarch->osk_idx - 1));
          else
-            input_event_set_osk_idx((enum osk_type)(menu_has_fb
+            p_rarch->osk_idx = ((enum osk_type)(menu_has_fb
                      ? OSK_SYMBOLS_PAGE1
                      : OSK_TYPE_LAST - 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
-         enum osk_type osk_type_idx = input_event_get_osk_idx();
-         if (osk_type_idx < (menu_has_fb
+         if (p_rarch->osk_idx < (menu_has_fb
                   ? OSK_SYMBOLS_PAGE1
                   : OSK_TYPE_LAST - 1))
-            input_event_set_osk_idx((enum osk_type)(
-                     osk_type_idx + 1));
+            p_rarch->osk_idx = ((enum osk_type)(
+                     p_rarch->osk_idx + 1));
          else
-            input_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+            p_rarch->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
          int ptr = input_event_get_osk_ptr();
          if (ptr >= 0)
-            input_event_osk_append(ptr, menu_has_fb);
+            input_event_osk_append(&p_rarch->osk_idx,
+                  ptr, menu_has_fb);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -23680,7 +23680,8 @@ static int menu_input_pointer_post_iterate(
                       menu->driver_ctx->set_texture);
 
                   input_event_set_osk_ptr(point.retcode);
-                  input_event_osk_append(point.retcode,
+                  input_event_osk_append(&p_rarch->osk_idx,
+                        point.retcode,
                         menu_has_fb);
                }
             }
@@ -34442,6 +34443,7 @@ bool retroarch_main_init(int argc, char *argv[])
    struct rarch_state *p_rarch  = &rarch_st;
    global_t            *global  = &p_rarch->g_extern;
 
+   p_rarch->osk_idx             = OSK_LOWERCASE_LATIN;
    p_rarch->video_driver_active = true;
    p_rarch->audio_driver_active = true;
 

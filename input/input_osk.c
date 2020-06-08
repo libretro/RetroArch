@@ -34,7 +34,6 @@
 /* TODO/FIXME - static public global variables */
 static char *osk_grid[45]        = {NULL};
 static int osk_ptr               = 0;
-static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
 
 #ifdef HAVE_LANGEXTRA
 /* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA is only enabled for compilers that can support this. */
@@ -60,16 +59,6 @@ static const char *lowercase_grid[] = {
                           "z","x","c","v","b","n","m"," ","-",".","Next"};
 #endif
 
-void input_event_set_osk_idx(enum osk_type idx)
-{
-   osk_idx = idx;
-}
-
-enum osk_type input_event_get_osk_idx(void)
-{
-   return osk_idx;
-}
-
 int input_event_get_osk_ptr(void)
 {
    return osk_ptr;
@@ -80,7 +69,7 @@ void input_event_set_osk_ptr(int i)
    osk_ptr = i;
 }
 
-void input_event_osk_append(int ptr, bool is_rgui)
+void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui)
 {
 #ifdef HAVE_LANGEXTRA
    if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa6")) /* backspace character */
@@ -89,9 +78,9 @@ void input_event_osk_append(int ptr, bool is_rgui)
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
    else
    if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa7")) /* up arrow */
-      osk_idx = OSK_UPPERCASE_LATIN;
+      *osk_idx = OSK_UPPERCASE_LATIN;
    else if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa9")) /* down arrow */
-      osk_idx = OSK_LOWERCASE_LATIN;
+      *osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(osk_grid[ptr],"\xe2\x8a\x95")) /* plus sign (next button) */
 #else
    if (string_is_equal(osk_grid[ptr], "Bksp"))
@@ -100,20 +89,20 @@ void input_event_osk_append(int ptr, bool is_rgui)
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
    else
    if (string_is_equal(osk_grid[ptr], "Upper"))
-      osk_idx = OSK_UPPERCASE_LATIN;
+      *osk_idx = OSK_UPPERCASE_LATIN;
    else if (string_is_equal(osk_grid[ptr], "Lower"))
-      osk_idx = OSK_LOWERCASE_LATIN;
+      *osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(osk_grid[ptr], "Next"))
 #endif
-      if (osk_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
-         osk_idx = (enum osk_type)(osk_idx + 1);
+      if (*osk_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
+         *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
-         osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
    else
       input_keyboard_line_append(osk_grid[ptr]);
 }
 
-void input_event_osk_iterate(void)
+void input_event_osk_iterate(enum osk_type osk_idx)
 {
    switch (osk_idx)
    {
