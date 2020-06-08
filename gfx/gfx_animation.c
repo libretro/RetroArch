@@ -1224,12 +1224,12 @@ void gfx_animation_unset_update_time_cb(void)
 }
 
 static void gfx_animation_update_time(
+      gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
       unsigned video_width, unsigned video_height,
       float _ticker_speed)
 {
-   gfx_animation_t *p_anim                     = anim_get_ptr();
    const bool ticker_is_active                 = p_anim->ticker_is_active;
 
    static retro_time_t last_clock_update       = 0;
@@ -1345,6 +1345,7 @@ bool gfx_animation_update(
    gfx_animation_t *p_anim = anim_get_ptr();
 
    gfx_animation_update_time(
+         p_anim,
          current_time,
          timedate_enable,
          video_width, video_height,

@@ -17258,7 +17258,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #if defined(HAVE_GFX_WIDGETS)
          if (p_rarch->widgets_active)
-            gfx_widget_set_libretro_message(dispwidget_get_ptr(),
+            gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
                   msg->msg,
                   roundf((float)msg->frames / 60.0f * 1000.0f));
          else
@@ -17349,7 +17349,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                /* Handle 'alternate' non-queued notifications */
                case RETRO_MESSAGE_TYPE_NOTIFICATION_ALT:
                   if (p_rarch->widgets_active)
-                     gfx_widget_set_libretro_message(dispwidget_get_ptr(),
+                     gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
                            msg->msg, msg->duration);
                   else
                      runloop_core_msg_queue_push(p_rarch, msg);
@@ -17364,7 +17364,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                 * handle these correctly */
                case RETRO_MESSAGE_TYPE_PROGRESS:
                   if (p_rarch->widgets_active)
-                     gfx_widget_set_libretro_message(dispwidget_get_ptr(),
+                     gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
                            msg->msg, msg->duration);
                   else
                      runloop_core_msg_queue_push(p_rarch, msg);
