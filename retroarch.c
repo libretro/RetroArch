@@ -3408,7 +3408,9 @@ int generic_menu_entry_action(
       void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
 {
    int ret                     = 0;
+#ifdef HAVE_ACCESSIBILITY
    struct rarch_state *p_rarch = &rarch_st;
+#endif
    file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr(0);
    menu_file_list_cbs_t *cbs   = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
@@ -10882,12 +10884,13 @@ gfx_display_t *disp_get_ptr(void)
    return &p_rarch->dispgfx;
 }
 
+#ifdef HAVE_GFX_WIDGETS
 void *dispwidget_get_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    return &p_rarch->dispwidget_st;
 }
-
+#endif
 
 settings_t *config_get_ptr(void)
 {
