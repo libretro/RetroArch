@@ -135,9 +135,6 @@ int action_switch_thumbnail(const char *path,
       if (settings->uints.menu_left_thumbnails > 3)
          configuration_set_uint(settings,
                settings->uints.menu_left_thumbnails, 1);
-
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
    }
    else
    {
@@ -148,10 +145,10 @@ int action_switch_thumbnail(const char *path,
       if (settings->uints.gfx_thumbnails > 3)
          configuration_set_uint(settings,
                settings->uints.gfx_thumbnails, 1);
-
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
    }
+
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
 
    return 0;
 }
@@ -166,7 +163,8 @@ static int action_scan_input_desc(const char *path,
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
-   if (string_is_equal(menu_label, "deferred_user_binds_list"))
+   if (string_is_equal(menu_label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST)))
    {
       unsigned char player_no_str = atoi(&label[1]);
 

@@ -4199,7 +4199,7 @@ finish:
    if (err)
    {
       RARCH_ERR("Download of '%s' failed: %s\n",
-            (transf ? transf->path: "unknown"), err);
+            (transf ? transf->path: msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)), err);
    }
 #ifdef HAVE_DISCORD
    else if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
@@ -4516,8 +4516,10 @@ static int action_ok_add_to_favorites(const char *path,
          if (!string_is_empty(global->name.label))
             strlcpy(content_label, global->name.label, sizeof(content_label));
 
-      if (string_is_empty(content_label)) /* Label is empty - use file name instead */
-         fill_short_pathname_representation(content_label, content_path, sizeof(content_label));
+      /* Label is empty - use file name instead */
+      if (string_is_empty(content_label))
+         fill_short_pathname_representation(content_label,
+               content_path, sizeof(content_label));
 
       /* > core_path + core_name */
       if (system)
@@ -4536,11 +4538,13 @@ static int action_ok_add_to_favorites(const char *path,
 
             if (core_info_find(&core_info))
                if (!string_is_empty(core_info.inf->display_name))
-                  strlcpy(core_name, core_info.inf->display_name, sizeof(core_name));
+                  strlcpy(core_name, core_info.inf->display_name,
+                        sizeof(core_name));
          }
 
          /* >> core_name (continued) */
-         if (string_is_empty(core_name) && !string_is_empty(system->library_name))
+         if (   string_is_empty(core_name) && 
+               !string_is_empty(system->library_name))
             strlcpy(core_name, system->library_name, sizeof(core_name));
       }
 
@@ -4557,10 +4561,14 @@ static int action_ok_add_to_favorites(const char *path,
          {
             playlist_t *playlist_curr = playlist_get_cached();
 
-            if (playlist_index_is_valid(playlist_curr, menu->rpl_entry_selection_ptr, content_path, core_path))
+            if (playlist_index_is_valid(playlist_curr,
+                     menu->rpl_entry_selection_ptr,
+                     content_path, core_path))
             {
-               playlist_get_crc32(playlist_curr, menu->rpl_entry_selection_ptr, &crc32);
-               playlist_get_db_name(playlist_curr, menu->rpl_entry_selection_ptr, &db_name);
+               playlist_get_crc32(playlist_curr,
+                     menu->rpl_entry_selection_ptr, &crc32);
+               playlist_get_db_name(playlist_curr,
+                     menu->rpl_entry_selection_ptr, &db_name);
             }
          }
       }
@@ -4576,8 +4584,10 @@ static int action_ok_add_to_favorites(const char *path,
       string_list_append(str_list, content_label, attr);
       string_list_append(str_list, core_path, attr);
       string_list_append(str_list, core_name, attr);
-      string_list_append(str_list, !string_is_empty(crc32) ? crc32 : "", attr);
-      string_list_append(str_list, !string_is_empty(db_name) ? db_name : "", attr);
+      string_list_append(str_list, !string_is_empty(crc32) 
+            ? crc32 : "", attr);
+      string_list_append(str_list, !string_is_empty(db_name) 
+            ? db_name : "", attr);
 
       /* Trigger 'ADD_TO_FAVORITES' event */
       if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)str_list))
@@ -4613,15 +4623,16 @@ static int action_ok_add_to_favorites_playlist(const char *path,
     * > If content path is empty, cannot do anything... */
    if (!string_is_empty(entry->path))
    {
-      struct string_list *str_list = NULL;
       union string_list_elem_attr attr;
       char core_display_name[PATH_MAX_LENGTH];
+      struct string_list 
+         *str_list         = NULL;
 
       core_display_name[0] = '\0';
 
       /* Create string list container for playlist parameters */
-      attr.i = 0;
-      str_list = string_list_new();
+      attr.i               = 0;
+      str_list             = string_list_new();
       if (!str_list)
          return 0;
 
@@ -4638,9 +4649,7 @@ static int action_ok_add_to_favorites_playlist(const char *path,
 
       /* > content_label */
       if (!string_is_empty(entry->label))
-      {
          string_list_append(str_list, entry->label, attr);
-      }
       else
       {
          /* Label is empty - use file name instead */
@@ -7006,7 +7015,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_generic_list);
             break;
          case FILE_TYPE_CHEAT:
-            if (string_is_equal(menu_label, "cheat_file_load_append"))
+            if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)))
             {
                BIND_ACTION_OK(cbs, action_ok_cheat_file_load_append);
             }
@@ -7065,12 +7075,18 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_DIRECTORY:
             if (cbs->enum_idx != MSG_UNKNOWN
-                  || string_is_equal(menu_label, "disk_image_append")
-                  || string_is_equal(menu_label, "subsystem_add")
-                  || string_is_equal(menu_label, "video_font_path")
-                  || string_is_equal(menu_label, "xmb_font")
-                  || string_is_equal(menu_label, "audio_dsp_plugin")
-                  || string_is_equal(menu_label, "video_filter"))
+                  || string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND))
+                  || string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD))
+                  || string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH))
+                  || string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT))
+                  || string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN))
+                  || string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER)))
                BIND_ACTION_OK(cbs, action_ok_directory_push);
             else
                BIND_ACTION_OK(cbs, action_ok_push_random_dir);
@@ -7084,7 +7100,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (string_is_equal(menu_label, "favorites"))
+               if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
                {
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
                }
@@ -7109,15 +7125,18 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (string_is_equal(menu_label, "deferred_core_list"))
+               if (string_is_equal(menu_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST)))
                {
                   BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
                }
-               else if (string_is_equal(menu_label, "deferred_core_list_set"))
+               else if (string_is_equal(menu_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET)))
                {
                   BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
                }
-               else if (string_is_equal(menu_label, "load_core"))
+               else if (string_is_equal(menu_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
                {
                   BIND_ACTION_OK(cbs, action_ok_load_core);
                }
@@ -7150,11 +7169,13 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_INFO:
             break;
          case FILE_TYPE_RDB:
-            if (string_is_equal(menu_label, "deferred_database_manager_list"))
+            if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
             }
-            else if (string_is_equal(menu_label, "database_manager_list"))
+            else if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_database_manager_list);
             }
@@ -7174,11 +7195,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
             break;
          case FILE_TYPE_CURSOR:
-            if (string_is_equal(menu_label, "deferred_database_manager_list"))
+            if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
             }
-            else if (string_is_equal(menu_label, "cursor_manager_list"))
+            else if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_cursor_manager_list);
             }
