@@ -19,10 +19,6 @@ ifeq ($(HAVE_CXX11), 1)
    CXXFLAGS += $(CXX11_CFLAGS)
 endif
 
-ifeq ($(HAVE_NVDA), 1)
-   LIBS += nvdaControllerClient64.dll
-endif
-
 ifeq ($(HAVE_SAPI), 1)
    LIBS += sapi.dll
 endif
