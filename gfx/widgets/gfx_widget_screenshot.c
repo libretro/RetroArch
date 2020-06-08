@@ -143,7 +143,7 @@ static void gfx_widget_screenshot_free(void)
    gfx_widget_screenshot_dispose(NULL);
 }
 
-static void gfx_widget_screenshot_frame(void* data)
+static void gfx_widget_screenshot_frame(void* data, void *user_data)
 {
    video_frame_info_t *video_info       = (video_frame_info_t*)data;
    void *userdata                       = video_info->userdata;

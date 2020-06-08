@@ -392,21 +392,21 @@ unsigned gfx_widgets_get_height(void)
    return p_dispwidget->simple_widget_height;
 }
 
-unsigned gfx_widgets_get_generic_message_height(void)
+unsigned gfx_widgets_get_generic_message_height(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->generic_message_height;
 }
 
-unsigned gfx_widgets_get_last_video_width(void)
+unsigned gfx_widgets_get_last_video_width(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->last_video_width;
 }
 
-unsigned gfx_widgets_get_last_video_height(void)
+unsigned gfx_widgets_get_last_video_height(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->last_video_height;
 }
 
@@ -1980,7 +1980,7 @@ void gfx_widgets_frame(void *data)
       const gfx_widget_t* widget = widgets[i];
 
       if (widget->frame)
-         widget->frame(data);
+         widget->frame(data, p_dispwidget);
    }
 
    /* Draw all messages */
@@ -2258,7 +2258,8 @@ static void gfx_widgets_layout(
       const gfx_widget_t* widget = widgets[i];
 
       if (widget->layout)
-         widget->layout(is_threaded, dir_assets, font_path);
+         widget->layout(p_dispwidget,
+               is_threaded, dir_assets, font_path);
    }
 }
 

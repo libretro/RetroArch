@@ -73,7 +73,8 @@ struct gfx_widget
 
    /* called when the window resolution changes
     * -> (re)layout the widget here */
-   void (*layout)(bool is_threaded, const char *dir_assets, char *font_path);
+   void (*layout)(void *data,
+         bool is_threaded, const char *dir_assets, char *font_path);
 
    /* called every frame on the main thread
     * -> update the widget logic here */
@@ -85,7 +86,7 @@ struct gfx_widget
    /* called every frame
     * (on the video thread if threaded video is on)
     * -> draw the widget here */
-   void (*frame)(void* data);
+   void (*frame)(void* data, void *userdata);
 };
 
 /* This structure holds all objects + metadata
@@ -118,11 +119,11 @@ gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void);
 
 float* gfx_widgets_get_backdrop_orig(void);
 
-unsigned gfx_widgets_get_last_video_width(void);
+unsigned gfx_widgets_get_last_video_width(void *data);
 
-unsigned gfx_widgets_get_last_video_height(void);
+unsigned gfx_widgets_get_last_video_height(void *data);
 
-unsigned gfx_widgets_get_generic_message_height(void);
+unsigned gfx_widgets_get_generic_message_height(void *data);
 
 /* Warning: not thread safe! */
 size_t gfx_widgets_get_msg_queue_size(void);

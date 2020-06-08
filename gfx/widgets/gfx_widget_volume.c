@@ -91,17 +91,15 @@ gfx_widget_volume_state_t* gfx_widget_volume_get_ptr(void)
    return &p_w_volume_st;
 }
 
-static void gfx_widget_volume_frame(void* data)
+static void gfx_widget_volume_frame(void* data, void *user_data)
 {
    gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
 
    if (state->alpha > 0.0f)
    {
-      video_frame_info_t *video_info = (video_frame_info_t*)data;
-
       char msg[255];
       char percentage_msg[255];
-
+      video_frame_info_t *video_info       = (video_frame_info_t*)data;
       gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
 
       void *userdata                = video_info->userdata;
@@ -305,14 +303,16 @@ void gfx_widget_volume_update_and_show(float new_volume, bool mute)
    gfx_timer_start(&state->timer, &entry);
 }
 
-static void gfx_widget_volume_layout(bool is_threaded, const char *dir_assets, char *font_path)
+static void gfx_widget_volume_layout(
+      void *data,
+      bool is_threaded, const char *dir_assets, char *font_path)
 {
    gfx_widget_volume_state_t* state     = gfx_widget_volume_get_ptr();
-   unsigned last_video_width            = gfx_widgets_get_last_video_width();
+   unsigned last_video_width            = gfx_widgets_get_last_video_width(data);
    gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
 
-   state->widget_height = font_regular->line_height * 4;
-   state->widget_width  = state->widget_height * 4;
+   state->widget_height                 = font_regular->line_height * 4;
+   state->widget_width                  = state->widget_height * 4;
 
    /* Volume widget cannot exceed screen width
     * > If it does, scale it down */

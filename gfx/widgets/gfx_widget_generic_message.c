@@ -81,7 +81,7 @@ void gfx_widget_set_message(char *msg)
    gfx_timer_start(&state->timer, &timer);
 }
 
-static void gfx_widget_generic_message_frame(void* data)
+static void gfx_widget_generic_message_frame(void* data, void *user_data)
 {
    gfx_widget_generic_message_state_t* state = 
       gfx_widget_generic_message_get_ptr();
@@ -92,7 +92,7 @@ static void gfx_widget_generic_message_frame(void* data)
       void* userdata                       = video_info->userdata;
       unsigned video_width                 = video_info->width;
       unsigned video_height                = video_info->height;
-      unsigned height                      = gfx_widgets_get_generic_message_height();
+      unsigned height                      = gfx_widgets_get_generic_message_height(user_data);
       unsigned text_color                  = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->alpha*255.0f));
       gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
       size_t msg_queue_size                = gfx_widgets_get_msg_queue_size();
