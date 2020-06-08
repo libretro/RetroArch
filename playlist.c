@@ -1832,9 +1832,7 @@ static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
    else if (pCtx->object_depth == 2)
    {
       if (pCtx->in_subsystem_roms && string_is_equal(pCtx->current_items_string, "subsystem_roms") && pCtx->array_depth == 1)
-      {
          pCtx->in_subsystem_roms = false;
-      }
    }
 
    return JSON_Parser_Continue;
@@ -1858,8 +1856,8 @@ static JSON_Parser_HandlerResult JSONStartObjectHandler(JSON_Parser parser)
              * Note: We can't just abort here, since there may
              * be more metadata to read at the end of the file... */
             RARCH_WARN("JSON file contains more entries than current playlist capacity. Excess entries will be discarded.\n");
-            pCtx->capacity_exceeded = true;
-            pCtx->current_entry = NULL;
+            pCtx->capacity_exceeded  = true;
+            pCtx->current_entry      = NULL;
             /* In addition, since we are discarding excess entries,
              * the playlist must be flagged as being modified
              * (i.e. the playlist is not the same as when it was
@@ -1916,10 +1914,6 @@ static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pVa
                free(*pCtx->current_entry_val);
             *pCtx->current_entry_val = strdup(pValue);
          }
-         else
-         {
-            /* must be a value for an unknown member we aren't tracking, skip it */
-         }
       }
    }
    else if (pCtx->object_depth == 1)
@@ -1961,10 +1955,6 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
             *pCtx->current_entry_int_val = (int)strtoul(pValue, NULL, 10);
          else if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
             *pCtx->current_entry_uint_val = (unsigned)strtoul(pValue, NULL, 10);
-         else
-         {
-            /* must be a value for an unknown member we aren't tracking, skip it */
-         }
       }
    }
    else if (pCtx->object_depth == 1)
@@ -1985,10 +1975,6 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
                *pCtx->current_meta_thumbnail_mode_val = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
             else if (pCtx->current_meta_sort_mode_val)
                *pCtx->current_meta_sort_mode_val = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
-            else
-            {
-               /* must be a value for an unknown member we aren't tracking, skip it */
-            }
          }
       }
    }
@@ -2041,33 +2027,38 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                   pCtx->current_entry_val = &pCtx->current_entry->crc32;
                else if (string_is_equal(pValue, "db_name"))
                   pCtx->current_entry_val = &pCtx->current_entry->db_name;
-               else if (string_is_equal(pValue, "subsystem_ident"))
-                  pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
-               else if (string_is_equal(pValue, "subsystem_name"))
-                  pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
-               else if (string_is_equal(pValue, "subsystem_roms"))
-                  pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
-               else if (string_is_equal(pValue, "runtime_hours"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
-               else if (string_is_equal(pValue, "runtime_minutes"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
-               else if (string_is_equal(pValue, "runtime_seconds"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
-               else if (string_is_equal(pValue, "last_played_year"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
-               else if (string_is_equal(pValue, "last_played_month"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
-               else if (string_is_equal(pValue, "last_played_day"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
-               else if (string_is_equal(pValue, "last_played_hour"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
-               else if (string_is_equal(pValue, "last_played_minute"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
-               else if (string_is_equal(pValue, "last_played_second"))
-                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
-               else
+               else if (string_starts_with(pValue, "subsystem_"))
                {
-                  /* ignore unknown members */
+                  if (string_is_equal(pValue, "subsystem_ident"))
+                     pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
+                  else if (string_is_equal(pValue, "subsystem_name"))
+                     pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
+                  else if (string_is_equal(pValue, "subsystem_roms"))
+                     pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
+               }
+               else if (string_starts_with(pValue, "runtime_"))
+               {
+                  if (string_is_equal(pValue, "runtime_hours"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
+                  else if (string_is_equal(pValue, "runtime_minutes"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
+                  else if (string_is_equal(pValue, "runtime_seconds"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
+               }
+               else if (string_starts_with(pValue, "last_played_"))
+               {
+                  if (string_is_equal(pValue, "last_played_year"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
+                  else if (string_is_equal(pValue, "last_played_month"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
+                  else if (string_is_equal(pValue, "last_played_day"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
+                  else if (string_is_equal(pValue, "last_played_hour"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
+                  else if (string_is_equal(pValue, "last_played_minute"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
+                  else if (string_is_equal(pValue, "last_played_second"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
                }
             }
             else
@@ -2108,10 +2099,6 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->left_thumbnail_mode;
             else if (string_is_equal(pValue, "sort_mode"))
                pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
-            else
-            {
-               /* ignore unknown members */
-            }
          }
       }
    }
@@ -2122,21 +2109,19 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
 static void get_old_format_metadata_value(
       char *metadata_line, char *value, size_t len)
 {
-   char *start = NULL;
    char *end   = NULL;
-
-   start = strchr(metadata_line, '\"');
+   char *start = strchr(metadata_line, '\"');
 
    if (!start)
       return;
 
    start++;
-   end = strchr(start, '\"');
+   end         = strchr(start, '\"');
 
    if (!end)
       return;
 
-   *end = '\0';
+   *end        = '\0';
    strlcpy(value, start, len);
 }
 
@@ -2145,16 +2130,14 @@ static bool playlist_read_file(
 {
    unsigned i;
    int test_char;
-   intfstream_t *file = NULL;
-
 #if defined(HAVE_ZLIB)
       /* Always use RZIP interface when reading playlists
        * > this will automatically handle uncompressed
        *   data */
-      file = intfstream_open_rzip_file(path,
+   intfstream_t *file   = intfstream_open_rzip_file(path,
             RETRO_VFS_FILE_ACCESS_READ);
 #else
-      file = intfstream_open_file(path,
+   intfstream_t *file   = intfstream_open_file(path,
             RETRO_VFS_FILE_ACCESS_READ,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
 #endif
@@ -2175,8 +2158,7 @@ static bool playlist_read_file(
 
       if (test_char == EOF) /* read error or end of file */
          goto end;
-   }
-   while (!isgraph(test_char) || test_char > 0x7F);
+   }while (!isgraph(test_char) || test_char > 0x7F);
 
    if (test_char == '{')
    {
