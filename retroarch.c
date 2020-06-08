@@ -7128,7 +7128,7 @@ static bool discord_download_avatar(
    struct rarch_state *p_rarch = &rarch_st;
    discord_state_t *discord_st = &p_rarch->discord_st;
 
-   RARCH_LOG("[DISCORD] user avatar id: %s\n", user_id);
+   RARCH_LOG("[DISCORD]: User avatar ID: %s\n", user_id);
 
    fill_pathname_application_special(buf,
             sizeof(buf),
@@ -7151,7 +7151,7 @@ static bool discord_download_avatar(
    transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
    strlcpy(transf->path, buf, sizeof(transf->path));
 
-   RARCH_LOG("[DISCORD] downloading avatar from: %s\n", url_encoded);
+   RARCH_LOG("[DISCORD]: Downloading avatar from: %s\n", url_encoded);
    task_push_http_transfer_file(url_encoded, true, NULL, cb_generic_download, transf);
 
    return false;
@@ -7166,7 +7166,7 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
    strlcpy(discord_st->user_name,
          connectedUser->username, sizeof(discord_st->user_name));
 
-   RARCH_LOG("[DISCORD] connected to user: %s#%s\n",
+   RARCH_LOG("[DISCORD]: Connected to user: %s#%s\n",
       connectedUser->username,
       connectedUser->discriminator);
 
@@ -7177,12 +7177,12 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
 
 static void handle_discord_disconnected(int errcode, const char* message)
 {
-   RARCH_LOG("[DISCORD] disconnected (%d: %s)\n", errcode, message);
+   RARCH_LOG("[DISCORD]: Disconnected (%d: %s)\n", errcode, message);
 }
 
 static void handle_discord_error(int errcode, const char* message)
 {
-   RARCH_LOG("[DISCORD] error (%d: %s)\n", errcode, message);
+   RARCH_LOG("[DISCORD]: Error (%d: %s)\n", errcode, message);
 }
 
 static void handle_discord_join_cb(retro_task_t *task,
@@ -7216,7 +7216,7 @@ static void handle_discord_join_cb(retro_task_t *task,
       snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
             srv_address, srv_port);
 
-      RARCH_LOG("[DISCORD] Joining lobby at: %s\n", join_hostname);
+      RARCH_LOG("[DISCORD]: Joining lobby at: %s\n", join_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, join_hostname, room->corename, room->subsystem_name);
       discord_st->connecting = true;
@@ -7252,14 +7252,14 @@ static void handle_discord_join(const char* secret)
    strlcat(url, discord_st->peer_party_id, sizeof(url));
    strlcat(url, "/", sizeof(url));
 
-   RARCH_LOG("[DISCORD] Querying lobby id: %s at %s\n",
+   RARCH_LOG("[DISCORD]: Querying lobby id: %s at %s\n",
          discord_st->peer_party_id, url);
    task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
 }
 
 static void handle_discord_spectate(const char* secret)
 {
-   RARCH_LOG("[DISCORD] spectate (%s)\n", secret);
+   RARCH_LOG("[DISCORD]: Spectate (%s)\n", secret);
 }
 
 #ifdef HAVE_MENU
@@ -7288,7 +7288,7 @@ static void handle_discord_join_request(const DiscordUser* request)
    menu_input_ctx_line_t line;
 #endif
 
-   RARCH_LOG("[DISCORD] join request from %s#%s - %s %s\n",
+   RARCH_LOG("[DISCORD]: Join request from %s#%s - %s %s\n",
       request->username,
       request->discriminator,
       request->userId,
@@ -7433,8 +7433,8 @@ void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
             if (room->id == 0)
                return;
 
-            RARCH_LOG("[DISCORD] netplay room details: id=%d"
-                  ", nick=%s IP=%s port=%d\n",
+            RARCH_LOG("[DISCORD]: Netplay room details: ID=%d"
+                  ", Nick=%s IP=%s Port=%d\n",
                   room->id, room->nickname,
                   srv_address, srv_port);
 
@@ -7452,12 +7452,12 @@ void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
             discord_st->presence.partyMax       = 2;
             discord_st->presence.partySize      = 1;
 
-            RARCH_LOG("[DISCORD] join secret: %s\n", join_secret);
-            RARCH_LOG("[DISCORD] party id: %s\n", discord_st->self_party_id);
+            RARCH_LOG("[DISCORD]: Join secret: %s\n", join_secret);
+            RARCH_LOG("[DISCORD]: Party ID: %s\n", discord_st->self_party_id);
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_CLIENT:
-         RARCH_LOG("[DISCORD] party id: %s\n", discord_st->peer_party_id);
+         RARCH_LOG("[DISCORD]: Party ID: %s\n", discord_st->peer_party_id);
          discord_st->presence.partyId    = strdup(discord_st->peer_party_id);
          break;
       case DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED:
@@ -7491,7 +7491,7 @@ void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
    }
 
 #ifdef DEBUG
-   RARCH_LOG("[DISCORD] updating (%d)\n", presence);
+   RARCH_LOG("[DISCORD]: Updating (%d)\n", presence);
 #endif
 
    Discord_UpdatePresence(&discord_st->presence);
@@ -7531,7 +7531,7 @@ static void discord_init(
 #else
    snprintf(command, sizeof(command), "sh -c %s", args);
 #endif
-   RARCH_LOG("[DISCORD] Registering startup command: %s\n", command);
+   RARCH_LOG("[DISCORD]: Registering startup command: %s\n", command);
    Discord_Register(discord_app_id, command);
    discord_st->ready = true;
 }
@@ -13110,17 +13110,17 @@ static void command_event_deinit_core(
    rcheevos_unload();
 #endif
 
-   RARCH_LOG("Unloading game..\n");
    core_unload_game(p_rarch);
-
-   RARCH_LOG("Unloading core..\n");
 
    video_driver_set_cached_frame_ptr(NULL);
 
    if (p_rarch->current_core.inited)
+   {
+      RARCH_LOG("[CORE]: Unloading core..\n");
       p_rarch->current_core.retro_deinit();
+   }
 
-   RARCH_LOG("Unloading core symbols..\n");
+   RARCH_LOG("[CORE]: Unloading core symbols..\n");
    uninit_libretro_symbols(p_rarch, &p_rarch->current_core);
    p_rarch->current_core.symbols_inited = false;
 
@@ -18607,12 +18607,12 @@ static bool init_libretro_symbols_custom(
 
                if (string_is_empty(path))
                {
-                  RARCH_ERR("Frontend is built for dynamic libretro cores, but "
+                  RARCH_ERR("[CORE]: Frontend is built for dynamic libretro cores, but "
                         "path is not set. Cannot continue.\n");
                   retroarch_fail(1, "init_libretro_symbols()");
                }
 
-               RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
+               RARCH_LOG("[CORE]: Loading dynamic libretro core from: \"%s\"\n",
                      path);
 
                if (!load_dynamic_core(
@@ -37826,6 +37826,7 @@ static bool core_unload_game(struct rarch_state *p_rarch)
 
    if (p_rarch->current_core.game_loaded)
    {
+      RARCH_LOG("[CORE]: Unloading game..\n");
       p_rarch->current_core.retro_unload_game();
       p_rarch->core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
       p_rarch->current_core.game_loaded = false;

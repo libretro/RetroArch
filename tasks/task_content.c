@@ -519,13 +519,13 @@ static void content_load_init_wrap(
 
    if (args->content_path)
    {
-      RARCH_LOG("Using content: %s.\n", args->content_path);
+      RARCH_LOG("[CORE]: Using content: %s.\n", args->content_path);
       argv[(*argc)++] = strdup(args->content_path);
    }
 #ifdef HAVE_MENU
    else
    {
-      RARCH_LOG("%s\n",
+      RARCH_LOG("[CORE]: %s\n",
             msg_hash_to_str(MSG_NO_CONTENT_STARTING_DUMMY_CORE));
       argv[(*argc)++] = strdup("--menu");
    }
@@ -561,7 +561,7 @@ static void content_load_init_wrap(
       argv[(*argc)++] = strdup("-v");
 
    for (i = 0; i < *argc; i++)
-      RARCH_LOG("arg #%d: %s\n", i, argv[i]);
+      RARCH_LOG("[CORE]: Arg #%d: %s\n", i, argv[i]);
 }
 
 /**
@@ -662,7 +662,7 @@ static bool load_content_into_memory(
 {
    uint8_t *ret_buf           = NULL;
 
-   RARCH_LOG("%s: %s.\n",
+   RARCH_LOG("[CONTENT LOAD]: %s: %s.\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
 
    if (!content_file_read(path, (void**) &ret_buf, length))
@@ -698,7 +698,7 @@ static bool load_content_into_memory(
          if (has_patch)
          {
             p_content->rom_crc = encoding_crc32(0, ret_buf, (size_t)*length);
-            RARCH_LOG("CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
+            RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
          }
          else
          {
@@ -1487,7 +1487,7 @@ static bool firmware_update_status(
       firmware_info.directory.system = s;
    }
 
-   RARCH_LOG("Updating firmware status for: %s on %s\n",
+   RARCH_LOG("[CONTENT LOAD]: Updating firmware status for: %s on %s\n",
          core_info->path,
          firmware_info.directory.system);
 
