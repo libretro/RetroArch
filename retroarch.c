@@ -14693,7 +14693,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Note: Sorting is disabled by default for
              * all content history playlists */
 
-            RARCH_LOG("%s: [%s].\n",
+            RARCH_LOG("[Playlist]: %s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_history);
             g_defaults.content_history = playlist_init(
@@ -14702,7 +14702,7 @@ bool command_event(enum event_command cmd, void *data)
             playlist_set_sort_mode(
                   g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
 
-            RARCH_LOG("%s: [%s].\n",
+            RARCH_LOG("[Playlist]: %s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_music_history);
             g_defaults.music_history = playlist_init(
@@ -14712,7 +14712,7 @@ bool command_event(enum event_command cmd, void *data)
                   g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            RARCH_LOG("%s: [%s].\n",
+            RARCH_LOG("[Playlist]: %s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_video_history);
             g_defaults.video_history = playlist_init(
@@ -14723,7 +14723,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-            RARCH_LOG("%s: [%s].\n",
+            RARCH_LOG("[Playlist]: %s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_image_history);
             g_defaults.image_history = playlist_init(
@@ -18619,7 +18619,9 @@ static bool init_libretro_symbols_custom(
                         path_get_realsize(RARCH_PATH_CORE)
                         ))
                {
-                  RARCH_ERR("Failed to open libretro core: \"%s\"\nError(s): %s\n", path, dylib_error());
+                  RARCH_ERR("%s: \"%s\"\nError(s): %s\n",
+                        msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+                        path, dylib_error());
                   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
                         1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return false;
@@ -26323,8 +26325,6 @@ static bool midi_driver_init(struct rarch_state *p_rarch)
 
    p_rarch->midi_drv_inputs          = string_list_new();
    p_rarch->midi_drv_outputs         = string_list_new();
-
-   RARCH_LOG("[MIDI]: Initializing ...\n");
 
    if (!settings)
       err_str = "settings unavailable";
@@ -37481,7 +37481,7 @@ void rarch_favorites_init(void)
 
    rarch_favorites_deinit();
 
-   RARCH_LOG("%s: [%s].\n",
+   RARCH_LOG("[Playlist]: %s: [%s].\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
          path_content_favorites);
    g_defaults.content_favorites = playlist_init(

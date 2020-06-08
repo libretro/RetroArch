@@ -1272,7 +1272,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
    playlist->old_format = false;
    playlist->compressed = false;
 
-   RARCH_LOG("Written to playlist file: %s\n", playlist->conf_path);
+   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->conf_path);
 end:
    intfstream_close(file);
    free(file);
@@ -1693,7 +1693,7 @@ void playlist_write_file(
    playlist->modified   = false;
    playlist->compressed = compressed;
 
-   RARCH_LOG("Written to playlist file: %s\n", playlist->conf_path);
+   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->conf_path);
 end:
    intfstream_close(file);
    free(file);
@@ -1926,7 +1926,9 @@ static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pVa
          if (pCtx->current_meta_val && length && !string_is_empty(pValue))
          {
             /* handle any top-level playlist metadata here */
-            /*RARCH_LOG("found meta: %s = %s\n", pCtx->current_meta_string, pValue);*/
+#if 0
+            RARCH_LOG("[Playlist]: Found meta: %s = %s\n", pCtx->current_meta_string, pValue);
+#endif
 
             free(pCtx->current_meta_string);
             pCtx->current_meta_string = NULL;
@@ -1967,7 +1969,9 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
          if (pCtx->current_meta_string && length && !string_is_empty(pValue))
          {
             /* handle any top-level playlist metadata here */
-            /*RARCH_LOG("found meta: %s = %s\n", pCtx->current_meta_string, pValue);*/
+#if 0
+            RARCH_LOG("[Playlist]: Found meta: %s = %s\n", pCtx->current_meta_string, pValue);
+#endif
 
             free(pCtx->current_meta_string);
             pCtx->current_meta_string = NULL;
@@ -2166,13 +2170,17 @@ static bool playlist_read_file(
    if (test_char == '{')
    {
       /* New playlist format detected */
-      /*RARCH_LOG("New playlist format detected.\n");*/
+#if 0
+      RARCH_LOG("[Playlist]: New playlist format detected.\n");
+#endif
       playlist->old_format = false;
    }
    else
    {
       /* old playlist format detected */
-      /*RARCH_LOG("Old playlist format detected.\n");*/
+#if 0
+      RARCH_LOG("[Playlist]: Old playlist format detected.\n");
+#endif
       playlist->old_format = true;
    }
 
