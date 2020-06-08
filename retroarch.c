@@ -3031,23 +3031,26 @@ static enum action_iterate_type action_iterate_type(const char *label)
 {
    if (string_is_equal(label, "info_screen"))
       return ITERATE_TYPE_INFO;
-   if (
-         string_is_equal(label, "help") ||
-         string_is_equal(label, "help_controls") ||
-         string_is_equal(label, "help_what_is_a_core") ||
-         string_is_equal(label, "help_loading_content") ||
-         string_is_equal(label, "help_scanning_content") ||
-         string_is_equal(label, "help_change_virtual_gamepad") ||
-         string_is_equal(label, "help_audio_video_troubleshooting") ||
-         string_is_equal(label, "help_send_debug_info") ||
-         string_is_equal(label, "cheevos_description")
+   if (string_starts_with(label, "help"))
+      if (
+            string_is_equal(label, "help") ||
+            string_is_equal(label, "help_controls") ||
+            string_is_equal(label, "help_what_is_a_core") ||
+            string_is_equal(label, "help_loading_content") ||
+            string_is_equal(label, "help_scanning_content") ||
+            string_is_equal(label, "help_change_virtual_gamepad") ||
+            string_is_equal(label, "help_audio_video_troubleshooting") ||
+            string_is_equal(label, "help_send_debug_info")
          )
-      return ITERATE_TYPE_HELP;
-   if (
-         string_is_equal(label, "custom_bind") ||
-         string_is_equal(label, "custom_bind_all") ||
-         string_is_equal(label, "custom_bind_defaults")
-      )
+         return ITERATE_TYPE_HELP;
+   if (string_is_equal(label, "cheevos_description"))
+         return ITERATE_TYPE_HELP;
+   if (string_starts_with(label, "custom_bind"))
+      if (
+            string_is_equal(label, "custom_bind") ||
+            string_is_equal(label, "custom_bind_all") ||
+            string_is_equal(label, "custom_bind_defaults")
+         )
          return ITERATE_TYPE_BIND;
 
    return ITERATE_TYPE_DEFAULT;
