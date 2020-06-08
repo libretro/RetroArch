@@ -1987,7 +1987,8 @@ static bool vulkan_frame(void *data, const void *frame,
          font_driver_render_msg(vk, msg, NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
-      gfx_widgets_frame(video_info);
+      if (video_info->widgets_active)
+         gfx_widgets_frame(video_info);
 #endif
 
       /* End the render pass. We're done rendering to backbuffer now. */

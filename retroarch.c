@@ -30939,6 +30939,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    VIDEO_DRIVER_THREADED_LOCK(is_threaded);
 #endif
    custom_vp                               = &settings->video_viewport_custom;
+#ifdef HAVE_GFX_WIDGETS
+   video_info->widgets_active              = p_rarch->widgets_active;
+#else
+   video_info->widgets_active              = false;
+#endif
    video_info->refresh_rate                = settings->floats.video_refresh_rate;
    video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;

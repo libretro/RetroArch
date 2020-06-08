@@ -1627,7 +1627,8 @@ static bool d3d9_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)

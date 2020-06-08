@@ -27,19 +27,26 @@
 #include "../../gfx/gfx_widgets.h"
 #endif
 
-static bool connman_cache[256]   = {0};
-static unsigned connman_counter  = 0;
-static struct string_list* lines = NULL;
-static char command[256]         = {0};
+static bool connman_cache[256]           = {0};
+static unsigned connman_counter          = 0;
+static struct string_list* lines         = NULL;
+static char command[256]                 = {0};
+static bool connmanctl_widgets_supported = false;
 
 static void *connmanctl_init(void)
 {
+#ifdef HAVE_GFX_WIDGETS
+   connmanctl_widgets_supported = gfx_widgets_ready();
+#endif
    return (void*)-1;
 }
 
 static void connmanctl_free(void *data)
 {
    (void)data;
+#ifdef HAVE_GFX_WIDGETS
+   connmanctl_widgets_supported = gfx_widgets_ready();
+#endif
 }
 
 static bool connmanctl_start(void *data)
@@ -97,12 +104,16 @@ static bool connmanctl_tether_status(void)
    return false;
 }
 
-static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey)
+static void connmanctl_tether_toggle(
+      bool switch_on, char* apname, char* passkey)
 {
    /* Starts / stops the tethering service on wi-fi device */
    char output[256]     = {0};
    FILE *command_file   = NULL;
    settings_t *settings = config_get_ptr();
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active  = connmanctl_widgets_supported;
+#endif
 
    snprintf(command, sizeof(command), "\
          connmanctl tether wifi %s %s %s",
@@ -123,7 +134,7 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
             output);
 
 #ifdef HAVE_GFX_WIDGETS
-      if (!gfx_widgets_ready())
+      if (!widgets_active)
 #endif
          runloop_msg_queue_push(output, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -268,8 +279,10 @@ static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
    FILE *settings_file                 = NULL;
    const char *line                    = lines->elems[idx].data;
    settings_t *settings                = config_get_ptr();
-
    static struct string_list* list     = NULL;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active                 = connmanctl_widgets_supported;
+#endif
    /* connmanctl services outputs a 4 character prefixed lines,
     * either whitespace or an identifier. i.e.:
     * $ connmanctl services
@@ -339,7 +352,7 @@ static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
    while (fgets(ln, sizeof(ln), command_file))
    {
 #ifdef HAVE_GFX_WIDGETS
-      if (!gfx_widgets_ready())
+      if (!widgets_active)
 #endif
          runloop_msg_queue_push(ln, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -485,12 +498,15 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
     * tethering service is already running / not running
     * before performing the desired action
     */
-   FILE *command_file = NULL;
-   char apname[64]    = {0};
-   char passkey[256]  = {0};
-   char ln[512]       = {0};
-   char ssid[64]      = {0};
-   char service[256]  = {0};
+   FILE *command_file  = NULL;
+   char apname[64]     = {0};
+   char passkey[256]   = {0};
+   char ln[512]        = {0};
+   char ssid[64]       = {0};
+   char service[256]   = {0};
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active = connmanctl_widgets_supported;
+#endif
 
    RARCH_LOG("[CONNMANCTL] Tether start stop: begin\n");
 
@@ -654,7 +670,7 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
                      ln);
 
 #ifdef HAVE_GFX_WIDGETS
-               if (!gfx_widgets_ready())
+               if (!widgets_active)
 #endif
                   runloop_msg_queue_push(ln, 1, 180, true,
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT,

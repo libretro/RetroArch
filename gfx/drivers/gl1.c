@@ -866,7 +866,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
 #ifdef HAVE_OVERLAY

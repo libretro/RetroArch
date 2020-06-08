@@ -336,7 +336,8 @@
 
 #ifdef HAVE_GFX_WIDGETS
       [rce pushDebugGroup:@"display widgets"];
-      gfx_widgets_frame(video_info);
+      if (video_info->widgets_active)
+         gfx_widgets_frame(video_info);
       [rce popDebugGroup];
 #endif
 

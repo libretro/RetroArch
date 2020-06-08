@@ -3056,7 +3056,8 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))

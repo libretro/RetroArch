@@ -1395,47 +1395,24 @@ static void INLINE gfx_widgets_font_unbind(gfx_widget_font_data_t *font_data)
 
 void gfx_widgets_frame(void *data)
 {
-   /* (Pointless) optimisation: allocating these
-    * costs nothing, so do it *before* the
-    * 'widgets_active' check... */
    size_t i;
-   video_frame_info_t *video_info;
-   bool framecount_show;
-   bool memory_show;
-   bool core_status_msg_show;
-   void *userdata;
-   unsigned video_width;
-   unsigned video_height;
-   bool widgets_is_paused;
-   bool fps_show;
-   bool widgets_is_fastforwarding;
-   bool widgets_is_rewinding;
-   bool runloop_is_slowmotion;
-   int top_right_x_advance;
 #ifdef HAVE_CHEEVOS
    int scissor_me_timbers           = 0;
 #endif
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-
-   /* TODO/FIXME - find something better */
-   if (!gfx_widgets_ready())
-      return;
-
-   /* ...but assigning them costs a tiny amount,
-    * so do it *after* the 'widgets_active' check */
-   video_info                = (video_frame_info_t*)data;
-   framecount_show           = video_info->framecount_show;
-   memory_show               = video_info->memory_show;
-   core_status_msg_show      = video_info->core_status_msg_show;
-   userdata                  = video_info->userdata;
-   video_width               = video_info->width;
-   video_height              = video_info->height;
-   widgets_is_paused         = video_info->widgets_is_paused;
-   fps_show                  = video_info->fps_show;
-   widgets_is_fastforwarding = video_info->widgets_is_fast_forwarding;
-   widgets_is_rewinding      = video_info->widgets_is_rewinding;
-   runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
-   top_right_x_advance       = video_width;
+   video_frame_info_t *video_info   = (video_frame_info_t*)data;
+   bool framecount_show             = video_info->framecount_show;
+   bool memory_show                 = video_info->memory_show;
+   bool core_status_msg_show        = video_info->core_status_msg_show;
+   void *userdata                   = video_info->userdata;
+   unsigned video_width             = video_info->width;
+   unsigned video_height            = video_info->height;
+   bool widgets_is_paused           = video_info->widgets_is_paused;
+   bool fps_show                    = video_info->fps_show;
+   bool widgets_is_fastforwarding   = video_info->widgets_is_fast_forwarding;
+   bool widgets_is_rewinding        = video_info->widgets_is_rewinding;
+   bool runloop_is_slowmotion       = video_info->runloop_is_slowmotion;
+   int top_right_x_advance          = video_width;
 
    p_dispwidget->gfx_widgets_frame_count++;
 
