@@ -103,7 +103,7 @@ typedef struct
    size_t usage_count;
 } gfx_widget_font_data_t;
 
-gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void *data);
+uintptr_t gfx_widgets_get_generic_tag(void *data);
 
 float* gfx_widgets_get_pure_white(void);
 

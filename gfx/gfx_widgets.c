@@ -235,7 +235,7 @@ typedef struct dispgfx_widget
 #ifdef HAVE_MENU
    gfx_timer_t load_content_animation_end_timer;
 #endif
-   gfx_animation_ctx_tag gfx_widgets_generic_tag;
+   uintptr_t gfx_widgets_generic_tag;
    gfx_widget_fonts_t gfx_widget_fonts;
 #ifdef HAVE_CHEEVOS
 /* Achievement notification */
@@ -374,7 +374,7 @@ float* gfx_widgets_get_backdrop_orig(void)
 
 /* Messages queue */
 
-gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void *data)
+uintptr_t gfx_widgets_get_generic_tag(void *data)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->gfx_widgets_generic_tag;
