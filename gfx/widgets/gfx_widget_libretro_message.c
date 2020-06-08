@@ -45,9 +45,9 @@ static gfx_widget_libretro_message_state_t* gfx_widget_libretro_message_get_stat
 
 static void gfx_widget_libretro_message_fadeout(void *userdata)
 {
-   gfx_widget_libretro_message_state_t* state = gfx_widget_libretro_message_get_state();
    gfx_animation_ctx_entry_t entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) &state->timer;
+   gfx_widget_libretro_message_state_t* state = gfx_widget_libretro_message_get_state();
+   uintptr_t        tag = (uintptr_t)&state->timer;
 
    /* Start fade out animation */
    entry.cb             = NULL;
@@ -66,7 +66,7 @@ void gfx_widget_set_libretro_message(void *data,
 {
    gfx_timer_ctx_entry_t timer;
    gfx_widget_libretro_message_state_t* state = gfx_widget_libretro_message_get_state();
-   gfx_animation_ctx_tag tag                  = (uintptr_t) &state->timer;
+   uintptr_t tag                              = (uintptr_t)&state->timer;
    gfx_widget_font_data_t* font_regular       = gfx_widgets_get_font_regular(data);
 
    strlcpy(state->message, msg, sizeof(state->message));
@@ -129,8 +129,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 
 static void gfx_widget_libretro_message_free(void)
 {
-   gfx_widget_libretro_message_state_t* state   = gfx_widget_libretro_message_get_state();
-   gfx_animation_ctx_tag tag                    = (uintptr_t) &state->timer;
+   gfx_widget_libretro_message_state_t* state = gfx_widget_libretro_message_get_state();
+   uintptr_t tag                              = (uintptr_t) &state->timer;
 
    state->alpha = 0.0f;
    gfx_timer_kill(&state->timer);

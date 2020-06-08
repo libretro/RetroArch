@@ -2723,7 +2723,7 @@ static size_t materialui_auto_select_onscreen_entry(
 static INLINE void materialui_kill_scroll_animation(
       materialui_handle_t *mui)
 {
-   gfx_animation_ctx_tag scroll_tag = (uintptr_t)&mui->scroll_y;
+   uintptr_t scroll_tag = (uintptr_t)&mui->scroll_y;
 
    gfx_animation_kill_by_tag(&scroll_tag);
    menu_input_set_pointer_y_accel(0.0f);
@@ -2884,7 +2884,7 @@ static bool materialui_render_process_entry_playlist_desktop(
    /* Fetch metadata for selected entry */
    if (mui->status_bar.enabled)
    {
-      gfx_animation_ctx_tag alpha_tag = (uintptr_t)&mui->status_bar.alpha;
+      uintptr_t alpha_tag = (uintptr_t)&mui->status_bar.alpha;
 
       /* Reset metadata if current selection
        * has changed */
@@ -5519,7 +5519,7 @@ static bool materialui_get_selected_thumbnails(
 static void materialui_hide_fullscreen_thumbnails(
       materialui_handle_t *mui, bool animate)
 {
-   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
+   uintptr_t alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -5558,8 +5558,9 @@ static void materialui_show_fullscreen_thumbnails(
    gfx_animation_ctx_entry_t animation_entry;
    gfx_thumbnail_t *primary_thumbnail   = NULL;
    gfx_thumbnail_t *secondary_thumbnail = NULL;
-   gfx_animation_ctx_tag alpha_tag       = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
-   const char *thumbnail_label           = NULL;
+   uintptr_t                  alpha_tag = (uintptr_t)
+      &mui->fullscreen_thumbnail_alpha;
+   const char *thumbnail_label          = NULL;
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -6514,8 +6515,8 @@ static void materialui_set_landscape_optimisations_enable(
 static void materialui_status_bar_init(
       materialui_handle_t *mui, settings_t *settings)
 {
-   bool playlist_show_sublabels    = settings->bools.playlist_show_sublabels;
-   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&mui->status_bar.alpha;
+   bool playlist_show_sublabels = settings->bools.playlist_show_sublabels;
+   uintptr_t          alpha_tag = (uintptr_t)&mui->status_bar.alpha;
 
    /* Kill any existing fade in animation */
    if (mui->status_bar.enabled ||
@@ -7322,8 +7323,8 @@ static void materialui_scroll_animation_end(void *userdata)
 static void materialui_animate_scroll(
       materialui_handle_t *mui, float scroll_pos, float duration)
 {
-   gfx_animation_ctx_tag animation_tag = (uintptr_t)&mui->scroll_y;
    gfx_animation_ctx_entry_t animation_entry;
+   uintptr_t animation_tag = (uintptr_t)&mui->scroll_y;
 
    /* Kill any existing scroll animation */
    gfx_animation_kill_by_tag(&animation_tag);
@@ -7472,9 +7473,10 @@ static void materialui_init_transition_animation(
 {
    gfx_animation_ctx_entry_t alpha_entry;
    gfx_animation_ctx_entry_t x_offset_entry;
-   size_t stack_size                   = materialui_list_get_size(mui, MENU_LIST_PLAIN);
-   gfx_animation_ctx_tag alpha_tag     = (uintptr_t)&mui->transition_alpha;
-   gfx_animation_ctx_tag x_offset_tag  = (uintptr_t)&mui->transition_x_offset;
+   size_t stack_size                   = 
+      materialui_list_get_size(mui, MENU_LIST_PLAIN);
+   uintptr_t             alpha_tag     = (uintptr_t)&mui->transition_alpha;
+   uintptr_t             x_offset_tag  = (uintptr_t)&mui->transition_x_offset;
    unsigned transition_animation       = settings->uints.menu_materialui_transition_animation;
 
    /* If animations are disabled, reset alpha/x offset

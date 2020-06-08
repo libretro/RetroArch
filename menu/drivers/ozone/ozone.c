@@ -875,8 +875,8 @@ static void INLINE ozone_font_free(ozone_font_data_t *font_data)
 static void ozone_context_destroy(void *data)
 {
    unsigned i;
+   uintptr_t tag;
    ozone_handle_t *ozone = (ozone_handle_t*) data;
-   gfx_animation_ctx_tag tag;
 
    if (!ozone)
       return;
@@ -1176,7 +1176,7 @@ static size_t ozone_list_get_selection(void *data)
 
 static void ozone_list_clear(file_list_t *list)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t)list;
+   uintptr_t tag = (uintptr_t)list;
    gfx_animation_kill_by_tag(&tag);
 
    ozone_free_list_nodes(list, false);
@@ -1288,8 +1288,8 @@ static void ozone_render(void *data,
    /* Process pointer input, if required */
    if (pointer_enabled)
    {
-      file_list_t *selection_buf          = menu_entries_get_selection_buf_ptr(0);
-      gfx_animation_ctx_tag animation_tag = (uintptr_t)selection_buf;
+      file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr(0);
+      uintptr_t     animation_tag = (uintptr_t)selection_buf;
 
       int entry_padding           = (ozone->depth == 1) ?
             ozone->dimensions.entry_padding_horizontal_half :
@@ -2255,7 +2255,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
    {
       menu_entry_t entry;
       unsigned entry_type;
-      gfx_animation_ctx_tag tag    = (uintptr_t)selection_buf;
+      uintptr_t tag                = (uintptr_t)selection_buf;
       size_t selection             = menu_navigation_get_selection();
 
       menu_entry_init(&entry);
@@ -2393,7 +2393,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    settings_t  *settings                  = config_get_ptr();
    unsigned color_theme                   = settings->uints.menu_ozone_color_theme;
    bool use_preferred_system_color_theme  = settings->bools.menu_use_preferred_system_color_theme;
-   gfx_animation_ctx_tag messagebox_tag   = (uintptr_t)ozone->pending_message;
+   uintptr_t messagebox_tag               = (uintptr_t)ozone->pending_message;
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
    float *background_color                = NULL;
@@ -2705,21 +2705,21 @@ static void ozone_animation_end(void *userdata)
 
 static void ozone_list_open(ozone_handle_t *ozone)
 {
-   gfx_animation_ctx_tag sidebar_tag = (uintptr_t)&ozone->sidebar_offset;
    struct gfx_animation_ctx_entry entry;
+   uintptr_t sidebar_tag        = (uintptr_t)&ozone->sidebar_offset;
 
-   ozone->draw_old_list = true;
+   ozone->draw_old_list         = true;
 
    /* Left/right animation */
    ozone->animations.list_alpha = 0.0f;
 
-   entry.cb             = ozone_animation_end;
-   entry.duration       = ANIMATION_PUSH_ENTRY_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &ozone->animations.list_alpha;
-   entry.tag            = (uintptr_t) NULL;
-   entry.target_value   = 1.0f;
-   entry.userdata       = ozone;
+   entry.cb                     = ozone_animation_end;
+   entry.duration               = ANIMATION_PUSH_ENTRY_DURATION;
+   entry.easing_enum            = EASING_OUT_QUAD;
+   entry.subject                = &ozone->animations.list_alpha;
+   entry.tag                    = (uintptr_t)NULL;
+   entry.target_value           = 1.0f;
+   entry.userdata               = ozone;
 
    gfx_animation_push(&entry);
 
@@ -2947,8 +2947,8 @@ static void ozone_list_insert(void *userdata,
 static void ozone_list_deep_copy(const file_list_t *src, file_list_t *dst,
       size_t first, size_t last)
 {
-   size_t i, j = 0;
-   gfx_animation_ctx_tag tag = (uintptr_t)dst;
+   size_t i, j   = 0;
+   uintptr_t tag = (uintptr_t)dst;
 
    gfx_animation_kill_by_tag(&tag);
 
@@ -3150,7 +3150,8 @@ static bool ozone_get_load_content_animation_data(void *userdata, uintptr_t *ico
 
 void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate)
 {
-   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
+   uintptr_t alpha_tag = (uintptr_t)
+      &ozone->animations.fullscreen_thumbnail_alpha;
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -3186,8 +3187,8 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    gfx_animation_ctx_entry_t animation_entry;
    const char *thumbnail_label      = NULL;
    file_list_t *selection_buf       = menu_entries_get_selection_buf_ptr(0);
-   gfx_animation_ctx_tag alpha_tag  = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
-   gfx_animation_ctx_tag scroll_tag = (uintptr_t)selection_buf;
+   uintptr_t alpha_tag              = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
+   uintptr_t scroll_tag             = (uintptr_t)selection_buf;
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -3305,7 +3306,7 @@ static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone)
 
 void ozone_toggle_metadata_override(ozone_handle_t *ozone)
 {
-   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&ozone->animations.left_thumbnail_alpha;
+   uintptr_t alpha_tag = (uintptr_t)&ozone->animations.left_thumbnail_alpha;
    gfx_animation_ctx_entry_t animation_entry;
 
    /* Kill any existing fade in/out animations */
@@ -3349,13 +3350,12 @@ static int ozone_pointer_up(void *userdata,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
+   unsigned width, height;
    ozone_handle_t *ozone             = (ozone_handle_t*)userdata;
    file_list_t *selection_buf        = menu_entries_get_selection_buf_ptr(0);
-   gfx_animation_ctx_tag sidebar_tag = (uintptr_t)selection_buf;
+   uintptr_t sidebar_tag             = (uintptr_t)selection_buf;
    size_t selection                  = menu_navigation_get_selection();
    size_t entries_end                = menu_entries_get_size();
-   unsigned width;
-   unsigned height;
 
    if (!ozone)
       return -1;
@@ -3576,11 +3576,11 @@ static size_t ozone_get_onscreen_category_selection(
 static enum menu_action ozone_parse_menu_entry_action(
       ozone_handle_t *ozone, enum menu_action action)
 {
+   uintptr_t tag;
    int new_selection;
    enum menu_action new_action   = action;
    file_list_t *selection_buf    = NULL;
    unsigned horizontal_list_size = 0;
-   gfx_animation_ctx_tag tag;
 
    /* If fullscreen thumbnail view is active, any
     * valid menu action will disable it... */

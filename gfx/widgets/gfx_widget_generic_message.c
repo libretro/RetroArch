@@ -45,7 +45,7 @@ static void gfx_widget_generic_message_fadeout(void *userdata)
    gfx_animation_ctx_entry_t entry;
    gfx_widget_generic_message_state_t* state = 
       gfx_widget_generic_message_get_ptr();
-   gfx_animation_ctx_tag                 tag = (uintptr_t) &state->timer;
+   uintptr_t                             tag = (uintptr_t) &state->timer;
 
    /* Start fade out animation */
    entry.cb             = NULL;
@@ -64,7 +64,7 @@ void gfx_widget_set_message(char *msg)
    gfx_timer_ctx_entry_t timer;
    gfx_widget_generic_message_state_t* state = 
       gfx_widget_generic_message_get_ptr();
-   gfx_animation_ctx_tag                 tag = (uintptr_t) &state->timer;
+   uintptr_t                             tag = (uintptr_t) &state->timer;
 
    strlcpy(state->message, msg, sizeof(state->message));
 

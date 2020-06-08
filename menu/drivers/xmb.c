@@ -1320,7 +1320,7 @@ static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
    unsigned i, end, height;
-   gfx_animation_ctx_tag tag;
+   uintptr_t tag;
    size_t num                 = 0;
    int threshold              = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -3864,7 +3864,7 @@ static void xmb_draw_dark_layer(
 static void xmb_hide_fullscreen_thumbnails(
       xmb_handle_t *xmb, bool animate)
 {
-   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
+   uintptr_t alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -3899,11 +3899,12 @@ static void xmb_hide_fullscreen_thumbnails(
 static void xmb_show_fullscreen_thumbnails(
       xmb_handle_t *xmb, size_t selection)
 {
+   menu_entry_t selected_entry;
+   gfx_animation_ctx_entry_t animation_entry;
    const char *core_name            = NULL;
    const char *thumbnail_label      = NULL;
-   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
-   gfx_animation_ctx_entry_t animation_entry;
-   menu_entry_t selected_entry;
+   uintptr_t              alpha_tag = (uintptr_t)
+      &xmb->fullscreen_thumbnail_alpha;
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -6128,7 +6129,7 @@ static void xmb_list_insert(void *userdata,
 
 static void xmb_list_clear(file_list_t *list)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t)list;
+   uintptr_t tag = (uintptr_t)list;
 
    gfx_animation_kill_by_tag(&tag);
 
@@ -6143,8 +6144,8 @@ static void xmb_list_free(file_list_t *list, size_t a, size_t b)
 static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst,
       size_t first, size_t last)
 {
-   size_t i, j = 0;
-   gfx_animation_ctx_tag tag = (uintptr_t)dst;
+   size_t i, j   = 0;
+   uintptr_t tag = (uintptr_t)dst;
 
    gfx_animation_kill_by_tag(&tag);
 

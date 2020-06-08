@@ -49,7 +49,7 @@ struct gfx_widget_volume_state
 
    float alpha;
    float text_alpha;
-   gfx_animation_ctx_tag tag;
+   uintptr_t tag;
    bool mute;
 
    unsigned widget_width;

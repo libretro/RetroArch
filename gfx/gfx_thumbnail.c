@@ -470,7 +470,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    /* Ensure any 'fade in' animation is killed */
    if (thumbnail->fade_active)
    {
-      gfx_animation_ctx_tag tag = (uintptr_t)&thumbnail->alpha;
+      uintptr_t tag = (uintptr_t)&thumbnail->alpha;
       gfx_animation_kill_by_tag(&tag);
    }
 

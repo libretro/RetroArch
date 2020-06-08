@@ -468,7 +468,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    struct gfx_animation_ctx_entry entry;
    settings_t *settings      = config_get_ptr();
    bool is_playlist          = ozone_is_playlist(ozone, false);
-   gfx_animation_ctx_tag tag = (uintptr_t) &ozone->sidebar_collapsed;
+   uintptr_t tag             = (uintptr_t)&ozone->sidebar_collapsed;
    bool collapse_sidebar     = settings->bools.ozone_collapse_sidebar;
 
    entry.easing_enum    = EASING_OUT_QUAD;
@@ -564,7 +564,7 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 {
    unsigned video_info_height;
    struct gfx_animation_ctx_entry entry;
-   gfx_animation_ctx_tag tag = (uintptr_t)ozone;
+   uintptr_t tag = (uintptr_t)ozone;
 
    video_driver_get_size(NULL, &video_info_height);
 
@@ -616,10 +616,10 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height)
 {
    settings_t *settings                 = config_get_ptr();
-   gfx_animation_ctx_tag collapsed_tag  = (uintptr_t)&ozone->sidebar_collapsed;
-   gfx_animation_ctx_tag offset_tag     = (uintptr_t)&ozone->sidebar_offset;
-   gfx_animation_ctx_tag thumbnail_tag  = (uintptr_t)&ozone->show_thumbnail_bar;
-   gfx_animation_ctx_tag scroll_tag     = (uintptr_t)ozone;
+   uintptr_t collapsed_tag              = (uintptr_t)&ozone->sidebar_collapsed;
+   uintptr_t offset_tag                 = (uintptr_t)&ozone->sidebar_offset;
+   uintptr_t thumbnail_tag              = (uintptr_t)&ozone->show_thumbnail_bar;
+   uintptr_t scroll_tag                 = (uintptr_t)ozone;
    bool is_playlist                     = ozone_is_playlist(ozone, false);
    bool collapse_sidebar                = settings->bools.ozone_collapse_sidebar;
 

@@ -1192,8 +1192,8 @@ static unsigned stripes_get_system_tab(stripes_handle_t *stripes, unsigned i)
 static void stripes_selection_pointer_changed(
       stripes_handle_t *stripes, bool allow_animations)
 {
+   uintptr_t tag;
    unsigned i, end, height;
-   gfx_animation_ctx_tag tag;
    menu_entry_t entry;
    size_t num                 = 0;
    int threshold              = 0;
@@ -3896,7 +3896,7 @@ static void stripes_list_insert(void *userdata,
 
 static void stripes_list_clear(file_list_t *list)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t)list;
+   uintptr_t tag = (uintptr_t)list;
 
    gfx_animation_kill_by_tag(&tag);
 
@@ -3911,8 +3911,8 @@ static void stripes_list_free(file_list_t *list, size_t a, size_t b)
 static void stripes_list_deep_copy(const file_list_t *src, file_list_t *dst,
       size_t first, size_t last)
 {
-   size_t i, j = 0;
-   gfx_animation_ctx_tag tag = (uintptr_t)dst;
+   size_t i, j   = 0;
+   uintptr_t tag = (uintptr_t)dst;
 
    gfx_animation_kill_by_tag(&tag);
 

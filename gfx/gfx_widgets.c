@@ -717,7 +717,7 @@ static void gfx_widgets_msg_queue_free(
       menu_widget_msg_t *msg, bool touch_list)
 {
    size_t i;
-   gfx_animation_ctx_tag tag        = (uintptr_t)msg;
+   uintptr_t tag = (uintptr_t)msg;
 
    if (msg->task_ptr)
    {
@@ -1003,16 +1003,16 @@ static void gfx_widgets_hourglass_end(void *userdata)
 static void gfx_widgets_hourglass_tick(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   menu_widget_msg_t    *msg = (menu_widget_msg_t*)userdata;
-   gfx_animation_ctx_tag tag = (uintptr_t)msg;
+   menu_widget_msg_t *msg = (menu_widget_msg_t*)userdata;
+   uintptr_t          tag = (uintptr_t)msg;
 
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.tag            = tag;
-   entry.duration       = HOURGLASS_DURATION;
-   entry.target_value   = -(2 * M_PI);
-   entry.subject        = &msg->hourglass_rotation;
-   entry.cb             = gfx_widgets_hourglass_end;
-   entry.userdata       = msg;
+   entry.easing_enum      = EASING_OUT_QUAD;
+   entry.tag              = tag;
+   entry.duration         = HOURGLASS_DURATION;
+   entry.target_value     = -(2 * M_PI);
+   entry.subject          = &msg->hourglass_rotation;
+   entry.cb               = gfx_widgets_hourglass_end;
+   entry.userdata         = msg;
 
    gfx_animation_push(&entry);
 }

@@ -2237,7 +2237,7 @@ bool gfx_animation_is_active(void)
    return p_anim->animation_is_active || p_anim->ticker_is_active;
 }
 
-bool gfx_animation_kill_by_tag(gfx_animation_ctx_tag *tag)
+bool gfx_animation_kill_by_tag(uintptr_t *tag)
 {
    unsigned i;
    gfx_animation_t *p_anim = anim_get_ptr();
@@ -2353,11 +2353,11 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
 void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 {
    gfx_animation_ctx_entry_t entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) timer;
+   uintptr_t tag        = (uintptr_t) timer;
 
    gfx_timer_kill(timer);
 
-   *timer = 0.0f;
+   *timer               = 0.0f;
 
    entry.easing_enum    = EASING_LINEAR;
    entry.tag            = tag;
@@ -2372,7 +2372,7 @@ void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 
 void gfx_timer_kill(gfx_timer_t *timer)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t) timer;
+   uintptr_t tag = (uintptr_t) timer;
    gfx_animation_kill_by_tag(&tag);
 }
 

@@ -150,7 +150,7 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
    float new_scroll = 0, entries_middle;
    float bottom_boundary, current_selection_middle_onscreen;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   gfx_animation_ctx_tag tag  = (uintptr_t) selection_buf;
+   uintptr_t tag              = (uintptr_t) selection_buf;
 
    video_driver_get_size(NULL, &video_info_height);
 
@@ -323,7 +323,7 @@ static void ozone_thumbnail_bar_hide_end(void *userdata)
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation)
 {
    struct gfx_animation_ctx_entry entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) &ozone->show_thumbnail_bar;
+   uintptr_t tag     = (uintptr_t)&ozone->show_thumbnail_bar;
 
    entry.duration    = ANIMATION_CURSOR_DURATION;
    entry.easing_enum = EASING_OUT_QUAD;
