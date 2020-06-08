@@ -663,8 +663,7 @@ int setting_uint_action_left_default(
       if (overflowed || *setting->value.target.unsigned_integer < min)
       {
          settings_t *settings = config_get_ptr();
-
-      double           max = setting->max;
+         double           max = setting->max;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.unsigned_integer = max;
@@ -697,7 +696,6 @@ int setting_uint_action_right_default(
       if (*setting->value.target.unsigned_integer > max)
       {
          settings_t *settings = config_get_ptr();
-
          double           min = setting->min;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -786,8 +784,7 @@ static int setting_size_action_left_default(
       if (overflowed || *setting->value.target.sizet < min)
       {
          settings_t *settings = config_get_ptr();
-
-      double           max = setting->max;
+         double           max = setting->max;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.sizet = max;
@@ -822,7 +819,6 @@ static int setting_size_action_right_default(
       if (*setting->value.target.sizet > max)
       {
          settings_t *settings = config_get_ptr();
-
          double           min = setting->min;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -851,8 +847,7 @@ int setting_generic_action_ok_default(rarch_setting_t *setting, bool wraparound)
 void setting_generic_handle_change(rarch_setting_t *setting)
 {
    settings_t *settings = config_get_ptr();
-
-   settings->modified = true;
+   settings->modified   = true;
 
    if (setting->change_handler)
       setting->change_handler(setting);
