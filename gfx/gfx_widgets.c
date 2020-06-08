@@ -144,7 +144,6 @@ typedef struct dispgfx_widget
     * avoid confusing users */
    bool widgets_moving;
    bool widgets_inited;
-   bool widgets_persisting;
    bool msg_queue_has_icons;
 #ifdef HAVE_MENU
    bool load_content_animation_running;
@@ -329,12 +328,6 @@ void *dispwidget_get_ptr(void)
    /* TODO/FIXME - static global state - perhaps move outside this file */
    static dispgfx_widget_t dispwidget_st;
    return &dispwidget_st;
-}
-
-void gfx_widgets_set_persistence(bool persist)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-   p_dispwidget->widgets_persisting = persist;
 }
 
 gfx_widget_font_data_t* gfx_widgets_get_font_regular(void *data)
@@ -2082,7 +2075,7 @@ error:
    return false;
 }
 
-bool gfx_widgets_deinit(void)
+bool gfx_widgets_deinit(bool widgets_persisting)
 {
    dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
    if (!p_dispwidget->widgets_inited)
@@ -2090,7 +2083,7 @@ bool gfx_widgets_deinit(void)
 
    gfx_widgets_context_destroy(p_dispwidget);
 
-   if (!p_dispwidget->widgets_persisting)
+   if (!widgets_persisting)
       gfx_widgets_free(p_dispwidget);
 
    return true;

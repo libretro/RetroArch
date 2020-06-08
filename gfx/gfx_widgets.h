@@ -159,15 +159,13 @@ void gfx_widgets_flush_text(
 
 typedef struct gfx_widget gfx_widget_t;
 
-void gfx_widgets_set_persistence(bool persist);
-
 bool gfx_widgets_init(
       uintptr_t widgets_active_ptr,
       bool video_is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path);
 
-bool gfx_widgets_deinit(void);
+bool gfx_widgets_deinit(bool widgets_persisting);
 
 void gfx_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,

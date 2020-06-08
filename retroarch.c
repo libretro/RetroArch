@@ -1827,6 +1827,7 @@ struct rarch_state
 
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active;
+   bool widgets_persisting;
 #endif
 #ifdef HAVE_NETWORKING
 /* Only used before init_netplay */
@@ -15742,7 +15743,7 @@ void main_exit(void *args)
 
 #if defined(HAVE_GFX_WIDGETS)
    /* Do not want display widgets to live any more. */
-   gfx_widgets_set_persistence(false);
+   p_rarch->widgets_persisting = false;
 #endif
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */
@@ -32320,7 +32321,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
 
    /* By default, we want display widgets to persist through driver reinits. */
-   gfx_widgets_set_persistence(true);
+   p_rarch->widgets_persisting = true;
 #endif
 
 #ifdef HAVE_MENU
@@ -32495,7 +32496,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   if (gfx_widgets_deinit())
+   if (gfx_widgets_deinit(p_rarch->widgets_persisting))
       p_rarch->widgets_active = false;
 #endif
 
@@ -32562,7 +32563,7 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   if (gfx_widgets_deinit())
+   if (gfx_widgets_deinit(p_rarch->widgets_persisting))
       p_rarch->widgets_active = false;
 #endif
 
