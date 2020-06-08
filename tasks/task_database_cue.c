@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_endianness.h>
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <file/file_path.h>

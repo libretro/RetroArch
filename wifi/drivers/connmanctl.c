@@ -27,19 +27,26 @@
 #include "../../gfx/gfx_widgets.h"
 #endif
 
-static bool connman_cache[256]   = {0};
-static unsigned connman_counter  = 0;
-static struct string_list* lines = NULL;
-static char command[256]         = {0};
+static bool connman_cache[256]           = {0};
+static unsigned connman_counter          = 0;
+static struct string_list* lines         = NULL;
+static char command[256]                 = {0};
+static bool connmanctl_widgets_supported = false;
 
 static void *connmanctl_init(void)
 {
+#ifdef HAVE_GFX_WIDGETS
+   connmanctl_widgets_supported = gfx_widgets_ready();
+#endif
    return (void*)-1;
 }
 
 static void connmanctl_free(void *data)
 {
    (void)data;
+#ifdef HAVE_GFX_WIDGETS
+   connmanctl_widgets_supported = gfx_widgets_ready();
+#endif
 }
 
 static bool connmanctl_start(void *data)
@@ -58,6 +65,7 @@ static bool connmanctl_tether_status(void)
    /* Returns true if the tethering is active
     * false when tethering is not active
     */
+   size_t ln_size;
    FILE *command_file = NULL;
    char ln[3]         = {0};
 
@@ -78,8 +86,9 @@ static bool connmanctl_tether_status(void)
 
    fgets(ln, sizeof(ln), command_file);
 
-   if (ln[strlen(ln)-1] == '\n')
-      ln[strlen(ln)-1] = '\0';
+   ln_size = strlen(ln)-1;
+   if (ln[ln_size] == '\n')
+      ln[ln_size] = '\0';
 
    RARCH_LOG("[CONNMANCTL] Tether Status: command: \"%s\", output: \"%s\"\n",
          command, ln);
@@ -95,12 +104,16 @@ static bool connmanctl_tether_status(void)
    return false;
 }
 
-static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey)
+static void connmanctl_tether_toggle(
+      bool switch_on, char* apname, char* passkey)
 {
    /* Starts / stops the tethering service on wi-fi device */
    char output[256]     = {0};
    FILE *command_file   = NULL;
    settings_t *settings = config_get_ptr();
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active  = connmanctl_widgets_supported;
+#endif
 
    snprintf(command, sizeof(command), "\
          connmanctl tether wifi %s %s %s",
@@ -111,16 +124,17 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
    RARCH_LOG("[CONNMANCTL] Tether toggle: command: \"%s\"\n",
          command);
 
-   while (fgets(output, sizeof(output), command_file) != NULL)
+   while (fgets(output, sizeof(output), command_file))
    {
-      if (output[strlen(output)-1] == '\n')
-         output[strlen(output)-1] = '\0';
+      size_t output_size = strlen(output) - 1;
+      if (output[output_size] == '\n')
+         output[output_size] = '\0';
 
       RARCH_LOG("[CONNMANCTL] Tether toggle: output: \"%s\"\n",
             output);
 
 #ifdef HAVE_GFX_WIDGETS
-      if (!gfx_widgets_ready())
+      if (!widgets_active)
 #endif
          runloop_msg_queue_push(output, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -176,7 +190,7 @@ static void connmanctl_scan(void)
          MESSAGE_QUEUE_CATEGORY_INFO);
 
    serv_file = popen("connmanctl services", "r");
-   while (fgets (line, 512, serv_file) != NULL)
+   while (fgets(line, 512, serv_file))
    {
       size_t len = strlen(line);
       if (len > 0 && line[len-1] == '\n')
@@ -236,7 +250,7 @@ static bool connmanctl_ssid_is_online(unsigned i)
 
       command_file = popen(command, "r");
 
-      while (fgets (ln, 512, command_file) != NULL)
+      while (fgets(ln, 512, command_file))
       {
          connman_cache[i] = true;
          return true;
@@ -265,8 +279,10 @@ static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
    FILE *settings_file                 = NULL;
    const char *line                    = lines->elems[idx].data;
    settings_t *settings                = config_get_ptr();
-
    static struct string_list* list     = NULL;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active                 = connmanctl_widgets_supported;
+#endif
    /* connmanctl services outputs a 4 character prefixed lines,
     * either whitespace or an identifier. i.e.:
     * $ connmanctl services
@@ -333,10 +349,10 @@ static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
 
    command_file = popen(command, "r");
 
-   while (fgets (ln, sizeof(ln), command_file) != NULL)
+   while (fgets(ln, sizeof(ln), command_file))
    {
 #ifdef HAVE_GFX_WIDGETS
-      if (!gfx_widgets_ready())
+      if (!widgets_active)
 #endif
          runloop_msg_queue_push(ln, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -349,6 +365,7 @@ static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
 
 static void connmanctl_get_connected_ssid(char* ssid, size_t buffersize)
 {
+   size_t ssid_size;
    /* Stores the SSID of the currently connected Wi-Fi
     * network in ssid
     */
@@ -373,12 +390,14 @@ static void connmanctl_get_connected_ssid(char* ssid, size_t buffersize)
 
    pclose(command_file);
 
-   if (strlen(ssid) > 0)
-      if (ssid[strlen(ssid)-1] == '\n')
-         ssid[strlen(ssid)-1] = '\0';
+   ssid_size = strlen(ssid) - 1;
+
+   if ((ssid_size + 1) > 0)
+      if (ssid[ssid_size] == '\n')
+         ssid[ssid_size] = '\0';
 
    RARCH_LOG("[CONNMANCTL] Get Connected SSID: command: \"%s\", output: \"%s\"\n",
-         command, strlen(ssid) ? ssid : "<nothing_found>");
+         command, (ssid_size + 1) ? ssid : "<nothing_found>");
 }
 
 static void connmanctl_get_connected_servicename(char* servicename, size_t buffersize)
@@ -414,13 +433,16 @@ static void connmanctl_get_connected_servicename(char* servicename, size_t buffe
    RARCH_LOG("[CONNMANCTL] Testing configured services for activity: command: \"%s\"\n",
          command);
 
-   while (fgets(temp, buffersize, command_file) != NULL)
+   while (fgets(temp, buffersize, command_file))
    {
-      if (strlen(temp) > 0)
-         if (temp[strlen(temp)-1] == '\n')
-            temp[strlen(temp)-1] = '\0';
+      size_t ln_size;
+      size_t temp_size = strlen(temp) - 1;
 
-      if (strlen(temp) == 0)
+      if ((temp_size + 1) > 0)
+         if (temp[temp_size] == '\n')
+            temp[temp_size] = '\0';
+
+      if ((temp_size + 1) == 0)
       {
          RARCH_WARN("[CONNMANCTL] Service name empty.\n");
          continue;
@@ -439,9 +461,10 @@ static void connmanctl_get_connected_servicename(char* servicename, size_t buffe
       service_file = popen(command, "r");
 
       fgets(ln, sizeof(ln), service_file);
+      ln_size = strlen(ln) - 1;
 
-      if (ln[strlen(ln)-1] == '\n')
-         ln[strlen(ln)-1] = '\0';
+      if (ln[ln_size] == '\n')
+         ln[ln_size] = '\0';
 
       pclose(service_file);
 
@@ -475,12 +498,15 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
     * tethering service is already running / not running
     * before performing the desired action
     */
-   FILE *command_file = NULL;
-   char apname[64]    = {0};
-   char passkey[256]  = {0};
-   char ln[512]       = {0};
-   char ssid[64]      = {0};
-   char service[256]  = {0};
+   FILE *command_file  = NULL;
+   char apname[64]     = {0};
+   char passkey[256]   = {0};
+   char ln[512]        = {0};
+   char ssid[64]       = {0};
+   char service[256]   = {0};
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active = connmanctl_widgets_supported;
+#endif
 
    RARCH_LOG("[CONNMANCTL] Tether start stop: begin\n");
 
@@ -547,13 +573,15 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
          RARCH_LOG("[CONNMANCTL] Tether start stop: parsing command: \"%s\"\n",
                command);
 
-         while (fgets(ln, sizeof(ln), command_file) != NULL)
+         while (fgets(ln, sizeof(ln), command_file))
          {
+            size_t ln_size = strlen(ln) - 1;
+
             i++;
-            if (strlen(ln) > 1)
+            if ((ln_size + 1) > 1)
             {
-               if (ln[strlen(ln)-1] == '\n')
-                  ln[strlen(ln)-1] = '\0';
+               if (ln[ln_size] == '\n')
+                  ln[ln_size] = '\0';
 
                if (i == 1)
                {
@@ -632,16 +660,17 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
             RARCH_LOG("[CONNMANCTL] Tether start stop: disconnecting from service \"%s\", command: \"%s\"\n",
                   service, command);
 
-            while (fgets(ln, sizeof(ln), command_file) != NULL)
+            while (fgets(ln, sizeof(ln), command_file))
             {
-               if (ln[strlen(ln)-1] == '\n')
-                  ln[strlen(ln)-1] = '\0';
+               size_t ln_size = strlen(ln) - 1;
+               if (ln[ln_size] == '\n')
+                  ln[ln_size] = '\0';
 
                RARCH_LOG("[CONNMANCTL] Tether start stop: output: \"%s\"\n",
                      ln);
 
 #ifdef HAVE_GFX_WIDGETS
-               if (!gfx_widgets_ready())
+               if (!widgets_active)
 #endif
                   runloop_msg_queue_push(ln, 1, 180, true,
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT,

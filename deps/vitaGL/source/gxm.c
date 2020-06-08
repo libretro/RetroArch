@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * gxm.c:
  * Implementation for setup and cleanup for sceGxm specific stuffs
@@ -27,7 +45,7 @@ static void *gxm_stencil_surface_addr; // Stencil surface memblock starting addr
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 
 SceGxmContext *gxm_context; // sceGxm context instance
-GLenum _vitagl_error = GL_NO_ERROR; // Error returned by glGetError
+GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix
@@ -52,7 +70,7 @@ static void *shader_patcher_host_alloc_cb(void *user_data, unsigned int size) {
 
 // sceGxmShaderPatcher custom deallocator
 static void shader_patcher_host_free_cb(void *user_data, void *mem) {
-	return free(mem);
+	free(mem);
 }
 
 // sceDisplay callback
@@ -128,9 +146,9 @@ void initGxmContext(void) {
 
 void termGxmContext(void) {
 	// Deallocating ring buffers
-	vitagl_mempool_free(vdm_ring_buffer_addr, VGL_MEM_VRAM);
-	vitagl_mempool_free(vertex_ring_buffer_addr, VGL_MEM_VRAM);
-	vitagl_mempool_free(fragment_ring_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(vdm_ring_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(vertex_ring_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(fragment_ring_buffer_addr, VGL_MEM_VRAM);
 	gpu_fragment_usse_free_mapped(fragment_usse_ring_buffer_addr);
 
 	// Destroying sceGxm context
@@ -188,7 +206,7 @@ void termDisplayColorSurfaces(void) {
 	// Deallocating display's color surfaces and destroying sync objects
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		vitagl_mempool_free(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
+		vgl_mem_free(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
 		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
 	}
 }
@@ -214,7 +232,7 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
 		SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8,
-		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
+		SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR,
 		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
 		*depth_buffer,
 		*stencil_buffer);
@@ -227,8 +245,8 @@ void initDepthStencilSurfaces(void) {
 
 void termDepthStencilSurfaces(void) {
 	// Deallocating depth and stencil surfaces memblocks
-	vitagl_mempool_free(gxm_depth_surface_addr, VGL_MEM_VRAM);
-	vitagl_mempool_free(gxm_stencil_surface_addr, VGL_MEM_VRAM);
+	vgl_mem_free(gxm_depth_surface_addr, VGL_MEM_VRAM);
+	vgl_mem_free(gxm_stencil_surface_addr, VGL_MEM_VRAM);
 }
 
 void startShaderPatcher(void) {
@@ -282,7 +300,7 @@ void stopShaderPatcher(void) {
 	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
 
 	// Freeing shader patcher buffers
-	vitagl_mempool_free(gxm_shader_patcher_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(gxm_shader_patcher_buffer_addr, VGL_MEM_VRAM);
 	gpu_vertex_usse_free_mapped(gxm_shader_patcher_vertex_usse_addr);
 	gpu_fragment_usse_free_mapped(gxm_shader_patcher_fragment_usse_addr);
 }
@@ -319,14 +337,12 @@ void vglStartRendering(void) {
 	}
 
 	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
-	if (scissor_test_state) {
-		if (viewport_mode)
-			sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w, region.y + region.h);
-	} else if (viewport_mode) {
-		sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, gl_viewport.x, DISPLAY_HEIGHT - gl_viewport.y - gl_viewport.h, gl_viewport.x + gl_viewport.w, gl_viewport.y + gl_viewport.h);
-	}
+	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	
+	if (scissor_test_state)
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
+	else
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
 }
 
 void vglStopRenderingInit(void) {
@@ -335,9 +351,6 @@ void vglStopRenderingInit(void) {
 }
 
 void vglStopRenderingTerm(void) {
-	// Waiting GPU to complete its work
-	sceGxmFinish(gxm_context);
-
 	if (active_write_fb == NULL) { // Default framebuffer is used
 
 		// Properly requesting a display update

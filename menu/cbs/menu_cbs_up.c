@@ -17,9 +17,7 @@
 #include "../menu_cbs.h"
 
 #ifndef BIND_ACTION_UP
-#define BIND_ACTION_UP(cbs, name) \
-   cbs->action_up = name; \
-   cbs->action_up_ident = #name;
+#define BIND_ACTION_UP(cbs, name) (cbs)->action_up = (name)
 #endif
 
 static int action_bind_up_generic(unsigned type, const char *label)

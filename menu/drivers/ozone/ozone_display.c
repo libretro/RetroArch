@@ -25,11 +25,24 @@
 #include <file/file_path.h>
 #include <encodings/utf.h>
 #include <lists/string_list.h>
-#include <features/features_cpu.h>
 
 #include "../../../gfx/gfx_animation.h"
 
 #include "../../../input/input_osk.h"
+
+static float ozone_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+};
+
+static float ozone_osk_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+};
 
 static void ozone_cursor_animation_cb(void *userdata);
 
@@ -83,7 +96,7 @@ static void ozone_cursor_animation_cb(void *userdata)
 
 void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t) &ozone_default_theme;
+   uintptr_t tag = (uintptr_t) &ozone_default_theme;
 
    if (!ozone->has_all_assets)
       return;
@@ -100,11 +113,11 @@ void ozone_draw_text(
       const char *str, float x,
       float y,
       enum text_alignment text_align,
-      unsigned width, unsigned height, font_data_t* font,
+      unsigned width, unsigned height, ozone_font_data_t *font_data,
       uint32_t color,
       bool draw_outside)
 {
-   gfx_display_draw_text(font, str, x, y,
+   gfx_display_draw_text(font_data->font, str, x, y,
          width, height, color, text_align, 1.0f,
          false,
          1.0, draw_outside);
@@ -120,9 +133,9 @@ static void ozone_draw_cursor_slice(
       size_t y, float alpha)
 {
    float scale_factor    = ozone->last_scale_factor;
-   int slice_x           = x_offset - 14 * scale_factor;
+   int slice_x           = x_offset - 12 * scale_factor;
    int slice_y           = (int)y + 8 * scale_factor;
-   unsigned slice_new_w  = width + (3 + 28 - 4) * scale_factor;
+   unsigned slice_new_w  = width + (24 + 1) * scale_factor;
    unsigned slice_new_h  = height + 20 * scale_factor;
 
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
@@ -185,7 +198,7 @@ static void ozone_draw_cursor_fallback(
          x_offset,
          (int)y,
          width,
-         height - ozone->dimensions.spacer_5px,
+         height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
          ozone->theme_dynamic.selection);
@@ -211,7 +224,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_3px,
-         (int)(y + height - ozone->dimensions.spacer_5px),
+         (int)(y + height - ozone->dimensions.spacer_3px),
          width + ozone->dimensions.spacer_3px * 2,
          ozone->dimensions.spacer_3px,
          video_width,
@@ -226,7 +239,7 @@ static void ozone_draw_cursor_fallback(
          (int)(x_offset - ozone->dimensions.spacer_3px),
          (int)y,
          ozone->dimensions.spacer_3px,
-         height - ozone->dimensions.spacer_5px,
+         height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
          ozone->theme_dynamic.selection_border);
@@ -239,7 +252,7 @@ static void ozone_draw_cursor_fallback(
          x_offset + width,
          (int)y,
          ozone->dimensions.spacer_3px,
-         height - ozone->dimensions.spacer_5px,
+         height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
          ozone->theme_dynamic.selection_border);
@@ -355,7 +368,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    unsigned y_offset       = 0;
    bool draw_placeholder   = string_is_empty(str);
 
-   retro_time_t current_time      = cpu_features_get_time_usec();
+   retro_time_t current_time      = menu_driver_get_current_time();
    static retro_time_t last_time  = 0;
 
    if (current_time - last_time >= INTERVAL_OSK_CURSOR)
@@ -443,7 +456,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
-   word_wrap(message, text, (video_width - margin*2 - padding*2) / ozone->entry_font_glyph_width, true, 0);
+   word_wrap(message, text, (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width, true, 0);
 
    list = string_split(message, "\n");
 
@@ -451,22 +464,25 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    {
       const char *msg = list->elems[i].data;
 
-      ozone_draw_text(ozone, msg, margin + padding * 2, margin + padding + ozone->sublabel_font_glyph_height + y_offset, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.entries_label, text_color, false);
+      ozone_draw_text(ozone, msg,
+            margin + padding * 2,
+            margin + padding + ozone->fonts.entries_label.line_height + y_offset,
+            TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.entries_label, text_color, false);
 
       /* Cursor */
       if (i == list->size - 1)
       {
          if (ozone->osk_cursor)
          {
-            unsigned cursor_x = draw_placeholder ? 0 : font_driver_get_message_width(ozone->fonts.entries_label, msg, (unsigned)strlen(msg), 1);
+            unsigned cursor_x = draw_placeholder ? 0 : font_driver_get_message_width(ozone->fonts.entries_label.font, msg, (unsigned)strlen(msg), 1);
             gfx_display_draw_quad(
                   userdata,
                   video_width,
                   video_height,
                   margin + padding*2 + cursor_x,
-                  margin + padding + y_offset + ozone->dimensions.spacer_3px,
+                  margin + padding + y_offset + ozone->fonts.entries_label.line_height - ozone->fonts.entries_label.line_ascender + ozone->dimensions.spacer_3px,
                   ozone->dimensions.spacer_1px,
-                  25 * scale_factor,
+                  ozone->fonts.entries_label.line_ascender,
                   video_width,
                   video_height,
                   ozone_pure_white);
@@ -484,7 +500,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          video_width,
          video_height,
          ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
-         ozone->fonts.entries_label,
+         ozone->fonts.entries_label.font,
          input_event_get_osk_grid(),
          input_event_get_osk_ptr(),
          ozone->theme->text_rgba);
@@ -500,21 +516,37 @@ void ozone_draw_messagebox(
       const char *message)
 {
    unsigned i, y_position;
-   int x, y, longest = 0, longest_width = 0;
-   struct string_list *list = !string_is_empty(message)
-      ? string_split(message, "\n") : NULL;
-   float scale_factor       = ozone->last_scale_factor;
+   int x, y, longest_width  = 0;
+   int usable_width         = 0;
+   struct string_list *list = NULL;
+   float scale_factor       = 0.0f;
    unsigned width           = video_width;
    unsigned height          = video_height;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 
-   if (!list || !ozone || !ozone->fonts.footer)
-   {
-      if (list)
-         string_list_free(list);
-      return;
-   }
+   wrapped_message[0] = '\0';
 
-   if (list->elems == 0)
+   /* Sanity check */
+   if (string_is_empty(message) ||
+       !ozone ||
+       !ozone->fonts.footer.font)
+      goto end;
+
+   scale_factor = ozone->last_scale_factor;
+   usable_width = (int)width - (48 * 8 * scale_factor);
+
+   if (usable_width < 1)
+      goto end;
+
+   /* Split message into lines */
+   word_wrap(
+         wrapped_message, message,
+         usable_width / (int)ozone->fonts.footer.glyph_width,
+         true, 0);
+
+   list = string_split(wrapped_message, "\n");
+
+   if (!list || list->elems == 0)
       goto end;
 
    y_position       = height / 2;
@@ -522,19 +554,20 @@ void ozone_draw_messagebox(
       y_position    = height / 4;
 
    x                = width  / 2;
-   y                = y_position - (list->size * ozone->footer_font_glyph_height) / 2;
+   y                = y_position - (list->size * ozone->fonts.footer.line_height) / 2;
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
    {
       const char *msg  = list->elems[i].data;
-      int len          = (int)utf8len(msg);
 
-      if (len > longest)
+      if (!string_is_empty(msg))
       {
-         longest       = len;
-         longest_width = font_driver_get_message_width(
-               ozone->fonts.footer, msg, (unsigned)strlen(msg), 1);
+         int width = font_driver_get_message_width(
+               ozone->fonts.footer.font, msg, (unsigned)strlen(msg), 1);
+
+         longest_width = (width > longest_width) ?
+               width : longest_width;
       }
    }
 
@@ -542,18 +575,26 @@ void ozone_draw_messagebox(
 
    gfx_display_blend_begin(userdata);
 
-   if (ozone->has_all_assets) /* avoid drawing a black box if there's no assets */
+   /* Avoid drawing a black box if there's no assets */
+   if (ozone->has_all_assets)
    {
-      int slice_x          = x - longest_width/2 - 48 * scale_factor;
+      /* Note: The fact that we use a texture slice here
+       * makes things very messy
+       * > The actual size and offset of a texture slice
+       *   is quite 'loose', and depends upon source image
+       *   size, draw size and scale factor... */
       unsigned slice_new_w = longest_width + 48 * 2 * scale_factor;
-      unsigned slice_new_h = ozone->footer_font_glyph_height * (list->size + 2);
+      unsigned slice_new_h = ozone->fonts.footer.line_height * (list->size + 2);
+      int slice_x          = x - longest_width/2 - 48 * scale_factor;
+      int slice_y          = y - ozone->fonts.footer.line_height +
+            ((slice_new_h >= 256) ? (16.0f * scale_factor) : (16.0f * ((float)slice_new_h / 256.0f)));
 
       gfx_display_draw_texture_slice(
             userdata,
             video_width,
             video_height,
             slice_x,
-            y,
+            slice_y,
             256, 256,
             slice_new_w,
             slice_new_h,
@@ -572,17 +613,18 @@ void ozone_draw_messagebox(
          ozone_draw_text(ozone,
             msg,
             x - longest_width/2.0,
-            y + (i + 1) * ozone->footer_font_glyph_height,
+            y + (i * ozone->fonts.footer.line_height) + ozone->fonts.footer.line_ascender,
             TEXT_ALIGN_LEFT,
             width, height,
-            ozone->fonts.footer,
+            &ozone->fonts.footer,
             COLOR_TEXT_ALPHA(ozone->theme->text_rgba, (uint32_t)(ozone->animations.messagebox_alpha*255.0f)),
             false
          );
    }
 
 end:
-   string_list_free(list);
+   if (list)
+      string_list_free(list);
 }
 
 void ozone_draw_fullscreen_thumbnails(

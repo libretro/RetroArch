@@ -56,6 +56,10 @@
 #include "../video_thread_wrapper.h"
 #endif
 
+#ifdef VITA
+static bool vgl_inited = false;
+#endif
+
 static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
 
 /* Used for the last pass when rendering to the back buffer. */
@@ -272,12 +276,12 @@ static void *gl1_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 #ifdef VITA
-   if (!gl1->vgl_inited)
+   if (!vgl_inited)
    {
       vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
       vglStartRendering();
-      gl1->vgl_inited = true;
+      vgl_inited = true;
    }
 #endif
    /* Clear out potential error flags in case we use cached context. */
@@ -696,6 +700,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    unsigned pot_height       = 0;
    unsigned video_width      = video_info->width;
    unsigned video_height     = video_info->height;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    gl1_context_bind_hw_render(gl1, false);
    
@@ -722,11 +727,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
             video_width, video_height, false, true);
    }
 
-   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-   glClear(GL_COLOR_BUFFER_BIT);
 
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    if (  gl1->video_width  != frame_width  ||
          gl1->video_height != frame_height ||
@@ -755,9 +756,10 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    pot_width = get_pot(width);
    pot_height = get_pot(height);
 
-   if (  frame_width  == 4 &&
+   if (  frame == RETRO_HW_FRAME_BUFFER_VALID || (
+         frame_width  == 4 &&
          frame_height == 4 &&
-         (frame_width < width && frame_height < height)
+         (frame_width < width && frame_height < height))
       )
       draw = false;
 
@@ -789,10 +791,15 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (draw)
    {
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   
       if (frame_to_copy)
-      {
-         draw_tex(gl1, pot_width, pot_height, width, height, gl1->tex, frame_to_copy);
-      }
+         draw_tex(gl1, pot_width, pot_height,
+               width, height, gl1->tex, frame_to_copy);
    }
 
    if (gl1->menu_frame && video_info->menu_is_alive)
@@ -837,28 +844,30 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU
    if (gl1->menu_texture_enable)
-      menu_driver_frame(video_info);
-   else if (video_info->statistics_show)
-   {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
-      if (osd_params)
+      menu_driver_frame(menu_is_alive, video_info);
+   else
+#endif
+      if (video_info->statistics_show)
       {
-         font_driver_render_msg(gl1, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         struct font_params *osd_params = (struct font_params*)
+            &video_info->osd_stat_params;
+
+         if (osd_params)
+         {
+            font_driver_render_msg(gl1, video_info->stat_text,
+                  (const struct font_params*)&video_info->osd_stat_params, NULL);
 #if 0
-         osd_params->y               = 0.350f;
-         osd_params->scale           = 0.75f;
-         font_driver_render_msg(gl1, video_info->chat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+            osd_params->y               = 0.350f;
+            osd_params->scale           = 0.75f;
+            font_driver_render_msg(gl1, video_info->chat_text,
+                  (const struct font_params*)&video_info->osd_stat_params, NULL);
 #endif
+         }
       }
-   }
-#endif
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -869,8 +878,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(gl1, msg, NULL, NULL);
 
-   video_info->cb_update_window_title(
-         video_info->context_data);
+   if (gl1->ctx_driver->update_window_title)
+      gl1->ctx_driver->update_window_title(
+            video_info->context_data);
 
    /* Screenshots. */
    if (gl1->readback_buffer_screenshot)
@@ -888,12 +898,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
    {
-      video_info->cb_swap_buffers(video_info->context_data);
+      gl1->ctx_driver->swap_buffers(video_info->context_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
-   video_info->cb_swap_buffers(video_info->context_data);
+   gl1->ctx_driver->swap_buffers(video_info->context_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (video_info->hard_sync

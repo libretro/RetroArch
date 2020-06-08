@@ -1,5 +1,4 @@
 #include "discord_rpc.h"
-#include "discord_register.h"
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMCX
@@ -9,6 +8,11 @@
 #include <psapi.h>
 #include <wchar.h>
 #include <stdio.h>
+
+int get_process_id(void)
+{
+    return (int)GetCurrentProcessId();
+}
 
 /**
  * Updated fixes for MinGW and WinXP
@@ -53,99 +57,99 @@ static LSTATUS regset(HKEY hkey,
       const void* data,
       DWORD len)
 {
-    HKEY htkey = hkey, hsubkey = NULL;
-    LSTATUS ret;
-    if (subkey && subkey[0])
-    {
-        if ((ret = RegCreateKeyExW(hkey, subkey, 0, 0, 0, KEY_ALL_ACCESS, 0, &hsubkey, 0)) !=
+   LSTATUS ret;
+   HKEY htkey = hkey, hsubkey = NULL;
+   if (subkey && subkey[0])
+   {
+      if ((ret = RegCreateKeyExW(hkey, subkey, 0, 0, 0, KEY_ALL_ACCESS, 0, &hsubkey, 0)) !=
             ERROR_SUCCESS)
-            return ret;
-        htkey = hsubkey;
-    }
-    ret = RegSetValueExW(htkey, name, 0, type, (const BYTE*)data, len);
-    if (hsubkey && hsubkey != hkey)
-        RegCloseKey(hsubkey);
-    return ret;
+         return ret;
+      htkey = hsubkey;
+   }
+   ret = RegSetValueExW(htkey, name, 0, type, (const BYTE*)data, len);
+   if (hsubkey && hsubkey != hkey)
+      RegCloseKey(hsubkey);
+   return ret;
 }
 
 static void Discord_RegisterW(
       const wchar_t* applicationId, const wchar_t* command)
 {
-    /* https://msdn.microsoft.com/en-us/library/aa767914(v=vs.85).aspx
-     * we want to register games so we can run them as discord-<appid>://
-     * Update the HKEY_CURRENT_USER, because it doesn't seem to require special permissions. */
+   /* https://msdn.microsoft.com/en-us/library/aa767914(v=vs.85).aspx
+    * we want to register games so we can run them as discord-<appid>://
+    * Update the HKEY_CURRENT_USER, because it doesn't seem to require special permissions. */
 
-    DWORD len;
-    LSTATUS result;
-    wchar_t urlProtocol = 0;
-    wchar_t keyName[256];
-    wchar_t protocolName[64];
-    wchar_t protocolDescription[128];
-    wchar_t exeFilePath[MAX_PATH];
-    DWORD exeLen = GetModuleFileNameW(NULL, exeFilePath, MAX_PATH);
-    wchar_t openCommand[1024];
+   DWORD len;
+   LSTATUS result;
+   wchar_t urlProtocol = 0;
+   wchar_t keyName[256];
+   wchar_t protocolName[64];
+   wchar_t protocolDescription[128];
+   wchar_t exeFilePath[MAX_PATH];
+   DWORD exeLen = GetModuleFileNameW(NULL, exeFilePath, MAX_PATH);
+   wchar_t openCommand[1024];
 
-    if (command && command[0])
-        StringCbPrintfW(openCommand, sizeof(openCommand), L"%S", command);
-    else
-        StringCbPrintfW(openCommand, sizeof(openCommand), L"%S", exeFilePath);
+   if (command && command[0])
+      StringCbPrintfW(openCommand, sizeof(openCommand), L"%S", command);
+   else
+      StringCbPrintfW(openCommand, sizeof(openCommand), L"%S", exeFilePath);
 
-    StringCbPrintfW(protocolName, sizeof(protocolName),
-          L"discord-%S", applicationId);
-    StringCbPrintfW(
-      protocolDescription, sizeof(protocolDescription),
-      L"URL:Run game %S protocol", applicationId);
-    StringCbPrintfW(keyName, sizeof(keyName), L"Software\\Classes\\%S", protocolName);
-    HKEY key;
-    LSTATUS status =
+   StringCbPrintfW(protocolName, sizeof(protocolName),
+         L"discord-%S", applicationId);
+   StringCbPrintfW(
+         protocolDescription, sizeof(protocolDescription),
+         L"URL:Run game %S protocol", applicationId);
+   StringCbPrintfW(keyName, sizeof(keyName), L"Software\\Classes\\%S", protocolName);
+   HKEY key;
+   LSTATUS status =
       RegCreateKeyExW(HKEY_CURRENT_USER, keyName, 0, NULL, 0, KEY_WRITE, NULL, &key, NULL);
-    if (status != ERROR_SUCCESS)
-    {
-        fprintf(stderr, "Error creating key\n");
-        return;
-    }
-    len = (DWORD)lstrlenW(protocolDescription) + 1;
-    result =
+   if (status != ERROR_SUCCESS)
+   {
+      fprintf(stderr, "Error creating key\n");
+      return;
+   }
+   len = (DWORD)lstrlenW(protocolDescription) + 1;
+   result =
       RegSetKeyValueW(key, NULL, NULL, REG_SZ, protocolDescription, len * sizeof(wchar_t));
-    if (FAILED(result)) {
-        fprintf(stderr, "Error writing description\n");
-    }
+   if (FAILED(result))
+      fprintf(stderr, "Error writing description\n");
 
-    len = (DWORD)lstrlenW(protocolDescription) + 1;
-    result = RegSetKeyValueW(key, NULL, L"URL Protocol", REG_SZ, &urlProtocol, sizeof(wchar_t));
-    if (FAILED(result))
-        fprintf(stderr, "Error writing description\n");
+   len = (DWORD)lstrlenW(protocolDescription) + 1;
+   result = RegSetKeyValueW(key, NULL, L"URL Protocol", REG_SZ, &urlProtocol, sizeof(wchar_t));
+   if (FAILED(result))
+      fprintf(stderr, "Error writing description\n");
 
-    result = RegSetKeyValueW(
-      key, L"DefaultIcon", NULL, REG_SZ, exeFilePath, (exeLen + 1) * sizeof(wchar_t));
-    if (FAILED(result))
-        fprintf(stderr, "Error writing icon\n");
+   result = RegSetKeyValueW(
+         key, L"DefaultIcon", NULL, REG_SZ, exeFilePath, (exeLen + 1) * sizeof(wchar_t));
+   if (FAILED(result))
+      fprintf(stderr, "Error writing icon\n");
 
-    len = (DWORD)lstrlenW(openCommand) + 1;
-    result = RegSetKeyValueW(
-      key, L"shell\\open\\command", NULL, REG_SZ, openCommand, len * sizeof(wchar_t));
-    if (FAILED(result))
-        fprintf(stderr, "Error writing command\n");
-    RegCloseKey(key);
+   len = (DWORD)lstrlenW(openCommand) + 1;
+   result = RegSetKeyValueW(
+         key, L"shell\\open\\command", NULL, REG_SZ, openCommand, len * sizeof(wchar_t));
+   if (FAILED(result))
+      fprintf(stderr, "Error writing command\n");
+   RegCloseKey(key);
 }
 
 void Discord_Register(const char* applicationId, const char* command)
 {
-    wchar_t openCommand[1024];
-    const wchar_t* wcommand = NULL;
-    wchar_t appId[32];
+   wchar_t appId[32];
+   wchar_t openCommand[1024];
+   const wchar_t* wcommand = NULL;
 
-    MultiByteToWideChar(CP_UTF8, 0, applicationId, -1, appId, 32);
-    if (command && command[0])
-    {
-        const int commandBufferLen = 
-           sizeof(openCommand) / sizeof(*openCommand);
-        MultiByteToWideChar(CP_UTF8, 0, command, -1,
-              openCommand, commandBufferLen);
-        wcommand = openCommand;
-    }
+   MultiByteToWideChar(CP_UTF8, 0, applicationId, -1, appId, 32);
 
-    Discord_RegisterW(appId, wcommand);
+   if (command && command[0])
+   {
+      const int commandBufferLen = 
+         sizeof(openCommand) / sizeof(*openCommand);
+      MultiByteToWideChar(CP_UTF8, 0, command, -1,
+            openCommand, commandBufferLen);
+      wcommand = openCommand;
+   }
+
+   Discord_RegisterW(appId, wcommand);
 }
 
 void Discord_RegisterSteamGame(
@@ -172,7 +176,8 @@ void Discord_RegisterSteamGame(
    status    = RegQueryValueExW(key,
          L"SteamExe", NULL, NULL, (BYTE*)steamPath, &pathBytes);
    RegCloseKey(key);
-   if (status != ERROR_SUCCESS || pathBytes < 1) {
+   if (status != ERROR_SUCCESS || pathBytes < 1)
+   {
       fprintf(stderr, "Error reading SteamExe key\n");
       return;
    }

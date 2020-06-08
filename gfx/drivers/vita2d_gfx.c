@@ -145,6 +145,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 {
    void *tex_p;
    vita_video_t *vita = (vita_video_t *)data;
+   bool menu_is_alive = video_info->menu_is_alive;
 
    if (frame)
    {
@@ -209,7 +210,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
                PSP_FB_HEIGHT / (float)vita->height);
       else
       {
-         const float radian = 90 * 0.0174532925f;
+         const float radian = 270 * 0.0174532925f;
          const float rad = vita->rotation * radian;
          float scalex = vita->vp.width / (float)vita->width;
          float scaley = vita->vp.height / (float)vita->height;
@@ -221,7 +222,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    if (vita->menu.active)
    {
 #ifdef HAVE_MENU
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
 #endif
 
       if(vita->menu.texture)
@@ -268,7 +269,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
    if(!string_is_empty(msg))
@@ -579,7 +581,7 @@ static void vita2d_gfx_viewport_info(void *data,
        *vp = vita->vp;
 }
 
-static void vita_set_filtering(void *data, unsigned index, bool smooth)
+static void vita_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    vita_video_t *vita = (vita_video_t *)data;
 

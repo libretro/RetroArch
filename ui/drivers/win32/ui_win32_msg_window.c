@@ -23,7 +23,8 @@
 
 #include "../../ui_companion_driver.h"
 
-static enum ui_msg_window_response ui_msg_window_win32_response(ui_msg_window_state *state, UINT response)
+static enum ui_msg_window_response ui_msg_window_win32_response(
+      ui_msg_window_state *state, UINT response)
 {
 	switch (response)
 	{

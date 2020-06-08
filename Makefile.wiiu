@@ -67,6 +67,7 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += libretro-common/streams/file_stream.o
    OBJ += libretro-common/vfs/vfs_implementation.o
    OBJ += libretro-common/hash/rhash.o
+   OBJ += libretro-common/time/rtime.o
    OBJ += file_path_str.o
    OBJ += verbosity.o
 
@@ -97,7 +98,7 @@ endif
    OBJ += gfx/drivers/gx2_shaders/snowflake.o
 
    ifeq ($(GRIFFIN_BUILD), 1)
-      OBJ += griffin/griffin.o
+      OBJ += griffin/griffin.o griffin/griffin_cpp.o
 
       INCDIRS += -Ilibretro-common/include/compat/zlib
       # for stb, libfat, iosuhax
@@ -107,7 +108,7 @@ endif
       INCDIRS += -Ideps/SPIRV-Cross
 
       DEFINES += -DHAVE_AUDIOMIXER
-      DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_RGUI -DHAVE_LIBRETRODB
+      DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_RGUI -DHAVE_LIBRETRODB
       DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
       DEFINES += -DHAVE_SPIRV_CROSS -DHAVE_SLANG
       DEFINES += -DHAVE_STB_FONT -DHAVE_STB_VORBIS -DHAVE_LANGEXTRA -DHAVE_LIBRETRODB -DHAVE_NETWORKING -DHAVE_NETPLAYDISCOVERY
@@ -122,6 +123,7 @@ endif
    else
       HAVE_AUDIOMIXER = 1
       HAVE_MENU_COMMON = 1
+      HAVE_GFX_WIDGETS = 1
       HAVE_RTGA = 1
       HAVE_RPNG = 1
       HAVE_RJPEG = 1
@@ -163,7 +165,7 @@ OBJ := $(addprefix $(BUILD_DIR)/,$(OBJ))
 #-----------------------------
 # Compile flags
 
-DEFINES += -DWIIU -DMSB_FIRST -D__WUT__ -DHW_WUP -D__wiiu__
+DEFINES += -DWIIU -D__WUT__ -DHW_WUP -D__wiiu__
 DEFINES += -DHAVE_MAIN
 DEFINES += -DRARCH_CONSOLE
 
@@ -184,7 +186,7 @@ CFLAGS  := -mcpu=750 -meabi -mhard-float
 CFLAGS  += -ffast-math -Werror=implicit-function-declaration
 CFLAGS  += -ffunction-sections -fdata-sections
 #CFLAGS += -fomit-frame-pointer -mword-relocations
-#CFLAGS += -Wall
+CFLAGS += -Wall
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g

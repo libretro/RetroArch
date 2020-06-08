@@ -88,8 +88,6 @@ struct libretrodb_cursor
 	libretrodb_t *db;
 };
 
-static struct rmsgpack_dom_value sentinal;
-
 static int libretrodb_read_metadata(RFILE *fd, libretrodb_metadata_t *md)
 {
    return rmsgpack_dom_read_into(fd, "count", &md->count, NULL);
@@ -140,10 +138,11 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
 {
    int rv;
    libretrodb_metadata_t md;
+   static struct rmsgpack_dom_value sentinal;
    struct rmsgpack_dom_value item;
    uint64_t item_count        = 0;
    libretrodb_header_t header = {{0}};
-   ssize_t root = filestream_tell(fd);
+   ssize_t root               = filestream_tell(fd);
 
    memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
 

@@ -17,9 +17,7 @@
 #include "../menu_cbs.h"
 
 #ifndef BIND_ACTION_REFRESH
-#define BIND_ACTION_REFRESH(cbs, name) \
-   cbs->action_refresh = name; \
-   cbs->action_refresh_ident = #name;
+#define BIND_ACTION_REFRESH(cbs, name) (cbs)->action_refresh = (name)
 #endif
 
 int action_refresh_default(file_list_t *list, file_list_t *menu_list)

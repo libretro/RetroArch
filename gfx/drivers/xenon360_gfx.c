@@ -198,7 +198,8 @@ static bool xenon360_gfx_frame(void *data,
       uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
-   xenos_t *xenos    = (xenos_t*)data;
+   xenos_t *xenos     = (xenos_t*)data;
+   bool menu_is_alive = video_info->menu_is_alive;
 
    ScreenUv[UV_TOP]	= ((float) (width) / (float) XE_W)*2;
    ScreenUv[UV_LEFT]	= ((float) (height) / (float) XE_H)*2;
@@ -238,7 +239,7 @@ static bool xenon360_gfx_frame(void *data,
    Xe_SetShader(xenos->device, SHADER_TYPE_VERTEX, xenos->g_pVertexShader, 0);
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    /* Draw */

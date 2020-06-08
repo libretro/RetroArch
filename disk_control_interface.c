@@ -42,7 +42,8 @@ static void disk_control_reset_callback(
    if (!disk_control)
       return;
 
-   memset(&disk_control->cb, 0, sizeof(struct retro_disk_control_ext_callback));
+   memset(&disk_control->cb, 0,
+         sizeof(struct retro_disk_control_ext_callback));
 }
 
 /* Set v0 disk interface callback functions */
@@ -234,7 +235,7 @@ static void disk_control_get_index_set_msg(
       unsigned *msg_duration, char *msg, size_t len)
 {
    bool has_label = false;
-   char image_label[PATH_MAX_LENGTH];
+   char image_label[128];
 
    image_label[0] = '\0';
 

@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <retro_environment.h>
 #include <retro_miscellaneous.h>
+#include <retro_endianness.h>
 
 #include "joypad_connection.h"
 #include "../input_defines.h"

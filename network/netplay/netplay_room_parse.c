@@ -49,6 +49,7 @@ typedef struct tag_Context
    void *cur_member;
 } Context;
 
+/* TODO/FIXME - static global variable */
 static struct netplay_rooms *netplay_rooms_data;
 
 static void parse_context_init(Context* pCtx)
@@ -436,7 +437,7 @@ struct netplay_room* netplay_room_get(int index)
    if (index < 0)
       return NULL;
 
-   while (room != NULL)
+   while (room)
    {
       if (cur == index)
          break;
@@ -461,7 +462,7 @@ int netplay_rooms_get_count(void)
    if (!room)
       return count;
 
-   while(room != NULL)
+   while (room)
    {
       count++;
 

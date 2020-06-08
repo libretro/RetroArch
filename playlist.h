@@ -24,6 +24,8 @@
 #include <boolean.h>
 #include <lists/string_list.h>
 
+#include "core_info.h"
+
 RETRO_BEGIN_DECLS
 
 /* Default maximum playlist size */
@@ -62,6 +64,13 @@ enum playlist_thumbnail_mode
    PLAYLIST_THUMBNAIL_MODE_SCREENSHOTS,
    PLAYLIST_THUMBNAIL_MODE_TITLE_SCREENS,
    PLAYLIST_THUMBNAIL_MODE_BOXARTS
+};
+
+enum playlist_sort_mode
+{
+   PLAYLIST_SORT_MODE_DEFAULT = 0,
+   PLAYLIST_SORT_MODE_ALPHABETICAL,
+   PLAYLIST_SORT_MODE_OFF
 };
 
 /* TODO/FIXME - since gfx_thumbnail_path.h has now
@@ -172,6 +181,18 @@ void playlist_delete_index(playlist_t *playlist,
       size_t idx);
 
 /**
+ * playlist_delete_by_path:
+ * @playlist            : Playlist handle.
+ * @search_path         : Content path.
+ *
+ * Deletes all entries with content path
+ * matching 'search_path'
+ **/
+void playlist_delete_by_path(playlist_t *playlist,
+      const char *search_path,
+      bool fuzzy_archive_match);
+
+/**
  * playlist_resolve_path:
  * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
  * @path        : The path to be modified
@@ -227,7 +248,9 @@ char *playlist_get_conf_path(playlist_t *playlist);
 
 uint32_t playlist_get_size(playlist_t *playlist);
 
-void playlist_write_file(playlist_t *playlist, bool use_old_format);
+void playlist_write_file(
+      playlist_t *playlist,
+      bool use_old_format, bool compress);
 
 void playlist_write_runtime_file(playlist_t *playlist);
 
@@ -237,19 +260,31 @@ void playlist_free_cached(void);
 
 playlist_t *playlist_get_cached(void);
 
-bool playlist_init_cached(const char *path, size_t size);
+/* If current on-disk playlist file referenced
+ * by 'path' does not match requested 'old format'
+ * or 'compression' state, file will be updated
+ * automatically
+ * > Since this function is called whenever a
+ *   playlist is browsed via the menu, this is
+ *   a simple method for ensuring that files
+ *   are always kept synced with user settings */
+bool playlist_init_cached(
+      const char *path, size_t size,
+      bool use_old_format, bool compress);
 
 void command_playlist_push_write(
       playlist_t *playlist,
       const struct playlist_entry *entry,
       bool fuzzy_archive_match,
-      bool use_old_format);
+      bool use_old_format,
+      bool compress);
 
 void command_playlist_update_write(
       playlist_t *playlist,
       size_t idx,
       const struct playlist_entry *entry,
-      bool use_old_format);
+      bool use_old_format,
+      bool compress);
 
 /* Returns true if specified playlist index matches
  * specified content/core paths */
@@ -275,12 +310,33 @@ char *playlist_get_default_core_name(playlist_t *playlist);
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
 enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id);
+enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
 void playlist_set_default_core_name(playlist_t *playlist, const char *core_name);
 void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode);
 void playlist_set_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode);
+void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_mode);
+
+/* Returns true if specified entry has a valid
+ * core association (i.e. a non-empty string
+ * other than DETECT) */
+bool playlist_entry_has_core(const struct playlist_entry *entry);
+
+/* Fetches core info object corresponding to the
+ * currently associated core of the specified
+ * playlist entry.
+ * Returns NULL if entry does not have a valid
+ * core association */
+core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry);
+
+/* Fetches core info object corresponding to the
+ * currently associated default core of the
+ * specified playlist.
+ * Returns NULL if playlist does not have a valid
+ * default core association */
+core_info_t *playlist_get_default_core_info(playlist_t* playlist);
 
 RETRO_END_DECLS
 

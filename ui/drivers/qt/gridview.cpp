@@ -13,14 +13,14 @@ ThumbnailDelegate::ThumbnailDelegate(const GridItem &gridItem, QObject* parent) 
 void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &option, const QModelIndex& index) const
 {
    QStyleOptionViewItem opt = option;
-   const QWidget *widget = opt.widget;
-   QStyle *style = widget->style();
-   int padding = m_style.padding;
-   int textTopMargin = 4; /* Qt seemingly reports -4 the actual line height. */
-   int textHeight = painter->fontMetrics().height() + padding + padding;
-   QRect rect = opt.rect;
-   QRect adjusted = rect.adjusted(padding, padding, -padding, -textHeight + textTopMargin);
-   QPixmap pixmap = index.data(PlaylistModel::THUMBNAIL).value<QPixmap>();
+   const QWidget    *widget = opt.widget;
+   QStyle            *style = widget->style();
+   int              padding = m_style.padding;
+   int      text_top_margin = 4; /* Qt seemingly reports -4 the actual line height. */
+   int          text_height = painter->fontMetrics().height() + padding + padding;
+   QRect               rect = opt.rect;
+   QRect           adjusted = rect.adjusted(padding, padding, -padding, -text_height + text_top_margin);
+   QPixmap           pixmap = index.data(PlaylistModel::THUMBNAIL).value<QPixmap>();
 
    painter->save();
 
@@ -40,7 +40,7 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
    if (!opt.text.isEmpty())
    {
       QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
-      QRect textRect = QRect(rect.x() + padding, rect.y() + adjusted.height() - textTopMargin + padding, rect.width() - 2 * padding, textHeight);
+      QRect textRect = QRect(rect.x() + padding, rect.y() + adjusted.height() - text_top_margin + padding, rect.width() - 2 * padding, text_height);
       QString elidedText = painter->fontMetrics().elidedText(opt.text, opt.textElideMode, textRect.width(), Qt::TextShowMnemonic);
 
       if (cg == QPalette::Normal && !(opt.state & QStyle::State_Active))
@@ -84,14 +84,13 @@ void GridView::setviewMode(ViewMode mode)
 
 void GridView::calculateRectsIfNecessary() const
 {
+   int row;
+   int nextX;
    if (!m_hashIsDirty)
       return;
 
-   int x = m_spacing;
-   int y = m_spacing;
-   int row;
-   int nextX;
-
+   int              x = m_spacing;
+   int              y = m_spacing;
    const int maxWidth = viewport()->width();
 
    if (m_size + m_spacing * 2 > maxWidth)
@@ -113,7 +112,8 @@ void GridView::calculateRectsIfNecessary() const
             int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
             if (columns > 0)
             {
-               const int actualSpacing = (maxWidth - m_spacing - m_size - (columns - 1) * m_size) / columns;
+               const int actualSpacing = (maxWidth - m_spacing - 
+                     m_size - (columns - 1) * m_size) / columns;
                for (row = 0; row < model()->rowCount(); ++row)
                {
                   nextX = x + m_size + actualSpacing;
@@ -134,8 +134,10 @@ void GridView::calculateRectsIfNecessary() const
             int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
             if (columns > 0)
             {
-               const int actualSpacing = (maxWidth - columns * m_size) / (columns + 1);
-               x = actualSpacing;
+               const int actualSpacing = (maxWidth - columns * m_size) 
+                  / (columns + 1);
+               x                       = actualSpacing;
+
                for (row = 0; row < model()->rowCount(); ++row)
                {
                   nextX = x + m_size + actualSpacing;

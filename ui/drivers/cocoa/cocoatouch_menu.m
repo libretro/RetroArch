@@ -36,7 +36,7 @@
 #include "../../../menu/menu_driver.h"
 #endif
 
-// Menu Support
+/* Menu Support */
 
 static const void* const associated_delegate_key = &associated_delegate_key;
 
@@ -111,7 +111,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 {
   menu_entry_t entry;
   char buffer[PATH_MAX_LENGTH];
-  const char *label              = NULL;
   static NSString* const cell_id = @"text";
 
   self.parentTable = tableView;
@@ -123,16 +122,15 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
   menu_entry_init(&entry);
   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
-  menu_entry_get_path(&entry, &label);
   menu_entry_get_value(&entry, &buffer);
 
-  if (string_is_empty(label))
+  if (string_is_empty(entry.label))
     strlcpy(buffer,
           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
           sizeof(buffer));
 
-  if (!string_is_empty(label))
-     result.textLabel.text    = BOXSTRING(label);
+  if (!string_is_empty(entry.label))
+     result.textLabel.text    = BOXSTRING(entry.label);
   result.detailTextLabel.text = BOXSTRING(buffer);
 
   return result;
@@ -152,10 +150,8 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
    menu_entry_t entry;
-   const char *label              = NULL;
    static NSString* const cell_id = @"boolean_setting";
-
-   UITableViewCell* result =
+   UITableViewCell       * result =
      (UITableViewCell*)[tableView dequeueReusableCellWithIdentifier:cell_id];
 
    if (!result)
@@ -169,10 +165,8 @@ static void RunActionSheet(const char* title, const struct string_list* items,
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
 
-   menu_entry_get_path(&entry, &label);
-
-   if (!string_is_empty(label))
-      result.textLabel.text = BOXSTRING(label);
+   if (!string_is_empty(entry.path))
+      result.textLabel.text = BOXSTRING(entry.path);
 
    [(id)result.accessoryView removeTarget:nil
                                    action:NULL
@@ -217,17 +211,15 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 {
    menu_entry_t entry;
    struct string_list* items       = NULL;
-   const char *label               = NULL;
    RAMenuItemEnum __weak* weakSelf = self;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
-   menu_entry_get_path(&entry, &label);
    items = menu_entry_enum_values(self.i);
 
-   if (!string_is_empty(label))
+   if (!string_is_empty(entry.path))
    {
-      RunActionSheet(label, items, self.parentTable,
+      RunActionSheet(entry.path, items, self.parentTable,
       ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
       {
          if (buttonIndex == actionSheet.cancelButtonIndex)
@@ -253,16 +245,14 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                   ofController:(UIViewController *)controller
 {
    menu_entry_t entry;
-   const char *label = NULL;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
-   menu_entry_get_path(&entry, &label);
 
    self.alert = [[UIAlertView alloc]
 
    initWithTitle:BOXSTRING("RetroArch")
-         message:BOXSTRING(label)
+         message:BOXSTRING(entry.path)
         delegate:self
                  cancelButtonTitle:BOXSTRING("Cancel")
                  otherButtonTitles:BOXSTRING("Clear Keyboard"),
@@ -429,18 +419,15 @@ replacementString:(NSString *)string
 {
    menu_entry_t entry;
    char buffer[PATH_MAX_LENGTH];
-   const char *label      = NULL;
    UIAlertView *alertView = NULL;
    UITextField     *field = NULL;
    NSString         *desc = NULL;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
-   menu_entry_get_path(&entry, &label);
 
-   desc      = BOXSTRING(label);
-
-   alertView =
+   desc           = BOXSTRING(entry.path);
+   alertView      =
      [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new value")
                                 message:desc
                                delegate:self

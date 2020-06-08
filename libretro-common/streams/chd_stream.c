@@ -167,6 +167,8 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
          }
          else if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0)
             return chdstream_find_track_number(fd, largest_track, meta);
+
+         return false;
       }
 
       switch (track)

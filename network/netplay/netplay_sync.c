@@ -27,6 +27,11 @@
 #include "../../driver.h"
 #include "../../input/input_driver.h"
 
+struct vote_count
+{
+   uint16_t votes[32];
+};
+
 #if 0
 #define DEBUG_NONDETERMINISTIC_CORES
 #endif
@@ -85,10 +90,6 @@ void netplay_update_unread_ptr(netplay_t *netplay)
       }
    }
 }
-
-struct vote_count {
-   uint16_t votes[32];
-};
 
 /**
  * netplay_device_client_state
@@ -551,10 +552,7 @@ static void netplay_handle_frame_hash(netplay_t *netplay,
  *
  * Pre-frame for Netplay synchronization.
  */
-bool netplay_sync_pre_frame(netplay_t *netplay,
-      const char *netplay_password,
-      const char *netplay_spectate_password
-      )
+bool netplay_sync_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
 
@@ -729,15 +727,14 @@ bool netplay_sync_pre_frame(netplay_t *netplay,
             goto process;
          }
 
-         netplay_handshake_init_send(netplay, connection,
-               netplay_password, netplay_spectate_password);
+         netplay_handshake_init_send(netplay, connection);
 
       }
    }
 
 process:
    netplay->can_poll = true;
-   input_poll_net(netplay);
+   input_poll_net();
 
    return (netplay->stall != NETPLAY_STALL_NO_CONNECTION);
 }
@@ -752,7 +749,6 @@ process:
 void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 {
    uint32_t lo_frame_count, hi_frame_count;
-   retro_time_t current_time = cpu_features_get_time_usec();
 
    /* Unless we're stalling, we've just finished running a frame */
    if (!stalled)
@@ -879,13 +875,14 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 
       while (netplay->replay_frame_count < netplay->run_frame_count)
       {
-         retro_time_t tm;
+         retro_time_t start, tm;
          struct delta_frame *ptr = &netplay->buffer[netplay->replay_ptr];
-         retro_time_t start      = current_time;
 
          serial_info.data        = ptr->state;
          serial_info.size        = netplay->state_size;
          serial_info.data_const  = NULL;
+
+         start                   = cpu_features_get_time_usec();
 
          /* Remember the current state */
          memset(serial_info.data, 0, serial_info.size);
@@ -923,7 +920,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 #endif
 
          /* Get our time window */
-         tm                           = current_time - start;
+         tm = cpu_features_get_time_usec() - start;
          netplay->frame_run_time_sum -= netplay->frame_run_time[netplay->frame_run_time_ptr];
          netplay->frame_run_time[netplay->frame_run_time_ptr] = tm;
          netplay->frame_run_time_sum += tm;
@@ -983,6 +980,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    {
       if (netplay->self_frame_count + 3 < lo_frame_count)
       {
+         retro_time_t cur_time = cpu_features_get_time_usec();
          uint32_t cur_behind = lo_frame_count - netplay->self_frame_count;
 
          /* We're behind, but we'll only try to catch up if we're actually
@@ -990,12 +988,11 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          if (netplay->catch_up_time == 0)
          {
             /* Record our current time to check for catch-up later */
-            netplay->catch_up_time   = current_time;
+            netplay->catch_up_time = cur_time;
             netplay->catch_up_behind = cur_behind;
 
          }
-         else if (current_time - netplay->catch_up_time 
-               > CATCH_UP_CHECK_TIME_USEC)
+         else if (cur_time - netplay->catch_up_time > CATCH_UP_CHECK_TIME_USEC)
          {
             /* Time to check how far behind we are */
             if (netplay->catch_up_behind <= cur_behind)
@@ -1009,7 +1006,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             else
             {
                /* Check again in another period */
-               netplay->catch_up_time   = current_time;
+               netplay->catch_up_time = cur_time;
                netplay->catch_up_behind = cur_behind;
             }
          }

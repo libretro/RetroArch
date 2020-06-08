@@ -33,7 +33,7 @@ THE SOFTWARE.
 //Default Floating Point value ABI: 0=softfp, 1=hardfp. Only effects *_neon routines.
 //You can access the hardfp versions directly via the *_hard suffix. 
 //You can access the softfp versions directly via the *_soft suffix. 
-#define __MATH_FPABI 	0	
+#define __MATH_FPABI 	1	
 
 #endif
 
@@ -84,6 +84,10 @@ THE SOFTWARE.
 #define modf_neon		modf_neon_hfp
 #define sqrtf_neon		sqrtf_neon_hfp
 #define invsqrtf_neon	invsqrtf_neon_hfp
+
+#define dot2_neon		dot2_neon_hfp
+#define dot3_neon		dot3_neon_hfp
+#define dot4_neon		dot4_neon_hfp
 #else
 #define sinf_neon		sinf_neon_sfp
 #define cosf_neon		cosf_neon_sfp

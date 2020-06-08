@@ -16,7 +16,6 @@
 
 #include "../frontend_driver.h"
 
-#include <io_common.h>
 #include <loadfile.h>
 #include <unistd.h>
 #include <sbv_patches.h>
@@ -27,12 +26,8 @@
 #include <libmtap.h>
 #include <audsrv.h>
 #include <libpad.h>
-#include <libcdvd-common.h>
-#include <cdvd_rpc.h>
-#include <fileXio_cdvd.h>
 #include <ps2_devices.h>
 #include <ps2_irx_variables.h>
-#include <ps2_descriptor.h>
 
 char eboot_path[512];
 char user_path[512];
@@ -186,9 +181,6 @@ static void frontend_ps2_init(void *data)
    SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
 
-   /* CDVD */
-   SifExecModuleBuffer(&cdvd_irx, size_cdvd_irx, 0, NULL, NULL);
-
    if (mcInit(MC_TYPE_XMC)) {
       RARCH_ERR("mcInit library not initalizated\n");
    }
@@ -210,20 +202,6 @@ static void frontend_ps2_init(void *data)
       RARCH_ERR("mtapPortOpen library not initalizated\n");
    }
 
-   /* Initializes CDVD library */
-   /* SCECdINoD init without check for a disc. Reduces risk of a lockup if the drive is in a erroneous state. */
-   sceCdInit(SCECdINoD);
-   if (CDVD_Init() != 1) {
-      RARCH_ERR("CDVD_Init library not initalizated\n");
-   }
-
-   _init_ps2_io();
-
-   /* Prepare device */
-   getcwd(cwd, sizeof(cwd));
-   bootDeviceID=getBootDeviceID(cwd);
-   waitUntilDeviceIsReady(bootDeviceID);
-
 #if defined(HAVE_FILE_LOGGER)
    retro_main_log_file_init("retroarch.log", false);
    verbosity_enable();
@@ -237,11 +215,8 @@ static void frontend_ps2_deinit(void *data)
    verbosity_disable();
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 #endif
-   _free_ps2_io();
-   CDVD_Stop();
    padEnd();
    audsrv_quit();
-   fileXioExit();
    Exit(0);
 }
 

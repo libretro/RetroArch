@@ -24,7 +24,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos-new/cheevos.h"
+#include "../../cheevos/cheevos.h"
 #endif
 
 #include "menu_dialog.h"
@@ -45,10 +45,10 @@ struct menu_dialog
 
 typedef struct menu_dialog menu_dialog_t;
 
-static menu_dialog_t dialog;
-
 static menu_dialog_t *dialog_get_ptr(void)
 {
+   /* TODO/FIXME - static public global variables */
+   static menu_dialog_t dialog;
    return &dialog;
 }
 
@@ -64,7 +64,12 @@ int menu_dialog_iterate(char *s, size_t len,
             static rarch_timer_t timer;
 
             if (!rarch_timer_is_running(&timer))
-               rarch_timer_begin_us(&timer, 3 * 1000000);
+            {
+               rarch_timer_begin_new_time_us(&timer,
+                     3 * 1000000);
+               timer.timer_begin = true;
+               timer.timer_end   = false;
+            }
 
             rarch_timer_tick(&timer, current_time);
 

@@ -57,6 +57,7 @@ typedef struct
    char dat_file_path[PATH_MAX_LENGTH];
 } scan_settings_t;
 
+/* TODO/FIXME - static public global variables */
 /* Static settings object
  * > Provides easy access to settings parameters
  *   when creating associated menu entries

@@ -76,7 +76,7 @@ const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 #define USB_PACKET_CTRL_LEN 5
 #define USB_TIMEOUT 5000 /* timeout in ms */
 
-const blissbox_pad_type_t blissbox_pad_types[] =
+static const blissbox_pad_type_t blissbox_pad_types[] =
 {
    {"A5200", 6},
    {"A5200_TB", 50},
@@ -142,10 +142,9 @@ const blissbox_pad_type_t blissbox_pad_types[] =
    {NULL, 0}, /* used to mark unconnected ports, do not remove */
 };
 
-
-/* only one blissbox per machine is currently supported */
+/* TODO/FIXME - global state - perhaps move outside this file */
+/* Only one blissbox per machine is currently supported */
 static const blissbox_pad_type_t *blissbox_pads[BLISSBOX_MAX_PADS] = {NULL};
-
 #ifdef HAVE_LIBUSB
 static struct libusb_device_handle *autoconfig_libusb_handle = NULL;
 #endif

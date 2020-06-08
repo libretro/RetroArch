@@ -1659,7 +1659,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_info->cb_swap_buffers(context_data);
+   vk->ctx_driver->swap_buffers(context_data);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -1685,7 +1685,7 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned video_height                         = video_info->height;
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
-
+   bool menu_is_alive                            = video_info->menu_is_alive;
 
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1935,7 +1935,7 @@ static bool vulkan_frame(void *data, const void *frame,
          settings_t *settings    = config_get_ptr();
          bool menu_linear_filter = settings->bools.menu_linear_filter;
 
-         menu_driver_frame(video_info);
+         menu_driver_frame(menu_is_alive, video_info);
 
          if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE ||
              vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)
@@ -1974,7 +1974,7 @@ static bool vulkan_frame(void *data, const void *frame,
          if (osd_params)
             font_driver_render_msg(vk,
                   stat_text,
-                  &osd_params, NULL);
+                  osd_params, NULL);
       }
 #endif
 
@@ -1987,7 +1987,8 @@ static bool vulkan_frame(void *data, const void *frame,
          font_driver_render_msg(vk, msg, NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
-      gfx_widgets_frame(video_info);
+      if (video_info->widgets_active)
+         gfx_widgets_frame(video_info);
 #endif
 
       /* End the render pass. We're done rendering to backbuffer now. */
@@ -2116,10 +2117,13 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_info->cb_swap_buffers(context_data);
+   vk->ctx_driver->swap_buffers(context_data);
 
    if (!vk->context->swap_interval_emulation_lock)
-      video_info->cb_update_window_title(context_data);
+   {
+      if (vk->ctx_driver->update_window_title)
+         vk->ctx_driver->update_window_title(context_data);
+   }
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */

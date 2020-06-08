@@ -826,14 +826,13 @@ chd_error chd_open_file(RFILE *file, int mode, chd_file *parent, chd_file **chd)
 	if (newchd->header.version < 5)
 	{
 		err = map_read(newchd);
-		if (err != CHDERR_NONE)
-			EARLY_EXIT(err);
 	}
 	else
 	{
 		err = decompress_v5_map(newchd, &(newchd->header));
-        (void)err;
 	}
+	if (err != CHDERR_NONE)
+		EARLY_EXIT(err);
 
 #ifdef NEED_CACHE_HUNK
 	/* allocate and init the hunk cache */

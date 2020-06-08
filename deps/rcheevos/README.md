@@ -59,8 +59,14 @@ enum {
   RC_INVALID_VALUE_FLAG = -20,
   RC_MISSING_VALUE_MEASURED = -21,
   RC_MULTIPLE_MEASURED = -22,
-  RC_INVALID_MEASURED_TARGET = -23
+  RC_INVALID_MEASURED_TARGET = -23,
+  RC_INVALID_COMPARISON = -24
 };
+```
+
+To convert the return code into something human-readable, pass it to:
+```c
+const char* rc_error_str(int ret);
 ```
 
 ### Console identifiers
@@ -92,14 +98,38 @@ enum {
   RC_CONSOLE_PLAYSTATION_2 = 21,
   RC_CONSOLE_XBOX = 22,
   RC_CONSOLE_SKYNET = 23,
-  RC_CONSOLE_XBOX_ONE = 24,
+  RC_CONSOLE_POKEMON_MINI = 24,
   RC_CONSOLE_ATARI_2600 = 25,
   RC_CONSOLE_MS_DOS = 26,
   RC_CONSOLE_ARCADE = 27,
   RC_CONSOLE_VIRTUAL_BOY = 28,
   RC_CONSOLE_MSX = 29,
   RC_CONSOLE_COMMODORE_64 = 30,
-  RC_CONSOLE_ZX81 = 31
+  RC_CONSOLE_ZX81 = 31,
+  RC_CONSOLE_ORIC = 32,
+  RC_CONSOLE_SG1000 = 33,
+  RC_CONSOLE_VIC20 = 34,
+  RC_CONSOLE_AMIGA = 35,
+  RC_CONSOLE_AMIGA_ST = 36,
+  RC_CONSOLE_AMSTRAD_PC = 37,
+  RC_CONSOLE_APPLE_II = 38,
+  RC_CONSOLE_SATURN = 39,
+  RC_CONSOLE_DREAMCAST = 40,
+  RC_CONSOLE_PSP = 41,
+  RC_CONSOLE_CDI = 42,
+  RC_CONSOLE_3DO = 43,
+  RC_CONSOLE_COLECOVISION = 44,
+  RC_CONSOLE_INTELLIVISION = 45,
+  RC_CONSOLE_VECTREX = 46,
+  RC_CONSOLE_PC8800 = 47,
+  RC_CONSOLE_PC9800 = 48,
+  RC_CONSOLE_PCFX = 49,
+  RC_CONSOLE_ATARI_5200 = 50,
+  RC_CONSOLE_ATARI_7800 = 51,
+  RC_CONSOLE_X68K = 52,
+  RC_CONSOLE_WONDERSWAN = 53,
+  RC_CONSOLE_CASSETTEVISION = 54,
+  RC_CONSOLE_SUPER_CASSETTEVISION = 55
 };
 ```
 
@@ -115,27 +145,23 @@ An operand is the leaf node of RetroAchievements expressions, and can hold one o
 typedef struct {
   union {
     /* A value read from memory. */
-    struct {
-      /* The memory address or constant value of this variable. */
-      unsigned value;
-      /* The previous memory contents if RC_OPERAND_DELTA. */
-      unsigned previous;
+    rc_memref_value_t* memref;
 
-      /* The size of the variable. */
-      char size;
-      /* True if the value is in BCD. */
-      char is_bcd;
-      /* The type of the variable. */
-    };
+    /* An integer value. */
+    unsigned num;
 
     /* A floating point value. */
-    double fp_value;
+    double dbl;
 
     /* A reference to the Lua function that provides the value. */
-    int function_ref;
+    int luafunc;
   };
 
+  /* specifies which member of the value union is being used */
   char type;
+
+  /* the actual RC_MEMSIZE of the operand - memref.size may differ */
+  char size;
 }
 rc_operand_t;
 ```
@@ -144,20 +170,21 @@ The `size` field, when applicable, holds one of these values:
 
 ```c
 enum {
-  RC_OPERAND_BIT_0,
-  RC_OPERAND_BIT_1,
-  RC_OPERAND_BIT_2,
-  RC_OPERAND_BIT_3,
-  RC_OPERAND_BIT_4,
-  RC_OPERAND_BIT_5,
-  RC_OPERAND_BIT_6,
-  RC_OPERAND_BIT_7,
-  RC_OPERAND_LOW,
-  RC_OPERAND_HIGH,
-  RC_OPERAND_8_BITS,
-  RC_OPERAND_16_BITS,
-  RC_OPERAND_24_BITS,
-  RC_OPERAND_32_BITS,
+  RC_MEMSIZE_8_BITS,
+  RC_MEMSIZE_16_BITS,
+  RC_MEMSIZE_24_BITS,
+  RC_MEMSIZE_32_BITS,
+  RC_MEMSIZE_LOW,
+  RC_MEMSIZE_HIGH,
+  RC_MEMSIZE_BIT_0,
+  RC_MEMSIZE_BIT_1,
+  RC_MEMSIZE_BIT_2,
+  RC_MEMSIZE_BIT_3,
+  RC_MEMSIZE_BIT_4,
+  RC_MEMSIZE_BIT_5,
+  RC_MEMSIZE_BIT_6,
+  RC_MEMSIZE_BIT_7,
+  RC_MEMSIZE_BITCOUNT
 };
 ```
 
@@ -165,15 +192,18 @@ The `type` field is always valid, and holds one of these values:
 
 ```c
 enum {
-  RC_OPERAND_ADDRESS, /* Compare to the value of a live address in RAM. */
-  RC_OPERAND_DELTA,   /* The value last known at this address. */
-  RC_OPERAND_CONST,   /* A 32-bit unsigned integer. */
-  RC_OPERAND_FP,      /* A floating point value. */
-  RC_OPERAND_LUA      /* A Lua function that provides the value. */
+  RC_OPERAND_ADDRESS,        /* The value of a live address in RAM. */
+  RC_OPERAND_DELTA,          /* The value last known at this address. */
+  RC_OPERAND_CONST,          /* A 32-bit unsigned integer. */
+  RC_OPERAND_FP,             /* A floating point value. */
+  RC_OPERAND_LUA,            /* A Lua function that provides the value. */
+  RC_OPERAND_PRIOR,          /* The last differing value at this address. */
+  RC_OPERAND_BCD,            /* The BCD-decoded value of a live address in RAM */
+  RC_OPERAND_INVERTED        /* The twos-complement value of a live address in RAM */
 };
 ```
 
-`RC_OPERAND_ADDRESS`, `RC_OPERAND_DELTA` and `RC_OPERAND_CONST` mean that the anonymous structure in the union is active. `RC_OPERAND_FP` means that `fp_value` is active. `RC_OPERAND_LUA` means `function_ref` is active.
+`RC_OPERAND_ADDRESS`, `RC_OPERAND_DELTA`, `RC_OPERAND_PRIOR`, `RC_OPERAND_BCD`, and `RC_OPERAND_INVERTED` mean that `memref` is active. `RC_OPERAND_CONST` means that `num` is active. `RC_OPERAND_FP` means that `dbl` is active. `RC_OPERAND_LUA` means `luafunc` is active.
 
 
 ### `rc_condition_t`
@@ -184,9 +214,6 @@ A condition compares its two operands according to the defined operator. It also
 typedef struct rc_condition_t rc_condition_t;
 
 struct rc_condition_t {
-  /* The next condition in the chain. */
-  rc_condition_t* next;
-
   /* The condition's operands. */
   rc_operand_t operand1;
   rc_operand_t operand2;
@@ -195,6 +222,9 @@ struct rc_condition_t {
   unsigned required_hits;
   /* Number of hits so far. */
   unsigned current_hits;
+
+  /* The next condition in the chain. */
+  rc_condition_t* next;
 
   /* The type of the condition. */
   char type;
@@ -219,7 +249,9 @@ enum {
   RC_CONDITION_ADD_HITS,
   RC_CONDITION_AND_NEXT,
   RC_CONDITION_MEASURED,
-  RC_CONDITION_ADD_ADDRESS
+  RC_CONDITION_ADD_ADDRESS,
+  RC_CONDITION_TRIGGER,
+  RC_CONDITION_MEASURED_IF
 };
 ```
 
@@ -227,13 +259,16 @@ enum {
 
 ```c
 enum {
-  RC_CONDITION_EQ,
-  RC_CONDITION_LT,
-  RC_CONDITION_LE,
-  RC_CONDITION_GT,
-  RC_CONDITION_GE,
-  RC_CONDITION_NE,
-  RC_CONDITION_NONE
+  RC_OPERATOR_EQ,
+  RC_OPERATOR_LT,
+  RC_OPERATOR_LE,
+  RC_OPERATOR_GT,
+  RC_OPERATOR_GE,
+  RC_OPERATOR_NE,
+  RC_OPERATOR_NONE,
+  RC_OPERATOR_MULT,
+  RC_OPERATOR_DIV,
+  RC_OPERATOR_AND
 };
 ```
 
@@ -267,6 +302,9 @@ typedef struct {
 
   /* The list of sub condition sets in this test. */
   rc_condset_t* alternative;
+
+  /* The memory references required by the trigger. */
+  rc_memref_value_t* memrefs;
 }
 rc_trigger_t;
 ```
@@ -313,7 +351,8 @@ enum {
   RC_TRIGGER_STATE_ACTIVE,     /* achievement is active and may trigger */
   RC_TRIGGER_STATE_PAUSED,     /* achievement is currently paused and will not trigger */
   RC_TRIGGER_STATE_RESET,      /* achievement hit counts were reset */
-  RC_TRIGGER_STATE_TRIGGERED   /* achievement has triggered */
+  RC_TRIGGER_STATE_TRIGGERED,  /* achievement has triggered */
+  RC_TRIGGER_STATE_PRIMED      /* all non-Trigger conditions are true */
 };
 ```
 
@@ -323,52 +362,12 @@ Finally, `rc_reset_trigger` can be used to reset the internal state of a trigger
 void rc_reset_trigger(rc_trigger_t* self);
 ```
 
-### `rc_term_t`
-
-A term is the leaf node of expressions used to compute values from operands. A term is evaluated by multiplying its two operands. `invert` is used to invert the bits of the second operand of the term, when the unary operator `~` is used.
-
-```c
-typedef struct rc_term_t rc_term_t;
-
-struct rc_term_t {
-  /* The next term in this chain. */
-  rc_term_t* next;
-
-  /* The first operand. */
-  rc_operand_t operand1;
-  /* The second operand. */
-  rc_operand_t operand2;
-
-  /* A value that is applied to the second variable to invert its bits. */
-  unsigned invert;
-};
-```
-
-### `rc_expression_t`
-
-An expression is a collection of terms. All terms in the collection are added together to give the value of the expression.
-
-```c
-typedef struct rc_expression_t rc_expression_t;
-
-struct rc_expression_t {
-  /* The next expression in this chain. */
-  rc_expression_t* next;
-
-  /* The list of terms in this expression. */
-  rc_term_t* terms;
-};
-```
-
 ### `rc_value_t`
 
-A value is a collection of expressions. It's used to give the value for a leaderboard, and it evaluates to value of the expression with the greatest value in the collection.
+A value is a collection of conditions that result in a single RC_CONDITION_MEASURED expression. It's used to calculate the value for a leaderboard and for lookups in rich presence.
 
 ```c
 typedef struct {
-  /* The list of expression to evaluate. */
-  rc_expression_t* expressions;
-
   /* The list of conditions to evaluate. */
   rc_condset_t* conditions;
 
@@ -413,9 +412,9 @@ typedef struct {
   rc_trigger_t cancel;
   rc_value_t value;
   rc_value_t* progress;
+  rc_memref_value_t* memrefs;
 
-  char started;
-  char submitted;
+  char state;
 }
 rc_lboard_t;
 ```
@@ -437,11 +436,12 @@ The function returns an action that must be performed by the caller, and `value`
 
 ```c
 enum {
-  RC_LBOARD_INACTIVE,
-  RC_LBOARD_ACTIVE,
-  RC_LBOARD_STARTED,
-  RC_LBOARD_CANCELED,
-  RC_LBOARD_TRIGGERED
+  RC_LBOARD_STATE_INACTIVE,  /* leaderboard is not being processed */
+  RC_LBOARD_STATE_WAITING,   /* leaderboard cannot activate until the start condition has been false for at least one frame */
+  RC_LBOARD_STATE_ACTIVE,    /* leaderboard is active and may start */
+  RC_LBOARD_STATE_STARTED,   /* leaderboard attempt in progress */
+  RC_LBOARD_STATE_CANCELED,  /* leaderboard attempt canceled */
+  RC_LBOARD_STATE_TRIGGERED  /* leaderboard attempt complete, value should be submitted */
 };
 ```
 
@@ -457,6 +457,101 @@ The caller must keep track of these values and do the necessary actions:
 ```c
 void rc_reset_lboard(rc_lboard_t* lboard);
 ```
+
+### `rc_runtime_t`
+
+The runtime encapsulates a set of achievements and leaderboards and manages processing them for each frame. When important things occur, events are raised for the caller via a callback.
+
+```c
+typedef struct rc_runtime_t {
+  rc_runtime_trigger_t* triggers;
+  unsigned trigger_count;
+  unsigned trigger_capacity;
+
+  rc_runtime_lboard_t* lboards;
+  unsigned lboard_count;
+  unsigned lboard_capacity;
+
+  rc_runtime_richpresence_t* richpresence;
+  char* richpresence_display_buffer;
+  char  richpresence_update_timer;
+
+  rc_memref_value_t* memrefs;
+  rc_memref_value_t** next_memref;
+}
+rc_runtime_t;
+```
+
+The runtime must first be initialized.
+```c
+void rc_runtime_init(rc_runtime_t* runtime);
+```
+
+Then individual achievements, leaderboards, and even rich presence can be loaded into the runtime. These functions return RC_OK, or one of the negative value error codes listed above.
+```c
+int rc_runtime_activate_achievement(rc_runtime_t* runtime, unsigned id, const char* memaddr, lua_State* L, int funcs_idx);
+int rc_runtime_activate_lboard(rc_runtime_t* runtime, unsigned id, const char* memaddr, lua_State* L, int funcs_idx);
+int rc_runtime_activate_richpresence(rc_runtime_t* runtime, const char* script, lua_State* L, int funcs_idx);
+```
+
+The runtime should be called once per frame to evaluate the state of the active achievements/leaderboards:
+```c
+void rc_runtime_do_frame(rc_runtime_t* runtime, rc_runtime_event_handler_t event_handler, rc_peek_t peek, void* ud, lua_State* L);
+```
+
+The `event_handler` is a callback function that is called for each event that occurs when processing the frame.
+```c
+typedef struct rc_runtime_event_t {
+  unsigned id;
+  int value;
+  char type;
+}
+rc_runtime_event_t;
+
+typedef void (*rc_runtime_event_handler_t)(const rc_runtime_event_t* runtime_event);
+```
+
+The `event.type` field will be one of the following:
+* RC_RUNTIME_EVENT_ACHIEVEMENT_ACTIVATED (id=achievement id)
+  An achievement starts in the RC_TRIGGER_STATE_WAITING state and cannot trigger until it has been false for at least one frame. This event indicates the achievement is no longer waiting and may trigger on a future frame.
+* RC_RUNTIME_EVENT_ACHIEVEMENT_PAUSED (id=achievement id)
+  One or more conditions in the achievement have disabled the achievement.
+* RC_RUNTIME_EVENT_ACHIEVEMENT_RESET (id=achievement id)
+  One or more conditions in the achievement have reset any progress captured in the achievement.
+* RC_RUNTIME_EVENT_ACHIEVEMENT_TRIGGERED (id=achievement id)
+  All conditions for the achievement have been met and the user should be informed.
+  NOTE: If `rc_runtime_reset` is called without deactivating the achievement, it may trigger again.
+* RC_RUNTIME_EVENT_ACHIEVEMENT_PRIMED (id=achievement id)
+  All non-trigger conditions for the achievement have been met. This typically indicates the achievement is a challenge achievement and the challenge is active.
+* RC_RUNTIME_EVENT_LBOARD_STARTED (id=leaderboard id, value=leaderboard value)
+  The leaderboard's start condition has been met and the user should be informed that a leaderboard attempt has started.
+* RC_RUNTIME_EVENT_LBOARD_CANCELED (id=leaderboard id, value=leaderboard value)
+  The leaderboard's cancel condition has been met and the user should be informed that a leaderboard attempt has failed.
+* RC_RUNTIME_EVENT_LBOARD_UPDATED (id=leaderboard id, value=leaderboard value)
+  The leaderboard value has changed.
+* RC_RUNTIME_EVENT_LBOARD_TRIGGERED (id=leaderboard id, value=leaderboard value)
+  The leaderboard's submit condition has been met and the user should be informed that a leaderboard attempt was successful. The value should be submitted.
+
+When an achievement triggers, it should be deactivated so it won't trigger again:
+```c
+void rc_runtime_deactivate_achievement(rc_runtime_t* runtime, unsigned id);
+```
+Additionally, the unlock should be submitted to the server.
+
+When a leaderboard triggers, it should not be deactivated in case the player wants to try again for a better score. The value should be submitted to the server.
+
+`rc_runtime_do_frame` also periodically updates the rich presense string (every 60 frames). To get the current value, call
+```c
+const char* rc_runtime_get_richpresence(const rc_runtime_t* runtime);
+```
+
+When the game is reset, the runtime should also be reset:
+```c
+void rc_runtime_reset(rc_runtime_t* runtime);
+```
+
+This ensures any active achievements/leaderboards are set back to their initial states and prevents unexpected triggers when the memory changes in atypical way.
+
 
 ### Value Formatting
 

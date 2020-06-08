@@ -1,6 +1,10 @@
 # vitaGL
 vitaGL is a wrapper between openGL and sceGxm. It allows to use a subset of openGL functions with fully hardware acceleration by translating the code to sceGxm equivalent.
 
+# Build Instructions
+In order to build vitaGL use the following command: `make HAVE_SBRK=1 install`.
+If you already have a newlib sbrk replacement in your app (eg. RetroArch), use instead this command: `make install`.
+
 # Samples
 
 You can find samples in the *samples* folder in this repository.
@@ -22,6 +26,9 @@ Direct OpenGL Usage:<br>
 [vitaXash3D](https://vitadb.rinnegatamante.it/#/info/365) - Port of Xash3D (Half Life, Counter Strike 1.6)<br>
 [Fade to Black](https://vitadb.rinnegatamante.it/#/info/367) - Port of Fade to Black<br>
 [vitaVoyager](https://vitadb.rinnegatamante.it/#/info/367) - Port of lilium-voyager (Star Trek Voyager: Elite Force)<br>
+[Daedalus X64](https://github.com/Rinnegatamante/daedalusx64-vitagl) - Port of Daedalus X64 (N64 Emulator)<br>
+[RetroArch](https://github.com/libretro/RetroArch) - Vita's GL1 video driver of RetroArch<br>
+[vitaET](https://github.com/Rinnegatamante/vitaET) - Port of ET:Legacy (Wolfenstein: Enemy Territory)<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>

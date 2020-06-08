@@ -59,6 +59,7 @@ struct config_file
    struct config_entry_list *last;
    unsigned include_depth;
    bool guaranteed_no_duplicates;
+   bool modified;
 
    struct config_include_list *includes;
 };

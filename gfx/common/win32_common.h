@@ -62,8 +62,6 @@ void create_graphics_context(HWND hwnd, bool *quit);
 
 void create_gdi_context(HWND hwnd, bool *quit);
 
-bool gdi_has_menu_frame(void *data);
-
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
 
 #if !defined(__WINRT__)

@@ -25,8 +25,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <net/net_http.h>
+#include <streams/interface_stream.h>
 #include <streams/file_stream.h>
-#include <encodings/crc32.h>
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
@@ -130,21 +130,24 @@ static bool local_core_matches_remote_crc(
 
    if (path_is_valid(local_core_path))
    {
-      int64_t length   = 0;
-      uint8_t *ret_buf = NULL;
+      /* Open core file */
+      intfstream_t *local_core_file = intfstream_open_file(
+            local_core_path, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-      if (filestream_read_file(
-            local_core_path, (void**)&ret_buf, &length))
+      if (local_core_file)
       {
          uint32_t crc = 0;
+         /* Get crc value */
+         bool success = intfstream_get_crc(local_core_file, &crc);
 
-         if (length >= 0)
-            crc = encoding_crc32(0, ret_buf, length);
+         /* Close core file */
+         intfstream_close(local_core_file);
+         free(local_core_file);
+         local_core_file = NULL;
 
-         if (ret_buf)
-            free(ret_buf);
-
-         if ((crc != 0) && (crc == remote_crc))
+         /* Check whether crc matches remote file */
+         if (success && (crc != 0) && (crc == remote_crc))
             return true;
       }
    }
@@ -441,6 +444,15 @@ error:
 /*****************/
 /* Download core */
 /*****************/
+
+static void cb_task_core_updater_download(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   /* Reload core info files
+    * > This must be done on the main thread */
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+}
 
 static void cb_decompress_task_core_updater_download(
       retro_task_t *task, void *task_data,
@@ -757,9 +769,6 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             task_title[0] = '\0';
 
-            /* Reload core info files */
-            command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-
             /* Set final task title */
             task_free_title(task);
 
@@ -894,6 +903,7 @@ void *task_push_core_updater_download(
    task->title            = strdup(task_title);
    task->alternative_look = true;
    task->progress         = 0;
+   task->callback         = cb_task_core_updater_download;
 
    /* Push task */
    task_queue_push(task);

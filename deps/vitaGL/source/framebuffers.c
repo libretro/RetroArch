@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * framebuffers.c:
  * Implementation for framebuffers related functions
@@ -32,7 +50,7 @@ uint32_t get_color_from_texture(uint32_t type) {
 		res = SCE_GXM_COLOR_FORMAT_U8_A;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	return res;
@@ -48,7 +66,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 	int i = 0, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -67,7 +85,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -79,8 +97,8 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 			fb->target = NULL;
 		}
 		if (fb->depth_buffer_addr) {
-			vitagl_mempool_free(fb->depth_buffer_addr, fb->depth_buffer_mem_type);
-			vitagl_mempool_free(fb->stencil_buffer_addr, fb->stencil_buffer_mem_type);
+			vgl_mem_free(fb->depth_buffer_addr, fb->depth_buffer_mem_type);
+			vgl_mem_free(fb->stencil_buffer_addr, fb->stencil_buffer_mem_type);
 			fb->depth_buffer_addr = NULL;
 			fb->stencil_buffer_addr = NULL;
 		}
@@ -99,7 +117,7 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 		active_write_fb = active_read_fb = (framebuffer *)fb;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -116,7 +134,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		fb = active_read_fb;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -160,7 +178,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		sceGxmCreateRenderTarget(&renderTargetParams, &fb->target);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }

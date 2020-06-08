@@ -776,6 +776,7 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+   bool menu_is_alive            = video_info->menu_is_alive;
 
    if (_dispvars->src_width != width || _dispvars->src_height != height)
    {
@@ -790,7 +791,7 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (_dispvars->menu_active)

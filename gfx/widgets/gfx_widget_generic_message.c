@@ -35,16 +35,17 @@ static gfx_widget_generic_message_state_t p_w_generic_message_st = {
    {'\0'}
 };
 
-static gfx_widget_generic_message_state_t* gfx_widget_generic_message_get_ptr()
+static gfx_widget_generic_message_state_t* gfx_widget_generic_message_get_ptr(void)
 {
    return &p_w_generic_message_st;
 }
 
 static void gfx_widget_generic_message_fadeout(void *userdata)
 {
-   gfx_widget_generic_message_state_t* state = gfx_widget_generic_message_get_ptr();
    gfx_animation_ctx_entry_t entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) &state->timer;
+   gfx_widget_generic_message_state_t* state = 
+      gfx_widget_generic_message_get_ptr();
+   uintptr_t                             tag = (uintptr_t) &state->timer;
 
    /* Start fade out animation */
    entry.cb             = NULL;
@@ -60,12 +61,10 @@ static void gfx_widget_generic_message_fadeout(void *userdata)
 
 void gfx_widget_set_message(char *msg)
 {
-   gfx_widget_generic_message_state_t* state = gfx_widget_generic_message_get_ptr();
    gfx_timer_ctx_entry_t timer;
-   gfx_animation_ctx_tag tag = (uintptr_t) &state->timer;
-
-   if (!gfx_widgets_active())
-      return;
+   gfx_widget_generic_message_state_t* state = 
+      gfx_widget_generic_message_get_ptr();
+   uintptr_t                             tag = (uintptr_t) &state->timer;
 
    strlcpy(state->message, msg, sizeof(state->message));
 
@@ -82,20 +81,22 @@ void gfx_widget_set_message(char *msg)
    gfx_timer_start(&state->timer, &timer);
 }
 
-static void gfx_widget_generic_message_frame(void* data)
+static void gfx_widget_generic_message_frame(void* data, void *user_data)
 {
-   gfx_widget_generic_message_state_t* state = gfx_widget_generic_message_get_ptr();
+   gfx_widget_generic_message_state_t* state = 
+      gfx_widget_generic_message_get_ptr();
 
    if (state->alpha > 0.0f)
    {
-      video_frame_info_t* video_info      = (video_frame_info_t*)data;
-      void* userdata                      = video_info->userdata;
-      unsigned video_width                = video_info->width;
-      unsigned video_height               = video_info->height;
+      video_frame_info_t* video_info       = (video_frame_info_t*)data;
+      void* userdata                       = video_info->userdata;
+      unsigned video_width                 = video_info->width;
+      unsigned video_height                = video_info->height;
+      unsigned height                      = gfx_widgets_get_generic_message_height(user_data);
+      unsigned text_color                  = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->alpha*255.0f));
+      gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular(user_data);
+      size_t msg_queue_size                = gfx_widgets_get_msg_queue_size(user_data);
 
-      unsigned height = gfx_widgets_get_generic_message_height();
-
-      unsigned text_color = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->alpha*255.0f));
       gfx_display_set_alpha(gfx_widgets_get_backdrop_orig(), state->alpha);
 
       gfx_display_draw_quad(userdata,
@@ -105,12 +106,17 @@ static void gfx_widget_generic_message_frame(void* data)
             video_width, video_height,
             gfx_widgets_get_backdrop_orig());
 
-      gfx_display_draw_text(gfx_widgets_get_font_regular(), state->message,
-         video_width/2,
-         video_height - height/2 + gfx_widgets_get_font_size()/4,
-         video_width, video_height,
-         text_color, TEXT_ALIGN_CENTER,
-         1, false, 0, false);
+      gfx_widgets_draw_text(font_regular, state->message,
+            video_width/2,
+            video_height - height/2.0f + font_regular->line_centre_offset,
+            video_width, video_height,
+            text_color, TEXT_ALIGN_CENTER,
+            false);
+
+      /* If the message queue is active, must flush the
+       * text here to avoid overlaps */
+      if (msg_queue_size > 0)
+         gfx_widgets_flush_text(video_width, video_height, font_regular);
    }
 }
 

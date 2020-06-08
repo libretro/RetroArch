@@ -126,12 +126,6 @@ else ifneq (,$(findstring win,$(platform)))
 endif
 endif
 
-ifeq ($(HAVE_BIGENDIAN),1)
-CPUOPTS += -DHAVE_BIGENDIAN=1 -DMSB_FIRST
-else
-CPUOPTS += -DHAVE_BIGENDIAN=0
-endif
-
 ifeq ($(HAVE_SSA), 1)
    LIBS += $(shell pkg-config libass --libs)
    DEFINES += -DHAVE_SSA

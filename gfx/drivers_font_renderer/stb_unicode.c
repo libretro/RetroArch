@@ -57,21 +57,14 @@ typedef struct
 
    int max_glyph_width;
    int max_glyph_height;
-   int line_height;
    float scale_factor;
+   struct font_line_metrics line_metrics;
 
    struct font_atlas atlas;
    stb_unicode_atlas_slot_t atlas_slots[STB_UNICODE_ATLAS_SIZE];
    stb_unicode_atlas_slot_t* uc_map[0x100];
    unsigned usage_counter;
 } stb_unicode_font_renderer_t;
-
-/* Ugly little thing... */
-static int INLINE round_away_from_zero(float f)
-{
-   double round = (f < 0.0) ? floor((double)f) : ceil((double)f);
-   return (int)round;
-}
 
 static struct font_atlas *font_renderer_stb_unicode_get_atlas(void *data)
 {
@@ -125,6 +118,8 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    uint8_t *dst                         = NULL;
    stb_unicode_atlas_slot_t* atlas_slot = NULL;
    stb_unicode_font_renderer_t *self    = (stb_unicode_font_renderer_t*)data;
+   float glyph_advance_x                = 0.0f;
+   float glyph_draw_offset_y            = 0.0f;
 
    if(!self)
       return NULL;
@@ -145,9 +140,9 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    atlas_slot             = font_renderer_stb_unicode_get_slot(self);
    atlas_slot->charcode   = charcode;
    atlas_slot->next       = self->uc_map[map_id];
-   self->uc_map[map_id] = atlas_slot;
+   self->uc_map[map_id]   = atlas_slot;
 
-   glyph_index              = stbtt_FindGlyphIndex(&self->info, charcode);
+   glyph_index            = stbtt_FindGlyphIndex(&self->info, charcode);
 
    dst = (uint8_t*)self->atlas.buffer + atlas_slot->glyph.atlas_offset_x
          + atlas_slot->glyph.atlas_offset_y * self->atlas.width;
@@ -171,15 +166,25 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
 
    atlas_slot->glyph.width          = self->max_glyph_width;
    atlas_slot->glyph.height         = self->max_glyph_height;
-   atlas_slot->glyph.advance_x      = round_away_from_zero((float)advance_width * self->scale_factor);
+   /* advance_x must always be rounded to the
+    * *nearest* integer */
+   glyph_advance_x = (float)advance_width * self->scale_factor;
+   atlas_slot->glyph.advance_x      = (int)((glyph_advance_x > 0.0f) ?
+         (glyph_advance_x + 0.5f) : (glyph_advance_x - 0.5f));
+   /* advance_y is always zero */
    atlas_slot->glyph.advance_y      = 0;
-   atlas_slot->glyph.draw_offset_x  = round_away_from_zero((float)x0 * self->scale_factor);
-   atlas_slot->glyph.draw_offset_y  = round_away_from_zero((float)(-y1) * self->scale_factor);
+   /* draw_offset_x must always be rounded *down*
+    * to the nearest integer */
+   atlas_slot->glyph.draw_offset_x  = (int)((float)x0 * self->scale_factor);
+   /* draw_offset_y must always be rounded *up*
+    * to the nearest integer */
+   glyph_draw_offset_y = (float)(-y1) * self->scale_factor;
+   atlas_slot->glyph.draw_offset_y  = (int)((glyph_draw_offset_y < 0.0f) ?
+         floor((double)glyph_draw_offset_y) : ceil((double)glyph_draw_offset_y));
 
    self->atlas.dirty = true;
    atlas_slot->last_used = self->usage_counter++;
    return &atlas_slot->glyph;
-
 }
 
 static bool font_renderer_stb_unicode_create_atlas(
@@ -259,7 +264,12 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    else
       self->scale_factor = stbtt_ScaleForPixelHeight(&self->info, font_size);
 
-   self->line_height  = (ascent - descent) * self->scale_factor;
+   /* Ascender, descender and line_gap values always
+    * end up ~0.5 pixels too small when scaled...
+    * > Add a manual correction factor */
+   self->line_metrics.ascender  = 0.5f + (float)ascent * self->scale_factor;
+   self->line_metrics.descender = 0.5f + ((float)(-descent) * self->scale_factor);
+   self->line_metrics.height    = 0.5f + (float)(ascent - descent + line_gap) * self->scale_factor;
 
    if (!font_renderer_stb_unicode_create_atlas(self, font_size))
       goto error;
@@ -321,10 +331,14 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
 #endif
 }
 
-static int font_renderer_stb_unicode_get_line_height(void* data)
+static bool font_renderer_stb_unicode_get_line_metrics(
+      void* data, struct font_line_metrics **metrics)
 {
    stb_unicode_font_renderer_t *handle = (stb_unicode_font_renderer_t*)data;
-   return handle->line_height;
+   if (!handle)
+      return false;
+   *metrics = &handle->line_metrics;
+   return true;
 }
 
 font_renderer_driver_t stb_unicode_font_renderer = {
@@ -334,5 +348,5 @@ font_renderer_driver_t stb_unicode_font_renderer = {
    font_renderer_stb_unicode_free,
    font_renderer_stb_unicode_get_default_font,
    "stb-unicode",
-   font_renderer_stb_unicode_get_line_height,
+   font_renderer_stb_unicode_get_line_metrics
 };

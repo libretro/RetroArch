@@ -33,7 +33,7 @@
 
 #include <gsKit.h>
 
-#define RETRO_HW_RENDER_INTERFACE_GSKIT_PS2_VERSION 1
+#define RETRO_HW_RENDER_INTERFACE_GSKIT_PS2_VERSION 2
 
 struct retro_hw_ps2_insets
 {
@@ -57,8 +57,6 @@ struct retro_hw_render_interface_gskit_ps2
    * in this interface.
    */
    GSTEXTURE *coreTexture;
-   bool clearTexture;
-   bool updatedPalette;
    struct retro_hw_ps2_insets padding;
 };
 typedef struct retro_hw_render_interface_gskit_ps2 RETRO_HW_RENDER_INTEFACE_GSKIT_PS2;

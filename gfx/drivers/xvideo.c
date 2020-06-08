@@ -83,6 +83,10 @@ typedef struct xv
 
    void (*render_func)(struct xv*, const void *frame,
          unsigned width, unsigned height, unsigned pitch);
+
+   void (*render_glyph)(struct xv*, int base_x, int base_y,
+			const uint8_t *glyph, int atlas_width,
+			int glyph_width, int glyph_height);
 } xv_t;
 
 static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)
@@ -295,34 +299,242 @@ static void render32_uyvy(xv_t *xv, const void *input_,
    }
 }
 
+static void render32_yuv12(xv_t *xv, const void *input_,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   unsigned x, y;
+   const uint32_t *input = (const uint32_t*)input_;
+   unsigned w0 = xv->width >> 1;
+   unsigned w1 = w0 << 1;
+   unsigned h0 = xv->height >> 1;
+   uint8_t *output       = (uint8_t*)xv->image->data;
+   uint8_t *outputu       = (uint8_t*)xv->image->data + 4 * w0 * h0;
+   uint8_t *outputv       = (uint8_t*)xv->image->data + 5 * w0 * h0;
+
+   for (y = 0; y < height; y++)
+   {
+      for (x = 0; x < width; x++)
+      {
+         uint8_t y0, u, v;
+         unsigned img_width;
+         uint32_t p = *input++;
+         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0)
+            | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
+
+         y0        = xv->ytable[p];
+         u         = xv->utable[p];
+         v         = xv->vtable[p];
+
+         output[0] = output[w1] = y0;
+	 output[1] = output[w1+1] = y0;
+         output+=2;
+	 *outputu++ = u;
+	 *outputv++ = v;
+      }
+
+      input  += (pitch >> 2) - width;
+      output += 4 * w0 - 2 * width;
+      outputu += (w0 - width);
+      outputv += (w0 - width);
+   }
+}
+
+static void render16_yuv12(xv_t *xv, const void *input_,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   unsigned x, y;
+   const uint16_t *input = (const uint16_t*)input_;
+   unsigned w0 = xv->width >> 1;
+   unsigned w1 = w0 << 1;
+   unsigned h0 = xv->height >> 1;
+   uint8_t *output       = (uint8_t*)xv->image->data;
+   uint8_t *outputu       = (uint8_t*)xv->image->data + 4 * w0 * h0;
+   uint8_t *outputv       = (uint8_t*)xv->image->data + 5 * w0 * h0;
+
+   for (y = 0; y < height; y++)
+   {
+      for (x = 0; x < width; x++)
+      {
+	 uint16_t p         = *input++;
+         uint8_t y0         = xv->ytable[p];
+         uint8_t u          = xv->utable[p];
+         uint8_t v          = xv->vtable[p];
+
+         output[0] = output[w1] = y0;
+	 output[1] = output[w1+1] = y0;
+         output+=2;
+	 *outputu++ = u;
+	 *outputv++ = v;
+      }
+
+      input  += (pitch >> 1) - width;
+      output += 4 * w0 - 2 * width;
+      outputu += (w0 - width);
+      outputv += (w0 - width);
+   }
+}
+
+static INLINE void render_glyph_yuv12(xv_t *xv, int base_x, int base_y,
+				      const uint8_t *glyph, int atlas_width,
+				      int glyph_width, int glyph_height)
+{
+   uint8_t *out_luma, *out_u, *out_v;
+   int x, y, i;
+
+   out_luma = (uint8_t*)xv->image->data + base_y * xv->width + (base_x);
+   out_u = (uint8_t*)xv->image->data + xv->width * xv->height + (base_y / 2) * xv->width / 2 + (base_x / 2);
+   out_v= (uint8_t*)xv->image->data + xv->width * xv->height * 5 / 4 + (base_y / 2) * xv->width / 2 + (base_x / 2);
+
+   for (y = 0; y < glyph_height; y++, glyph += atlas_width, out_luma += xv->width)
+   {
+      /* 2 input pixels => 4 bytes (2Y, 1U, 1V). */
+
+      for (x = 0; x < glyph_width; x += 2)
+      {
+	 unsigned alpha[2], alpha_sub, blended;
+
+	 alpha[0] = glyph[x + 0];
+	 alpha[1] = 0;
+
+	 if (x + 1 < glyph_width)
+	    alpha[1] = glyph[x + 1];
+
+	 /* Blended alpha for the sub-sampled U/V channels. */
+	 alpha_sub = (alpha[0] + alpha[1]) >> 1;
+
+	 for (i = 0; i < 2; i++)
+	 {
+	    unsigned blended = (xv->font_y * alpha[i]
+				+ ((256 - alpha[i]) * out_luma[x+i])) >> 8;
+	    out_luma[x+i] = blended;
+	 }
+
+	 /* Blend chroma channels */
+	 if (y & 1)
+	 {
+	    blended = (xv->font_u * alpha_sub
+		       + ((256 - alpha_sub) * out_u[x/2])) >> 8;
+	    out_u[x / 2] = blended;
+
+	    blended = (xv->font_v * alpha_sub
+		       + ((256 - alpha_sub) * out_v[x/2])) >> 8;
+	    out_v[x/2] = blended;
+	 }
+      }
+
+      if (y & 1)
+      {
+	 out_u += xv->width / 2;
+	 out_v += xv->width / 2;
+      }
+   }
+}
+
+static INLINE void render_glyph_yuv_packed(xv_t *xv, int base_x, int base_y,
+					   const uint8_t *glyph, int atlas_width,
+					   int glyph_width, int glyph_height)
+{
+   uint8_t *out                   = NULL;
+   int x, y, i;
+   unsigned luma_index[2], pitch;
+   unsigned chroma_u_index, chroma_v_index;
+
+   luma_index[0]  = xv->luma_index[0];
+   luma_index[1]  = xv->luma_index[1];
+
+   chroma_u_index = xv->chroma_u_index;
+   chroma_v_index = xv->chroma_v_index;
+
+   pitch          = xv->width << 1; /* YUV formats used are 16 bpp. */
+   out = (uint8_t*)xv->image->data + base_y * pitch + (base_x << 1);
+
+   for (y = 0; y < glyph_height; y++, glyph += atlas_width, out += pitch)
+   {
+      /* 2 input pixels => 4 bytes (2Y, 1U, 1V). */
+
+      for (x = 0; x < glyph_width; x += 2)
+      {
+	 unsigned alpha[2], alpha_sub, blended;
+	 int out_x = x << 1;
+
+	 alpha[0] = glyph[x + 0];
+	 alpha[1] = 0;
+
+	 if (x + 1 < glyph_width)
+	    alpha[1] = glyph[x + 1];
+
+	 /* Blended alpha for the sub-sampled U/V channels. */
+	 alpha_sub = (alpha[0] + alpha[1]) >> 1;
+
+	 for (i = 0; i < 2; i++)
+	 {
+	    unsigned blended = (xv->font_y * alpha[i]
+				+ ((256 - alpha[i]) * out[out_x + luma_index[i]])) >> 8;
+	    out[out_x + luma_index[i]] = blended;
+	 }
+
+	 /* Blend chroma channels */
+	 blended = (xv->font_u * alpha_sub
+		    + ((256 - alpha_sub) * out[out_x + chroma_u_index])) >> 8;
+	 out[out_x + chroma_u_index] = blended;
+
+	 blended = (xv->font_v * alpha_sub
+		    + ((256 - alpha_sub) * out[out_x + chroma_v_index])) >> 8;
+	 out[out_x + chroma_v_index] = blended;
+      }
+   }
+}
+
 struct format_desc
 {
    void (*render_16)(xv_t *xv, const void *input,
          unsigned width, unsigned height, unsigned pitch);
    void (*render_32)(xv_t *xv, const void *input,
          unsigned width, unsigned height, unsigned pitch);
+   void (*render_glyph)(xv_t *xv, int base_x, int base_y,
+			const uint8_t *glyph, int atlas_width,
+			int glyph_width, int glyph_height);
    char components[4];
    unsigned luma_index[2];
    unsigned u_index;
    unsigned v_index;
+   unsigned bits;
+   int format;
 };
 
 static const struct format_desc formats[] = {
    {
       render16_yuy2,
       render32_yuy2,
+      render_glyph_yuv_packed,
       { 'Y', 'U', 'Y', 'V' },
       { 0, 2 },
       1,
       3,
+      16,
+      XvPacked
    },
    {
       render16_uyvy,
       render32_uyvy,
+      render_glyph_yuv_packed,
       { 'U', 'Y', 'V', 'Y' },
       { 1, 3 },
       0,
       2,
+      16,
+      XvPacked
+   },
+   {
+      render16_yuv12,
+      render32_yuv12,
+      render_glyph_yuv12,
+      { 'Y', 'U', 'V', 0 },
+      { 1, 3 },
+      0,
+      2,
+      12,
+      XvPlanar
    },
 };
 
@@ -343,8 +555,8 @@ static bool xv_adaptor_set_format(xv_t *xv, Display *dpy,
       for (j = 0; j < ARRAY_SIZE(formats); j++)
       {
          if (format[i].type == XvYUV
-               && format[i].bits_per_pixel == 16
-               && format[i].format == XvPacked)
+               && format[i].bits_per_pixel == formats[j].bits
+               && format[i].format == formats[j].format)
          {
             if (format[i].component_order[0] == formats[j].components[0] &&
                   format[i].component_order[1] == formats[j].components[1] &&
@@ -354,6 +566,7 @@ static bool xv_adaptor_set_format(xv_t *xv, Display *dpy,
                xv->fourcc         = format[i].id;
                xv->render_func    = video->rgb32
                   ? formats[j].render_32 : formats[j].render_16;
+               xv->render_glyph    = formats[j].render_glyph;
 
                xv->luma_index[0]  = formats[j].luma_index[0];
                xv->luma_index[1]  = formats[j].luma_index[1];
@@ -637,6 +850,12 @@ static void *xv_init(const video_info_t *video,
 
    frontend_driver_install_signal_handler();
 
+   xv_init_yuv_tables(xv);
+   xv_init_font(xv, settings->paths.path_font, settings->floats.video_font_size);
+
+   if (!x11_input_ctx_new(true))
+      goto error;
+
    if (input && input_data)
    {
       xinput = input_x.init(settings->arrays.input_joypad_driver);
@@ -648,12 +867,6 @@ static void *xv_init(const video_info_t *video,
       else
          *input = NULL;
    }
-
-   xv_init_yuv_tables(xv);
-   xv_init_font(xv, settings->paths.path_font, settings->floats.video_font_size);
-
-   if (!x11_input_ctx_new(true))
-      goto error;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
@@ -724,9 +937,7 @@ static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
 static void xv_render_msg(xv_t *xv, const char *msg,
       unsigned width, unsigned height)
 {
-   int x, y, msg_base_x, msg_base_y;
-   unsigned i, luma_index[2], pitch;
-   unsigned chroma_u_index, chroma_v_index;
+   int msg_base_x, msg_base_y;
    const struct font_atlas *atlas = NULL;
    settings_t           *settings = config_get_ptr();
    float video_msg_pos_x          = settings->floats.video_msg_pos_x;
@@ -740,19 +951,10 @@ static void xv_render_msg(xv_t *xv, const char *msg,
    msg_base_x     = video_msg_pos_x * width;
    msg_base_y     = height * (1.0f - video_msg_pos_y);
 
-   luma_index[0]  = xv->luma_index[0];
-   luma_index[1]  = xv->luma_index[1];
-
-   chroma_u_index = xv->chroma_u_index;
-   chroma_v_index = xv->chroma_v_index;
-
-   pitch          = width << 1; /* YUV formats used are 16 bpp. */
-
    for (; *msg; msg++)
    {
       int base_x, base_y, glyph_width, glyph_height, max_width, max_height;
       const uint8_t *src             = NULL;
-      uint8_t *out                   = NULL;
       const struct font_glyph *glyph =
          xv->font_driver->get_glyph(xv->font, (uint8_t)*msg);
 
@@ -795,43 +997,7 @@ static void xv_render_msg(xv_t *xv, const char *msg,
       if (glyph_height > max_height)
          glyph_height  = max_height;
 
-      out = (uint8_t*)xv->image->data + base_y * pitch + (base_x << 1);
-
-      for (y = 0; y < glyph_height; y++, src += atlas->width, out += pitch)
-      {
-         /* 2 input pixels => 4 bytes (2Y, 1U, 1V). */
-
-         for (x = 0; x < glyph_width; x += 2)
-         {
-            unsigned alpha[2], alpha_sub, blended;
-            int out_x = x << 1;
-
-            alpha[0] = src[x + 0];
-            alpha[1] = 0;
-
-            if (x + 1 < glyph_width)
-               alpha[1] = src[x + 1];
-
-            /* Blended alpha for the sub-sampled U/V channels. */
-            alpha_sub = (alpha[0] + alpha[1]) >> 1;
-
-            for (i = 0; i < 2; i++)
-            {
-               unsigned blended = (xv->font_y * alpha[i]
-                     + ((256 - alpha[i]) * out[out_x + luma_index[i]])) >> 8;
-               out[out_x + luma_index[i]] = blended;
-            }
-
-            /* Blend chroma channels */
-            blended = (xv->font_u * alpha_sub
-                  + ((256 - alpha_sub) * out[out_x + chroma_u_index])) >> 8;
-            out[out_x + chroma_u_index] = blended;
-
-            blended = (xv->font_v * alpha_sub
-                  + ((256 - alpha_sub) * out[out_x + chroma_v_index])) >> 8;
-            out[out_x + chroma_v_index] = blended;
-         }
-      }
+      xv->render_glyph(xv, base_x, base_y, src, atlas->width, glyph_width, glyph_height);
 
       msg_base_x += glyph->advance_x;
       msg_base_y += glyph->advance_y;
@@ -844,6 +1010,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    if (!frame)
       return true;
@@ -859,7 +1026,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    xv->vp.full_height = target.height;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (msg)

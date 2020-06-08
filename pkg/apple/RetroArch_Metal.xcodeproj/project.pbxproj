@@ -193,7 +193,6 @@
 		05A8C52D20DB72F000FF7857 /* menu_cbs_up.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_up.c; sourceTree = "<group>"; };
 		05A8C52E20DB72F000FF7857 /* gfx_animation.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gfx_animation.c; sourceTree = "<group>"; };
 		05A8C52F20DB72F000FF7857 /* menu_displaylist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_displaylist.h; sourceTree = "<group>"; };
-		05A8C53020DB72F000FF7857 /* menu_content.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_content.h; sourceTree = "<group>"; };
 		05A8C53220DB72F000FF7857 /* xmb.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xmb.c; sourceTree = "<group>"; };
 		05A8C53B20DB72F000FF7857 /* xui.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = xui.cpp; sourceTree = "<group>"; };
 		05A8C53C20DB72F000FF7857 /* rgui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rgui.c; sourceTree = "<group>"; };
@@ -205,7 +204,6 @@
 		05A8C54520DB72F000FF7857 /* menu_entries.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_entries.c; sourceTree = "<group>"; };
 		05A8C54620DB72F000FF7857 /* menu_setting.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_setting.c; sourceTree = "<group>"; };
 		05A8C54720DB72F000FF7857 /* menu_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_input.c; sourceTree = "<group>"; };
-		05A8C54820DB72F000FF7857 /* menu_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_content.c; sourceTree = "<group>"; };
 		05A8C54920DB72F000FF7857 /* menu_displaylist.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_displaylist.c; sourceTree = "<group>"; };
 		05A8C54A20DB72F000FF7857 /* menu_shader.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_shader.c; sourceTree = "<group>"; };
 		05A8C54B20DB72F000FF7857 /* gfx_animation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gfx_animation.h; sourceTree = "<group>"; };
@@ -761,8 +759,6 @@
 				05A8C54B20DB72F000FF7857 /* gfx_animation.h */,
 				05A8C54120DB72F000FF7857 /* menu_cbs.c */,
 				05A8C54C20DB72F000FF7857 /* menu_cbs.h */,
-				05A8C54820DB72F000FF7857 /* menu_content.c */,
-				05A8C53020DB72F000FF7857 /* menu_content.h */,
 				05A8C54920DB72F000FF7857 /* menu_displaylist.c */,
 				05A8C52F20DB72F000FF7857 /* menu_displaylist.h */,
 				05A8C54D20DB72F000FF7857 /* menu_driver.c */,

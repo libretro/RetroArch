@@ -43,6 +43,7 @@ struct bintree
    void *ctx;
 };
 
+/* TODO/FIXME - static global variable */
 static void *NIL_NODE = &NIL_NODE;
 
 static struct bintree_node *bintree_new_nil_node(struct bintree_node *parent)
