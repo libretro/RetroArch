@@ -2097,17 +2097,19 @@ error:
    return false;
 }
 
-void gfx_widgets_deinit(void)
+bool gfx_widgets_deinit(void)
 {
    dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
    if (!p_dispwidget->widgets_inited)
-      return;
+      return false;
 
    p_dispwidget->widgets_active     = false;
    gfx_widgets_context_destroy(p_dispwidget);
 
    if (!p_dispwidget->widgets_persisting)
       gfx_widgets_free(p_dispwidget);
+
+   return true;
 }
 
 static void gfx_widgets_font_init(

@@ -167,7 +167,7 @@ bool gfx_widgets_init(
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path);
 
-void gfx_widgets_deinit(void);
+bool gfx_widgets_deinit(void);
 
 void gfx_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
