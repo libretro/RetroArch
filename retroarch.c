@@ -17244,6 +17244,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION:
+         RARCH_LOG("[Environ]: GET_MESSAGE_INTERFACE_VERSION.\n");
          /* Current API version is 1 */
          *(unsigned *)data = 1;
          break;
@@ -17454,6 +17455,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
+         RARCH_LOG("[Environ]: GET_SAVE_DIRECTORY.\n");
          *(const char**)data = p_rarch->current_savefile_dir;
          break;
 
@@ -17628,6 +17630,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION:
+         RARCH_LOG("[Environ]: GET_DISK_CONTROL_INTERFACE_VERSION.\n");
          /* Current API version is 1 */
          *(unsigned *)data = 1;
          break;
@@ -17736,6 +17739,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
       {
          const char **path = (const char**)data;
+         RARCH_LOG("[Environ]: GET_LIBRETRO_PATH.\n");
 #ifdef HAVE_DYNAMIC
          *path = path_get(RARCH_PATH_CORE);
 #else
@@ -18190,16 +18194,19 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
       {
          uint64_t *quirks = (uint64_t *) data;
+         RARCH_LOG("[Environ]: SET_SERIALIZATION_QUIRKS.\n");
          p_rarch->current_core.serialization_quirks_v = *quirks;
          break;
       }
 
       case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
 #ifdef HAVE_LIBNX
+         RARCH_LOG("[Environ]: SET_HW_SHARED_CONTEXT - ignored for now.\n");
          /* TODO/FIXME - Force this off for now for Switch
           * until shared HW context can work there */
          return false;
 #else
+         RARCH_LOG("[Environ]: SET_HW_SHARED_CONTEXT.\n");
          p_rarch->core_set_shared_context = true;
 #endif
          break;
@@ -18313,6 +18320,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION:
+         RARCH_LOG("[Environ]: GET_CORE_OPTIONS_VERSION.\n");
          /* Current API version is 1 */
          *(unsigned *)data = 1;
          break;
