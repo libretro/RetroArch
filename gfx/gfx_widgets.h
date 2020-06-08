@@ -78,7 +78,7 @@ struct gfx_widget
 
    /* called every frame on the main thread
     * -> update the widget logic here */
-   void (*iterate)(
+   void (*iterate)(void *user_data,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded);
@@ -103,19 +103,19 @@ typedef struct
    size_t usage_count;
 } gfx_widget_font_data_t;
 
-gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void);
+gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void *data);
 
 float* gfx_widgets_get_pure_white(void);
 
-unsigned gfx_widgets_get_padding(void);
+unsigned gfx_widgets_get_padding(void *data);
 
-unsigned gfx_widgets_get_height(void);
+unsigned gfx_widgets_get_height(void *data);
 
-gfx_widget_font_data_t* gfx_widgets_get_font_regular(void);
+gfx_widget_font_data_t* gfx_widgets_get_font_regular(void *data);
 
-gfx_widget_font_data_t* gfx_widgets_get_font_bold(void);
+gfx_widget_font_data_t* gfx_widgets_get_font_bold(void *data);
 
-gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void);
+gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void *data);
 
 float* gfx_widgets_get_backdrop_orig(void);
 
@@ -186,7 +186,8 @@ void gfx_widgets_iterate(
       const char *dir_assets, char *font_path,
       bool is_threaded);
 
-void gfx_widget_screenshot_taken(const char *shotname, const char *filename);
+void gfx_widget_screenshot_taken(void *data,
+      const char *shotname, const char *filename);
 
 /* AI Service functions */
 #ifdef HAVE_TRANSLATE
@@ -212,12 +213,16 @@ void gfx_widgets_push_achievement(const char *title, const char *badge);
 void gfx_widget_set_message(char *message);
 
 /* Warning: not thread safe! */
-void gfx_widget_set_libretro_message(const char *message, unsigned duration);
+void gfx_widget_set_libretro_message(
+      void *data,
+      const char *message, unsigned duration);
 
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
 void gfx_widgets_frame(void *data);
+
+void *dispwidget_get_ptr(void);
 
 bool gfx_widgets_set_fps_text(const char *new_fps_text);
 

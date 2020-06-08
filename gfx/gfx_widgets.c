@@ -325,7 +325,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget);
 static void gfx_widgets_layout(dispgfx_widget_t *p_dispwidget,
       bool is_threaded, const char *dir_assets, char *font_path);
 
-dispgfx_widget_t *dispwidget_get_ptr(void)
+void *dispwidget_get_ptr(void)
 {
    /* TODO/FIXME - static global state - perhaps move outside this file */
    static dispgfx_widget_t dispwidget_st;
@@ -334,31 +334,31 @@ dispgfx_widget_t *dispwidget_get_ptr(void)
 
 bool gfx_widgets_active(void)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    return p_dispwidget->widgets_active;
 }
 
 void gfx_widgets_set_persistence(bool persist)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    p_dispwidget->widgets_persisting = persist;
 }
 
-gfx_widget_font_data_t* gfx_widgets_get_font_regular(void)
+gfx_widget_font_data_t* gfx_widgets_get_font_regular(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return &p_dispwidget->gfx_widget_fonts.regular;
 }
 
-gfx_widget_font_data_t* gfx_widgets_get_font_bold(void)
+gfx_widget_font_data_t* gfx_widgets_get_font_bold(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return &p_dispwidget->gfx_widget_fonts.bold;
 }
 
-gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void)
+gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return &p_dispwidget->gfx_widget_fonts.msg_queue;
 }
 
@@ -374,21 +374,21 @@ float* gfx_widgets_get_backdrop_orig(void)
 
 /* Messages queue */
 
-gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void)
+gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->gfx_widgets_generic_tag;
 }
 
-unsigned gfx_widgets_get_padding(void)
+unsigned gfx_widgets_get_padding(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->simple_widget_padding;
 }
 
-unsigned gfx_widgets_get_height(void)
+unsigned gfx_widgets_get_height(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->simple_widget_height;
 }
 
@@ -412,7 +412,7 @@ unsigned gfx_widgets_get_last_video_height(void *data)
 
 size_t gfx_widgets_get_msg_queue_size(void)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    return p_dispwidget->current_msgs ? p_dispwidget->current_msgs->size : 0;
 }
 
@@ -448,7 +448,7 @@ void gfx_widgets_msg_queue_push(
       bool menu_is_alive)
 {
    menu_widget_msg_t    *msg_widget = NULL;
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    if (!p_dispwidget->widgets_active)
       return;
@@ -632,7 +632,7 @@ void gfx_widgets_msg_queue_push(
 static void gfx_widgets_unfold_end(void *userdata)
 {
    menu_widget_msg_t *unfold        = (menu_widget_msg_t*)userdata;
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    unfold->unfolding                = false;
    p_dispwidget->widgets_moving     = false;
@@ -640,7 +640,7 @@ static void gfx_widgets_unfold_end(void *userdata)
 
 static void gfx_widgets_move_end(void *userdata)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    if (userdata)
    {
@@ -765,7 +765,7 @@ static void gfx_widgets_msg_queue_free(
 
 static void gfx_widgets_msg_queue_kill_end(void *userdata)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    menu_widget_msg_t           *msg = (menu_widget_msg_t*)
       p_dispwidget->current_msgs->list[p_dispwidget->msg_queue_kill].userdata;
 
@@ -1024,7 +1024,7 @@ void gfx_widgets_iterate(
 {
    size_t i;
    float scale_factor;
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    if (!p_dispwidget->widgets_active)
       return;
@@ -1055,7 +1055,9 @@ void gfx_widgets_iterate(
       const gfx_widget_t* widget = widgets[i];
 
       if (widget->iterate)
-         widget->iterate(width, height, fullscreen, dir_assets, font_path, is_threaded);
+         widget->iterate(p_dispwidget,
+               width, height, fullscreen,
+               dir_assets, font_path, is_threaded);
    }
 
    /* Messages queue */
@@ -1633,7 +1635,7 @@ void gfx_widgets_frame(void *data)
 #ifdef HAVE_CHEEVOS
    int scissor_me_timbers           = 0;
 #endif
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    if (!p_dispwidget->widgets_active)
       return;
@@ -2036,7 +2038,8 @@ bool gfx_widgets_init(
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
-   dispgfx_widget_t *p_dispwidget              = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)
+      dispwidget_get_ptr();
 #ifdef HAVE_CHEEVOS
    p_dispwidget->cheevo_popup_queue_read_index = -1;
 #endif
@@ -2096,7 +2099,7 @@ error:
 
 void gfx_widgets_deinit(void)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
    if (!p_dispwidget->widgets_inited)
       return;
 
@@ -2446,7 +2449,7 @@ static void gfx_widgets_achievement_free_current(dispgfx_widget_t *p_dispwidget)
 
 static void gfx_widgets_achievement_next(void* userdata)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
    SLOCK_LOCK(p_dispwidget->cheevo_popup_queue_lock);
 
    gfx_widgets_achievement_free_current(p_dispwidget);
@@ -2540,7 +2543,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 
 bool gfx_widgets_set_fps_text(const char *new_fps_text)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
    if (!p_dispwidget->widgets_active)
       return false;
 
@@ -2553,13 +2556,13 @@ bool gfx_widgets_set_fps_text(const char *new_fps_text)
 #ifdef HAVE_TRANSLATE
 int gfx_widgets_ai_service_overlay_get_state(void)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
    return p_dispwidget->ai_service_overlay_state;
 }
 
 bool gfx_widgets_ai_service_overlay_set_state(int state)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget         = (dispgfx_widget_t*)dispwidget_get_ptr();
    p_dispwidget->ai_service_overlay_state = state;
    return true;
 }
@@ -2568,7 +2571,7 @@ bool gfx_widgets_ai_service_overlay_load(
         char* buffer, unsigned buffer_len,
         enum image_type_enum image_type)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    if (p_dispwidget->ai_service_overlay_state == 0)
    {
@@ -2587,7 +2590,7 @@ bool gfx_widgets_ai_service_overlay_load(
 
 void gfx_widgets_ai_service_overlay_unload(void)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    if (p_dispwidget->ai_service_overlay_state == 1)
    {
@@ -2608,7 +2611,7 @@ static void gfx_widgets_end_load_content_animation(void *userdata)
 
 void gfx_widgets_cleanup_load_content_animation(void)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    p_dispwidget->load_content_animation_running = false;
    if (p_dispwidget->load_content_animation_content_name)
       free(p_dispwidget->load_content_animation_content_name);
@@ -2624,7 +2627,7 @@ void gfx_widgets_start_load_content_animation(
    int i;
    gfx_animation_ctx_entry_t entry;
    gfx_timer_ctx_entry_t timer_entry;
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    float icon_color[16]             = 
       COLOR_HEX_TO_FLOAT(0x0473C9, 1.0f); /* TODO: random color */
    unsigned timing                  = 0;
@@ -2734,7 +2737,7 @@ void gfx_widgets_start_load_content_animation(
 static void gfx_widgets_achievement_dismiss(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    /* Slide up animation */
    entry.cb             = gfx_widgets_achievement_next;
@@ -2751,7 +2754,7 @@ static void gfx_widgets_achievement_dismiss(void *userdata)
 static void gfx_widgets_achievement_fold(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    /* Fold */
    entry.cb             = gfx_widgets_achievement_dismiss;
@@ -2769,7 +2772,7 @@ static void gfx_widgets_achievement_unfold(void *userdata)
 {
    gfx_timer_ctx_entry_t timer;
    gfx_animation_ctx_entry_t entry;
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    /* Unfold */
    entry.cb             = NULL;
@@ -2823,7 +2826,7 @@ static void gfx_widgets_start_achievement_notification(
 
 void gfx_widgets_push_achievement(const char *title, const char *badge)
 {
-   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    int           start_notification = 1;
 
    if (!p_dispwidget->widgets_active)
