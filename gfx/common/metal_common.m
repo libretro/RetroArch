@@ -294,9 +294,6 @@
    @autoreleasepool
    {
       bool statistics_show = video_info->statistics_show;
-#ifdef HAVE_GFX_WIDGETS
-      bool widgets_active  = gfx_widgets_active();
-#endif
 
       [self _beginFrame];
 
@@ -338,12 +335,9 @@
       }
 
 #ifdef HAVE_GFX_WIDGETS
-      if (widgets_active)
-      {
-         [rce pushDebugGroup:@"display widgets"];
-         gfx_widgets_frame(video_info);
-         [rce popDebugGroup];
-      }
+      [rce pushDebugGroup:@"display widgets"];
+      gfx_widgets_frame(video_info);
+      [rce popDebugGroup];
 #endif
 
       if (msg && *msg)
