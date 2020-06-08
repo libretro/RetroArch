@@ -798,14 +798,12 @@ bool task_push_pl_entry_thumbnail_download(
       goto error;
    
    /* Only parse supported playlist types */
-   if (string_is_equal(system, "images_history") ||
-       string_is_equal(system, "music_history") ||
-       string_is_equal(system, "video_history"))
+   if (string_ends_with(system, "_history"))
       goto error;
    
    /* Copy playlist path
     * (required for task finder and menu refresh functionality) */
-   playlist_path = strdup(playlist_get_conf_path(playlist));
+   playlist_path                 = strdup(playlist_get_conf_path(playlist));
    
    /* Concurrent download of thumbnails for the same
     * playlist entry is not allowed */
