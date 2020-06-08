@@ -1186,7 +1186,7 @@ static const camera_driver_t *camera_drivers[] = {
 #define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
    { \
       static bool old_pressed                   = false; \
-      bool pressed                              = BIT256_GET(current_bits, cmd1); \
+      bool pressed                              = BIT128_GET(current_bits, cmd1); \
       if (pressed && !old_pressed) \
          if (cond) \
             command_event(cmd2, cond2); \
@@ -1198,9 +1198,9 @@ static const camera_driver_t *camera_drivers[] = {
       static bool old_pressed                   = false; \
       static bool old_pressed2                  = false; \
       static bool old_pressed3                  = false; \
-      bool pressed                              = BIT256_GET(current_bits, cmd1); \
-      bool pressed2                             = BIT256_GET(current_bits, cmd3); \
-      bool pressed3                             = BIT256_GET(current_bits, cmd5); \
+      bool pressed                              = BIT128_GET(current_bits, cmd1); \
+      bool pressed2                             = BIT128_GET(current_bits, cmd3); \
+      bool pressed3                             = BIT128_GET(current_bits, cmd5); \
       if (pressed && !old_pressed) \
          command_event(cmd2, (void*)(intptr_t)0); \
       else if (pressed2 && !old_pressed2) \
@@ -2249,7 +2249,7 @@ struct rarch_state
     */
    gfx_ctx_flags_t deferred_flag_data;
 
-   retro_bits_t has_set_libretro_device;
+   input_bits_t has_set_libretro_device;
 
    rarch_system_info_t runloop_system;
    struct retro_frame_time_callback runloop_frame_time;
@@ -15546,7 +15546,7 @@ void retroarch_override_setting_set(
             if (val)
             {
                unsigned bit = *val;
-               BIT256_SET(p_rarch->has_set_libretro_device, bit);
+               BIT128_SET(p_rarch->has_set_libretro_device, bit);
             }
          }
          break;
@@ -15613,7 +15613,7 @@ void retroarch_override_setting_unset(
             if (val)
             {
                unsigned bit = *val;
-               BIT256_CLEAR(p_rarch->has_set_libretro_device, bit);
+               BIT128_CLEAR(p_rarch->has_set_libretro_device, bit);
             }
          }
          break;
@@ -21019,7 +21019,7 @@ static void input_overlay_poll(
                      desc->button_mask.data,
                      ARRAY_SIZE(desc->button_mask.data));
 
-               if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
+               if (BIT128_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
                   ol->next_index = desc->next_index;
             }
             break;
@@ -21289,7 +21289,7 @@ bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key)
    input_overlay_state_t *ol_state  = ol ? &ol->overlay_state : NULL;
    if (!ol)
       return false;
-   return (BIT256_GET(ol_state->buttons, key));
+   return (BIT128_GET(ol_state->buttons, key));
 }
 
 /*
@@ -21407,9 +21407,9 @@ static void input_poll_overlay(
       if (ol_state->analog[j])
          continue;
 
-      if ((BIT256_GET(ol->overlay_state.buttons, bind_plus)))
+      if ((BIT128_GET(ol->overlay_state.buttons, bind_plus)))
          ol_state->analog[j] += 0x7fff;
-      if ((BIT256_GET(ol->overlay_state.buttons, bind_minus)))
+      if ((BIT128_GET(ol->overlay_state.buttons, bind_minus)))
          ol_state->analog[j] -= 0x7fff;
    }
 
@@ -21430,13 +21430,13 @@ static void input_poll_overlay(
          analog_y = (float)ol_state->analog[analog_base + 1] / 0x7fff;
 
          if (analog_x <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
+            BIT128_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
          if (analog_x >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+            BIT128_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
          if (analog_y <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
+            BIT128_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
          if (analog_y >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
+            BIT128_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
          break;
       }
 
@@ -21784,16 +21784,13 @@ static void input_driver_poll(void)
             case RETRO_DEVICE_KEYBOARD:
             case RETRO_DEVICE_JOYPAD:
             case RETRO_DEVICE_ANALOG:
-               BIT256_CLEAR_ALL_PTR(&current_inputs);
+               BIT128_CLEAR_ALL_PTR(&current_inputs);
                {
                   unsigned k, j;
 
                   if (joypad_driver)
                   {
-                     int16_t ret = 0;
-                     if (  p_rarch->current_input && 
-                           p_rarch->current_input->input_state)
-                        ret = p_rarch->current_input->input_state(
+                     int16_t ret = p_rarch->current_input->input_state(
                               p_rarch->current_input_data,
                               &joypad_info[i],
                               p_rarch->libretro_input_binds,
@@ -21809,7 +21806,7 @@ static void input_driver_poll(void)
                                  RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
                                  p_rarch->libretro_input_binds[i]);
 
-                           BIT256_SET_PTR(p_new_state, k);
+                           BIT128_SET_PTR(p_new_state, k);
 
                            if (val)
                               p_new_state->analog_buttons[k] = val;
@@ -21851,7 +21848,7 @@ static void input_driver_poll(void)
                   bool remap_valid              = remap_button != RETROK_UNKNOWN;
                   if (remap_valid)
                   {
-                     unsigned current_button_value = BIT256_GET_PTR(p_new_state, j);
+                     unsigned current_button_value = BIT128_GET_PTR(p_new_state, j);
 #ifdef HAVE_OVERLAY
                      if (poll_overlay && i == 0)
                         current_button_value |= input_overlay_key_pressed(overlay_pointer, j);
@@ -21882,7 +21879,7 @@ static void input_driver_poll(void)
                 * other button than the default one, then it sets
                 * the bit on the mapper input bitmap, later on the
                 * original input is cleared in input_state */
-               BIT256_CLEAR_ALL(handle->buttons[i]);
+               BIT128_CLEAR_ALL(handle->buttons[i]);
 
                for (j = 0; j < 8; j++)
                   handle->analog_value[i][j] = 0;
@@ -21892,7 +21889,7 @@ static void input_driver_poll(void)
                   bool remap_valid;
                   unsigned remap_button         =
                      settings->uints.input_remap_ids[i][j];
-                  unsigned current_button_value = BIT256_GET_PTR(p_new_state, j);
+                  unsigned current_button_value = BIT128_GET_PTR(p_new_state, j);
 #ifdef HAVE_OVERLAY
                   if (poll_overlay && i == 0)
                      current_button_value      |= 
@@ -21907,7 +21904,7 @@ static void input_driver_poll(void)
                   /* gamepad override */
                   if (i == 0 && p_rarch->gamepad_input_override & (1 << j))
                   {
-                     BIT256_SET(handle->buttons[i], j);
+                     BIT128_SET(handle->buttons[i], j);
                   }
 #endif
 
@@ -21915,7 +21912,7 @@ static void input_driver_poll(void)
                   {
                      if (remap_button < RARCH_FIRST_CUSTOM_BIND)
                      {
-                        BIT256_SET(handle->buttons[i], remap_button);
+                        BIT128_SET(handle->buttons[i], remap_button);
                      }
                      else if (remap_button >= RARCH_FIRST_CUSTOM_BIND)
                      {
@@ -21933,7 +21930,7 @@ static void input_driver_poll(void)
                   }
                }
 
-               for (j = 0; j < 8; j++)
+               for (j = 0; j < 4; j++)
                {
                   unsigned k                 = j + RARCH_FIRST_CUSTOM_BIND;
                   int16_t current_axis_value = p_new_state->analogs[j];
@@ -21951,7 +21948,7 @@ static void input_driver_poll(void)
                            p_rarch->input_driver_axis_threshold
                             * 32767)
                      {
-                        BIT256_SET(handle->buttons[i], remap_axis);
+                        BIT128_SET(handle->buttons[i], remap_axis);
                      }
                      else
                      {
@@ -22100,7 +22097,7 @@ static int16_t input_state_device(
                         && port == 0
                         && p_rarch->overlay_ptr->alive)
                   {
-                     if ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, id)))
+                     if ((BIT128_GET(p_rarch->overlay_ptr->overlay_state.buttons, id)))
                         res_overlay |= 1;
                      if (p_rarch->overlay_ptr->alive)
                         res |= res_overlay;
@@ -22111,7 +22108,7 @@ static int16_t input_state_device(
          }
 
          if (input_remap_binds_enable && p_rarch->input_driver_mapper)
-            if (BIT256_GET(p_rarch->input_driver_mapper->buttons[port], id))
+            if (BIT128_GET(p_rarch->input_driver_mapper->buttons[port], id))
                res = 1;
 
          /* Don't allow turbo for D-pad. */
@@ -22481,7 +22478,7 @@ static INLINE bool input_keys_pressed_other_sources(
 {
 #ifdef HAVE_OVERLAY
    if (p_rarch->overlay_ptr &&
-         ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, i))))
+         ((BIT128_GET(p_rarch->overlay_ptr->overlay_state.buttons, i))))
       return true;
 #endif
 
@@ -22905,7 +22902,7 @@ static unsigned menu_event(
    unsigned menu_cancel_btn                        =
          (!input_swap_override && swap_ok_cancel_btns) ?
                RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
-   unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
+   unsigned ok_current                             = BIT128_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
 #ifdef HAVE_RGUI
    menu_handle_t             *menu                 = p_rarch->menu_driver_data;
@@ -22975,14 +22972,14 @@ static unsigned menu_event(
    {
       input_event_osk_iterate(p_rarch->osk_idx);
 
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+      if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          int old_osk_ptr = input_event_get_osk_ptr();
          if (old_osk_ptr < 33)
             input_event_set_osk_ptr(old_osk_ptr + OSK_CHARS_PER_LINE);
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
+      if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          int old_osk_ptr = input_event_get_osk_ptr();
          if (old_osk_ptr >= OSK_CHARS_PER_LINE)
@@ -22990,21 +22987,21 @@ static unsigned menu_event(
                   - OSK_CHARS_PER_LINE);
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
          int old_osk_ptr = input_event_get_osk_ptr();
          if (old_osk_ptr < 43)
             input_event_set_osk_ptr(old_osk_ptr + 1);
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
          int old_osk_ptr = input_event_get_osk_ptr();
          if (old_osk_ptr >= 1)
             input_event_set_osk_ptr(old_osk_ptr - 1);
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
          if (p_rarch->osk_idx > OSK_TYPE_UNKNOWN + 1)
             p_rarch->osk_idx = ((enum osk_type)
@@ -23015,7 +23012,7 @@ static unsigned menu_event(
                      : OSK_TYPE_LAST - 1));
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
          if (p_rarch->osk_idx < (menu_has_fb
                   ? OSK_SYMBOLS_PAGE1
@@ -23026,7 +23023,7 @@ static unsigned menu_event(
             p_rarch->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
+      if (BIT128_GET_PTR(p_trigger_input, menu_ok_btn))
       {
          int ptr = input_event_get_osk_ptr();
          if (ptr >= 0)
@@ -23034,43 +23031,43 @@ static unsigned menu_event(
                   ptr, menu_has_fb);
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+      if (BIT128_GET_PTR(p_trigger_input, menu_cancel_btn))
          input_keyboard_event(true, '\x7f', '\x7f',
                0, RETRO_DEVICE_KEYBOARD);
 
       /* send return key to close keyboard input window */
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+      if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
-      BIT256_CLEAR_ALL_PTR(p_trigger_input);
+      BIT128_CLEAR_ALL_PTR(p_trigger_input);
    }
    else
    {
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
+      if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
          ret = MENU_ACTION_UP;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
          ret = MENU_ACTION_DOWN;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
          ret = MENU_ACTION_LEFT;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
          ret = MENU_ACTION_RIGHT;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
          ret = MENU_ACTION_SCROLL_UP;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
          ret = MENU_ACTION_SCROLL_DOWN;
       else if (ok_trigger)
          ret = MENU_ACTION_OK;
-      else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+      else if (BIT128_GET_PTR(p_trigger_input, menu_cancel_btn))
          ret = MENU_ACTION_CANCEL;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
          ret = MENU_ACTION_SEARCH;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
          ret = MENU_ACTION_SCAN;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
          ret = MENU_ACTION_START;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+      else if (BIT128_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
          ret = MENU_ACTION_INFO;
-      else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
+      else if (BIT128_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
    }
 
@@ -24056,7 +24053,7 @@ static void input_menu_keys_pressed(
          if (bit_pressed || input_keys_pressed_other_sources(
                   p_rarch, i, p_new_state))
          {
-            BIT256_SET_PTR(p_new_state, i);
+            BIT128_SET_PTR(p_new_state, i);
          }
       }
 
@@ -24090,7 +24087,7 @@ static void input_menu_keys_pressed(
                || BIT64_GET(lifecycle_state, i)
                || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
          {
-            BIT256_SET_PTR(p_new_state, i);
+            BIT128_SET_PTR(p_new_state, i);
          }
       }
    }
@@ -24185,7 +24182,7 @@ static void input_keys_pressed(
          if (bit_pressed || input_keys_pressed_other_sources(p_rarch,
                   i, p_new_state))
          {
-            BIT256_SET_PTR(p_new_state, i);
+            BIT128_SET_PTR(p_new_state, i);
          }
       }
    }
@@ -24200,7 +24197,7 @@ static void input_keys_pressed(
             || BIT64_GET(lifecycle_state, i)
             || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
       {
-         BIT256_SET_PTR(p_new_state, i);
+         BIT128_SET_PTR(p_new_state, i);
       }
    }
 }
@@ -35693,7 +35690,7 @@ bool retroarch_override_setting_is_set(
             if (val)
             {
                unsigned bit = *val;
-               return BIT256_GET(p_rarch->has_set_libretro_device, bit);
+               return BIT128_GET(p_rarch->has_set_libretro_device, bit);
             }
          }
          break;
@@ -35982,60 +35979,60 @@ static bool input_driver_toggle_button_combo(
    switch (mode)
    {
       case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_L3_R3:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
          break;
       case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_START_SELECT:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
       case INPUT_TOGGLE_L3_R:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_L_R:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_DOWN_SELECT:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
       case INPUT_TOGGLE_HOLD_START:
       {
          static rarch_timer_t timer = {0};
 
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT128_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
          {
             /* timer only runs while start is held down */
             rarch_timer_end(&timer);
@@ -36192,7 +36189,7 @@ static enum runloop_state runloop_check_state(
       return RUNLOOP_STATE_QUIT;
 #endif
 
-   BIT256_CLEAR_ALL_PTR(&current_bits);
+   BIT128_CLEAR_ALL_PTR(&current_bits);
 
    p_rarch->input_driver_block_libretro_input   = false;
    p_rarch->input_driver_block_hotkey           = false;
@@ -36256,7 +36253,7 @@ static enum runloop_state runloop_check_state(
                      p_rarch->current_input_data,
                      &joypad_info, binds, 0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
-               BIT256_SET_PTR(&current_bits, ids[i][1]);
+               BIT128_SET_PTR(&current_bits, ids[i][1]);
          }
       }
    }
@@ -36291,7 +36288,7 @@ static enum runloop_state runloop_check_state(
           input_driver_toggle_button_combo(
              menu_toggle_gamepad_combo, current_time,
              &last_input)))
-      BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
+      BIT128_SET(current_bits, RARCH_MENU_TOGGLE);
 #endif
 
    if (p_rarch->input_driver_flushing_input > 0)
@@ -36304,9 +36301,9 @@ static enum runloop_state runloop_check_state(
 
       if (input_active || (p_rarch->input_driver_flushing_input > 0))
       {
-         BIT256_CLEAR_ALL(current_bits);
+         BIT128_CLEAR_ALL(current_bits);
          if (runloop_paused)
-            BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
+            BIT128_SET(current_bits, RARCH_PAUSE_TOGGLE);
       }
    }
 
@@ -36327,7 +36324,7 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_MENU
    if (menu_driver_binding_state)
-      BIT256_CLEAR_ALL(current_bits);
+      BIT128_CLEAR_ALL(current_bits);
 #endif
 
    /* Check fullscreen toggle */
@@ -36393,7 +36390,7 @@ static enum runloop_state runloop_check_state(
       static bool quit_key     = false;
       static bool old_quit_key = false;
       static bool runloop_exec = false;
-      quit_key                 = BIT256_GET(
+      quit_key                 = BIT128_GET(
             current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
       old_quit_key             = quit_key;
@@ -36669,7 +36666,7 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_pressed = false;
       char *menu_driver       = settings->arrays.menu_driver;
-      bool pressed            = BIT256_GET(
+      bool pressed            = BIT128_GET(
             current_bits, RARCH_MENU_TOGGLE) &&
          !string_is_equal(menu_driver, "null");
       bool core_type_is_dummy = p_rarch->current_core_type == CORE_TYPE_DUMMY;
@@ -36743,9 +36740,9 @@ static enum runloop_state runloop_check_state(
    /* Check if we have pressed the streaming toggle button */
    HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE, true, NULL);
 
-   if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
+   if (BIT128_GET(current_bits, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
-   else if (BIT256_GET(current_bits, RARCH_VOLUME_DOWN))
+   else if (BIT128_GET(current_bits, RARCH_VOLUME_DOWN))
       command_event(CMD_EVENT_VOLUME_DOWN, NULL);
 
 #ifdef HAVE_NETWORKING
@@ -36757,9 +36754,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
-      bool frameadvance_pressed     = BIT256_GET(
+      bool frameadvance_pressed     = BIT128_GET(
             current_bits, RARCH_FRAMEADVANCE);
-      bool pause_pressed            = BIT256_GET(
+      bool pause_pressed            = BIT128_GET(
             current_bits, RARCH_PAUSE_TOGGLE);
       bool trig_frameadvance        = frameadvance_pressed && !old_frameadvance;
 
@@ -36789,7 +36786,7 @@ static enum runloop_state runloop_check_state(
                CMD_EVENT_FULLSCREEN_TOGGLE, true, &toggle);
 
          /* Check if it's not oneshot */
-         if (!(trig_frameadvance || BIT256_GET(current_bits, RARCH_REWIND)))
+         if (!(trig_frameadvance || BIT128_GET(current_bits, RARCH_REWIND)))
             focused = false;
       }
    }
@@ -36800,25 +36797,25 @@ static enum runloop_state runloop_check_state(
       to send off if it's run. */
    if (settings->bools.ai_service_enable)
    {
-      p_rarch->ai_gamepad_state[0]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
-      p_rarch->ai_gamepad_state[1]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
-      p_rarch->ai_gamepad_state[2]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
-      p_rarch->ai_gamepad_state[3]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
+      p_rarch->ai_gamepad_state[0]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
+      p_rarch->ai_gamepad_state[1]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
+      p_rarch->ai_gamepad_state[2]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      p_rarch->ai_gamepad_state[3]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
 
-      p_rarch->ai_gamepad_state[4]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
-      p_rarch->ai_gamepad_state[5]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
-      p_rarch->ai_gamepad_state[6]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
-      p_rarch->ai_gamepad_state[7]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      p_rarch->ai_gamepad_state[4]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+      p_rarch->ai_gamepad_state[5]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+      p_rarch->ai_gamepad_state[6]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+      p_rarch->ai_gamepad_state[7]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 
-      p_rarch->ai_gamepad_state[8]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
-      p_rarch->ai_gamepad_state[9]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
-      p_rarch->ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
-      p_rarch->ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
+      p_rarch->ai_gamepad_state[8]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
+      p_rarch->ai_gamepad_state[9]  = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
+      p_rarch->ai_gamepad_state[10] = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
+      p_rarch->ai_gamepad_state[11] = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
 
-      p_rarch->ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
-      p_rarch->ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
-      p_rarch->ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
-      p_rarch->ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
+      p_rarch->ai_gamepad_state[12] = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
+      p_rarch->ai_gamepad_state[13] = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
+      p_rarch->ai_gamepad_state[14] = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
+      p_rarch->ai_gamepad_state[15] = BIT128_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
    }
 #endif
 #endif
@@ -36837,9 +36834,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_button_state      = false;
       static bool old_hold_button_state = false;
-      bool new_button_state             = BIT256_GET(
+      bool new_button_state             = BIT128_GET(
             current_bits, RARCH_FAST_FORWARD_KEY);
-      bool new_hold_button_state        = BIT256_GET(
+      bool new_hold_button_state        = BIT128_GET(
             current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
       bool check1                       = !new_hold_button_state;
       bool check2                       = new_button_state && !old_button_state;
@@ -36890,9 +36887,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_should_slot_increase = false;
       static bool old_should_slot_decrease = false;
-      bool should_slot_increase            = BIT256_GET(
+      bool should_slot_increase            = BIT128_GET(
             current_bits, RARCH_STATE_SLOT_PLUS);
-      bool should_slot_decrease            = BIT256_GET(
+      bool should_slot_decrease            = BIT128_GET(
             current_bits, RARCH_STATE_SLOT_MINUS);
       bool check1                          = true;
       bool check2                          = should_slot_increase && !old_should_slot_increase;
@@ -36946,7 +36943,7 @@ static enum runloop_state runloop_check_state(
       s[0]           = '\0';
 
       rewinding      = state_manager_check_rewind(
-            BIT256_GET(current_bits, RARCH_REWIND),
+            BIT128_GET(current_bits, RARCH_REWIND),
             settings->uints.rewind_granularity,
             p_rarch->runloop_paused,
             s, sizeof(s), &t);
@@ -36970,9 +36967,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_slowmotion_button_state      = false;
       static bool old_slowmotion_hold_button_state = false;
-      bool new_slowmotion_button_state             = BIT256_GET(
+      bool new_slowmotion_button_state             = BIT128_GET(
             current_bits, RARCH_SLOWMOTION_KEY);
-      bool new_slowmotion_hold_button_state        = BIT256_GET(
+      bool new_slowmotion_hold_button_state        = BIT128_GET(
             current_bits, RARCH_SLOWMOTION_HOLD_KEY);
 
       if (new_slowmotion_button_state && !old_slowmotion_button_state)
