@@ -2188,6 +2188,10 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
+#ifdef HAVE_GFX_WIDGETS
+   dispgfx_widget_t dispwidget_st;
+#endif
+
    input_keyboard_press_t keyboard_press_cb;
 
    turbo_buttons_t input_driver_turbo_btns;
@@ -10877,6 +10881,13 @@ gfx_display_t *disp_get_ptr(void)
    struct rarch_state   *p_rarch  = &rarch_st;
    return &p_rarch->dispgfx;
 }
+
+void *dispwidget_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->dispwidget_st;
+}
+
 
 settings_t *config_get_ptr(void)
 {

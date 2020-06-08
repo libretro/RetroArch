@@ -25,18 +25,8 @@
 #include <string/stdstring.h>
 #include <retro_math.h>
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#define SLOCK_LOCK(x) slock_lock(x)
-#define SLOCK_UNLOCK(x) slock_unlock(x)
-#else
-#define SLOCK_LOCK(x)
-#define SLOCK_UNLOCK(x)
-#endif
-
-#include "gfx_widgets.h"
-
 #include "gfx_display.h"
+#include "gfx_widgets.h"
 #include "font_driver.h"
 
 #include "../msg_hash.h"
@@ -47,13 +37,17 @@
 #include "../cheevos/badges.h"
 #endif
 
+#ifdef HAVE_THREADS
+#define SLOCK_LOCK(x) slock_lock(x)
+#define SLOCK_UNLOCK(x) slock_unlock(x)
+#else
+#define SLOCK_LOCK(x)
+#define SLOCK_UNLOCK(x)
+#endif
+
 #define BASE_FONT_SIZE 32.0f
 
 #define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.69f)
-
-#ifdef HAVE_CHEEVOS
-#define CHEEVO_QUEUE_SIZE 8
-#endif
 
 #ifdef HAVE_MENU
 #define ANIMATION_LOAD_CONTENT_DURATION            333
@@ -61,192 +55,6 @@
 #define LOAD_CONTENT_ANIMATION_INITIAL_ICON_SIZE   320
 #define LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE    240
 #endif
-
-enum gfx_widgets_icon
-{
-   MENU_WIDGETS_ICON_PAUSED = 0,
-   MENU_WIDGETS_ICON_FAST_FORWARD,
-   MENU_WIDGETS_ICON_REWIND,
-   MENU_WIDGETS_ICON_SLOW_MOTION,
-
-   MENU_WIDGETS_ICON_HOURGLASS,
-   MENU_WIDGETS_ICON_CHECK,
-
-   MENU_WIDGETS_ICON_INFO,
-
-   MENU_WIDGETS_ICON_ACHIEVEMENT,
-
-   MENU_WIDGETS_ICON_LAST
-};
-
-/* Font data */
-typedef struct
-{
-   gfx_widget_font_data_t regular;
-   gfx_widget_font_data_t bold;
-   gfx_widget_font_data_t msg_queue;
-} gfx_widget_fonts_t;
-
-#ifdef HAVE_CHEEVOS
-typedef struct cheevo_popup
-{
-   char* title;
-   uintptr_t badge;
-} cheevo_popup;
-#endif
-
-typedef struct menu_widget_msg
-{
-   char *msg;
-   char *msg_new;
-   float msg_transition_animation;
-   unsigned msg_len;
-   unsigned duration;
-
-   unsigned text_height;
-
-   float offset_y;
-   float alpha;
-
-   /* Is it currently doing the fade out animation ? */
-   bool dying;
-   /* Has the timer expired ? if so, should be set to dying */
-   bool expired;
-   unsigned width;
-
-   gfx_timer_t expiration_timer;
-   bool expiration_timer_started;
-
-   retro_task_t *task_ptr;
-   /* Used to detect title change */
-   char *task_title_ptr;
-   /* How many tasks have used this notification? */
-   uint8_t task_count;
-
-   int8_t task_progress;
-   bool task_finished;
-   bool task_error;
-   bool task_cancelled;
-   uint32_t task_ident;
-
-   /* Unfold animation */
-   bool unfolded;
-   bool unfolding;
-   float unfold;
-
-   float hourglass_rotation;
-   gfx_timer_t hourglass_timer;
-} menu_widget_msg_t;
-
-typedef struct dispgfx_widget
-{
-   /* There can only be one message animation at a time to 
-    * avoid confusing users */
-   bool widgets_moving;
-   bool widgets_inited;
-   bool msg_queue_has_icons;
-#ifdef HAVE_MENU
-   bool load_content_animation_running;
-#endif
-
-#ifdef HAVE_CHEEVOS
-   int cheevo_popup_queue_read_index;
-#endif
-#ifdef HAVE_TRANSLATE
-   int ai_service_overlay_state;
-#endif
-#ifdef HAVE_CHEEVOS
-   int cheevo_popup_queue_write_index;
-#endif
-#ifdef HAVE_CHEEVOS
-   float cheevo_unfold;
-   float cheevo_y;
-#endif
-#ifdef HAVE_MENU
-   float load_content_animation_icon_color[16];
-   float load_content_animation_icon_size;
-   float load_content_animation_icon_alpha;
-   float load_content_animation_fade_alpha;
-   float load_content_animation_final_fade_alpha;
-#endif
-   float last_scale_factor;
-#ifdef HAVE_MENU
-   unsigned load_content_animation_icon_size_initial;
-   unsigned load_content_animation_icon_size_target;
-#endif
-#ifdef HAVE_TRANSLATE
-   unsigned ai_service_overlay_width;
-   unsigned ai_service_overlay_height;
-#endif
-   unsigned last_video_width;
-   unsigned last_video_height;
-   unsigned msg_queue_kill;
-   /* Count of messages bound to a task in current_msgs */
-   unsigned msg_queue_tasks_count;
-#ifdef HAVE_CHEEVOS
-   unsigned cheevo_width;
-   unsigned cheevo_height;
-#endif
-   unsigned simple_widget_padding;
-   unsigned simple_widget_height;
-
-   /* Used for both generic and libretro messages */
-   unsigned generic_message_height;
-
-   unsigned msg_queue_height;
-   unsigned msg_queue_spacing;
-   unsigned msg_queue_rect_start_x;
-   unsigned msg_queue_internal_icon_size;
-   unsigned msg_queue_internal_icon_offset;
-   unsigned msg_queue_icon_size_x;
-   unsigned msg_queue_icon_size_y;
-   unsigned msg_queue_icon_offset_y;
-   unsigned msg_queue_scissor_start_x;
-   unsigned msg_queue_default_rect_width_menu_alive;
-   unsigned msg_queue_default_rect_width;
-   unsigned msg_queue_regular_padding_x;
-   unsigned msg_queue_regular_text_start;
-   unsigned msg_queue_task_text_start_x;
-   unsigned msg_queue_task_rect_start_x;
-   unsigned msg_queue_task_hourglass_x;
-   unsigned divider_width_1px;
-
-   uint64_t gfx_widgets_frame_count;
-
-#ifdef HAVE_MENU
-   uintptr_t load_content_animation_icon;
-#endif
-#ifdef HAVE_TRANSLATE
-   uintptr_t ai_service_overlay_texture;
-#endif
-   uintptr_t msg_queue_icon;
-   uintptr_t msg_queue_icon_outline;
-   uintptr_t msg_queue_icon_rect;
-   uintptr_t gfx_widgets_icons_textures[
-   MENU_WIDGETS_ICON_LAST];
-
-   char gfx_widgets_fps_text[255];
-#ifdef HAVE_MENU
-   char *load_content_animation_content_name;
-   char *load_content_animation_playlist_name;
-#endif
-#ifdef HAVE_MENU
-   gfx_timer_t load_content_animation_end_timer;
-#endif
-   uintptr_t gfx_widgets_generic_tag;
-   gfx_widget_fonts_t gfx_widget_fonts;
-#ifdef HAVE_CHEEVOS
-/* Achievement notification */
-   cheevo_popup cheevo_popup_queue[CHEEVO_QUEUE_SIZE];
-   gfx_timer_t cheevo_timer;
-#endif
-   fifo_buffer_t *msg_queue;
-   file_list_t *current_msgs;
-#if defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)
-   slock_t* cheevo_popup_queue_lock;
-#endif
-} dispgfx_widget_t;
-
 
 /* TODO/FIXME - global state - perhaps move outside this file */
 static float msg_queue_background[16]                    =
@@ -322,13 +130,6 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget);
 static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget);
 static void gfx_widgets_layout(dispgfx_widget_t *p_dispwidget,
       bool is_threaded, const char *dir_assets, char *font_path);
-
-void *dispwidget_get_ptr(void)
-{
-   /* TODO/FIXME - static global state - perhaps move outside this file */
-   static dispgfx_widget_t dispwidget_st;
-   return &dispwidget_st;
-}
 
 gfx_widget_font_data_t* gfx_widgets_get_font_regular(void *data)
 {
