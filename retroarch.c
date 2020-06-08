@@ -1825,6 +1825,9 @@ struct rarch_state
    enum overlay_visibility *overlay_visibility;
 #endif
 
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active;
+#endif
 #ifdef HAVE_NETWORKING
 /* Only used before init_netplay */
    bool netplay_enabled;
@@ -10600,7 +10603,8 @@ static bool is_accessibility_enabled(struct rarch_state *p_rarch)
 bool gfx_widgets_ready(void)
 {
 #ifdef HAVE_GFX_WIDGETS
-   return gfx_widgets_active();
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->widgets_active;
 #else
    return false;
 #endif
@@ -11194,7 +11198,7 @@ bool retroarch_apply_shader(
                   msg_hash_to_str(MSG_SHADER),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
 #ifdef HAVE_GFX_WIDGETS
-         if (gfx_widgets_active())
+         if (p_rarch->widgets_active)
             gfx_widget_set_message(msg);
          else
 #endif
@@ -12951,7 +12955,7 @@ static void command_event_set_volume(struct rarch_state *p_rarch, float gain)
          new_volume);
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_active())
+   if (p_rarch->widgets_active)
       gfx_widget_volume_update_and_show(new_volume,
             p_rarch->audio_driver_mute_enable);
    else
@@ -13974,7 +13978,7 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
    bool is_paused                 = p_rarch->runloop_paused;
    bool is_idle                   = p_rarch->runloop_idle;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active            = gfx_widgets_active();
+   bool widgets_active            = p_rarch->widgets_active;
 
    if (widgets_active)
       p_rarch->gfx_widgets_paused = is_paused;
@@ -14536,7 +14540,7 @@ bool command_event(enum event_command cmd, void *data)
                !p_rarch->audio_driver_mute_enable;
 
 #if defined(HAVE_GFX_WIDGETS)
-            if (gfx_widgets_active())
+            if (p_rarch->widgets_active)
                gfx_widget_volume_update_and_show(
                      settings->floats.audio_volume,
                      p_rarch->audio_driver_mute_enable);
@@ -17233,7 +17237,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #if defined(HAVE_GFX_WIDGETS)
-         if (gfx_widgets_active())
+         if (p_rarch->widgets_active)
             gfx_widget_set_libretro_message(dispwidget_get_ptr(),
                   msg->msg,
                   roundf((float)msg->frames / 60.0f * 1000.0f));
@@ -17324,8 +17328,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 #if defined(HAVE_GFX_WIDGETS)
                /* Handle 'alternate' non-queued notifications */
                case RETRO_MESSAGE_TYPE_NOTIFICATION_ALT:
-
-                  if (gfx_widgets_active())
+                  if (p_rarch->widgets_active)
                      gfx_widget_set_libretro_message(dispwidget_get_ptr(),
                            msg->msg, msg->duration);
                   else
@@ -17340,8 +17343,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                 * implement a separate 'progress bar' widget to
                 * handle these correctly */
                case RETRO_MESSAGE_TYPE_PROGRESS:
-
-                  if (gfx_widgets_active())
+                  if (p_rarch->widgets_active)
                      gfx_widget_set_libretro_message(dispwidget_get_ptr(),
                            msg->msg, msg->duration);
                   else
@@ -30425,15 +30427,15 @@ static void video_driver_frame(const void *data, unsigned width,
    static float last_fps, frame_time;
    retro_time_t new_time;
    video_frame_info_t video_info;
-#if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active;
-#endif
    struct rarch_state *p_rarch  = &rarch_st;
    const enum retro_pixel_format
       video_driver_pix_fmt      = p_rarch->video_driver_pix_fmt;
    bool runloop_idle            = p_rarch->runloop_idle;
    bool video_driver_active     = p_rarch->video_driver_active;
    settings_t *settings         = p_rarch->configuration_settings;
+#if defined(HAVE_GFX_WIDGETS)
+   bool widgets_active          = p_rarch->widgets_active;
+#endif
 
    fps_text[0]                  = '\0';
    video_driver_msg[0]          = '\0';
@@ -30442,9 +30444,6 @@ static void video_driver_frame(const void *data, unsigned width,
       return;
 
    new_time                     = cpu_features_get_time_usec();
-#if defined(HAVE_GFX_WIDGETS)
-   widgets_active               = gfx_widgets_active();
-#endif
 
    if (data)
       p_rarch->frame_cache_data = data;
@@ -30657,8 +30656,8 @@ static void video_driver_frame(const void *data, unsigned width,
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
       {
-         bool msg_found = false;
          msg_queue_entry_t msg_entry;
+         bool msg_found = false;
 
          RUNLOOP_MSG_QUEUE_LOCK();
          msg_found                       = msg_queue_extract(
@@ -32416,7 +32415,9 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      gfx_widgets_init(video_is_threaded,
+      p_rarch->widgets_active     = gfx_widgets_init(
+            (uintptr_t)&p_rarch->widgets_active,
+            video_is_threaded,
             p_rarch->video_driver_width,
             p_rarch->video_driver_height,
             video_is_fullscreen,
@@ -32494,7 +32495,8 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   gfx_widgets_deinit();
+   if (gfx_widgets_deinit())
+      p_rarch->widgets_active = false;
 #endif
 
 #ifdef HAVE_MENU
@@ -32560,7 +32562,8 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   gfx_widgets_deinit();
+   if (gfx_widgets_deinit())
+      p_rarch->widgets_active = false;
 #endif
 
    /* Video */
@@ -34885,8 +34888,9 @@ static void runloop_task_msg_queue_push(
 {
 #if defined(HAVE_GFX_WIDGETS)
    struct rarch_state *p_rarch = &rarch_st;
+   bool widgets_active         = p_rarch->widgets_active;
 
-   if (gfx_widgets_active() && task->title && !task->mute)
+   if (widgets_active && task->title && !task->mute)
    {
       RUNLOOP_MSG_QUEUE_LOCK();
       ui_companion_driver_msg_queue_push(p_rarch, msg,
@@ -35873,6 +35877,9 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_category category)
 {
    struct rarch_state *p_rarch = &rarch_st;
+#if defined(HAVE_GFX_WIDGETS)
+   bool widgets_active         = p_rarch->widgets_active;
+#endif
 
    RUNLOOP_MSG_QUEUE_LOCK();
 #ifdef HAVE_ACCESSIBILITY
@@ -35880,7 +35887,7 @@ void runloop_msg_queue_push(const char *msg,
       accessibility_speak_priority(p_rarch, (char*) msg, 0);
 #endif
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_active())
+   if (widgets_active)
    {
       gfx_widgets_msg_queue_push(NULL, msg,
             roundf((float)duration / 60.0f * 1000.0f),
@@ -36126,7 +36133,7 @@ static enum runloop_state runloop_check_state(
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active                 = gfx_widgets_active();
+   bool widgets_active                 = p_rarch->widgets_active;
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)

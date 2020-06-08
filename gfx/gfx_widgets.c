@@ -140,7 +140,6 @@ typedef struct menu_widget_msg
 
 typedef struct dispgfx_widget
 {
-   bool widgets_active;
    /* There can only be one message animation at a time to 
     * avoid confusing users */
    bool widgets_moving;
@@ -330,12 +329,6 @@ void *dispwidget_get_ptr(void)
    /* TODO/FIXME - static global state - perhaps move outside this file */
    static dispgfx_widget_t dispwidget_st;
    return &dispwidget_st;
-}
-
-bool gfx_widgets_active(void)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-   return p_dispwidget->widgets_active;
 }
 
 void gfx_widgets_set_persistence(bool persist)
@@ -1630,7 +1623,8 @@ void gfx_widgets_frame(void *data)
 #endif
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
-   if (!p_dispwidget->widgets_active)
+   /* TODO/FIXME - find something better */
+   if (!gfx_widgets_ready())
       return;
 
    /* ...but assigning them costs a tiny amount,
@@ -2026,7 +2020,7 @@ void gfx_widgets_frame(void *data)
    gfx_display_unset_viewport(video_width, video_height);
 }
 
-bool gfx_widgets_init(
+bool gfx_widgets_init(uintptr_t widgets_active_ptr,
       bool video_is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
@@ -2037,8 +2031,8 @@ bool gfx_widgets_init(
    p_dispwidget->cheevo_popup_queue_read_index = -1;
 #endif
    p_dispwidget->divider_width_1px             = 1;
-   p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)
-      &p_dispwidget->widgets_active;
+   p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)widgets_active_ptr;
+
    if (!gfx_display_init_first_driver(video_is_threaded))
       goto error;
 
@@ -2081,8 +2075,6 @@ bool gfx_widgets_init(
          width, height, fullscreen,
          dir_assets, font_path);
 
-   p_dispwidget->widgets_active = true;
-
    return true;
 
 error:
@@ -2096,7 +2088,6 @@ bool gfx_widgets_deinit(void)
    if (!p_dispwidget->widgets_inited)
       return false;
 
-   p_dispwidget->widgets_active     = false;
    gfx_widgets_context_destroy(p_dispwidget);
 
    if (!p_dispwidget->widgets_persisting)
@@ -2463,7 +2454,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    size_t i;
 
    p_dispwidget->widgets_inited     = false;
-   p_dispwidget->widgets_active     = false;
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
