@@ -450,9 +450,6 @@ void gfx_widgets_msg_queue_push(
    menu_widget_msg_t    *msg_widget = NULL;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
-   if (!p_dispwidget->widgets_active)
-      return;
-
    if (fifo_write_avail(p_dispwidget->msg_queue) > 0)
    {
       /* Get current msg if it exists */
@@ -1023,21 +1020,17 @@ void gfx_widgets_iterate(
       bool is_threaded)
 {
    size_t i;
-   float scale_factor;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-
-   if (!p_dispwidget->widgets_active)
-      return;
-
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
-         gfx_display_get_widget_pixel_scale(width, height, fullscreen) :
-               gfx_display_get_widget_dpi_scale(width, height, fullscreen);
+   float scale_factor               = (
+         gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
+      ? gfx_display_get_widget_pixel_scale(width, height, fullscreen) 
+      : gfx_display_get_widget_dpi_scale(width, height, fullscreen);
 
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
-       (width  != p_dispwidget->last_video_width) ||
-       (height != p_dispwidget->last_video_height))
+       (width        != p_dispwidget->last_video_width) ||
+       (height       != p_dispwidget->last_video_height))
    {
       p_dispwidget->last_scale_factor = scale_factor;
       p_dispwidget->last_video_width  = width;
@@ -2546,8 +2539,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 bool gfx_widgets_set_fps_text(const char *new_fps_text)
 {
    dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
-   if (!p_dispwidget->widgets_active)
-      return false;
 
    strlcpy(p_dispwidget->gfx_widgets_fps_text,
          new_fps_text, sizeof(p_dispwidget->gfx_widgets_fps_text));
@@ -2633,9 +2624,6 @@ void gfx_widgets_start_load_content_animation(
    float icon_color[16]             = 
       COLOR_HEX_TO_FLOAT(0x0473C9, 1.0f); /* TODO: random color */
    unsigned timing                  = 0;
-
-   if (!p_dispwidget->widgets_active)
-      return;
 
    /* Prepare data */
    p_dispwidget->load_content_animation_icon         = 0;
@@ -2830,9 +2818,6 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    int           start_notification = 1;
-
-   if (!p_dispwidget->widgets_active)
-      return;
 
    if (p_dispwidget->cheevo_popup_queue_read_index < 0)
    {
