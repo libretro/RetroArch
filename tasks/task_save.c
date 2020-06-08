@@ -427,7 +427,7 @@ bool content_undo_load_state(void)
    if (block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
-      RARCH_LOG("%s.\n",
+      RARCH_LOG("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
       blocks = (struct sram_block*)
          calloc(task_save_files->size, sizeof(*blocks));
@@ -990,7 +990,7 @@ static void content_load_state_cb(retro_task_t *task,
    if (block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
-      RARCH_LOG("%s.\n",
+      RARCH_LOG("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
       blocks = (struct sram_block*)
          calloc(task_save_files->size, sizeof(*blocks));
@@ -1307,7 +1307,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    {
       if (path_is_valid(path) && !autosave)
       {
-         /* Before overwritting the savestate file, load it into a buffer
+         /* Before overwriting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
          /* TODO/FIXME - Use msg_hash_to_str here */
          RARCH_LOG("%s ...\n",
@@ -1542,7 +1542,7 @@ bool content_load_ram_file(unsigned slot)
    {
       if (rc > (ssize_t)mem_info.size)
       {
-         RARCH_WARN("SRAM is larger than implementation expects, "
+         RARCH_WARN("[SRAM]: SRAM is larger than implementation expects, "
                "doing partial load (truncating %u %s %s %u).\n",
                (unsigned)rc,
                msg_hash_to_str(MSG_BYTES),
@@ -1621,7 +1621,7 @@ static bool dump_to_file_desperate(const void *data,
       return false;
    }
 
-   RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
+   RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
    free(path);
    return true;
 }
@@ -1643,7 +1643,7 @@ bool content_save_ram_file(unsigned slot, bool compress)
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
 
-   RARCH_LOG("%s #%u %s \"%s\".\n",
+   RARCH_LOG("[SRAM]: %s #%u %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_RAM_TYPE),
          ram.type,
          msg_hash_to_str(MSG_TO),
@@ -1660,9 +1660,9 @@ bool content_save_ram_file(unsigned slot, bool compress)
 
    if (!write_success)
    {
-      RARCH_ERR("%s.\n",
+      RARCH_ERR("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
-      RARCH_WARN("Attempting to recover ...\n");
+      RARCH_WARN("[SRAM]: Attempting to recover ...\n");
 
       /* In case the file could not be written to,
        * the fallback function 'dump_to_file_desperate'
@@ -1670,12 +1670,12 @@ bool content_save_ram_file(unsigned slot, bool compress)
       if (!dump_to_file_desperate(
                mem_info.data, mem_info.size, ram.type))
       {
-         RARCH_WARN("Failed ... Cannot recover save file.\n");
+         RARCH_WARN("[SRAM]: Failed ... Cannot recover save file.\n");
       }
       return false;
    }
 
-   RARCH_LOG("%s \"%s\".\n",
+   RARCH_LOG("[SRAM]: %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
          ram.path);
 
