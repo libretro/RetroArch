@@ -1533,10 +1533,6 @@ enum
 static int rcheevos_iterate(rcheevos_coro_t* coro)
 {
    char buffer[2048];
-   ssize_t num_read          = 0;
-   size_t to_read            = 4096;
-   uint8_t* ptr              = NULL;
-   const char* end           = NULL;
 #ifdef CHEEVOS_TIME_HASH
    retro_time_t start;
 #endif
