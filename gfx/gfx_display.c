@@ -1920,7 +1920,7 @@ bool gfx_display_init_first_driver(bool video_is_threaded)
                video_is_threaded))
          continue;
 
-      RARCH_LOG("[Menu]: Found menu display driver: \"%s\".\n",
+      RARCH_LOG("[Display]: Found display driver: \"%s\".\n",
             gfx_display_ctx_drivers[i]->ident);
       p_disp->dispctx = gfx_display_ctx_drivers[i];
       return true;
