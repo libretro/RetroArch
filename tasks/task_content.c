@@ -737,7 +737,7 @@ static bool load_content_from_compressed_archive(
    new_basedir[0]                    = '\0';
    attributes.i                      = 0;
 
-   RARCH_LOG("Compressed file in case of need_fullpath."
+   RARCH_LOG("[CONTENT LOAD]: Compressed file in case of need_fullpath."
          " Now extracting to temporary directory.\n");
 
    if (!string_is_empty(content_ctx->directory_cache))
@@ -745,7 +745,7 @@ static bool load_content_from_compressed_archive(
 
    if (!path_is_directory(new_basedir))
    {
-      RARCH_WARN("Tried extracting to cache directory, but "
+      RARCH_WARN("[CONTENT LOAD]: Tried extracting to cache directory, but "
             "cache directory was not set or found. "
             "Setting cache directory to directory "
             "derived by basename...\n");
@@ -981,13 +981,14 @@ static bool content_file_load(
             new_basedir[0]          = '\0';
             attributes.i            = 0;
 
-            RARCH_LOG("Core does not support VFS - copying to cache directory\n");
+            RARCH_LOG("[CONTENT LOAD]: Core does not support VFS - copying to cache directory\n");
 
             if (!string_is_empty(content_ctx->directory_cache))
                strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
             if (string_is_empty(new_basedir) || !path_is_directory(new_basedir) || !is_path_accessible_using_standard_io(new_basedir))
             {
-               RARCH_WARN("Tried copying to cache directory, but "
+               RARCH_WARN("[CONTENT LOAD]: Tried copying to cache directory"
+                     ", but "
                      "cache directory was not set or found. "
                      "Setting cache directory to root of "
                      "writable app directory...\n");
@@ -1046,7 +1047,7 @@ static bool content_file_load(
          }
 #endif
 
-         RARCH_LOG("%s\n", msg_hash_to_str(
+         RARCH_LOG("[CONTENT LOAD]: %s\n", msg_hash_to_str(
                   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
          strlcpy(p_content->pending_rom_crc_path,
                path, sizeof(p_content->pending_rom_crc_path));
@@ -1508,7 +1509,7 @@ static bool firmware_update_status(
             msg_hash_to_str(MSG_FIRMWARE),
             100, 500, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("Load content blocked. Reason: %s\n",
+      RARCH_LOG("[CONTENT LOAD]: Load content blocked. Reason: %s\n",
             msg_hash_to_str(MSG_FIRMWARE));
 
       return true;
@@ -1583,7 +1584,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -1677,7 +1678,7 @@ bool task_push_load_content_from_playlist_from_menu(
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -1782,7 +1783,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -1912,7 +1913,7 @@ bool task_push_load_content_with_new_core_from_menu(
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -2060,7 +2061,7 @@ end:
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
 
@@ -2316,7 +2317,7 @@ void content_set_subsystem(unsigned idx)
       p_content->pending_subsystem_rom_num = subsystem->num_roms;
    }
 
-   RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
+   RARCH_LOG("[Subsystem]: Setting current subsystem to: %d(%s) Content amount: %d\n",
       p_content->pending_subsystem_id,
       p_content->pending_subsystem_ident,
       p_content->pending_subsystem_rom_num);
@@ -2383,8 +2384,8 @@ void content_add_subsystem(const char* path)
    strlcpy(p_content->pending_subsystem_roms[
          p_content->pending_subsystem_rom_id],
          path, pending_size);
-   RARCH_LOG("[subsystem] subsystem id: %d subsystem ident:"
-         " %s rom id: %d, rom path: %s\n",
+   RARCH_LOG("[Subsystem]: Subsystem id: %d Subsystem ident:"
+         " %s Content ID: %d, Content Path: %s\n",
          p_content->pending_subsystem_id,
          p_content->pending_subsystem_ident,
          p_content->pending_subsystem_rom_id,
@@ -2420,7 +2421,7 @@ uint32_t content_get_crc(void)
       p_content->pending_rom_crc   = false;
       p_content->rom_crc           = file_crc32(0,
             (const char*)p_content->pending_rom_crc_path);
-      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
+      RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
    }
    return p_content->rom_crc;
 }
@@ -2448,10 +2449,10 @@ void content_deinit(void)
       {
          const char *path = p_content->temporary_content->elems[i].data;
 
-         RARCH_LOG("%s: %s.\n",
+         RARCH_LOG("[CONTENT LOAD]: %s: %s.\n",
                msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
          if (filestream_delete(path) != 0)
-            RARCH_ERR("%s: %s.\n",
+            RARCH_ERR("[CONTENT LOAD]: %s: %s.\n",
                   msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
                   path);
       }
@@ -2577,11 +2578,11 @@ bool content_init(void)
    {
       if (ret)
       {
-         RARCH_LOG("%s\n", error_string);
+         RARCH_LOG("[CONTENT LOAD]: %s\n", error_string);
       }
       else
       {
-         RARCH_ERR("%s\n", error_string);
+         RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
       }
       runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(error_string);
