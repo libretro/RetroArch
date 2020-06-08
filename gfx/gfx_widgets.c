@@ -1645,7 +1645,8 @@ void gfx_widgets_frame(void *data)
          )
    {
       const char *text      = *p_dispwidget->gfx_widgets_fps_text == '\0' 
-         ? "N/A" : p_dispwidget->gfx_widgets_fps_text;
+         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) 
+         : p_dispwidget->gfx_widgets_fps_text;
 
       int text_width        = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,

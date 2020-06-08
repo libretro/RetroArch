@@ -23317,16 +23317,22 @@ static void menu_input_pointer_close_messagebox(struct rarch_state *p_rarch)
    /* > Info box */
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN)))
       pop_stack = true;
+
    /* > Help box */
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP)) ||
-       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONTROLS)) ||
-       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE)) ||
-       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOADING_CONTENT)) ||
-       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SCANNING_CONTENT)) ||
-       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD)) ||
-       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING)) ||
-       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO)) ||
-       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
+   if (string_starts_with(label, "help"))
+      if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONTROLS))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOADING_CONTENT))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SCANNING_CONTENT))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
+         pop_stack = true;
+   if (
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
       pop_stack = true;
 
    /* Pop stack, if required */
@@ -26755,10 +26761,10 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (i > (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1))
-      return "N/A";
+      return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
    if (!string_is_empty(p_rarch->audio_mixer_streams[i].name))
       return p_rarch->audio_mixer_streams[i].name;
-   return "N/A";
+   return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 }
 
 static void audio_driver_mixer_deinit(struct rarch_state *p_rarch)
@@ -31540,24 +31546,30 @@ enum gfx_ctx_api video_context_driver_get_api(void)
       const char *video_ident  = (p_rarch->current_video)
          ? p_rarch->current_video->ident
          : NULL;
-      if (string_is_equal(video_ident, "d3d9"))
-         return GFX_CTX_DIRECT3D9_API;
-      else if (string_is_equal(video_ident, "d3d10"))
-         return GFX_CTX_DIRECT3D10_API;
-      else if (string_is_equal(video_ident, "d3d11"))
-         return GFX_CTX_DIRECT3D11_API;
-      else if (string_is_equal(video_ident, "d3d12"))
-         return GFX_CTX_DIRECT3D12_API;
+      if (string_starts_with(video_ident, "d3d"))
+      {
+         if (string_is_equal(video_ident, "d3d9"))
+            return GFX_CTX_DIRECT3D9_API;
+         else if (string_is_equal(video_ident, "d3d10"))
+            return GFX_CTX_DIRECT3D10_API;
+         else if (string_is_equal(video_ident, "d3d11"))
+            return GFX_CTX_DIRECT3D11_API;
+         else if (string_is_equal(video_ident, "d3d12"))
+            return GFX_CTX_DIRECT3D12_API;
+      }
+      if (string_starts_with(video_ident, "gl"))
+      {
+         if (string_is_equal(video_ident, "gl"))
+            return GFX_CTX_OPENGL_API;
+         else if (string_is_equal(video_ident, "gl1"))
+            return GFX_CTX_OPENGL_API;
+         else if (string_is_equal(video_ident, "glcore"))
+            return GFX_CTX_OPENGL_API;
+      }
       else if (string_is_equal(video_ident, "gx2"))
          return GFX_CTX_GX2_API;
       else if (string_is_equal(video_ident, "gx"))
          return GFX_CTX_GX_API;
-      else if (string_is_equal(video_ident, "gl"))
-         return GFX_CTX_OPENGL_API;
-      else if (string_is_equal(video_ident, "gl1"))
-         return GFX_CTX_OPENGL_API;
-      else if (string_is_equal(video_ident, "glcore"))
-         return GFX_CTX_OPENGL_API;
       else if (string_is_equal(video_ident, "vulkan"))
          return GFX_CTX_VULKAN_API;
       else if (string_is_equal(video_ident, "metal"))
