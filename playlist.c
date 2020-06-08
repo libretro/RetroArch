@@ -2753,12 +2753,12 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
 
          /* Only use file basename if this is a 'collection' playlist
           * (i.e. ignore history/favourites) */
-         if (!string_is_empty(conf_path_basename)                                                 &&
-             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_FAVORITES))     &&
-             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_HISTORY))       &&
-             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) &&
-             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) &&
-             !string_is_equal(conf_path_basename, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)))
+         if (
+                  !string_is_empty(conf_path_basename)
+               && !string_ends_with(playlist->conf_path, "_history.lpl")
+               && !string_is_equal(conf_path_basename,
+                  file_path_str(FILE_PATH_CONTENT_FAVORITES))
+            )
             *db_name = conf_path_basename;
       }
    }

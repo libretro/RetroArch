@@ -1886,10 +1886,7 @@ static void menu_displaylist_set_new_playlist(
    /* Get proper playlist capacity */
    if (!string_is_empty(playlist_file_name))
    {
-      if (string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-          string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
-          string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
-          string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)))
+      if (string_ends_with(path, "_history.lpl"))
          playlist_size = content_history_size;
       else if (string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
          if (content_favorites_size >= 0)
@@ -2704,11 +2701,10 @@ static unsigned menu_displaylist_parse_playlists(
          continue;
 
       /* Ignore history/favourites */
-      if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-          string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
-          string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
-          string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) ||
-          string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+      if (
+               string_ends_with(path, "_history.lpl")
+            || string_is_equal(playlist_file,
+               file_path_str(FILE_PATH_CONTENT_FAVORITES)))
          continue;
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
@@ -2974,11 +2970,10 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
          /* Ignore history/favourites
           * > content_history + favorites are handled separately
           * > music/video/image_history are ignored */
-         if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
-             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
-             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) ||
-             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+         if (
+                  string_ends_with(path, "_history.lpl")
+               || string_is_equal(playlist_file,
+                  file_path_str(FILE_PATH_CONTENT_FAVORITES)))
             continue;
 
          menu_entries_append_enum(info->list,
@@ -3054,10 +3049,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
       return false;
 
    /* Check whether this is a content history playlist */
-   is_content_history = string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-                        string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
-                        string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
-                        string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY));
+   is_content_history = string_ends_with(playlist_path, "_history.lpl");
 
    /* Default core association
     * > This is only shown for collection playlists
