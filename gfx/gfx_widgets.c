@@ -410,9 +410,9 @@ unsigned gfx_widgets_get_last_video_height(void *data)
    return p_dispwidget->last_video_height;
 }
 
-size_t gfx_widgets_get_msg_queue_size(void)
+size_t gfx_widgets_get_msg_queue_size(void *data)
 {
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->current_msgs ? p_dispwidget->current_msgs->size : 0;
 }
 

@@ -126,7 +126,7 @@ unsigned gfx_widgets_get_last_video_height(void *data);
 unsigned gfx_widgets_get_generic_message_height(void *data);
 
 /* Warning: not thread safe! */
-size_t gfx_widgets_get_msg_queue_size(void);
+size_t gfx_widgets_get_msg_queue_size(void *data);
 
 float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,
