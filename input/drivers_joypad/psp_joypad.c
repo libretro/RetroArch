@@ -189,6 +189,7 @@ static void psp_joypad_poll(void)
 #if defined(VITA)
    settings_t *settings        = config_get_ptr();
    bool input_backtouch_enable = settings->bools.input_backtouch_enable;
+   bool input_backtouch_toggle = settings->bools.input_backtouch_toggle;
 #endif
 
 #ifdef PSP

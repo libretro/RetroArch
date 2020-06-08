@@ -61,6 +61,7 @@ typedef struct db_handle
 {
    bool pl_fuzzy_archive_match;
    bool pl_use_old_format;
+   bool pl_compression;
    bool is_directory;
    bool scan_started;
    bool scan_without_core_match;
@@ -73,35 +74,26 @@ typedef struct db_handle
    database_state_handle_t state;
 } db_handle_t;
 
+/* Forward declarations */
 int cue_find_track(const char *cue_path, bool first,
       uint64_t *offset, uint64_t *size,
       char *track_path, uint64_t max_len);
-
 bool cue_next_file(intfstream_t *fd, const char *cue_path,
       char *path, uint64_t max_len);
-
 int gdi_find_track(const char *gdi_path, bool first,
       char *track_path, uint64_t max_len);
-
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *path, uint64_t max_len);
 
+/* Database scanning system */
 int detect_system(intfstream_t *fd, const char** system_name, const char *filename);
-
 int detect_ps1_game(intfstream_t *fd, char *game_id, const char *filename);
-
 int detect_psp_game(intfstream_t *fd, char *game_id, const char *filename);
-
 int detect_gc_game(intfstream_t *fd, char *game_id, const char *filename);
-
 int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename);
-
 int detect_sat_game(intfstream_t *fd, char *game_id, const char *filename);
-
 int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename);
-
 int detect_wii_game(intfstream_t *fd, char *game_id, const char *filename);
-
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
 static void database_info_set_type(
@@ -166,7 +158,9 @@ static int task_database_iterate_start(retro_task_t *task,
       task_free_title(task);
       task_set_title(task, strdup(msg));
       if (db->list->size != 0)
-         task_set_progress(task, roundf((float)db->list_ptr / ((float)db->list->size / 100.0f)));
+         task_set_progress(task,
+               roundf((float)db->list_ptr /
+                  ((float)db->list->size / 100.0f)));
 #else
       fprintf(stderr, "msg: %s\n", msg);
 #endif
@@ -377,27 +371,10 @@ static int task_database_chd_get_serial(const char *name, char* game_id)
    return result;
 }
 
-static int intfstream_get_crc(intfstream_t *fd, uint32_t *crc)
-{
-   int64_t read = 0;
-   uint32_t acc = 0;
-   uint8_t buffer[4096];
-
-   while ((read = intfstream_read(fd, buffer, sizeof(buffer))) > 0)
-      acc = encoding_crc32(acc, buffer, (size_t)read);
-
-   if (read < 0)
-      return 0;
-
-   *crc = acc;
-
-   return 1;
-}
-
 static bool intfstream_file_get_crc(const char *name,
       uint64_t offset, size_t size, uint32_t *crc)
 {
-   int rv;
+   bool rv;
    intfstream_t *fd  = intfstream_open_file(name,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    uint8_t *data     = NULL;
@@ -519,7 +496,7 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 
 static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
 {
-   int rv;
+   bool rv;
    intfstream_t *fd = intfstream_open_chd_track(
          name,
          RETRO_VFS_FILE_ACCESS_READ,
@@ -529,7 +506,7 @@ static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
       return 0;
 
    rv = intfstream_get_crc(fd, crc);
-   if (rv == 1)
+   if (rv)
    {
       RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
    }
@@ -910,7 +887,8 @@ static int database_info_list_iterate_found_match(
       playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
    }
 
-   playlist_write_file(playlist, _db->pl_use_old_format);
+   playlist_write_file(
+         playlist, _db->pl_use_old_format, _db->pl_compression);
    playlist_free(playlist);
 
    database_info_list_free(db_state->info);
@@ -1121,7 +1099,8 @@ static int task_database_iterate_playlist_lutro(
       free(game_title);
    }
 
-   playlist_write_file(playlist, _db->pl_use_old_format);
+   playlist_write_file(
+         playlist, _db->pl_use_old_format, _db->pl_compression);
    playlist_free(playlist);
 
    return 0;
@@ -1437,9 +1416,11 @@ bool task_push_dbscan(
    db->scan_without_core_match = settings->bools.scan_without_core_match;
    db->pl_fuzzy_archive_match  = settings->bools.playlist_fuzzy_archive_match;
    db->pl_use_old_format       = settings->bools.playlist_use_old_format;
+   db->pl_compression          = settings->bools.playlist_compression;
 #else
    db->pl_fuzzy_archive_match  = false;
    db->pl_use_old_format       = false;
+   db->pl_compression          = false;
 #endif
    db->show_hidden_files       = db_dir_show_hidden_files;
    db->is_directory            = directory;

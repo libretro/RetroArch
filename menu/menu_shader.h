@@ -33,7 +33,7 @@ enum auto_shader_type
 
 struct video_shader *menu_shader_get(void);
 
-void menu_shader_manager_free(void);
+void menu_shader_manager_free(void *data);
 
 /**
  * menu_shader_manager_init:

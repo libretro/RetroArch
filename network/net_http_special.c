@@ -22,7 +22,8 @@
 
 #include "net_http_special.h"
 
-int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout)
+int net_http_get(const char **result, size_t *size,
+      const char *url, retro_time_t *timeout)
 {
    size_t length;
    uint8_t* data                  = NULL;

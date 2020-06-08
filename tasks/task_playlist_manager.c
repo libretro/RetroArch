@@ -21,8 +21,10 @@
 #include <ctype.h>
 
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <formats/m3u_file.h>
 
 #include "tasks_internal.h"
 
@@ -39,16 +41,22 @@ enum pl_manager_status
    PL_MANAGER_ITERATE_ENTRY_VALIDATE,
    PL_MANAGER_VALIDATE_END,
    PL_MANAGER_ITERATE_ENTRY_CHECK_DUPLICATE,
+   PL_MANAGER_CHECK_DUPLICATE_END,
+   PL_MANAGER_ITERATE_FETCH_M3U,
+   PL_MANAGER_ITERATE_CLEAN_M3U,
    PL_MANAGER_END
 };
 
 typedef struct pl_manager_handle
 {
    bool use_old_format;
+   bool compress;
    bool fuzzy_archive_match;
    enum pl_manager_status status;
    size_t list_size;
    size_t list_index;
+   struct string_list *m3u_list;
+   size_t m3u_index;
    char *playlist_path;
    char *playlist_name;
    playlist_t *playlist;
@@ -62,6 +70,12 @@ static void free_pl_manager_handle(pl_manager_handle_t *pl_manager)
 {
    if (!pl_manager)
       return;
+   
+   if (pl_manager->m3u_list)
+   {
+      string_list_free(pl_manager->m3u_list);
+      pl_manager->m3u_list = NULL;
+   }
    
    if (!string_is_empty(pl_manager->playlist_path))
    {
@@ -86,7 +100,8 @@ static void free_pl_manager_handle(pl_manager_handle_t *pl_manager)
 }
 
 static void pl_manager_write_playlist(
-      playlist_t *playlist, const char *playlist_path, bool use_old_format)
+      playlist_t *playlist, const char *playlist_path,
+      bool use_old_format, bool compress)
 {
    playlist_t *cached_playlist = playlist_get_cached();
    
@@ -95,7 +110,7 @@ static void pl_manager_write_playlist(
       return;
    
    /* Write any changes to playlist file */
-   playlist_write_file(playlist, use_old_format);
+   playlist_write_file(playlist, use_old_format, compress);
    
    /* If this is the currently cached playlist, then
     * it must be re-cached (otherwise changes will be
@@ -106,7 +121,8 @@ static void pl_manager_write_playlist(
       if (string_is_equal(playlist_path, playlist_get_conf_path(cached_playlist)))
       {
          playlist_free_cached();
-         playlist_init_cached(playlist_path, COLLECTION_SIZE);
+         playlist_init_cached(
+               playlist_path, COLLECTION_SIZE, use_old_format, compress);
       }
    }
 }
@@ -214,7 +230,8 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             pl_manager_write_playlist(
                   pl_manager->playlist,
                   pl_manager->playlist_path,
-                  pl_manager->use_old_format);
+                  pl_manager->use_old_format,
+                  pl_manager->compress);
             
             /* Update progress display */
             task_free_title(task);
@@ -309,8 +326,11 @@ bool task_push_pl_manager_reset_cores(const char *playlist_path)
    pl_manager->playlist            = NULL;
    pl_manager->list_size           = 0;
    pl_manager->list_index          = 0;
+   pl_manager->m3u_list            = NULL;
+   pl_manager->m3u_index           = 0;
    pl_manager->status              = PL_MANAGER_BEGIN;
    pl_manager->use_old_format      = settings->bools.playlist_use_old_format;
+   pl_manager->compress            = settings->bools.playlist_compression;
    pl_manager->fuzzy_archive_match = false; /* Not relevant here */
    
    task_queue_push(task);
@@ -443,35 +463,19 @@ static void pl_manager_validate_core_association(
       goto reset_core;
    else
    {
-      const char *core_path_basename = path_basename(core_path);
-      core_info_list_t *core_info    = NULL;
       char core_display_name[PATH_MAX_LENGTH];
-      size_t i;
+      core_info_ctx_find_t core_info;
       
       core_display_name[0] = '\0';
       
-      if (string_is_empty(core_path_basename))
-         goto reset_core;
+      /* Search core info */
+      core_info.inf  = NULL;
+      core_info.path = core_path;
       
-      /* Final check - search core info */
-      core_info_get_list(&core_info);
-      
-      if (core_info)
-      {
-         for (i = 0; i < core_info->count; i++)
-         {
-            const char *info_display_name = core_info->list[i].display_name;
-            
-            if (!string_is_equal(
-                  path_basename(core_info->list[i].path), core_path_basename))
-               continue;
-            
-            if (!string_is_empty(info_display_name))
-               strlcpy(core_display_name, info_display_name, sizeof(core_display_name));
-            
-            break;
-         }
-      }
+      if (core_info_find(&core_info) &&
+          !string_is_empty(core_info.inf->display_name))
+         strlcpy(core_display_name, core_info.inf->display_name,
+               sizeof(core_display_name));
       
       /* If core_display_name string is empty, it means the
        * core wasn't found -> reset association */
@@ -541,7 +545,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             bool entry_deleted                 = false;
             
             /* Update progress display */
-            task_set_progress(task, (pl_manager->list_index * 50) / pl_manager->list_size);
+            task_set_progress(task, (pl_manager->list_index * 100) / pl_manager->list_size);
             
             /* Get current entry */
             playlist_get_index(
@@ -600,7 +604,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             bool entry_deleted                 = false;
             
             /* Update progress display */
-            task_set_progress(task, 50 + (pl_manager->list_index * 50) / pl_manager->list_size);
+            task_set_progress(task, (pl_manager->list_index * 100) / pl_manager->list_size);
             
             /* Get current entry */
             playlist_get_index(
@@ -631,6 +635,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
                      
                      /* Update list_size */
                      pl_manager->list_size = playlist_size(pl_manager->playlist);
+                     break;
                   }
                }
             }
@@ -642,6 +647,107 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
                pl_manager->list_index++;
             
             if (pl_manager->list_index + 1 >= pl_manager->list_size)
+               pl_manager->status = PL_MANAGER_CHECK_DUPLICATE_END;
+         }
+         break;
+      case PL_MANAGER_CHECK_DUPLICATE_END:
+         {
+            /* Sanity check - if all (or all but one)
+             * playlist entries were removed during the
+             * 'check duplicate' phase, we can stop now */
+            if (pl_manager->list_size < 2)
+            {
+               pl_manager->status = PL_MANAGER_END;
+               break;
+            }
+            
+            /* ...otherwise, reset index counter and
+             * start building the M3U file list */
+            pl_manager->list_index = 0;
+            pl_manager->status = PL_MANAGER_ITERATE_FETCH_M3U;
+         }
+         break;
+      case PL_MANAGER_ITERATE_FETCH_M3U:
+         {
+            const struct playlist_entry *entry = NULL;
+            
+            /* Update progress display */
+            task_set_progress(task, (pl_manager->list_index * 100) / pl_manager->list_size);
+            
+            /* Get current entry */
+            playlist_get_index(
+                  pl_manager->playlist, pl_manager->list_index, &entry);
+            
+            if (entry)
+            {
+               /* If this is an M3U file, add it to the
+                * M3U list for later processing */
+               if (m3u_file_is_m3u(entry->path))
+               {
+                  union string_list_elem_attr attr;
+                  attr.i = 0;
+                  /* Note: If string_list_append() fails, there is
+                   * really nothing we can do. The M3U file will
+                   * just be ignored... */
+                  string_list_append(
+                        pl_manager->m3u_list, entry->path, attr);
+               }
+            }
+            
+            /* Increment entry index */
+            pl_manager->list_index++;
+            
+            if (pl_manager->list_index >= pl_manager->list_size)
+            {
+               /* Check whether we have any M3U files
+                * to process */
+               if (pl_manager->m3u_list->size > 0)
+                  pl_manager->status = PL_MANAGER_ITERATE_CLEAN_M3U;
+               else
+                  pl_manager->status = PL_MANAGER_END;
+            }
+         }
+         break;
+      case PL_MANAGER_ITERATE_CLEAN_M3U:
+         {
+            const char *m3u_path =
+                  pl_manager->m3u_list->elems[pl_manager->m3u_index].data;
+            
+            if (!string_is_empty(m3u_path))
+            {
+               m3u_file_t *m3u_file = NULL;
+               
+               /* Update progress display */
+               task_set_progress(task, (pl_manager->m3u_index * 100) / pl_manager->m3u_list->size);
+               
+               /* Load M3U file */
+               m3u_file = m3u_file_init(m3u_path, M3U_FILE_SIZE);
+               
+               if (m3u_file)
+               {
+                  size_t i;
+                  
+                  /* Loop over M3U entries */
+                  for (i = 0; i < m3u_file_get_size(m3u_file); i++)
+                  {
+                     m3u_file_entry_t *m3u_entry = NULL;
+
+                     /* Delete any playlist items matching the
+                      * content path of the M3U entry */
+                     if (m3u_file_get_entry(m3u_file, i, &m3u_entry))
+                        playlist_delete_by_path(
+                              pl_manager->playlist,
+                              m3u_entry->full_path,
+                              pl_manager->fuzzy_archive_match);
+                  }
+                  
+                  m3u_file_free(m3u_file);
+               }
+            }
+            
+            /* Increment M3U file index */
+            pl_manager->m3u_index++;
+            if (pl_manager->m3u_index >= pl_manager->m3u_list->size)
                pl_manager->status = PL_MANAGER_END;
          }
          break;
@@ -655,7 +761,8 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             pl_manager_write_playlist(
                   pl_manager->playlist,
                   pl_manager->playlist_path,
-                  pl_manager->use_old_format);
+                  pl_manager->use_old_format,
+                  pl_manager->compress);
             
             /* Update progress display */
             task_free_title(task);
@@ -750,9 +857,15 @@ bool task_push_pl_manager_clean_playlist(const char *playlist_path)
    pl_manager->playlist            = NULL;
    pl_manager->list_size           = 0;
    pl_manager->list_index          = 0;
+   pl_manager->m3u_list            = string_list_new();
+   pl_manager->m3u_index           = 0;
    pl_manager->status              = PL_MANAGER_BEGIN;
    pl_manager->use_old_format      = settings->bools.playlist_use_old_format;
+   pl_manager->compress            = settings->bools.playlist_compression;
    pl_manager->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   
+   if (!pl_manager->m3u_list)
+      goto error;
    
    task_queue_push(task);
    

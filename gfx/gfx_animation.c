@@ -84,9 +84,7 @@ typedef struct gfx_animation gfx_animation_t;
 static const float ticker_pixel_period = (1.0f / 60.0f) * 1000.0f;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
-
-static gfx_animation_t anim;
-
+ 
 /* Forward declarations */
 static void gfx_animation_update_time_default(
       float *dst,
@@ -98,6 +96,9 @@ static update_time_cb update_time_callback = gfx_animation_update_time_default;
 
 static gfx_animation_t *anim_get_ptr(void)
 {
+   /* TODO/FIXME - global that gets referenced outside,
+    * needs to be refactored */
+   static gfx_animation_t anim;
    return &anim;
 }
 
@@ -1060,6 +1061,7 @@ void gfx_animation_push_delayed(
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
 {
    struct tween t;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
    t.duration           = entry->duration;
    t.running_since      = 0;
@@ -1189,17 +1191,17 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (!anim.initialized)
+   if (!p_anim->initialized)
    {
-      da_init(anim.list);
-      da_init(anim.pending);
-      anim.initialized = true;
+      da_init(p_anim->list);
+      da_init(p_anim->pending);
+      p_anim->initialized = true;
    }
 
-   if (anim.in_update)
-      da_push(anim.pending, t);
+   if (p_anim->in_update)
+      da_push(p_anim->pending, t);
    else
-      da_push(anim.list, t);
+      da_push(p_anim->list, t);
 
    return true;
 }
@@ -1679,6 +1681,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    size_t i;
    size_t src_str_len           = 0;
    size_t spacer_len            = 0;
+   unsigned small_src_char_widths[64] = {0};
    unsigned src_str_width       = 0;
    unsigned spacer_width        = 0;
    unsigned *src_char_widths    = NULL;
@@ -1706,9 +1709,14 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    if (src_str_len < 1)
       goto end;
 
-   src_char_widths = (unsigned*)calloc(src_str_len, sizeof(unsigned));
-   if (!src_char_widths)
-      goto end;
+   src_char_widths = small_src_char_widths;
+
+   if (src_str_len > ARRAY_SIZE(small_src_char_widths))
+   {
+      src_char_widths = (unsigned*)calloc(src_str_len, sizeof(unsigned));
+      if (!src_char_widths)
+         goto end;
+   }
 
    str_ptr = ticker->src_str;
    for (i = 0; i < src_str_len; i++)
@@ -1881,7 +1889,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
 
 end:
 
-   if (src_char_widths)
+   if (src_char_widths != small_src_char_widths && src_char_widths)
    {
       free(src_char_widths);
       src_char_widths = NULL;
@@ -2229,27 +2237,28 @@ bool gfx_animation_is_active(void)
    return p_anim->animation_is_active || p_anim->ticker_is_active;
 }
 
-bool gfx_animation_kill_by_tag(gfx_animation_ctx_tag *tag)
+bool gfx_animation_kill_by_tag(uintptr_t *tag)
 {
    unsigned i;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
    if (!tag || *tag == (uintptr_t)-1)
       return false;
 
-   for (i = 0; i < da_count(anim.list); ++i)
+   for (i = 0; i < da_count(p_anim->list); ++i)
    {
-      struct tween *t = da_getptr(anim.list, i);
+      struct tween *t = da_getptr(p_anim->list, i);
       if (!t || t->tag != *tag)
          continue;
 
-      if (anim.in_update)
+      if (p_anim->in_update)
       {
-         t->deleted = true;
-         anim.pending_deletes = true;
+         t->deleted              = true;
+         p_anim->pending_deletes = true;
       }
       else
       {
-         da_delete(anim.list, i);
+         da_delete(p_anim->list, i);
          --i;
       }
    }
@@ -2259,12 +2268,13 @@ bool gfx_animation_kill_by_tag(gfx_animation_ctx_tag *tag)
 
 void gfx_animation_kill_by_subject(gfx_animation_ctx_subject_t *subject)
 {
-   unsigned i, j,  killed = 0;
-   float            **sub = (float**)subject->data;
+   unsigned i, j,   killed = 0;
+   float             **sub = (float**)subject->data;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
-   for (i = 0; i < da_count(anim.list) && killed < subject->count; ++i)
+   for (i = 0; i < da_count(p_anim->list) && killed < subject->count; ++i)
    {
-      struct tween *t = da_getptr(anim.list, i);
+      struct tween *t = da_getptr(p_anim->list, i);
       if (!t)
          continue;
 
@@ -2273,14 +2283,14 @@ void gfx_animation_kill_by_subject(gfx_animation_ctx_subject_t *subject)
          if (t->subject != sub[j])
             continue;
 
-         if (anim.in_update)
+         if (p_anim->in_update)
          {
-            t->deleted = true;
-            anim.pending_deletes = true;
+            t->deleted              = true;
+            p_anim->pending_deletes = true;
          }
          else
          {
-            da_delete(anim.list, i);
+            da_delete(p_anim->list, i);
             --i;
          }
 
@@ -2306,9 +2316,9 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
          {
             size_t i;
 
-            for (i = 0; i < da_count(anim.list); i++)
+            for (i = 0; i < da_count(p_anim->list); i++)
             {
-               struct tween *t = da_getptr(anim.list, i);
+               struct tween *t = da_getptr(p_anim->list, i);
                if (!t)
                   continue;
 
@@ -2316,14 +2326,13 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
                   t->subject = NULL;
             }
 
-            da_free(anim.list);
-            da_free(anim.pending);
-
-            memset(&anim, 0, sizeof(anim));
+            da_free(p_anim->list);
+            da_free(p_anim->pending);
          }
          p_anim->cur_time            = 0;
          p_anim->old_time            = 0;
          p_anim->delta_time          = 0.0f;
+         memset(&p_anim, 0, sizeof(p_anim));
          break;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          p_anim->animation_is_active = false;
@@ -2344,11 +2353,11 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
 void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 {
    gfx_animation_ctx_entry_t entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) timer;
+   uintptr_t tag        = (uintptr_t) timer;
 
    gfx_timer_kill(timer);
 
-   *timer = 0.0f;
+   *timer               = 0.0f;
 
    entry.easing_enum    = EASING_LINEAR;
    entry.tag            = tag;
@@ -2363,7 +2372,7 @@ void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 
 void gfx_timer_kill(gfx_timer_t *timer)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t) timer;
+   uintptr_t tag = (uintptr_t) timer;
    gfx_animation_kill_by_tag(&tag);
 }
 

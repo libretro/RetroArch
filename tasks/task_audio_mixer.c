@@ -457,6 +457,15 @@ bool task_push_audio_mixer_load_and_play(
    struct audio_mixer_handle   *mixer = NULL;
    retro_task_t                   *t  = task_init();
    struct audio_mixer_userdata *user  = (struct audio_mixer_userdata*)calloc(1, sizeof(*user));
+   /* We are comparing against a fixed list of file
+    * extensions, the longest (jpeg) being 4 characters
+    * in length. We therefore only need to extract the first
+    * 5 characters from the extension of the input path
+    * to correctly validate a match */
+   const char *ext                    = NULL;
+   char ext_lower[6];
+
+   ext_lower[0] = '\0';
 
    if (!t || !user)
       goto error;
@@ -479,34 +488,44 @@ bool task_push_audio_mixer_load_and_play(
    nbio->type         = NBIO_TYPE_NONE;
    mixer->type        = AUDIO_MIXER_TYPE_NONE;
 
-   if (strstr(fullpath, ".wav"))
+   /* Get file extension */
+   ext = strrchr(fullpath, '.');
+
+   if (!ext || (*(++ext) == '\0'))
+      goto error;
+
+   /* Copy and convert to lower case */
+   strlcpy(ext_lower, ext, sizeof(ext_lower));
+   string_to_lower(ext_lower);
+
+   if (string_is_equal(ext_lower, "wav"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_WAV;
       nbio->type      = NBIO_TYPE_WAV;
       t->callback     = task_audio_mixer_handle_upload_wav_and_play;
    }
-   else if (strstr(fullpath, ".ogg"))
+   else if (string_is_equal(ext_lower, "ogg"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
       t->callback     = task_audio_mixer_handle_upload_ogg_and_play;
    }
-   else if (strstr(fullpath, ".mp3"))
+   else if (string_is_equal(ext_lower, "mp3"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MP3;
       nbio->type      = NBIO_TYPE_MP3;
       t->callback     = task_audio_mixer_handle_upload_mp3_and_play;
    }
-   else if (strstr(fullpath, ".flac"))
+   else if (string_is_equal(ext_lower, "flac"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_FLAC;
       nbio->type      = NBIO_TYPE_FLAC;
       t->callback     = task_audio_mixer_handle_upload_flac_and_play;
    }
    else if (	
-         strstr(fullpath, ".mod") ||
-         strstr(fullpath, ".s3m") ||
-         strstr(fullpath, ".xm"))
+         string_is_equal(ext_lower, "mod") ||
+         string_is_equal(ext_lower, "s3m") ||
+         string_is_equal(ext_lower, "xm"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MOD;
       nbio->type      = NBIO_TYPE_MOD;
@@ -566,6 +585,15 @@ bool task_push_audio_mixer_load(
    struct audio_mixer_handle   *mixer = NULL;
    retro_task_t                   *t  = task_init();
    struct audio_mixer_userdata *user  = (struct audio_mixer_userdata*)calloc(1, sizeof(*user));
+   /* We are comparing against a fixed list of file
+    * extensions, the longest (jpeg) being 4 characters
+    * in length. We therefore only need to extract the first
+    * 5 characters from the extension of the input path
+    * to correctly validate a match */
+   const char *ext                    = NULL;
+   char ext_lower[6];
+
+   ext_lower[0] = '\0';
 
    if (!t || !user)
       goto error;
@@ -589,34 +617,44 @@ bool task_push_audio_mixer_load(
    nbio->type         = NBIO_TYPE_NONE;
    mixer->type        = AUDIO_MIXER_TYPE_NONE;
 
-   if (strstr(fullpath, ".wav"))
+   /* Get file extension */
+   ext                = strrchr(fullpath, '.');
+
+   if (!ext || (*(++ext) == '\0'))
+      goto error;
+
+   /* Copy and convert to lower case */
+   strlcpy(ext_lower, ext, sizeof(ext_lower));
+   string_to_lower(ext_lower);
+
+   if (string_is_equal(ext_lower, "wav"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_WAV;
       nbio->type      = NBIO_TYPE_WAV;
       t->callback     = task_audio_mixer_handle_upload_wav;
    }
-   else if (strstr(fullpath, ".ogg"))
+   else if (string_is_equal(ext_lower, "ogg"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
       t->callback     = task_audio_mixer_handle_upload_ogg;
    }
-   else if (strstr(fullpath, ".mp3"))
+   else if (string_is_equal(ext_lower, "mp3"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MP3;
       nbio->type      = NBIO_TYPE_MP3;
       t->callback     = task_audio_mixer_handle_upload_mp3;
    }
-   else if (strstr(fullpath, ".flac"))
+   else if (string_is_equal(ext_lower, "flac"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_FLAC;
       nbio->type      = NBIO_TYPE_FLAC;
       t->callback     = task_audio_mixer_handle_upload_flac;
    }
    else if (	
-         strstr(fullpath, ".mod") ||
-         strstr(fullpath, ".s3m") ||
-         strstr(fullpath, ".xm"))
+         string_is_equal(ext_lower, "mod") ||
+         string_is_equal(ext_lower, "s3m") ||
+         string_is_equal(ext_lower, "xm"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MOD;
       nbio->type      = NBIO_TYPE_MOD;

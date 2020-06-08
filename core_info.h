@@ -35,10 +35,28 @@ typedef struct
    bool optional;
 } core_info_firmware_t;
 
+/* Simple container/convenience struct for
+ * holding the 'id' of a core file
+ * > 'id' is the filename without extension or
+ *   platform-specific suffix
+ * > 'id' is used for core info searches - enables
+ *   matching regardless of core file base path,
+ *   and is platform-independent (e.g. an Android
+ *   core file will be correctly identified on Linux)
+ * > 'len' is used to cache the length of 'str', for
+ *   improved performance when performing string
+ *   comparisons */
+typedef struct
+{
+   char *str;
+   size_t len;
+} core_file_id_t;
+
 typedef struct
 {
    bool supports_no_game;
    bool database_match_archive_member;
+   bool is_experimental;
    size_t firmware_count;
    char *path;
    void *config_data;
@@ -56,6 +74,7 @@ typedef struct
    char *databases;
    char *notes;
    char *required_hw_api;
+   char *description;
    struct string_list *categories_list;
    struct string_list *databases_list;
    struct string_list *note_list;
@@ -65,8 +84,19 @@ typedef struct
    struct string_list *licenses_list;
    struct string_list *required_hw_api_list;
    core_info_firmware_t *firmware;
+   core_file_id_t core_file_id;
    void *userdata;
 } core_info_t;
+
+/* A subset of core_info parameters required for
+ * core updater tasks */
+typedef struct
+{
+   bool is_experimental;
+   char *display_name;
+   char *description;
+   char *licenses;
+} core_updater_info_t;
 
 typedef struct
 {
@@ -109,6 +139,14 @@ bool core_info_list_get_display_name(core_info_list_t *list,
 
 bool core_info_get_display_name(const char *path, char *s, size_t len);
 
+/* Returns core_info parameters required for
+ * core updater tasks, read from specified file.
+ * Returned core_updater_info_t object must be
+ * freed using core_info_free_core_updater_info().
+ * Returns NULL if 'path' is invalid. */
+core_updater_info_t *core_info_get_core_updater_info(const char *path);
+void core_info_free_core_updater_info(core_updater_info_t *info);
+
 void core_info_get_name(const char *path, char *s, size_t len,
       const char *path_info, const char *dir_cores,
       const char *exts, bool show_hidden_files,
@@ -132,7 +170,7 @@ bool core_info_get_list(core_info_list_t **core);
 bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
       bool *set_missing_bios);
 
-bool core_info_find(core_info_ctx_find_t *info, const char *name);
+bool core_info_find(core_info_ctx_find_t *info);
 
 bool core_info_load(core_info_ctx_find_t *info);
 

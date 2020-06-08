@@ -2,8 +2,6 @@ TARGET          := libvitaGL
 SOURCES         := source source/utils
 SHADERS         := shaders
 
-LIBS = -lc -lm -lSceGxm_stub -lSceDisplay_stub
-
 ifeq ($(HAVE_SBRK),1)
 SOURCES += source/hacks
 endif
@@ -16,8 +14,12 @@ OBJS     := $(CFILES:.c=.o)
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -ftree-vectorize -DTRANSPOSE_MATRICES
+CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -ftree-vectorize -DSTB_DXT_IMPLEMENTATION
 ASFLAGS = $(CFLAGS)
+
+ifeq ($(NO_DEBUG),1)
+CFLAGS  += -DSKIP_ERROR_HANDLING
+endif
 
 all: $(TARGET).a
 
@@ -25,12 +27,12 @@ $(TARGET).a: $(OBJS)
 	$(AR) -rc $@ $^
 
 %_f.h:
-	psp2cgc -profile sce_fp_psp2 $(@:_f.h=_f.cg) -Wperf -fastprecision -O3 -o $(@:_f.h=_f.gxp)
+	psp2cgc -profile sce_fp_psp2 $(@:_f.h=_f.cg) -Wperf -o $(@:_f.h=_f.gxp)
 	bin2c $(@:_f.h=_f.gxp) source/shaders/$(notdir $(@)) $(notdir $(@:_f.h=_f))
 	@rm -rf $(@:_f.h=_f.gxp)
 	
 %_v.h:
-	psp2cgc -profile sce_vp_psp2 $(@:_v.h=_v.cg) -Wperf -fastprecision -O3 -o $(@:_v.h=_v.gxp)
+	psp2cgc -profile sce_vp_psp2 $(@:_v.h=_v.cg) -Wperf -o $(@:_v.h=_v.gxp)
 	bin2c $(@:_v.h=_v.gxp) source/shaders/$(notdir $(@:_v.h=_v.h)) $(notdir $(@:_v.h=_v))
 	@rm -rf $(@:_v.h=_v.gxp)
 

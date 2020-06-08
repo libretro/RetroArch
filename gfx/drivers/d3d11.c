@@ -254,7 +254,7 @@ static void d3d11_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
+static void d3d11_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    unsigned       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
@@ -859,7 +859,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       }
    }
 
-   d3d11_set_filtering(d3d11, 0, video->smooth);
+   d3d11_set_filtering(d3d11, 0, video->smooth, video->ctx_scaling);
 
    {
       D3D11_BUFFER_DESC desc;
@@ -1290,6 +1290,7 @@ static bool d3d11_gfx_frame(
    unsigned video_height          = video_info->height;
    bool statistics_show           = video_info->statistics_show;
    struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
+   bool menu_is_alive             = video_info->menu_is_alive;
 
    if (d3d11->resize_chain)
    {
@@ -1544,7 +1545,7 @@ static bool d3d11_gfx_frame(
 
 #ifdef HAVE_MENU
    if (d3d11->menu.enabled)
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    else
 #endif
       if (statistics_show)
@@ -1582,7 +1583,8 @@ static bool d3d11_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)

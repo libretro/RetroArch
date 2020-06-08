@@ -26,6 +26,8 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
+#include <lists/string_list.h>
+
 #include <boolean.h>
 
 RETRO_BEGIN_DECLS
@@ -52,6 +54,9 @@ typedef struct
    char *local_core_path;
    char *local_info_path;
    char *display_name;
+   char *description;
+   struct string_list *licenses_list;
+   bool is_experimental;
    uint32_t crc;
    core_updater_list_date_t date;
 } core_updater_list_entry_t;

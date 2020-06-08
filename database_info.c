@@ -217,30 +217,39 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          if (!string_is_empty(val_string))
             db_info->franchise = strdup(val_string);
       }
-      else if (string_is_equal(str, "bbfc_rating"))
+      else if (string_ends_with(str, "_rating"))
       {
-         if (!string_is_empty(val_string))
-            db_info->bbfc_rating = strdup(val_string);
-      }
-      else if (string_is_equal(str, "esrb_rating"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->esrb_rating = strdup(val_string);
-      }
-      else if (string_is_equal(str, "elspa_rating"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->elspa_rating = strdup(val_string);
-      }
-      else if (string_is_equal(str, "cero_rating"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->cero_rating          = strdup(val_string);
-      }
-      else if (string_is_equal(str, "pegi_rating"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->pegi_rating          = strdup(val_string);
+         if (string_is_equal(str, "bbfc_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->bbfc_rating = strdup(val_string);
+         }
+         else if (string_is_equal(str, "esrb_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->esrb_rating = strdup(val_string);
+         }
+         else if (string_is_equal(str, "elspa_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->elspa_rating = strdup(val_string);
+         }
+         else if (string_is_equal(str, "cero_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->cero_rating          = strdup(val_string);
+         }
+         else if (string_is_equal(str, "pegi_rating"))
+         {
+            if (!string_is_empty(val_string))
+               db_info->pegi_rating          = strdup(val_string);
+         }
+         else if (string_is_equal(str, "edge_rating"))
+            db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
+         else if (string_is_equal(str, "famitsu_rating"))
+            db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
+         else if (string_is_equal(str, "tgdb_rating"))
+            db_info->tgdb_rating             = (unsigned)val->val.uint_;
       }
       else if (string_is_equal(str, "enhancement_hw"))
       {
@@ -252,14 +261,8 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          if (!string_is_empty(val_string))
             db_info->edge_magazine_review = strdup(val_string);
       }
-      else if (string_is_equal(str, "edge_rating"))
-         db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "edge_issue"))
          db_info->edge_magazine_issue     = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "famitsu_rating"))
-         db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "tgdb_rating"))
-         db_info->tgdb_rating             = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "users"))
          db_info->max_users               = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "releasemonth"))

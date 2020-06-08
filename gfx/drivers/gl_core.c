@@ -1850,6 +1850,8 @@ static bool gl_core_frame(void *data, const void *frame,
    bool runloop_is_paused                      = video_info->runloop_is_paused;
    bool runloop_is_slowmotion                  = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state            = video_info->input_driver_nonblock_state;
+   bool menu_is_alive                          = video_info->menu_is_alive;
+
    if (!gl)
       return false;
 
@@ -1919,7 +1921,7 @@ static bool gl_core_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
       if (gl->menu_texture_enable && gl->menu_texture)
          gl_core_draw_menu_texture(gl, width, height);
    }
@@ -1937,7 +1939,8 @@ static bool gl_core_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
@@ -1949,7 +1952,8 @@ static bool gl_core_frame(void *data, const void *frame,
       font_driver_render_msg(gl, msg, NULL, NULL);
    }
 
-   video_info->cb_update_window_title(context_data);
+   if (gl->ctx_driver->update_window_title)
+      gl->ctx_driver->update_window_title(context_data);
 
    if (gl->readback_buffer_screenshot)
    {
@@ -1973,11 +1977,11 @@ static bool gl_core_frame(void *data, const void *frame,
          && !runloop_is_slowmotion
          && !runloop_is_paused)
    {
-      video_info->cb_swap_buffers(context_data);
+      gl->ctx_driver->swap_buffers(context_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   video_info->cb_swap_buffers(context_data);
+   gl->ctx_driver->swap_buffers(context_data);
 
    if (video_info->hard_sync &&
        !input_driver_nonblock_state &&

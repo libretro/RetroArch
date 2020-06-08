@@ -75,14 +75,21 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END       := -Wl,--no-whole-archive
 endif
 
+STATIC_BUILD = 1
 ifneq (,$(findstring msvc,$(platform)))
-   LIBS               := $(WHOLE_START) $(WHOLE_END)
-else
+   STATIC_BUILD = 0
+endif
 ifneq (,$(findstring unix,$(platform)))
+   STATIC_BUILD = 0
+endif
+ifeq (qnx, $(platform))
+   STATIC_BUILD = 0
+endif
+
+ifeq ($(STATIC_BUILD), 0)
    LIBS               := $(WHOLE_START) $(WHOLE_END)
 else
    LIBS               := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
-endif
 endif
 
 libogc_platform    :=
@@ -148,7 +155,7 @@ else ifeq ($(libogc_platform), 1)
    endif
 
    LIBDIRS += -L.
-   MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+   MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float
 
    ifeq ($(platform), ngc)
       LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
@@ -791,6 +798,44 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
       export INCLUDE := $(INCLUDE);libretro-common\include;libretro-common\include\compat\msvc;gfx\include;deps;deps\stb
       export LIB := $(LIB)
    endif
+else ifeq (qnx,$(platform))
+   HAVE_AUDIOMIXER          := 1
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 0
+   WANT_GLSLANG             := 0
+	HAVE_CONFIGFILE          := 1
+   CC=qcc -Vgcc_ntoarmv7le
+   CXX=QCC -Vgcc_ntoarmv7le
+
+   ifeq ($(DEBUG), 1)
+      LDFLAGS += -g
+   endif
+
+   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_FBO -DHAVE_GL_SYNC -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_XCB -DHAVE_EGL -DHAVE_BB10 -DHAVE_GLSL -DHAVE_AL -DRARCH_MOBILE
+   EXT_TARGET := $(TARGET_NAME)
+   EXT_INTER_TARGET := $(TARGET_NAME)
+   INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
+   LIBS += -lEGL -lbps -lscreen -lsocket -lm -lGLESv2 -lOpenAL
 else ifneq (,$(findstring unix,$(platform)))
    HAVE_AUDIOMIXER          := 1
    HAVE_RPNG                := 1
@@ -823,6 +868,46 @@ else ifneq (,$(findstring unix,$(platform)))
    EXT_INTER_TARGET := $(TARGET_NAME)
    INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
    LIBS += -ldl -lm -lpthread -lGL -ludev -lpulse -lX11 -lX11-xcb -lXxf86vm
+else ifeq (dos,$(platform))
+   HAVE_AUDIOMIXER          := 1
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 0
+   HAVE_NETWORK_CMD         := 0
+   HAVE_NETPLAYDISCOVERY    := 0
+   HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 0
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 0
+   HAVE_LIBRETRODB          := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 0
+   HAVE_DYNAMIC             := 0
+   HAVE_GRIFFIN_CPP         := 0
+   WANT_GLSLANG             := 0
+	HAVE_CONFIGFILE          := 1
+   CC=i586-pc-msdosdjgpp-gcc
+   CXX=i586-pc-msdosdjgpp-g++
+
+   ifeq ($(DEBUG), 1)
+      LDFLAGS += -g
+   endif
+
+   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_CC_RESAMPLER -DRC_DISABLE_LUA -DHAVE_FBO -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DRARCH_INTERNAL  -DHAVE_XCB
+   TARGET_NAME := retrodos
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/SPIRV-Cross -Ideps/glslang -I.
+   LIBS += -lm
+   LIBDIRS += -L.
 endif
 
 ifneq (,$(findstring msvc,$(platform)))
@@ -1096,12 +1181,29 @@ $(APP_BOOTER_DIR)/app_booter.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 pkg: all
-ifeq ($(platform), wii)
+ifeq ($(platform), qnx)
+	mkdir -p pkg/qnx/pkg
+	cp -r $(EXT_TARGET) pkg/qnx/pkg/RetroArch
+	cp -r media/canvas.png pkg/qnx/pkg/canvas.png
+	cp -r media/retroarch-96x96.png pkg/qnx/pkg/retroarch-96x96.png
+else ifeq ($(platform), wii)
 	cp -r $(EXT_TARGET) pkg/wii/CORE.dol
 else ifeq ($(platform), ngc)
 	cp -r $(EXT_TARGET) pkg/ngc/CORE.dol
 else ifeq ($(platform), psp1)
 	psp-fixup-imports$(EXT) $(EXT_TARGET)
+endif
+
+ifeq ($(platform), qnx)
+retroarch-dev.bar: pkg
+ifeq ($(QNX_DEBUGTOKEN),)
+	blackberry-nativepackager -package $@ -devMode pkg/qnx/bar-descriptor.xml -C  pkg/qnx/pkg pkg/qnx/pkg/*
+else
+	blackberry-nativepackager -package $@ -devMode -debugToken $(QNX_DEBUGTOKEN) pkg/qnx/bar-descriptor.xml -C  pkg/qnx/pkg pkg/qnx/pkg/*
+endif
+
+retroarch-release.bar: pkg
+	blackberry-nativepackager -package $@ pkg/qnx/bar-descriptor.xml -C  pkg/qnx/pkg pkg/qnx/pkg/*
 endif
 
 shaders-checkout:

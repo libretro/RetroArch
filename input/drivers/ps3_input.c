@@ -31,9 +31,7 @@
 #include "../input_driver.h"
 
 #ifdef HAVE_MOUSE
-#ifndef __PSL1GHT__
 #define MAX_MICE 7
-#endif
 #endif
 
 /* TODO/FIXME -

@@ -9,11 +9,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-int GetProcessId()
-{
-    return ::getpid();
-}
-
 struct BaseConnectionUnix : public BaseConnection {
     int sock{-1};
 };

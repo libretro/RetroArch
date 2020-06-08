@@ -1683,6 +1683,15 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Bild mit bilinearer Filterung glätten. \n"
                "Sollte deaktiviert werden, wenn Shader verwendet werden.");
          break;
+      case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+         snprintf(s, len,
+#ifdef HAVE_ODROIDGO2
+               "RGA scaling and bicubic filtering. May break widgets."
+#else
+               "Hardware context scaling (if available)."
+#endif
+         );
+         break;
       case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
          snprintf(s, len,
                "Zeigt das aktuelle Datum/die aktuelle Zeit im Menü an.");

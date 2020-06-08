@@ -59,7 +59,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos-new/badges.h"
+#include "../../cheevos/badges.h"
 #endif
 
 #include "../../content.h"
@@ -903,7 +903,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   entry_type = menu_entry_get_type_new(&entry);
+   entry_type = entry.type;
 
    if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
    {
@@ -1192,18 +1192,16 @@ static unsigned stripes_get_system_tab(stripes_handle_t *stripes, unsigned i)
 static void stripes_selection_pointer_changed(
       stripes_handle_t *stripes, bool allow_animations)
 {
+   uintptr_t tag;
    unsigned i, end, height;
-   gfx_animation_ctx_tag tag;
    menu_entry_t entry;
    size_t num                 = 0;
    int threshold              = 0;
-   menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
    const char *thumb_ident    = stripes_thumbnails_ident('R');
    const char *lft_thumb_ident= stripes_thumbnails_ident('L');
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
    menu_entry_init(&entry);
 
    if (!stripes)
@@ -1839,7 +1837,7 @@ static void stripes_context_destroy_horizontal_list(stripes_handle_t *stripes)
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, ".lpl"))
+      if (!path || !string_ends_with(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);
@@ -1937,10 +1935,7 @@ static void stripes_context_reset_horizontal_list(
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path)
-         continue;
-
-      if (!strstr(path, ".lpl"))
+      if (!path || !string_ends_with(path, ".lpl"))
          continue;
 
       {
@@ -2406,7 +2401,7 @@ static int stripes_draw_item(
    if (icon_x < -half_size || icon_x > width)
       goto iterate;
 
-   entry_type = menu_entry_get_type_new(entry);
+   entry_type = entry.type;
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
@@ -3901,7 +3896,7 @@ static void stripes_list_insert(void *userdata,
 
 static void stripes_list_clear(file_list_t *list)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t)list;
+   uintptr_t tag = (uintptr_t)list;
 
    gfx_animation_kill_by_tag(&tag);
 
@@ -3916,8 +3911,8 @@ static void stripes_list_free(file_list_t *list, size_t a, size_t b)
 static void stripes_list_deep_copy(const file_list_t *src, file_list_t *dst,
       size_t first, size_t last)
 {
-   size_t i, j = 0;
-   gfx_animation_ctx_tag tag = (uintptr_t)dst;
+   size_t i, j   = 0;
+   uintptr_t tag = (uintptr_t)dst;
 
    gfx_animation_kill_by_tag(&tag);
 

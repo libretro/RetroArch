@@ -287,7 +287,7 @@ static void frontend_psp_init(void *data)
    scePowerSetGpuClockFrequency(222);
    scePowerSetGpuXbarClockFrequency(166);
    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
-   
+
    SceAppUtilInitParam appUtilParam;
    SceAppUtilBootParam appUtilBootParam;
    memset(&appUtilParam, 0, sizeof(SceAppUtilInitParam));
@@ -532,6 +532,11 @@ enum retro_language psp_get_retro_lang_from_langid(int langid)
       return RETRO_LANGUAGE_PORTUGUESE_BRAZIL;
    case SCE_SYSTEM_PARAM_LANG_TURKISH:
       return RETRO_LANGUAGE_TURKISH;
+#if 0
+   /* TODO/FIXME - this doesn't seem to actually exist */
+   case SCE_SYSTEM_PARAM_LANG_SLOVAK:
+      return RETRO_LANGUAGE_SLOVAK;
+#endif
    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US:
    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB:
    default:
@@ -540,7 +545,7 @@ enum retro_language psp_get_retro_lang_from_langid(int langid)
 }
 
 enum retro_language frontend_psp_get_user_language(void)
-{ 
+{
    int langid;
    sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, &langid);
    return psp_get_retro_lang_from_langid(langid);

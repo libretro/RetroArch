@@ -6,9 +6,10 @@
 
 #define FILE_CHUNK_SIZE 4096
 
-typedef struct{
-	u32 argc;
-	char args[0x300 - 0x4];
+typedef struct
+{
+   u32 argc;
+   char args[0x300 - 0x4];
 }ciaParam;
 
 char argvHmac[0x20] = {0x1d, 0x78, 0xff, 0xb9, 0xc5, 0xbc, 0x78, 0xb7, 0xac, 0x29, 0x1d, 0x3e, 0x16, 0xd0, 0xcf, 0x53, 0xef, 0x12, 0x58, 0x83, 0xb6, 0x9e, 0x2f, 0x79, 0x47, 0xf9, 0x35, 0x61, 0xeb, 0x50, 0xd7, 0x67};
@@ -28,11 +29,10 @@ static int isCiaInstalled(u64 titleId, u16 version)
    u32 titlesToRetrieve;
    u32 titlesRetrieved;
    u64* titleIds;
-   bool titleExists = false;
+   u32 titlesToCheck;
    AM_TitleEntry titleInfo;
-   Result failed;
-
-   failed = AM_GetTitleCount(MEDIATYPE_SD, &titlesToRetrieve);
+   bool titleExists = false;
+   Result failed    = AM_GetTitleCount(MEDIATYPE_SD, &titlesToRetrieve);
    if (R_FAILED(failed))
       return -1;
 
@@ -44,7 +44,7 @@ static int isCiaInstalled(u64 titleId, u16 version)
    if (R_FAILED(failed))
       return -1;
 
-   for(u32 titlesToCheck = 0; titlesToCheck < titlesRetrieved; titlesToCheck++)
+   for(titlesToCheck = 0; titlesToCheck < titlesRetrieved; titlesToCheck++)
    {
       if (titleIds[titlesToCheck] == titleId)
       {
@@ -57,7 +57,8 @@ static int isCiaInstalled(u64 titleId, u16 version)
 
    if (titleExists)
    {
-      failed = AM_GetTitleInfo(MEDIATYPE_SD, 1 /*titleCount*/, &titleId, &titleInfo);
+      failed = AM_GetTitleInfo(MEDIATYPE_SD,
+            1 /*titleCount*/, &titleId, &titleInfo);
       if (R_FAILED(failed))
          return -1;
 
@@ -70,15 +71,13 @@ static int isCiaInstalled(u64 titleId, u16 version)
 
 static int installCia(Handle ciaFile)
 {
-   Result failed;
    Handle outputHandle;
    u64 fileSize;
-   u64 fileOffset = 0;
    u32 bytesRead;
    u32 bytesWritten;
    u8 transferBuffer[FILE_CHUNK_SIZE];
-
-   failed = AM_StartCiaInstall(MEDIATYPE_SD, &outputHandle);
+   u64 fileOffset = 0;
+   Result failed  = AM_StartCiaInstall(MEDIATYPE_SD, &outputHandle);
    if (R_FAILED(failed))
       return -1;
 
@@ -89,14 +88,19 @@ static int installCia(Handle ciaFile)
    while(fileOffset < fileSize)
    {
       u64 bytesRemaining = fileSize - fileOffset;
-      failed = FSFILE_Read(ciaFile, &bytesRead, fileOffset, transferBuffer, bytesRemaining < FILE_CHUNK_SIZE ? bytesRemaining : FILE_CHUNK_SIZE);
+      failed             = FSFILE_Read(ciaFile, &bytesRead,
+            fileOffset, transferBuffer,
+            bytesRemaining < FILE_CHUNK_SIZE 
+            ? bytesRemaining 
+            : FILE_CHUNK_SIZE);
       if (R_FAILED(failed))
       {
          AM_CancelCIAInstall(outputHandle);
          return -1;
       }
 
-      failed = FSFILE_Write(outputHandle, &bytesWritten, fileOffset, transferBuffer, bytesRead, 0);
+      failed = FSFILE_Write(outputHandle, &bytesWritten,
+            fileOffset, transferBuffer, bytesRead, 0);
       if (R_FAILED(failed))
       {
          AM_CancelCIAInstall(outputHandle);
@@ -146,6 +150,7 @@ int exec_cia(const char* path, const char** args)
    }
 
    inited = R_SUCCEEDED(amInit()) && R_SUCCEEDED(fsInit());
+
    if (inited)
    {
       AM_TitleEntry ciaInfo;
@@ -155,12 +160,15 @@ int exec_cia(const char* path, const char** args)
       ciaParam param;
       int argsLength;
       /* open CIA file */
-      Result res = FSUSER_OpenArchive(&ciaArchive, ARCHIVE_SDMC, fsMakePath(PATH_EMPTY, ""));
+      Result res = FSUSER_OpenArchive(&ciaArchive,
+            ARCHIVE_SDMC, fsMakePath(PATH_EMPTY, ""));
 
       if (R_FAILED(res))
          errorAndQuit("Cant open SD FS archive.");
 
-      res = FSUSER_OpenFile(&ciaFile, ciaArchive, fsMakePath(PATH_ASCII, path + 5/*skip "sdmc:"*/), FS_OPEN_READ, 0);
+      res = FSUSER_OpenFile(&ciaFile,
+            ciaArchive, fsMakePath(PATH_ASCII, path + 5/*skip "sdmc:"*/),
+            FS_OPEN_READ, 0);
       if (R_FAILED(res))
          errorAndQuit("Cant open CIA file.");
 
@@ -185,10 +193,11 @@ int exec_cia(const char* path, const char** args)
       FSFILE_Close(ciaFile);
       FSUSER_CloseArchive(ciaArchive);
 
-      param.argc = 0;
-      argsLength = 0;
-      char* argLocation = param.args;
-      while(args[param.argc] != NULL)
+      param.argc        = 0;
+      argsLength        = 0;
+      char *argLocation = param.args;
+
+      while(args[param.argc])
       {
          strcpy(argLocation, args[param.argc]);
          argLocation += strlen(args[param.argc]) + 1;
@@ -200,7 +209,8 @@ int exec_cia(const char* path, const char** args)
       if (R_FAILED(res))
          errorAndQuit("CIA cant run, cant prepare.");
 
-      res = APT_DoApplicationJump(&param, sizeof(param.argc) + argsLength, argvHmac);
+      res = APT_DoApplicationJump(&param, sizeof(param.argc) 
+            + argsLength, argvHmac);
       if (R_FAILED(res))
          errorAndQuit("CIA cant run, cant jump.");
 

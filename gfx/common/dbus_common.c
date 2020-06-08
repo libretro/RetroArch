@@ -93,7 +93,7 @@ bool dbus_screensaver_inhibit(void)
    reply = dbus_connection_send_with_reply_and_block(dbus_connection,
          msg, 300, NULL);
 
-   if (reply != NULL)
+   if (reply)
    {
       if (!dbus_message_get_args(reply, NULL,
                DBUS_TYPE_UINT32, &dbus_screensaver_cookie,

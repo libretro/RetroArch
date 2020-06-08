@@ -27,6 +27,7 @@
 
 #include "msg_hash.h"
 
+/* TODO/FIXME - static public global variable */
 static unsigned uint_user_language;
 
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
@@ -87,6 +88,18 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case RETRO_LANGUAGE_TURKISH:
          ret = menu_hash_get_help_tr_enum(msg, s, len);
+         break;
+      case RETRO_LANGUAGE_SLOVAK:
+         ret = menu_hash_get_help_sk_enum(msg, s, len);
+         break;
+      case RETRO_LANGUAGE_PERSIAN:
+         ret = menu_hash_get_help_fa_enum(msg, s, len);
+         break;
+      case RETRO_LANGUAGE_HEBREW:
+         ret = menu_hash_get_help_he_enum(msg, s, len);
+         break;
+      case RETRO_LANGUAGE_ASTURIAN:
+         ret = menu_hash_get_help_ast_enum(msg, s, len);
          break;
       default:
          break;
@@ -165,10 +178,21 @@ const char *get_user_language_iso639_1(bool limit)
       case RETRO_LANGUAGE_TURKISH:
          voice = "tr";
          break;
+      case RETRO_LANGUAGE_SLOVAK:
+         voice = "sk";
+         break;
       case RETRO_LANGUAGE_RUSSIAN:
          voice = "ru";
          break;
-
+      case RETRO_LANGUAGE_PERSIAN:
+         voice = "fa";
+         break;
+      case RETRO_LANGUAGE_HEBREW:
+         voice = "he";
+         break;
+      case RETRO_LANGUAGE_ASTURIAN:
+         voice = "ast";
+         break;
    }
    return voice;
 }
@@ -233,6 +257,18 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_TURKISH:
          ret = msg_hash_to_str_tr(msg);
+         break;
+      case RETRO_LANGUAGE_SLOVAK:
+         ret = msg_hash_to_str_sk(msg);
+         break;
+      case RETRO_LANGUAGE_PERSIAN:
+         ret = msg_hash_to_str_fa(msg);
+         break;
+      case RETRO_LANGUAGE_HEBREW:
+         ret = msg_hash_to_str_he(msg);
+         break;
+      case RETRO_LANGUAGE_ASTURIAN:
+         ret = msg_hash_to_str_ast(msg);
          break;
       default:
          break;

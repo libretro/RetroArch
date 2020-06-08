@@ -235,7 +235,7 @@ static float metal_get_refresh_rate(void *data)
    return 0.0f;
 }
 
-static void metal_set_filtering(void *data, unsigned index, bool smooth)
+static void metal_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    [md.frameView setFilteringIndex:index smooth:smooth];

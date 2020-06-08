@@ -135,6 +135,7 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 };
 
 #ifndef IS_SALAMANDER
+/* TODO/FIXME - static public global variable */
 static frontend_ctx_driver_t *current_frontend_ctx;
 #endif
 
@@ -218,6 +219,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #elif defined(HAVE_LIBNX)
    strlcpy(s, "nro", len);
    return true;
+#elif defined(DJGPP)
+   strlcpy(s, "exe", len);
+   return true;
 #elif defined(_3DS)
    if (envIsHomebrew())
       strlcpy(s, "3dsx", len);
@@ -263,6 +267,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return true;
 #elif defined(_3DS)
    strlcpy(s, "retroarch.core", len);
+   return true;
+#elif defined(DJGPP)
+   strlcpy(s, "retrodos.exe", len);
    return true;
 #elif defined(SWITCH)
    strlcpy(s, "retroarch_switch.nro", len);

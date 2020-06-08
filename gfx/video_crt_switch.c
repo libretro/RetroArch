@@ -51,8 +51,8 @@ typedef struct videocrt_switch
    double p_clock;
 } videocrt_switch_t;
 
+/* TODO/FIXME - globals */
 static videocrt_switch_t crt_switch_st;
-
 static bool first_run             = true;
 
 static void crt_check_first_run(void)

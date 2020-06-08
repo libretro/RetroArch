@@ -171,7 +171,7 @@ static void frontend_ctr_deinit(void* data)
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
     * mode with the parallax barrier disabled
     * (i.e. these are the only platforms that can use
-    * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
+    * CTR_VIDEO_MODE_2D_400X240 and CTR_VIDEO_MODE_2D_800X240) */
    CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
    if ((device_model == 0) || (device_model == 1))
    {

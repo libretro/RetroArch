@@ -86,8 +86,6 @@ enum rarch_netplay_share_analog_preference
    RARCH_NETPLAY_SHARE_ANALOG_LAST
 };
 
-void deinit_netplay(void);
-
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
 
 int netplay_rooms_parse(const char *buf);

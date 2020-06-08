@@ -43,24 +43,29 @@
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
 
-static ITaskbarList3 *g_taskbarList = NULL;
-
 /* MSVC really doesn't want CINTERFACE to be used with shobjidl for some reason, but since we use C++ mode,
  * we need a workaround... so use the names of the COBJMACROS functions instead. */
 #if defined(__cplusplus) && !defined(CINTERFACE)
-#define ITaskbarList3_HrInit(x) g_taskbarList->HrInit()
-#define ITaskbarList3_Release(x) g_taskbarList->Release()
-#define ITaskbarList3_SetProgressState(a, b, c) g_taskbarList->SetProgressState(b, c)
-#define ITaskbarList3_SetProgressValue(a, b, c, d) g_taskbarList->SetProgressValue(b, c, d)
+#define ITaskbarList3_HrInit(x) (x)->HrInit()
+#define ITaskbarList3_Release(x) (x)->Release()
+#define ITaskbarList3_SetProgressState(a, b, c) (a)->SetProgressState(b, c)
+#define ITaskbarList3_SetProgressValue(a, b, c, d) (a)->SetProgressValue(b, c, d)
 #endif
 
 #endif
 
 typedef struct
 {
-   unsigned opacity;
-   int progress;
    bool decorations;
+   int progress;
+   int crt_center;
+   unsigned opacity;
+   unsigned orig_width;
+   unsigned orig_height;
+   unsigned orig_refresh;
+#ifdef HAS_TASKBAR_EXT
+   ITaskbarList3 *taskbar_list;
+#endif
 } dispserv_win32_t;
 
 /*
@@ -71,12 +76,7 @@ typedef struct
    be received by your application before it calls any ITaskbarList3 method.
  */
 
-static unsigned win32_orig_width          = 0;
-static unsigned win32_orig_height         = 0;
-static unsigned win32_orig_refresh        = 0;
-static int crt_center                     = 0;
-
-static void* win32_display_server_init(void)
+static void *win32_display_server_init(void)
 {
    HRESULT hr;
    dispserv_win32_t *dispserv = (dispserv_win32_t*)calloc(1, sizeof(*dispserv));
@@ -90,23 +90,25 @@ static void* win32_display_server_init(void)
 #ifdef __cplusplus
    /* When compiling in C++ mode, GUIDs are references instead of pointers */
    hr = CoCreateInstance(CLSID_TaskbarList, NULL,
-         CLSCTX_INPROC_SERVER, IID_ITaskbarList3, (void**)&g_taskbarList);
+         CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
+         (void**)&dispserv->taskbar_list);
 #else
    /* Mingw GUIDs are pointers instead of references since we're in C mode */
    hr = CoCreateInstance(&CLSID_TaskbarList, NULL,
-         CLSCTX_INPROC_SERVER, &IID_ITaskbarList3, (void**)&g_taskbarList);
+         CLSCTX_INPROC_SERVER, &IID_ITaskbarList3,
+         (void**)&dispserv->taskbar_list);
 #endif
 
    if (SUCCEEDED(hr))
    {
-      hr = ITaskbarList3_HrInit(g_taskbarList);
+      hr = ITaskbarList3_HrInit(dispserv->taskbar_list);
 
       if (!SUCCEEDED(hr))
          RARCH_ERR("[dispserv]: HrInit of ITaskbarList3 failed.\n");
    }
    else
    {
-      g_taskbarList = NULL;
+      dispserv->taskbar_list = NULL;
       RARCH_ERR("[dispserv]: CoCreateInstance of ITaskbarList3 failed.\n");
    }
 #endif
@@ -118,15 +120,19 @@ static void win32_display_server_destroy(void *data)
 {
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
 
-   if (win32_orig_width > 0 && win32_orig_height > 0)
-      video_display_server_set_resolution(win32_orig_width, win32_orig_height,
-            win32_orig_refresh, (float)win32_orig_refresh, crt_center, 0, 0);
+   if (dispserv->orig_width > 0 && dispserv->orig_height > 0)
+      video_display_server_set_resolution(
+            dispserv->orig_width,
+            dispserv->orig_height,
+            dispserv->orig_refresh,
+            (float)dispserv->orig_refresh,
+            dispserv->crt_center, 0, 0);
 
 #ifdef HAS_TASKBAR_EXT
-   if (g_taskbarList)
+   if (dispserv->taskbar_list)
    {
-      ITaskbarList3_Release(g_taskbarList);
-      g_taskbarList = NULL;
+      ITaskbarList3_Release(dispserv->taskbar_list);
+      dispserv->taskbar_list = NULL;
    }
 #endif
 
@@ -170,29 +176,29 @@ static bool win32_display_server_set_window_progress(void *data, int progress, b
       serv->progress      = progress;
 
 #ifdef HAS_TASKBAR_EXT
-   if (!g_taskbarList || !win32_taskbar_is_created())
+   if (!serv->taskbar_list || !win32_taskbar_is_created())
       return false;
 
    if (progress == -1)
    {
       if (ITaskbarList3_SetProgressState(
-            g_taskbarList, hwnd, TBPF_INDETERMINATE) != S_OK)
+            serv->taskbar_list, hwnd, TBPF_INDETERMINATE) != S_OK)
          return false;
    }
    else if (finished)
    {
       if (ITaskbarList3_SetProgressState(
-            g_taskbarList, hwnd, TBPF_NOPROGRESS) != S_OK)
+            serv->taskbar_list, hwnd, TBPF_NOPROGRESS) != S_OK)
          return false;
    }
    else if (progress >= 0)
    {
       if (ITaskbarList3_SetProgressState(
-            g_taskbarList, hwnd, TBPF_NORMAL) != S_OK)
+            serv->taskbar_list, hwnd, TBPF_NORMAL) != S_OK)
          return false;
 
       if (ITaskbarList3_SetProgressValue(
-            g_taskbarList, hwnd, progress, 100) != S_OK)
+            serv->taskbar_list, hwnd, progress, 100) != S_OK)
          return false;
    }
 #endif
@@ -227,11 +233,11 @@ static bool win32_display_server_set_resolution(void *data,
 
    win32_get_video_output(&curDevmode, -1, sizeof(curDevmode));
 
-   if (win32_orig_width == 0)
-      win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
-   win32_orig_refresh        = curDevmode.dmDisplayFrequency;
-   if (win32_orig_height == 0)
-      win32_orig_height         = GetSystemMetrics(SM_CYSCREEN);
+   if (serv->orig_width == 0)
+      serv->orig_width          = GetSystemMetrics(SM_CXSCREEN);
+   serv->orig_refresh           = curDevmode.dmDisplayFrequency;
+   if (serv->orig_height == 0)
+      serv->orig_height         = GetSystemMetrics(SM_CYSCREEN);
 
    /* Used to stop super resolution bug */
    if (width == curDevmode.dmPelsWidth)

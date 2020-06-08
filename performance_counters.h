@@ -51,10 +51,6 @@ void performance_counter_register(struct retro_perf_counter *perf);
 
 void performance_counters_clear(void);
 
-void retro_perf_log(void);
-
-void rarch_perf_log(void);
-
 void rarch_perf_register(struct retro_perf_counter *perf);
 
 #define performance_counter_init(perf, name) \
@@ -94,8 +90,6 @@ void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time);
 bool rarch_timer_is_running(rarch_timer_t *timer);
 
 bool rarch_timer_has_expired(rarch_timer_t *timer);
-
-void rarch_timer_begin_us(rarch_timer_t *timer, uint64_t usec);
 
 void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec);
 

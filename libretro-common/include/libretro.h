@@ -278,6 +278,10 @@ enum retro_language
    RETRO_LANGUAGE_ARABIC              = 16,
    RETRO_LANGUAGE_GREEK               = 17,
    RETRO_LANGUAGE_TURKISH             = 18,
+   RETRO_LANGUAGE_SLOVAK              = 19,
+   RETRO_LANGUAGE_PERSIAN             = 20,
+   RETRO_LANGUAGE_HEBREW              = 21,
+   RETRO_LANGUAGE_ASTURIAN            = 22,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -1087,10 +1091,10 @@ enum retro_mod
 
 #define RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                             /* float * --
-                                            * Float value that lets us know what target refresh rate 
+                                            * Float value that lets us know what target refresh rate
                                             * is curently in use by the frontend.
                                             *
-                                            * The core can use the returned value to set an ideal 
+                                            * The core can use the returned value to set an ideal
                                             * refresh rate/framerate.
                                             */
 
@@ -1098,7 +1102,7 @@ enum retro_mod
                                             /* bool * --
                                             * Boolean value that indicates whether or not the frontend supports
                                             * input bitmasks being returned by retro_input_state_t. The advantage
-                                            * of this is that retro_input_state_t has to be only called once to 
+                                            * of this is that retro_input_state_t has to be only called once to
                                             * grab all button states instead of multiple times.
                                             *
                                             * If it returns true, you can pass RETRO_DEVICE_ID_JOYPAD_MASK as 'id'
@@ -1285,6 +1289,36 @@ enum retro_mod
                                             * This is used for games which consist of multiple images and
                                             * must be manually swapped out by the user (e.g. PSX, floppy disk
                                             * based systems).
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION 59
+                                           /* unsigned * --
+                                            * Unsigned value is the API version number of the message
+                                            * interface supported by the frontend. If callback returns
+                                            * false, API version is assumed to be 0.
+                                            *
+                                            * In legacy code, messages may be displayed in an
+                                            * implementation-specific manner by passing a struct
+                                            * of type retro_message to RETRO_ENVIRONMENT_SET_MESSAGE.
+                                            * This may be still be done regardless of the message
+                                            * interface version.
+                                            *
+                                            * If version is >= 1 however, messages may instead be
+                                            * displayed by passing a struct of type retro_message_ext
+                                            * to RETRO_ENVIRONMENT_SET_MESSAGE_EXT. This allows the
+                                            * core to specify message logging level, priority and
+                                            * destination (OSD, logging interface or both).
+                                            */
+
+#define RETRO_ENVIRONMENT_SET_MESSAGE_EXT 60
+                                           /* const struct retro_message_ext * --
+                                            * Sets a message to be displayed in an implementation-specific
+                                            * manner for a certain amount of 'frames'. Additionally allows
+                                            * the core to specify message logging level, priority and
+                                            * destination (OSD, logging interface or both).
+                                            * Should not be used for trivial messages, which should simply be
+                                            * logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a
+                                            * fallback, stderr).
                                             */
 
 /* VFS functionality */
@@ -2504,6 +2538,104 @@ struct retro_message
 {
    const char *msg;        /* Message to be displayed. */
    unsigned    frames;     /* Duration in frames of message. */
+};
+
+enum retro_message_target
+{
+   RETRO_MESSAGE_TARGET_ALL = 0,
+   RETRO_MESSAGE_TARGET_OSD,
+   RETRO_MESSAGE_TARGET_LOG
+};
+
+enum retro_message_type
+{
+   RETRO_MESSAGE_TYPE_NOTIFICATION = 0,
+   RETRO_MESSAGE_TYPE_NOTIFICATION_ALT,
+   RETRO_MESSAGE_TYPE_STATUS,
+   RETRO_MESSAGE_TYPE_PROGRESS
+};
+
+struct retro_message_ext
+{
+   /* Message string to be displayed/logged */
+   const char *msg;
+   /* Duration (in ms) of message when targeting the OSD */
+   unsigned duration;
+   /* Message priority when targeting the OSD
+    * > When multiple concurrent messages are sent to
+    *   the frontend and the frontend does not have the
+    *   capacity to display them all, messages with the
+    *   *highest* priority value should be shown
+    * > There is no upper limit to a message priority
+    *   value (within the bounds of the unsigned data type)
+    * > In the reference frontend (RetroArch), the same
+    *   priority values are used for frontend-generated
+    *   notifications, which are typically assigned values
+    *   between 0 and 3 depending upon importance */
+   unsigned priority;
+   /* Message logging level (info, warn, error, etc.) */
+   enum retro_log_level level;
+   /* Message destination: OSD, logging interface or both */
+   enum retro_message_target target;
+   /* Message 'type' when targeting the OSD
+    * > RETRO_MESSAGE_TYPE_NOTIFICATION: Specifies that a
+    *   message should be handled in identical fashion to
+    *   a standard frontend-generated notification
+    * > RETRO_MESSAGE_TYPE_NOTIFICATION_ALT: Specifies that
+    *   message is a notification that requires user attention
+    *   or action, but that it should be displayed in a manner
+    *   that differs from standard frontend-generated notifications.
+    *   This would typically correspond to messages that should be
+    *   displayed immediately (independently from any internal
+    *   frontend message queue), and/or which should be visually
+    *   distinguishable from frontend-generated notifications.
+    *   For example, a core may wish to inform the user of
+    *   information related to a disk-change event. It is
+    *   expected that the frontend itself may provide a
+    *   notification in this case; if the core sends a
+    *   message of type RETRO_MESSAGE_TYPE_NOTIFICATION, an
+    *   uncomfortable 'double-notification' may occur. A message
+    *   of RETRO_MESSAGE_TYPE_NOTIFICATION_ALT should therefore
+    *   be presented such that visual conflict with regular
+    *   notifications does not occur
+    * > RETRO_MESSAGE_TYPE_STATUS: Indicates that message
+    *   is not a standard notification. This typically
+    *   corresponds to 'status' indicators, such as a core's
+    *   internal FPS, which are intended to be displayed
+    *   either permanently while a core is running, or in
+    *   a manner that does not suggest user attention or action
+    *   is required. 'Status' type messages should therefore be
+    *   displayed in a different on-screen location and in a manner
+    *   easily distinguishable from both standard frontend-generated
+    *   notifications and messages of type RETRO_MESSAGE_TYPE_NOTIFICATION_ALT
+    * > RETRO_MESSAGE_TYPE_PROGRESS: Indicates that message reports
+    *   the progress of an internal core task. For example, in cases
+    *   where a core itself handles the loading of content from a file,
+    *   this may correspond to the percentage of the file that has been
+    *   read. Alternatively, an audio/video playback core may use a
+    *   message of type RETRO_MESSAGE_TYPE_PROGRESS to display the current
+    *   playback position as a percentage of the runtime. 'Progress' type
+    *   messages should therefore be displayed as a literal progress bar,
+    *   where:
+    *   - 'retro_message_ext.msg' is the progress bar title/label
+    *   - 'retro_message_ext.progress' determines the length of
+    *     the progress bar
+    * NOTE: Message type is a *hint*, and may be ignored
+    * by the frontend. If a frontend lacks support for
+    * displaying messages via alternate means than standard
+    * frontend-generated notifications, it will treat *all*
+    * messages as having the type RETRO_MESSAGE_TYPE_NOTIFICATION */
+   enum retro_message_type type;
+   /* Task progress when targeting the OSD and message is
+    * of type RETRO_MESSAGE_TYPE_PROGRESS
+    * > -1:    Unmetered/indeterminate
+    * > 0-100: Current progress percentage
+    * NOTE: Since message type is a hint, a frontend may ignore
+    * progress values. Where relevant, a core should therefore
+    * include progress percentage within the message string,
+    * such that the message intent remains clear when displayed
+    * as a standard frontend-generated notification */
+   int8_t progress;
 };
 
 /* Describes how the libretro implementation maps a libretro input bind

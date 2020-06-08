@@ -63,6 +63,7 @@
 #include "configuration.h"
 #include "file_path_special.h"
 
+#include "msg_hash.h"
 #include "paths.h"
 #include "verbosity.h"
 
@@ -163,6 +164,18 @@ void fill_pathname_application_special(char *s,
                strlcpy(s, dir_menu_config, len);
             else if (!path_is_empty(RARCH_PATH_CONFIG))
                fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
+         }
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG:
+         {
+            settings_t *settings   = config_get_ptr();
+            char               *s1 = (char*)malloc(
+                  PATH_MAX_LENGTH * sizeof(char));
+            const char *dir_assets = settings->paths.directory_assets;
+            s1[0] = '\0';
+            fill_pathname_join(s1, dir_assets, "pkg", PATH_MAX_LENGTH * sizeof(char));
+            strlcpy(s, s1, len);
+            free(s1);
          }
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
@@ -327,10 +340,34 @@ void fill_pathname_application_special(char *s,
 
             s1[0] = '\0';
 
-            fill_pathname_application_special(s1,
-                  PATH_MAX_LENGTH * sizeof(char),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-            fill_pathname_join(s, s1, "font.ttf", len);
+            switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+            {
+               case RETRO_LANGUAGE_ARABIC:
+               case RETRO_LANGUAGE_PERSIAN:
+                  fill_pathname_application_special(s1,
+                        PATH_MAX_LENGTH * sizeof(char),
+                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                  fill_pathname_join(s, s1, "fallback-font.ttf", len);
+                  break;
+               case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+               case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+                  fill_pathname_application_special(s1,
+                        PATH_MAX_LENGTH * sizeof(char),
+                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                  fill_pathname_join(s, s1, "chinese-fallback-font.ttf", len);
+                  break;
+               case RETRO_LANGUAGE_KOREAN:
+                  fill_pathname_application_special(s1,
+                        PATH_MAX_LENGTH * sizeof(char),
+                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                  fill_pathname_join(s, s1, "korean-fallback-font.ttf", len);
+                  break;
+               default:
+                  fill_pathname_application_special(s1,
+                        PATH_MAX_LENGTH * sizeof(char),
+                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+                  fill_pathname_join(s, s1, "font.ttf", len);
+            }
 
             free(s1);
          }
@@ -350,10 +387,34 @@ void fill_pathname_application_special(char *s,
 
                s1[0] = '\0';
 
-               fill_pathname_application_special(s1,
-                     PATH_MAX_LENGTH * sizeof(char),
-                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-               fill_pathname_join(s, s1, "font.ttf", len);
+               switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+               {
+                  case RETRO_LANGUAGE_ARABIC:
+                  case RETRO_LANGUAGE_PERSIAN:
+                     fill_pathname_application_special(s1,
+                           PATH_MAX_LENGTH * sizeof(char),
+                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s, s1, "fallback-font.ttf", len);
+                     break;
+                  case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+                  case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+                     fill_pathname_application_special(s1,
+                           PATH_MAX_LENGTH * sizeof(char),
+                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s, s1, "chinese-fallback-font.ttf", len);
+                     break;
+                  case RETRO_LANGUAGE_KOREAN:
+                     fill_pathname_application_special(s1,
+                           PATH_MAX_LENGTH * sizeof(char),
+                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s, s1, "korean-fallback-font.ttf", len);
+                     break;
+                  default:
+                     fill_pathname_application_special(s1,
+                           PATH_MAX_LENGTH * sizeof(char),
+                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
+                     fill_pathname_join(s, s1, "font.ttf", len);
+               }
                free(s1);
             }
          }
@@ -413,54 +474,4 @@ void fill_pathname_application_special(char *s,
       default:
          break;
    }
-}
-
-/**
- * fill_short_pathname_representation:
- * @out_rep            : output representation
- * @in_path            : input path
- * @size               : size of output representation
- *
- * Generates a short representation of path. It should only
- * be used for displaying the result; the output representation is not
- * binding in any meaningful way (for a normal path, this is the same as basename)
- * In case of more complex URLs, this should cut everything except for
- * the main image file.
- *
- * E.g.: "/path/to/game.img" -> game.img
- *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
- */
-void fill_short_pathname_representation_wrapper(char* out_rep,
-      const char *in_path, size_t size)
-{
-#ifdef HAVE_COMPRESSION
-   char *path_short = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *last_slash = NULL;
-
-   path_short[0]    = '\0';
-
-   fill_pathname(path_short, path_basename(in_path), "",
-         PATH_MAX_LENGTH * sizeof(char)
-         );
-
-   last_slash  = find_last_slash(path_short);
-
-   if (last_slash != NULL)
-   {
-      /* We handle paths like:
-       * /path/to/file.7z#mygame.img
-       * short_name: mygame.img:
-       *
-       * We check whether something is actually
-       * after the hash to avoid going over the buffer.
-       */
-      strlcpy(out_rep, last_slash + 1, size);
-      free(path_short);
-      return;
-   }
-
-   free(path_short);
-#endif
-
-   fill_short_pathname_representation(out_rep, in_path, size);
 }

@@ -95,8 +95,8 @@ static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
       return;
    }
 
-   fprintf(stderr, "[osmesa] Frame size is %ix%ix%i\n", osmesa->width, osmesa->height, osmesa->pixsize);
-   fprintf(stderr, "[osmesa] Please connect to unix:%s\n", g_osmesa_fifo);
+   RARCH_ERR("[osmesa] Frame size is %ix%ix%i\n", osmesa->width, osmesa->height, osmesa->pixsize);
+   RARCH_ERR("[osmesa] Please connect to unix:%s\n", g_osmesa_fifo);
 }
 
 static void osmesa_fifo_accept(gfx_ctx_osmesa_data_t *osmesa)
@@ -116,7 +116,7 @@ static void osmesa_fifo_accept(gfx_ctx_osmesa_data_t *osmesa)
    else if (res > 0)
    {
       osmesa->client = accept(osmesa->socket, NULL, NULL);
-      fprintf(stderr, "[osmesa] Client %i connected.\n", osmesa->client);
+      RARCH_LOG("[osmesa] Client %i connected.\n", osmesa->client);
    }
 }
 
@@ -134,7 +134,7 @@ static void osmesa_fifo_write(gfx_ctx_osmesa_data_t *osmesa)
 
       if (res < 0)
       {
-         fprintf(stderr, "[osmesa] Lost connection to %i: %s\n", osmesa->client, strerror(errno));
+         RARCH_LOG("[osmesa] Lost connection to %i: %s\n", osmesa->client, strerror(errno));
          close(osmesa->client);
          osmesa->client = -1;
          break;

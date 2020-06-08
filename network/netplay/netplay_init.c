@@ -33,7 +33,7 @@
 #include "../../autosave.h"
 #include "../../retroarch.h"
 
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
 #define HAVE_INET6 1
 #endif
 
@@ -269,7 +269,7 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
    return true;
 }
 
-bool netplay_init_serialization(netplay_t *netplay)
+static bool netplay_init_serialization(netplay_t *netplay)
 {
    unsigned i;
    retro_ctx_size_info_t info;
@@ -418,8 +418,6 @@ static bool netplay_init_buffers(netplay_t *netplay)
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    bool stateless_mode, int check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
-   const char *netplay_password,
-   const char *netplay_spectate_password,
    uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
@@ -489,9 +487,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    else
    {
       /* Start our handshake */
-      netplay_handshake_init_send(netplay, &netplay->connections[0],
-            netplay_password,
-            netplay_spectate_password);
+      netplay_handshake_init_send(netplay, &netplay->connections[0]);
 
       netplay->connections[0].mode = NETPLAY_CONNECTION_INIT;
       netplay->self_mode           = NETPLAY_CONNECTION_INIT;

@@ -24,6 +24,7 @@
 #include "../configuration.h"
 #include "../retroarch.h"
 
+/* TODO/FIXME - static public global variables */
 static unsigned old_analog_dpad_mode[MAX_USERS];
 static unsigned old_libretro_device[MAX_USERS];
 

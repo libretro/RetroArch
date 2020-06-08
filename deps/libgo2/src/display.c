@@ -71,7 +71,6 @@ typedef struct go2_surface
     int stride;
     uint32_t format;
     int prime_fd;
-    bool is_mapped;
     uint8_t* map;
 } go2_surface_t;
 
@@ -93,13 +92,13 @@ typedef struct go2_presenter
     sem_t freeSem;
     sem_t usedSem;
     volatile bool terminating;
+    bool managed;
 } go2_presenter_t;
 
 
 go2_display_t* go2_display_create()
 {
     int i;
-
 
     go2_display_t* result = malloc(sizeof(*result));
     if (!result)
@@ -121,7 +120,7 @@ go2_display_t* go2_display_create()
 
 
     drmModeRes* resources = drmModeGetResources(result->fd);
-    if (!resources) 
+    if (!resources)
     {
         printf("drmModeGetResources failed: %s\n", strerror(errno));
         goto err_01;
@@ -164,7 +163,7 @@ go2_display_t* go2_display_create()
         mode = NULL;
     }
 
-    if (!mode) 
+    if (!mode)
     {
         printf("DRM_MODE_TYPE_PREFERRED not found.\n");
         goto err_03;
@@ -184,7 +183,7 @@ go2_display_t* go2_display_create()
         {
             break;
         }
-        
+
         drmModeFreeEncoder(encoder);
         encoder = NULL;
     }
@@ -195,13 +194,13 @@ go2_display_t* go2_display_create()
         printf("could not find encoder!\n");
         goto err_03;
     }
-    
+
     result->crtc_id = encoder->crtc_id;
 
     drmModeFreeEncoder(encoder);
     drmModeFreeConnector(connector);
     drmModeFreeResources(resources);
-    
+
     return result;
 
 
@@ -243,7 +242,7 @@ void go2_display_present(go2_display_t* display, go2_frame_buffer_t* frame_buffe
     int ret = drmModeSetCrtc(display->fd, display->crtc_id, frame_buffer->fb_id, 0, 0, &display->connector_id, 1, &display->mode);
     if (ret)
     {
-        printf("drmModeSetCrtc failed.\n");        
+        printf("drmModeSetCrtc failed.\n");
     }
 }
 
@@ -285,7 +284,7 @@ uint32_t go2_display_backlight_get(go2_display_t* display)
             value = atoi(buffer);
         }
 
-        close(fd);        
+        close(fd);
     }
 
     float percent = value / (float)max * 100.0f;
@@ -298,7 +297,7 @@ void go2_display_backlight_set(go2_display_t* display, uint32_t value)
     int max = 255;
     char buffer[BACKLIGHT_BUFFER_SIZE + 1];
 
-    
+
     if (value > 100) value = 100;
 
     fd = open(BACKLIGHT_BRIGHTNESS_MAX_NAME, O_RDONLY);
@@ -331,13 +330,13 @@ void go2_display_backlight_set(go2_display_t* display, uint32_t value)
             printf("go2_display_backlight_set write failed.\n");
         }
 
-        close(fd);        
+        close(fd);
     }
     else
     {
         printf("go2_display_backlight_set open failed.\n");
     }
-    
+
 }
 
 
@@ -371,7 +370,7 @@ int go2_drm_format_get_bpp(uint32_t format)
         case DRM_FORMAT_BGR565:
             result = 16;
             break;
-            
+
 
         case DRM_FORMAT_RGB888:
         case DRM_FORMAT_BGR888:
@@ -443,6 +442,7 @@ go2_surface_t* go2_surface_create(go2_display_t* display, int width, int height,
     result->height = height;
     result->stride = args.pitch;
     result->format = format;
+    result->map = NULL;
 
     return result;
 
@@ -459,7 +459,7 @@ void go2_surface_destroy(go2_surface_t* surface)
     int io = drmIoctl(surface->display->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &args);
     if (io < 0)
     {
-        printf("DRM_IOCTL_MODE_DESTROY_DUMB failed.\n");        
+        printf("DRM_IOCTL_MODE_DESTROY_DUMB failed.\n");
     }
 
     free(surface);
@@ -511,9 +511,8 @@ out:
 
 void* go2_surface_map(go2_surface_t* surface)
 {
-    if (surface->is_mapped)
+    if (surface->map)
         return surface->map;
-
 
     int prime_fd = go2_surface_prime_fd(surface);
     surface->map = mmap(NULL, surface->size, PROT_READ | PROT_WRITE, MAP_SHARED, prime_fd, 0);
@@ -523,17 +522,14 @@ void* go2_surface_map(go2_surface_t* surface)
         return NULL;
     }
 
-    surface->is_mapped = true;
     return surface->map;
 }
 
 void go2_surface_unmap(go2_surface_t* surface)
 {
-    if (surface->is_mapped)
+    if (surface->map)
     {
         munmap(surface->map, surface->size);
-
-        surface->is_mapped = false;
         surface->map = NULL;
     }
 }
@@ -545,29 +541,29 @@ static uint32_t go2_rkformat_get(uint32_t drm_fourcc)
     {
         case DRM_FORMAT_RGBA8888:
             return RK_FORMAT_RGBA_8888;
-    
+
         case DRM_FORMAT_RGBX8888:
             return RK_FORMAT_RGBX_8888;
-    
+
         case DRM_FORMAT_RGB888:
             return RK_FORMAT_RGB_888;
-    
+
         case DRM_FORMAT_ARGB8888:
         case DRM_FORMAT_XRGB8888:
             return RK_FORMAT_BGRA_8888;
-    
+
         case DRM_FORMAT_RGB565:
             return RK_FORMAT_RGB_565;
 
         case DRM_FORMAT_RGBA5551:
             return RK_FORMAT_RGBA_5551;
-    
+
         case DRM_FORMAT_RGBA4444:
             return RK_FORMAT_RGBA_4444;
 
         case DRM_FORMAT_BGR888:
             return RK_FORMAT_BGR_888;
-    
+
         default:
             printf("RKFORMAT not supported. ");
             printf("drm_fourcc=%c%c%c%c\n", drm_fourcc & 0xff, drm_fourcc >> 8 & 0xff, drm_fourcc >> 16 & 0xff, drm_fourcc >> 24);
@@ -577,7 +573,7 @@ static uint32_t go2_rkformat_get(uint32_t drm_fourcc)
 
 void go2_surface_blit(go2_surface_t* srcSurface, int srcX, int srcY, int srcWidth, int srcHeight,
                       go2_surface_t* dstSurface, int dstX, int dstY, int dstWidth, int dstHeight,
-                      go2_rotation_t rotation)
+                      go2_rotation_t rotation, int scale_mode)
 {
     rga_info_t dst = { 0 };
     dst.fd = go2_surface_prime_fd(dstSurface);
@@ -634,13 +630,12 @@ void go2_surface_blit(go2_surface_t* srcSurface, int srcX, int srcY, int srcWidt
         B_SPLINE  = 0x3,
     };  /*bicubic coefficient*/
 #endif
-    src.scale_mode = 2;
-
+    src.scale_mode = scale_mode;
 
     int ret = c_RkRgaBlit(&src, &dst, NULL);
     if (ret)
     {
-        printf("c_RkRgaBlit failed.\n");        
+        printf("c_RkRgaBlit failed.\n");
     }
 }
 
@@ -652,14 +647,14 @@ int go2_surface_save_as_png(go2_surface_t* surface, const char* filename)
 
 
     png_byte color_type = 0;
-    png_byte bit_depth = 0;    
+    png_byte bit_depth = 0;
     switch (surface->format)
-    {     
+    {
         case DRM_FORMAT_RGBA8888:
             color_type = PNG_COLOR_TYPE_RGBA;
             bit_depth = 8;
             break;
-    
+
         case DRM_FORMAT_RGB888:
             color_type = PNG_COLOR_TYPE_RGB;
             bit_depth = 8;
@@ -733,7 +728,7 @@ int go2_surface_save_as_png(go2_surface_t* surface, const char* filename)
 
     /* write bytes */
     png_bytep src = (png_bytep)go2_surface_map(surface);
-    row_pointers = malloc(sizeof(png_bytep) * surface->height);        
+    row_pointers = malloc(sizeof(png_bytep) * surface->height);
     for (int y = 0; y < surface->height; ++y)
     {
         row_pointers[y] = src + (surface->stride * y);
@@ -891,14 +886,19 @@ static void* go2_presenter_renderloop(void* arg)
             sem_post(&presenter->freeSem);
         }
 
-        prevFrameBuffer = dstFrameBuffer;            
+        prevFrameBuffer = dstFrameBuffer;
     }
 
 
     return NULL;
 }
 
-go2_presenter_t* go2_presenter_create(go2_display_t* display, uint32_t format, uint32_t background_color)
+go2_display_t* go2_presenter_display_get(go2_presenter_t* presenter)
+{
+    return presenter->display;
+}
+
+go2_presenter_t* go2_presenter_create(go2_display_t* display, uint32_t format, uint32_t background_color, bool managed)
 {
     go2_presenter_t* result = malloc(sizeof(*result));
     if (!result)
@@ -913,67 +913,74 @@ go2_presenter_t* go2_presenter_create(go2_display_t* display, uint32_t format, u
     result->display = display;
     result->format = format;
     result->background_color = background_color;
-    result->freeFrameBuffers = go2_queue_create(BUFFER_COUNT);
-    result->usedFrameBuffers = go2_queue_create(BUFFER_COUNT);
+    result->managed = managed;
+    if (managed) {
+        result->freeFrameBuffers = go2_queue_create(BUFFER_COUNT);
+        result->usedFrameBuffers = go2_queue_create(BUFFER_COUNT);
 
-    int width = go2_display_width_get(display);
-    int height = go2_display_height_get(display);
+        int width = go2_display_width_get(display);
+        int height = go2_display_height_get(display);
 
-    for (int i = 0; i < BUFFER_COUNT; ++i)
-    {
-        go2_surface_t* surface = go2_surface_create(display, width, height, format);
-        go2_frame_buffer_t* frameBuffer = go2_frame_buffer_create(surface);
+        for (int i = 0; i < BUFFER_COUNT; ++i)
+        {
+            go2_surface_t* surface = go2_surface_create(display, width, height, format);
+            go2_frame_buffer_t* frameBuffer = go2_frame_buffer_create(surface);
 
-        go2_queue_push(result->freeFrameBuffers, frameBuffer);
+            go2_queue_push(result->freeFrameBuffers, frameBuffer);
+        }
+
+        sem_init(&result->usedSem, 0, 0);
+        sem_init(&result->freeSem, 0, BUFFER_COUNT);
+
+        pthread_mutex_init(&result->queueMutex, NULL);
+
+        pthread_create(&result->renderThread, NULL, go2_presenter_renderloop, result);
     }
-
- 
-    sem_init(&result->usedSem, 0, 0);
-    sem_init(&result->freeSem, 0, BUFFER_COUNT);
-
-    pthread_mutex_init(&result->queueMutex, NULL);
-
-    pthread_create(&result->renderThread, NULL, go2_presenter_renderloop, result);
+    else {
+        result->freeFrameBuffers = go2_queue_create(0);
+        result->usedFrameBuffers = go2_queue_create(0);
+    }
 
     return result;
 }
 
 void go2_presenter_destroy(go2_presenter_t* presenter)
 {
-    presenter->terminating = true;
-    sem_post(&presenter->usedSem);
+    if (presenter->managed) {
+        presenter->terminating = true;
+        sem_post(&presenter->usedSem);
 
-    pthread_join(presenter->renderThread, NULL);
-    pthread_mutex_destroy(&presenter->queueMutex);
+        pthread_join(presenter->renderThread, NULL);
+        pthread_mutex_destroy(&presenter->queueMutex);
 
-    sem_destroy(&presenter->freeSem);
-    sem_destroy(&presenter->usedSem);
+        sem_destroy(&presenter->freeSem);
+        sem_destroy(&presenter->usedSem);
 
-  
-    while(go2_queue_count_get(presenter->usedFrameBuffers) > 0)
-    {
-        go2_frame_buffer_t* frameBuffer = go2_queue_pop(presenter->usedFrameBuffers);
-        
-        go2_surface_t* surface = frameBuffer->surface;
-        
-        go2_frame_buffer_destroy(frameBuffer);
-        go2_surface_destroy(surface);
-    }
+        while(go2_queue_count_get(presenter->usedFrameBuffers) > 0)
+        {
+            go2_frame_buffer_t* frameBuffer = go2_queue_pop(presenter->usedFrameBuffers);
 
-    while(go2_queue_count_get(presenter->freeFrameBuffers) > 0)
-    {
-        go2_frame_buffer_t* frameBuffer = go2_queue_pop(presenter->freeFrameBuffers);
-        
-        go2_surface_t* surface = frameBuffer->surface;
+            go2_surface_t* surface = frameBuffer->surface;
 
-        go2_frame_buffer_destroy(frameBuffer);
-        go2_surface_destroy(surface);
+            go2_frame_buffer_destroy(frameBuffer);
+            go2_surface_destroy(surface);
+        }
+
+        while(go2_queue_count_get(presenter->freeFrameBuffers) > 0)
+        {
+            go2_frame_buffer_t* frameBuffer = go2_queue_pop(presenter->freeFrameBuffers);
+
+            go2_surface_t* surface = frameBuffer->surface;
+
+            go2_frame_buffer_destroy(frameBuffer);
+            go2_surface_destroy(surface);
+        }
     }
 
     free(presenter);
 }
 
-void go2_presenter_post(go2_presenter_t* presenter, go2_surface_t* surface, int srcX, int srcY, int srcWidth, int srcHeight, int dstX, int dstY, int dstWidth, int dstHeight, go2_rotation_t rotation)
+void go2_presenter_post(go2_presenter_t* presenter, go2_surface_t* surface, int srcX, int srcY, int srcWidth, int srcHeight, int dstX, int dstY, int dstWidth, int dstHeight, go2_rotation_t rotation, int scale_mode)
 {
     sem_wait(&presenter->freeSem);
 
@@ -1012,7 +1019,7 @@ void go2_presenter_post(go2_presenter_t* presenter, go2_surface_t* surface, int 
     }
 
 
-    go2_surface_blit(surface, srcX, srcY, srcWidth, srcHeight, dstSurface, dstX, dstY, dstWidth, dstHeight, rotation);
+    go2_surface_blit(surface, srcX, srcY, srcWidth, srcHeight, dstSurface, dstX, dstY, dstWidth, dstHeight, rotation, scale_mode);
 
 
     pthread_mutex_lock(&presenter->queueMutex);
@@ -1021,8 +1028,6 @@ void go2_presenter_post(go2_presenter_t* presenter, go2_surface_t* surface, int 
 
     sem_post(&presenter->usedSem);
 }
-
-
 
 #define BUFFER_MAX (3)
 
@@ -1034,7 +1039,7 @@ typedef struct buffer_surface_pair
 
 typedef struct go2_context
 {
-    go2_display_t* display;    
+    go2_display_t* display;
     int width;
     int height;
     go2_context_attributes_t attributes;

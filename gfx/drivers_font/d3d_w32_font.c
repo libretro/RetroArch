@@ -236,5 +236,6 @@ font_renderer_t d3d_win32_font = {
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   d3dfonts_w32_get_message_width
+   d3dfonts_w32_get_message_width,
+   NULL                       /* get_line_metrics */
 };

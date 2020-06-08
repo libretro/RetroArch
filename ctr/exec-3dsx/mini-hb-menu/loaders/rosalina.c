@@ -9,28 +9,32 @@ static bool init(void)
 
 static Result HBLDR_SetTarget(const char* path)
 {
+   Result rc;
 	u32 pathLen = strlen(path) + 1;
 	u32* cmdbuf = getThreadCommandBuffer();
 
-	cmdbuf[0] = IPC_MakeHeader(2, 0, 2); /* 0x20002 */
-	cmdbuf[1] = IPC_Desc_StaticBuffer(pathLen, 0);
-	cmdbuf[2] = (u32)path;
+	cmdbuf[0]   = IPC_MakeHeader(2, 0, 2); /* 0x20002 */
+	cmdbuf[1]   = IPC_Desc_StaticBuffer(pathLen, 0);
+	cmdbuf[2]   = (u32)path;
 
-	Result rc = svcSendSyncRequest(hbldrHandle);
-	if (R_SUCCEEDED(rc)) rc = cmdbuf[1];
+	rc          = svcSendSyncRequest(hbldrHandle);
+	if (R_SUCCEEDED(rc))
+      rc = cmdbuf[1];
 	return rc;
 }
 
 static Result HBLDR_SetArgv(const void* buffer, u32 size)
 {
+   Result rc;
 	u32* cmdbuf = getThreadCommandBuffer();
 
-	cmdbuf[0] = IPC_MakeHeader(3, 0, 2); /* 0x30002 */
-	cmdbuf[1] = IPC_Desc_StaticBuffer(size, 1);
-	cmdbuf[2] = (u32)buffer;
+	cmdbuf[0]   = IPC_MakeHeader(3, 0, 2); /* 0x30002 */
+	cmdbuf[1]   = IPC_Desc_StaticBuffer(size, 1);
+	cmdbuf[2]   = (u32)buffer;
 
-	Result rc = svcSendSyncRequest(hbldrHandle);
-	if (R_SUCCEEDED(rc)) rc = cmdbuf[1];
+	rc          = svcSendSyncRequest(hbldrHandle);
+	if (R_SUCCEEDED(rc))
+      rc = cmdbuf[1];
 	return rc;
 }
 
@@ -39,7 +43,8 @@ static void deinit(void)
 	svcCloseHandle(hbldrHandle);
 }
 
-static void launchFile(const char* path, argData_s* args, executableMetadata_s* em)
+static void launchFile(const char* path,
+      argData_s* args, executableMetadata_s* em)
 {
 	if (strncmp(path, "sdmc:/",6) == 0)
 		path += 5;

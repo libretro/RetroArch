@@ -6,6 +6,7 @@
 
 int main(int argc, const char** argv)
 {
+   unsigned i;
    const char* slang_fn = NULL;
    const char* vs_asm_fn = NULL;
    const char* ps_asm_fn = NULL;
@@ -13,7 +14,7 @@ int main(int argc, const char** argv)
    const char* ps_out_fn = NULL;
    bool verbose = false;
 
-   for(int i = 1; i < argc - 1; i++)
+   for (i = 1; i < argc - 1; i++)
    {
       if(!strcmp(argv[i], "--slang"))
          slang_fn = argv[++i];
@@ -92,10 +93,14 @@ int main(int argc, const char** argv)
    common << "#define float2 vec2\n";
    common << "#define float3 vec3\n";
    common << "#define float4 vec4\n";
-   for (std::shared_ptr<peg::Ast> &node : ast->nodes) {
-      if (node->name == "Version") {
+   for (std::shared_ptr<peg::Ast> &node : ast->nodes)
+   {
+      if (node->name == "Version")
+      {
          /* do nothing */
-      } else if (node->name == "UniformBlock") {
+      }
+      else if (node->name == "UniformBlock")
+      {
          int location = 0;
          int binding = 0;
          int set = 0;
@@ -110,33 +115,37 @@ int main(int argc, const char** argv)
          };
          std::vector<member_type> members;
 
-         for (std::shared_ptr<peg::Ast> &child : node->nodes) {
-            if (child->name == "Layout") {
-               for (std::shared_ptr<peg::Ast> &layout : child->nodes) {
-                  if (layout->name == "PushConstant") {
+         for (std::shared_ptr<peg::Ast> &child : node->nodes)
+         {
+            if (child->name == "Layout")
+            {
+               for (std::shared_ptr<peg::Ast> &layout : child->nodes)
+               {
+                  if (layout->name == "PushConstant")
                      push_constant = true;
-                  } else if (layout->name == "Location") {
+                  else if (layout->name == "Location")
                      location = std::stoul(layout->token);
-                  } else if (layout->name == "Binding") {
+                  else if (layout->name == "Binding")
                      binding = std::stoul(layout->token);
-                  } else if (layout->name == "Set") {
+                  else if (layout->name == "Set")
                      set = std::stoul(layout->token);
-                  } else if (layout->name == "Std") {
+                  else if (layout->name == "Std")
                      std_val = std::stoul(layout->token);
-                  }
                }
-            } else if (child->name == "StructName") {
+            }
+            else if (child->name == "StructName")
                struct_name = child->token;
-            } else if (child->name == "Name") {
+            else if (child->name == "Name")
                name = child->token;
-            } else if (child->name == "Member") {
+            else if (child->name == "Member")
+            {
                member_type new_member;
-               for (std::shared_ptr<peg::Ast> &member : child->nodes) {
-                  if (member->name == "Type") {
+               for (std::shared_ptr<peg::Ast> &member : child->nodes)
+               {
+                  if (member->name == "Type")
                      new_member.type = member->token;
-                  } else if (member->name == "Name") {
+                  else if (member->name == "Name")
                      new_member.name = member->token;
-                  }
                }
                members.push_back(new_member);
             }
@@ -152,12 +161,13 @@ int main(int argc, const char** argv)
             *out  << "layout(std" << std_val << ") ";
 #endif
          *out << "uniform " << struct_name << "\n{\n";
-         for(member_type &member : members) {
+         for (member_type &member : members)
             *out  << "   " << member.type << " " << member.name << ";\n";
-         }
          *out  << "}" << name << ";";
 
-      } else if (node->name == "Declaration") {
+      }
+      else if (node->name == "Declaration")
+      {
          int location = 0;
          int binding = 0;
          int set = 0;
@@ -167,54 +177,55 @@ int main(int argc, const char** argv)
          int array_size = 0;
          bool has_layout = false;
 
-         for (std::shared_ptr<peg::Ast> &child : node->nodes) {
-            if (child->name == "Layout") {
+         for (std::shared_ptr<peg::Ast> &child : node->nodes)
+         {
+            if (child->name == "Layout")
+            {
                has_layout = true;
-               for (std::shared_ptr<peg::Ast> &layout : child->nodes) {
-                  if (layout->name == "Location") {
+               for (std::shared_ptr<peg::Ast> &layout : child->nodes)
+               {
+                  if (layout->name == "Location")
                      location = std::stoul(layout->token);
-                  } else if (layout->name == "Binding") {
+                  else if (layout->name == "Binding")
                      binding = std::stoul(layout->token);
-                  } else if (layout->name == "Set") {
+                  else if (layout->name == "Set")
                      set = std::stoul(layout->token);
-                  }
                }
-            } else if (child->name == "Qualifier") {
-               qualifier = child->token;
-            } else if (child->name == "Type") {
-               type = child->token;
-            } else if (child->name == "Name") {
-               name = child->token;
-            }else if (child->name == "ArraySize") {
-               array_size = std::stoul(child->token);
             }
+            else if (child->name == "Qualifier")
+               qualifier = child->token;
+            else if (child->name == "Type")
+               type = child->token;
+            else if (child->name == "Name")
+               name = child->token;
+            else if (child->name == "ArraySize")
+               array_size = std::stoul(child->token);
          }
          if(has_layout && type != "sampler2D")
-         {
             *out << "layout(location = " << location << ") ";
-         }
 
          *out << qualifier << " " << type << " " << name;
          if(array_size)
             *out << "[" << array_size << "]";
          *out << ";";
-
-      } else if (node->name == "ConstArray") {
+      }
+      else if (node->name == "ConstArray")
+      {
          std::string type;
          std::string name;
          int array_size = 0;
          std::vector<std::shared_ptr<peg::Ast>>* array;
 
-         for (std::shared_ptr<peg::Ast> &child : node->nodes) {
-            if (child->name == "Type") {
+         for (std::shared_ptr<peg::Ast> &child : node->nodes)
+         {
+            if (child->name == "Type")
                type = child->token;
-            } else if (child->name == "Name") {
+            else if (child->name == "Name")
                name = child->token;
-            } else if (child->name == "ArraySize") {
+            else if (child->name == "ArraySize")
                array_size = std::stoul(child->token);
-            } else if (child->name == "Array") {
+            else if (child->name == "Array")
                array = &child->nodes;
-            }
          }
          *out << type << " " << name;
          if(array_size)
@@ -223,7 +234,8 @@ int main(int argc, const char** argv)
          if(array_size)
             *out << "[" << array_size << "]";
          *out << "(";
-         for (std::shared_ptr<peg::Ast> &item : *array) {
+         for (std::shared_ptr<peg::Ast> &item : *array)
+         {
             if(array_size)
                *out << type << "(";
             *out << item->token;
@@ -233,21 +245,22 @@ int main(int argc, const char** argv)
                *out << ", ";
          }
          *out << ");";
-
-      } else if (node->name == "Stage") {
+      }
+      else if (node->name == "Stage")
+      {
          std::string stage = node->token;
          std::transform(stage.begin(), stage.end(), stage.begin(), ::toupper);
          if(stage == "VERTEX")
             out = &vs;
          else
             out = &ps;
-      } else if (node->name == "Indent"){
-         *out << node->token;
-      } else if (node->name == "Line"){
-         *out << node->token << std::endl;
-      } else {
-         std::cout << "Unexcpected node " << node->name << std::endl;
       }
+      else if (node->name == "Indent")
+         *out << node->token;
+      else if (node->name == "Line")
+         *out << node->token << std::endl;
+      else
+         std::cout << "Unexcpected node " << node->name << std::endl;
    }
 
    {

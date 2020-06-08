@@ -353,7 +353,7 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
    strlcat(tmp, " ", sizeof(tmp));
 
-   if (strstr(s, ".index"))
+   if (string_ends_with(s, ".index"))
       strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));
    else
       strlcat(tmp, s, sizeof(tmp));

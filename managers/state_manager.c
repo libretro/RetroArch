@@ -62,6 +62,65 @@
 #include <emmintrin.h>
 #endif
 
+struct state_manager
+{
+   uint8_t *data;
+   size_t capacity;
+   /* Reading and writing is done here here. */
+   uint8_t *head;
+   /* If head comes close to this, discard a frame. */
+   uint8_t *tail;
+
+   uint8_t *thisblock;
+   uint8_t *nextblock;
+
+   /* This one is rounded up from reset::blocksize. */
+   size_t blocksize;
+
+   /* size_t + (blocksize + 131071) / 131072 *
+    * (blocksize + u16 + u16) + u16 + u32 + size_t
+    * (yes, the math is a bit ugly). */
+   size_t maxcompsize;
+
+   unsigned entries;
+   bool thisblock_valid;
+#if STRICT_BUF_SIZE
+   size_t debugsize;
+   uint8_t *debugblock;
+#endif
+};
+
+struct state_manager_rewind_state
+{
+   /* Rewind support. */
+   state_manager_t *state;
+   size_t size;
+};
+
+/* Format per frame (pseudocode): */
+#if 0
+size nextstart;
+repeat {
+   uint16 numchanged; /* everything is counted in units of uint16 */
+   if (numchanged)
+   {
+      uint16 numunchanged; /* skip these before handling numchanged */
+      uint16[numchanged] changeddata;
+   }
+   else
+   {
+      uint32 numunchanged;
+      if (!numunchanged)
+         break;
+   }
+}
+size thisstart;
+#endif
+
+/* TODO/FIXME - static public global variables */
+static struct state_manager_rewind_state rewind_state;
+static bool frame_is_reversed                         = false;
+
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
 static size_t find_change(const uint16_t *a, const uint16_t *b)
@@ -158,64 +217,6 @@ static size_t find_same(const uint16_t *a, const uint16_t *b)
    }
    return a - a_org;
 }
-
-struct state_manager
-{
-   uint8_t *data;
-   size_t capacity;
-   /* Reading and writing is done here here. */
-   uint8_t *head;
-   /* If head comes close to this, discard a frame. */
-   uint8_t *tail;
-
-   uint8_t *thisblock;
-   uint8_t *nextblock;
-
-   /* This one is rounded up from reset::blocksize. */
-   size_t blocksize;
-
-   /* size_t + (blocksize + 131071) / 131072 *
-    * (blocksize + u16 + u16) + u16 + u32 + size_t
-    * (yes, the math is a bit ugly). */
-   size_t maxcompsize;
-
-   unsigned entries;
-   bool thisblock_valid;
-#if STRICT_BUF_SIZE
-   size_t debugsize;
-   uint8_t *debugblock;
-#endif
-};
-
-/* Format per frame (pseudocode): */
-#if 0
-size nextstart;
-repeat {
-   uint16 numchanged; /* everything is counted in units of uint16 */
-   if (numchanged)
-   {
-      uint16 numunchanged; /* skip these before handling numchanged */
-      uint16[numchanged] changeddata;
-   }
-   else
-   {
-      uint32 numunchanged;
-      if (!numunchanged)
-         break;
-   }
-}
-size thisstart;
-#endif
-
-struct state_manager_rewind_state
-{
-   /* Rewind support. */
-   state_manager_t *state;
-   size_t size;
-};
-
-static struct state_manager_rewind_state rewind_state;
-static bool frame_is_reversed                         = false;
 
 /* Returns the maximum compressed size of a savestate.
  * It is very likely to compress to far less. */

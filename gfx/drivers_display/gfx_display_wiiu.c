@@ -89,6 +89,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
       }
 
    }
+   /* TODO come up with a better check for "not all vertexes are the same color" */
    else if (draw->coords->vertex || draw->coords->color[0] != draw->coords->color[12])
    {
       if (wiiu->vertex_cache_tex.current + 4 > wiiu->vertex_cache_tex.size)
@@ -106,14 +107,20 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 
       if (!draw->coords->vertex)
       {
-         v[0].pos.x = 0.0f;
-         v[0].pos.y = 1.0f;
-         v[1].pos.x = 1.0f;
-         v[1].pos.y = 1.0f;
-         v[2].pos.x = 0.0f;
-         v[2].pos.y = 0.0f;
-         v[3].pos.x = 1.0f;
-         v[3].pos.y = 0.0f;
+         /* Convert the libretro bottom-up coordinate system to GX2 - low y at
+            the top of the screen, large y at the bottom
+            The compiler will optimise 90% of this out anyway */
+         float y = -(draw->y + draw->height - video_height);
+         /* Remember: this is a triangle strip, not a quad, draw in a Z shape
+            Bottom-left, right, top-left, right */
+         v[0].pos.x = (draw->x               ) / video_width;
+         v[0].pos.y = (y       + draw->height) / video_height;
+         v[1].pos.x = (draw->x + draw->width ) / video_width;
+         v[1].pos.y = (y       + draw->height) / video_height;
+         v[2].pos.x = (draw->x               ) / video_width;
+         v[2].pos.y = (y                     ) / video_height;
+         v[3].pos.x = (draw->x + draw->width ) / video_width;
+         v[3].pos.y = (y                     ) / video_height;
       }
       else
       {

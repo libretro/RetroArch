@@ -137,11 +137,11 @@ void retro_vfs_file_open_cdrom(
    if (!string_is_equal_noncase(ext, "cue") && !string_is_equal_noncase(ext, "bin"))
       return;
 
-   if (path_len >= strlen("drive1-track01.bin"))
+   if (path_len >= STRLEN_CONST("drive1-track01.bin"))
    {
-      if (!memcmp(path, "drive", strlen("drive")))
+      if (!memcmp(path, "drive", STRLEN_CONST("drive")))
       {
-         if (!memcmp(path + 6, "-track", strlen("-track")))
+         if (!memcmp(path + 6, "-track", STRLEN_CONST("-track")))
          {
             if (sscanf(path + 12, "%02u", (unsigned*)&stream->cdrom.cur_track))
             {
@@ -154,9 +154,9 @@ void retro_vfs_file_open_cdrom(
       }
    }
 
-   if (path_len >= strlen("drive1.cue"))
+   if (path_len >= STRLEN_CONST("drive1.cue"))
    {
-      if (!memcmp(path, "drive", strlen("drive")))
+      if (!memcmp(path, "drive", STRLEN_CONST("drive")))
       {
          if (path[5] >= '0' && path[5] <= '9')
          {
@@ -209,9 +209,9 @@ void retro_vfs_file_open_cdrom(
    if (!string_is_equal_noncase(ext, "cue") && !string_is_equal_noncase(ext, "bin"))
       return;
 
-   if (path_len >= strlen("d:/drive-track01.bin"))
+   if (path_len >= STRLEN_CONST("d:/drive-track01.bin"))
    {
-      if (!memcmp(path + 1, ":/drive-track", strlen(":/drive-track")))
+      if (!memcmp(path + 1, ":/drive-track", STRLEN_CONST(":/drive-track")))
       {
          if (sscanf(path + 14, "%02u", (unsigned*)&stream->cdrom.cur_track))
          {
@@ -223,9 +223,9 @@ void retro_vfs_file_open_cdrom(
       }
    }
 
-   if (path_len >= strlen("d:/drive.cue"))
+   if (path_len >= STRLEN_CONST("d:/drive.cue"))
    {
-      if (!memcmp(path + 1, ":/drive", strlen(":/drive")))
+      if (!memcmp(path + 1, ":/drive", STRLEN_CONST(":/drive")))
       {
          if ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'))
          {
@@ -340,25 +340,15 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
    if (string_is_equal_noncase(ext, "cue"))
    {
-      if ((int64_t)len < (int64_t)stream->cdrom.cue_len - stream->cdrom.byte_pos)
-      {
+      if ((int64_t)len >= (int64_t)stream->cdrom.cue_len - stream->cdrom.byte_pos) len = stream->cdrom.cue_len - stream->cdrom.byte_pos - 1;
 #ifdef CDROM_DEBUG
-         printf("[CDROM] Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 "...\n", len, stream->cdrom.byte_pos);
-         fflush(stdout);
+      printf("[CDROM] Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 "...\n", len, stream->cdrom.byte_pos);
+      fflush(stdout);
 #endif
-         memcpy(s, stream->cdrom.cue_buf + stream->cdrom.byte_pos, len);
-         stream->cdrom.byte_pos += len;
+      memcpy(s, stream->cdrom.cue_buf + stream->cdrom.byte_pos, len);
+      stream->cdrom.byte_pos += len;
 
-         return len;
-      }
-      else
-      {
-#ifdef CDROM_DEBUG
-         printf("[CDROM] Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 " failed.\n", len, stream->cdrom.byte_pos);
-         fflush(stdout);
-#endif
-         return 0;
-      }
+      return len;
    }
    else if (string_is_equal_noncase(ext, "bin"))
    {

@@ -269,12 +269,13 @@ static bool sixel_gfx_frame(void *data, const void *frame,
    unsigned pixfmt           = SIXEL_PIXELFORMAT_RGB565;
    bool draw                 = true;
    sixel_t *sixel            = (sixel_t*)data;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    if (!frame || !frame_width || !frame_height)
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (sixel_video_width != frame_width || sixel_video_height != frame_height || sixel_video_pitch != pitch)
@@ -418,7 +419,7 @@ static bool sixel_gfx_frame(void *data, const void *frame,
 
       if (SIXEL_FAILED(sixel->sixel_status))
       {
-         fprintf(stderr, "%s\n%s\n",
+         RARCH_ERR("%s\n%s\n",
                sixel_helper_format_error(sixel->sixel_status),
                sixel_helper_get_additional_message());
       }

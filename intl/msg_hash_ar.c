@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2019 - Brad Parker
  *
@@ -30,7 +30,7 @@
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
 #endif
-#pragma warning(disable: 4566)
+#pragma warning(disable:4566)
 #endif
 
 int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
@@ -1685,6 +1685,15 @@ int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Smoothens picture with bilinear filtering. \n"
                              "Should be disabled if using shaders.");
             break;
+      case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+         snprintf(s, len,
+#ifdef HAVE_ODROIDGO2
+               "RGA scaling and bicubic filtering. May break widgets."
+#else
+               "Hardware context scaling (if available)."
+#endif
+         );
+         break;
         case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             snprintf(s, len,
                      "Shows current date and/or time inside menu.");

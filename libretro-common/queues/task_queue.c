@@ -313,23 +313,20 @@ static scond_t *worker_cond     = NULL;
 static sthread_t *worker_thread = NULL;
 static bool worker_continue     = true; /* use running_lock when touching it */
 
+/* 'queue_lock' must be held for the duration of this function */
 static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 {
    retro_task_t     *t = NULL;
    retro_task_t *front = NULL;
 
-   slock_lock(queue_lock);
    front = queue->front;
-   slock_unlock(queue_lock);
 
    /* Remove first element if needed */
    if (task == front)
    {
-      slock_lock(queue_lock);
       queue->front = task->next;
       if (queue->back == task) /* if only element, also update back */
          queue->back = NULL;
-      slock_unlock(queue_lock);
       task->next   = NULL;
       return;
    }
@@ -348,10 +345,8 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
          /* When removing the tail of the queue, update the tail pointer */
          if (queue->back == task)
          {
-            slock_lock(queue_lock);
             if (queue->back == task)
                queue->back = t;
-            slock_unlock(queue_lock);
          }
          break;
       }
@@ -506,18 +501,31 @@ static void threaded_worker(void *userdata)
       finished = task->finished;
       slock_unlock(property_lock);
 
-      slock_lock(running_lock);
-      task_queue_remove(&tasks_running, task);
-      slock_unlock(running_lock);
-
       /* Update queue */
       if (!finished)
       {
-         /* Re-add task to running queue */
-         retro_task_threaded_push_running(task);
+         /* Move the task to the back of the queue */
+         /* mimics retro_task_threaded_push_running, but also includes a task_queue_remove */
+         slock_lock(running_lock);
+         slock_lock(queue_lock);
+         if (task->next != NULL) /* do nothing if only item in queue */
+         {
+            task_queue_remove(&tasks_running, task);
+            task_queue_put(&tasks_running, task);
+            scond_signal(worker_cond);
+         }
+         slock_unlock(queue_lock);
+         slock_unlock(running_lock);
       }
       else
       {
+         /* Remove task from running queue */
+         slock_lock(running_lock);
+         slock_lock(queue_lock);
+         task_queue_remove(&tasks_running, task);
+         slock_unlock(queue_lock);
+         slock_unlock(running_lock);
+
          /* Add task to finished queue */
          slock_lock(finished_lock);
          task_queue_put(&tasks_finished, task);

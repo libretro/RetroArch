@@ -19,6 +19,12 @@ ifeq ($(HAVE_CXX11), 1)
    CXXFLAGS += $(CXX11_CFLAGS)
 endif
 
+ifeq ($(HAVE_SAPI), 1)
+   LIBS += sapi.dll
+endif
+
+
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
@@ -176,6 +182,7 @@ OBJ += frontend/frontend_driver.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
        tasks/task_manual_content_scan.o \
+       tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o \
@@ -219,7 +226,6 @@ OBJ += \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        input/common/input_hid_common.o \
-       input/input_mapper.o \
        led/led_driver.o \
        gfx/video_coord_array.o \
        gfx/video_crt_switch.o \
@@ -241,6 +247,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o \
        managers/cheat_manager.o \
        core_info.o \
+       core_backup.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
@@ -260,9 +267,9 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
-       performance_counters.o \
        verbosity.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
+       $(LIBRETRO_COMM_DIR)/time/rtime.o \
        manual_content_scan.o \
        disk_control_interface.o
 
@@ -317,7 +324,11 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_cht.o \
           intl/msg_hash_ar.o \
           intl/msg_hash_el.o \
-          intl/msg_hash_tr.o
+          intl/msg_hash_tr.o \
+          intl/msg_hash_sk.o \
+          intl/msg_hash_fa.o \
+          intl/msg_hash_he.o \
+          intl/msg_hash_ast.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -425,6 +436,8 @@ ifeq ($(HAVE_QT), 1)
    NEED_CXX_LINKER = 1
 
    ifneq ($(findstring Linux,$(OS)),)
+      DEF_FLAGS += -fPIC
+   else ifneq ($(findstring BSD,$(OS)),)
       DEF_FLAGS += -fPIC
    endif
 endif
@@ -805,18 +818,11 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
-# Does not depend on HAVE_MENU
-ifeq ($(HAVE_SHADERS_COMMON), 1)
-   OBJ += menu/menu_shader.o
-endif
-
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += menu/menu_driver.o \
-          menu/menu_setting.o \
+   OBJ += menu/menu_setting.o \
           menu/widgets/menu_filebrowser.o \
           menu/widgets/menu_dialog.o \
           menu/widgets/menu_input_bind_dialog.o \
-          menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
@@ -843,7 +849,8 @@ ifeq ($(HAVE_GFX_WIDGETS), 1)
    OBJ += gfx/gfx_widgets.o \
           gfx/widgets/gfx_widget_screenshot.o \
           gfx/widgets/gfx_widget_volume.o \
-          gfx/widgets/gfx_widget_generic_message.o
+          gfx/widgets/gfx_widget_generic_message.o \
+          gfx/widgets/gfx_widget_libretro_message.o
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)
@@ -1117,7 +1124,12 @@ OBJ += gfx/drivers_context/gfx_null_ctx.o
 
 ifeq ($(HAVE_KMS), 1)
    HAVE_AND_WILL_USE_DRM = 1
+
+ifeq ($(HAVE_ODROIDGO2), 1)
+   OBJ += gfx/drivers_context/drm_go2_ctx.o
+else
    OBJ += gfx/drivers_context/drm_ctx.o
+endif
    DEF_FLAGS += $(GBM_CFLAGS) $(DRM_CFLAGS)
    LIBS += $(GBM_LIBS) $(DRM_LIBS)
 endif
@@ -1673,7 +1685,8 @@ endif
 
 ifeq ($(HAVE_ZLIB_COMMON), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
-          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
+          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o \
+          $(LIBRETRO_COMM_DIR)/streams/rzip_stream.o
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
 
@@ -1732,7 +1745,8 @@ endif
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
-       $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
+       $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
+       $(LIBRETRO_COMM_DIR)/formats/m3u/m3u_file.o
 
 # Gong embedded core
 ifeq ($(HAVE_GONG),1)
@@ -1755,7 +1769,16 @@ endif
 # Accessibility
 ifeq ($(HAVE_ACCESSIBILITY), 1)
    DEFINES += -DHAVE_ACCESSIBILITY
+
+ifeq ($(HAVE_SAPI), 1)
+ifneq ($(findstring Win32,$(OS)),)
+   LIBS += -lsapi
 endif
+endif
+
+endif
+
+
 
 # Things that depend on network availability
 
@@ -1801,38 +1824,41 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
    OBJ += network/netplay/netplay_delta.o \
-               network/netplay/netplay_handshake.o \
-               network/netplay/netplay_init.o \
-               network/netplay/netplay_io.o \
-               network/netplay/netplay_keyboard.o \
-               network/netplay/netplay_sync.o \
-               network/netplay/netplay_discovery.o \
-               network/netplay/netplay_buf.o \
-               network/netplay/netplay_room_parse.o
+			 network/netplay/netplay_handshake.o \
+			 network/netplay/netplay_init.o \
+			 network/netplay/netplay_io.o \
+			 network/netplay/netplay_keyboard.o \
+			 network/netplay/netplay_sync.o \
+			 network/netplay/netplay_discovery.o \
+			 network/netplay/netplay_buf.o \
+			 network/netplay/netplay_room_parse.o
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
       DEFINES += -DHAVE_CHEEVOS
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
-      OBJ += cheevos-new/cheevos.o \
-             cheevos-new/badges.o \
-             cheevos-new/fixup.o \
-             cheevos-new/parser.o \
-             cheevos-new/hash.o \
+      OBJ += cheevos/cheevos.o \
+             cheevos/badges.o \
+             cheevos/fixup.o \
+             cheevos/parser.o \
+             cheevos/hash.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
-             deps/rcheevos/src/rcheevos/trigger.o \
-             deps/rcheevos/src/rcheevos/condset.o \
-             deps/rcheevos/src/rcheevos/condition.o \
-             deps/rcheevos/src/rcheevos/operand.o \
-             deps/rcheevos/src/rcheevos/term.o \
-             deps/rcheevos/src/rcheevos/expression.o \
-             deps/rcheevos/src/rcheevos/value.o \
-             deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/alloc.o \
+             deps/rcheevos/src/rcheevos/compat.o \
+             deps/rcheevos/src/rcheevos/condition.o \
+             deps/rcheevos/src/rcheevos/condset.o \
+             deps/rcheevos/src/rcheevos/consoleinfo.o \
              deps/rcheevos/src/rcheevos/format.o \
+             deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
+             deps/rcheevos/src/rcheevos/operand.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
+             deps/rcheevos/src/rcheevos/runtime.o \
+             deps/rcheevos/src/rcheevos/runtime_progress.o \
+             deps/rcheevos/src/rcheevos/trigger.o \
+             deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rurl/url.o
 
       ifeq ($(HAVE_LUA), 1)
@@ -1881,7 +1907,8 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_DISCORD), 1)
       NEED_CXX_LINKER = 1
       DEFINES += -DHAVE_DISCORD
-      INCLUDE_DIRS += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
+      INCLUDE_DIRS += -Ideps/discord-rpc/include \
+							 -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
 
       ifneq ($(HAVE_THREADS), 1)
          DEFINES += -DDISCORD_DISABLE_IO_THREAD
@@ -1889,8 +1916,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
       OBJ     += deps/discord-rpc/src/discord_rpc.o \
                  deps/discord-rpc/src/rpc_connection.o \
-                 deps/discord-rpc/src/serialization.o \
-                 discord/discord.o
+                 deps/discord-rpc/src/serialization.o
 
       ifneq ($(findstring Win32,$(OS)),)
          OBJ  += deps/discord-rpc/src/discord_register_win.o \
@@ -2066,7 +2092,7 @@ ifeq ($(HAVE_MATH_NEON), 1)
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
-   DEFINES += -DHAVE_VITAGL -DTRANSPOSE_MATRICES
+   DEFINES += -DHAVE_VITAGL -DSTB_DXT_IMPLEMENTATION -DSKIP_ERROR_HANDLING
    INCLUDE_DIRS += -I$(DEPS_DIR)/vitaGL/source
    SOURCES := $(DEPS_DIR)/vitaGL/source $(DEPS_DIR)/vitaGL/source/utils
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
@@ -2115,6 +2141,7 @@ ifeq ($(HAVE_ODROIDGO2), 1)
   LIBS += -lrga -lpng -lz
   INCLUDE_DIRS += -I$(DEPS_DIR)/libgo2/include
   OBJ += $(DEPS_DIR)/libgo2/src/display.o \
-         $(DEPS_DIR)/libgo2/src/queue.o
+         $(DEPS_DIR)/libgo2/src/queue.o \
+         gfx/drivers/oga_gfx.o
 endif
 ##################################

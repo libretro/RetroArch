@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * legacy.c:
  * Implementation for legacy openGL 1.0 rendering method
@@ -69,7 +87,7 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -100,7 +118,7 @@ void glVertex3fv(const GLfloat *v) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -191,7 +209,7 @@ void glTexCoord2fv(GLfloat *f) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -214,7 +232,7 @@ void glTexCoord2f(GLfloat s, GLfloat t) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -237,7 +255,7 @@ void glTexCoord2i(GLint s, GLint t) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -260,14 +278,13 @@ void glArrayElement(GLint i) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (i < 0) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
 
-	// Aliasing client texture unit and client texture id for better code readability
+	// Aliasing client texture unit for better code readability
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
 
 	// Checking if current texture unit has GL_VERTEX_ARRAY enabled
 	if (tex_unit->vertex_array_state) {
@@ -340,7 +357,7 @@ void glBegin(GLenum mode) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -377,7 +394,7 @@ void glBegin(GLenum mode) {
 		np = 4;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -393,7 +410,7 @@ void glEnd(void) {
 
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -437,6 +454,9 @@ void glEnd(void) {
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_mode, 0, 1, &fogmode);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_color, 0, 4, &fog_color.r);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_near, 0, 1, (const float *)&fog_near);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_far, 0, 1, (const float *)&fog_far);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_density, 0, 1, (const float *)&fog_density);
 
 	} else {
 		// Setting proper vertex and fragment programs
@@ -455,15 +475,10 @@ void glEnd(void) {
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float *)mvp_matrix);
 
 		// Setting fogging uniforms
-		float fogmode = (float)internal_fog_mode;
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_mode2, 0, 1, (const float *)&fogmode);
 		float clipplane0 = (float)clip_plane0;
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0, 0, 1, &clipplane0);
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_near, 0, 1, (const float *)&fog_near);
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_far, 0, 1, (const float *)&fog_far);
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_density, 0, 1, (const float *)&fog_density);
 
 		// Setting in use texture
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);

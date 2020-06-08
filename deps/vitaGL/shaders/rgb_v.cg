@@ -6,6 +6,6 @@ void main(
 	float4 out vColor: COLOR)
 {
 	vPosition = mul(float4(aPosition, 1.f), wvp);
-	vColor = float4(aColor, 1.0);
+	vColor = float4(aColor, 1.f);
 }
 

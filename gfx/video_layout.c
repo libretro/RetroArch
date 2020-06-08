@@ -66,6 +66,7 @@ typedef struct video_layout_state
 }
 video_layout_state_t;
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static video_layout_state_t *video_layout_state = NULL;
 
 void video_layout_init(void *video_driver_data,

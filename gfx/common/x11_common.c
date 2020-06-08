@@ -219,23 +219,15 @@ static void xdg_screensaver_inhibit(Window wnd)
    }
 }
 
-void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
-{
-   /* Check if screensaver suspend is enabled in config */
-   if (!enable)
-      return;
-
-   if (xdg_screensaver_available)
-      xdg_screensaver_inhibit(wnd);
-}
-
 void x11_suspend_screensaver(Window wnd, bool enable)
 {
 #ifdef HAVE_DBUS
     if (dbus_suspend_screensaver(enable))
        return;
 #endif
-    x11_suspend_screensaver_xdg_screensaver(wnd, enable);
+    if (enable)
+       if (xdg_screensaver_available)
+          xdg_screensaver_inhibit(wnd);
 }
 
 float x11_get_refresh_rate(void *data)

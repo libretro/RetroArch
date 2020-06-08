@@ -476,10 +476,10 @@ else
    die : 'Notice: X11 not present. Skipping X11 code paths.'
 fi
 
-check_enabled X11 XINERAMA Xinerama 'X11 is' false
-check_enabled X11 XSHM XShm 'X11 is' false
-check_enabled X11 XRANDR Xrandr 'X11 is' false
-check_enabled X11 XVIDEO XVideo 'X11 is' false
+check_enabled X11 XINERAMA Xinerama 'Xinerama is' false
+check_enabled X11 XSHM XShm 'XShm is' false
+check_enabled X11 XRANDR Xrandr 'Xrandr is' false
+check_enabled X11 XVIDEO XVideo 'Xvideo is' false
 check_enabled XEXT XVIDEO XVideo 'Xext is' false
 check_enabled XF86VM XVIDEO XVideo 'XF86vm is' false
 

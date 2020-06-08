@@ -25,7 +25,7 @@ extern "C" {
 #define TEMP_EXTENSION ".update_tmp"
 #define RETROARCH_NIGHTLY_UPDATE_PATH "../RetroArch_update.zip"
 
-static void extractUpdateCB(retro_task_t *task,
+static void extract_update_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
@@ -85,14 +85,16 @@ void MainWindow::onUpdateNetworkError(QNetworkReply::NetworkError code)
    errorStringArray = reply->errorString().toUtf8();
    errorStringData = errorStringArray.constData();
 
-   RARCH_ERR("[Qt]: Network error code %d received: %s\n", code, errorStringData);
+   RARCH_ERR("[Qt]: Network error code %d received: %s\n",
+         code, errorStringData);
 
-   /* Deleting the reply here seems to cause a strange heap-use-after-free crash. */
-   /*
+   /* Deleting the reply here seems to cause a 
+    * strange heap-use-after-free crash. */
+#if 0
    reply->disconnect();
    reply->abort();
    reply->deleteLater();
-   */
+#endif
 }
 
 void MainWindow::onUpdateNetworkSslErrors(const QList<QSslError> &errors)
@@ -106,7 +108,10 @@ void MainWindow::onUpdateNetworkSslErrors(const QList<QSslError> &errors)
    for (i = 0; i < errors.count(); i++)
    {
       const QSslError &error = errors.at(i);
-      QString         string = QString("Ignoring SSL error code ") + QString::number(error.error()) + ": " + error.errorString();
+      QString         string = QString("Ignoring SSL error code ") 
+         + QString::number(error.error()) 
+         + ": " 
+         + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
 
@@ -150,7 +155,8 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
       emit showErrorMessageDeferred(QString(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) 
             + ": HTTP Code " + QString::number(code));
-      RARCH_ERR("[Qt]: RetroArch update failed with HTTP status code: %d\n", code);
+      RARCH_ERR("[Qt]: RetroArch update failed with HTTP status code: %d\n",
+            code);
       reply->disconnect();
       reply->abort();
       reply->deleteLater();
@@ -159,7 +165,7 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
 
    if (error == QNetworkReply::NoError)
    {
-      int index = m_updateFile.fileName().lastIndexOf(PARTIAL_EXTENSION);
+      int           index = m_updateFile.fileName().lastIndexOf(PARTIAL_EXTENSION);
       QString newFileName = m_updateFile.fileName().left(index);
       QFile newFile(newFileName);
 
@@ -171,12 +177,15 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
          if (m_updateFile.rename(newFileName))
          {
             RARCH_LOG("[Qt]: RetroArch update finished downloading successfully.\n");
-            emit extractArchiveDeferred(newFileName, ".", TEMP_EXTENSION, extractUpdateCB);
+            emit extractArchiveDeferred(newFileName, ".", TEMP_EXTENSION,
+                  extract_update_cb);
          }
          else
          {
             RARCH_ERR("[Qt]: RetroArch update finished, but temp file could not be renamed.\n");
-            emit showErrorMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
+            emit showErrorMessageDeferred(
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
          }
       }
    }
@@ -212,10 +221,11 @@ void MainWindow::onUpdateRetroArchFinished(bool success)
    emit showInfoMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED));
 }
 
-void MainWindow::onUpdateDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+void MainWindow::onUpdateDownloadProgress(
+      qint64 bytesReceived, qint64 bytesTotal)
 {
    QNetworkReply *reply = m_updateReply.data();
-   int progress = (bytesReceived / (float)bytesTotal) * 100.0f;
+   int         progress = (bytesReceived / (float)bytesTotal) * 100.0f;
 
    if (!reply)
       return;
@@ -238,8 +248,8 @@ void MainWindow::updateRetroArchNightly()
    QUrl url(QUrl(DEFAULT_BUILDBOT_SERVER_URL).resolved(QUrl(RETROARCH_NIGHTLY_UPDATE_PATH)));
    QNetworkRequest request(url);
    QNetworkReply *reply = NULL;
-   QByteArray urlArray = url.toString().toUtf8();
-   const char *urlData = urlArray.constData();
+   QByteArray urlArray  = url.toString().toUtf8();
+   const char *urlData  = urlArray.constData();
 
    if (m_updateFile.isOpen())
    {
@@ -248,7 +258,8 @@ void MainWindow::updateRetroArchNightly()
    }
    else
    {
-      QString fileName = QFileInfo(url.toString()).fileName() + PARTIAL_EXTENSION;
+      QString fileName         = QFileInfo(url.toString()).fileName() 
+         + PARTIAL_EXTENSION;
       QByteArray fileNameArray = fileName.toUtf8();
       const char *fileNameData = fileNameArray.constData();
 
@@ -273,7 +284,8 @@ void MainWindow::updateRetroArchNightly()
    m_updateProgressDialog->setAutoClose(true);
    m_updateProgressDialog->setAutoReset(true);
    m_updateProgressDialog->setValue(0);
-   m_updateProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
+   m_updateProgressDialog->setLabelText(QString(
+            msg_hash_to_str(MSG_DOWNLOADING)) + "...");
    m_updateProgressDialog->setCancelButtonText(tr("Cancel"));
    m_updateProgressDialog->show();
 

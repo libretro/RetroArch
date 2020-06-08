@@ -96,7 +96,9 @@ enum file_path_enum
    FILE_PATH_RUNTIME_EXTENSION,
    FILE_PATH_DEFAULT_EVENT_LOG,
    FILE_PATH_EVENT_LOG_EXTENSION,
-   FILE_PATH_DISK_CONTROL_INDEX_EXTENSION
+   FILE_PATH_DISK_CONTROL_INDEX_EXTENSION,
+   FILE_PATH_CORE_BACKUP_EXTENSION,
+   FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT
 };
 
 enum application_special_type
@@ -104,6 +106,9 @@ enum application_special_type
    APPLICATION_SPECIAL_NONE = 0,
    APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG,
    APPLICATION_SPECIAL_DIRECTORY_CONFIG,
+   APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG,
+   APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG_AR_FONT,
+   APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG_CJK_FONT,
    APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI,
    APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
    APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS,
@@ -116,24 +121,6 @@ enum application_special_type
    APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES,
    APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS
 };
-
-/**
- * fill_short_pathname_representation:
- * @out_rep            : output representation
- * @in_path            : input path
- * @size               : size of output representation
- *
- * Generates a short representation of path. It should only
- * be used for displaying the result; the output representation is not
- * binding in any meaningful way (for a normal path, this is the same as basename)
- * In case of more complex URLs, this should cut everything except for
- * the main image file.
- *
- * E.g.: "/path/to/game.img" -> game.img
- *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
- */
-void fill_short_pathname_representation_wrapper(char* out_rep,
-      const char *in_path, size_t size);
 
 const char *file_path_str(enum file_path_enum enum_idx);
 

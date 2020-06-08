@@ -55,6 +55,7 @@ enum
    ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX,
@@ -110,6 +111,7 @@ enum
    ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST,
    ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST,
    ACTION_OK_DL_CORE_SETTINGS_LIST,
+   ACTION_OK_DL_CORE_INFORMATION_LIST,
    ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST,
    ACTION_OK_DL_RECORDING_SETTINGS_LIST,
    ACTION_OK_DL_PLAYLIST_SETTINGS_LIST,
@@ -189,7 +191,9 @@ enum
    ACTION_OK_DL_CDROM_INFO_DETAIL_LIST,
    ACTION_OK_DL_RGUI_MENU_THEME_PRESET,
    ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST,
-   ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE
+   ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE,
+   ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST,
+   ACTION_OK_DL_CORE_DELETE_BACKUP_LIST
 };
 
 /* Function callbacks */
@@ -277,13 +281,10 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash,
-      const char *menu_label,
-      uint32_t menu_label_hash);
+      const char *menu_label);
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash);
+      const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
@@ -292,8 +293,7 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash);
+      const char *path, const char *label, unsigned type, size_t idx);
 
 #ifdef HAVE_LIBRETRODB
 int action_scan_directory(const char *path,
@@ -308,35 +308,6 @@ int bind_right_generic(unsigned type, const char *label,
 
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
-
-/* This sets up all the callback functions for a menu entry.
- *
- * OK     : When we press the 'OK' button on an entry.
- * Cancel : When we press the 'Cancel' button on an entry.
- * Scan   : When we press the 'Scan' button on an entry.
- * Start  : When we press the 'Start' button on an entry.
- * Select : When we press the 'Select' button on an entry.
- * Info   : When we press the 'Info' button on an entry.
- * Content Switch   : ??? (TODO/FIXME - Kivutar should document this)
- * Up     : when we press 'Up' on the D-pad while this entry is selected.
- * Down   : when we press 'Down' on the D-pad while this entry is selected.
- * Left   : when we press 'Left' on the D-pad while this entry is selected.
- * Right  : when we press 'Right' on the D-pad while this entry is selected.
- * Deferred push : When pressing an entry results in spawning a new list, it waits until the next
- * frame to push this onto the stack. This function callback will then be invoked.
- * Refresh : What happens when the screen has to be refreshed. Does an entry have internal state
- * that needs to be rebuild?
- * Get value: Each entry has associated 'text', which we call the value. This function callback
- * lets us render that text.
- * Get title: Each entry can have a custom 'title'.
- * Label: Each entry has a label name. This function callback lets us render that label text.
- * Sublabel: each entry has a sublabel, which consists of one or more lines of additional information.
- * This function callback lets us render that text.
- */
-void menu_cbs_init(void *data,
-      menu_file_list_cbs_t *cbs,
-      const char *path, const char *label,
-      unsigned type, size_t idx);
 
 int menu_cbs_exit(void);
 

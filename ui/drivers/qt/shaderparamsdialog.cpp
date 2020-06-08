@@ -169,7 +169,7 @@ void ShaderParamsDialog::clearLayout()
 
    m_layout = new QVBoxLayout();
 
-   widget = new QWidget();
+   widget   = new QWidget();
    widget->setLayout(m_layout);
    widget->setObjectName("shaderParamsWidget");
 

@@ -32,6 +32,7 @@
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <time/rtime.h>
 
 /* TODO: There are probably some unnecessary things on this huge include list now but I'm too afraid to touch it */
 #ifdef __APPLE__
@@ -44,7 +45,6 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #endif
-#include <compat/strcasestr.h>
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 
@@ -80,12 +80,7 @@
 #include <pspkernel.h>
 #endif
 
-#if defined(PS2)
-#include <fileXio_rpc.h>
-#include <fileXio.h>
-#endif
-
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/cell_fs.h>
 #endif
 
@@ -93,7 +88,7 @@
 #define FIO_S_ISDIR SCE_S_ISDIR
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP) || defined(PS2)
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
 #include <unistd.h> /* stat() is defined here */
 #endif
 
@@ -124,26 +119,48 @@
  */
 const char *path_get_archive_delim(const char *path)
 {
-   const char *last  = find_last_slash(path);
-   const char *delim = NULL;
+   const char *last_slash = find_last_slash(path);
+   const char *delim      = NULL;
+   char buf[5];
 
-   if (!last)
+   buf[0] = '\0';
+
+   if (!last_slash)
       return NULL;
 
-   /* Test if it's .zip */
-   delim = strcasestr(last, ".zip#");
+   /* Find delimiter position */
+   delim = strrchr(last_slash, '#');
 
-   if (!delim) /* If it's not a .zip, test if it's .apk */
-      delim = strcasestr(last, ".apk#");
+   if (!delim)
+      return NULL;
 
-   if (delim)
-      return delim + 4;
+   /* Check whether this is a known archive type
+    * > Note: The code duplication here is
+    *   deliberate, to maximise performance */
+   if (delim - last_slash > 4)
+   {
+      strlcpy(buf, delim - 4, sizeof(buf));
+      buf[4] = '\0';
 
-   /* If it's not a .zip or .apk file, test if it's .7z */
-   delim = strcasestr(last, ".7z#");
+      string_to_lower(buf);
 
-   if (delim)
-      return delim + 3;
+      /* Check if this is a '.zip', '.apk' or '.7z' file */
+      if (string_is_equal(buf,     ".zip") ||
+          string_is_equal(buf,     ".apk") ||
+          string_is_equal(buf + 1, ".7z"))
+         return delim;
+   }
+   else if (delim - last_slash > 3)
+   {
+      strlcpy(buf, delim - 3, sizeof(buf));
+      buf[3] = '\0';
+
+      string_to_lower(buf);
+
+      /* Check if this is a '.7z' file */
+      if (string_is_equal(buf, ".7z"))
+         return delim;
+   }
 
    return NULL;
 }
@@ -202,9 +219,12 @@ bool path_is_compressed_file(const char* path)
 {
    const char *ext = path_get_extension(path);
 
-   if (     strcasestr(ext, "zip")
-         || strcasestr(ext, "apk")
-         || strcasestr(ext, "7z"))
+   if (string_is_empty(ext))
+      return false;
+
+   if (string_is_equal_noncase(ext, "zip") ||
+       string_is_equal_noncase(ext, "apk") ||
+       string_is_equal_noncase(ext, "7z"))
       return true;
 
    return false;
@@ -463,11 +483,13 @@ void fill_pathname_parent_dir(char *out_dir,
 size_t fill_dated_filename(char *out_filename,
       const char *ext, size_t size)
 {
-   time_t       cur_time = time(NULL);
-   const struct tm* tm_  = localtime(&cur_time);
+   time_t cur_time = time(NULL);
+   struct tm tm_;
+
+   rtime_localtime(&cur_time, &tm_);
 
    strftime(out_filename, size,
-         "RetroArch-%m%d-%H%M%S", tm_);
+         "RetroArch-%m%d-%H%M%S", &tm_);
    return strlcat(out_filename, ext, size);
 }
 
@@ -488,19 +510,21 @@ void fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size)
 {
    char format[256];
-   time_t cur_time      = time(NULL);
-   const struct tm* tm_ = localtime(&cur_time);
+   struct tm tm_;
+   time_t cur_time = time(NULL);
 
-   format[0]            = '\0';
+   format[0]       = '\0';
+
+   rtime_localtime(&cur_time, &tm_);
 
    if (string_is_empty(ext))
    {
-      strftime(format, sizeof(format), "-%y%m%d-%H%M%S", tm_);
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S", &tm_);
       fill_pathname_noext(out_filename, in_str, format, size);
    }
    else
    {
-      strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", tm_);
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", &tm_);
 
       fill_pathname_join_concat_noext(out_filename,
             in_str, format, ext,
@@ -602,19 +626,27 @@ const char *path_basename(const char *path)
  **/
 bool path_is_absolute(const char *path)
 {
+   if (string_is_empty(path))
+      return false;
+
    if (path[0] == '/')
       return true;
-#ifdef _WIN32
-   /* Many roads lead to Rome ... */
-   if ((    strstr(path, "\\\\") == path)
-         || strstr(path, ":/")
-         || strstr(path, ":\\")
-         || strstr(path, ":\\\\"))
+
+#if defined(_WIN32)
+   /* Many roads lead to Rome...
+    * Note: Drive letter can only be 1 character long */
+   if (string_starts_with(path,     "\\\\") ||
+       string_starts_with(path + 1, ":/")   ||
+       string_starts_with(path + 1, ":\\"))
       return true;
-#elif defined(__wiiu__)
-   if (strstr(path, ":/"))
-      return true;
+#elif defined(__wiiu__) || defined(VITA)
+   {
+      const char *seperator = strchr(path, ':');
+      if (seperator && (seperator[1] == '/'))
+         return true;
+   }
 #endif
+
    return false;
 }
 
@@ -764,7 +796,7 @@ end:
 size_t path_relative_to(char *out,
       const char *path, const char *base, size_t size)
 {
-   size_t i;
+   size_t i, j;
    const char *trimmed_path, *trimmed_base;
 
 #ifdef _WIN32
@@ -776,9 +808,11 @@ size_t path_relative_to(char *out,
 #endif
 
    /* Trim common beginning */
-   for (i = 0; path[i] && base[i] && path[i] == base[i]; )
-      i++;
-   trimmed_path = path+i;
+   for (i = 0, j = 0; path[i] && base[i] && path[i] == base[i]; i++)
+      if (path[i] == path_default_slash_c())
+         j = i + 1;
+
+   trimmed_path = path+j;
    trimmed_base = base+i;
 
    /* Each segment of base turns into ".." */
@@ -1027,10 +1061,11 @@ void fill_pathname_abbreviate_special(char *out_path,
    unsigned i;
    const char *candidates[3];
    const char *notations[3];
-   char *application_dir     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *home_dir            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char application_dir[PATH_MAX_LENGTH];
+   char home_dir[PATH_MAX_LENGTH];
 
    application_dir[0] = '\0';
+   home_dir[0]        = '\0';
 
    /* application_dir could be zero-string. Safeguard against this.
     *
@@ -1047,15 +1082,13 @@ void fill_pathname_abbreviate_special(char *out_path,
    notations [1] = "~";
    notations [2] = NULL;
 
-   fill_pathname_application_dir(application_dir,
-         PATH_MAX_LENGTH * sizeof(char));
-   fill_pathname_home_dir(home_dir,
-         PATH_MAX_LENGTH * sizeof(char));
+   fill_pathname_application_dir(application_dir, sizeof(application_dir));
+   fill_pathname_home_dir(home_dir, sizeof(home_dir));
 
    for (i = 0; candidates[i]; i++)
    {
       if (!string_is_empty(candidates[i]) &&
-            strstr(in_path, candidates[i]) == in_path)
+          string_starts_with(in_path, candidates[i]))
       {
          size_t src_size  = strlcpy(out_path, notations[i], size);
 
@@ -1077,8 +1110,6 @@ void fill_pathname_abbreviate_special(char *out_path,
       }
    }
 
-   free(application_dir);
-   free(home_dir);
 #endif
 
    retro_assert(strlcpy(out_path, in_path, size) < size);

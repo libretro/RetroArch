@@ -34,7 +34,7 @@ Build-Depends:	debhelper (>= 9),
 				libass-dev,
 				nvidia-cg-dev [!armhf]
 Standards-Version: 3.9.5
-Homepage: http://www.libretro.com/
+Homepage: https://www.libretro.com/
 Vcs-Git: git://github.com/libretro/RetroArch.git
 Vcs-Browser: https://github.com/libretro/RetroArch
 
@@ -49,7 +49,7 @@ Depends:		${shlibs:Depends},
 Replaces: ssnes
 Suggests: retroarch-joypad-autoconfig, libretro-common-shaders, libretro-common-overlays, retroarch-assets
 Description: Simple frontend for the libretro library
- RetroArch is an open source, multi-platform frontend for the libretro API. 
- It can be used as a modular multi emulator system, game engine, media player 
- and 3D technical demonstration. These features are available through 
+ RetroArch is an open source, multi-platform frontend for the libretro API.
+ It can be used as a modular multi emulator system, game engine, media player
+ and 3D technical demonstration. These features are available through
  libretro cores.

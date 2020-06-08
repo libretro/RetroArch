@@ -58,6 +58,30 @@ static void cdfs_determine_sector_size(cdfs_track_t* track)
          track->stream_sector_size = 2352;
          track->stream_sector_header_size = 16;
       }
+      else
+      {
+         /* attempt to determine stream_sector_size from file size */
+         size_t size = intfstream_get_size(track->stream);
+
+         if ((size % 2352) == 0)
+         {
+            /* raw tracks use all 2352 bytes and have a 24 byte header */
+            track->stream_sector_size = 2352;
+            track->stream_sector_header_size = 24;
+         }
+         else if ((size % 2048) == 0)
+         {
+            /* cooked tracks eliminate all header/footer data */
+            track->stream_sector_size = 2048;
+            track->stream_sector_header_size = 0;
+         }
+         else if ((size % 2336) == 0)
+         {
+            /* MODE 2 format without 16-byte sync data */
+            track->stream_sector_size = 2336;
+            track->stream_sector_header_size = 8;
+         }
+      }
    }
 }
 
@@ -418,7 +442,7 @@ static cdfs_track_t* cdfs_open_cue_track(
          const char *track = line + 5;
          cdfs_skip_spaces(&track);
 
-         sscanf(track, "%d", &track_number);
+         sscanf(track, "%d", (int*)&track_number);
          while (*track && *track != ' ' && *track != '\n')
             ++track;
 
@@ -540,6 +564,10 @@ struct cdfs_track_t* cdfs_open_track(const char* path,
       return cdfs_open_chd_track(path, track_index);
 #endif
 
+   /* if opening track 1, try opening as a raw track */
+   if (track_index == 1)
+      return cdfs_open_raw_track(path);
+
    /* unsupported file type */
    return NULL;
 }
@@ -563,22 +591,39 @@ struct cdfs_track_t* cdfs_open_data_track(const char* path)
 cdfs_track_t* cdfs_open_raw_track(const char* path)
 {
    const char* ext = path_get_extension(path);
+   cdfs_track_t* track = NULL;
 
    if (  string_is_equal_noncase(ext, "bin") || 
          string_is_equal_noncase(ext, "iso"))
-      return cdfs_wrap_stream(intfstream_open_file(path,
-               RETRO_VFS_FILE_ACCESS_READ,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE), 0);
+   {
+      intfstream_t* file = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-   /* unsupported file type */
-   return NULL;
+      track = cdfs_wrap_stream(file, 0);
+      if (track != NULL && track->stream_sector_size == 0)
+      {
+         cdfs_close_track(track);
+         track = NULL;
+      }
+   }
+   else
+   {
+      /* unsupported file type */
+   }
+
+   return track;
 }
 
 void cdfs_close_track(cdfs_track_t* track)
 {
    if (track)
    {
-      intfstream_close(track->stream);
+      if (track->stream)
+      {
+         intfstream_close(track->stream);
+         free(track->stream);
+      }
+
       free(track);
    }
 }

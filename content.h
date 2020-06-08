@@ -43,13 +43,16 @@ typedef struct content_ctx_info
 bool content_load_ram_file(unsigned slot);
 
 /* Save a RAM state from memory to disk. */
-bool content_save_ram_file(unsigned slot);
+bool content_save_ram_file(unsigned slot, bool compress);
 
 /* Load a state from disk to memory. */
 bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk, bool autosave);
+
+/* Returns true if a save state task is in progress */
+bool content_save_state_in_progress(void);
 
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);

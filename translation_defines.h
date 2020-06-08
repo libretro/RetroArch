@@ -26,6 +26,7 @@ enum translation_lang
    TRANSLATION_LANG_AR,    /* Arabic */
    TRANSLATION_LANG_SQ,    /* Albanian */
    TRANSLATION_LANG_AF,    /* Afrikaans */
+   TRANSLATION_LANG_AST,    /* Asturian */
    TRANSLATION_LANG_EO,    /* Esperanto */
    TRANSLATION_LANG_ET,    /* Estonian */
    TRANSLATION_LANG_TL,    /* Filipino */
@@ -35,7 +36,7 @@ enum translation_lang
    TRANSLATION_LANG_EL,    /* Greek */
    TRANSLATION_LANG_GU,    /* Gujarati */
    TRANSLATION_LANG_HT,    /* Haitian Creole */
-   TRANSLATION_LANG_IW,    /* Hebrew */
+   TRANSLATION_LANG_HE,    /* Hebrew */
    TRANSLATION_LANG_HI,    /* Hindi */
    TRANSLATION_LANG_HU,    /* Hungarian */
    TRANSLATION_LANG_IS,    /* Icelandic */
