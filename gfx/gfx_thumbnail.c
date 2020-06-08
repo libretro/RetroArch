@@ -169,10 +169,10 @@ static void gfx_thumbnail_fade_cb(void *userdata)
 }
 
 /* Initialises thumbnail 'fade in' animation */
-static void gfx_thumbnail_init_fade(gfx_thumbnail_t *thumbnail)
+static void gfx_thumbnail_init_fade(
+      gfx_thumbnail_state_t *p_gfx_thumb,
+      gfx_thumbnail_t *thumbnail)
 {
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
-
    /* Sanity check */
    if (!thumbnail)
       return;
@@ -276,7 +276,8 @@ end:
    {
       /* Trigger 'fade in' animation, if required */
       if (fade_enabled)
-         gfx_thumbnail_init_fade(thumbnail_tag->thumbnail);
+         gfx_thumbnail_init_fade(p_gfx_thumb,
+               thumbnail_tag->thumbnail);
 
       free(thumbnail_tag);
    }
@@ -316,11 +317,15 @@ void gfx_thumbnail_request(
       bool network_on_demand_thumbnails
       )
 {
-   const char *thumbnail_path = NULL;
-   bool has_thumbnail         = false;
-
+   const char *thumbnail_path         = NULL;
+   bool has_thumbnail                 = false;
+   gfx_thumbnail_state_t *p_gfx_thumb = NULL;
+   p_gfx_thumb                        = NULL;
+   
    if (!path_data || !thumbnail)
       return;
+
+   p_gfx_thumb                        = gfx_thumb_get_ptr();
 
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
@@ -337,7 +342,6 @@ void gfx_thumbnail_request(
    {
       if (path_is_valid(thumbnail_path))
       {
-         gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
          gfx_thumbnail_tag_t *thumbnail_tag =
                (gfx_thumbnail_tag_t*)calloc(1, sizeof(gfx_thumbnail_tag_t));
 
@@ -403,7 +407,8 @@ void gfx_thumbnail_request(
 end:
    /* Trigger 'fade in' animation, if required */
    if (thumbnail->status != GFX_THUMBNAIL_STATUS_PENDING)
-      gfx_thumbnail_init_fade(thumbnail);
+      gfx_thumbnail_init_fade(p_gfx_thumb,
+            thumbnail);
 }
 
 /* Requests loading of a specific thumbnail image file
