@@ -101,29 +101,31 @@ static void ozone_draw_entry_value(
    {
       if (!string_is_empty(entry->value))
       {
-         if (
-               string_is_equal(entry->value, "...")     ||
-               string_is_equal(entry->value, "(PRESET)")  ||
-               string_is_equal(entry->value, "(SHADER)")  ||
-               string_is_equal(entry->value, "(COMP)")  ||
-               string_is_equal(entry->value, "(CORE)")  ||
-               string_is_equal(entry->value, "(MOVIE)") ||
-               string_is_equal(entry->value, "(MUSIC)") ||
-               string_is_equal(entry->value, "(DIR)")   ||
-               string_is_equal(entry->value, "(RDB)")   ||
-               string_is_equal(entry->value, "(CURSOR)")||
-               string_is_equal(entry->value, "(CFILE)") ||
-               string_is_equal(entry->value, "(FILE)")  ||
-               string_is_equal(entry->value, "(IMAGE)")
+         if (string_is_equal(entry->value, "..."))
+            return;
+         if (string_starts_with(entry->value, "(") &&
+             string_ends_with  (entry->value, ")")
             )
          {
-            return;
+            if (
+                  string_is_equal(entry->value, "(PRESET)")  ||
+                  string_is_equal(entry->value, "(SHADER)")  ||
+                  string_is_equal(entry->value, "(COMP)")  ||
+                  string_is_equal(entry->value, "(CORE)")  ||
+                  string_is_equal(entry->value, "(MOVIE)") ||
+                  string_is_equal(entry->value, "(MUSIC)") ||
+                  string_is_equal(entry->value, "(DIR)")   ||
+                  string_is_equal(entry->value, "(RDB)")   ||
+                  string_is_equal(entry->value, "(CURSOR)")||
+                  string_is_equal(entry->value, "(CFILE)") ||
+                  string_is_equal(entry->value, "(FILE)")  ||
+                  string_is_equal(entry->value, "(IMAGE)")
+               )
+               return;
          }
-         else
-            do_draw_text = true;
       }
-      else
-         do_draw_text = true;
+
+      do_draw_text = true;
    }
 
    if (do_draw_text)

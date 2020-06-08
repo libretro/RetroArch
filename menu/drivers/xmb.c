@@ -3082,24 +3082,32 @@ static int xmb_draw_item(
    {
       if (!string_is_empty(entry.value))
       {
-         if (
-               string_is_equal(entry.value, "...")     ||
-               string_is_equal(entry.value, "(PRESET)")  ||
-               string_is_equal(entry.value, "(SHADER)")  ||
-               string_is_equal(entry.value, "(COMP)")  ||
-               string_is_equal(entry.value, "(CORE)")  ||
-               string_is_equal(entry.value, "(MOVIE)") ||
-               string_is_equal(entry.value, "(MUSIC)") ||
-               string_is_equal(entry.value, "(DIR)")   ||
-               string_is_equal(entry.value, "(RDB)")   ||
-               string_is_equal(entry.value, "(CURSOR)")||
-               string_is_equal(entry.value, "(CFILE)") ||
-               string_is_equal(entry.value, "(FILE)")  ||
-               string_is_equal(entry.value, "(IMAGE)")
+         bool found = false;
+
+         if (string_is_equal(entry.value, "..."))
+            found = true;
+         else if (string_starts_with(entry.value, "(") &&
+             string_ends_with  (entry.value, ")")
             )
          {
+            if (
+                  string_is_equal(entry.value, "(PRESET)")  ||
+                  string_is_equal(entry.value, "(SHADER)")  ||
+                  string_is_equal(entry.value, "(COMP)")  ||
+                  string_is_equal(entry.value, "(CORE)")  ||
+                  string_is_equal(entry.value, "(MOVIE)") ||
+                  string_is_equal(entry.value, "(MUSIC)") ||
+                  string_is_equal(entry.value, "(DIR)")   ||
+                  string_is_equal(entry.value, "(RDB)")   ||
+                  string_is_equal(entry.value, "(CURSOR)")||
+                  string_is_equal(entry.value, "(CFILE)") ||
+                  string_is_equal(entry.value, "(FILE)")  ||
+                  string_is_equal(entry.value, "(IMAGE)")
+               )
+               found = true;
          }
-         else
+         
+         if (!found)
             do_draw_text = true;
       }
       else
