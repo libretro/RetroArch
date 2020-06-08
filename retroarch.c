@@ -3642,12 +3642,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
-gfx_display_t *disp_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->dispgfx;
-}
-
 menu_handle_t *menu_driver_get_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -10871,6 +10865,12 @@ struct retro_system_av_info *video_viewport_get_system_av_info(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    return &p_rarch->video_driver_av_info;
+}
+
+gfx_display_t *disp_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->dispgfx;
 }
 
 settings_t *config_get_ptr(void)
