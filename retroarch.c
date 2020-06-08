@@ -18503,6 +18503,9 @@ static bool libretro_get_system_info(
    dylib_t lib;
 #endif
 
+   if (string_ends_with(path, "builtin"))
+      return false;
+
    dummy_info.library_name      = NULL;
    dummy_info.library_version   = NULL;
    dummy_info.valid_extensions  = NULL;
@@ -34043,7 +34046,16 @@ static void retroarch_parse_input_and_config(
    #ifdef HAVE_DYNAMIC
             case 'L':
                {
-                  int path_stats = path_stat(optarg);
+                  int path_stats;
+
+                  if (string_ends_with(optarg, "builtin"))
+                  {
+                     RARCH_LOG("--libretro argument \"%s\" is a built-in core. Ignoring.\n",
+                           optarg);
+                     break;
+                  }
+
+                  path_stats = path_stat(optarg);
 
                   if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
                   {
