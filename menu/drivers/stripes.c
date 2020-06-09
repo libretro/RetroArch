@@ -2245,6 +2245,7 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
       case MENU_SETTING_ACTION_RUN:
          return stripes->textures.list[STRIPES_TEXTURE_RUN];
       case MENU_SETTING_ACTION_CLOSE:
+      case MENU_SETTING_ACTION_CLOSE_HORIZONTAL:
          return stripes->textures.list[STRIPES_TEXTURE_CLOSE];
       case MENU_SETTING_ACTION_SAVESTATE:
          return stripes->textures.list[STRIPES_TEXTURE_SAVESTATE];
