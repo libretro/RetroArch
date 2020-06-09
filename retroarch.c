@@ -24022,13 +24022,37 @@ static void input_menu_keys_pressed(
          }
          else
          {
-            p_rarch->input_hotkey_block_counter = 0;
-            p_rarch->input_driver_block_hotkey         = true;
+            p_rarch->input_hotkey_block_counter           = 0;
+            p_rarch->input_driver_block_hotkey            = true;
             break;
          }
       }
    }
 
+   if (p_rarch->input_driver_block_libretro_input)
+   {
+      /* Check the libretro input first */
+      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         if (input_keys_pressed_other_sources(p_rarch, i, p_new_state))
+         {
+            BIT256_SET_PTR(p_new_state, i);
+         }
+      }
+
+      /* Check the hotkeys */
+      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+      {
+         if (    
+                  BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(p_rarch, i, p_new_state)
+            )
+         {
+            BIT256_SET_PTR(p_new_state, i);
+         }
+      }
+   }
+   else
    {
       int16_t ret[MAX_USERS];
       /* Check the libretro input first */
@@ -24046,59 +24070,54 @@ static void input_menu_keys_pressed(
 
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         bool bit_pressed    = false;
-
-         if (!p_rarch->input_driver_block_libretro_input)
+         for (port = 0; port < port_max; port++)
          {
-            for (port = 0; port < port_max; port++)
+            if (binds[port][i].valid && ret[port] & (UINT64_C(1) << i))
             {
-               if (binds[port][i].valid && ret[port] & (UINT64_C(1) << i))
-               {
-                  bit_pressed = true;
-                  break;
-               }
+               BIT256_SET_PTR(p_new_state, i);
+               /* Break out of nested loop */
+               goto input_menu_keys_check_libretro_end;
             }
          }
 
-         if (bit_pressed || input_keys_pressed_other_sources(
-                  p_rarch, i, p_new_state))
+         if (input_keys_pressed_other_sources(p_rarch, i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
          }
+input_menu_keys_check_libretro_end:
+         ;
       }
 
       /* Check the hotkeys */
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
-         bool bit_pressed    = false;
-
-         if (!p_rarch->input_driver_block_hotkey)
+         for (port = 0; port < port_max; port++)
          {
-            for (port = 0; port < port_max; port++)
-            {
-               const struct retro_keybind *mtkey = &input_config_binds[port][i];
-               if (!mtkey->valid)
-                  continue;
-               joypad_info->joy_idx              = settings->uints.input_joypad_map[port];
-               joypad_info->auto_binds           = input_autoconf_binds[joypad_info->joy_idx];
-               joypad_info->axis_threshold       = p_rarch->input_driver_axis_threshold;
+            const struct retro_keybind *mtkey = &input_config_binds[port][i];
+            if (!mtkey->valid)
+               continue;
+            joypad_info->joy_idx              = settings->uints.input_joypad_map[port];
+            joypad_info->auto_binds           = input_autoconf_binds[joypad_info->joy_idx];
+            joypad_info->axis_threshold       = p_rarch->input_driver_axis_threshold;
 
-               if (p_rarch->current_input->input_state(
-                        p_rarch->current_input_data, joypad_info,
-                        &binds[0], port, RETRO_DEVICE_JOYPAD, 0, i))
-               {
-                  bit_pressed = true;
-                  break;
-               }
+            if (p_rarch->current_input->input_state(
+                     p_rarch->current_input_data, joypad_info,
+                     &binds[0], port, RETRO_DEVICE_JOYPAD, 0, i))
+            {
+               BIT256_SET_PTR(p_new_state, i);
+               /* Break out of nested loop */
+               goto input_menu_keys_check_hotkeys_end;
             }
          }
 
-         if (     bit_pressed 
-               || BIT64_GET(lifecycle_state, i)
-               || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
+         if (     BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(p_rarch, i, p_new_state)
+            )
          {
             BIT256_SET_PTR(p_new_state, i);
          }
+input_menu_keys_check_hotkeys_end:
+         ;
       }
    }
 
@@ -24153,8 +24172,8 @@ static void input_keys_pressed(
       }
       else
       {
-         p_rarch->input_hotkey_block_counter = 0;
-         p_rarch->input_driver_block_hotkey         = true;
+         p_rarch->input_hotkey_block_counter           = 0;
+         p_rarch->input_driver_block_hotkey            = true;
       }
    }
 
@@ -24179,37 +24198,60 @@ static void input_keys_pressed(
       }
    }
 
-   /* Check the libretro input first */
+   if (p_rarch->input_driver_block_libretro_input)
    {
+      /* Check the libretro input first */
+      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         if (input_keys_pressed_other_sources(p_rarch, i, p_new_state))
+         {
+            BIT256_SET_PTR(p_new_state, i);
+         }
+      }
+
+      /* Check the hotkeys */
+      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+      {
+         if (     
+                  BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
+         {
+            BIT256_SET_PTR(p_new_state, i);
+         }
+      }
+   }
+   else
+   {
+      /* Check the libretro input first */
       int16_t ret = p_rarch->current_input->input_state(
             p_rarch->current_input_data,
             joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         bool bit_pressed = !p_rarch->input_driver_block_libretro_input
-            && binds[i].valid && (ret & (UINT64_C(1) <<  i));
+         bool bit_pressed = binds[i].valid && (ret & (UINT64_C(1) <<  i));
          if (bit_pressed || input_keys_pressed_other_sources(p_rarch,
                   i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
          }
       }
-   }
 
-   /* Check the hotkeys */
-   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
-   {
-      bool bit_pressed = !p_rarch->input_driver_block_hotkey && binds[i].valid
-         && p_rarch->current_input->input_state(p_rarch->current_input_data, joypad_info,
-               &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
-      if (     bit_pressed
-            || BIT64_GET(lifecycle_state, i)
-            || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
+      /* Check the hotkeys */
+      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
-         BIT256_SET_PTR(p_new_state, i);
+         bool bit_pressed = binds[i].valid && p_rarch->current_input->input_state(
+                  p_rarch->current_input_data, joypad_info,
+                  &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
+         if (     bit_pressed
+               || BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
+         {
+            BIT256_SET_PTR(p_new_state, i);
+         }
       }
    }
+
 }
 
 void *input_driver_get_data(void)
