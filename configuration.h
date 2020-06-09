@@ -144,7 +144,6 @@ typedef struct settings
       bool input_overlay_auto_rotate;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
-      bool input_all_users_control_menu;
       bool input_menu_swap_ok_cancel_buttons;
       bool input_backtouch_enable;
       bool input_backtouch_toggle;

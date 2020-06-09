@@ -23975,11 +23975,9 @@ static void input_menu_keys_pressed(
 {
    unsigned i, port;
    settings_t     *settings                     = p_rarch->configuration_settings;
-   bool input_all_users_control_menu            = settings->bools.input_all_users_control_menu;
    int input_hotkey_block_delay                 = settings->uints.input_hotkey_block_delay;
    uint8_t max_users                            = (uint8_t)p_rarch->input_driver_max_users;
-   uint8_t port_max                             = input_all_users_control_menu
-      ? max_users : 1;
+   uint8_t port_max                             = 1;
 
    for (i = 0; i < max_users; i++)
    {
