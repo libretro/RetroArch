@@ -1240,54 +1240,6 @@ static const camera_driver_t *camera_drivers[] = {
 
 #define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
 
-/**
- * input_pop_analog_dpad:
- * @binds                          : Binds to modify.
- *
- * Restores binds temporarily overridden by INPUT_PUSH_ANALOG_DPAD().
- **/
-#define INPUT_POP_ANALOG_DPAD(binds) \
-{ \
-   unsigned j; \
-   for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
-      (binds)[j].joyaxis = (binds)[j].orig_joyaxis; \
-}
-
-/**
- * input_push_analog_dpad:
- * @binds                          : Binds to modify.
- * @mode                           : Which analog stick to bind D-Pad to.
- *                                   E.g:
- *                                   ANALOG_DPAD_LSTICK
- *                                   ANALOG_DPAD_RSTICK
- *
- * Push analog to D-Pad mappings to binds.
- **/
-#define INPUT_PUSH_ANALOG_DPAD(binds, mode) \
-{ \
-   unsigned k; \
-   unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS; \
-   unsigned y_plus      =  RARCH_ANALOG_RIGHT_Y_PLUS; \
-   unsigned x_minus     =  RARCH_ANALOG_RIGHT_X_MINUS; \
-   unsigned y_minus     =  RARCH_ANALOG_RIGHT_Y_MINUS; \
-   if ((mode) == ANALOG_DPAD_LSTICK) \
-   { \
-      x_plus            =  RARCH_ANALOG_LEFT_X_PLUS; \
-      y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS; \
-      x_minus           =  RARCH_ANALOG_LEFT_X_MINUS; \
-      y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS; \
-   } \
-   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
-      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
-   if (!INHERIT_JOYAXIS(binds)) \
-   { \
-      unsigned j = x_plus + 3; \
-      /* Inherit joyaxis from analogs. */ \
-      for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
-         (binds)[k].joyaxis = (binds)[j--].joyaxis; \
-   } \
-}
-
 #define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 
@@ -36130,8 +36082,34 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
       if (menu_input_active)
       {
-         INPUT_PUSH_ANALOG_DPAD(auto_binds, ANALOG_DPAD_LSTICK);
-         INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
+         unsigned k;
+         unsigned x_plus      =  RARCH_ANALOG_LEFT_X_PLUS;
+         unsigned y_plus      =  RARCH_ANALOG_LEFT_Y_PLUS;
+         unsigned x_minus     =  RARCH_ANALOG_LEFT_X_MINUS;
+         unsigned y_minus     =  RARCH_ANALOG_LEFT_Y_MINUS;
+
+         /* Push analog to D-Pad mappings to binds. */
+
+         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+         {
+            (auto_binds)[k].orig_joyaxis    = (auto_binds)[k].joyaxis;
+            (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
+         }
+
+         if (!INHERIT_JOYAXIS(auto_binds))
+         {
+            unsigned j = x_plus + 3;
+            /* Inherit joyaxis from analogs. */
+            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               (auto_binds)[k].joyaxis = (auto_binds)[j--].joyaxis;
+         }
+         if (!INHERIT_JOYAXIS(general_binds))
+         {
+            unsigned j = x_plus + 3;
+            /* Inherit joyaxis from analogs. */
+            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               (general_binds)[k].joyaxis = (general_binds)[j--].joyaxis;
+         }
       }
 #endif
 
@@ -36142,8 +36120,15 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
       if (menu_input_active)
       {
-         INPUT_POP_ANALOG_DPAD(auto_binds);
-         INPUT_POP_ANALOG_DPAD(general_binds);
+         unsigned j;
+
+         /* Restores analog D-pad binds temporarily overridden. */
+
+         for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
+         {
+            (auto_binds)[j].joyaxis    = (auto_binds)[j].orig_joyaxis;
+            (general_binds)[j].joyaxis = (general_binds)[j].orig_joyaxis;
+         }
 
          if (!display_kb)
          {
@@ -37149,14 +37134,49 @@ int runloop_iterate(void)
    /* Update binds for analog dpad modes. */
    for (i = 0; i < max_users; i++)
    {
-      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode        = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
 
       if (dpad_mode != ANALOG_DPAD_NONE)
       {
+         unsigned k;
          struct retro_keybind *general_binds = input_config_binds[i];
          struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-         INPUT_PUSH_ANALOG_DPAD(general_binds, dpad_mode);
-         INPUT_PUSH_ANALOG_DPAD(auto_binds,    dpad_mode);
+         unsigned x_plus                     =  RARCH_ANALOG_RIGHT_X_PLUS;
+         unsigned y_plus                     =  RARCH_ANALOG_RIGHT_Y_PLUS;
+         unsigned x_minus                    =  RARCH_ANALOG_RIGHT_X_MINUS;
+         unsigned y_minus                    =  RARCH_ANALOG_RIGHT_Y_MINUS;
+
+         /* Push analog to D-Pad mappings to binds. */
+
+         if ((dpad_mode) == ANALOG_DPAD_LSTICK)
+         {
+            x_plus            =  RARCH_ANALOG_LEFT_X_PLUS;
+            y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS;
+            x_minus           =  RARCH_ANALOG_LEFT_X_MINUS;
+            y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS;
+         }
+
+         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+         {
+            (auto_binds)[k].orig_joyaxis    = (auto_binds)[k].joyaxis;
+            (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
+         }
+
+         if (!INHERIT_JOYAXIS(auto_binds))
+         {
+            unsigned j = x_plus + 3;
+            /* Inherit joyaxis from analogs. */
+            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               (auto_binds)[k].joyaxis = (auto_binds)[j--].joyaxis;
+         }
+
+         if (!INHERIT_JOYAXIS(general_binds))
+         {
+            unsigned j = x_plus + 3;
+            /* Inherit joyaxis from analogs. */
+            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               (general_binds)[k].joyaxis = (general_binds)[j--].joyaxis;
+         }
       }
    }
 
@@ -37201,15 +37221,21 @@ int runloop_iterate(void)
 
    for (i = 0; i < max_users; i++)
    {
+      unsigned j;
       enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
+
+      /* Restores analog D-pad binds temporarily overridden. */
 
       if (dpad_mode != ANALOG_DPAD_NONE)
       {
          struct retro_keybind *general_binds = input_config_binds[i];
          struct retro_keybind *auto_binds    = input_autoconf_binds[i];
 
-         INPUT_POP_ANALOG_DPAD(general_binds);
-         INPUT_POP_ANALOG_DPAD(auto_binds);
+         for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
+         {
+            (auto_binds)[j].joyaxis    = (auto_binds)[j].orig_joyaxis;
+            (general_binds)[j].joyaxis = (general_binds)[j].orig_joyaxis;
+         }
       }
    }
 
