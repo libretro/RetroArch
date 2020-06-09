@@ -939,7 +939,10 @@ static bool create_win32_process(char* cmd)
 static bool is_narrator_running_windows(void)
 {
    DWORD status = 0;
+#ifdef HAVE_NVDA
    init_nvda();
+#endif
+
    if (USE_POWERSHELL)
    {
       if (pi_set == false)
@@ -1006,7 +1009,9 @@ static bool accessibility_speak_windows(int speed,
          return true;
    
    }
+#ifdef HAVE_NVDA
    init_nvda();
+#endif
    
    if (USE_POWERSHELL)
    {
