@@ -213,6 +213,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_statistics_show,               MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_settings,              MENU_ENUM_SUBLABEL_NETPLAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_bind_settings,            MENU_ENUM_SUBLABEL_INPUT_USER_BINDS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_settings,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_enable_hotkey,      MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,      MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
 #ifdef HAVE_MATERIALUI
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_landscape_layout_optimization, MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION)
@@ -1384,6 +1386,16 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       return 0;
    }
 #endif
+
+   /* Hotkey binds require special handling
+    * > Only the 'enable_hotkey' entry has a sublabel */
+   if ((cbs->enum_idx >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN) &&
+       (cbs->enum_idx <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END) &&
+       string_is_equal(label, "enable_hotkey"))
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_enable_hotkey);
+      return 0;
+   }
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -2916,6 +2928,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_hotkey_settings);
+            break;
+         case MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_hotkey_block_delay);
             break;
          case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
          case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:

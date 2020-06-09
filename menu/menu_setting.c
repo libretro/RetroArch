@@ -11439,6 +11439,21 @@ static bool setting_append_list(
                &setting_get_string_representation_toggle_gamepad_combo;
             menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TOGGLE_LAST-1), 1, true, true);
 
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_hotkey_block_delay,
+                  MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+                  DEFAULT_INPUT_HOTKEY_BLOCK_DELAY,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 600, 1, true, true);
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.input_menu_swap_ok_cancel_buttons,
