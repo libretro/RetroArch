@@ -22477,34 +22477,6 @@ static int16_t input_state(unsigned port, unsigned device,
    return result;
 }
 
-static INLINE bool input_keys_pressed_other_sources(
-      struct rarch_state *p_rarch,
-      unsigned i,
-      input_bits_t* p_new_state)
-{
-#ifdef HAVE_OVERLAY
-   if (p_rarch->overlay_ptr &&
-         ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, i))))
-      return true;
-#endif
-
-#ifdef HAVE_COMMAND
-   if (p_rarch->input_driver_command)
-      return ((i < RARCH_BIND_LIST_END)
-         && p_rarch->input_driver_command->state[i]);
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-   /* Only process key presses related to game input if using Remote RetroPad */
-   if (i < RARCH_CUSTOM_BIND_LIST_END &&
-         p_rarch->input_driver_remote &&
-            INPUT_REMOTE_KEY_PRESSED(i, 0))
-      return true;
-#endif
-
-   return false;
-}
-
 static int16_t input_joypad_axis(
       struct rarch_state *p_rarch,
       const input_device_driver_t *drv,
@@ -23963,6 +23935,34 @@ static void menu_input_post_iterate(
 }
 #endif
 
+static INLINE bool input_keys_pressed_other_sources(
+      struct rarch_state *p_rarch,
+      unsigned i,
+      input_bits_t* p_new_state)
+{
+#ifdef HAVE_OVERLAY
+   if (p_rarch->overlay_ptr &&
+         ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, i))))
+      return true;
+#endif
+
+#ifdef HAVE_COMMAND
+   if (p_rarch->input_driver_command)
+      return ((i < RARCH_BIND_LIST_END)
+         && p_rarch->input_driver_command->state[i]);
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+   /* Only process key presses related to game input if using Remote RetroPad */
+   if (i < RARCH_CUSTOM_BIND_LIST_END &&
+         p_rarch->input_driver_remote &&
+            INPUT_REMOTE_KEY_PRESSED(i, 0))
+      return true;
+#endif
+
+   return false;
+}
+
 /**
  * input_keys_pressed:
  *
@@ -23973,6 +23973,7 @@ static void menu_input_post_iterate(
 static void input_keys_pressed(
       unsigned port,
       bool is_menu,
+      int input_hotkey_block_delay,
       struct rarch_state *p_rarch,
       input_bits_t *p_new_state,
       const struct retro_keybind **binds,
@@ -23981,8 +23982,6 @@ static void input_keys_pressed(
       rarch_joypad_info_t *joypad_info)
 {
    unsigned i;
-   settings_t              *settings      = p_rarch->configuration_settings;
-   int input_hotkey_block_delay           = settings->uints.input_hotkey_block_delay;
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
@@ -36115,6 +36114,7 @@ static enum runloop_state runloop_check_state(
       bool menu_input_active                       = false;
 #endif
       unsigned port                                = 0;
+      int input_hotkey_block_delay                 = settings->uints.input_hotkey_block_delay;
       const struct retro_keybind *binds_norm       = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto       = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
       joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
@@ -36139,7 +36139,7 @@ static enum runloop_state runloop_check_state(
             INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
          }
 
-         input_keys_pressed(port, true, p_rarch,
+         input_keys_pressed(port, true, input_hotkey_block_delay, p_rarch,
                &current_bits, &binds[0], binds_norm, binds_auto,
                &joypad_info);
 
@@ -36205,7 +36205,7 @@ static enum runloop_state runloop_check_state(
 #endif
       {
          const struct retro_keybind *binds = input_config_binds[0];
-         input_keys_pressed(port, false, p_rarch,
+         input_keys_pressed(port, false, input_hotkey_block_delay, p_rarch,
                &current_bits, &binds, binds_norm, binds_auto,
                &joypad_info);
       }
