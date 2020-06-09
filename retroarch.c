@@ -36117,6 +36117,7 @@ static enum runloop_state runloop_check_state(
       int input_hotkey_block_delay                 = settings->uints.input_hotkey_block_delay;
       const struct retro_keybind *binds_norm       = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto       = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *binds            = input_config_binds[port];
       joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
       joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
       joypad_info.axis_threshold                   = p_rarch->input_driver_axis_threshold;
@@ -36125,31 +36126,18 @@ static enum runloop_state runloop_check_state(
       menu_input_active                            = menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb);
       if (menu_input_active)
       {
-         unsigned i;
-         const struct retro_keybind *binds[MAX_USERS] = {NULL};
-         uint8_t max_users                            = (uint8_t)p_rarch->input_driver_max_users;
+         struct retro_keybind *auto_binds             = input_autoconf_binds[port];
+         struct retro_keybind *general_binds          = input_config_binds[port];
 
-         for (i = 0; i < max_users; i++)
-         {
-            struct retro_keybind *auto_binds          = input_autoconf_binds[i];
-            struct retro_keybind *general_binds       = input_config_binds[i];
-            binds[i]                                  = input_config_binds[i];
-
-            INPUT_PUSH_ANALOG_DPAD(auto_binds, ANALOG_DPAD_LSTICK);
-            INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
-         }
+         INPUT_PUSH_ANALOG_DPAD(auto_binds, ANALOG_DPAD_LSTICK);
+         INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
 
          input_keys_pressed(port, true, input_hotkey_block_delay, p_rarch,
-               &current_bits, &binds[0], binds_norm, binds_auto,
+               &current_bits, &binds, binds_norm, binds_auto,
                &joypad_info);
 
-         for (i = 0; i < max_users; i++)
-         {
-            struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-            struct retro_keybind *general_binds = input_config_binds[i];
-            INPUT_POP_ANALOG_DPAD(auto_binds);
-            INPUT_POP_ANALOG_DPAD(general_binds);
-         }
+         INPUT_POP_ANALOG_DPAD(auto_binds);
+         INPUT_POP_ANALOG_DPAD(general_binds);
 
          if (!display_kb)
          {
@@ -36177,13 +36165,13 @@ static enum runloop_state runloop_check_state(
                {0,                RARCH_MENU_TOGGLE             },
             };
 
-            ids[9][0]  = input_config_binds[0][RARCH_QUIT_KEY].key;
-            ids[10][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
-            ids[14][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
-            ids[15][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
-            ids[16][0] = input_config_binds[0][RARCH_SEND_DEBUG_INFO].key;
-            ids[17][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
-            ids[18][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
+            ids[9][0]  = input_config_binds[port][RARCH_QUIT_KEY].key;
+            ids[10][0] = input_config_binds[port][RARCH_FULLSCREEN_TOGGLE_KEY].key;
+            ids[14][0] = input_config_binds[port][RARCH_UI_COMPANION_TOGGLE].key;
+            ids[15][0] = input_config_binds[port][RARCH_FPS_TOGGLE].key;
+            ids[16][0] = input_config_binds[port][RARCH_SEND_DEBUG_INFO].key;
+            ids[17][0] = input_config_binds[port][RARCH_NETPLAY_HOST_TOGGLE].key;
+            ids[18][0] = input_config_binds[port][RARCH_MENU_TOGGLE].key;
 
             if (settings->bools.input_menu_swap_ok_cancel_buttons)
             {
@@ -36195,7 +36183,7 @@ static enum runloop_state runloop_check_state(
             {
                if (p_rarch->current_input->input_state(
                         p_rarch->current_input_data,
-                        &joypad_info, binds, 0,
+                        &joypad_info, &binds, port,
                         RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
                   BIT256_SET_PTR(&current_bits, ids[i][1]);
             }
@@ -36204,7 +36192,6 @@ static enum runloop_state runloop_check_state(
       else
 #endif
       {
-         const struct retro_keybind *binds = input_config_binds[0];
          input_keys_pressed(port, false, input_hotkey_block_delay, p_rarch,
                &current_bits, &binds, binds_norm, binds_auto,
                &joypad_info);
