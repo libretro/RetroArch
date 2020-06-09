@@ -1299,6 +1299,10 @@ MSG_HASH(
    "input_hotkey_binds_begin"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "input_hotkey_block_delay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
    "input_icade_enable"
    )

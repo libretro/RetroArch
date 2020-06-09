@@ -4456,21 +4456,56 @@ unsigned menu_displaylist_build_list(
             count++;
          break;
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         for (i = 0; i < RARCH_BIND_LIST_END; i++)
          {
+            bool hotkey_enable_found   = false;
+            size_t hotkey_enable_index = 0;
+
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     (enum msg_hash_enums)(
-                        MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i),
-                     PARSE_ONLY_BIND, false) == 0)
+                     MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
+                     PARSE_ONLY_BOOL, false) == 0)
                count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+
+            /* Hotkey enable bind comes first - due to the
+             * way binds are implemented, have to search the
+             * entire list for it... */
+            for (i = 0; i < RARCH_BIND_LIST_END; i++)
+            {
+               if (string_is_equal(input_config_bind_map_get_base(i), "enable_hotkey"))
+               {
+                  hotkey_enable_found = true;
+                  hotkey_enable_index = i;
+
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           (enum msg_hash_enums)(
+                              MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i),
+                           PARSE_ONLY_BIND, false) == 0)
+                     count++;
+
+                  break;
+               }
+            }
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+
+            /* All other binds come last */
+            for (i = 0; i < RARCH_BIND_LIST_END; i++)
+            {
+               if (hotkey_enable_found && (hotkey_enable_index == i))
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        (enum msg_hash_enums)(
+                           MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i),
+                        PARSE_ONLY_BIND, false) == 0)
+                  count++;
+            }
          }
          break;
       case DISPLAYLIST_SHADER_PRESET_REMOVE:
