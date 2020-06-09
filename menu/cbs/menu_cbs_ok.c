@@ -4431,9 +4431,34 @@ static int action_ok_option_create(const char *path,
 
 int action_ok_close_content(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* This line resets the navigation pointer so the active entry will be "Run" */
+   int ret;
+
+   /* Reset navigation pointer
+    * > If we are returning to the quick menu, want
+    *   the active entry to be 'Run' (first item in
+    *   menu list) */
    menu_navigation_set_selection(0);
-   return generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+
+   /* Unload core */
+   ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+
+   /* If close content was selected via 'Main Menu > Quick Menu',
+    * have to flush the menu stack back to 'Main Menu'
+    * (otherwise users will be presented with an empty
+    * 'No items' quick menu, requiring needless backwards
+    * navigation) */
+   if (type == MENU_SETTING_ACTION_CLOSE)
+   {
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), 0);
+      /* An annoyance - some menu drivers (Ozone...) call
+       * RARCH_MENU_CTL_SET_PREVENT_POPULATE in awkward
+       * places, which can cause breakage here when flushing
+       * the menu stack. We therefore have to force a
+       * RARCH_MENU_CTL_UNSET_PREVENT_POPULATE */
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+   }
+
+   return ret;
 }
 
 DEFAULT_ACTION_OK_CMD_FUNC(action_ok_cheat_apply_changes,      CMD_EVENT_CHEATS_APPLY)

@@ -2769,6 +2769,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS:
          return xmb->textures.list[XMB_TEXTURE_RESUME];
       case MENU_SETTING_ACTION_CLOSE:
+      case MENU_SETTING_ACTION_CLOSE_HORIZONTAL:
       case MENU_SETTING_ACTION_DELETE_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_SETTING_ACTION_SAVESTATE:

@@ -1974,7 +1974,7 @@ static int menu_displaylist_parse_horizontal_list(
 }
 
 static int menu_displaylist_parse_load_content_settings(
-      file_list_t *list)
+      file_list_t *list, bool horizontal)
 {
    unsigned count         = 0;
    settings_t *settings   = config_get_ptr();
@@ -2004,12 +2004,22 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_RUN, 0, 0))
             count++;
 
+      /* Note: Entry type depends on whether quick menu
+       * was accessed via a playlist ('horizontal content')
+       * or the main menu
+       * > This allows us to identify a close content event
+       *   triggered via 'Main Menu > Quick Menu', which
+       *   subsequently requires the menu stack to be flushed
+       *   in order to prevent the display of an empty
+       *   'No items' menu */
       if (settings->bools.quick_menu_show_close_content)
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT),
                MENU_ENUM_LABEL_CLOSE_CONTENT,
-               MENU_SETTING_ACTION_CLOSE, 0, 0))
+               horizontal ? MENU_SETTING_ACTION_CLOSE_HORIZONTAL :
+                     MENU_SETTING_ACTION_CLOSE,
+               0, 0))
             count++;
 
       if (settings->bools.quick_menu_show_take_screenshot)
@@ -2288,7 +2298,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    if (content_loaded)
    {
-      if (menu_displaylist_parse_load_content_settings(info->list) == 0)
+      if (menu_displaylist_parse_load_content_settings(info->list, true) == 0)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
                msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
@@ -4594,7 +4604,7 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
-         count = menu_displaylist_parse_load_content_settings(list);
+         count = menu_displaylist_parse_load_content_settings(list, false);
 
          if (count == 0)
             if (menu_entries_append_enum(list,

@@ -371,6 +371,7 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RESUME];
       case MENU_SETTING_ACTION_CLOSE:
+      case MENU_SETTING_ACTION_CLOSE_HORIZONTAL:
       case MENU_SETTING_ACTION_DELETE_ENTRY:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
       case MENU_SETTING_ACTION_SAVESTATE:
