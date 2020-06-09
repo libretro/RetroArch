@@ -23961,114 +23961,6 @@ static void menu_input_post_iterate(
             current_time, cbs, &entry, action);
    }
 }
-
-/**
- * input_menu_keys_pressed:
- *
- * Grab an input sample for this frame. We exclude
- * keyboard input here.
- *
- * Returns: Input sample containing a mask of all pressed keys.
- */
-static void input_menu_keys_pressed(
-      unsigned port,
-      struct rarch_state *p_rarch,
-      input_bits_t *p_new_state,
-      const struct retro_keybind **binds,
-      const struct retro_keybind *binds_norm,
-      const struct retro_keybind *binds_auto,
-      rarch_joypad_info_t *joypad_info)
-{
-   unsigned i;
-   settings_t     *settings                     = p_rarch->configuration_settings;
-   int input_hotkey_block_delay                 = settings->uints.input_hotkey_block_delay;
-
-   if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
-   {
-      const struct retro_keybind *hotkey = 
-         &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-
-      if (     hotkey->valid
-            && p_rarch->current_input->input_state(
-               p_rarch->current_input_data, joypad_info,
-               &binds[port], port, RETRO_DEVICE_JOYPAD, 0,
-               RARCH_ENABLE_HOTKEY))
-      {
-         if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
-            p_rarch->input_hotkey_block_counter++;
-         else
-            p_rarch->input_driver_block_libretro_input = true;
-      }
-      else
-      {
-         p_rarch->input_hotkey_block_counter           = 0;
-         p_rarch->input_driver_block_hotkey            = true;
-      }
-   }
-
-   /* Check the libretro input first */
-   if (p_rarch->input_driver_block_libretro_input)
-   {
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         if (
-               input_keys_pressed_other_sources(
-                  p_rarch, i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-         }
-      }
-   }
-   else
-   {
-      int16_t ret                    =
-            p_rarch->current_input->input_state(
-                  p_rarch->current_input_data,
-                  joypad_info, &binds[port], port, RETRO_DEVICE_JOYPAD, 0,
-                  RETRO_DEVICE_ID_JOYPAD_MASK);
-
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         bool bit_pressed = binds[port][i].valid && (ret & (UINT64_C(1) << i));
-         if (bit_pressed || input_keys_pressed_other_sources(
-                  p_rarch, i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-         }
-      }
-   }
-
-   /* Check the hotkeys */
-   if (p_rarch->input_driver_block_hotkey)
-   {
-      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
-      {
-         if (     
-               BIT64_GET(lifecycle_state, i)
-               || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-         }
-      }
-   }
-   else
-   {
-      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
-      {
-         bool bit_pressed = binds[port][i].valid
-            && p_rarch->current_input->input_state(
-                     p_rarch->current_input_data, joypad_info,
-                     &binds[port], port, RETRO_DEVICE_JOYPAD, 0, i);
-         if (     bit_pressed 
-               || BIT64_GET(lifecycle_state, i)
-               || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-         }
-      }
-   }
-
-}
 #endif
 
 /**
@@ -24080,6 +23972,7 @@ static void input_menu_keys_pressed(
  */
 static void input_keys_pressed(
       unsigned port,
+      bool is_menu,
       struct rarch_state *p_rarch,
       input_bits_t *p_new_state,
       const struct retro_keybind **binds,
@@ -24114,7 +24007,8 @@ static void input_keys_pressed(
       }
    }
 
-   if (binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
+   if (     !is_menu 
+         && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
    {
       const struct retro_keybind *focus_binds_auto =
          &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
@@ -36245,7 +36139,7 @@ static enum runloop_state runloop_check_state(
             INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
          }
 
-         input_menu_keys_pressed(port, p_rarch,
+         input_keys_pressed(port, true, p_rarch,
                &current_bits, &binds[0], binds_norm, binds_auto,
                &joypad_info);
 
@@ -36311,7 +36205,7 @@ static enum runloop_state runloop_check_state(
 #endif
       {
          const struct retro_keybind *binds = input_config_binds[0];
-         input_keys_pressed(port, p_rarch,
+         input_keys_pressed(port, false, p_rarch,
                &current_bits, &binds, binds_norm, binds_auto,
                &joypad_info);
       }
