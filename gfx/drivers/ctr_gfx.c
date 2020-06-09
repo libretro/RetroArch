@@ -523,7 +523,6 @@ static bool ctr_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
-   extern bool select_pressed;
    static uint64_t currentTick,lastTick;
    touchPosition state_tmp_touch;
    extern GSPGPU_FramebufferInfo topFramebufferInfo;
@@ -555,12 +554,6 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    if(!aptMainLoop())
-   {
-      command_event(CMD_EVENT_QUIT, NULL);
-      return true;
-   }
-
-   if (select_pressed)
    {
       command_event(CMD_EVENT_QUIT, NULL);
       return true;
