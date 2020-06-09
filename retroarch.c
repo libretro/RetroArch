@@ -2686,7 +2686,8 @@ static void menu_driver_list_free(
       menu_ctx_list_t *list);
 static void menu_input_post_iterate(
       struct rarch_state *p_rarch,
-      int *ret, unsigned action);
+      int *ret, unsigned action,
+      retro_time_t current_time);
 static void menu_input_reset(struct rarch_state *p_rarch);
 
 /* TODO/FIXME - public global variables */
@@ -3352,7 +3353,8 @@ static int generic_menu_iterate(
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
-      menu_input_post_iterate(p_rarch, &ret, action);
+      menu_input_post_iterate(p_rarch, &ret, action,
+            current_time);
 
 end:
    if (ret)
@@ -23845,11 +23847,11 @@ static int menu_input_pointer_post_iterate(
 
 static void menu_input_post_iterate(
       struct rarch_state *p_rarch,
-      int *ret, unsigned action)
+      int *ret, unsigned action,
+      retro_time_t current_time)
 {
    menu_input_t     *menu_input  = &p_rarch->menu_input_state;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   retro_time_t     current_time = cpu_features_get_time_usec();
 
    /* If pointer devices are disabled, just ensure mouse
     * cursor is hidden */
