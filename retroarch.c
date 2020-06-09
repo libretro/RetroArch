@@ -36110,32 +36110,38 @@ static enum runloop_state runloop_check_state(
 
    {
       rarch_joypad_info_t joypad_info;
-#ifdef HAVE_MENU
-      bool menu_input_active                       = false;
-#endif
       unsigned port                                = 0;
       int input_hotkey_block_delay                 = settings->uints.input_hotkey_block_delay;
       const struct retro_keybind *binds_norm       = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto       = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds            = input_config_binds[port];
+      struct retro_keybind *auto_binds             = input_autoconf_binds[port];
+      struct retro_keybind *general_binds          = input_config_binds[port];
+#ifdef HAVE_MENU
+      bool menu_input_active                       = menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb);
+#else
+      bool menu_input_active                       = false;
+#endif
+
       joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
       joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
       joypad_info.axis_threshold                   = p_rarch->input_driver_axis_threshold;
 
 #ifdef HAVE_MENU
-      menu_input_active                            = menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb);
       if (menu_input_active)
       {
-         struct retro_keybind *auto_binds             = input_autoconf_binds[port];
-         struct retro_keybind *general_binds          = input_config_binds[port];
-
          INPUT_PUSH_ANALOG_DPAD(auto_binds, ANALOG_DPAD_LSTICK);
          INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
+      }
+#endif
 
-         input_keys_pressed(port, true, input_hotkey_block_delay, p_rarch,
-               &current_bits, &binds, binds_norm, binds_auto,
-               &joypad_info);
+      input_keys_pressed(port, menu_input_active, input_hotkey_block_delay, p_rarch,
+            &current_bits, &binds, binds_norm, binds_auto,
+            &joypad_info);
 
+#ifdef HAVE_MENU
+      if (menu_input_active)
+      {
          INPUT_POP_ANALOG_DPAD(auto_binds);
          INPUT_POP_ANALOG_DPAD(general_binds);
 
@@ -36190,15 +36196,6 @@ static enum runloop_state runloop_check_state(
          }
       }
       else
-#endif
-      {
-         input_keys_pressed(port, false, input_hotkey_block_delay, p_rarch,
-               &current_bits, &binds, binds_norm, binds_auto,
-               &joypad_info);
-      }
-
-#ifdef HAVE_MENU
-      if (!menu_input_active)
 #endif
       {
 #ifdef HAVE_ACCESSIBILITY
