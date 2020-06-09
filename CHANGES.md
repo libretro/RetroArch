@@ -22,6 +22,7 @@
 - LOCALIZATION: Add Hebrew language
 - LOCALIZATION: Add Asturian language
 - MENU: Proper line wrapping for message dialog boxes
+- MENU/QUICK MENU: Suppress the display of 'empty' quick menu listings when closing content
 - MENU/OZONE: Performance improvements
 - OPENGL1/VITA: Initial changes for HW context without FBO
 - PLAYLISTS/WINDOWS: Fix core path entries in image/video/music history playlists
