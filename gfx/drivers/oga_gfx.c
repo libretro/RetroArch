@@ -61,6 +61,7 @@ typedef struct oga_video
 
     go2_frame_buffer_t* frameBuffer[NUM_PAGES];
     int cur_page;
+    bool threaded;
 
     const font_renderer_driver_t *font_driver;
     void *font;
@@ -136,12 +137,15 @@ static void *oga_gfx_init(const video_info_t *video,
    vid->font = NULL;
    vid->font_driver = NULL;
 
+   vid->threaded = video->is_threaded;
+
    int aw = MAX(ALIGN(av_info->geometry.max_width, 32), NATIVE_WIDTH);
    int ah = MAX(ALIGN(av_info->geometry.max_height, 32), NATIVE_HEIGHT);
 
-   printf("oga_gfx_init video %dx%d rgb32 %d smooth %d input_scale %u force_aspect %d fullscreen %d aw %d ah %d rgb %d\n",
-         video->width, video->height, video->rgb32, video->smooth, video->input_scale, video->force_aspect,
-         video->fullscreen, aw, ah, video->rgb32);
+   RARCH_LOG("oga_gfx_init video %dx%d rgb32 %d smooth %d input_scale %u force_aspect %d"
+           " fullscreen %d aw %d ah %d rgb %d threaded %d\n",
+         video->width, video->height, video->rgb32, video->smooth, video->input_scale,
+         video->force_aspect, video->fullscreen, aw, ah, video->rgb32, video->is_threaded);
 
    vid->frame = go2_surface_create(vid->display, aw, ah, video->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565);
 
@@ -258,6 +262,12 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (unlikely(!frame || width == 0 || height == 0))
       return true;
+
+   if (unlikely(video_info->input_driver_nonblock_state) && !vid->threaded)
+   {
+      if (frame_count % 4 != 0)
+          return true;
+   }
 
    /* copy buffer to surface */
    dst        = (uint8_t*)go2_surface_map(dst_surface);
