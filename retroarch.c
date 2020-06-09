@@ -23975,28 +23975,13 @@ static void input_menu_keys_pressed(
       struct rarch_state *p_rarch,
       input_bits_t *p_new_state,
       const struct retro_keybind **binds,
+      const struct retro_keybind *binds_norm,
+      const struct retro_keybind *binds_auto,
       rarch_joypad_info_t *joypad_info)
 {
    unsigned i;
    settings_t     *settings                     = p_rarch->configuration_settings;
-   uint8_t max_users                            = (uint8_t)p_rarch->input_driver_max_users;
-   uint8_t port_max                             = 1;
-   const struct retro_keybind *binds_norm       = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-   const struct retro_keybind *binds_auto       = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
-
-   joypad_info->joy_idx                         = settings->uints.input_joypad_map[port];
-   joypad_info->auto_binds                      = input_autoconf_binds[joypad_info->joy_idx];
-   joypad_info->axis_threshold                  = p_rarch->input_driver_axis_threshold;
-
-   for (i = 0; i < max_users; i++)
-   {
-      struct retro_keybind *auto_binds          = input_autoconf_binds[i];
-      struct retro_keybind *general_binds       = input_config_binds[i];
-      binds[i]                                  = input_config_binds[i];
-
-      INPUT_PUSH_ANALOG_DPAD(auto_binds, ANALOG_DPAD_LSTICK);
-      INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
-   }
+   int input_hotkey_block_delay                 = settings->uints.input_hotkey_block_delay;
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
@@ -24009,7 +23994,6 @@ static void input_menu_keys_pressed(
                &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
                RARCH_ENABLE_HOTKEY))
       {
-         int input_hotkey_block_delay                  = settings->uints.input_hotkey_block_delay;
          if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
             p_rarch->input_hotkey_block_counter++;
          else
@@ -24085,13 +24069,6 @@ static void input_menu_keys_pressed(
       }
    }
 
-   for (i = 0; i < max_users; i++)
-   {
-      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-      struct retro_keybind *general_binds = input_config_binds[i];
-      INPUT_POP_ANALOG_DPAD(auto_binds);
-      INPUT_POP_ANALOG_DPAD(general_binds);
-   }
 }
 #endif
 
@@ -24106,17 +24083,13 @@ static void input_keys_pressed(
       unsigned port,
       struct rarch_state *p_rarch,
       input_bits_t *p_new_state,
+      const struct retro_keybind *binds_norm,
+      const struct retro_keybind *binds_auto,
       rarch_joypad_info_t *joypad_info)
 {
    unsigned i;
    settings_t              *settings      = p_rarch->configuration_settings;
    const struct retro_keybind *binds      = input_config_binds[0];
-   const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-   const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
-
-   joypad_info->joy_idx                   = settings->uints.input_joypad_map[port];
-   joypad_info->auto_binds                = input_autoconf_binds[joypad_info->joy_idx];
-   joypad_info->axis_threshold            = p_rarch->input_driver_axis_threshold;
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
@@ -36196,7 +36169,6 @@ static enum runloop_state runloop_check_state(
       retro_time_t current_time)
 {
    input_bits_t current_bits;
-   rarch_joypad_info_t joypad_info;
 #ifdef HAVE_MENU
    static input_bits_t last_input      = {{0}};
 #endif
@@ -36244,88 +36216,128 @@ static enum runloop_state runloop_check_state(
    if (p_rarch->current_input->keyboard_mapping_blocked)
       p_rarch->input_driver_block_hotkey        = true;
 
-   joypad_info.joy_idx                          = 0;
-   joypad_info.auto_binds                       = NULL;
+   {
+      rarch_joypad_info_t joypad_info;
+#ifdef HAVE_MENU
+      bool menu_input_active                       = false;
+#endif
+      unsigned port                                = 0;
+      const struct retro_keybind *binds_norm       = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *binds_auto       = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
+      joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
+      joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
+      joypad_info.axis_threshold                   = p_rarch->input_driver_axis_threshold;
 
 #ifdef HAVE_MENU
-   if (menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb))
-   {
-      const struct retro_keybind *binds[MAX_USERS] = {NULL};
-      input_menu_keys_pressed(0, p_rarch,
-            &current_bits, &binds[0], &joypad_info);
-
-      if (!display_kb)
+      menu_input_active                            = menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb);
+      if (menu_input_active)
       {
          unsigned i;
-         unsigned ids[][2] =
-         {
-            {RETROK_SPACE,     RETRO_DEVICE_ID_JOYPAD_START   },
-            {RETROK_SLASH,     RETRO_DEVICE_ID_JOYPAD_X       },
-            {RETROK_RSHIFT,    RETRO_DEVICE_ID_JOYPAD_SELECT  },
-            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT   },
-            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT    },
-            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN    },
-            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP      },
-            {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L       },
-            {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R       },
-            {0,                RARCH_QUIT_KEY                 },
-            {0,                RARCH_FULLSCREEN_TOGGLE_KEY    },
-            {RETROK_BACKSPACE, RETRO_DEVICE_ID_JOYPAD_B      },
-            {RETROK_RETURN,    RETRO_DEVICE_ID_JOYPAD_A      },
-            {RETROK_DELETE,    RETRO_DEVICE_ID_JOYPAD_Y      },
-            {0,                RARCH_UI_COMPANION_TOGGLE     },
-            {0,                RARCH_FPS_TOGGLE              },
-            {0,                RARCH_SEND_DEBUG_INFO         },
-            {0,                RARCH_NETPLAY_HOST_TOGGLE     },
-            {0,                RARCH_MENU_TOGGLE             },
-         };
+         const struct retro_keybind *binds[MAX_USERS] = {NULL};
+         uint8_t max_users                            = (uint8_t)p_rarch->input_driver_max_users;
 
-         ids[9][0]  = input_config_binds[0][RARCH_QUIT_KEY].key;
-         ids[10][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
-         ids[14][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
-         ids[15][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
-         ids[16][0] = input_config_binds[0][RARCH_SEND_DEBUG_INFO].key;
-         ids[17][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
-         ids[18][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
-
-         if (settings->bools.input_menu_swap_ok_cancel_buttons)
+         for (i = 0; i < max_users; i++)
          {
-            ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
-            ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
+            struct retro_keybind *auto_binds          = input_autoconf_binds[i];
+            struct retro_keybind *general_binds       = input_config_binds[i];
+            binds[i]                                  = input_config_binds[i];
+
+            INPUT_PUSH_ANALOG_DPAD(auto_binds, ANALOG_DPAD_LSTICK);
+            INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
          }
 
-         for (i = 0; i < ARRAY_SIZE(ids); i++)
+         input_menu_keys_pressed(port, p_rarch,
+               &current_bits, &binds[0], binds_norm, binds_auto,
+               &joypad_info);
+
+         for (i = 0; i < max_users; i++)
          {
-            if (p_rarch->current_input->input_state(
-                     p_rarch->current_input_data,
-                     &joypad_info, binds, 0,
-                     RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
-               BIT256_SET_PTR(&current_bits, ids[i][1]);
+            struct retro_keybind *auto_binds    = input_autoconf_binds[i];
+            struct retro_keybind *general_binds = input_config_binds[i];
+            INPUT_POP_ANALOG_DPAD(auto_binds);
+            INPUT_POP_ANALOG_DPAD(general_binds);
+         }
+
+         if (!display_kb)
+         {
+            unsigned i;
+            unsigned ids[][2] =
+            {
+               {RETROK_SPACE,     RETRO_DEVICE_ID_JOYPAD_START   },
+               {RETROK_SLASH,     RETRO_DEVICE_ID_JOYPAD_X       },
+               {RETROK_RSHIFT,    RETRO_DEVICE_ID_JOYPAD_SELECT  },
+               {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT   },
+               {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT    },
+               {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN    },
+               {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP      },
+               {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L       },
+               {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R       },
+               {0,                RARCH_QUIT_KEY                 },
+               {0,                RARCH_FULLSCREEN_TOGGLE_KEY    },
+               {RETROK_BACKSPACE, RETRO_DEVICE_ID_JOYPAD_B      },
+               {RETROK_RETURN,    RETRO_DEVICE_ID_JOYPAD_A      },
+               {RETROK_DELETE,    RETRO_DEVICE_ID_JOYPAD_Y      },
+               {0,                RARCH_UI_COMPANION_TOGGLE     },
+               {0,                RARCH_FPS_TOGGLE              },
+               {0,                RARCH_SEND_DEBUG_INFO         },
+               {0,                RARCH_NETPLAY_HOST_TOGGLE     },
+               {0,                RARCH_MENU_TOGGLE             },
+            };
+
+            ids[9][0]  = input_config_binds[0][RARCH_QUIT_KEY].key;
+            ids[10][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
+            ids[14][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
+            ids[15][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
+            ids[16][0] = input_config_binds[0][RARCH_SEND_DEBUG_INFO].key;
+            ids[17][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
+            ids[18][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
+
+            if (settings->bools.input_menu_swap_ok_cancel_buttons)
+            {
+               ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
+               ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
+            }
+
+            for (i = 0; i < ARRAY_SIZE(ids); i++)
+            {
+               if (p_rarch->current_input->input_state(
+                        p_rarch->current_input_data,
+                        &joypad_info, binds, 0,
+                        RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
+                  BIT256_SET_PTR(&current_bits, ids[i][1]);
+            }
          }
       }
-   }
-   else
+      else
 #endif
-   {
-      input_keys_pressed(0, p_rarch,
-            &current_bits, &joypad_info);
+      {
+         input_keys_pressed(port, p_rarch,
+               &current_bits, binds_norm, binds_auto,
+               &joypad_info);
+      }
+
+#ifdef HAVE_MENU
+      if (!menu_input_active)
+#endif
+      {
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
-      if (settings->bools.ai_service_enable)
-      {
-         unsigned i;
-
-         p_rarch->gamepad_input_override = 0;
-
-         for (i = 0; i < 16; i++)
+         if (settings->bools.ai_service_enable)
          {
-            if (p_rarch->ai_gamepad_state[i] == 2)
-               set_gamepad_input_override(p_rarch, i, true);
-            p_rarch->ai_gamepad_state[i] = 0;
+            unsigned i;
+
+            p_rarch->gamepad_input_override = 0;
+
+            for (i = 0; i < 16; i++)
+            {
+               if (p_rarch->ai_gamepad_state[i] == 2)
+                  set_gamepad_input_override(p_rarch, i, true);
+               p_rarch->ai_gamepad_state[i] = 0;
+            }
          }
+#endif
+#endif
       }
-#endif
-#endif
    }
 
 #ifdef HAVE_MENU
