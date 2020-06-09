@@ -24090,19 +24090,19 @@ static void input_keys_pressed(
    unsigned i;
    settings_t              *settings      = p_rarch->configuration_settings;
    const struct retro_keybind *binds      = input_config_binds[0];
+   int input_hotkey_block_delay           = settings->uints.input_hotkey_block_delay;
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
-      const struct retro_keybind *enable_hotkey    =
+      const struct retro_keybind *hotkey =
          &input_config_binds[port][RARCH_ENABLE_HOTKEY];
 
-      if (     enable_hotkey && enable_hotkey->valid
+      if (hotkey->valid
          && p_rarch->current_input->input_state(
             p_rarch->current_input_data, joypad_info,
-            &binds, port,
-            RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+            &binds, port, RETRO_DEVICE_JOYPAD, 0,
+            RARCH_ENABLE_HOTKEY))
       {
-         int input_hotkey_block_delay                  = settings->uints.input_hotkey_block_delay;
          if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
             p_rarch->input_hotkey_block_counter++;
          else
@@ -24152,7 +24152,7 @@ static void input_keys_pressed(
    {
       int16_t ret = p_rarch->current_input->input_state(
             p_rarch->current_input_data,
-            joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
+            joypad_info, &binds, port, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
 
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
@@ -24186,7 +24186,7 @@ static void input_keys_pressed(
          bool bit_pressed = binds[i].valid
             && p_rarch->current_input->input_state(
                   p_rarch->current_input_data, joypad_info,
-                  &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
+                  &binds, port, RETRO_DEVICE_JOYPAD, 0, i);
          if (     bit_pressed
                || BIT64_GET(lifecycle_state, i)
                || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
