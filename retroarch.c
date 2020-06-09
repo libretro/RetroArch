@@ -23971,15 +23971,22 @@ static void menu_input_post_iterate(
  * Returns: Input sample containing a mask of all pressed keys.
  */
 static void input_menu_keys_pressed(
+      unsigned port,
       struct rarch_state *p_rarch,
       input_bits_t *p_new_state,
       const struct retro_keybind **binds,
       rarch_joypad_info_t *joypad_info)
 {
-   unsigned i, port;
+   unsigned i;
    settings_t     *settings                     = p_rarch->configuration_settings;
    uint8_t max_users                            = (uint8_t)p_rarch->input_driver_max_users;
    uint8_t port_max                             = 1;
+   const struct retro_keybind *binds_norm       = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
+   const struct retro_keybind *binds_auto       = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
+
+   joypad_info->joy_idx                         = settings->uints.input_joypad_map[port];
+   joypad_info->auto_binds                      = input_autoconf_binds[joypad_info->joy_idx];
+   joypad_info->axis_threshold                  = p_rarch->input_driver_axis_threshold;
 
    for (i = 0; i < max_users; i++)
    {
@@ -23991,41 +23998,27 @@ static void input_menu_keys_pressed(
       INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
    }
 
-   for (port = 0; port < port_max; port++)
+   if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
-      const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-      const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *hotkey = 
+         &input_config_binds[port][RARCH_ENABLE_HOTKEY];
 
-      joypad_info->joy_idx                   = settings->uints.input_joypad_map[port];
-      joypad_info->auto_binds                = input_autoconf_binds[joypad_info->joy_idx];
-      joypad_info->axis_threshold            = p_rarch->input_driver_axis_threshold;
-
-      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
+      if (hotkey->valid
+            && p_rarch->current_input->input_state(
+               p_rarch->current_input_data, joypad_info,
+               &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
+               RARCH_ENABLE_HOTKEY))
       {
-         const struct retro_keybind *hotkey = 
-            &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-
-         if (hotkey->valid
-               && p_rarch->current_input->input_state(
-                  p_rarch->current_input_data, joypad_info,
-                  &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
-                  RARCH_ENABLE_HOTKEY))
-         {
-            int input_hotkey_block_delay                  = settings->uints.input_hotkey_block_delay;
-            if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
-               p_rarch->input_hotkey_block_counter++;
-            else
-            {
-               p_rarch->input_driver_block_libretro_input = true;
-               break;
-            }
-         }
+         int input_hotkey_block_delay                  = settings->uints.input_hotkey_block_delay;
+         if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
+            p_rarch->input_hotkey_block_counter++;
          else
-         {
-            p_rarch->input_hotkey_block_counter           = 0;
-            p_rarch->input_driver_block_hotkey            = true;
-            break;
-         }
+            p_rarch->input_driver_block_libretro_input = true;
+      }
+      else
+      {
+         p_rarch->input_hotkey_block_counter           = 0;
+         p_rarch->input_driver_block_hotkey            = true;
       }
    }
 
@@ -24044,32 +24037,15 @@ static void input_menu_keys_pressed(
    }
    else
    {
-      int16_t ret[MAX_USERS];
-      for (port = 0; port < port_max; port++)
-      {
-         joypad_info->joy_idx        = settings->uints.input_joypad_map[port];
-         joypad_info->auto_binds     = input_autoconf_binds[joypad_info->joy_idx];
-         joypad_info->axis_threshold = p_rarch->input_driver_axis_threshold;
-         ret[port]                   = 
+      int16_t ret                    =
             p_rarch->current_input->input_state(
                   p_rarch->current_input_data,
                   joypad_info, &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
                   RETRO_DEVICE_ID_JOYPAD_MASK);
-      }
 
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         bool bit_pressed    = false;
-
-         for (port = 0; port < port_max; port++)
-         {
-            if (binds[port][i].valid && ret[port] & (UINT64_C(1) << i))
-            {
-               bit_pressed = true;
-               break;
-            }
-         }
-
+         bool bit_pressed = binds[port][i].valid && (ret & (UINT64_C(1) << i));
          if (bit_pressed || input_keys_pressed_other_sources(
                   p_rarch, i, p_new_state))
          {
@@ -24095,26 +24071,11 @@ static void input_menu_keys_pressed(
    {
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
-         bool bit_pressed    = false;
-
-         for (port = 0; port < port_max; port++)
-         {
-            const struct retro_keybind *metakey = &input_config_binds[port][i];
-            if (!metakey->valid)
-               continue;
-            joypad_info->joy_idx                = settings->uints.input_joypad_map[port];
-            joypad_info->auto_binds             = input_autoconf_binds[joypad_info->joy_idx];
-            joypad_info->axis_threshold         = p_rarch->input_driver_axis_threshold;
-
-            if (p_rarch->current_input->input_state(
+         const struct retro_keybind *metakey = &input_config_binds[port][i];
+         bool bit_pressed                    = metakey->valid
+            && p_rarch->current_input->input_state(
                      p_rarch->current_input_data, joypad_info,
-                     &binds[0], port, RETRO_DEVICE_JOYPAD, 0, i))
-            {
-               bit_pressed = true;
-               break;
-            }
-         }
-
+                     &binds[0], port, RETRO_DEVICE_JOYPAD, 0, i);
          if (     bit_pressed 
                || BIT64_GET(lifecycle_state, i)
                || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
@@ -24142,11 +24103,12 @@ static void input_menu_keys_pressed(
  * Returns: Input sample containing a mask of all pressed keys.
  */
 static void input_keys_pressed(
+      unsigned port,
       struct rarch_state *p_rarch,
       input_bits_t *p_new_state,
       rarch_joypad_info_t *joypad_info)
 {
-   unsigned i, port                       = 0;
+   unsigned i;
    settings_t              *settings      = p_rarch->configuration_settings;
    const struct retro_keybind *binds      = input_config_binds[0];
    const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
@@ -24260,7 +24222,6 @@ static void input_keys_pressed(
          }
       }
    }
-
 }
 
 void *input_driver_get_data(void)
@@ -36290,7 +36251,7 @@ static enum runloop_state runloop_check_state(
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb))
    {
       const struct retro_keybind *binds[MAX_USERS] = {NULL};
-      input_menu_keys_pressed(p_rarch,
+      input_menu_keys_pressed(0, p_rarch,
             &current_bits, &binds[0], &joypad_info);
 
       if (!display_kb)
@@ -36346,7 +36307,7 @@ static enum runloop_state runloop_check_state(
    else
 #endif
    {
-      input_keys_pressed(p_rarch,
+      input_keys_pressed(0, p_rarch,
             &current_bits, &joypad_info);
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
