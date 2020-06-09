@@ -6594,6 +6594,10 @@ MSG_HASH(
    "Hold Start (2 seconds)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HOLD_SELECT,
+   "Hold Select (2 seconds)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
    "Down + Select"
    )
