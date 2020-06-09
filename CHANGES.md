@@ -1,16 +1,39 @@
 # Future
 - AUTO SAVESTATES: Ensure save states are correctly flushed to disk when quitting RetroArch (fixes broken save states when exiting RetroArch - without first closing content - with 'Auto Save State' enabled)
+- BUILTIN CORES: Builtin cores like ffmpeg and imageviewer would previously try  to erroneously load a dynamic core named 'builtin' - this would fail and would just be a wasteful operation - this now skips dylib loading in libretro_get_system_info for builtin cores
 - CHEEVOS: report API errors when unlocking achievements or submitting leaderboards
+- CHEEVOS/M3u: Bugfix - did not handle absolute/relative paths in M3U files correctly before
+- CHEEVOS/M3U: Bugfix - it didn't handle comments/directives
+- CHEEVOS/M3U: Bugfix - it doesn't handle trailing whitespace
+- CHEEVOS/M3U: Bugfix - failed when loading M3U files with certain line endings
 - CORE MANAGEMENT: Add option to backup/restore installed cores
+- CORE MANAGEMENT: Improved core selection logic
+- CORE INFO: Search search optimisations
 - CORE DOWNLOADER: Rename 'Core Updater' to 'Core Downloader'
 - CORE DOWNLOADER: Add 'Show Experimental Cores' setting under Settings > Network > Updater
 - CORE DOWNLOADER: Core licenses are now shown for all entries in the Core Updater menu
 - CORE DOWNLOADER: Pressing RetroPad select on a Core Updater entry will now display any text in the description field of its info file
 - CORE DOWNLOADER: Installed cores are now highlighted via a [#] symbol
-- CORE DOWNLOADER: Pressing RetroPad start on a selected, installed entry opens the Core Information menu (when using Material UI, swiping left or right triggers the same action). This means we can now view bios info etc. - and more importantly delete cores - without jumping through all the hoops of loading a core first and navigating all over the place 
+- CORE DOWNLOADER: Pressing RetroPad start on a selected, installed entry opens the Core Information menu (when using Material UI, swiping left or right triggers the same action). This means we can now view bios info etc. - and more importantly delete cores - without jumping through all the hoops of loading a core first and navigating all over the place
+- INPUT: Added a hotkey delay option to allow hotkey input to work properly when it is assigned to another action
 - LINUX: Set default saves/save states/system paths
+- LOCALIZATION: Add Persian language
+- LOCALIZATION: Add Hebrew language
+- LOCALIZATION: Add Asturian language
 - MENU: Proper line wrapping for message dialog boxes
+- MENU/OZONE: Performance improvements
+- OPENGL1/VITA: Initial changes for HW context without FBO
+- PLAYLISTS/WINDOWS: Fix core path entries in image/video/music history playlists
+- PS2: Add back CDFS support
 - SDL/GL: Advertise GLSL support
+- VITA: Added custom bubbles support
+- VITA: VitaGL update
+- VULKAN/WSI: Better frame pacing
+- VULKAN/WSI: Fix Intel Mesa being broken when using Fences, we have to use Semaphores to acquire the swapchain or the entire GPU stalls
+- VULKAN/WSI: Add support for either using fences or semaphores when syncing
+- VULKAN/WSI: Prefer using semaphores for integrated GPUs as it promotes better throughput over fences
+- VULKAN/WSI/ANDROID: Do not use mailbox emulation on Android
+- UWP/XBOX: Potentially improve performance by enabling 'Game Mode'
 
 # 1.8.8
 - AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
