@@ -35,7 +35,7 @@
 
 #include "wiiu_dbg.h"
 
-static uint8_t keyboardChannel = 0x00;
+static uint8_t keyboardChannel         = 0x00;
 static bool keyboardState[RETROK_LAST] = { 0 };
 
 typedef struct wiiu_input
@@ -43,26 +43,26 @@ typedef struct wiiu_input
    const input_device_driver_t *joypad;
 } wiiu_input_t;
 
-void kb_connection_callback(KBDKeyEvent *key)
+static void kb_connection_callback(KBDKeyEvent *key)
 {
    keyboardChannel = keyboardChannel + (key->channel + 0x01);
 }
 
-void kb_disconnection_callback(KBDKeyEvent *key)
+static void kb_disconnection_callback(KBDKeyEvent *key)
 {
 	keyboardChannel = keyboardChannel - (key->channel + 0x01);
 }
 
-void kb_key_callback(KBDKeyEvent *key)
+static void kb_key_callback(KBDKeyEvent *key)
 {
-   uint16_t mod        = 0;
-   unsigned code       = 0;
-   bool pressed        = false;
+   uint16_t mod           = 0;
+   unsigned code          = 0;
+   bool pressed           = false;
 
    if (key->state > 0)
       pressed = true;
 
-   code                = input_keymaps_translate_keysym_to_rk(key->scancode);
+   code                   = input_keymaps_translate_keysym_to_rk(key->scancode);
    if (code < RETROK_LAST)
       keyboardState[code] = pressed;
 
@@ -115,11 +115,9 @@ static void wiiu_input_poll(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if (!wiiu)
-     return;
-
-   if (wiiu->joypad)
-     wiiu->joypad->poll();
+   if (wiiu)
+      if (wiiu->joypad)
+         wiiu->joypad->poll();
 }
 
 static int16_t wiiu_input_state(void *data,
@@ -172,15 +170,15 @@ static int16_t wiiu_input_state(void *data,
                ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
             if ((uint16_t)joykey != NO_BTN && wiiu->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(wiiu->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST && keyboardState[id] && (keyboardChannel > 0))
-            return true;
-         return false;
+            return 1;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(wiiu->joypad,

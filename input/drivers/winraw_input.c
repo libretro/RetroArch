@@ -143,7 +143,6 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
             name, &name_size);
       if (r == (UINT)-1 || r == 0)
          name[0] = '\0';
-      RARCH_LOG("[WINRAW]: Mouse #%u %s.\n", i, name);
    }
 }
 
@@ -680,15 +679,15 @@ static void winraw_poll(void *d)
 
    for (i = 0; i < g_mouse_cnt; ++i)
    {
-      wr->mice[i].x     = g_mice[i].x;
-      wr->mice[i].y     = g_mice[i].y;
-      wr->mice[i].dlt_x = InterlockedExchange(&g_mice[i].dlt_x, 0);
-      wr->mice[i].dlt_y = InterlockedExchange(&g_mice[i].dlt_y, 0);
-      wr->mice[i].whl_u = InterlockedExchange(&g_mice[i].whl_u, 0);
-      wr->mice[i].whl_d = InterlockedExchange(&g_mice[i].whl_d, 0);
-      wr->mice[i].btn_l = g_mice[i].btn_l;
-      wr->mice[i].btn_m = g_mice[i].btn_m;
-      wr->mice[i].btn_r = g_mice[i].btn_r;
+      wr->mice[i].x      = g_mice[i].x;
+      wr->mice[i].y      = g_mice[i].y;
+      wr->mice[i].dlt_x  = InterlockedExchange(&g_mice[i].dlt_x, 0);
+      wr->mice[i].dlt_y  = InterlockedExchange(&g_mice[i].dlt_y, 0);
+      wr->mice[i].whl_u  = InterlockedExchange(&g_mice[i].whl_u, 0);
+      wr->mice[i].whl_d  = InterlockedExchange(&g_mice[i].whl_d, 0);
+      wr->mice[i].btn_l  = g_mice[i].btn_l;
+      wr->mice[i].btn_m  = g_mice[i].btn_m;
+      wr->mice[i].btn_r  = g_mice[i].btn_r;
       wr->mice[i].btn_b4 = g_mice[i].btn_b4;
       wr->mice[i].btn_b5 = g_mice[i].btn_b5;
    }

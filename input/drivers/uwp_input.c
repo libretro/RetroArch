@@ -157,9 +157,11 @@ static int16_t uwp_pressed_analog(uwp_input_t *uwp,
    if (!bind_minus->valid || !bind_plus->valid)
       return 0;
 
-   if ((bind_minus->key < RETROK_LAST) && uwp_keyboard_pressed(bind_minus->key))
+   if ((bind_minus->key < RETROK_LAST) 
+         && uwp_keyboard_pressed(bind_minus->key))
       pressed_minus = -0x7fff;
-   if ((bind_plus->key < RETROK_LAST) && uwp_keyboard_pressed(bind_plus->key))
+   if ((bind_plus->key < RETROK_LAST) 
+         && uwp_keyboard_pressed(bind_plus->key))
       pressed_plus = 0x7fff;
 
    pressed_keyboard = pressed_plus + pressed_minus;
@@ -167,7 +169,8 @@ static int16_t uwp_pressed_analog(uwp_input_t *uwp,
       return pressed_keyboard;
 
    /* Then, process the joypad bindings */
-   return input_joypad_analog(uwp->joypad, joypad_info, port, idx, id, binds);
+   return input_joypad_analog(uwp->joypad,
+         joypad_info, port, idx, id, binds);
 }
 
 static int16_t uwp_input_state(void *data,
@@ -201,7 +204,7 @@ static int16_t uwp_input_state(void *data,
          {
             if (id < RARCH_BIND_LIST_END)
                if (uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id))
-                  return true;
+                  return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:

@@ -186,9 +186,9 @@ static int16_t gx_input_state(void *data,
 
             if ((uint16_t)joykey != NO_BTN && gx->joypad->button(
                      joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(gx->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:

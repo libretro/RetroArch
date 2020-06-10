@@ -352,17 +352,17 @@ static int16_t cocoa_input_state(void *data,
                ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
             if (id < RARCH_BIND_LIST_END)
                if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
-                  return true;
+                  return 1;
             if ((uint16_t)joykey != NO_BTN && apple->joypad->button(
                      joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(apple->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
 #ifdef HAVE_MFI
             if ((uint16_t)joykey != NO_BTN && apple->sec_joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(apple->sec_joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
 #endif
          }
          break;

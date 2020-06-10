@@ -163,12 +163,12 @@ static int16_t linuxraw_input_state(void *data,
             if (((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
                      linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
                 ))
-               return true;
+               return 1;
 
             if ((uint16_t)joykey != NO_BTN && linuxraw->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(linuxraw->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:

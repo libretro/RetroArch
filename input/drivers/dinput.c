@@ -617,7 +617,7 @@ static int16_t dinput_input_state(void *data,
                {
                   if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]] & 0x80)
                      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
-                        return true;
+                        return 1;
                }
                if (binds[port][id].valid)
                {
@@ -628,12 +628,12 @@ static int16_t dinput_input_state(void *data,
                      ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
                   if (dinput_mouse_button_pressed(di, port, binds[port][id].mbutton))
-                     return true;
+                     return 1;
                   if ((uint16_t)joykey != NO_BTN
                         && di->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-                     return true;
+                     return 1;
                   if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-                     return true;
+                     return 1;
                }
             }
          }
@@ -649,7 +649,7 @@ static int16_t dinput_input_state(void *data,
                      port, idx, id, binds[port]);
             return ret;
          }
-         return 0;
+         break;
 
       case RETRO_DEVICE_MOUSE:
          return dinput_mouse_state(di, port, id);
@@ -729,7 +729,7 @@ static int16_t dinput_input_state(void *data,
                   {
                      if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
                         if ((new_id == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
-                           return true;
+                           return 1;
                   }
                   if (binds[port][new_id].valid)
                   {
@@ -740,12 +740,13 @@ static int16_t dinput_input_state(void *data,
                         ? binds[port][new_id].joyaxis : joypad_info->auto_binds[new_id].joyaxis;
 
                      if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
-                        return true;
+                        return 1;
                      if ((uint16_t)joykey != NO_BTN
-                           && di->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-                        return true;
+                           && di->joypad->button(
+                              joypad_info->joy_idx, (uint16_t)joykey))
+                        return 1;
                      if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-                        return true;
+                        return 1;
                   }
                }
                break;

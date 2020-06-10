@@ -100,7 +100,8 @@ typedef struct qnx_input
 
 extern screen_context_t screen_ctx;
 
-static void qnx_init_controller(qnx_input_t *qnx, qnx_input_device_t* controller)
+static void qnx_init_controller(
+      qnx_input_t *qnx, qnx_input_device_t* controller)
 {
    if (!qnx)
       return;
@@ -716,7 +717,7 @@ static void qnx_input_poll(void *data)
    for (;;)
    {
       bps_event_t *event = NULL;
-      int rc = bps_get_event(&event, 0);
+      int rc             = bps_get_event(&event, 0);
 
       if(rc == BPS_SUCCESS)
       {
@@ -833,20 +834,20 @@ static int16_t qnx_input_state(void *data,
          }
          else
             if (qnx_is_pressed(qnx, joypad_info, binds[port], port, id))
-               return true;
+               return 1;
          break;
       case RETRO_DEVICE_ANALOG:
-	if (binds[port])
+         if (binds[port])
             return input_joypad_analog(qnx->joypad, joypad_info,
                   port, idx, id, binds[port]);
-	 return 0;
+         return 0;
       case RETRO_DEVICE_KEYBOARD:
          return qnx_keyboard_pressed(qnx, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          return qnx_pointer_input_state(qnx, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
       default:
-          break;
+         break;
    }
 
    return 0;

@@ -53,7 +53,8 @@
 
 void flush_wayland_fd(void *data);
 
-static int16_t input_wl_mouse_state(input_ctx_wayland_data_t *wl, unsigned id, bool screen)
+static int16_t input_wl_mouse_state(
+      input_ctx_wayland_data_t *wl, unsigned id, bool screen)
 {
    switch (id)
    {
@@ -74,7 +75,8 @@ static int16_t input_wl_mouse_state(input_ctx_wayland_data_t *wl, unsigned id, b
    return 0;
 }
 
-static int16_t input_wl_lightgun_state(input_ctx_wayland_data_t *wl, unsigned id)
+static int16_t input_wl_lightgun_state(
+      input_ctx_wayland_data_t *wl, unsigned id)
 {
    switch (id)
    {
@@ -333,15 +335,16 @@ static int16_t input_wl_state(void *data,
                ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
             if (id < RARCH_BIND_LIST_END)
-               if (BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
-                  return true;
+               if (BIT_GET(wl->key_state,
+                        rarch_keysym_lut[binds[port][id].key]))
+                  return 1;
 
             if (binds[port])
             {
                if ((uint16_t)joykey != NO_BTN && wl->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-                  return true;
+                  return 1;
                if (((float)abs(wl->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-                  return true;
+                  return 1;
             }
          }
          break;
@@ -358,7 +361,6 @@ static int16_t input_wl_state(void *data,
          return input_wl_mouse_state(wl, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
          return input_wl_mouse_state(wl, id, true);
-
       case RETRO_DEVICE_POINTER:
          if (idx == 0)
             return input_wl_pointer_state(wl, idx, id,

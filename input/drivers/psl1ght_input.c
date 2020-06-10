@@ -162,11 +162,7 @@ static void ps3_input_poll(void *data)
 
 #ifdef HAVE_MOUSE
 static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
-      unsigned user, unsigned id)
-{
-  RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
-}
-
+      unsigned user, unsigned id) { }
 #endif
 
 static bool psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
@@ -262,11 +258,11 @@ static int16_t ps3_input_state(void *data,
 
             if ((uint16_t)joykey != NO_BTN && ps3->joypad->button(
                      joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(ps3->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
             if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][id].key))
-               return true;
+               return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:

@@ -114,7 +114,8 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       return 1;
    }
 
-   if (((float)abs(sdl->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
+   if (((float)abs(sdl->joypad->axis(joypad_info->joy_idx, joyaxis)) 
+            / 0x8000) > joypad_info->axis_threshold)
    {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
       return 1;
@@ -167,8 +168,9 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
    vp.full_width               = 0;
    vp.full_height              = 0;
 
-   if (!(video_driver_translate_coord_viewport_wrap(&vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
+   if (!(video_driver_translate_coord_viewport_wrap(
+               &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
+               &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -251,7 +253,7 @@ static int16_t sdl_input_state(void *data,
             if (id < RARCH_BIND_LIST_END)
                if (sdl_joypad_device_state(sdl,
                      joypad_info, binds[port], port, id, &type))
-                  return true;
+                  return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -366,15 +368,18 @@ static void sdl_input_poll(void *data)
    sdl_poll_mouse(sdl);
 
 #ifdef HAVE_SDL2
-   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_KEYDOWN, SDL_MOUSEWHEEL) > 0)
+   while (SDL_PeepEvents(&event, 1,
+            SDL_GETEVENT, SDL_KEYDOWN, SDL_MOUSEWHEEL) > 0)
 #else
-   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_KEYEVENTMASK) > 0)
+   while (SDL_PeepEvents(&event, 1,
+            SDL_GETEVENT, SDL_KEYEVENTMASK) > 0)
 #endif
    {
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
       {
          uint16_t mod = 0;
-         unsigned code = input_keymaps_translate_keysym_to_rk(event.key.keysym.sym);
+         unsigned code = input_keymaps_translate_keysym_to_rk(
+               event.key.keysym.sym);
 
          if (event.key.keysym.mod & KMOD_SHIFT)
             mod |= RETROKMOD_SHIFT;

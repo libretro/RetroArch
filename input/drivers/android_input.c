@@ -1512,12 +1512,12 @@ static int16_t android_input_state(void *data,
                ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
             if ((uint16_t)joykey != NO_BTN && android->joypad->button(
                      joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(android->joypad->axis(
                            joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
             if (android_keyboard_port_input_pressed(binds[port], id))
-               return true;
+               return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:

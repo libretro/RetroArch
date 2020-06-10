@@ -98,9 +98,9 @@ static int16_t xdk_input_state(void *data,
                ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
             if ((uint16_t)joykey != NO_BTN && xdk->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(xdk->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:

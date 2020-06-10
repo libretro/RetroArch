@@ -92,23 +92,23 @@ static bool x_mouse_button_pressed(
 
    switch ( key )
    {
-
-   case RETRO_DEVICE_ID_MOUSE_LEFT:
-      return x11->mouse_l;
-   case RETRO_DEVICE_ID_MOUSE_RIGHT:
-      return x11->mouse_r;
-   case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-      return x11->mouse_m;
-/*   case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-      return x11->mouse_b4;*/
-/*   case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-      return x11->mouse_b5;*/
-
-   case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-   case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-      return x_mouse_state_wheel( key );
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return x11->mouse_l;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return x11->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return x11->mouse_m;
+#if 0
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         return x11->mouse_b4;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         return x11->mouse_b5;
+#endif
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+         return x_mouse_state_wheel(key);
    }
 
    return false;
@@ -176,10 +176,11 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    return pressed_plus + pressed_minus;
 }
 
-static int16_t x_lightgun_aiming_state( x11_input_t *x11, unsigned idx, unsigned id )
+static int16_t x_lightgun_aiming_state(
+      x11_input_t *x11, unsigned idx, unsigned id )
 {
-   const int edge_detect = 32700;
    struct video_viewport vp;
+   const int edge_detect       = 32700;
    bool inside                 = false;
    int16_t res_x               = 0;
    int16_t res_y               = 0;
@@ -194,21 +195,21 @@ static int16_t x_lightgun_aiming_state( x11_input_t *x11, unsigned idx, unsigned
    vp.full_height              = 0;
 
    if (!(video_driver_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
+               &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
 
    switch ( id )
    {
-   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-      return inside ? res_x : 0;
-   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-      return inside ? res_y : 0;
-   case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-      return !inside;
-   default:
-      break;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+         return inside ? res_x : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+         return inside ? res_y : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return !inside;
+      default:
+         break;
    }
 
    return 0;
@@ -270,8 +271,9 @@ static int16_t x_pointer_state(x11_input_t *x11,
    vp.full_width               = 0;
    vp.full_height              = 0;
 
-   if (!(video_driver_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
+   if (!(video_driver_translate_coord_viewport_wrap(
+               &vp, x11->mouse_x, x11->mouse_y,
+               &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -328,7 +330,7 @@ static int16_t x_input_state(void *data,
          {
             if (id < RARCH_BIND_LIST_END)
                if (x_is_pressed(x11, joypad_info, binds[port], port, id))
-                  return true;
+                  return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -456,7 +458,7 @@ static void x_input_poll_mouse(x11_input_t *x11,
 
          video_driver_get_viewport_info(&vp);
 
-         mid_w = vp.full_width >> 1;
+         mid_w = vp.full_width  >> 1;
          mid_h = vp.full_height >> 1;
 
          if (x11->mouse_x != mid_w || x11->mouse_y != mid_h)

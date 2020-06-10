@@ -127,7 +127,8 @@ static int16_t ps3_input_state(void *data,
                   continue;
                }
                else if (((float)abs(ps3->joypad->axis(
-                              joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
+                              joypad_info->joy_idx, joyaxis)) / 0x8000) 
+                     > joypad_info->axis_threshold)
                {
                   ret |= (1 << i);
                   continue;
@@ -146,9 +147,9 @@ static int16_t ps3_input_state(void *data,
 
             if ((uint16_t)joykey != NO_BTN && ps3->joypad->button(
                      joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(ps3->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:

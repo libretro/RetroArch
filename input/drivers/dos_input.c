@@ -124,13 +124,13 @@ static int16_t dos_input_state(void *data,
 
             if ((uint16_t)joykey != NO_BTN && dos->joypad->button(
                      joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
+               return 1;
             if (((float)abs(dos->joypad->axis(
                            joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+               return 1;
 
             if (dos_keyboard_port_input_pressed(binds[port], id))
-               return true;
+               return 1;
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
