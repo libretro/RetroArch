@@ -69,33 +69,6 @@ struct menu_bind_state
 /* TODO/FIXME - static public global variables */
 static struct menu_bind_state menu_input_binds = {0};
 
-static bool input_joypad_button_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned button)
-{
-   if (!drv)
-      return false;
-   return drv && drv->button(port, button);
-}
-
-static int16_t input_joypad_axis_raw(
-      const input_device_driver_t *drv,
-      unsigned port, unsigned axis)
-{
-   if (!drv)
-      return 0;
-   return drv->axis(port, AXIS_POS(axis)) +
-      drv->axis(port, AXIS_NEG(axis));
-}
-
-static bool input_joypad_hat_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned hat_dir, unsigned hat)
-{
-   if (!drv)
-      return false;
-   return drv->button(port, HAT_MAP(hat, hat_dir));
-}
-
-
 static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
 {
@@ -107,12 +80,12 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input_binds.buffer.key = (enum retro_key)code;
 
    /* write out the bind */
-   *(menu_input_binds.output)=menu_input_binds.buffer;
+   *(menu_input_binds.output)  = menu_input_binds.buffer;
 
    /* next bind */
    menu_input_binds.begin++;
    menu_input_binds.output++;
-   menu_input_binds.buffer=*(menu_input_binds.output);
+   menu_input_binds.buffer    =* (menu_input_binds.output);
    rarch_timer_begin_new_time_us(
          &menu_input_binds.timer_hold, input_bind_hold_us);
    rarch_timer_begin_new_time_us(
@@ -201,14 +174,16 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
    /* poll only the relevant port */
    for (a = 0; a < MENU_MAX_AXES; a++)
       state->axis_state[port].rested_axes[a] =
-         input_joypad_axis_raw(joypad, port, a);
+         joypad->axis(port, AXIS_POS(a)) +
+         joypad->axis(port, AXIS_NEG(a));
 
    if (sec_joypad)
    {
-        /* poll only the relevant port */
-        for (a = 0; a < MENU_MAX_AXES; a++)
-            state->axis_state[port].rested_axes[a] =
-               input_joypad_axis_raw(sec_joypad, port, a);
+      /* poll only the relevant port */
+      for (a = 0; a < MENU_MAX_AXES; a++)
+         state->axis_state[port].rested_axes[a] =
+            sec_joypad->axis(port, AXIS_POS(a)) +
+            sec_joypad->axis(port, AXIS_NEG(a));
    }
 }
 
@@ -219,32 +194,32 @@ static void menu_input_key_bind_poll_bind_state_internal(
       bool timed_out)
 {
    unsigned b, a, h;
-    if (!joypad)
-        return;
+   if (!joypad)
+      return;
 
-    if (joypad->poll)
-        joypad->poll();
+   if (joypad->poll)
+      joypad->poll();
 
-    /* poll only the relevant port */
-    for (b = 0; b < MENU_MAX_BUTTONS; b++)
-        state->state[port].buttons[b] =
-           input_joypad_button_raw(joypad, port, b);
+   /* poll only the relevant port */
+   for (b = 0; b < MENU_MAX_BUTTONS; b++)
+      state->state[port].buttons[b] = joypad->button(port, b);
 
-    for (a = 0; a < MENU_MAX_AXES; a++)
-        state->state[port].axes[a] =
-           input_joypad_axis_raw(joypad, port, a);
+   for (a = 0; a < MENU_MAX_AXES; a++)
+      state->state[port].axes[a] =
+         joypad->axis(port, AXIS_POS(a)) +
+         joypad->axis(port, AXIS_NEG(a));
 
-    for (h = 0; h < MENU_MAX_HATS; h++)
-    {
-        if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
-            state->state[port].hats[h] |= HAT_UP_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_DOWN_MASK, h))
-            state->state[port].hats[h] |= HAT_DOWN_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_LEFT_MASK, h))
-            state->state[port].hats[h] |= HAT_LEFT_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_RIGHT_MASK, h))
-            state->state[port].hats[h] |= HAT_RIGHT_MASK;
-    }
+   for (h = 0; h < MENU_MAX_HATS; h++)
+   {
+      if (joypad->button(port, HAT_MAP(h, HAT_UP_MASK)))
+         state->state[port].hats[h] |= HAT_UP_MASK;
+      if (joypad->button(port, HAT_MAP(h, HAT_DOWN_MASK)))
+         state->state[port].hats[h] |= HAT_DOWN_MASK;
+      if (joypad->button(port, HAT_MAP(h, HAT_LEFT_MASK)))
+         state->state[port].hats[h] |= HAT_LEFT_MASK;
+      if (joypad->button(port, HAT_MAP(h, HAT_RIGHT_MASK)))
+         state->state[port].hats[h] |= HAT_RIGHT_MASK;
+   }
 }
 
 static void menu_input_key_bind_poll_bind_state(
@@ -263,10 +238,10 @@ static void menu_input_key_bind_poll_bind_state(
 
    memset(state->state, 0, sizeof(state->state));
 
-    /* poll mouse (on the relevant port) */
-    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
-        state->state[port].mouse_buttons[b] =
-           input_mouse_button_raw(port, b);
+   /* poll mouse (on the relevant port) */
+   for (b = 0; b < MENU_MAX_MBUTTONS; b++)
+      state->state[port].mouse_buttons[b] =
+         input_mouse_button_raw(port, b);
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -290,11 +265,13 @@ bool menu_input_key_bind_set_mode(
 {
    unsigned index_offset;
    input_keyboard_ctx_wait_t keys;
-   rarch_setting_t  *setting = (rarch_setting_t*)data;
-   settings_t *settings      = config_get_ptr();
-   menu_handle_t       *menu = menu_driver_get_ptr();
-   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
-   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+   rarch_setting_t  *setting      = (rarch_setting_t*)data;
+   settings_t *settings           = config_get_ptr();
+   menu_handle_t       *menu      = menu_driver_get_ptr();
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    
+      * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout 
+      * 1000000;
 
    if (!setting || !menu)
       return false;
@@ -309,8 +286,10 @@ bool menu_input_key_bind_set_mode(
    menu_input_key_bind_poll_bind_state(
          &menu_input_binds, false);
 
-   rarch_timer_begin_new_time_us(&menu_input_binds.timer_hold, input_bind_hold_us);
-   rarch_timer_begin_new_time_us(&menu_input_binds.timer_timeout, input_bind_timeout_us);
+   rarch_timer_begin_new_time_us(
+         &menu_input_binds.timer_hold, input_bind_hold_us);
+   rarch_timer_begin_new_time_us(
+         &menu_input_binds.timer_timeout, input_bind_timeout_us);
 
    keys.userdata = menu;
    keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
@@ -434,7 +413,8 @@ static bool menu_input_key_bind_poll_find_hold_pad(
       unsigned p)
 {
    unsigned a, b, h;
-   const struct menu_bind_state_port *n = (const struct menu_bind_state_port*)
+   const struct menu_bind_state_port *n = 
+      (const struct menu_bind_state_port*)
       &new_state->state[p];
 
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
@@ -483,7 +463,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
             ? AXIS_POS(a) : AXIS_NEG(a);
          output->joykey = NO_BTN;
 
-       return true;
+         return true;
       }
    }
 
@@ -503,7 +483,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 
       if (sane_trigger)
       {
-         output->joykey = HAT_MAP(h, sane_trigger);
+         output->joykey  = HAT_MAP(h, sane_trigger);
          output->joyaxis = AXIS_NONE;
          return true;
       }
@@ -525,7 +505,7 @@ bool menu_input_key_bind_poll_find_hold(
    for (i = 0; i < max_users; i++)
    {
       if (!menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
-        continue;
+         continue;
 
       return true;
    }
@@ -546,8 +526,9 @@ static bool menu_input_key_bind_poll_find_trigger(
 
    for (i = 0; i < max_users; i++)
    {
-      if (!menu_input_key_bind_poll_find_trigger_pad(state, new_state, output, i))
-        continue;
+      if (!menu_input_key_bind_poll_find_trigger_pad(
+               state, new_state, output, i))
+         continue;
 
       return true;
    }
@@ -578,13 +559,13 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
       return false;
 
    snprintf(bind->s, bind->len,
-             "[%s]\npress keyboard, mouse or joypad\n(timeout %d %s)",
-             input_config_bind_map_get_desc(
-                menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN),
-             rarch_timer_get_timeout(&menu_input_binds.timer_timeout),
-             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
+         "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
+         input_config_bind_map_get_desc(
+            menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN),
+         rarch_timer_get_timeout(&menu_input_binds.timer_timeout),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 
-   /*tick main timers*/
+   /* Tick main timers */
    rarch_timer_tick(&menu_input_binds.timer_timeout, current_time);
    rarch_timer_tick(&menu_input_binds.timer_hold, current_time);
 
@@ -629,46 +610,45 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
       menu_input_key_bind_poll_bind_state(&binds, timed_out);
 
 #ifdef ANDROID
-
-	  /*keep resetting bind during the hold period, or we'll potentially bind joystick and mouse, etc.*/
-	  binds.buffer = *(binds.output);
+      /* Keep resetting bind during the hold period, 
+       * or we'll potentially bind joystick and mouse, etc.*/
+      binds.buffer = *(binds.output);
 
       if (menu_input_key_bind_poll_find_hold(&binds, &binds.buffer))
       {
-         /*inhibit timeout*/
-         rarch_timer_begin_new_time_us(&binds.timer_timeout, input_bind_timeout_us);
+         /* Inhibit timeout*/
+         rarch_timer_begin_new_time_us(&binds.timer_timeout,
+               input_bind_timeout_us);
 
-         /*run hold timer*/
+         /* Run hold timer*/
          rarch_timer_tick(&binds.timer_hold, current_time);
 
          snprintf(bind->s, bind->len,
-                "[%s]\npress keyboard, mouse or joypad\nand hold ...",
-                input_config_bind_map_get_desc(
-                   menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN));
+               "[%s]\npress keyboard, mouse or joypad\nand hold ...",
+               input_config_bind_map_get_desc(
+                  menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN));
 
-         /*hold complete?*/
+         /* Hold complete? */
          if (rarch_timer_has_expired(&binds.timer_hold))
             complete = true;
       }
       else
       {
-         /*reset hold countdown*/
+         /* Reset hold countdown*/
          rarch_timer_begin_new_time_us(&binds.timer_hold, input_bind_hold_us);
       }
 #else
       if ((binds.skip && !menu_input_binds.skip) ||
-         menu_input_key_bind_poll_find_trigger(&menu_input_binds, &binds, &(binds.buffer)))
-      {
+            menu_input_key_bind_poll_find_trigger(
+               &menu_input_binds, &binds, &(binds.buffer)))
          complete = true;
-      }
-
 #endif
 
       if (complete)
       {
          input_driver_t *input_drv    = input_get_ptr();
 
-         /*update bind*/
+         /* Update bind */
          *(binds.output) = binds.buffer;
 
          if (input_drv)
