@@ -1278,8 +1278,6 @@ MENU
 #include "../gfx/widgets/gfx_widget_libretro_message.c"
 #endif
 
-#include "../input/input_osk.c"
-
 #ifdef HAVE_MENU
 #include "../menu/menu_setting.c"
 

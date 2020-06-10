@@ -49,9 +49,8 @@ enum osk_type
 
 int input_event_get_osk_ptr(void);
 
-void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui);
-
-void input_event_osk_iterate(enum osk_type osk_idx);
+void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui,
+      const char *word);
 
 char **input_event_get_osk_grid(void);
 

@@ -843,8 +843,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_displaylist.o
 endif
 
-   OBJ += input/input_osk.o
-
 ifeq ($(HAVE_GFX_WIDGETS), 1)
    OBJ += gfx/gfx_widgets.o \
           gfx/widgets/gfx_widget_screenshot.o \

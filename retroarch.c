@@ -246,6 +246,30 @@
 #include "audio/audio_thread_wrapper.h"
 #endif
 
+#ifdef HAVE_LANGEXTRA
+/* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA is only enabled for compilers that can support this. */
+#include "input/input_osk_utf8_pages.h"
+#else
+/* Otherwise define some ascii-friendly pages. */
+static const char *symbols_page1_grid[] = {
+                          "1","2","3","4","5","6","7","8","9","0","Bksp",
+                          "!","\"","#","$","%","&","'","*","(",")","Enter",
+                          "+",",","-","~","/",":",";","=","<",">","Lower",
+                          "?","@","[","\\","]","^","_","|","{","}","Next"};
+
+static const char *uppercase_grid[] = {
+                          "1","2","3","4","5","6","7","8","9","0","Bksp",
+                          "Q","W","E","R","T","Y","U","I","O","P","Enter",
+                          "A","S","D","F","G","H","J","K","L","+","Lower",
+                          "Z","X","C","V","B","N","M"," ","_","/","Next"};
+
+static const char *lowercase_grid[] = {
+                          "1","2","3","4","5","6","7","8","9","0","Bksp",
+                          "q","w","e","r","t","y","u","i","o","p","Enter",
+                          "a","s","d","f","g","h","j","k","l","@","Upper",
+                          "z","x","c","v","b","n","m"," ","-",".","Next"};
+#endif
+
 /* DRIVERS */
 
 audio_driver_t audio_null = {
@@ -2132,6 +2156,7 @@ struct rarch_state
    char input_device_config_names [MAX_INPUT_DEVICES][64];
    char input_device_config_paths [MAX_INPUT_DEVICES][64];
 
+   char *osk_grid[45];
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char *secondary_library_path;
@@ -3620,6 +3645,12 @@ int input_event_get_osk_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    return p_rarch->osk_ptr;
+}
+
+char **input_event_get_osk_grid(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return p_rarch->osk_grid;
 }
 
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
@@ -22801,6 +22832,87 @@ static void menu_input_get_touchscreen_hw_state(
    last_cancel_pressed = hw_state->cancel_pressed;
 }
 
+void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui,
+      const char *word)
+{
+#ifdef HAVE_LANGEXTRA
+   if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
+      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+   else if (string_is_equal(word, "\xe2\x8f\x8e")) /* return character */
+      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+   else
+   if (string_is_equal(word, "\xe2\x87\xa7")) /* up arrow */
+      *osk_idx = OSK_UPPERCASE_LATIN;
+   else if (string_is_equal(word, "\xe2\x87\xa9")) /* down arrow */
+      *osk_idx = OSK_LOWERCASE_LATIN;
+   else if (string_is_equal(word,"\xe2\x8a\x95")) /* plus sign (next button) */
+#else
+   if (string_is_equal(word, "Bksp"))
+      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+   else if (string_is_equal(word, "Enter"))
+      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+   else
+   if (string_is_equal(word, "Upper"))
+      *osk_idx = OSK_UPPERCASE_LATIN;
+   else if (string_is_equal(word, "Lower"))
+      *osk_idx = OSK_LOWERCASE_LATIN;
+   else if (string_is_equal(word, "Next"))
+#endif
+      if (*osk_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
+         *osk_idx = (enum osk_type)(*osk_idx + 1);
+      else
+         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+   else
+      input_keyboard_line_append(word);
+}
+
+static void input_event_osk_iterate(
+      struct rarch_state *p_rarch,
+      enum osk_type osk_idx)
+{
+   switch (osk_idx)
+   {
+#ifdef HAVE_LANGEXTRA
+      case OSK_HIRAGANA_PAGE1:
+         memcpy(p_rarch->osk_grid,
+               hiragana_page1_grid,
+               sizeof(hiragana_page1_grid));
+         break;
+      case OSK_HIRAGANA_PAGE2:
+         memcpy(p_rarch->osk_grid,
+               hiragana_page2_grid,
+               sizeof(hiragana_page2_grid));
+         break;
+      case OSK_KATAKANA_PAGE1:
+         memcpy(p_rarch->osk_grid,
+               katakana_page1_grid,
+               sizeof(katakana_page1_grid));
+         break;
+      case OSK_KATAKANA_PAGE2:
+         memcpy(p_rarch->osk_grid,
+               katakana_page2_grid,
+               sizeof(katakana_page2_grid));
+         break;
+#endif
+      case OSK_SYMBOLS_PAGE1:
+         memcpy(p_rarch->osk_grid,
+               symbols_page1_grid,
+               sizeof(uppercase_grid));
+         break;
+      case OSK_UPPERCASE_LATIN:
+         memcpy(p_rarch->osk_grid,
+               uppercase_grid,
+               sizeof(uppercase_grid));
+         break;
+      case OSK_LOWERCASE_LATIN:
+      default:
+         memcpy(p_rarch->osk_grid,
+               lowercase_grid,
+               sizeof(lowercase_grid));
+         break;
+   }
+}
+
 /*
  * This function gets called in order to process all input events
  * for the current frame.
@@ -22918,7 +23030,7 @@ static unsigned menu_event(
 
    if (display_kb)
    {
-      input_event_osk_iterate(p_rarch->osk_idx);
+      input_event_osk_iterate(p_rarch, p_rarch->osk_idx);
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
@@ -22975,8 +23087,10 @@ static unsigned menu_event(
       {
          int ptr = input_event_get_osk_ptr();
          if (ptr >= 0)
-            input_event_osk_append(&p_rarch->osk_idx,
-                  ptr, menu_has_fb);
+            input_event_osk_append(
+                  &p_rarch->osk_idx,
+                  ptr, menu_has_fb,
+                  p_rarch->osk_grid[ptr]);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -23646,7 +23760,8 @@ static int menu_input_pointer_post_iterate(
                   p_rarch->osk_ptr = point.retcode;
                   input_event_osk_append(&p_rarch->osk_idx,
                         point.retcode,
-                        menu_has_fb);
+                        menu_has_fb,
+                        p_rarch->osk_grid[p_rarch->osk_ptr]);
                }
             }
          }
@@ -23662,9 +23777,11 @@ static int menu_input_pointer_post_iterate(
             if (!menu_input->pointer.dragged)
             {
                /* Pointer hasn't moved - check press duration */
-               if (menu_input->pointer.press_duration < MENU_INPUT_PRESS_TIME_SHORT)
+               if (menu_input->pointer.press_duration 
+                     < MENU_INPUT_PRESS_TIME_SHORT)
                   point.gesture = MENU_INPUT_GESTURE_TAP;
-               else if (menu_input->pointer.press_duration < MENU_INPUT_PRESS_TIME_LONG)
+               else if (menu_input->pointer.press_duration 
+                     < MENU_INPUT_PRESS_TIME_LONG)
                   point.gesture = MENU_INPUT_GESTURE_SHORT_PRESS;
                else
                   point.gesture = MENU_INPUT_GESTURE_LONG_PRESS;
@@ -23693,38 +23810,47 @@ static int menu_input_pointer_post_iterate(
 
                   /* Get final deltas */
                   if (dx_start > 0)
-                     dx_start_right_final = (uint16_t)dx_start;
+                     dx_start_right_final              = (uint16_t)dx_start;
                   else
-                     dx_start_left_final  = (uint16_t)(dx_start * -1);
+                     dx_start_left_final               = (uint16_t)
+                        (dx_start * -1);
 
                   if (dy_start > 0)
-                     dy_start_down_final  = (uint16_t)dy_start;
+                     dy_start_down_final               = (uint16_t)dy_start;
                   else
-                     dy_start_up_final    = (uint16_t)(dy_start * -1);
+                     dy_start_up_final                 = (uint16_t)
+                        (dy_start * -1);
 
                   /* Swipe right */
-                  if ((dx_start_right_final > dpi_threshold_swipe) &&
-                      (dx_start_left_max    < dpi_threshold_swipe_tangent) &&
-                      (dy_start_up_max      < dpi_threshold_swipe_tangent) &&
-                      (dy_start_down_max    < dpi_threshold_swipe_tangent))
+                  if (     (dx_start_right_final > dpi_threshold_swipe) 
+                        && (dx_start_left_max    < dpi_threshold_swipe_tangent)
+                        && (dy_start_up_max      < dpi_threshold_swipe_tangent)
+                        && (dy_start_down_max    < dpi_threshold_swipe_tangent)
+                     )
                      point.gesture = MENU_INPUT_GESTURE_SWIPE_RIGHT;
                   /* Swipe left */
-                  else if ((dx_start_right_max  < dpi_threshold_swipe_tangent) &&
-                           (dx_start_left_final > dpi_threshold_swipe) &&
-                           (dy_start_up_max     < dpi_threshold_swipe_tangent) &&
-                           (dy_start_down_max   < dpi_threshold_swipe_tangent))
+                  else if (
+                           (dx_start_right_max  < dpi_threshold_swipe_tangent) 
+                        && (dx_start_left_final > dpi_threshold_swipe)
+                        && (dy_start_up_max     < dpi_threshold_swipe_tangent)
+                        && (dy_start_down_max   < dpi_threshold_swipe_tangent)
+                        )
                      point.gesture = MENU_INPUT_GESTURE_SWIPE_LEFT;
                   /* Swipe up */
-                  else if ((dx_start_right_max < dpi_threshold_swipe_tangent) &&
-                           (dx_start_left_max  < dpi_threshold_swipe_tangent) &&
-                           (dy_start_up_final  > dpi_threshold_swipe) &&
-                           (dy_start_down_max  < dpi_threshold_swipe_tangent))
+                  else if (
+                           (dx_start_right_max < dpi_threshold_swipe_tangent) 
+                        && (dx_start_left_max  < dpi_threshold_swipe_tangent)
+                        && (dy_start_up_final  > dpi_threshold_swipe)
+                        && (dy_start_down_max  < dpi_threshold_swipe_tangent)
+                        )
                      point.gesture = MENU_INPUT_GESTURE_SWIPE_UP;
                   /* Swipe down */
-                  else if ((dx_start_right_max  < dpi_threshold_swipe_tangent) &&
-                           (dx_start_left_max   < dpi_threshold_swipe_tangent) &&
-                           (dy_start_up_max     < dpi_threshold_swipe_tangent) &&
-                           (dy_start_down_final > dpi_threshold_swipe))
+                  else if (
+                           (dx_start_right_max  < dpi_threshold_swipe_tangent)
+                        && (dx_start_left_max   < dpi_threshold_swipe_tangent)
+                        && (dy_start_up_max     < dpi_threshold_swipe_tangent)
+                        && (dy_start_down_final > dpi_threshold_swipe)
+                        )
                      point.gesture = MENU_INPUT_GESTURE_SWIPE_DOWN;
                }
             }
@@ -23761,12 +23887,12 @@ static int menu_input_pointer_post_iterate(
    /* If select has been released, disable any existing
     * select inhibit */
    if (!pointer_hw_state->select_pressed)
-      menu_input->select_inhibit = false;
+      menu_input->select_inhibit   = false;
 
    /* Cancel */
-   if (!menu_input->cancel_inhibit &&
-       pointer_hw_state->cancel_pressed &&
-       !last_cancel_pressed)
+   if (   !menu_input->cancel_inhibit
+       &&  pointer_hw_state->cancel_pressed
+       && !last_cancel_pressed)
    {
       /* If currently showing a message box, close it */
       if (messagebox_active)
@@ -23822,8 +23948,8 @@ static int menu_input_pointer_post_iterate(
        *   inhibit input */
 
       /* > Left */
-      if (pointer_hw_state->left_pressed &&
-            !last_left_pressed)
+      if (      pointer_hw_state->left_pressed 
+            && !last_left_pressed)
       {
          if (current_time - last_left_action_time 
                > MENU_INPUT_HORIZ_WHEEL_DELAY)
@@ -23837,8 +23963,8 @@ static int menu_input_pointer_post_iterate(
 
       /* > Right */
       if (
-            pointer_hw_state->right_pressed &&
-            !last_right_pressed)
+                pointer_hw_state->right_pressed
+            && !last_right_pressed)
       {
          if (current_time - last_right_action_time 
                > MENU_INPUT_HORIZ_WHEEL_DELAY)
