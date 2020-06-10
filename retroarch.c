@@ -138,6 +138,7 @@
 
 #include "gfx/gfx_animation.h"
 #include "gfx/gfx_display.h"
+#include "gfx/gfx_thumbnail.h"
 
 #include "input/input_osk.h"
 
@@ -2145,6 +2146,8 @@ struct rarch_state
    dispgfx_widget_t dispwidget_st;
 #endif
 
+   gfx_thumbnail_state_t gfx_thumb_state;
+
    input_keyboard_press_t keyboard_press_cb;
 
    turbo_buttons_t input_driver_turbo_btns;
@@ -3609,6 +3612,13 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    &menu_ctx_null,
    NULL
 };
+
+gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->gfx_thumb_state;
+}
+
 
 menu_handle_t *menu_driver_get_ptr(void)
 {
