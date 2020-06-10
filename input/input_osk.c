@@ -33,7 +33,6 @@
 
 /* TODO/FIXME - static public global variables */
 static char *osk_grid[45]        = {NULL};
-static int osk_ptr               = 0;
 
 #ifdef HAVE_LANGEXTRA
 /* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA is only enabled for compilers that can support this. */
@@ -58,16 +57,6 @@ static const char *lowercase_grid[] = {
                           "a","s","d","f","g","h","j","k","l","@","Upper",
                           "z","x","c","v","b","n","m"," ","-",".","Next"};
 #endif
-
-int input_event_get_osk_ptr(void)
-{
-   return osk_ptr;
-}
-
-void input_event_set_osk_ptr(int i)
-{
-   osk_ptr = i;
-}
 
 void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui)
 {

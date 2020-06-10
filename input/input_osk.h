@@ -49,8 +49,6 @@ enum osk_type
 
 int input_event_get_osk_ptr(void);
 
-void input_event_set_osk_ptr(int a);
-
 void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui);
 
 void input_event_osk_iterate(enum osk_type osk_idx);

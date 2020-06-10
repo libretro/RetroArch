@@ -1762,6 +1762,7 @@ typedef struct discord_state discord_state_t;
 struct rarch_state
 {
    enum osk_type osk_idx;
+   int osk_ptr;
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
    enum rotation initial_screen_orientation;
@@ -3614,6 +3615,12 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    &menu_ctx_null,
    NULL
 };
+
+int input_event_get_osk_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return p_rarch->osk_ptr;
+}
 
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 {
@@ -22917,29 +22924,29 @@ static unsigned menu_event(
       {
          int old_osk_ptr = input_event_get_osk_ptr();
          if (old_osk_ptr < 33)
-            input_event_set_osk_ptr(old_osk_ptr + OSK_CHARS_PER_LINE);
+            p_rarch->osk_ptr = old_osk_ptr + OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          int old_osk_ptr = input_event_get_osk_ptr();
          if (old_osk_ptr >= OSK_CHARS_PER_LINE)
-            input_event_set_osk_ptr(old_osk_ptr
-                  - OSK_CHARS_PER_LINE);
+            p_rarch->osk_ptr = old_osk_ptr
+                  - OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
          int old_osk_ptr = input_event_get_osk_ptr();
          if (old_osk_ptr < 43)
-            input_event_set_osk_ptr(old_osk_ptr + 1);
+            p_rarch->osk_ptr = old_osk_ptr + 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
          int old_osk_ptr = input_event_get_osk_ptr();
          if (old_osk_ptr >= 1)
-            input_event_set_osk_ptr(old_osk_ptr - 1);
+            p_rarch->osk_ptr = old_osk_ptr - 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
@@ -23344,7 +23351,7 @@ static int menu_input_pointer_post_iterate(
 
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
       if (point.retcode > -1)
-         input_event_set_osk_ptr(point.retcode);
+         p_rarch->osk_ptr = point.retcode;
    }
 
    /* Select + X/Y position */
@@ -23636,7 +23643,7 @@ static int menu_input_pointer_post_iterate(
                       menu->driver_ctx &&
                       menu->driver_ctx->set_texture);
 
-                  input_event_set_osk_ptr(point.retcode);
+                  p_rarch->osk_ptr = point.retcode;
                   input_event_osk_append(&p_rarch->osk_idx,
                         point.retcode,
                         menu_has_fb);
