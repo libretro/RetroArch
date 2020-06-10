@@ -2246,12 +2246,19 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
    if (!tag || *tag == (uintptr_t)-1)
       return false;
 
+   /* Scan animation list */
    for (i = 0; i < da_count(p_anim->list); ++i)
    {
       struct tween *t = da_getptr(p_anim->list, i);
+
       if (!t || t->tag != *tag)
          continue;
 
+      /* If we are currently inside gfx_animation_update(),
+       * we are already looping over p_anim->list entries
+       * > Cannot modify p_anim->list now, so schedule a
+       *   delete for when the gfx_animation_update() loop
+       *   is complete */
       if (p_anim->in_update)
       {
          t->deleted              = true;
@@ -2264,41 +2271,26 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
       }
    }
 
-   return true;
-}
-
-void gfx_animation_kill_by_subject(gfx_animation_ctx_subject_t *subject)
-{
-   unsigned i, j,   killed = 0;
-   float             **sub = (float**)subject->data;
-   gfx_animation_t *p_anim = anim_get_ptr();
-
-   for (i = 0; i < da_count(p_anim->list) && killed < subject->count; ++i)
+   /* If we are currently inside gfx_animation_update(),
+    * also have to scan *pending* animation list
+    * (otherwise any entries that are simultaneously added
+    * and deleted inside gfx_animation_update() won't get
+    * deleted at all, producing utter chaos) */
+   if (p_anim->in_update)
    {
-      struct tween *t = da_getptr(p_anim->list, i);
-      if (!t)
-         continue;
-
-      for (j = 0; j < subject->count; ++j)
+      for (i = 0; i < da_count(p_anim->pending); ++i)
       {
-         if (t->subject != sub[j])
+         struct tween *t = da_getptr(p_anim->pending, i);
+
+         if (!t || t->tag != *tag)
             continue;
 
-         if (p_anim->in_update)
-         {
-            t->deleted              = true;
-            p_anim->pending_deletes = true;
-         }
-         else
-         {
-            da_delete(p_anim->list, i);
-            --i;
-         }
-
-         killed++;
-         break;
+         da_delete(p_anim->pending, i);
+         --i;
       }
    }
+
+   return true;
 }
 
 float gfx_animation_get_delta_time(void)

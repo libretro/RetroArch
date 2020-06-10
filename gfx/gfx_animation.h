@@ -100,12 +100,6 @@ enum gfx_animation_ticker_type
    TICKER_TYPE_LAST
 };
 
-typedef struct gfx_animation_ctx_subject
-{
-   size_t count;
-   const void *data;
-} gfx_animation_ctx_subject_t;
-
 typedef struct gfx_animation_ctx_entry
 {
    enum gfx_animation_easing_type easing_enum;
@@ -218,8 +212,6 @@ float gfx_animation_get_delta_time(void);
 bool gfx_animation_is_active(void);
 
 bool gfx_animation_kill_by_tag(uintptr_t *tag);
-
-void gfx_animation_kill_by_subject(gfx_animation_ctx_subject_t *subject);
 
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry);
 
