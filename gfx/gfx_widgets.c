@@ -2252,6 +2252,16 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
          fifo_read(p_dispwidget->msg_queue,
                &msg_widget, sizeof(msg_widget));
 
+         /* Note: gfx_widgets_free() is only called when
+          * main_exit() is invoked. At this stage, we cannot
+          * guarantee that any task pointers are valid (the
+          * task may have been free()'d, but we can't know
+          * that here) - so all we can do is unset the task
+          * pointer associated with each message
+          * > If we don't do this, gfx_widgets_msg_queue_free()
+          *   will generate heap-use-after-free errors */
+         msg_widget->task_ptr = NULL;
+
          gfx_widgets_msg_queue_free(p_dispwidget, msg_widget, false);
          free(msg_widget);
       }
@@ -2267,6 +2277,16 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
       {
          menu_widget_msg_t *msg = (menu_widget_msg_t*)
             p_dispwidget->current_msgs->list[i].userdata;
+
+         /* Note: gfx_widgets_free() is only called when
+          * main_exit() is invoked. At this stage, we cannot
+          * guarantee that any task pointers are valid (the
+          * task may have been free()'d, but we can't know
+          * that here) - so all we can do is unset the task
+          * pointer associated with each message
+          * > If we don't do this, gfx_widgets_msg_queue_free()
+          *   will generate heap-use-after-free errors */
+         msg->task_ptr = NULL;
 
          gfx_widgets_msg_queue_free(p_dispwidget, msg, false);
       }
