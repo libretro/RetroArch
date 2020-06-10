@@ -55,7 +55,8 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
    natt_init();
 
    if (natt_new(ntsd->nat_traversal_state))
-      natt_open_port_any(ntsd->nat_traversal_state, ntsd->port, SOCKET_PROTOCOL_TCP);
+      natt_open_port_any(ntsd->nat_traversal_state,
+            ntsd->port, SOCKET_PROTOCOL_TCP);
 
    task_set_progress(task, 100);
    task_set_finished(task, true);
@@ -66,12 +67,13 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
 {
 #ifdef HAVE_NETWORKING
    struct nat_traversal_state_data *ntsd;
-   retro_task_t *task = task_init();
+   retro_task_t *task        = task_init();
 
    if (!task)
       return false;
 
-   ntsd = (struct nat_traversal_state_data *) calloc(1, sizeof(*ntsd));
+   ntsd                      = (struct nat_traversal_state_data *)
+      calloc(1, sizeof(*ntsd));
 
    if (!ntsd)
    {
@@ -79,14 +81,13 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
       return false;
    }
 
-   ntsd->nat_traversal_state =
-      (struct natt_status *) nat_traversal_state;
-   ntsd->port = port;
+   ntsd->nat_traversal_state = (struct natt_status *)nat_traversal_state;
+   ntsd->port                = port;
 
-   task->type     = TASK_TYPE_BLOCKING;
-   task->handler  = task_netplay_nat_traversal_handler;
-   task->callback = netplay_nat_traversal_callback;
-   task->task_data = ntsd;
+   task->type                = TASK_TYPE_BLOCKING;
+   task->handler             = task_netplay_nat_traversal_handler;
+   task->callback            = netplay_nat_traversal_callback;
+   task->task_data           = ntsd;
 
    task_queue_push(task);
 
