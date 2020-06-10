@@ -21747,10 +21747,7 @@ static void input_driver_poll(void)
 
                   if (joypad_driver)
                   {
-                     int16_t ret = 0;
-                     if (  p_rarch->current_input && 
-                           p_rarch->current_input->input_state)
-                        ret = p_rarch->current_input->input_state(
+                     int16_t ret = p_rarch->current_input->input_state(
                               p_rarch->current_input_data,
                               &joypad_info[i],
                               p_rarch->libretro_input_binds,
@@ -24402,7 +24399,6 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
             : bind->joyaxis;
 
          /* Analog button. */
-         if (drv->axis)
          {
             float normal_mag = 0.0f;
             if (input_analog_deadzone)
@@ -24411,6 +24407,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
             res = abs(input_joypad_axis(p_rarch, drv,
                      joypad_info->joy_idx, axis, normal_mag));
          }
+
          /* If the result is zero, it's got a digital button
           * attached to it instead */
          if (res == 0)
@@ -24466,7 +24463,6 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       if (!bind_y_minus->valid || !bind_y_plus->valid)
          return 0;
 
-      if (drv->axis)
       {
          uint32_t axis_minus      = (bind_minus->joyaxis   == AXIS_NONE)
             ? joypad_info->auto_binds[ident_minus].joyaxis
