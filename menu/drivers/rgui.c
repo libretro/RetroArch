@@ -533,6 +533,23 @@ typedef struct
    video_viewport_t viewport;
 } rgui_video_settings_t;
 
+/* A 'particle' is just 4 float variables that can
+ * be used for any purpose - e.g.:
+ * > a = x pos
+ * > b = y pos
+ * > c = x velocity
+ * or:
+ * > a = radius
+ * > b = theta
+ * etc. */
+typedef struct
+{
+   float a;
+   float b;
+   float c;
+   float d;
+} rgui_particle_t;
+
 typedef struct
 {
    bool bg_modified;
@@ -582,28 +599,9 @@ typedef struct
    char menu_title[255]; /* Must be a fixed length array... */
    char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
    gfx_thumbnail_path_data_t *thumbnail_path_data;
+   rgui_particle_t particles[RGUI_NUM_PARTICLES];
+   bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
 } rgui_t;
-
-/* A 'particle' is just 4 float variables that can
- * be used for any purpose - e.g.:
- * > a = x pos
- * > b = y pos
- * > c = x velocity
- * or:
- * > a = radius
- * > b = theta
- * etc. */
-typedef struct
-{
-   float a;
-   float b;
-   float c;
-   float d;
-} rgui_particle_t;
-
-/* TODO/FIXME - static global variables */
-static bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
-static rgui_particle_t particles[RGUI_NUM_PARTICLES] = {{ 0.0f }};
 
 /* Particle effect animations update at a base rate
  * of 60Hz (-> 16.666 ms update period) */
@@ -1266,7 +1264,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
          {
             for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
-               rgui_particle_t *particle = &particles[i];
+               rgui_particle_t *particle = &rgui->particles[i];
                
                particle->a = (float)(rand() % fb_width);
                particle->b = (float)(rand() % fb_height);
@@ -1293,7 +1291,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
             
             for (i = 0; i < num_drops; i++)
             {
-               rgui_particle_t *particle = &particles[i];
+               rgui_particle_t *particle = &rgui->particles[i];
                
                /* x pos */
                particle->a = (float)(rand() % (fb_width / 3)) * 3.0f;
@@ -1313,7 +1311,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
             
             for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
-               rgui_particle_t *particle = &particles[i];
+               rgui_particle_t *particle = &rgui->particles[i];
                
                /* radius */
                particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
@@ -1330,7 +1328,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
          {
             for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
-               rgui_particle_t *particle = &particles[i];
+               rgui_particle_t *particle = &rgui->particles[i];
                
                /* x pos */
                particle->a = (float)(rand() % fb_width);
@@ -1405,7 +1403,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
             
             for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
-               rgui_particle_t *particle = &particles[i];
+               rgui_particle_t *particle = &rgui->particles[i];
                
                /* Update particle 'speed' */
                particle->c = particle->c + (float)(rand() % 16 - 9) * 0.01f;
@@ -1468,7 +1466,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
             
             for (i = 0; i < num_drops; i++)
             {
-               rgui_particle_t *particle = &particles[i];
+               rgui_particle_t *particle = &rgui->particles[i];
                
                /* Draw particle */
                on_screen = rgui_draw_particle(rgui_frame_buf.data, fb_width, fb_height,
@@ -1505,7 +1503,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
             
             for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
-               rgui_particle_t *particle = &particles[i];
+               rgui_particle_t *particle = &rgui->particles[i];
                
                /* Get particle location */
                x = (int)(particle->a * cos(particle->b)) + x_centre;
@@ -1562,7 +1560,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
              * https://codepen.io/nodws/pen/pejBNb */
             for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
-               rgui_particle_t *particle = &particles[i];
+               rgui_particle_t *particle = &rgui->particles[i];
                
                /* Get particle location */
                x = (int)((particle->a - (float)x_centre) * (focal_length / particle->c));
@@ -2413,7 +2411,9 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 
 /* blit_line() */
 
-static void blit_line_regular(unsigned fb_width, int x, int y,
+static void blit_line_regular(
+      rgui_t *rgui,
+      unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui_frame_buf.data;
@@ -2434,7 +2434,7 @@ static void blit_line_regular(unsigned fb_width, int x, int y,
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
-               if (font_lut[symbol][i + (j * FONT_WIDTH)])
+               if (rgui->font_lut[symbol][i + (j * FONT_WIDTH)])
                   *(frame_buf_data + buff_offset + i) = color;
             }
          }
@@ -2444,7 +2444,9 @@ static void blit_line_regular(unsigned fb_width, int x, int y,
    }
 }
 
-static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
+static void blit_line_regular_shadow(
+      rgui_t *rgui,
+      unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data     = rgui_frame_buf.data;
@@ -2473,7 +2475,7 @@ static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
-               if (font_lut[symbol][i + (j * FONT_WIDTH)])
+               if (rgui->font_lut[symbol][i + (j * FONT_WIDTH)])
                {
                   uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
@@ -2492,7 +2494,9 @@ static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
    }
 }
 
-static void blit_line_extended(unsigned fb_width, int x, int y,
+static void blit_line_extended(
+      rgui_t *rgui,
+      unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui_frame_buf.data;
@@ -2526,7 +2530,7 @@ static void blit_line_extended(unsigned fb_width, int x, int y,
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
-               if (font_lut[symbol][i + (j * FONT_WIDTH)])
+               if (rgui->font_lut[symbol][i + (j * FONT_WIDTH)])
                   *(frame_buf_data + buff_offset + i) = color;
             }
          }
@@ -2536,7 +2540,9 @@ static void blit_line_extended(unsigned fb_width, int x, int y,
    }
 }
 
-static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
+static void blit_line_extended_shadow(
+      rgui_t *rgui,
+      unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data     = rgui_frame_buf.data;
@@ -2578,7 +2584,7 @@ static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
-               if (font_lut[symbol][i + (j * FONT_WIDTH)])
+               if (rgui->font_lut[symbol][i + (j * FONT_WIDTH)])
                {
                   uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
@@ -2597,7 +2603,7 @@ static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
    }
 }
 
-static void (*blit_line)(unsigned fb_width, int x, int y,
+static void (*blit_line)(rgui_t *rgui, unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color) = blit_line_regular;
 
 /* blit_symbol() */
@@ -2729,12 +2735,14 @@ static void rgui_set_blit_functions(bool draw_shadow, bool extended_ascii)
  * blit_line/symbol() END
  * ============================== */
 
-static void rgui_init_font_lut(void)
+static void rgui_init_font_lut(rgui_t *rgui)
 {
    unsigned symbol_index, i, j;
    
    /* Loop over all possible characters */
-   for (symbol_index = 0; symbol_index < RGUI_NUM_FONT_GLYPHS_EXTENDED; symbol_index++)
+   for ( symbol_index = 0; 
+         symbol_index < RGUI_NUM_FONT_GLYPHS_EXTENDED; 
+         symbol_index++)
    {
       for (j = 0; j < FONT_HEIGHT; j++)
       {
@@ -2744,7 +2752,7 @@ static void rgui_init_font_lut(void)
             unsigned offset  = (i + j * FONT_WIDTH) >> 3;
             
             /* LUT value is 'true' if specified glyph position contains a pixel */
-            font_lut[symbol_index][i + (j * FONT_WIDTH)] = (bitmap_bin[FONT_OFFSET(symbol_index) + offset] & rem) > 0;
+            rgui->font_lut[symbol_index][i + (j * FONT_WIDTH)] = (bitmap_bin[FONT_OFFSET(symbol_index) + offset] & rem) > 0;
          }
       }
    }
@@ -2874,7 +2882,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
          if (text_y > (int)fb_height - 10 - (int)FONT_HEIGHT_STRIDE)
             break;
 
-         blit_line(fb_width, text_x, text_y, msg,
+         blit_line(rgui, fb_width, text_x, text_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       }
    }
@@ -3103,7 +3111,7 @@ static void rgui_render_osk(
       input_label_x      = ticker_x_offset + osk_x + input_offset_x + ((input_label_max_length * FONT_WIDTH_STRIDE) - input_label_length) / 2;
       input_label_y      = osk_y + input_offset_y;
       
-      blit_line(fb_width, input_label_x, input_label_y, input_label_buf,
+      blit_line(rgui, fb_width, input_label_x, input_label_y, input_label_buf,
             rgui->colors.normal_color, rgui->colors.shadow_color);
    }
    
@@ -3126,7 +3134,7 @@ static void rgui_render_osk(
       input_str_y = osk_y + input_offset_y + FONT_HEIGHT_STRIDE;
       
       if (!string_is_empty(input_str + input_str_char_offset))
-         blit_line(fb_width, input_str_x, input_str_y, input_str + input_str_char_offset,
+         blit_line(rgui, fb_width, input_str_x, input_str_y, input_str + input_str_char_offset,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       
       /* Draw text cursor */
@@ -3185,7 +3193,7 @@ static void rgui_render_osk(
                rgui->colors.normal_color, rgui->colors.shadow_color);
 #endif
       else
-         blit_line(fb_width, key_text_x, key_text_y, key_text,
+         blit_line(rgui, fb_width, key_text_x, key_text_y, key_text,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       
       /* Draw selection pointer */
@@ -3477,7 +3485,8 @@ static void rgui_render(void *data,
                rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
 
          /* Draw thumbnail title */
-         blit_line(fb_width, ticker_x_offset + title_x, 0, thumbnail_title_buf,
+         blit_line(rgui, fb_width, ticker_x_offset + title_x,
+               0, thumbnail_title_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
@@ -3579,8 +3588,9 @@ static void rgui_render(void *data,
                            powerstate_color, rgui->colors.shadow_color);
 
                /* Print text */
-               blit_line(fb_width, powerstate_x + (2 * FONT_WIDTH_STRIDE), title_y,
-                         percent_str, powerstate_color, rgui->colors.shadow_color);
+               blit_line(rgui, fb_width,
+                     powerstate_x + (2 * FONT_WIDTH_STRIDE), title_y,
+                     percent_str, powerstate_color, rgui->colors.shadow_color);
 
                /* Final length of battery indicator is 'powerstate_len' + a
                 * spacer of 3 characters */
@@ -3632,7 +3642,7 @@ static void rgui_render(void *data,
          if (title_len > title_max_len - (powerstate_len - 5))
             title_x -= (powerstate_len - 5) * FONT_WIDTH_STRIDE / 2;
 
-      blit_line(fb_width, title_x, title_y,
+      blit_line(rgui, fb_width, title_x, title_y,
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */
@@ -3753,7 +3763,8 @@ static void rgui_render(void *data,
          }
 
          /* Print entry title */
-         blit_line(fb_width, ticker_x_offset + x + (2 * FONT_WIDTH_STRIDE), y,
+         blit_line(rgui, fb_width,
+               ticker_x_offset + x + (2 * FONT_WIDTH_STRIDE), y,
                entry_title_buf,
                entry_color, rgui->colors.shadow_color);
 
@@ -3781,7 +3792,10 @@ static void rgui_render(void *data,
             }
 
             /* Print entry value */
-            blit_line(fb_width, ticker_x_offset + term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
+            blit_line(rgui,
+                  fb_width,
+                  ticker_x_offset + term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE),
+                  y,
                   type_str_buf,
                   entry_color, rgui->colors.shadow_color);
          }
@@ -3793,7 +3807,7 @@ static void rgui_render(void *data,
 
          /* Print selection marker, if required */
          if (entry_selected)
-            blit_line(fb_width, x, y, ">",
+            blit_line(rgui, fb_width, x, y, ">",
                   entry_color, rgui->colors.shadow_color);
       }
 
@@ -3834,7 +3848,7 @@ static void rgui_render(void *data,
             gfx_animation_ticker(&ticker);
          }
 
-         blit_line(
+         blit_line(rgui,
                fb_width,
                ticker_x_offset + rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
                (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
@@ -3870,7 +3884,7 @@ static void rgui_render(void *data,
             gfx_animation_ticker(&ticker);
          }
 
-         blit_line(
+         blit_line(rgui,
                fb_width,
                ticker_x_offset + rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
                (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
@@ -3893,7 +3907,7 @@ static void rgui_render(void *data,
 
          menu_display_timedate(&datetime);
 
-         blit_line(
+         blit_line(rgui,
                fb_width,
                timedate_x,
                (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
@@ -4467,7 +4481,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
    rgui->scroll_y = 0;
 
-   rgui_init_font_lut();
+   rgui_init_font_lut(rgui);
 
    rgui->bg_thickness          = settings->bools.menu_rgui_background_filler_thickness_enable;
    rgui->border_thickness      = settings->bools.menu_rgui_border_filler_thickness_enable;
