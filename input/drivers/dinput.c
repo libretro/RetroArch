@@ -644,10 +644,10 @@ static int16_t dinput_input_state(void *data,
          if (binds[port])
          {
             int16_t ret = dinput_pressed_analog(di, binds[port], idx, id);
-            if (!ret)
-               ret = input_joypad_analog(di->joypad, joypad_info,
-                     port, idx, id, binds[port]);
-            return ret;
+            if (ret)
+               return ret;
+            return input_joypad_analog(di->joypad, joypad_info,
+                  port, idx, id, binds[port]);
          }
          break;
 
