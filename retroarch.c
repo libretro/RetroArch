@@ -2146,6 +2146,8 @@ struct rarch_state
    dispgfx_widget_t dispwidget_st;
 #endif
 
+   videocrt_switch_t crt_switch_st;
+
    gfx_thumbnail_state_t gfx_thumb_state;
 
    input_keyboard_press_t keyboard_press_cb;
@@ -30677,6 +30679,7 @@ static void video_driver_frame(const void *data, unsigned width,
       }
 
       crt_switch_res_core(
+            &p_rarch->crt_switch_st,
             width,
             height,
             p_rarch->video_driver_core_hz,
