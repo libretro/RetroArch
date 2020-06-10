@@ -2197,7 +2197,6 @@ struct rarch_state
    struct rarch_dir_list dir_shader_list;
 
 #ifdef HAVE_MENU
-   /* Since these are static/global, they are initialised to zero */
    menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
    menu_input_t menu_input_state;
 #endif

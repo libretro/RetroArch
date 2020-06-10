@@ -2510,20 +2510,30 @@ static bool check_menu_driver_compatibility(settings_t *settings)
       return true;
 
    /* TODO/FIXME - maintenance hazard */
-   if (string_is_equal(video_driver, "d3d9")   ||
-         string_is_equal(video_driver, "d3d10")  ||
-         string_is_equal(video_driver, "d3d11")  ||
-         string_is_equal(video_driver, "d3d12")  ||
+   if (string_starts_with(video_driver, "d3d"))
+      if (
+            string_is_equal(video_driver, "d3d9")   ||
+            string_is_equal(video_driver, "d3d10")  ||
+            string_is_equal(video_driver, "d3d11")  ||
+            string_is_equal(video_driver, "d3d12")
+         )
+      return true;
+   if (string_starts_with(video_driver, "gl"))
+      if (
+            string_is_equal(video_driver, "gl")     ||
+            string_is_equal(video_driver, "gl1")    ||
+            string_is_equal(video_driver, "glcore")
+         )
+         return true;
+   if (
          string_is_equal(video_driver, "caca")   ||
          string_is_equal(video_driver, "gdi")    ||
-         string_is_equal(video_driver, "gl")     ||
-         string_is_equal(video_driver, "gl1")    ||
          string_is_equal(video_driver, "gx2")    ||
          string_is_equal(video_driver, "vulkan") ||
-         string_is_equal(video_driver, "glcore") ||
          string_is_equal(video_driver, "metal")  ||
          string_is_equal(video_driver, "ctr")    ||
-         string_is_equal(video_driver, "vita2d"))
+         string_is_equal(video_driver, "vita2d")
+      )
       return true;
 
    return false;
