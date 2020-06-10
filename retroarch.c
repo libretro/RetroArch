@@ -21812,8 +21812,8 @@ static void input_driver_poll(void)
       bool poll_overlay                = (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive);
 #endif
       input_mapper_t *handle           = p_rarch->input_driver_mapper;
-      const input_device_driver_t 
-         *joypad_driver                = input_driver_get_joypad_driver();
+      const input_device_driver_t *joypad_driver 
+                                       = input_driver_get_joypad_driver();
 
       memset(handle->keys, 0, sizeof(handle->keys));
 
@@ -21837,7 +21837,10 @@ static void input_driver_poll(void)
 
                   if (joypad_driver)
                   {
-                     int16_t ret = p_rarch->current_input->input_state(
+                     int16_t ret = 0;
+                     if (  p_rarch->current_input && 
+                           p_rarch->current_input->input_state)
+                        ret = p_rarch->current_input->input_state(
                               p_rarch->current_input_data,
                               &joypad_info[i],
                               p_rarch->libretro_input_binds,
