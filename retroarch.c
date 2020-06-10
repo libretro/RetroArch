@@ -23034,31 +23034,26 @@ static unsigned menu_event(
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
-         int old_osk_ptr = input_event_get_osk_ptr();
-         if (old_osk_ptr < 33)
-            p_rarch->osk_ptr = old_osk_ptr + OSK_CHARS_PER_LINE;
+         if (p_rarch->osk_ptr < 33)
+            p_rarch->osk_ptr += OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
-         int old_osk_ptr = input_event_get_osk_ptr();
-         if (old_osk_ptr >= OSK_CHARS_PER_LINE)
-            p_rarch->osk_ptr = old_osk_ptr
-                  - OSK_CHARS_PER_LINE;
+         if (p_rarch->osk_ptr >= OSK_CHARS_PER_LINE)
+            p_rarch->osk_ptr -= OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
-         int old_osk_ptr = input_event_get_osk_ptr();
-         if (old_osk_ptr < 43)
-            p_rarch->osk_ptr = old_osk_ptr + 1;
+         if (p_rarch->osk_ptr < 43)
+            p_rarch->osk_ptr += 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
-         int old_osk_ptr = input_event_get_osk_ptr();
-         if (old_osk_ptr >= 1)
-            p_rarch->osk_ptr = old_osk_ptr - 1;
+         if (p_rarch->osk_ptr >= 1)
+            p_rarch->osk_ptr -= 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
@@ -23085,12 +23080,12 @@ static unsigned menu_event(
 
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
-         int ptr = input_event_get_osk_ptr();
-         if (ptr >= 0)
+         if (p_rarch->osk_ptr >= 0)
             input_event_osk_append(
                   &p_rarch->osk_idx,
-                  ptr, menu_has_fb,
-                  p_rarch->osk_grid[ptr]);
+                  p_rarch->osk_ptr,
+                  menu_has_fb,
+                  p_rarch->osk_grid[p_rarch->osk_ptr]);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
