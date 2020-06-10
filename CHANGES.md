@@ -28,6 +28,7 @@
 - PLAYLISTS/WINDOWS: Fix core path entries in image/video/music history playlists
 - PS2: Add back CDFS support
 - SDL/GL: Advertise GLSL support
+- VIDEO/WIDGETS: Fix heap-use-after-free errors, leading to memory corruption
 - VITA: Added custom bubbles support
 - VITA: VitaGL update
 - VULKAN/WSI: Better frame pacing
