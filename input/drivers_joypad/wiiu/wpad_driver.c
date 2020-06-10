@@ -36,19 +36,21 @@ static drc_state gamepads[WIIU_GAMEPAD_CHANNELS] = { 0 };
 #define WPAD_INVALID_CHANNEL -1
 static int channel_slot_map[WIIU_GAMEPAD_CHANNELS] = { WPAD_INVALID_CHANNEL, WPAD_INVALID_CHANNEL };
 
-static VPADChan to_gamepad_channel(unsigned pad) {
+static VPADChan to_gamepad_channel(unsigned pad)
+{
    unsigned i;
 
-   for (i = 0; i < WIIU_GAMEPAD_CHANNELS; i++) {
-      if (channel_slot_map[i] == pad) {
+   for (i = 0; i < WIIU_GAMEPAD_CHANNELS; i++)
+   {
+      if (channel_slot_map[i] == pad)
          return i;
-      }
    }
 
    return WPAD_INVALID_CHANNEL;
 }
 
-static void wpad_deregister(unsigned channel) {
+static void wpad_deregister(unsigned channel)
+{
    unsigned slot;
 
    if (channel >= WIIU_GAMEPAD_CHANNELS)
@@ -59,7 +61,8 @@ static void wpad_deregister(unsigned channel) {
       return;
 
    /* Sanity check, about to use as unsigned */
-   if (channel_slot_map[channel] < 0) {
+   if (channel_slot_map[channel] < 0)
+   {
       channel_slot_map[channel] = WPAD_INVALID_CHANNEL;
       return;
    }
@@ -73,14 +76,16 @@ static void wpad_deregister(unsigned channel) {
    channel_slot_map[channel] = WPAD_INVALID_CHANNEL;
 }
 
-static void wpad_register(unsigned channel) {
+static void wpad_register(unsigned channel)
+{
    int slot;
 
    if (channel >= WIIU_GAMEPAD_CHANNELS)
       return;
 
    /* Check if gamepad is already handled
-      Other checks not needed here - about to overwrite channel_slot_map entry*/
+      Other checks not needed here - about to overwrite 
+      channel_slot_map entry*/
    if (channel_slot_map[channel] != WPAD_INVALID_CHANNEL)
       return;
 
@@ -192,7 +197,8 @@ static void log_coords(int16_t x, int16_t y)
 }
 #endif
 
-static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatus *vpad, VPADChan channel)
+static void update_touch_state(int16_t state[3][2],
+      uint64_t *buttons, VPADStatus *vpad, VPADChan channel)
 {
    VPADTouchData point            = {0};
    struct video_viewport viewport = {0};
@@ -235,17 +241,18 @@ static void wpad_poll(void)
    VPADReadError error;
    VPADChan channel;
 
-   for (channel = VPAD_CHAN_0; channel < WIIU_GAMEPAD_CHANNELS; channel++) {
+   for (channel = VPAD_CHAN_0; channel < WIIU_GAMEPAD_CHANNELS; channel++)
+   {
       VPADRead(channel, &vpad, 1, &error);
 
-      if (error == VPAD_READ_SUCCESS || error == VPAD_READ_NO_SAMPLES) {
-         /* Gamepad is connected! */
+      /* Gamepad is connected! */
+      if (error == VPAD_READ_SUCCESS || error == VPAD_READ_NO_SAMPLES)
          wpad_register(channel);
-      } else if (error == VPAD_READ_INVALID_CONTROLLER) {
+      else if (error == VPAD_READ_INVALID_CONTROLLER)
          wpad_deregister(channel);
-      }
 
-      if (error == VPAD_READ_SUCCESS) {
+      if (error == VPAD_READ_SUCCESS)
+      {
          update_button_state(&gamepads[channel].button_state, vpad.hold);
          update_analog_state(gamepads[channel].analog_state, &vpad);
          update_touch_state(gamepads[channel].analog_state, &gamepads[channel].button_state, &vpad, channel);
@@ -289,13 +296,15 @@ static void wpad_get_buttons(unsigned pad, input_bits_t *state)
 {
    VPADChan channel;
 
-   if (!wpad_query_pad(pad)) {
+   if (!wpad_query_pad(pad))
+   {
       BIT256_CLEAR_ALL_PTR(state);
       return;
    }
 
    channel = to_gamepad_channel(pad);
-   if (channel < 0) {
+   if (channel < 0)
+   {
       BIT256_CLEAR_ALL_PTR(state);
       return;
    }
