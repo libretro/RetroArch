@@ -349,11 +349,6 @@ int16_t input_joypad_analog(const input_device_driver_t *driver,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 
-int16_t input_joypad_analog_button(const input_device_driver_t *drv,
-      rarch_joypad_info_t *joypad_info,
-      unsigned port, unsigned idx, unsigned ident,
-      const struct retro_keybind *binds);
-
 /**
  * input_joypad_set_rumble:
  * @drv                     : Input device driver handle.

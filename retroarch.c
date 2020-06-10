@@ -21761,13 +21761,10 @@ static void input_driver_poll(void)
                      {
                         if (ret & (1 << k))
                         {
-                           bool check       = (k < RARCH_FIRST_CUSTOM_BIND)
-                              && p_rarch->libretro_input_binds[i]->valid;
-                           int16_t      val = (check)
-                              ? input_joypad_analog_button(
+                           int16_t      val = input_joypad_analog(
                                  joypad_driver, &joypad_info[i], (unsigned)i,
                                  RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
-                                 p_rarch->libretro_input_binds[i]) : 0;
+                                 p_rarch->libretro_input_binds[i]);
 
                            BIT256_SET_PTR(p_new_state, k);
 
@@ -24357,46 +24354,6 @@ bool input_joypad_set_rumble(const input_device_driver_t *drv,
       return false;
 
    return drv->set_rumble(joy_idx, effect, strength);
-}
-
-int16_t input_joypad_analog_button(const input_device_driver_t *drv,
-      rarch_joypad_info_t *joypad_info,
-      unsigned port, unsigned idx, unsigned ident,
-      const struct retro_keybind *binds)
-{
-   int16_t res = 0;
-   struct rarch_state *p_rarch      = &rarch_st;
-   settings_t *settings             = p_rarch->configuration_settings;
-   float input_analog_deadzone      = settings->floats.input_analog_deadzone;
-   const struct retro_keybind *bind = &binds[ ident ];
-   uint32_t axis                    = (bind->joyaxis == AXIS_NONE)
-      ? joypad_info->auto_binds[ident].joyaxis
-      : bind->joyaxis;
-
-   /* Analog button. */
-   if (drv->axis)
-   {
-      float normal_mag = 0.0f;
-      if (input_analog_deadzone)
-         normal_mag = fabs((1.0f / 0x7fff) * drv->axis(
-                  joypad_info->joy_idx, axis));
-      res = abs(input_joypad_axis(p_rarch, drv,
-               joypad_info->joy_idx, axis, normal_mag));
-   }
-
-   /* If the result is zero, it's got a digital button
-    * attached to it instead */
-   if (res == 0)
-   {
-      uint16_t key = (bind->joykey == NO_BTN)
-         ? joypad_info->auto_binds[ident].joykey
-         : bind->joykey;
-
-      if (drv->button(joypad_info->joy_idx, key))
-         res = 0x7fff;
-   }
-
-   return res;
 }
 
 /**
