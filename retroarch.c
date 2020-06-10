@@ -1030,7 +1030,7 @@ static const camera_driver_t *camera_drivers[] = {
 #endif
 
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
-#define HOLD_START_DELAY_SEC 2
+#define HOLD_BTN_DELAY_SEC 2
 
 #define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
 
@@ -35952,7 +35952,7 @@ static bool input_driver_toggle_button_combo(
          if (!rarch_timer_is_running(&timer))
          {
             rarch_timer_begin_new_time_us(&timer,
-                  HOLD_START_DELAY_SEC * 1000000);
+                  HOLD_BTN_DELAY_SEC * 1000000);
             timer.timer_begin = true;
             timer.timer_end   = false;
          }
@@ -35962,6 +35962,37 @@ static bool input_driver_toggle_button_combo(
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
             /* start has been held down long enough, stop timer and enter menu */
+            rarch_timer_end(&timer);
+            return true;
+         }
+
+         return false;
+      }
+      case INPUT_TOGGLE_HOLD_SELECT:
+      {
+         static rarch_timer_t timer = {0};
+
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         {
+            /* timer only runs while select is held down */
+            rarch_timer_end(&timer);
+            return false;
+         }
+
+         /* user started holding down the select button, start the timer */
+         if (!rarch_timer_is_running(&timer))
+         {
+            rarch_timer_begin_new_time_us(&timer,
+                  HOLD_BTN_DELAY_SEC * 1000000);
+            timer.timer_begin = true;
+            timer.timer_end   = false;
+         }
+
+         rarch_timer_tick(&timer, current_time);
+
+         if (!timer.timer_end && rarch_timer_has_expired(&timer))
+         {
+            /* select has been held down long enough, stop timer and enter menu */
             rarch_timer_end(&timer);
             return true;
          }
