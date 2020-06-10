@@ -930,7 +930,12 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save state files, compress
  * written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+/* TODO/FIXME Apparently this is an issue on UWP for now, so disable it for now */
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION false
+#else
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION true
+#endif
 
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0
