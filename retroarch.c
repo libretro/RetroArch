@@ -32443,7 +32443,6 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
 
    /* Video */
    video_display_server_destroy();
-   crt_video_restore();
 
    p_rarch->video_driver_use_rgba                   = false;
    p_rarch->video_driver_active                     = false;

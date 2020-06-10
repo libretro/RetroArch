@@ -53,15 +53,6 @@ typedef struct videocrt_switch
 
 /* TODO/FIXME - globals */
 static videocrt_switch_t crt_switch_st;
-static bool first_run             = true;
-
-static void crt_check_first_run(void)
-{
-   if (!first_run)
-      return;
-
-   first_run   = false;
-}
 
 static void switch_crt_hz(void)
 {
@@ -127,7 +118,8 @@ static void switch_res_crt(unsigned width, unsigned height)
    video_driver_apply_state_changes();
 }
 
-/* Create correct aspect to fit video if resolution does not exist */
+/* Create correct aspect to fit video 
+ * if resolution does not exist */
 static void crt_screen_setup_aspect(unsigned width, unsigned height)
 {
    videocrt_switch_t *p_switch = &crt_switch_st;
@@ -137,10 +129,11 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
 #endif
 
    switch_crt_hz();
-   /* get original resolution of core */
+
+   /* Get original resolution of core */
    if (height == 4)
    {
-      /* detect menu only */
+      /* Detect menu only */
       if (width < 700)
          width = 320;
 
@@ -207,8 +200,8 @@ void crt_switch_res_core(unsigned width, unsigned height,
     * video_driver_monitor_adjust_system_rates() */
    if (width == 4)
    {
-      width  = 320;
-      height = 240;
+      width                        = 320;
+      height                       = 240;
    }
 
    p_switch->ra_core_height        = height;
@@ -225,12 +218,10 @@ void crt_switch_res_core(unsigned width, unsigned height,
    if (crt_mode == 2)
    {
       if (hz > 53)
-         p_switch->ra_core_hz = hz * 2;
+         p_switch->ra_core_hz      = hz * 2;
       if (hz <= 53)
-         p_switch->ra_core_hz = 120.0f;
+         p_switch->ra_core_hz      = 120.0f;
    }
-
-   crt_check_first_run();
 
    /* Detect resolution change and switch */
    if (
@@ -252,14 +243,6 @@ void crt_switch_res_core(unsigned width, unsigned height,
       video_driver_set_aspect_ratio_value((float)p_switch->fly_aspect);
       video_driver_apply_state_changes();
    }
-}
-
-void crt_video_restore(void)
-{
-   if (first_run)
-      return;
-
-   first_run = true;
 }
 
 int crt_compute_dynamic_width(int width)
@@ -290,27 +273,27 @@ static void crt_rpi_switch(int width, int height, float hz, int xoffset)
 {
    char buffer[1024];
    VCHI_INSTANCE_T vchi_instance;
-   VCHI_CONNECTION_T *vchi_connection = NULL;
+   VCHI_CONNECTION_T *vchi_connection  = NULL;
    static char output[250]             = {0};
    static char output1[250]            = {0};
    static char output2[250]            = {0};
    static char set_hdmi[250]           = {0};
    static char set_hdmi_timing[250]    = {0};
-   int i              = 0;
-   int hfp            = 0;
-   int hsp            = 0;
-   int hbp            = 0;
-   int vfp            = 0;
-   int vsp            = 0;
-   int vbp            = 0;
-   int hmax           = 0;
-   int vmax           = 0;
-   int pdefault       = 8;
-   int pwidth         = 0;
-   float roundw     = 0.0f;
-   float roundh     = 0.0f;
-   float pixel_clock  = 0;
-   int ip_flag     = 0;
+   int i                               = 0;
+   int hfp                             = 0;
+   int hsp                             = 0;
+   int hbp                             = 0;
+   int vfp                             = 0;
+   int vsp                             = 0;
+   int vbp                             = 0;
+   int hmax                            = 0;
+   int vmax                            = 0;
+   int pdefault                        = 8;
+   int pwidth                          = 0;
+   int ip_flag                         = 0;
+   float roundw                        = 0.0f;
+   float roundh                        = 0.0f;
+   float pixel_clock                   = 0.0f;
 
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
@@ -321,7 +304,9 @@ static void crt_rpi_switch(int width, int height, float hz, int xoffset)
    {
       hfp    = (width * 0.065);
       hbp  = width * 0.35-hsp-hfp;
-   }else {
+   }
+   else
+   {
       hfp  = (width * 0.033) + (width / 112);
       hbp  = (width * 0.225) + (width /58);
       xoffset = xoffset*2;

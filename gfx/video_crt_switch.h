@@ -31,8 +31,6 @@ void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt
 
 void crt_aspect_ratio_switch(unsigned width, unsigned height);
 
-void crt_video_restore(void);
-
 int crt_compute_dynamic_width(int width);
 
 RETRO_END_DECLS
