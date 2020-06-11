@@ -228,18 +228,26 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
    vp.full_width         = 0;
    vp.full_height        = 0;
 
-   if ( !( video_driver_translate_coord_viewport_wrap(
-               &vp, mouse->x, mouse->y, &res_x, &res_y, &res_screen_x, &res_screen_y ) ) )
+   if (!(video_driver_translate_coord_viewport_wrap(
+               &vp, mouse->x, mouse->y,
+               &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
-   inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
+   inside =    (res_x >= -edge_detect) 
+            && (res_y >= -edge_detect)
+            && (res_x <= edge_detect)
+            && (res_y <= edge_detect);
 
    switch ( id )
    {
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         return inside ? res_x : 0;
+         if (inside)
+            return res_x;
+         break;
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         return inside ? res_y : 0;
+         if (inside)
+            return res_y;
+         break;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
          return !inside;
       default:
