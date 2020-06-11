@@ -2710,6 +2710,24 @@ static bool accessibility_speak_priority(
       const char* speak_text, int priority);
 #endif
 
+int input_event_get_osk_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return p_rarch->osk_ptr;
+}
+
+char **input_event_get_osk_grid(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return p_rarch->osk_grid;
+}
+
+gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->gfx_thumb_state;
+}
+
 #ifdef HAVE_MENU
 static void menu_driver_list_free(
       struct rarch_state *p_rarch,
@@ -3670,25 +3688,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    &menu_ctx_null,
    NULL
 };
-
-int input_event_get_osk_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return p_rarch->osk_ptr;
-}
-
-char **input_event_get_osk_grid(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return p_rarch->osk_grid;
-}
-
-gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->gfx_thumb_state;
-}
-
 
 menu_handle_t *menu_driver_get_ptr(void)
 {
