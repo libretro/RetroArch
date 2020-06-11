@@ -386,6 +386,7 @@ static int16_t rwebinput_pointer_device_state(rwebinput_mouse_state_t *mouse,
    unsigned id, bool screen)
 {
    struct video_viewport vp;
+   const int edge_detect       = 32700;
    bool inside                 = false;
    int16_t res_x               = 0;
    int16_t res_y               = 0;
