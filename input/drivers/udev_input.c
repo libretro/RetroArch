@@ -1033,8 +1033,7 @@ static int16_t udev_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               if (udev_is_pressed(udev, joypad_info, binds[port], port, id))
-                  return 1;
+               return udev_is_pressed(udev, joypad_info, binds[port], port, id);
          }
          break;
       case RETRO_DEVICE_ANALOG:
