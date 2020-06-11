@@ -1,11 +1,13 @@
 # Future
 - AUTO SAVESTATES: Ensure save states are correctly flushed to disk when quitting RetroArch (fixes broken save states when exiting RetroArch - without first closing content - with 'Auto Save State' enabled)
 - BUILTIN CORES: Builtin cores like ffmpeg and imageviewer would previously try  to erroneously load a dynamic core named 'builtin' - this would fail and would just be a wasteful operation - this now skips dylib loading in libretro_get_system_info for builtin cores
-- CHEEVOS: report API errors when unlocking achievements or submitting leaderboards
-- CHEEVOS/M3u: Bugfix - did not handle absolute/relative paths in M3U files correctly before
+- CHEEVOS: Report API errors when unlocking achievements or submitting leaderboards
+- CHEEVOS: Support less common file extensions
+- CHEEVOS/M3U: Bugfix - did not handle absolute/relative paths in M3U files correctly before
 - CHEEVOS/M3U: Bugfix - it didn't handle comments/directives
 - CHEEVOS/M3U: Bugfix - it doesn't handle trailing whitespace
 - CHEEVOS/M3U: Bugfix - failed when loading M3U files with certain line endings
+- CORE MANAGEMENT: Add 'core management' menu (Settings -> Core)
 - CORE MANAGEMENT: Add option to backup/restore installed cores
 - CORE MANAGEMENT: Improved core selection logic
 - CORE INFO: Search search optimisations
@@ -22,9 +24,11 @@
 - LOCALIZATION: Add Hebrew language
 - LOCALIZATION: Add Asturian language
 - MENU: Proper line wrapping for message dialog boxes
+- MENU/HOTKEYS: Add sublabels to all hotkey bind entries
 - MENU/QUICK MENU: Suppress the display of 'empty' quick menu listings when closing content
 - MENU/OZONE: Performance improvements
 - OPENGL1/VITA: Initial changes for HW context without FBO
+- OVERLAYS: Add options for moving the on-screen overlay
 - PLAYLISTS/WINDOWS: Fix core path entries in image/video/music history playlists
 - PS2: Add back CDFS support
 - SDL/GL: Advertise GLSL support
