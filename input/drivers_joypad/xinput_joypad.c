@@ -171,7 +171,7 @@ static const char* const XBOX_ONE_CONTROLLER_NAMES[4] =
    "XBOX One Controller (User 4)"
 };
 
-const char *xinput_joypad_name(unsigned pad)
+static const char *xinput_joypad_name(unsigned pad)
 {
    int xuser = pad_index_to_xuser_index(pad);
 #ifdef HAVE_DINPUT
