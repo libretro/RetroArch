@@ -259,14 +259,14 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    size_t i;
    char path[PATH_MAX_LENGTH];
    char best_path[PATH_MAX_LENGTH];
-   int ret                    = 0;
-   int index                  = -1;
-   int current_best           = 0;
-   config_file_t *best_conf   = NULL;
-   struct string_list *list   = NULL;
+   bool found                  = false;
+   int index                   = -1;
+   int current_best            = 0;
+   config_file_t *best_conf    = NULL;
+   struct string_list *list    = NULL;
 
-   best_path[0]               = '\0';
-   path[0]                    = '\0';
+   best_path[0]                = '\0';
+   path[0]                     = '\0';
 
    fill_pathname_application_special(path, sizeof(path),
          APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG);
@@ -316,7 +316,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if (index >= 0 && current_best > 0 && best_conf)
    {
       input_autoconfigure_joypad_add(best_conf, params, task);
-      ret = 1;
+      found = true;
    }
 
    if (best_conf)
@@ -324,9 +324,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    string_list_free(list);
 
-   if (ret == 0)
-      return false;
-   return true;
+   return found;
 }
 
 static bool input_autoconfigure_joypad_from_conf_internal(
