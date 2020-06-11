@@ -469,6 +469,8 @@ unsigned input_config_bind_map_get_meta(unsigned i);
 
 const char *input_config_bind_map_get_desc(unsigned i);
 
+uint8_t input_config_bind_map_get_retro_key(unsigned i);
+
 /* auto_bind can be NULL. */
 void input_config_get_bind_string(char *buf,
       const struct retro_keybind *bind,
