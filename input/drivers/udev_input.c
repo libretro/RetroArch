@@ -1045,8 +1045,8 @@ static int16_t udev_input_state(void *data,
          {
             if (id < RARCH_BIND_LIST_END)
             {
-               if ( (binds[port][i].key < RETROK_LAST) && 
-                     udev_keyboard_pressed(udev, binds[port][i].key) )
+               if ( (binds[port][id].key < RETROK_LAST) && 
+                     udev_keyboard_pressed(udev, binds[port][id].key))
                   if ((    id == RARCH_GAME_FOCUS_TOGGLE) 
                         || !input_udev.keyboard_mapping_blocked)
                      return 1;
@@ -1105,7 +1105,7 @@ static int16_t udev_input_state(void *data,
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
                if (!input_udev.keyboard_mapping_blocked)
                   if ((binds[port][RARCH_LIGHTGUN_RELOAD].key < RETROK_LAST) 
-                        && x_keyboard_pressed(udev, binds[port]
+                        && udev_keyboard_pressed(udev, binds[port]
                            [RARCH_LIGHTGUN_RELOAD].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_RELOAD].valid)
