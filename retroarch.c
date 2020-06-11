@@ -3194,35 +3194,66 @@ static int generic_menu_iterate(
 
             if (cbs && cbs->enum_idx != MSG_UNKNOWN)
             {
-#ifdef HAVE_NETWORKING
-               /* Core updater entries require special treatment */
-               if (cbs->enum_idx == MENU_ENUM_LABEL_CORE_UPDATER_ENTRY)
+               /* Core updater/manager entries require special treatment */
+               switch (cbs->enum_idx)
                {
-                  core_updater_list_t *core_list         = core_updater_list_get_cached();
-                  const core_updater_list_entry_t *entry = NULL;
-                  const char *path                       = NULL;
+#ifdef HAVE_NETWORKING
+                  case MENU_ENUM_LABEL_CORE_UPDATER_ENTRY:
+                     {
+                        core_updater_list_t *core_list         = core_updater_list_get_cached();
+                        const core_updater_list_entry_t *entry = NULL;
+                        const char *path                       = NULL;
 
-                  /* Get core path */
-                  menu_entries_get_at_offset(selection_buf, selection,
-                        &path, NULL, NULL, NULL, NULL);
+                        /* Get core path */
+                        menu_entries_get_at_offset(selection_buf, selection,
+                              &path, NULL, NULL, NULL, NULL);
 
-                  /* Search for specified core */
-                  if (core_list && path &&
-                      core_updater_list_get_filename(core_list, path, &entry) &&
-                      !string_is_empty(entry->description))
-                     strlcpy(menu->menu_state_msg, entry->description,
-                           sizeof(menu->menu_state_msg));
-                  else
-                     strlcpy(menu->menu_state_msg,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
-                           sizeof(menu->menu_state_msg));
+                        /* Search for specified core */
+                        if (core_list && path &&
+                            core_updater_list_get_filename(core_list, path, &entry) &&
+                            !string_is_empty(entry->description))
+                           strlcpy(menu->menu_state_msg, entry->description,
+                                 sizeof(menu->menu_state_msg));
+                        else
+                           strlcpy(menu->menu_state_msg,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
+                                 sizeof(menu->menu_state_msg));
 
-                  ret = 0;
-               }
-               else
+                        ret = 0;
+                     }
+                     break;
 #endif
-                  ret = menu_hash_get_help_enum(cbs->enum_idx,
-                        menu->menu_state_msg, sizeof(menu->menu_state_msg));
+                  case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
+                     {
+                        const char *path = NULL;
+                        core_info_ctx_find_t core_info;
+
+                        /* Get core path */
+                        menu_entries_get_at_offset(selection_buf, selection,
+                              &path, NULL, NULL, NULL, NULL);
+
+                        /* Search for specified core */
+                        core_info.inf  = NULL;
+                        core_info.path = path;
+
+                        if (path &&
+                            core_info_find(&core_info) &&
+                            !string_is_empty(core_info.inf->description))
+                           strlcpy(menu->menu_state_msg, core_info.inf->description,
+                                 sizeof(menu->menu_state_msg));
+                        else
+                           strlcpy(menu->menu_state_msg,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
+                                 sizeof(menu->menu_state_msg));
+
+                        ret = 0;
+                     }
+                     break;
+                  default:
+                     ret = menu_hash_get_help_enum(cbs->enum_idx,
+                           menu->menu_state_msg, sizeof(menu->menu_state_msg));
+                     break;
+               }
 
 #ifdef HAVE_ACCESSIBILITY
                if (  (iterate_type != last_iterate_type) &&

@@ -525,6 +525,10 @@ MSG_HASH(
    "core_updater_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_MANAGER_LIST,
+   "core_manager_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CPU_ARCHITECTURE,
    "system_information_cpu_architecture"
    )
@@ -759,6 +763,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
    "core_updater"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST,
+   "deferred_core_manager_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST,

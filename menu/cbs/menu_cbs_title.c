@@ -379,6 +379,47 @@ static int action_get_title_deferred_core_delete_backup_list(
          s, len);
 }
 
+static int action_get_core_information_list(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   core_info_t *core_info = NULL;
+
+   /* Check whether we are parsing information for a
+    * core updater/manager entry or the currently loaded core */
+   if ((menu_type == FILE_TYPE_DOWNLOAD_CORE) ||
+       (menu_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
+   {
+      const char *core_path = path;
+      core_info_ctx_find_t core_info_finder;
+
+      if (string_is_empty(core_path))
+         goto error;
+
+      /* Core updater/manager entry - search for
+       * corresponding core info */
+      core_info_finder.inf  = NULL;
+      core_info_finder.path = core_path;
+
+      if (core_info_find(&core_info_finder))
+         core_info = core_info_finder.inf;
+   }
+   else
+      core_info_get_current_core(&core_info);
+
+   if (!core_info || string_is_empty(core_info->display_name))
+      goto error;
+
+   /* Copy display name */
+   strlcpy(s, core_info->display_name, len);
+   return 1;
+
+error:
+   /* An unknown error has occurred - just set the
+    * title to the legacy 'Core Information' string */
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
+   return 0;
+}
+
 DEFAULT_TITLE_MACRO(action_get_quick_menu_override_options,     MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_user_accounts_cheevos_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS)
 DEFAULT_TITLE_MACRO(action_get_user_accounts_youtube_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE)
@@ -391,6 +432,7 @@ DEFAULT_TITLE_MACRO(action_get_netplay_list,                    MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_online_thumbnails_updater_list,  MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_online_pl_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_core_updater_list,               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
+DEFAULT_TITLE_MACRO(action_get_core_manager_list,               MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
 DEFAULT_TITLE_MACRO(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
 DEFAULT_TITLE_MACRO(action_get_core_options_list,               MENU_ENUM_LABEL_VALUE_CORE_OPTIONS)
@@ -407,7 +449,6 @@ DEFAULT_TITLE_MACRO(action_get_playlist_manager_list,           MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_input_hotkey_binds_settings_list,MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS)
 DEFAULT_TITLE_MACRO(action_get_driver_settings_list,            MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_core_settings_list,              MENU_ENUM_LABEL_VALUE_CORE_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_core_information_list,           MENU_ENUM_LABEL_VALUE_CORE_INFORMATION)
 DEFAULT_TITLE_MACRO(action_get_video_settings_list,             MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_video_fullscreen_mode_settings_list,     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_video_windowed_mode_settings_list,     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS)
@@ -893,6 +934,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_overlay},
       {MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
          action_get_core_updater_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST,
+         action_get_core_manager_list},
       {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
          action_get_configurations_list},
       {MENU_ENUM_LABEL_ADD_CONTENT_LIST,
@@ -1188,6 +1231,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_core_manager_list);
             break;
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_add_content_list);

@@ -139,14 +139,20 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    unsigned i, count           = 0;
    core_info_t *core_info      = NULL;
    const char *core_path       = NULL;
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    settings_t *settings        = config_get_ptr();
+   bool kiosk_mode_enable      = settings->bools.kiosk_mode_enable;
+#if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
    bool menu_show_core_updater = settings->bools.menu_show_core_updater;
+#endif
+#endif
 
    tmp[0] = '\0';
 
    /* Check whether we are parsing information for a
-    * core updater entry or the currently loaded core */
-   if (info->type == FILE_TYPE_DOWNLOAD_CORE)
+    * core updater/manager entry or the currently loaded core */
+   if ((info->type == FILE_TYPE_DOWNLOAD_CORE) ||
+       (info->type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
    {
       core_info_ctx_find_t core_info_finder;
 
@@ -358,10 +364,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
 end:
 
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-#else
-   if (menu_show_core_updater &&
-       !string_is_empty(core_path))
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   if (!string_is_empty(core_path) && !kiosk_mode_enable)
    {
       /* Backup core */
       if (menu_entries_append_enum(info->list,
@@ -387,13 +391,20 @@ end:
             MENU_SETTING_ACTION_CORE_DELETE_BACKUP, 0, 0))
          count++;
 
-      /* Delete core */
-      if (menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
-            core_path,
-            MENU_ENUM_LABEL_CORE_DELETE,
-            MENU_SETTING_ACTION_CORE_DELETE, 0, 0))
-         count++;
+      /* Delete core
+       * > Only add this option if online updater is
+       *   enabled/activated, otherwise user could end
+       *   up in a situation where a core cannot be
+       *   restored */
+#if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
+      if (menu_show_core_updater)
+         if (menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
+               core_path,
+               MENU_ENUM_LABEL_CORE_DELETE,
+               MENU_SETTING_ACTION_CORE_DELETE, 0, 0))
+            count++;
+#endif
    }
 #endif
 
@@ -485,6 +496,67 @@ static unsigned menu_displaylist_parse_core_backup_list(
             MENU_ENUM_LABEL_NO_CORE_BACKUPS_AVAILABLE,
             0, 0, 0))
          count++;
+
+   return count;
+}
+
+static unsigned menu_displaylist_parse_core_manager_list(
+      menu_displaylist_info_t *info)
+{
+   unsigned count                   = 0;
+   core_info_list_t *core_info_list = NULL;
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   settings_t *settings             = config_get_ptr();
+   bool kiosk_mode_enable           = settings->bools.kiosk_mode_enable;
+#endif
+
+   /* Get core list */
+   core_info_get_list(&core_info_list);
+
+   if (core_info_list)
+   {
+      core_info_t *core_info = NULL;
+      size_t menu_index      = 0;
+      size_t i;
+
+      /* Sort cores alphabetically */
+      core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
+
+      /* Loop through cores */
+      for (i = 0; i < core_info_list->count; i++)
+      {
+         core_info = NULL;
+         core_info = core_info_get(core_info_list, i);
+
+         if (core_info)
+         {
+            if (menu_entries_append_enum(info->list,
+                     core_info->path,
+                     "",
+                     MENU_ENUM_LABEL_CORE_MANAGER_ENTRY,
+                     MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS,
+                     0, 0))
+            {
+               file_list_set_alt_at_offset(
+                     info->list, menu_index, core_info->display_name);
+
+               menu_index++;
+               count++;
+            }
+         }
+      }
+   }
+
+   /* Add 'sideload core' entry */
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   if (!kiosk_mode_enable)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST),
+            MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
+#endif
 
    return count;
 }
@@ -7385,6 +7457,13 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
+
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_MANAGER_LIST),
+                     MENU_ENUM_LABEL_CORE_MANAGER_LIST,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
          }
          break;
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
@@ -9576,6 +9655,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_navigation_clear = true;
          info->need_refresh          = true;
          info->need_push             = true;
+         break;
+      case DISPLAYLIST_CORE_MANAGER_LIST:
+         {
+            /* When a core is deleted, the number of items in
+             * the core manager list will change. We therefore
+             * have to cache the last set menu size, and reset
+             * the navigation pointer if the current size is
+             * different */
+            static size_t prev_count = 0;
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            count           = menu_displaylist_parse_core_manager_list(info);
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0);
+
+            if (count != prev_count)
+            {
+               info->need_refresh          = true;
+               info->need_navigation_clear = true;
+               prev_count                  = count;
+            }
+            info->need_push = true;
+         }
          break;
       case DISPLAYLIST_CORE_OPTIONS:
          {

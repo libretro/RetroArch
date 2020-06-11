@@ -471,6 +471,31 @@ static void menu_action_setting_disp_set_label_core_updater_entry(
 }
 #endif
 
+static void menu_action_setting_disp_set_label_core_manager_entry(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *alt = NULL;
+
+   *s = '\0';
+   *w = 0;
+
+   menu_entries_get_at_offset(list, i, NULL,
+         NULL, NULL, NULL, &alt);
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   /* TODO: Once core-specific 'block online updates'
+    * settings are implemented, the 'value' string will
+    * be used to indicate whether updates are enabled
+    * or disabled */
+}
+
 static void menu_action_setting_disp_set_label_input_desc(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1586,6 +1611,16 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_manual_content_scan_core_name);
             break;
+#ifdef HAVE_NETWORKING
+         case MENU_ENUM_LABEL_CORE_UPDATER_ENTRY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_core_updater_entry);
+            break;
+#endif
+         case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_core_manager_entry);
+            break;
          default:
             return - 1;
       }
@@ -1673,12 +1708,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_core);
          break;
-#ifdef HAVE_NETWORKING
-      case FILE_TYPE_DOWNLOAD_CORE:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_core_updater_entry);
-         break;
-#endif
       case FILE_TYPE_PLAIN:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_plain);
