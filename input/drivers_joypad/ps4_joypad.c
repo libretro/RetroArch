@@ -86,16 +86,12 @@ static bool ps4_joypad_init(void *data)
 
 	result = sceUserServiceGetLoginUserIdList(&userIdList);
 
-   RARCH_LOG("sceUserServiceGetLoginUserIdList %x ", result);
-
 	if (result == 0)
 	{
       unsigned i;
       for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
       {
          SceUserServiceUserId userId = userIdList.userId[i];
-
-         RARCH_LOG("USER %d ID %x\n", i, userId);
 
          if (userId != SCE_USER_SERVICE_USER_ID_INVALID)
          {
@@ -110,12 +106,10 @@ static bool ps4_joypad_init(void *data)
             if (index == num_players)
             {
                ds_joypad_states[num_players].handle = scePadOpen(userId, 0, 0, NULL);
-               RARCH_LOG("USER %x HANDLE %x\n", userId, ds_joypad_states[num_players].handle);
                if (ds_joypad_states[num_players].handle > 0)
                {
                   ds_joypad_states[num_players].connected = true;
                   ds_joypad_states[num_players].userId = userId;
-                  RARCH_LOG("NEW PAD: num_players %x \n", num_players);
 
                   input_autoconfigure_connect(
                         ps4_joypad_name(num_players),

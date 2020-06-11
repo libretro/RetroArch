@@ -79,10 +79,9 @@ bool dinput_joypad_get_vidpid_from_xinput_index(int32_t index, int32_t *vid, int
 
    for (i = 0; i < ARRAY_SIZE(g_xinput_pad_indexes); i++)
    {
+      /* Found XInput pad? */
       if (index == g_xinput_pad_indexes[i])
       {
-         RARCH_LOG("[DINPUT]: Found XInput pad at index %d (DINPUT index %d)\n", index, i);
-
          if (vid)
             *vid = g_pads[i].vid;
 
@@ -335,7 +334,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (FAILED(IDirectInput8_CreateDevice(
                g_dinput_ctx, &inst->guidInstance, pad, NULL)))
 #endif
-   return DIENUM_CONTINUE;
+      return DIENUM_CONTINUE;
 
    g_pads[g_joypad_cnt].joy_name          = strdup((const char*)inst->tszProductName);
    g_pads[g_joypad_cnt].joy_friendly_name = strdup((const char*)inst->tszInstanceName);
@@ -358,11 +357,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
    g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
-
-   RARCH_LOG("[DINPUT]: Device #%u PID: {%04lX} VID:{%04lX}\n",
-         g_joypad_cnt,
-         g_pads[g_joypad_cnt].pid,
-         g_pads[g_joypad_cnt].vid);
 
 #ifdef HAVE_XINPUT
    is_xinput_pad = g_xinput_block_pads
@@ -424,10 +418,8 @@ static bool dinput_joypad_init(void *data)
       g_pads[i].joy_friendly_name = NULL;
    }
 
-   RARCH_LOG("[DINPUT]: Enumerating joypads ...\n");
    IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
-   RARCH_LOG("[DINPUT]: Done enumerating joypads ...\n");
    return true;
 }
 

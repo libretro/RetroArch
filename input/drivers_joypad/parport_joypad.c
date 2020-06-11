@@ -116,7 +116,8 @@ static void parport_poll_pad(struct parport_joypad *pad)
       BIT32_SET(pad->buttons, 12);
 }
 
-static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad)
+static bool parport_joypad_init_pad(
+      const char *path, struct parport_joypad *pad)
 {
    int i;
    char data;
@@ -134,33 +135,26 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
    pad->fd     = open(path, O_RDWR | O_NONBLOCK);
    *pad->ident = '\0';
 
+   /* Found parallel port? */
    if (pad->fd >= 0)
    {
-      RARCH_LOG("[Joypad]: Found parallel port: %s\n", path);
-
-      /* Parport driver does not log failures with RARCH_ERR because they could be
+      /* Parport driver does not log failures with 
+       * RARCH_ERR because they could be
        * a normal result of connected non-joypad devices. */
-      if (ioctl(pad->fd, PPCLAIM) < 0)
-      {
-         RARCH_WARN("[Joypad]: Failed to claim %s\n", path);
-         goto error;
-      }
-      if (ioctl(pad->fd, PPSETMODE, &mode) < 0)
-      {
-         RARCH_WARN("[Joypad]: Failed to set byte mode on %s\n", path);
-         goto error;
-      }
-      if (ioctl(pad->fd, PPDATADIR, &datadir) < 0)
-      {
-         RARCH_WARN("[Joypad]: Failed to set data direction to input on %s\n", path);
-         goto error;
-      }
 
-      if (ioctl(pad->fd, PPRDATA, &data) < 0)
-      {
-         RARCH_WARN("[Joypad]: Failed to save original data register on %s\n", path);
+      /* Failed to claim? */
+      if (ioctl(pad->fd, PPCLAIM) < 0)
          goto error;
-      }
+      /* Failed to set byte mode? */
+      if (ioctl(pad->fd, PPSETMODE, &mode) < 0)
+         goto error;
+      /* Failed to set data direction to input */
+      if (ioctl(pad->fd, PPDATADIR, &datadir) < 0)
+         goto error;
+      /* Failed to save original data register */
+      if (ioctl(pad->fd, PPRDATA, &data) < 0)
+         goto error;
+
       pad->saved_data = data;
 
       if (ioctl(pad->fd, PPRCONTROL, &data) == 0)
@@ -168,17 +162,19 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
          pad->saved_control = data;
          /* Clear strobe bit to set strobe high for pullup +V */
          /* Clear control bit 4 to disable interrupts */
-         frob.mask = PARPORT_CONTROL_STROBE | (UINT8_C(1 << 4));
-         frob.val = 0;
+         frob.mask          = PARPORT_CONTROL_STROBE | (UINT8_C(1 << 4));
+         frob.val           = 0;
          if (ioctl(pad->fd, PPFCONTROL, &frob) == 0)
             set_control = true;
       }
       else
       {
          data = pad->saved_data;
+#if 0
          if (ioctl(pad->fd, PPWDATA, &data) < 0)
             RARCH_WARN("[Joypad]: Failed to restore original data register on %s\n", path);
          RARCH_WARN("[Joypad]: Failed to save original control register on %s\n", path);
+#endif
          goto error;
       }
 
@@ -200,7 +196,6 @@ error:
       return false;
    }
 
-   RARCH_WARN("[Joypad]: Failed to open parallel port %s (error: %s).\n", path, strerror(errno));
    return false;
 }
 
@@ -264,7 +259,7 @@ static bool parport_joypad_init(void *data)
           * and disable any low pins.
           */
          parport_poll_pad(pad);
-         found_enabled_button = false;
+         found_enabled_button  = false;
          found_disabled_button = false;
 
          for (j = 0; j < PARPORT_NUM_BUTTONS; j++)

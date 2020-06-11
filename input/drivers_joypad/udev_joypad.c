@@ -164,11 +164,9 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    strlcpy(pad->ident, input_device_names[p], sizeof(pad->ident));
 
+   /* Failed to get pad name */
    if (ioctl(fd, EVIOCGNAME(sizeof(pad->ident)), pad->ident) < 0)
-   {
-      RARCH_LOG("[udev]: Failed to get pad name: %s.\n", pad->ident);
       return -1;
-   }
 
    pad->vid = pad->pid = 0;
 
@@ -176,9 +174,6 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       pad->vid = inputid.vendor;
       pad->pid = inputid.product;
    }
-
-   RARCH_LOG("[udev]: Plugged pad: %s (%u:%u) on port #%u.\n",
-             pad->ident, pad->vid, pad->pid, p);
 
    if (fstat(fd, &st) < 0)
       return -1;
@@ -461,16 +456,12 @@ static void udev_joypad_poll(void)
 
          if (val && string_is_equal(val, "1") && devnode)
          {
+            /* Hotplug add */
             if (string_is_equal(action, "add"))
-            {
-               RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
                udev_check_device(dev, devnode);
-            }
+            /* Hotplug removal */
             else if (string_is_equal(action, "remove"))
-            {
-               RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
                udev_joypad_remove_device(devnode);
-            }
          }
 
          udev_device_unref(dev);

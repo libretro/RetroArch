@@ -71,7 +71,6 @@ static int get_slot_for_channel(unsigned channel)
    int slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
    if(slot >= 0)
    {
-      RARCH_LOG("[kpad]: got slot %d\n", slot);
       channel_slot_map[channel]             = slot;
       hid_instance.pad_list[slot].connected = true;
    }
@@ -257,7 +256,9 @@ static const char *kpad_name(unsigned pad)
          return PAD_NAME_WIIMOTE;
       case WIIMOTE_TYPE_NONE:
       default:
+#ifdef DEBUG
          RARCH_LOG("[kpad]: Unknown pad type %d\n", wiimotes[pad].type);
+#endif
          break;
    }
 
