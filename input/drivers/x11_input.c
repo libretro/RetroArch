@@ -347,7 +347,7 @@ static int16_t x_input_state(void *data,
             if (id < RARCH_BIND_LIST_END)
             {
                if ((binds[port][id].key < RETROK_LAST) && 
-                     x_keyboard_pressed(x11, binds[port][i].key) )
+                     x_keyboard_pressed(x11, binds[port][id].key) )
                   if ((    id == RARCH_GAME_FOCUS_TOGGLE) 
                         || !input_x.keyboard_mapping_blocked)
                      return 1;
