@@ -299,7 +299,7 @@ static int16_t cocoa_is_pressed(
 {
     /* Auto-binds are per joypad, not per user. */
     const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-    ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
+    ? binds[id].joykey  : joypad_info->auto_binds[id].joykey;
     const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
     ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
     if ((uint16_t)joykey != NO_BTN && joypad->button(
@@ -335,7 +335,7 @@ static int16_t cocoa_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (apple_key_state[rarch_keysym_lut[binds[i].key]])
+               if (apple_key_state[rarch_keysym_lut[binds[port][i].key]])
                   return 1;
                if (cocoa_is_pressed(
                         apple->joypad, apple->sec_joypad,
@@ -347,7 +347,7 @@ static int16_t cocoa_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               if (apple_key_state[rarch_keysym_lut[binds[id].key]])
+               if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
                   return 1;
              return cocoa_is_pressed(
                    apple->joypad, apple->sec_joypad,
