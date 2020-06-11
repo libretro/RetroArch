@@ -2544,6 +2544,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
    "Allow cores to set rotation. When disabled, rotation requests are ignored. Useful for setups that manually rotate the screen."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   "Manage Cores"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
+   "Perform offline maintenance tasks on installed cores (backup, restore, delete, etc.) and view core information."
+   )
 
 /* Settings > Configuration */
 

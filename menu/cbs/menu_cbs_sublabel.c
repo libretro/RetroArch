@@ -307,6 +307,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_list,                     MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_download_core,                 MENU_ENUM_SUBLABEL_DOWNLOAD_CORE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_update_installed_cores,        MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sideload_core_list,            MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_list,             MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_disc,                  MENU_ENUM_SUBLABEL_LOAD_DISC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dump_disc,                  MENU_ENUM_SUBLABEL_DUMP_DISC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_list,                  MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST)
@@ -1379,14 +1380,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-#ifdef HAVE_NETWORKING
-   if (type == FILE_TYPE_DOWNLOAD_CORE)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_entry);
-      return 0;
-   }
-#endif
-
    /* Hotkey binds require special handling
     * > Only the 'enable_hotkey' entry has a sublabel */
    if ((cbs->enum_idx >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN) &&
@@ -1402,8 +1395,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
+         case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_file_browser_core);
             break;
+#ifdef HAVE_NETWORKING
+         case MENU_ENUM_LABEL_CORE_UPDATER_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_entry);
+            break;
+#endif
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
 #ifdef HAVE_AUDIOMIXER
@@ -2685,6 +2684,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_update_installed_cores);
+            break;
+         case MENU_ENUM_LABEL_CORE_MANAGER_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_manager_list);
             break;
          case MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_post_filter_record);
