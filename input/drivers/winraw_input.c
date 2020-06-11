@@ -325,7 +325,7 @@ static int16_t winraw_is_pressed(
    const struct retro_keybind *bind = &binds[id];
    /* Auto-binds are per joypad, not per user. */
    const uint64_t           joykey  = (binds[id].joykey != NO_BTN)
-      ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
+      ? binds[id].joykey  : joypad_info->auto_binds[id].joykey;
    const uint32_t           joyaxis = (binds[id].joyaxis != AXIS_NONE)
       ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
    if (mouse && winraw_mouse_button_pressed(wr,

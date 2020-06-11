@@ -51,10 +51,10 @@ static int16_t ctr_is_pressed(
 {
    const struct retro_keybind *bind = &binds[id];
    /* Auto-binds are per joypad, not per user. */
-   const uint64_t           joykey  = (binds[port][id].joykey != NO_BTN)
-      ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-   const uint32_t           joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-      ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
+   const uint64_t           joykey  = (binds[id].joykey != NO_BTN)
+      ? binds[id].joykey  : joypad_info->auto_binds[id].joykey;
+   const uint32_t           joyaxis = (binds[id].joyaxis != AXIS_NONE)
+      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
    if ((uint16_t)joykey != NO_BTN && 
          joypad->button(
             joypad_info->joy_idx, (uint16_t)joykey))
