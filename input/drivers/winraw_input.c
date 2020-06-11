@@ -669,8 +669,8 @@ static int16_t winraw_input_state(void *d,
                {
                   if ((binds[port][i].key < RETROK_LAST) && 
                         winraw_keyboard_pressed(wr, binds[port][i].key))
-                     return true;
-                  if (binds[port][i].valid)
+                     ret |= (1 << i);
+                  else if (binds[port][i].valid)
                      if (winraw_is_pressed(
                               wr, mouse, joypad_info, binds[port], port, i))
                         ret |= (1 << i);

@@ -604,18 +604,12 @@ static int16_t dinput_input_state(void *data,
                   {
                      if ((binds[port][i].key < RETROK_LAST) &&
                            di->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]] & 0x80)
-                     {
                         ret |= (1 << i);
-                        continue;
-                     }
-
-                     if (binds[port][i].valid)
+                     else if (binds[port][i].valid)
                         if (dinput_is_pressed(
-                                 di, settings, joypad_info, binds[port], port, i))
-                        {
+                                 di, settings, joypad_info,
+                                 binds[port], port, i))
                            ret |= (1 << i);
-                           continue;
-                        }
                   }
                }
                return ret;
