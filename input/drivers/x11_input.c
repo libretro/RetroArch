@@ -325,10 +325,7 @@ static int16_t x_input_state(void *data,
             {
                if (x_is_pressed(
                         x11, joypad_info, binds[port], port, i))
-               {
                   ret |= (1 << i);
-                  continue;
-               }
             }
 
             return ret;
