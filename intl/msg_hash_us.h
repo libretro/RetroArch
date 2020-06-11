@@ -3223,6 +3223,24 @@ MSG_HASH(
    "Scale of all UI elements of the overlay."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_X,
+   "Overlay Offset X"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X,
+   "X offset of all UI elements of the overlay."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_Y,
+   "Overlay Offset Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y,
+   "Y offset of all UI elements of the overlay."
+   )
+
 /* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(

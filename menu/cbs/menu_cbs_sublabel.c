@@ -463,6 +463,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_float_format,     MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_sh_buffer_length, MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_opacity,               MENU_ENUM_SUBLABEL_OVERLAY_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_scale,                 MENU_ENUM_SUBLABEL_OVERLAY_SCALE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_center_x,                 MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_center_y,                 MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_enable,                MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_preset,                MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
 #ifdef HAVE_VIDEO_LAYOUT
@@ -2527,6 +2529,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_OVERLAY_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_scale);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_CENTER_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_center_x);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_CENTER_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_center_y);
             break;
 #ifdef HAVE_VIDEO_LAYOUT
          case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:

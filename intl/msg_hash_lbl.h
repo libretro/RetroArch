@@ -1931,6 +1931,14 @@ MSG_HASH(
    "input_overlay_scale"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_CENTER_X,
+   "input_overlay_center_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_CENTER_Y,
+   "input_overlay_center_y"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PAL60_ENABLE,
    "pal60_enable"
    )

@@ -1705,6 +1705,8 @@ static struct config_float_setting *populate_settings_float(
 #ifdef HAVE_OVERLAY
    SETTING_FLOAT("input_overlay_opacity",    &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
    SETTING_FLOAT("input_overlay_scale",      &settings->floats.input_overlay_scale, true, 1.0f, false);
+   SETTING_FLOAT("input_overlay_center_x",   &settings->floats.input_overlay_center_x, true, 0.5f, false);
+   SETTING_FLOAT("input_overlay_center_y",   &settings->floats.input_overlay_center_y, true, 0.5f, false);
 #endif
 #ifdef HAVE_MENU
    SETTING_FLOAT("menu_scale_factor",        &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);

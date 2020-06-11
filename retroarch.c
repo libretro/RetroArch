@@ -2656,7 +2656,8 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch);
 static void retroarch_overlay_deinit(struct rarch_state *p_rarch);
 static void input_overlay_set_alpha_mod(struct rarch_state *p_rarch,
       input_overlay_t *ol, float mod);
-static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
+static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale,
+      float center_x, float center_y);
 static void input_overlay_load_active(
       struct rarch_state *p_rarch,
       input_overlay_t *ol, float opacity);
@@ -14844,7 +14845,10 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             float input_overlay_scale   = settings->floats.input_overlay_scale;
-            input_overlay_set_scale_factor(p_rarch->overlay_ptr, input_overlay_scale);
+            float input_overlay_c_x     = settings->floats.input_overlay_center_x;
+            float input_overlay_c_y     = settings->floats.input_overlay_center_y;
+            input_overlay_set_scale_factor(p_rarch->overlay_ptr,
+                  input_overlay_scale, input_overlay_c_x, input_overlay_c_y);
          }
 #endif
          break;
@@ -20717,12 +20721,16 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
  * Scales overlay and all its associated descriptors
  * by a given scaling factor (@scale).
  **/
-static void input_overlay_scale(struct overlay *ol, float scale)
+static void input_overlay_scale(struct overlay *ol, float scale, float center_x,
+      float center_y)
 {
    size_t i;
 
    if (ol->block_scale)
       scale = 1.0f;
+
+   ol->center_x = ol->x + center_x * ol->w;
+   ol->center_y = ol->y + center_y * ol->h;
 
    ol->scale = scale;
    ol->mod_w = ol->w * scale;
@@ -20776,7 +20784,8 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
  *
  * Scales the overlay by a factor of scale.
  **/
-static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
+static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale,
+      float center_x, float center_y)
 {
    size_t i;
 
@@ -20784,7 +20793,7 @@ static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
       return;
 
    for (i = 0; i < ol->size; i++)
-      input_overlay_scale(&ol->overlays[i], scale);
+      input_overlay_scale(&ol->overlays[i], scale, center_x, center_y);
 
    input_overlay_set_vertex_geom(ol);
 }
@@ -21258,7 +21267,8 @@ static void input_overlay_loaded(retro_task_t *task,
    if (ol->iface->enable)
       ol->iface->enable(ol->iface_data, data->overlay_enable);
 
-   input_overlay_set_scale_factor(ol, data->overlay_scale);
+   input_overlay_set_scale_factor(ol, data->overlay_scale,
+         data->overlay_center_x, data->overlay_center_y);
 
    ol->next_index = (unsigned)((ol->index + 1) % ol->size);
    ol->state      = OVERLAY_STATUS_NONE;
@@ -21502,6 +21512,8 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
    const char *path_overlay    = settings->paths.path_overlay;
    float overlay_opacity       = settings->floats.input_overlay_opacity;
    float overlay_scale         = settings->floats.input_overlay_scale;
+   float overlay_center_x      = settings->floats.input_overlay_center_x;
+   float overlay_center_y      = settings->floats.input_overlay_center_y;
    bool load_enabled           = input_overlay_enable;
 #ifdef HAVE_MENU
    bool overlay_hide_in_menu   = settings->bools.input_overlay_hide_in_menu;
@@ -21531,6 +21543,8 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
             input_overlay_enable,
             overlay_opacity,
             overlay_scale,
+            overlay_center_x,
+            overlay_center_y,
             NULL);
 }
 #endif
