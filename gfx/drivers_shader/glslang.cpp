@@ -176,18 +176,21 @@ SlangProcess::SlangProcess()
       {
          if (string_starts_with(token, "MaxCompute"))
          {
-            if (string_is_equal(token, "MaxComputeWorkGroupCountX"))
-               Resources.maxComputeWorkGroupCountX = value;
-            else if (string_is_equal(token, "MaxComputeWorkGroupCountY"))
-               Resources.maxComputeWorkGroupCountY = value;
-            else if (string_is_equal(token, "MaxComputeWorkGroupCountZ"))
-               Resources.maxComputeWorkGroupCountZ = value;
-            else if (string_is_equal(token, "MaxComputeWorkGroupSizeX"))
-               Resources.maxComputeWorkGroupSizeX = value;
-            else if (string_is_equal(token, "MaxComputeWorkGroupSizeY"))
-               Resources.maxComputeWorkGroupSizeY = value;
-            else if (string_is_equal(token, "MaxComputeWorkGroupSizeZ"))
-               Resources.maxComputeWorkGroupSizeZ = value;
+            if (string_starts_with(token, "MaxComputeWork"))
+            {
+               if (string_is_equal(token, "MaxComputeWorkGroupCountX"))
+                  Resources.maxComputeWorkGroupCountX = value;
+               else if (string_is_equal(token, "MaxComputeWorkGroupCountY"))
+                  Resources.maxComputeWorkGroupCountY = value;
+               else if (string_is_equal(token, "MaxComputeWorkGroupCountZ"))
+                  Resources.maxComputeWorkGroupCountZ = value;
+               else if (string_is_equal(token, "MaxComputeWorkGroupSizeX"))
+                  Resources.maxComputeWorkGroupSizeX = value;
+               else if (string_is_equal(token, "MaxComputeWorkGroupSizeY"))
+                  Resources.maxComputeWorkGroupSizeY = value;
+               else if (string_is_equal(token, "MaxComputeWorkGroupSizeZ"))
+                  Resources.maxComputeWorkGroupSizeZ = value;
+            }
             else if (string_is_equal(token, "MaxComputeUniformComponents"))
                Resources.maxComputeUniformComponents = value;
             else if (string_is_equal(token, "MaxComputeTextureImageUnits"))
@@ -222,40 +225,46 @@ SlangProcess::SlangProcess()
          }
          else if (string_starts_with(token, "MaxTess"))
          {
-            if (string_is_equal(token, "MaxTessControlInputComponents"))
-               Resources.maxTessControlInputComponents = value;
-            else if (string_is_equal(token, "MaxTessControlOutputComponents"))
-               Resources.maxTessControlOutputComponents = value;
-            else if (string_is_equal(token, "MaxTessControlTextureImageUnits"))
-               Resources.maxTessControlTextureImageUnits = value;
-            else if (string_is_equal(token, "MaxTessControlUniformComponents"))
-               Resources.maxTessControlUniformComponents = value;
-            else if (string_is_equal(token, "MaxTessControlTotalOutputComponents"))
-               Resources.maxTessControlTotalOutputComponents = value;
-            else if (string_is_equal(token, "MaxTessEvaluationInputComponents"))
-               Resources.maxTessEvaluationInputComponents = value;
-            else if (string_is_equal(token, "MaxTessEvaluationOutputComponents"))
-               Resources.maxTessEvaluationOutputComponents = value;
-            else if (string_is_equal(token, "MaxTessEvaluationTextureImageUnits"))
-               Resources.maxTessEvaluationTextureImageUnits = value;
-            else if (string_is_equal(token, "MaxTessEvaluationUniformComponents"))
-               Resources.maxTessEvaluationUniformComponents = value;
+            if (string_starts_with(token, "MaxTessEvaluation"))
+            {
+               if (string_is_equal(token, "MaxTessEvaluationInputComponents"))
+                  Resources.maxTessEvaluationInputComponents = value;
+               else if (string_is_equal(token, "MaxTessEvaluationOutputComponents"))
+                  Resources.maxTessEvaluationOutputComponents = value;
+               else if (string_is_equal(token, "MaxTessEvaluationTextureImageUnits"))
+                  Resources.maxTessEvaluationTextureImageUnits = value;
+               else if (string_is_equal(token, "MaxTessEvaluationUniformComponents"))
+                  Resources.maxTessEvaluationUniformComponents = value;
+               else if (string_is_equal(token, "MaxTessEvaluationAtomicCounters"))
+                  Resources.maxTessEvaluationAtomicCounters = value;
+               else if (string_is_equal(token, "MaxTessEvaluationAtomicCounterBuffers"))
+                  Resources.maxTessEvaluationAtomicCounterBuffers = value;
+               else if (string_is_equal(token, "MaxTessEvaluationImageUniforms"))
+                  Resources.maxTessEvaluationImageUniforms = value;
+            }
+            else if (string_starts_with(token, "MaxTessControl"))
+            {
+               if (string_is_equal(token, "MaxTessControlInputComponents"))
+                  Resources.maxTessControlInputComponents = value;
+               else if (string_is_equal(token, "MaxTessControlOutputComponents"))
+                  Resources.maxTessControlOutputComponents = value;
+               else if (string_is_equal(token, "MaxTessControlTextureImageUnits"))
+                  Resources.maxTessControlTextureImageUnits = value;
+               else if (string_is_equal(token, "MaxTessControlUniformComponents"))
+                  Resources.maxTessControlUniformComponents = value;
+               else if (string_is_equal(token, "MaxTessControlTotalOutputComponents"))
+                  Resources.maxTessControlTotalOutputComponents = value;
+               else if (string_is_equal(token, "MaxTessControlAtomicCounters"))
+                  Resources.maxTessControlAtomicCounters = value;
+               else if (string_is_equal(token, "MaxTessControlAtomicCounterBuffers"))
+                  Resources.maxTessControlAtomicCounterBuffers = value;
+               else if (string_is_equal(token, "MaxTessControlImageUniforms"))
+                  Resources.maxTessControlImageUniforms = value;
+            }
             else if (string_is_equal(token, "MaxTessPatchComponents"))
                Resources.maxTessPatchComponents = value;
             else if (string_is_equal(token, "MaxTessGenLevel"))
                Resources.maxTessGenLevel = value;
-            else if (string_is_equal(token, "MaxTessControlAtomicCounters"))
-               Resources.maxTessControlAtomicCounters = value;
-            else if (string_is_equal(token, "MaxTessEvaluationAtomicCounters"))
-               Resources.maxTessEvaluationAtomicCounters = value;
-            else if (string_is_equal(token, "MaxTessControlAtomicCounterBuffers"))
-               Resources.maxTessControlAtomicCounterBuffers = value;
-            else if (string_is_equal(token, "MaxTessEvaluationAtomicCounterBuffers"))
-               Resources.maxTessEvaluationAtomicCounterBuffers = value;
-            else if (string_is_equal(token, "MaxTessControlImageUniforms"))
-               Resources.maxTessControlImageUniforms = value;
-            else if (string_is_equal(token, "MaxTessEvaluationImageUniforms"))
-               Resources.maxTessEvaluationImageUniforms = value;
          }
          else if (string_is_equal(token, "MaxLights"))
             Resources.maxLights = value;
