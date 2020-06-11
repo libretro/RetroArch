@@ -2237,7 +2237,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   "Performs a soft reset of the current core, restarting any content from the beginning."
+   "Restarts the current content from the beginning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
