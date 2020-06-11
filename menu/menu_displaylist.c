@@ -6749,6 +6749,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_OVERLAY_PRESET,                         PARSE_ONLY_PATH,  false  },
                {MENU_ENUM_LABEL_OVERLAY_OPACITY,                        PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_SCALE,                          PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_CENTER_X,                       PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_CENTER_Y,                       PARSE_ONLY_FLOAT, false },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -6763,6 +6765,8 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_OVERLAY_PRESET:
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
                   case MENU_ENUM_LABEL_OVERLAY_SCALE:
+                  case MENU_ENUM_LABEL_OVERLAY_CENTER_X:
+                  case MENU_ENUM_LABEL_OVERLAY_CENTER_Y:
                      if (input_overlay_enable)
                         build_list[i].checked = true;
                      break;

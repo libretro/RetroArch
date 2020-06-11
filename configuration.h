@@ -437,6 +437,8 @@ typedef struct settings
 
       float input_overlay_opacity;
       float input_overlay_scale;
+      float input_overlay_center_x;
+      float input_overlay_center_y;
 
       float slowmotion_ratio;
       float fastforward_ratio;
