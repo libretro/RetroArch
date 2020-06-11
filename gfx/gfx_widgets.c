@@ -2334,25 +2334,11 @@ bool gfx_widgets_set_fps_text(
 }
 
 #ifdef HAVE_TRANSLATE
-int gfx_widgets_ai_service_overlay_get_state(void)
-{
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
-   return p_dispwidget->ai_service_overlay_state;
-}
-
-bool gfx_widgets_ai_service_overlay_set_state(int state)
-{
-   dispgfx_widget_t *p_dispwidget         = (dispgfx_widget_t*)dispwidget_get_ptr();
-   p_dispwidget->ai_service_overlay_state = state;
-   return true;
-}
-
 bool gfx_widgets_ai_service_overlay_load(
-        char* buffer, unsigned buffer_len,
-        enum image_type_enum image_type)
+      dispgfx_widget_t *p_dispwidget,
+      char* buffer, unsigned buffer_len,
+      enum image_type_enum image_type)
 {
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-
    if (p_dispwidget->ai_service_overlay_state == 0)
    {
       bool res = gfx_display_reset_textures_list_buffer(
@@ -2368,10 +2354,8 @@ bool gfx_widgets_ai_service_overlay_load(
    return true;
 }
 
-void gfx_widgets_ai_service_overlay_unload(void)
+void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget)
 {
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-
    if (p_dispwidget->ai_service_overlay_state == 1)
    {
       video_driver_texture_unload(&p_dispwidget->ai_service_overlay_texture);

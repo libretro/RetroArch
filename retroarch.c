@@ -11810,13 +11810,11 @@ static void handle_translation_cb(
    bool gfx_widgets_paused           = p_rarch->gfx_widgets_paused;
 
 #ifdef GFX_MENU_WIDGETS
-   if (gfx_widgets_ai_service_overlay_get_state() != 0
+   /* When auto mode is on, we turn off the overlay
+    * once we have the result for the next call.*/
+   if (p_rarch->dispwidget_st.ai_service_overlay_state != 0
        && p_rarch->ai_service_auto == 2)
-   {
-      /* When auto mode is on, we turn off the overlay
-       * once we have the result for the next call.*/
-      gfx_widgets_ai_service_overlay_unload();
-   }
+      gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
 #endif
 
 #ifdef DEBUG
@@ -11946,7 +11944,7 @@ static void handle_translation_cb(
       if (gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
-         gfx_widgets_ai_service_overlay_set_state(2);
+         p_rarch->dispwidget_st.ai_service_overlay_state = 2;
          command_event(CMD_EVENT_UNPAUSE, NULL);
       }
 #endif
@@ -11995,8 +11993,9 @@ static void handle_translation_cb(
          }
 
          ai_res = gfx_widgets_ai_service_overlay_load(
-                     raw_image_file_data, (unsigned) new_image_size,
-                     image_type);
+               &p_rarch->dispwidget_st,
+               raw_image_file_data, (unsigned) new_image_size,
+               image_type);
 
          if (!ai_res)
          {
@@ -12011,7 +12010,8 @@ static void handle_translation_cb(
          {
             /* In this case we have to unpause and then repause for a frame */
 #ifdef HAVE_TRANSLATE
-            gfx_widgets_ai_service_overlay_set_state(2);/* Unpausing state */
+            /* Unpausing state */
+            p_rarch->dispwidget_st.ai_service_overlay_state = 2;
 #endif
             command_event(CMD_EVENT_UNPAUSE, NULL);
          }
@@ -12528,11 +12528,11 @@ static bool run_translation_service(struct rarch_state *p_rarch,
       video_driver_pix_fmt               = p_rarch->video_driver_pix_fmt;
 
 #ifdef HAVE_GFX_WIDGETS
-   if (  (gfx_widgets_ai_service_overlay_get_state() != 0)
+   /* For the case when ai service pause is disabled. */
+   if (  (p_rarch->dispwidget_st.ai_service_overlay_state != 0)
          && (p_rarch->ai_service_auto == 1))
    {
-      /* For the case when ai service pause is disabled. */
-      gfx_widgets_ai_service_overlay_unload();
+      gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
       goto finish;
    }
 #endif
@@ -14032,8 +14032,8 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_ai_service_overlay_get_state() == 1)
-      gfx_widgets_ai_service_overlay_unload();
+   if (p_rarch->dispwidget_st.ai_service_overlay_state == 1)
+      gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
 #endif
 }
 
@@ -14128,13 +14128,11 @@ bool command_event(enum event_command cmd, void *data)
          retroarch_overlay_deinit(p_rarch);
 #endif
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-         if (gfx_widgets_ai_service_overlay_get_state() != 0)
-         {
-            /* Because the overlay is a display widget,
-             * it's going to be written
-             * over the menu, so we unset it here. */
-            gfx_widgets_ai_service_overlay_unload();
-         }
+         /* Because the overlay is a display widget,
+          * it's going to be written
+          * over the menu, so we unset it here. */
+         if (p_rarch->dispwidget_st.ai_service_overlay_state != 0)
+            gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
@@ -14206,7 +14204,7 @@ bool command_event(enum event_command cmd, void *data)
                 * toggle button, so turn it off now. */
                p_rarch->ai_service_auto = 0;
 #ifdef HAVE_MENU_WIDGETS
-               gfx_widgets_ai_service_overlay_unload();
+               gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
 #endif
             }
             else
@@ -36207,10 +36205,10 @@ static enum runloop_state runloop_check_state(
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_ai_service_overlay_get_state() == 3)
+   if (p_rarch->dispwidget_st.ai_service_overlay_state == 3)
    {
       command_event(CMD_EVENT_PAUSE, NULL);
-      gfx_widgets_ai_service_overlay_set_state(1);
+      p_rarch->dispwidget_st.ai_service_overlay_state = 1;
    }
 #endif
 

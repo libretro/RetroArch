@@ -385,15 +385,12 @@ void gfx_widget_screenshot_taken(void *data,
 
 /* AI Service functions */
 #ifdef HAVE_TRANSLATE
-int gfx_widgets_ai_service_overlay_get_state(void);
-
-bool gfx_widgets_ai_service_overlay_set_state(int state);
-
 bool gfx_widgets_ai_service_overlay_load(
-        char* buffer, unsigned buffer_len,
-        enum image_type_enum image_type);
+      dispgfx_widget_t *p_dispwidget,
+      char* buffer, unsigned buffer_len,
+      enum image_type_enum image_type);
 
-void gfx_widgets_ai_service_overlay_unload(void);
+void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget);
 #endif
 
 void gfx_widgets_start_load_content_animation(
