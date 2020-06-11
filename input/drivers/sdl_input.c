@@ -178,10 +178,10 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       res_y = res_screen_y;
    }
 
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-   if (!inside)
-      return 0;
+   inside =    (res_x >= -edge_detect) 
+            && (res_y >= -edge_detect)
+            && (res_x <= edge_detect)
+            && (res_y <= edge_detect);
 
    switch (id)
    {
@@ -191,6 +191,8 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
          return res_y;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return sdl->mouse_l;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return !inside;
    }
 
    return 0;

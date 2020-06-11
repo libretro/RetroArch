@@ -409,19 +409,27 @@ static int16_t rwebinput_pointer_device_state(rwebinput_mouse_state_t *mouse,
       res_y = res_screen_y;
    }
 
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-   if (!inside)
-      return 0;
+   inside =    (res_x >= -edge_detect) 
+            && (res_y >= -edge_detect)
+            && (res_x <= edge_detect)
+            && (res_y <= edge_detect);
 
    switch (id)
    {
       case RETRO_DEVICE_ID_POINTER_X:
-         return res_x;
+         if (inside)
+            return res_x;
+         break;
       case RETRO_DEVICE_ID_POINTER_Y:
-         return res_y;
+         if (inside)
+            return res_y;
+         break;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTNL));
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return !inside;
+      default:
+         break;
    }
 
    return 0;

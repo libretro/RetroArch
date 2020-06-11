@@ -216,17 +216,22 @@ static int16_t input_wl_pointer_state(input_ctx_wayland_data_t *wl,
 
    inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
 
-   if (!inside)
-      return 0;
-
    switch (id)
    {
       case RETRO_DEVICE_ID_POINTER_X:
-         return res_x;
+         if (inside)
+            return res_x;
+         break;
       case RETRO_DEVICE_ID_POINTER_Y:
-         return res_y;
+         if (inside)
+            return res_y;
+         break;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return wl->mouse.left;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return !inside;
+      default:
+         break;
    }
 
    return 0;
