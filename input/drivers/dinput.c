@@ -526,7 +526,8 @@ static int16_t dinput_pointer_state(struct dinput_input *di,
    return 0;
 }
 
-static bool dinput_is_pressed(struct dinput_input *di,
+static bool dinput_is_pressed(
+      struct dinput_input *di,
       settings_t *settings,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
@@ -728,28 +729,14 @@ static int16_t dinput_input_state(void *data,
                   }
                   if (binds[port][new_id].key < RETROK_LAST)
                   {
-                     if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
-                        if (!input_dinput.keyboard_mapping_blocked)
+                     if (!input_dinput.keyboard_mapping_blocked)
+                        if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
                            return 1;
                   }
                   if (binds[port][new_id].valid)
-                  {
-                     /* Auto-binds are per joypad, not per user. */
-                        const uint64_t joykey  = (binds[port][new_id].joykey != NO_BTN)
-                        ? binds[port][new_id].joykey : joypad_info->auto_binds[new_id].joykey;
-                     const uint32_t joyaxis = (binds[port][new_id].joyaxis != AXIS_NONE)
-                        ? binds[port][new_id].joyaxis : joypad_info->auto_binds[new_id].joyaxis;
-
-                     if (settings->uints.input_mouse_index[port] == 0)
-                        if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
-                           return 1;
-                     if ((uint16_t)joykey != NO_BTN
-                           && di->joypad->button(
-                              joypad_info->joy_idx, (uint16_t)joykey))
+                     if (dinput_is_pressed(di, settings, joypad_info,
+                           binds[port], port, new_id))
                         return 1;
-                     if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-                        return 1;
-                  }
                }
                break;
                /*deprecated*/
