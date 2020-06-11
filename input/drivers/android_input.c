@@ -814,10 +814,12 @@ static INLINE int android_input_poll_event_type_motion(
    return 0;
 }
 
-bool is_keyboard_id(int id)
+static bool android_is_keyboard_id(int id)
 {
-   for(int i=0; i<kbd_num; i++)
-      if (id == kbd_id[i]) return true;
+   unsigned i;
+   for (i = 0;  i < (unsigned)kbd_num; i++)
+      if (id == kbd_id[i])
+         return true;
 
    return false;
 }
@@ -1248,7 +1250,7 @@ static void android_input_poll_input(android_input_t *android)
          int            id = android_input_get_id(event);
          int          port = android_input_get_id_port(android, id, source);
 
-         if (port < 0 && !is_keyboard_id(id))
+         if (port < 0 && !android_is_keyboard_id(id))
             handle_hotplug(android, android_app,
             &port, id, source);
 
@@ -1263,7 +1265,7 @@ static void android_input_poll_input(android_input_t *android)
                {
                   int keycode = AKeyEvent_getKeyCode(event);
 
-                  if (is_keyboard_id(id))
+                  if (android_is_keyboard_id(id))
                   {
                      if (!predispatched)
                      {
