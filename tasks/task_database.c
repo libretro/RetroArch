@@ -537,43 +537,42 @@ end:
 
 static enum msg_file_type extension_to_file_type(const char *ext)
 {
+   char ext_lower[6];
+
+   ext_lower[0] = '\0';
+
+   /* Copy and convert to lower case */
+   strlcpy(ext_lower, ext, sizeof(ext_lower));
+   string_to_lower(ext_lower);
+
    if (
-         string_is_equal(ext, "7z")  ||
-         string_is_equal(ext, "7Z")  ||
-         string_is_equal(ext, "zip") ||
-         string_is_equal(ext, "ZIP") ||
-         string_is_equal(ext, "apk") ||
-         string_is_equal(ext, "APK")
+         string_is_equal(ext_lower, "7z")  ||
+         string_is_equal(ext_lower, "zip") ||
+         string_is_equal(ext_lower, "apk")
       )
       return FILE_TYPE_COMPRESSED;
    if (
-         string_is_equal(ext, "cue")  ||
-         string_is_equal(ext, "CUE")
+         string_is_equal(ext_lower, "cue")
       )
       return FILE_TYPE_CUE;
    if (
-         string_is_equal(ext, "gdi")  ||
-         string_is_equal(ext, "GDI")
+         string_is_equal(ext_lower, "gdi")
       )
       return FILE_TYPE_GDI;
    if (
-         string_is_equal(ext, "iso")  ||
-         string_is_equal(ext, "ISO")
+         string_is_equal(ext_lower, "iso")
       )
       return FILE_TYPE_ISO;
    if (
-         string_is_equal(ext, "chd")  ||
-         string_is_equal(ext, "CHD")
+         string_is_equal(ext_lower, "chd")
       )
       return FILE_TYPE_CHD;
    if (
-         string_is_equal(ext, "wbfs")  ||
-         string_is_equal(ext, "WBFS")
+         string_is_equal(ext_lower, "wbfs")
       )
       return FILE_TYPE_WBFS;
    if (
-         string_is_equal(ext, "lutro")  ||
-         string_is_equal(ext, "LUTRO")
+         string_is_equal(ext_lower, "lutro")
       )
       return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;
