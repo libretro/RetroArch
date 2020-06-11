@@ -536,8 +536,9 @@ static int16_t dinput_pointer_state(struct dinput_input *di,
    return 0;
 }
 
-static bool dinput_is_pressed(
+static int16_t dinput_is_pressed(
       struct dinput_input *di,
+      const input_device_driver_t *joypad,
       settings_t *settings,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
@@ -553,18 +554,15 @@ static bool dinput_is_pressed(
    if (settings->uints.input_mouse_index[port] == 0)
       if (dinput_mouse_button_pressed(
                di, port, binds[id].mbutton))
-         return true;
-
+         return 1;
    if ((uint16_t)joykey != NO_BTN
-         && di->joypad->button(
+         && joypad->button(
             joypad_info->joy_idx, (uint16_t)joykey))
-      return true;
-
-   if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) 
+      return 1;
+   if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
             / 0x8000) > joypad_info->axis_threshold)
-      return true;
-
-   return false;
+      return 1;
+   return 0;
 }
 
 static int16_t dinput_input_state(void *data,
@@ -594,7 +592,8 @@ static int16_t dinput_input_state(void *data,
                   {
                      if (binds[port][i].valid)
                         if (dinput_is_pressed(
-                                 di, settings, joypad_info, binds[port], port, i))
+                                 di, di->joypad, 
+                                 settings, joypad_info, binds[port], port, i))
                            ret |= (1 << i);
                   }
                }
@@ -607,7 +606,7 @@ static int16_t dinput_input_state(void *data,
                         ret |= (1 << i);
                      else if (binds[port][i].valid)
                         if (dinput_is_pressed(
-                                 di, settings, joypad_info,
+                                 di, di->joypad, settings, joypad_info,
                                  binds[port], port, i))
                            ret |= (1 << i);
                   }
@@ -626,7 +625,8 @@ static int16_t dinput_input_state(void *data,
                   }
                   if (binds[port][id].valid)
                      return dinput_is_pressed(
-                           di, settings, joypad_info, binds[port], port, id);
+                           di, di->joypad,
+                           settings, joypad_info, binds[port], port, id);
                }
             }
          }
@@ -735,7 +735,8 @@ static int16_t dinput_input_state(void *data,
                            return 1;
                   }
                   if (binds[port][new_id].valid)
-                     return dinput_is_pressed(di, settings, joypad_info,
+                     return dinput_is_pressed(di, di->joypad,
+                           settings, joypad_info,
                            binds[port], port, new_id);
                }
                break;

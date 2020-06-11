@@ -467,10 +467,12 @@ static int16_t rwebinput_mouse_state(rwebinput_mouse_state_t *mouse,
    return 0;
 }
 
-static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
-   rarch_joypad_info_t *joypad_info,
-   const struct retro_keybind *binds,
-   unsigned port, unsigned id)
+static int16_t rwebinput_is_pressed(
+      rwebinput_input_t *rwebinput,
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
    {
@@ -479,7 +481,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
 
       if ((key < RETROK_LAST) && rwebinput_key_pressed(rwebinput, key))
          if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_rwebinput.keyboard_mapping_blocked)
-            return true;
+            return 1;
 
       if (bind->valid)
       {
@@ -491,15 +493,15 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
 
          if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse,
                   bind->mbutton, false))
-            return true;
-         if ((uint16_t)joykey != NO_BTN && rwebinput->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-            return true;
-         if (((float)abs(rwebinput->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-            return true;
+            return 1;
+         if ((uint16_t)joykey != NO_BTN && joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
+            return 1;
+         if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
+                  / 0x8000) > joypad_info->axis_threshold)
+            return 1;
       }
    }
-
-   return false;
+   return 0;
 }
 
 static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
@@ -512,9 +514,11 @@ static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
 
    input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-   if (rwebinput_is_pressed(rwebinput, joypad_info, binds, idx, id_minus))
+   if (rwebinput_is_pressed(rwebinput, 
+            rwebinput->joypad, joypad_info, binds, idx, id_minus))
       pressed_minus = -0x7fff;
-   if (rwebinput_is_pressed(rwebinput, joypad_info, binds, idx, id_plus))
+   if (rwebinput_is_pressed(rwebinput,
+            rwebinput->joypad, joypad_info, binds, idx, id_plus))
       pressed_plus = 0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -537,7 +541,8 @@ static int16_t rwebinput_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (rwebinput_is_pressed(
-                        rwebinput, joypad_info, binds[port], port, i))
+                        rwebinput, rwebinput->joypad,
+                        joypad_info, binds[port], port, i))
                {
                   ret |= (1 << i);
                   continue;
@@ -549,8 +554,9 @@ static int16_t rwebinput_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               if (rwebinput_is_pressed(rwebinput, joypad_info, binds[port],
-                     port, id))
+               if (rwebinput_is_pressed(rwebinput, rwebinput->joypad,
+                        joypad_info, binds[port],
+                        port, id))
                   return true;
          }
          break;

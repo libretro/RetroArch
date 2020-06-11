@@ -290,7 +290,9 @@ static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
    return 0;
 }
 
-static bool cocoa_is_pressed(cocoa_input_data_t *apple,
+static int16_t cocoa_is_pressed(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id)
@@ -300,21 +302,21 @@ static bool cocoa_is_pressed(cocoa_input_data_t *apple,
     ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
     const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
     ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-    if ((uint16_t)joykey != NO_BTN && apple->joypad->button(
+    if ((uint16_t)joykey != NO_BTN && joypad->button(
             joypad_info->joy_idx, (uint16_t)joykey))
-        return true;
-    if (((float)abs(apple->joypad->axis(joypad_info->joy_idx, joyaxis)) 
+        return 1;
+    if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
-        return true;
+        return 1;
 #ifdef HAVE_MFI
-    if ((uint16_t)joykey != NO_BTN && apple->sec_joypad->button(
+    if ((uint16_t)joykey != NO_BTN && sec_joypad->button(
              joypad_info->joy_idx, (uint16_t)joykey))
-        return true;
-    if (((float)abs(apple->sec_joypad->axis(joypad_info->joy_idx, joyaxis)) 
+        return 1;
+    if (((float)abs(sec_joypad->axis(joypad_info->joy_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
-        return true;
+        return 1;
 #endif
-    return false;
+    return 0;
 }
 
 static int16_t cocoa_input_state(void *data,
@@ -335,7 +337,9 @@ static int16_t cocoa_input_state(void *data,
             {
                if (apple_key_state[rarch_keysym_lut[binds[i].key]])
                   return 1;
-               if (cocoa_is_pressed(apple, joypad_info, binds[port], port, i))
+               if (cocoa_is_pressed(
+                        apple->joypad, apple->sec_joypad,
+                        joypad_info, binds[port], port, i))
                    ret |= (1 << i);
             }
             return ret;
@@ -345,7 +349,9 @@ static int16_t cocoa_input_state(void *data,
             if (id < RARCH_BIND_LIST_END)
                if (apple_key_state[rarch_keysym_lut[binds[id].key]])
                   return 1;
-             return cocoa_is_pressed(apple, joypad_info, binds[port], port, id);
+             return cocoa_is_pressed(
+                   apple->joypad, apple->sec_joypad,
+                   joypad_info, binds[port], port, id);
          }
          break;
       case RETRO_DEVICE_ANALOG:

@@ -89,7 +89,8 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static bool sdl_is_pressed(sdl_input_t *sdl,
+static int16_t sdl_is_pressed(
+      const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id)
@@ -101,17 +102,14 @@ static bool sdl_is_pressed(sdl_input_t *sdl,
       ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
    if ((binds[id].key < RETROK_LAST) && sdl_key_pressed(binds[id].key))
-      return true;
-
-   if ((uint16_t)joykey != NO_BTN && sdl->joypad->button(
+      return 1;
+   if ((uint16_t)joykey != NO_BTN && joypad->button(
             joypad_info->joy_idx, (uint16_t)joykey))
-      return true;
-
-   if (((float)abs(sdl->joypad->axis(joypad_info->joy_idx, joyaxis)) 
+      return 1;
+   if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
             / 0x8000) > joypad_info->axis_threshold)
-      return true;
-
-   return false;
+      return 1;
+   return 0;
 }
 
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
@@ -231,7 +229,7 @@ static int16_t sdl_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (sdl_is_pressed(
-                        sdl, joypad_info, binds[port], port, i))
+                        sdl->joypad, joypad_info, binds[port], port, i))
                   ret |= (1 << i);
             }
 
@@ -240,7 +238,7 @@ static int16_t sdl_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               if (sdl_is_pressed(sdl,
+               if (sdl_is_pressed(sdl->joypad,
                      joypad_info, binds[port], port, id))
                   return 1;
          }

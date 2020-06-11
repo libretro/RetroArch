@@ -743,21 +743,20 @@ static bool qnx_keyboard_pressed(qnx_input_t *qnx, unsigned id)
     return id < RETROK_LAST && BIT_GET(qnx->keyboard_state, bit);
 }
 
-static bool qnx_is_pressed(qnx_input_t *qnx,
+static int16_t qnx_is_pressed(
+      qnx_input_t *qnx,
+      const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id)
 {
    const struct retro_keybind *bind = &binds[id];
    int key                          = bind->key;
-
    if (id >= RARCH_BIND_LIST_END)
-      return false;
-
+      return 0;
    if (qnx_keyboard_pressed(qnx, key))
       if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_qnx.keyboard_mapping_blocked)
-         return true;
-
+         return 1;
    if (binds && binds[id].valid)
    {
       /* Auto-binds are per joypad, not per user. */
@@ -766,14 +765,14 @@ static bool qnx_is_pressed(qnx_input_t *qnx,
       const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
          ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
-      if ((uint16_t)joykey != NO_BTN && qnx->joypad->button(
+      if ((uint16_t)joykey != NO_BTN && joypad->button(
                joypad_info->joy_idx, (uint16_t)joykey))
-         return true;
-      if (((float)abs(qnx->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-         return true;
+         return 1;
+      if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
+               / 0x8000) > joypad_info->axis_threshold)
+         return 1;
    }
-
-   return false;
+   return 0;
 }
 
 static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
@@ -825,7 +824,8 @@ static int16_t qnx_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (qnx_is_pressed(
-                        qnx, joypad_info, binds[port], port, i))
+                        qnx, qnx->joypad,
+                        joypad_info, binds[port], port, i))
                {
                   ret |= (1 << i);
                   continue;
@@ -835,7 +835,8 @@ static int16_t qnx_input_state(void *data,
             return ret;
          }
          else
-            if (qnx_is_pressed(qnx, joypad_info, binds[port], port, id))
+            if (qnx_is_pressed(qnx, qnx->joypad,
+                     joypad_info, binds[port], port, id))
                return 1;
          break;
       case RETRO_DEVICE_ANALOG:

@@ -114,7 +114,9 @@ static bool x_mouse_button_pressed(
    return false;
 }
 
-static bool x_is_pressed(x11_input_t *x11,
+static int16_t x_is_pressed(
+      x11_input_t *x11,
+      const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id)
@@ -126,14 +128,14 @@ static bool x_is_pressed(x11_input_t *x11,
    const uint32_t           joyaxis = (binds[id].joyaxis != AXIS_NONE)
       ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
    if (x_mouse_button_pressed(x11, port, bind->mbutton))
-      return true;
+      return 1;
    if ((uint16_t)joykey != NO_BTN 
-         && x11->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-      return true;
-   if (((float)abs(x11->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-      return true;
-
-   return false;
+         && joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
+      return 1;
+   if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
+            / 0x8000) > joypad_info->axis_threshold)
+      return 1;
+   return 0;
 }
 
 static int16_t x_pressed_analog(x11_input_t *x11,
@@ -318,7 +320,8 @@ static int16_t x_input_state(void *data,
                {
                   if (binds[port][i].valid)
                      if (x_is_pressed(
-                              x11, joypad_info, binds[port], port, i))
+                              x11, x11->joypad,
+                              joypad_info, binds[port], port, i))
                         ret |= (1 << i);
                }
             }
@@ -331,7 +334,8 @@ static int16_t x_input_state(void *data,
                      return true;
                   if (binds[port][i].valid)
                      if (x_is_pressed(
-                              x11, joypad_info, binds[port], port, i))
+                              x11, x11->joypad,
+                              joypad_info, binds[port], port, i))
                         ret |= (1 << i);
                }
             }
@@ -348,7 +352,8 @@ static int16_t x_input_state(void *data,
                         || !input_x.keyboard_mapping_blocked)
                      return 1;
                if (binds[port][id].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port], port, id);
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port], port, id);
             }
          }
          break;
@@ -391,7 +396,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_TRIGGER].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_TRIGGER].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_TRIGGER);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -401,7 +407,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_RELOAD].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_RELOAD].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_RELOAD);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
@@ -411,7 +418,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_AUX_A].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_AUX_A].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_AUX_A);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
@@ -421,7 +429,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_AUX_B].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_AUX_B].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_AUX_B);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
@@ -431,7 +440,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_AUX_C].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_AUX_C].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_AUX_C);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_START:
@@ -441,7 +451,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_START].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_START].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_START);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
@@ -451,7 +462,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_SELECT].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_SELECT].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_SELECT);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
@@ -461,7 +473,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_DPAD_UP].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_DPAD_UP].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_DPAD_UP);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
@@ -471,7 +484,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_DPAD_DOWN].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_DPAD_DOWN].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_DPAD_DOWN);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
@@ -481,7 +495,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_DPAD_LEFT].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_DPAD_LEFT].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_DPAD_LEFT);
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
@@ -491,7 +506,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_DPAD_RIGHT].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_DPAD_RIGHT].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_DPAD_RIGHT);
                break;
             /*deprecated*/
@@ -506,7 +522,8 @@ static int16_t x_input_state(void *data,
                            [RARCH_LIGHTGUN_START].key) )
                      return 1;
                if (binds[port][RARCH_LIGHTGUN_START].valid)
-                  return x_is_pressed(x11, joypad_info, binds[port],
+                  return x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port],
                         port, RARCH_LIGHTGUN_START);
                break;
          }
