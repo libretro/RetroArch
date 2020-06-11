@@ -729,7 +729,7 @@ static int16_t dinput_input_state(void *data,
                   if (binds[port][new_id].key < RETROK_LAST)
                   {
                      if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
-                        if ((new_id == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
+                        if (!input_dinput.keyboard_mapping_blocked)
                            return 1;
                   }
                   if (binds[port][new_id].valid)
