@@ -4556,7 +4556,7 @@ unsigned menu_displaylist_build_list(
              * entire list for it... */
             for (i = 0; i < RARCH_BIND_LIST_END; i++)
             {
-               if (string_is_equal(input_config_bind_map_get_base(i), "enable_hotkey"))
+               if (input_config_bind_map_get_retro_key(i) == RARCH_ENABLE_HOTKEY)
                {
                   hotkey_enable_found = true;
                   hotkey_enable_index = i;

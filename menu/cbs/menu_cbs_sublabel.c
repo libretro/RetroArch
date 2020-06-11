@@ -213,8 +213,52 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_statistics_show,               MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_settings,              MENU_ENUM_SUBLABEL_NETPLAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_bind_settings,            MENU_ENUM_SUBLABEL_INPUT_USER_BINDS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_settings,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_enable_hotkey,      MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,      MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fast_forward_key,      MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fast_forward_hold_key, MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_slowmotion_key,        MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_slowmotion_hold_key,   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_key,        MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_key,        MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fullscreen_toggle_key, MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY)
+#ifdef HAVE_LAKKA
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_restart_key,           MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY)
+#else
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_quit_key,              MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY)
+#endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_state_slot_plus,       MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_state_slot_minus,      MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_rewind_hotkey,         MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_bsv_record_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_pause_toggle,          MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_frameadvance,          MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_reset,                 MENU_ENUM_SUBLABEL_INPUT_META_RESET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_next,           MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_prev,           MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_cheat_index_plus,      MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_cheat_index_minus,     MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_cheat_toggle,          MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_screenshot,            MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_mute,                  MENU_ENUM_SUBLABEL_INPUT_META_MUTE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_osk,                   MENU_ENUM_SUBLABEL_INPUT_META_OSK)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fps_toggle,            MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_send_debug_info,       MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_host_toggle,   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_game_watch,    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_enable_hotkey,         MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_volume_up,             MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_volume_down,           MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_overlay_next,          MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_eject_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_next,             MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_prev,             MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_grab_mouse_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_game_focus_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ui_companion_toggle,   MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_recording_toggle,      MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_streaming_toggle,      MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ai_service,            MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_menu_toggle,           MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
 #ifdef HAVE_MATERIALUI
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_landscape_layout_optimization, MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION)
@@ -1380,14 +1424,148 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   /* Hotkey binds require special handling
-    * > Only the 'enable_hotkey' entry has a sublabel */
+   /* Hotkey binds require special handling */
    if ((cbs->enum_idx >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN) &&
-       (cbs->enum_idx <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END) &&
-       string_is_equal(label, "enable_hotkey"))
+       (cbs->enum_idx <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END))
    {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_enable_hotkey);
-      return 0;
+      unsigned bind_index = (unsigned)(cbs->enum_idx -
+            MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN);
+
+      if (bind_index < RARCH_BIND_LIST_END)
+      {
+         switch (input_config_bind_map_get_retro_key(bind_index))
+         {
+            case RARCH_FAST_FORWARD_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fast_forward_key);
+               return 0;
+            case RARCH_FAST_FORWARD_HOLD_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fast_forward_hold_key);
+               return 0;
+            case RARCH_SLOWMOTION_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_slowmotion_key);
+               return 0;
+            case RARCH_SLOWMOTION_HOLD_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_slowmotion_hold_key);
+               return 0;
+            case RARCH_LOAD_STATE_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_key);
+               return 0;
+            case RARCH_SAVE_STATE_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_key);
+               return 0;
+            case RARCH_FULLSCREEN_TOGGLE_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fullscreen_toggle_key);
+               return 0;
+            case RARCH_QUIT_KEY:
+#ifdef HAVE_LAKKA
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_restart_key);
+#else
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_quit_key);
+#endif
+               return 0;
+            case RARCH_STATE_SLOT_PLUS:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_state_slot_plus);
+               return 0;
+            case RARCH_STATE_SLOT_MINUS:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_state_slot_minus);
+               return 0;
+            case RARCH_REWIND:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_rewind_hotkey);
+               return 0;
+            case RARCH_BSV_RECORD_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_bsv_record_toggle);
+               return 0;
+            case RARCH_PAUSE_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_pause_toggle);
+               return 0;
+            case RARCH_FRAMEADVANCE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_frameadvance);
+               return 0;
+            case RARCH_RESET:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_reset);
+               return 0;
+            case RARCH_SHADER_NEXT:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_shader_next);
+               return 0;
+            case RARCH_SHADER_PREV:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_shader_prev);
+               return 0;
+            case RARCH_CHEAT_INDEX_PLUS:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_cheat_index_plus);
+               return 0;
+            case RARCH_CHEAT_INDEX_MINUS:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_cheat_index_minus);
+               return 0;
+            case RARCH_CHEAT_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_cheat_toggle);
+               return 0;
+            case RARCH_SCREENSHOT:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_screenshot);
+               return 0;
+            case RARCH_MUTE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_mute);
+               return 0;
+            case RARCH_OSK:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_osk);
+               return 0;
+            case RARCH_FPS_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fps_toggle);
+               return 0;
+            case RARCH_SEND_DEBUG_INFO:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_send_debug_info);
+               return 0;
+            case RARCH_NETPLAY_HOST_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_netplay_host_toggle);
+               return 0;
+            case RARCH_NETPLAY_GAME_WATCH:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_netplay_game_watch);
+               return 0;
+            case RARCH_ENABLE_HOTKEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_enable_hotkey);
+               return 0;
+            case RARCH_VOLUME_UP:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_volume_up);
+               return 0;
+            case RARCH_VOLUME_DOWN:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_volume_down);
+               return 0;
+            case RARCH_OVERLAY_NEXT:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_overlay_next);
+               return 0;
+            case RARCH_DISK_EJECT_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_disk_eject_toggle);
+               return 0;
+            case RARCH_DISK_NEXT:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_disk_next);
+               return 0;
+            case RARCH_DISK_PREV:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_disk_prev);
+               return 0;
+            case RARCH_GRAB_MOUSE_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_grab_mouse_toggle);
+               return 0;
+            case RARCH_GAME_FOCUS_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_game_focus_toggle);
+               return 0;
+            case RARCH_UI_COMPANION_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_ui_companion_toggle);
+               return 0;
+            case RARCH_MENU_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_menu_toggle);
+               return 0;
+            case RARCH_RECORDING_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_recording_toggle);
+               return 0;
+            case RARCH_STREAMING_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_streaming_toggle);
+               return 0;
+            case RARCH_AI_SERVICE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_ai_service);
+               return 0;
+            default:
+               break;
+         }
+      }
    }
 
    if (cbs->enum_idx != MSG_UNKNOWN)
