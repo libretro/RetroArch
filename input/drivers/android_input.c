@@ -1420,7 +1420,6 @@ bool android_run_events(void *data)
 
 static bool android_is_pressed(
       android_input_t *android,
-      settings_t *settings,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id)
@@ -1428,9 +1427,9 @@ static bool android_is_pressed(
    const struct retro_keybind *bind = &binds[id];
    /* Auto-binds are per joypad, not per user. */
    const uint64_t joykey            = (binds[id].joykey  != NO_BTN)
-      ? binds[id].joykey  : joypad_info->auto_binds[i].joykey;
+      ? binds[id].joykey  : joypad_info->auto_binds[id].joykey;
    const uint32_t joyaxis           = (binds[id].joyaxis != AXIS_NONE)
-      ? binds[id].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
    if ((uint16_t)joykey != NO_BTN 
          && android->joypad->button(
@@ -1460,16 +1459,10 @@ static int16_t android_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               /* Auto-binds are per joypad, not per user. */
-               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-
                if (
                         android_keyboard_port_input_pressed(binds[port], i)
                      || android_is_pressed(
-                        android, settings, joypad_info, binds[port],
+                        android, joypad_info, binds[port],
                         port, i)
                   )
                   ret |= (1 << i);
@@ -1481,7 +1474,7 @@ static int16_t android_input_state(void *data,
             if ( 
                      android_keyboard_port_input_pressed(binds[port], id)
                  ||  android_is_pressed(
-                  android, settings, joypad_info, binds[port],
+                  android, joypad_info, binds[port],
                   port, id))
                return 1;
          }
