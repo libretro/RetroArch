@@ -333,25 +333,27 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
 static int16_t dinput_lightgun_aiming_state(
       struct dinput_input *di, unsigned idx, unsigned id)
 {
-   const int edge_detect = 32700;
    struct video_viewport vp;
-   bool inside = false;
-   int x = 0;
-   int y = 0;
-   int16_t res_x = 0;
-   int16_t res_y = 0;
-   int16_t res_screen_x = 0;
-   int16_t res_screen_y = 0;
-   unsigned num = 0;
+   const int edge_detect       = 32700;
+   bool inside                 = false;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
 
-   struct pointer_status* check_pos = di->pointer_head.next;
+   int x                       = 0;
+   int y                       = 0;
+   unsigned num                = 0;
 
-   vp.x = 0;
-   vp.y = 0;
-   vp.width = 0;
-   vp.height = 0;
-   vp.full_width = 0;
-   vp.full_height = 0;
+   struct pointer_status 
+      *check_pos               = di->pointer_head.next;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
 
    while (check_pos && num < idx)
    {
@@ -372,17 +374,25 @@ static int16_t dinput_lightgun_aiming_state(
    }
 
    if (!(video_driver_translate_coord_viewport_wrap(
-               &vp, x, y, &res_x, &res_y, &res_screen_x, &res_screen_y)))
+               &vp, x, y,
+               &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
-   inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
+   inside =    (res_x >= -edge_detect) 
+            && (res_y >= -edge_detect)
+            && (res_x <= edge_detect)
+            && (res_y <= edge_detect);
 
-   switch (id)
+   switch ( id )
    {
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         return inside ? res_x : 0;
+         if (inside)
+            return res_x;
+         break;
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         return inside ? res_y : 0;
+         if (inside)
+            return res_y;
+         break;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
          return !inside;
       default:
