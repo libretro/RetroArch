@@ -1025,10 +1025,7 @@ static int16_t udev_input_state(void *data,
             {
                if (udev_is_pressed(
                         udev, joypad_info, binds[port], port, i))
-               {
                   ret |= (1 << i);
-                  continue;
-               }
             }
 
             return ret;

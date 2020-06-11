@@ -89,10 +89,10 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
+static bool sdl_is_pressed(sdl_input_t *sdl,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
-      unsigned port, unsigned id, enum input_device_type *device)
+      unsigned port, unsigned id)
 {
    /* Auto-binds are per joypad, not per user. */
    const uint64_t joykey  = (binds[id].joykey != NO_BTN)
@@ -101,26 +101,17 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
    if ((binds[id].key < RETROK_LAST) && sdl_key_pressed(binds[id].key))
-   {
-      *device = INPUT_DEVICE_TYPE_KEYBOARD;
-      return 1;
-   }
+      return true;
 
    if ((uint16_t)joykey != NO_BTN && sdl->joypad->button(
             joypad_info->joy_idx, (uint16_t)joykey))
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
-      return 1;
-   }
+      return true;
 
    if (((float)abs(sdl->joypad->axis(joypad_info->joy_idx, joyaxis)) 
             / 0x8000) > joypad_info->axis_threshold)
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
-      return 1;
-   }
+      return true;
 
-   return 0;
+   return false;
 }
 
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
@@ -154,6 +145,7 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       unsigned idx, unsigned id, bool screen)
 {
    struct video_viewport vp;
+   const int edge_detect       = 32700;
    bool inside                 = false;
    int16_t res_x               = 0;
    int16_t res_y               = 0;
@@ -226,7 +218,6 @@ static int16_t sdl_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
    sdl_input_t            *sdl = (sdl_input_t*)data;
 
    switch (device)
@@ -239,12 +230,9 @@ static int16_t sdl_input_state(void *data,
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (sdl_joypad_device_state(
-                        sdl, joypad_info, binds[port], port, i, &type))
-               {
+               if (sdl_is_pressed(
+                        sdl, joypad_info, binds[port], port, i))
                   ret |= (1 << i);
-                  continue;
-               }
             }
 
             return ret;
@@ -252,8 +240,8 @@ static int16_t sdl_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               if (sdl_joypad_device_state(sdl,
-                     joypad_info, binds[port], port, id, &type))
+               if (sdl_is_pressed(sdl,
+                     joypad_info, binds[port], port, id))
                   return 1;
          }
          break;

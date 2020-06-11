@@ -545,8 +545,8 @@ static bool dinput_is_pressed(
 {
    const struct retro_keybind *bind = &binds[id];
    /* Auto-binds are per joypad, not per user. */
-   const uint64_t joykey            = (binds[id].joykey != NO_BTN)
-      ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
+   const uint64_t joykey            = (binds[id].joykey  != NO_BTN)
+      ? binds[id].joykey  : joypad_info->auto_binds[id].joykey;
    const uint32_t joyaxis           = (binds[id].joyaxis != AXIS_NONE)
       ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
@@ -560,7 +560,8 @@ static bool dinput_is_pressed(
             joypad_info->joy_idx, (uint16_t)joykey))
       return true;
 
-   if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
+   if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) 
+            / 0x8000) > joypad_info->axis_threshold)
       return true;
 
    return false;
@@ -594,10 +595,7 @@ static int16_t dinput_input_state(void *data,
                      if (binds[port][i].valid)
                         if (dinput_is_pressed(
                                  di, settings, joypad_info, binds[port], port, i))
-                        {
                            ret |= (1 << i);
-                           continue;
-                        }
                   }
                }
                else

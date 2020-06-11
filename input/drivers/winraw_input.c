@@ -660,10 +660,7 @@ static int16_t winraw_input_state(void *d,
                   if (binds[port][i].valid)
                      if (winraw_is_pressed(
                               wr, mouse, joypad_info, binds[port], port, i))
-                     {
                         ret |= (1 << i);
-                        continue;
-                     }
                }
             }
             else
@@ -676,10 +673,7 @@ static int16_t winraw_input_state(void *d,
                   if (binds[port][i].valid)
                      if (winraw_is_pressed(
                               wr, mouse, joypad_info, binds[port], port, i))
-                     {
                         ret |= (1 << i);
-                        continue;
-                     }
                }
             }
 

@@ -1418,6 +1418,32 @@ bool android_run_events(void *data)
    return true;
 }
 
+static bool android_is_pressed(
+      android_input_t *android,
+      settings_t *settings,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port, unsigned id)
+{
+   const struct retro_keybind *bind = &binds[id];
+   /* Auto-binds are per joypad, not per user. */
+   const uint64_t joykey            = (binds[id].joykey  != NO_BTN)
+      ? binds[id].joykey  : joypad_info->auto_binds[i].joykey;
+   const uint32_t joyaxis           = (binds[id].joyaxis != AXIS_NONE)
+      ? binds[id].joyaxis : joypad_info->auto_binds[i].joyaxis;
+
+   if ((uint16_t)joykey != NO_BTN 
+         && android->joypad->button(
+            joypad_info->joy_idx, (uint16_t)joykey))
+      return true;
+
+   if (((float)abs(android->joypad->axis(joypad_info->joy_idx, joyaxis)) 
+            / 0x8000) > joypad_info->axis_threshold)
+      return true;
+
+   return false;
+}
+
 static int16_t android_input_state(void *data,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds, unsigned port, unsigned device,
@@ -1439,37 +1465,24 @@ static int16_t android_input_state(void *data,
                   ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
                const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
                   ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-               if ((uint16_t)joykey != NO_BTN && android->joypad->button(
-                        joypad_info->joy_idx, (uint16_t)joykey))
-               {
-                  ret |= (1 << i);
-                  continue;
-               }
-               if (((float)abs(android->joypad->axis(
-                              joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               {
-                  ret |= (1 << i);
-                  continue;
-               }
-               if (android_keyboard_port_input_pressed(binds[port], i))
+
+               if (
+                        android_keyboard_port_input_pressed(binds[port], i)
+                     || android_is_pressed(
+                        android, settings, joypad_info, binds[port],
+                        port, i)
+                  )
                   ret |= (1 << i);
             }
             return ret;
          }
          else
          {
-            /* Auto-binds are per joypad, not per user. */
-            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-            if ((uint16_t)joykey != NO_BTN && android->joypad->button(
-                     joypad_info->joy_idx, (uint16_t)joykey))
-               return 1;
-            if (((float)abs(android->joypad->axis(
-                           joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return 1;
-            if (android_keyboard_port_input_pressed(binds[port], id))
+            if ( 
+                     android_keyboard_port_input_pressed(binds[port], id)
+                 ||  android_is_pressed(
+                  android, settings, joypad_info, binds[port],
+                  port, id))
                return 1;
          }
          break;
