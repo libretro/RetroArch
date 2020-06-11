@@ -331,7 +331,7 @@ static int16_t x_input_state(void *data,
                {
                   if ((binds[port][i].key < RETROK_LAST) && 
                         x_keyboard_pressed(x11, binds[port][i].key) )
-                     return true;
+                     return 1;
                   if (binds[port][i].valid)
                      if (x_is_pressed(
                               x11, x11->joypad,
