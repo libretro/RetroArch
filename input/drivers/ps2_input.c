@@ -41,28 +41,6 @@ static void ps2_input_poll(void *data)
       ps2->joypad->poll();
 }
 
-static int16_t ps2_is_pressed(
-      const input_device_driver_t *joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id)
-{
-   const struct retro_keybind *bind = &binds[id];
-   /* Auto-binds are per joypad, not per user. */
-   const uint64_t joykey            = (binds[id].joykey  != NO_BTN)
-      ? binds[id].joykey  : joypad_info->auto_binds[id].joykey;
-   const uint32_t joyaxis           = (binds[id].joyaxis != AXIS_NONE)
-      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-   if ((uint16_t)joykey != NO_BTN 
-         && joypad->button(
-            joypad_info->joy_idx, (uint16_t)joykey))
-      return 1;
-   if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
-            / 0x8000) > joypad_info->axis_threshold)
-      return 1;
-   return 0;
-}
-
 static int16_t ps2_input_state(void *data,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
@@ -80,7 +58,7 @@ static int16_t ps2_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (ps2_is_pressed(ps2->joypad, joypad_info, binds[port],
+               if (button_is_pressed(ps2->joypad, joypad_info, binds[port],
                         port, i))
                   ret |= (1 << i);
             }
@@ -89,7 +67,7 @@ static int16_t ps2_input_state(void *data,
          }
          else
          {
-            if (ps2_is_pressed(ps2->joypad, joypad_info, binds[port],
+            if (button_is_pressed(ps2->joypad, joypad_info, binds[port],
                      port, id))
                return 1;
          }

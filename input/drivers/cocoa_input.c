@@ -290,26 +290,6 @@ static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
    return 0;
 }
 
-static int16_t cocoa_is_pressed(
-      const input_device_driver_t *joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id)
-{
-    /* Auto-binds are per joypad, not per user. */
-    const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-    ? binds[id].joykey  : joypad_info->auto_binds[id].joykey;
-    const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-    ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-    if ((uint16_t)joykey != NO_BTN && joypad->button(
-            joypad_info->joy_idx, (uint16_t)joykey))
-        return 1;
-    if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
-             / 0x8000) > joypad_info->axis_threshold)
-        return 1;
-    return 0;
-}
-
 static int16_t cocoa_input_state(void *data,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds, unsigned port,
@@ -328,12 +308,12 @@ static int16_t cocoa_input_state(void *data,
             {
                if (apple_key_state[rarch_keysym_lut[binds[port][i].key]])
                   ret |= (1 << i);
-               else if (cocoa_is_pressed(
+               else if (button_is_pressed(
                         apple->joypad,
                         joypad_info, binds[port], port, i))
                    ret |= (1 << i);
 #ifdef HAVE_MFI
-               else if (cocoa_is_pressed(
+               else if (button_is_pressed(
                         apple->sec_joypad,
                         joypad_info, binds[port], port, i))
                   ret |= (1 << i);
@@ -346,12 +326,12 @@ static int16_t cocoa_input_state(void *data,
             if (id < RARCH_BIND_LIST_END)
                if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
                   return 1;
-             if (cocoa_is_pressed(
+             if (button_is_pressed(
                    apple->joypad,
                    joypad_info, binds[port], port, id))
                 return 1;
 #ifdef HAVE_MFI
-             if (cocoa_is_pressed(
+             if (button_is_pressed(
                    apple->sec_joypad,
                    joypad_info, binds[port], port, id))
                 return 1;
