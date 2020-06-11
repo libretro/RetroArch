@@ -205,36 +205,28 @@ static bool android_input_lookup_name_prekitkat(char *buf,
    JNIEnv     *env   = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
-      goto error;
-
-   RARCH_LOG("Using old lookup");
+      return false;
 
    FIND_CLASS(env, class, "android/view/InputDevice");
    if (!class)
-      goto error;
+      return false;
 
    GET_STATIC_METHOD_ID(env, method, class, "getDevice",
          "(I)Landroid/view/InputDevice;");
    if (!method)
-      goto error;
+      return false;
 
    CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
    if (!device)
-   {
-      RARCH_ERR("Failed to find device for ID: %d\n", id);
-      goto error;
-   }
+      return false;
 
    GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
    if (!getName)
-      goto error;
+      return false;
 
    CALL_OBJ_METHOD(env, name, device, getName);
    if (!name)
-   {
-      RARCH_ERR("Failed to find name for device ID: %d\n", id);
-      goto error;
-   }
+      return false;
 
    buf[0] = '\0';
 
@@ -243,11 +235,7 @@ static bool android_input_lookup_name_prekitkat(char *buf,
       strlcpy(buf, str, size);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
-   RARCH_LOG("device name: %s\n", buf);
-
    return true;
-error:
-   return false;
 }
 
 static bool android_input_lookup_name(char *buf,
@@ -264,36 +252,28 @@ static bool android_input_lookup_name(char *buf,
    JNIEnv     *env        = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
-      goto error;
-
-   RARCH_LOG("Using new lookup");
+      return false;
 
    FIND_CLASS(env, class, "android/view/InputDevice");
    if (!class)
-      goto error;
+      return false;
 
    GET_STATIC_METHOD_ID(env, method, class, "getDevice",
          "(I)Landroid/view/InputDevice;");
    if (!method)
-      goto error;
+      return false;
 
    CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
    if (!device)
-   {
-      RARCH_ERR("Failed to find device for ID: %d\n", id);
-      goto error;
-   }
+      return false;
 
    GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
    if (!getName)
-      goto error;
+      return false;
 
    CALL_OBJ_METHOD(env, name, device, getName);
    if (!name)
-   {
-      RARCH_ERR("Failed to find name for device ID: %d\n", id);
-      goto error;
-   }
+      return false;
 
    buf[0] = '\0';
 
@@ -302,28 +282,20 @@ static bool android_input_lookup_name(char *buf,
       strlcpy(buf, str, size);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
-   RARCH_LOG("device name: %s\n", buf);
-
    GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I");
    if (!getVendorId)
-      goto error;
+      return false;
 
    CALL_INT_METHOD(env, *vendorId, device, getVendorId);
 
-   RARCH_LOG("device vendor id: %d\n", *vendorId);
-
    GET_METHOD_ID(env, getProductId, class, "getProductId", "()I");
    if (!getProductId)
-      goto error;
+      return false;
 
    *productId = 0;
    CALL_INT_METHOD(env, *productId, device, getProductId);
 
-   RARCH_LOG("device product id: %d\n", *productId);
-
    return true;
-error:
-   return false;
 }
 
 static void android_input_poll_main_cmd(void)
@@ -354,12 +326,9 @@ static void android_input_poll_main_cmd(void)
          android_app->inputQueue = android_app->pendingInputQueue;
 
          if (android_app->inputQueue)
-         {
-            RARCH_LOG("Attaching input queue to looper");
             AInputQueue_attachLooper(android_app->inputQueue,
                   android_app->looper, LOOPER_ID_INPUT, NULL,
                   NULL);
-         }
 
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
@@ -451,7 +420,6 @@ static void android_input_poll_main_cmd(void)
          break;
 
       case APP_CMD_DESTROY:
-         RARCH_LOG("APP_CMD_DESTROY\n");
          android_app->destroyRequested = 1;
          break;
       case APP_CMD_VIBRATE_KEYPRESS:
@@ -534,10 +502,7 @@ static bool android_input_init_handle(void)
 
    if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT,
                "AMotionEvent_getAxisValue")))
-   {
-      RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
       engine_handle_dpad = engine_handle_dpad_getaxisvalue;
-   }
 
    p_AMotionEvent_getButtonState = dlsym(RTLD_DEFAULT,"AMotionEvent_getButtonState");
 #endif
@@ -565,8 +530,6 @@ static void *android_input_init(const char *joypad_driver)
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
 
    frontend_android_get_version_sdk(&sdk);
-
-   RARCH_LOG("sdk version: %d\n", sdk);
 
    if (sdk >= 19)
       engine_lookup_name = android_input_lookup_name;
@@ -959,20 +922,12 @@ static void handle_hotplug(android_input_t *android,
 
    frontend_android_get_name(device_model, sizeof(device_model));
 
-   RARCH_LOG("Device model: (%s).\n", device_model);
-
    if (*port > DEFAULT_MAX_PADS)
-   {
-      RARCH_ERR("Max number of pads reached.\n");
       return;
-   }
 
    if (!engine_lookup_name(device_name, &vendorId,
             &productId, sizeof(device_name), id))
-   {
-      RARCH_ERR("Could not look up device name or IDs.\n");
       return;
-   }
 
    /* FIXME - per-device hacks for NVidia Shield, Xperia Play and
     * similar devices
@@ -1010,7 +965,7 @@ static void handle_hotplug(android_input_t *android,
          RARCH_LOG("- Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d",
                android->pads_connected, device_name, id, pad_id1, pad_id2);
 #endif
-         /* remove the remote or virtual controller device if it is mapped */
+         /* Remove the remote or virtual controller device if it is mapped */
          if (strstr(android->pad_states[0].name,"SHIELD Remote") ||
             strstr(android->pad_states[0].name,"SHIELD Virtual Controller"))
          {

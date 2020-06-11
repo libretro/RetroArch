@@ -633,18 +633,12 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    else
       goto end;
 
+   /* Hotplug add */
    if (string_is_equal(action, "add"))
-   {
-      RARCH_LOG("[udev]: Hotplug add %s: %s.\n",
-            g_dev_type_str[dev_type], devnode);
       udev_input_add_device(udev, dev_type, devnode, cb);
-   }
+   /* Hotplug remove */
    else if (string_is_equal(action, "remove"))
-   {
-      RARCH_LOG("[udev]: Hotplug remove %s: %s.\n",
-            g_dev_type_str[dev_type], devnode);
       udev_input_remove_device(udev, devnode);
-   }
 
 end:
    udev_device_unref(dev);
@@ -1176,7 +1170,9 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
+#ifdef DEBUG
    int device_index                 = 0;
+#endif
 
    if (!enumerate)
       return false;
@@ -1200,13 +1196,17 @@ static bool open_devices(udev_input_t *udev,
 
          if (fd != -1)
          {
-            if (!udev_input_add_device(udev, type, devnode, cb))
+            bool check = udev_input_add_device(udev, type, devnode, cb);
+#ifdef DEBUG
+            if (!check)
                RARCH_ERR("[udev] Failed to open device: %s (%s).\n",
                      devnode, strerror(errno));
             else
                RARCH_LOG("[udev]: %s #%d (%s).\n",
                      type == UDEV_INPUT_KEYBOARD ? "Keyboard" : "Mouse",
                      device_index++, devnode);
+#endif
+            (void)check;
             close(fd);
          }
       }
@@ -1231,10 +1231,7 @@ static void *udev_input_init(const char *joypad_driver)
 
    udev->udev = udev_new();
    if (!udev->udev)
-   {
-      RARCH_ERR("Failed to create udev handle.\n");
       goto error;
-   }
 
    udev->monitor = udev_monitor_new_from_netlink(udev->udev, "udev");
    if (udev->monitor)
@@ -1254,38 +1251,23 @@ static void *udev_input_init(const char *joypad_driver)
 #if defined(HAVE_EPOLL)
    fd = epoll_create(32);
    if (fd < 0)
-   {
-      RARCH_ERR("Failed to create poll file descriptor.\n");
       goto error;
-   }
 #elif defined(HAVE_KQUEUE)
    fd = kqueue();
    if (fd == -1)
-   {
-      RARCH_ERR("Failed to create poll file descriptor.\n");
       goto error;
-   }
 #endif
 
    udev->fd  = fd;
 
    if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard))
-   {
-      RARCH_ERR("Failed to open keyboard.\n");
       goto error;
-   }
 
    if (!open_devices(udev, UDEV_INPUT_MOUSE, udev_handle_mouse))
-   {
-      RARCH_ERR("Failed to open mouse.\n");
       goto error;
-   }
 
    if (!open_devices(udev, UDEV_INPUT_TOUCHPAD, udev_handle_mouse))
-   {
-      RARCH_ERR("Failed to open touchpads.\n");
       goto error;
-   }
 
    /* If using KMS and we forgot this,
     * we could lock ourselves out completely. */
@@ -1300,6 +1282,7 @@ static void *udev_input_init(const char *joypad_driver)
 #endif
 
 #ifndef HAVE_X11
+   /* TODO/FIXME - this can't be hidden behind a compile-time ifdef */
    RARCH_WARN("[udev]: Full-screen pointer won't be available.\n");
 #endif
 

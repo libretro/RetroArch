@@ -284,7 +284,6 @@ static void ps3_input_free_input(void *data)
 
 static void* ps3_input_init(const char *joypad_driver)
 {
-   int status;
    unsigned i;
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
    if (!ps3)
@@ -299,13 +298,8 @@ static void* ps3_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_psl1ght);
 
-   status = ioKbInit(MAX_KB_PORT_NUM);
-   RARCH_LOG("Calling ioKbInit(%d) returned %d\r\n", MAX_KB_PORT_NUM, status);
-
-   status = ioKbGetInfo(&ps3->kbinfo);
-   RARCH_LOG("Calling ioKbGetInfo() returned %d\r\n", status);
-
-   RARCH_LOG("KbInfo:\r\nMax Kbs: %u\r\nConnected Kbs: %u\r\nInfo Field: %08x\r\n", ps3->kbinfo.max, ps3->kbinfo.connected, ps3->kbinfo.info);
+   ioKbInit(MAX_KB_PORT_NUM);
+   ioKbGetInfo(&ps3->kbinfo);
 
    for (i = 0; i < MAX_KB_PORT_NUM; i++)
    {
@@ -331,14 +325,12 @@ static uint64_t ps3_input_get_capabilities(void *data)
 static bool ps3_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
-   RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
    return false;
 }
 
 static bool ps3_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
    return false;
 }
 

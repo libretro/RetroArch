@@ -292,6 +292,7 @@ static void qnx_handle_device(qnx_input_t *qnx,
     * we still might need to adjust. */
    qnx_input_autodetect_gamepad(qnx, controller);
 
+#ifdef DEBUG
    if (controller->type == SCREEN_EVENT_GAMEPAD)
       RARCH_LOG("Gamepad Device Connected:\n");
    else if (controller->type == SCREEN_EVENT_JOYSTICK)
@@ -304,6 +305,7 @@ static void qnx_handle_device(qnx_input_t *qnx,
    RARCH_LOG("\tProduct ID: %s\n", controller->pid);
    RARCH_LOG("\tButton Count: %d\n", controller->buttonCount);
    RARCH_LOG("\tAnalog Count: %d\n", controller->analogCount);
+#endif
 }
 
 /* Find currently connected gamepads. */
