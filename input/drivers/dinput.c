@@ -260,14 +260,6 @@ static bool dinput_mouse_button_pressed(
       struct dinput_input *di, unsigned port, unsigned key)
 {
 	bool result;
-	settings_t *settings = config_get_ptr();
-
-	if (port >= MAX_USERS)
-		return false;
-
-	/* the driver only supports one mouse */
-	if (settings->uints.input_mouse_index[port] != 0)
-		return false;
 
 	switch (key)
    {
@@ -301,7 +293,6 @@ static bool dinput_mouse_button_pressed(
          result = di->mouse_hwd;
          di->mouse_hwd = false;
          return result;
-
    }
 
 	return false;
@@ -404,14 +395,6 @@ static int16_t dinput_mouse_state(struct dinput_input *di,
       unsigned port, unsigned id)
 {
    int16_t        state = 0;
-	settings_t *settings = config_get_ptr();
-
-	if (port >= MAX_USERS)
-		return false;
-
-	/* the driver only supports one mouse */
-	if (settings->uints.input_mouse_index[port] != 0)
-		return 0;
 
    switch (id)
    {
@@ -457,15 +440,6 @@ static int16_t dinput_mouse_state(struct dinput_input *di,
 static int16_t dinput_mouse_state_screen(struct dinput_input *di,
       unsigned port, unsigned id)
 {
-	settings_t *settings = config_get_ptr();
-
-	if (port >= MAX_USERS)
-		return false;
-
-	/* the driver only supports one mouse */
-	if (settings->uints.input_mouse_index[ port ] != 0)
-		return 0;
-
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
@@ -556,90 +530,101 @@ static int16_t dinput_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
+   settings_t *settings;
    struct dinput_input *di    = (struct dinput_input*)data;
+
+	if (port >= MAX_USERS)
+		return 0;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
-            unsigned i;
-            int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            settings                   = config_get_ptr();
+
+            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
             {
-               if (binds[port][i].key < RETROK_LAST)
+               unsigned i;
+               int16_t ret = 0;
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]] & 0x80)
-                     if ((i == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
+                  if (binds[port][i].key < RETROK_LAST)
+                  {
+                     if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]] & 0x80)
+                        if ((i == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
+                        {
+                           ret |= (1 << i);
+                           continue;
+                        }
+                  }
+
+                  if (binds[port][i].valid)
+                  {
+                     /* Auto-binds are per joypad, not per user. */
+                     const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
+                        ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
+                     const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
+                        ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+
+                     if (settings->uints.input_mouse_index[port] == 0)
+                        if (dinput_mouse_button_pressed(
+                                 di, port, binds[port][i].mbutton))
+                        {
+                           ret |= (1 << i);
+                           continue;
+                        }
+
+                     if ((uint16_t)joykey != NO_BTN
+                           && di->joypad->button(
+                              joypad_info->joy_idx, (uint16_t)joykey))
                      {
                         ret |= (1 << i);
                         continue;
                      }
-               }
 
-               if (binds[port][i].valid)
-               {
-                  /* Auto-binds are per joypad, not per user. */
-                     const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                     ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-                  const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                     ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-
-                  if (dinput_mouse_button_pressed(
-                           di, port, binds[port][i].mbutton))
-                  {
-                     ret |= (1 << i);
-                     continue;
-                  }
-
-                  if ((uint16_t)joykey != NO_BTN
-                        && di->joypad->button(
-                           joypad_info->joy_idx, (uint16_t)joykey))
-                  {
-                     ret |= (1 << i);
-                     continue;
-                  }
-
-                  if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-                  {
-                     ret |= (1 << i);
-                     continue;
+                     if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
+                     {
+                        ret |= (1 << i);
+                        continue;
+                     }
                   }
                }
+               return ret;
             }
-            return ret;
-         }
-         else
-         {
-            if (id < RARCH_BIND_LIST_END)
+            else
             {
-               if (binds[port][id].key < RETROK_LAST)
+               if (id < RARCH_BIND_LIST_END)
                {
-                  if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]] & 0x80)
-                     if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
-                        return 1;
-               }
-               if (binds[port][id].valid)
-               {
-                  /* Auto-binds are per joypad, not per user. */
+                  if (binds[port][id].key < RETROK_LAST)
+                  {
+                     if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]] & 0x80)
+                        if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
+                           return 1;
+                  }
+                  if (binds[port][id].valid)
+                  {
+                     /* Auto-binds are per joypad, not per user. */
                      const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-                     ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-                  const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-                     ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
+                        ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
+                     const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
+                        ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
-                  if (dinput_mouse_button_pressed(di, port, binds[port][id].mbutton))
-                     return 1;
-                  if ((uint16_t)joykey != NO_BTN
-                        && di->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-                     return 1;
-                  if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-                     return 1;
+                     if (settings->uints.input_mouse_index[port] == 0)
+                        if (dinput_mouse_button_pressed(di, port, binds[port][id].mbutton))
+                           return 1;
+                     if ((uint16_t)joykey != NO_BTN
+                           && di->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
+                        return 1;
+                     if (((float)abs(di->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
+                        return 1;
+                  }
                }
             }
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
+         return (id < RETROK_LAST) && 
+            di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
@@ -652,11 +637,19 @@ static int16_t dinput_input_state(void *data,
          break;
 
       case RETRO_DEVICE_MOUSE:
-         return dinput_mouse_state(di, port, id);
-
+         {
+            settings                   = config_get_ptr();
+            if (settings->uints.input_mouse_index[port] == 0)
+               return dinput_mouse_state(di, port, id);
+         }
+         break;
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return dinput_mouse_state_screen(di, port, id);
-
+         {
+            settings                   = config_get_ptr();
+            if (settings->uints.input_mouse_index[ port ] != 0)
+               return dinput_mouse_state_screen(di, port, id);
+         }
+         break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          return dinput_pointer_state(di, idx, id,
@@ -686,6 +679,7 @@ static int16_t dinput_input_state(void *data,
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                {
                   unsigned new_id = 0;
+                  settings        = config_get_ptr();
                   switch (id)
                   {
                      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
@@ -739,8 +733,9 @@ static int16_t dinput_input_state(void *data,
                      const uint32_t joyaxis = (binds[port][new_id].joyaxis != AXIS_NONE)
                         ? binds[port][new_id].joyaxis : joypad_info->auto_binds[new_id].joyaxis;
 
-                     if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
-                        return 1;
+                     if (settings->uints.input_mouse_index[port] == 0)
+                        if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
+                           return 1;
                      if ((uint16_t)joykey != NO_BTN
                            && di->joypad->button(
                               joypad_info->joy_idx, (uint16_t)joykey))
