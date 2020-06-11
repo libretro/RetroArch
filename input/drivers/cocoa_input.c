@@ -334,7 +334,7 @@ static int16_t cocoa_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (apple_key_state[rarch_keysym_lut[binds[i].key]])
-                  return true;
+                  return 1;
                if (cocoa_is_pressed(apple, joypad_info, binds[port], port, i))
                    ret |= (1 << i);
             }
