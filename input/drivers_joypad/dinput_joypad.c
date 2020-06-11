@@ -254,31 +254,48 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    for (i = 0; i < num_raw_devs; i++)
    {
       RID_DEVICE_INFO rdi;
-      char *devName   = NULL;
-      UINT rdiSize    = sizeof(rdi);
-      UINT nameSize   = 0;
+      char *dev_name  = NULL;
+      UINT rdi_size   = sizeof(rdi);
+      UINT name_size  = 0;
 
-      rdi.cbSize = sizeof (rdi);
+      rdi.cbSize      = rdi_size;
 
-      if ((raw_devs[i].dwType == RIM_TYPEHID) &&
-          (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
-                                  RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
-          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
-           == ((LONG)product_guid->Data1)) &&
-          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, NULL, &nameSize) != ((UINT)-1)) &&
-          ((devName = (char*)malloc(nameSize)) != NULL) &&
-          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
-          (strstr(devName, "IG_") != NULL) )
+      /* 
+       * Step 1 -
+       * Check if device type is HID
+       * Step 2 -
+       * Query size of name
+       * Step 3 -
+       * Allocate string holding ID of device
+       * Step 4 -
+       * query ID of device
+       * Step 5 -
+       * Check if the device ID contains "IG_".
+       * If it does, then it's an XInput device
+       * This information can not be found from DirectInput 
+       */
+      if (
+               (raw_devs[i].dwType == RIM_TYPEHID)                    /* 1 */
+            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
+                RIDI_DEVICEINFO, &rdi, &rdi_size) != ((UINT)-1))
+            && (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
+             == ((LONG)product_guid->Data1))
+            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
+                RIDI_DEVICENAME, NULL, &name_size) != ((UINT)-1))     /* 2 */
+            && ((dev_name = (char*)malloc(name_size)) != NULL)        /* 3 */
+            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
+                RIDI_DEVICENAME, dev_name, &name_size) != ((UINT)-1)) /* 4 */
+            && (strstr(dev_name, "IG_"))                              /* 5 */
+         )
       {
-         free(devName);
+         free(dev_name);
          free(raw_devs);
          raw_devs = NULL;
          return true;
       }
 
-      if (devName) {
-         free(devName);
-      }
+      if (dev_name)
+         free(dev_name);
    }
 
    free(raw_devs);
@@ -370,6 +387,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    }
 #endif
 
+   /* Set data format to simple joystick */
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(*pad,
          (HWND)video_driver_window_get(),
@@ -561,21 +579,13 @@ static void dinput_joypad_poll(void)
 
       memset(&pad->joy_state, 0, sizeof(pad->joy_state));
 
+      /* If this fails, something *really* bad must have happened. */
       if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
-      {
-         if (FAILED(IDirectInputDevice8_Acquire(pad->joypad)))
-         {
-            memset(&pad->joy_state, 0, sizeof(DIJOYSTATE2));
+         if (
+                  FAILED(IDirectInputDevice8_Acquire(pad->joypad))
+               || FAILED(IDirectInputDevice8_Poll(pad->joypad))
+            )
             continue;
-         }
-
-         /* If this fails, something *really* bad must have happened. */
-         if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
-         {
-            memset(&pad->joy_state, 0, sizeof(DIJOYSTATE2));
-            continue;
-         }
-      }
 
       ret = IDirectInputDevice8_GetDeviceState(pad->joypad,
             sizeof(DIJOYSTATE2), &pad->joy_state);
