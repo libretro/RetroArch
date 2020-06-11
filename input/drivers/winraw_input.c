@@ -593,7 +593,6 @@ static int16_t winraw_input_state(void *d,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   unsigned i;
    settings_t *settings  = NULL;
    winraw_mouse_t *mouse = NULL;
    winraw_input_t *wr    = (winraw_input_t*)d;
@@ -635,6 +634,7 @@ static int16_t winraw_input_state(void *d,
 
    if (process_mouse)
    {
+      unsigned i;
       settings        = config_get_ptr();
       for (i = 0; i < g_mouse_cnt; ++i)
       {

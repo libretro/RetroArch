@@ -330,7 +330,8 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    return pressed_plus + pressed_minus;
 }
 
-static int16_t dinput_lightgun_aiming_state(struct dinput_input *di, unsigned idx, unsigned id)
+static int16_t dinput_lightgun_aiming_state(
+      struct dinput_input *di, unsigned idx, unsigned id)
 {
    const int edge_detect = 32700;
    struct video_viewport vp;
