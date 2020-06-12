@@ -114,15 +114,23 @@ static void cb_task_manual_content_scan(
    playlist_t *cached_playlist       = playlist_get_cached();
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    menu_ctx_environment_t menu_environ;
-#endif
-
    if (!task)
       goto end;
+#else
+   if (!task)
+      return;
+#endif
 
    manual_scan = (manual_scan_handle_t*)task->state;
 
    if (!manual_scan)
+   {
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
       goto end;
+#else
+      return;
+#endif
+   }
 
    /* If the manual content scan task has modified the
     * currently cached playlist, then it must be re-cached
@@ -141,10 +149,10 @@ static void cb_task_manual_content_scan(
       }
    }
 
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
 end:
    /* When creating playlists, the playlist tabs of
     * any active menu driver must be refreshed */
-#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
    menu_environ.data = NULL;
 
