@@ -76,6 +76,7 @@ struct dinput_input
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
+   uintptr_t window_ptr;
    uint8_t state[256];
 
    int window_pos_x;
@@ -169,24 +170,27 @@ static void *dinput_init(const char *joypad_driver)
       di->mouse = NULL;
    }
 
+   di->window_ptr = video_driver_window_get();
+
    if (di->keyboard)
    {
       IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
       IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
-            (HWND)video_driver_window_get(), DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+            (HWND)di->window_ptr,
+            DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
       IDirectInputDevice8_Acquire(di->keyboard);
    }
 
    if (di->mouse)
    {
       IDirectInputDevice8_SetDataFormat(di->mouse, &c_dfDIMouse2);
-      IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)video_driver_window_get(),
+      IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)di->window_ptr,
             DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
       IDirectInputDevice8_Acquire(di->mouse);
    }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
-   di->joypad = input_joypad_init_driver(joypad_driver, di);
+   di->joypad     = input_joypad_init_driver(joypad_driver, di);
 
    return di;
 }
@@ -247,7 +251,7 @@ static void dinput_poll(void *data)
       /* No simple way to get absolute coordinates
        * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
       GetCursorPos(&point);
-      ScreenToClient((HWND)video_driver_window_get(), &point);
+      ScreenToClient((HWND)di->window_ptr, &point);
       di->mouse_x = point.x;
       di->mouse_y = point.y;
    }
@@ -772,13 +776,14 @@ static int16_t dinput_input_state(void *data,
 
 /* Stores x/y in client coordinates. */
 static void dinput_pointer_store_pos(
+      struct dinput_input *di,
       struct pointer_status *pointer, WPARAM lParam)
 {
    POINT point;
 
    point.x = GET_X_LPARAM(lParam);
    point.y = GET_Y_LPARAM(lParam);
-   ScreenToClient((HWND)video_driver_window_get(), &point);
+   ScreenToClient((HWND)di->window_ptr, &point);
    pointer->pointer_x = point.x;
    pointer->pointer_y = point.y;
 }
@@ -874,7 +879,7 @@ bool dinput_handle_message(void *data,
             }
 
             new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
-            dinput_pointer_store_pos(new_pointer, lParam);
+            dinput_pointer_store_pos(di, new_pointer, lParam);
             dinput_add_pointer(di, new_pointer);
             return true;
          }
@@ -889,7 +894,7 @@ bool dinput_handle_message(void *data,
             int pointer_id = GET_POINTERID_WPARAM(wParam);
             struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
             if (pointer)
-               dinput_pointer_store_pos(pointer, lParam);
+               dinput_pointer_store_pos(di, pointer, lParam);
             return true;
          }
       case WM_DEVICECHANGE:
@@ -967,7 +972,7 @@ static void dinput_grab_mouse(void *data, bool state)
 
    IDirectInputDevice8_Unacquire(di->mouse);
    IDirectInputDevice8_SetCooperativeLevel(di->mouse,
-      (HWND)video_driver_window_get(),
+      (HWND)di->window_ptr,
       state ?
       (DISCL_EXCLUSIVE | DISCL_FOREGROUND) :
       (DISCL_NONEXCLUSIVE | DISCL_FOREGROUND));
