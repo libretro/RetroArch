@@ -55,7 +55,6 @@ struct dinput_joypad_data
 #define NUM_HATS 4
 #endif
 
-static uintptr_t g_window_ptr;
 static struct dinput_joypad_data g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
 static unsigned g_last_xinput_pad_idx;
@@ -337,6 +336,9 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    bool is_xinput_pad;
 #endif
    LPDIRECTINPUTDEVICE8 *pad = NULL;
+
+   (void)p;
+
    if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
@@ -354,21 +356,20 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].joy_name          = strdup((const char*)inst->tszProductName);
    g_pads[g_joypad_cnt].joy_friendly_name = strdup((const char*)inst->tszInstanceName);
 
+   /* there may be more useful info in the GUID so leave this here for a while */
 #if 0
-   /* there may be more useful info in the GUID so 
-    * leave this here for a while */
    printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
-         inst->guidProduct.Data1,
-         inst->guidProduct.Data2,
-         inst->guidProduct.Data3,
-         inst->guidProduct.Data4[0],
-         inst->guidProduct.Data4[1],
-         inst->guidProduct.Data4[2],
-         inst->guidProduct.Data4[3],
-         inst->guidProduct.Data4[4],
-         inst->guidProduct.Data4[5],
-         inst->guidProduct.Data4[6],
-         inst->guidProduct.Data4[7]);
+   inst->guidProduct.Data1,
+   inst->guidProduct.Data2,
+   inst->guidProduct.Data3,
+   inst->guidProduct.Data4[0],
+   inst->guidProduct.Data4[1],
+   inst->guidProduct.Data4[2],
+   inst->guidProduct.Data4[3],
+   inst->guidProduct.Data4[4],
+   inst->guidProduct.Data4[5],
+   inst->guidProduct.Data4[6],
+   inst->guidProduct.Data4[7]);
 #endif
 
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
@@ -389,7 +390,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    /* Set data format to simple joystick */
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(*pad,
-         (HWND)g_window_ptr,
+         (HWND)video_driver_window_get(),
          DISCL_EXCLUSIVE | DISCL_BACKGROUND);
 
    IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb,
@@ -435,7 +436,6 @@ static bool dinput_joypad_init(void *data)
       g_pads[i].joy_friendly_name = NULL;
    }
 
-   g_window_ptr                   = video_driver_window_get();
    IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
    return true;
