@@ -39,6 +39,7 @@
  * with a manual content scan */
 typedef struct
 {
+   bool search_recursively;
    bool search_archives;
    bool filter_dat_content;
    bool overwrite_playlist;
@@ -68,6 +69,7 @@ typedef struct
  *   are not thread safe, but we only access them when pushing a
  *   task, not in the task thread itself, so all is well) */
 static scan_settings_t scan_settings = {
+   true,                                        /* search_recursively */
    false,                                       /* search_archives */
    false,                                       /* filter_dat_content */
    false,                                       /* overwrite_playlist */
@@ -130,6 +132,13 @@ char *manual_content_scan_get_dat_file_path_ptr(void)
 size_t manual_content_scan_get_dat_file_path_size(void)
 {
    return sizeof(scan_settings.dat_file_path);
+}
+
+/* Returns a pointer to the internal
+ * 'search_recursively' bool */
+bool *manual_content_scan_get_search_recursively_ptr(void)
+{
+   return &scan_settings.search_recursively;
 }
 
 /* Returns a pointer to the internal
@@ -866,6 +875,9 @@ bool manual_content_scan_get_task_config(
             sizeof(task_config->dat_file_path));
    }
 
+   /* Copy 'search recursively' setting */
+   task_config->search_recursively = scan_settings.search_recursively;
+
    /* Copy 'search inside archives' setting */
    task_config->search_archives = scan_settings.search_archives;
 
@@ -911,15 +923,14 @@ struct string_list *manual_content_scan_get_content_list(manual_content_scan_tas
    include_compressed = (!filter_exts || task_config->search_archives);
 
    /* Get directory listing
-    * > Exclude directories and hidden files
-    * > Scan recursively */
+    * > Exclude directories and hidden files */
    dir_list = dir_list_new(
          task_config->content_dir,
          filter_exts ? task_config->file_exts : NULL,
          false, /* include_dirs */
          false, /* include_hidden */
          include_compressed,
-         true   /* recursive */
+         task_config->search_recursively
    );
 
    /* Sanity check */

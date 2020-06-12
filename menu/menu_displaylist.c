@@ -4190,6 +4190,12 @@ static bool menu_displaylist_parse_manual_content_scan_list(
          false) == 0)
       count++;
 
+   /* Search recursively */
+   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY, PARSE_ONLY_BOOL,
+         false) == 0)
+      count++;
+
    /* Search inside archive files */
    if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES, PARSE_ONLY_BOOL,
