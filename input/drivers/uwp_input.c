@@ -106,37 +106,33 @@ static void uwp_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static bool uwp_pressed_joypad(uwp_input_t *uwp,
-   rarch_joypad_info_t *joypad_info,
-   const struct retro_keybind *binds,
-   unsigned port, unsigned id)
+static int16_t uwp_is_pressed(
+      uwp_input_t *uwp,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port, unsigned id)
 {
    const struct retro_keybind *bind = &binds[id];
+   /* Auto-binds are per joypad, not per user. */
+   const uint64_t joykey  = (binds[id].joykey != NO_BTN)
+      ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
+   const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
+      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
    /* First, process the keyboard bindings */
    if ((bind->key < RETROK_LAST) && uwp_keyboard_pressed(bind->key))
       if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_uwp.keyboard_mapping_blocked)
-         return true;
+         return 1;
 
    /* Then, process the joypad bindings */
-   if (binds && binds[id].valid)
-   {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-         ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
-      const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-         ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-      if (uwp_mouse_state(port, bind->mbutton, false))
-         return true;
-      if ((uint16_t)joykey != NO_BTN && uwp->joypad->button(
-               joypad_info->joy_idx, (uint16_t)joykey))
-         return true;
-      if (((float)abs(uwp->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-         return true;
-   }
-
-   return false;
+   if (uwp_mouse_state(port, bind->mbutton, false))
+      return 1;
+   if ((uint16_t)joykey != NO_BTN && uwp->joypad->button(
+            joypad_info->joy_idx, (uint16_t)joykey))
+      return 1;
+   if (((float)abs(uwp->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
+      return 1;
+   return 0;
 }
 
 static int16_t uwp_pressed_analog(uwp_input_t *uwp,
@@ -192,7 +188,7 @@ static int16_t uwp_input_state(void *data,
             {
                if (binds[port][i].valid)
                {
-                  if (uwp_pressed_joypad(
+                  if (uwp_is_pressed(
                            uwp, joypad_info, binds[port], port, i))
                      ret |= (1 << i);
                }
@@ -204,9 +200,9 @@ static int16_t uwp_input_state(void *data,
          {
             if (id < RARCH_BIND_LIST_END)
             {
-               if (binds[port][i].valid)
+               if (binds[port][id].valid)
                {
-                  if (uwp_pressed_joypad(uwp, joypad_info,
+                  if (uwp_is_pressed(uwp, joypad_info,
                            binds[port], port, id))
                      return 1;
                }

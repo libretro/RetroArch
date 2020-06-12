@@ -1434,25 +1434,31 @@ static int16_t android_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (
+               if (binds[port][i].valid)
+               {
+                  if (
                         button_is_pressed(
-                        android->joypad, joypad_info, binds[port],
-                        port, i)
-                     || android_keyboard_port_input_pressed(binds[port], i)
-                  )
-                  ret |= (1 << i);
+                           android->joypad, joypad_info, binds[port],
+                           port, i)
+                        || android_keyboard_port_input_pressed(binds[port], i)
+                     )
+                     ret |= (1 << i);
+               }
             }
             return ret;
          }
          else
          {
-            if ( 
+            if (binds[port][id].valid)
+            {
+               if ( 
                      button_is_pressed(
-                     android->joypad, joypad_info, binds[port],
-                     port, id)
-                  || android_keyboard_port_input_pressed(binds[port], id)
-               )
-               return 1;
+                        android->joypad, joypad_info, binds[port],
+                        port, id)
+                     || android_keyboard_port_input_pressed(binds[port], id)
+                  )
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:

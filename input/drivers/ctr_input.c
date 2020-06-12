@@ -64,9 +64,11 @@ static int16_t ctr_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
+               {
                   if (button_is_pressed(
                            ctr->joypad, joypad_info, binds[port], port, i))
                      ret |= (1 << i);
+               }
             }
 
             return ret;
@@ -74,9 +76,14 @@ static int16_t ctr_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
+            {
                if (binds[port][id].valid)
-                  return button_is_pressed(
-                        ctr->joypad, joypad_info, binds[port], port, id);
+               {
+                  if (button_is_pressed(
+                        ctr->joypad, joypad_info, binds[port], port, id))
+                     return 1;
+               }
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
