@@ -4473,6 +4473,10 @@ MSG_HASH(
    "manual_content_scan_file_exts"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "manual_content_scan_search_recursively"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
    "manual_content_scan_search_archives"
    )
