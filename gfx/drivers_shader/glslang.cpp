@@ -290,8 +290,6 @@ SlangProcess::SlangProcess()
             Resources.maxFragmentUniformVectors = value;
          else if (string_is_equal(token, "MaxFragmentInputVectors"))
             Resources.maxFragmentInputVectors = value;
-         else if (string_is_equal(token, "MinProgramTexelOffset"))
-            Resources.minProgramTexelOffset = value;
          else if (string_is_equal(token, "MaxProgramTexelOffset"))
             Resources.maxProgramTexelOffset = value;
          else if (string_is_equal(token, "MaxClipDistances"))
@@ -374,6 +372,8 @@ SlangProcess::SlangProcess()
          else if (string_is_equal(token, "generalConstantMatrixVectorIndexing"))
             Resources.limits.generalConstantMatrixVectorIndexing = (value != 0);
       }
+      else if (string_is_equal(token, "MinProgramTexelOffset"))
+         Resources.minProgramTexelOffset = value;
       else if (string_is_equal(token, "nonInductiveForLoops"))
          Resources.limits.nonInductiveForLoops = (value != 0);
       else if (string_is_equal(token, "whileLoops"))
