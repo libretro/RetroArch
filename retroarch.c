@@ -24130,8 +24130,7 @@ static void input_keys_pressed(
       const struct retro_keybind *hotkey =
          &input_config_binds[port][RARCH_ENABLE_HOTKEY];
 
-      if (  hotkey->valid
-         && p_rarch->current_input->input_state(
+      if (  p_rarch->current_input->input_state(
             p_rarch->current_input_data, joypad_info,
             &binds[port], port, RETRO_DEVICE_JOYPAD, 0,
             RARCH_ENABLE_HOTKEY))
@@ -24191,8 +24190,9 @@ static void input_keys_pressed(
 
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         bool bit_pressed = binds[port][i].valid && (ret & (UINT64_C(1) <<  i));
-         if (bit_pressed || input_keys_pressed_other_sources(p_rarch,
+         if (
+               (ret & (UINT64_C(1) <<  i)) || 
+               input_keys_pressed_other_sources(p_rarch,
                   i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
