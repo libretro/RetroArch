@@ -1028,19 +1028,19 @@ static int16_t udev_input_state(void *data,
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  bool keyboard_pressed = false;
-                  bool joypad_pressed   = false;
-
                   if (binds[port][i].valid)
                   {
-                     keyboard_pressed = (binds[port][i].key < RETROK_LAST) ?
-                           udev_keyboard_pressed(udev, binds[port][i].key) : false;
-                     joypad_pressed   = udev_is_pressed(udev, udev->joypad,
-                           joypad_info, binds[port], port, i);
-                  }
+                     if (udev_is_pressed(udev, udev->joypad,
+                           joypad_info, binds[port], port, i))
+                     {
+                        ret |= (1 << i);
+                        continue;
+                     }
 
-                  if (keyboard_pressed || joypad_pressed)
-                     ret |= (1 << i);
+                     if ((binds[port][i].key < RETROK_LAST) &&
+                           udev_keyboard_pressed(udev, binds[port][i].key))
+                        ret |= (1 << i);
+                  }
                }
             }
 
