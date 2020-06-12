@@ -2171,7 +2171,9 @@ struct rarch_state
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t dispwidget_st;
 #endif
-
+#ifdef HAVE_MENU
+   menu_dialog_t dialog_st;
+#endif
    videocrt_switch_t crt_switch_st;
 
    gfx_thumbnail_state_t gfx_thumb_state;
@@ -2723,6 +2725,14 @@ char **input_event_get_osk_grid(void)
    return p_rarch->osk_grid;
 }
 
+#ifdef HAVE_MENU
+menu_dialog_t *dialog_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->dialog_st;
+}
+#endif
+
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -3269,7 +3279,7 @@ static int generic_menu_iterate(
                      }
                      break;
                   default:
-                     ret = menu_hash_get_help_enum(cbs->enum_idx,
+                     ret = msg_hash_get_help_enum(cbs->enum_idx,
                            menu->menu_state_msg, sizeof(menu->menu_state_msg));
                      break;
                }
@@ -3367,7 +3377,7 @@ static int generic_menu_iterate(
                }
 
                if (enum_idx != MSG_UNKNOWN)
-                  ret = menu_hash_get_help_enum(enum_idx,
+                  ret = msg_hash_get_help_enum(enum_idx,
                         menu->menu_state_msg, sizeof(menu->menu_state_msg));
 
             }

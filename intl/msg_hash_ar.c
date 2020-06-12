@@ -33,7 +33,7 @@
 #pragma warning(disable:4566)
 #endif
 
-int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
+int msg_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
     settings_t *settings = config_get_ptr();
 

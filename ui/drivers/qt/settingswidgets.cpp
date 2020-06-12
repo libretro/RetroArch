@@ -38,7 +38,7 @@ static inline void add_sublabel_and_whats_this(
 
    widget->setToolTip(tmp);
 
-   menu_hash_get_help_enum(setting->enum_idx, tmp, sizeof(tmp));
+   msg_hash_get_help_enum(setting->enum_idx, tmp, sizeof(tmp));
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
       widget->setWhatsThis(tmp);
