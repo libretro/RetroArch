@@ -106,35 +106,6 @@ static void uwp_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static int16_t uwp_is_pressed(
-      uwp_input_t *uwp,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id)
-{
-   const struct retro_keybind *bind = &binds[id];
-   /* Auto-binds are per joypad, not per user. */
-   const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-      ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
-   const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-   /* First, process the keyboard bindings */
-   if ((bind->key < RETROK_LAST) && uwp_keyboard_pressed(bind->key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_uwp.keyboard_mapping_blocked)
-         return 1;
-
-   /* Then, process the joypad bindings */
-   if (uwp_mouse_state(port, bind->mbutton, false))
-      return 1;
-   if ((uint16_t)joykey != NO_BTN && uwp->joypad->button(
-            joypad_info->joy_idx, (uint16_t)joykey))
-      return 1;
-   if (((float)abs(uwp->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-      return 1;
-   return 0;
-}
-
 static int16_t uwp_pressed_analog(uwp_input_t *uwp,
    rarch_joypad_info_t *joypad_info,
    const struct retro_keybind *binds,
@@ -184,13 +155,36 @@ static int16_t uwp_input_state(void *data,
          {
             unsigned i;
             int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (input_uwp.keyboard_mapping_blocked)
             {
-               if (binds[port][i].valid)
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (uwp_is_pressed(
-                           uwp, joypad_info, binds[port], port, i))
-                     ret |= (1 << i);
+                  if (binds[port][i].valid)
+                  {
+                     if (button_is_pressed(
+                              uwp->joypad, joypad_info, binds[port], port, i))
+                        ret |= (1 << i);
+                     else if (uwp_mouse_state(port,
+                              binds[port][i].mbutton, false))
+                        ret |= (1 << i);
+                  }
+               }
+            }
+            else
+            {
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               {
+                  if (binds[port][i].valid)
+                  {
+                     if (     button_is_pressed(
+                              uwp->joypad, joypad_info, binds[port], port, i)
+                           || ((binds[port][i].key < RETROK_LAST) && uwp_keyboard_pressed(binds[port][i].key))
+                        )
+                        ret |= (1 << i);
+                     else if (uwp_mouse_state(port,
+                              binds[port][i].mbutton, false))
+                        ret |= (1 << i);
+                  }
                }
             }
 
@@ -202,8 +196,17 @@ static int16_t uwp_input_state(void *data,
             {
                if (binds[port][id].valid)
                {
-                  if (uwp_is_pressed(uwp, joypad_info,
+                  if (button_is_pressed(uwp->joypad, joypad_info,
                            binds[port], port, id))
+                     return 1;
+                  else if ((binds[port][id].key < RETROK_LAST) 
+                        && uwp_keyboard_pressed(binds[port][id].key)
+                        && ((id == RARCH_GAME_FOCUS_TOGGLE) || 
+                           !input_uwp.keyboard_mapping_blocked)
+                        )
+                     return 1;
+                  else if (uwp_mouse_state(port,
+                           binds[port][id].mbutton, false))
                      return 1;
                }
             }
