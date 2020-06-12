@@ -329,14 +329,19 @@ static int16_t x_input_state(void *data,
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if ((binds[port][i].key < RETROK_LAST) && 
-                        x_keyboard_pressed(x11, binds[port][i].key) )
-                     return 1;
+                  bool keyboard_pressed = false;
+                  bool joypad_pressed   = false;
+
                   if (binds[port][i].valid)
-                     if (x_is_pressed(
-                              x11, x11->joypad,
-                              joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
+                  {
+                     keyboard_pressed = (binds[port][i].key < RETROK_LAST) ?
+                           x_keyboard_pressed(x11, binds[port][i].key) : false;
+                     joypad_pressed   = x_is_pressed(x11, x11->joypad,
+                           joypad_info, binds[port], port, i);
+                  }
+
+                  if (keyboard_pressed || joypad_pressed)
+                     ret |= (1 << i);
                }
             }
 
