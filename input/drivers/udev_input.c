@@ -790,10 +790,10 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
    bool r = video_driver_get_viewport_info(&view);
 
    if (r)
-      r = udev->pointer_x < view.x ||
-          udev->pointer_x >= view.x + view.width ||
-          udev->pointer_y < view.y ||
-          udev->pointer_y >= view.y + view.height;
+      r = udev->pointer_x < 0 ||
+          udev->pointer_x >= view.full_width ||
+          udev->pointer_y < 0 ||
+          udev->pointer_y >= view.full_height;
    return r;
 #else
    return false;
@@ -1028,14 +1028,19 @@ static int16_t udev_input_state(void *data,
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if ( (binds[port][i].key < RETROK_LAST) && 
-                        udev_keyboard_pressed(udev, binds[port][i].key) )
-                        return 1;
                   if (binds[port][i].valid)
-                     if (udev_is_pressed(
-                              udev, udev->joypad,
-                              joypad_info, binds[port], port, i))
+                  {
+                     if (udev_is_pressed(udev, udev->joypad,
+                           joypad_info, binds[port], port, i))
+                     {
                         ret |= (1 << i);
+                        continue;
+                     }
+
+                     if ((binds[port][i].key < RETROK_LAST) &&
+                           udev_keyboard_pressed(udev, binds[port][i].key))
+                        ret |= (1 << i);
+                  }
                }
             }
 
