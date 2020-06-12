@@ -153,7 +153,7 @@ static int16_t wiiu_input_state(void *data,
          }
          else
          {
-            if (binds[port][i].valid)
+            if (binds[port][id].valid)
                return button_is_pressed(
                      wiiu->joypad,
                      joypad_info, binds[port], port, id);
