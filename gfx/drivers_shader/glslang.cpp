@@ -266,6 +266,23 @@ SlangProcess::SlangProcess()
             else if (string_is_equal(token, "MaxTessGenLevel"))
                Resources.maxTessGenLevel = value;
          }
+         else if (string_starts_with(token, "MaxFragment"))
+         {
+            if (string_is_equal(token, "MaxFragmentUniformComponents"))
+               Resources.maxFragmentUniformComponents = value;
+            else if (string_is_equal(token, "MaxFragmentUniformVectors"))
+               Resources.maxFragmentUniformVectors = value;
+            else if (string_is_equal(token, "MaxFragmentInputVectors"))
+               Resources.maxFragmentInputVectors = value;
+            else if (string_is_equal(token, "MaxFragmentInputComponents"))
+               Resources.maxFragmentInputComponents = value;
+            else if (string_is_equal(token, "MaxFragmentImageUniforms"))
+               Resources.maxFragmentImageUniforms = value;
+            else if (string_is_equal(token, "MaxFragmentAtomicCounters"))
+               Resources.maxFragmentAtomicCounters = value;
+            else if (string_is_equal(token, "MaxFragmentAtomicCounterBuffers"))
+               Resources.maxFragmentAtomicCounterBuffers = value;
+         }
          else if (string_is_equal(token, "MaxLights"))
             Resources.maxLights = value;
          else if (string_is_equal(token, "MaxClipPlanes"))
@@ -280,16 +297,10 @@ SlangProcess::SlangProcess()
             Resources.maxCombinedTextureImageUnits = value;
          else if (string_is_equal(token, "MaxTextureImageUnits"))
             Resources.maxTextureImageUnits = value;
-         else if (string_is_equal(token, "MaxFragmentUniformComponents"))
-            Resources.maxFragmentUniformComponents = value;
          else if (string_is_equal(token, "MaxDrawBuffers"))
             Resources.maxDrawBuffers = value;
          else if (string_is_equal(token, "MaxVaryingVectors"))
             Resources.maxVaryingVectors = value;
-         else if (string_is_equal(token, "MaxFragmentUniformVectors"))
-            Resources.maxFragmentUniformVectors = value;
-         else if (string_is_equal(token, "MaxFragmentInputVectors"))
-            Resources.maxFragmentInputVectors = value;
          else if (string_is_equal(token, "MaxProgramTexelOffset"))
             Resources.maxProgramTexelOffset = value;
          else if (string_is_equal(token, "MaxClipDistances"))
@@ -300,8 +311,6 @@ SlangProcess::SlangProcess()
             Resources.maxGeometryInputComponents = value;
          else if (string_is_equal(token, "MaxGeometryOutputComponents"))
             Resources.maxGeometryOutputComponents = value;
-         else if (string_is_equal(token, "MaxFragmentInputComponents"))
-            Resources.maxFragmentInputComponents = value;
          else if (string_is_equal(token, "MaxImageUnits"))
             Resources.maxImageUnits = value;
          else if (string_is_equal(token, "MaxCombinedImageUnitsAndFragmentOutputs"))
@@ -312,8 +321,6 @@ SlangProcess::SlangProcess()
             Resources.maxImageSamples = value;
          else if (string_is_equal(token, "MaxGeometryImageUniforms"))
             Resources.maxGeometryImageUniforms = value;
-         else if (string_is_equal(token, "MaxFragmentImageUniforms"))
-            Resources.maxFragmentImageUniforms = value;
          else if (string_is_equal(token, "MaxCombinedImageUniforms"))
             Resources.maxCombinedImageUniforms = value;
          else if (string_is_equal(token, "MaxGeometryTextureImageUnits"))
@@ -332,16 +339,12 @@ SlangProcess::SlangProcess()
             Resources.maxViewports = value;
          else if (string_is_equal(token, "MaxGeometryAtomicCounters"))
             Resources.maxGeometryAtomicCounters = value;
-         else if (string_is_equal(token, "MaxFragmentAtomicCounters"))
-            Resources.maxFragmentAtomicCounters = value;
          else if (string_is_equal(token, "MaxCombinedAtomicCounters"))
             Resources.maxCombinedAtomicCounters = value;
          else if (string_is_equal(token, "MaxAtomicCounterBindings"))
             Resources.maxAtomicCounterBindings = value;
          else if (string_is_equal(token, "MaxGeometryAtomicCounterBuffers"))
             Resources.maxGeometryAtomicCounterBuffers = value;
-         else if (string_is_equal(token, "MaxFragmentAtomicCounterBuffers"))
-            Resources.maxFragmentAtomicCounterBuffers = value;
          else if (string_is_equal(token, "MaxCombinedAtomicCounterBuffers"))
             Resources.maxCombinedAtomicCounterBuffers = value;
          else if (string_is_equal(token, "MaxAtomicCounterBufferSize"))
