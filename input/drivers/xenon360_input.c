@@ -81,15 +81,23 @@ static int16_t xenon360_input_state(void *data,
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (state[port] & binds[port][i].joykey)
-                  ret |= (1 << i);
+               if (binds[port][i].valid)
+               {
+                  if (state[port] & binds[port][i].joykey)
+                     ret |= (1 << i);
+               }
             }
 
             return ret;
          }
          else
-            if (state[port] & binds[port][id].joykey)
-               return 1;
+         {
+            if (binds[port][id].valid)
+            {
+               if (state[port] & binds[port][id].joykey)
+                  return 1;
+            }
+         }
          break;
       default:
          break;

@@ -89,29 +89,6 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static int16_t sdl_is_pressed(
-      const input_device_driver_t *joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id)
-{
-   /* Auto-binds are per joypad, not per user. */
-   const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-      ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
-   const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-   if ((binds[id].key < RETROK_LAST) && sdl_key_pressed(binds[id].key))
-      return 1;
-   if ((uint16_t)joykey != NO_BTN && joypad->button(
-            joypad_info->joy_idx, (uint16_t)joykey))
-      return 1;
-   if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
-            / 0x8000) > joypad_info->axis_threshold)
-      return 1;
-   return 0;
-}
-
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
 {
    switch (id)
@@ -228,9 +205,14 @@ static int16_t sdl_input_state(void *data,
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (sdl_is_pressed(
-                        sdl->joypad, joypad_info, binds[port], port, i))
-                  ret |= (1 << i);
+               if (binds[port][i].valid)
+               {
+                  if (button_is_pressed(
+                           sdl->joypad, joypad_info, binds[port], port, i))
+                     ret |= (1 << i);
+                  else if (sdl_key_pressed(binds[port][i].key))
+                     ret |= (1 << i);
+               }
             }
 
             return ret;
@@ -238,9 +220,16 @@ static int16_t sdl_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               if (sdl_is_pressed(sdl->joypad,
-                     joypad_info, binds[port], port, id))
-                  return 1;
+            {
+               if (binds[port][id].valid)
+               {
+                  if (button_is_pressed(sdl->joypad,
+                           joypad_info, binds[port], port, id))
+                     return 1;
+                  else if (sdl_key_pressed(binds[port][id].key))
+                     return 1;
+               }
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:

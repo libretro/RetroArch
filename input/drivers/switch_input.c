@@ -399,20 +399,26 @@ static int16_t switch_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (
-                     button_is_pressed(sw->joypad, joypad_info, binds[port],
-                        port, i))
-                  ret |= (1 << i);
+               if (binds[port][i].valid)
+               {
+                  if (
+                        button_is_pressed(sw->joypad, joypad_info, binds[port],
+                           port, i))
+                     ret |= (1 << i);
+               }
             }
 
             return ret;
          }
          else
          {
-            if (
-                  button_is_pressed(sw->joypad, joypad_info, binds[port],
-                     port, id))
-               return 1;
+            if (binds[port][id].valid)
+            {
+               if (
+                     button_is_pressed(sw->joypad, joypad_info, binds[port],
+                        port, id))
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:

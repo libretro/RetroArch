@@ -190,11 +190,11 @@ static int16_t uwp_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (uwp_pressed_joypad(
-                        uwp, joypad_info, binds[port], port, i))
+               if (binds[port][i].valid)
                {
-                  ret |= (1 << i);
-                  continue;
+                  if (uwp_pressed_joypad(
+                           uwp, joypad_info, binds[port], port, i))
+                     ret |= (1 << i);
                }
             }
 
@@ -203,8 +203,14 @@ static int16_t uwp_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               if (uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id))
-                  return 1;
+            {
+               if (binds[port][i].valid)
+               {
+                  if (uwp_pressed_joypad(uwp, joypad_info,
+                           binds[port], port, id))
+                     return 1;
+               }
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:

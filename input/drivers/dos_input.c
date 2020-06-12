@@ -89,22 +89,32 @@ static int16_t dos_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (
-                        dos_keyboard_port_input_pressed(binds[port], i)
-                     || button_is_pressed(dos->joypad, joypad_info, binds[port],
-                        port, i))
-                  ret |= (1 << i);
+               if (binds[port][i].valid)
+               {
+                  if (
+                           button_is_pressed(
+                              dos->joypad, joypad_info, binds[port],
+                              port, i)
+                        || dos_keyboard_port_input_pressed(binds[port], i)
+                     )
+                     ret |= (1 << i);
+               }
             }
 
             return ret;
          }
          else
          {
-            if (
-                     dos_keyboard_port_input_pressed(binds[port], id)
-                  || button_is_pressed(dos->joypad, joypad_info, binds[port],
-                     port, id))
-               return 1;
+            if (binds[port][id].valid)
+            {
+               if (
+                        button_is_pressed(
+                           dos->joypad, joypad_info, binds[port],
+                           port, id)
+                     || dos_keyboard_port_input_pressed(binds[port], id)
+                  )
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_KEYBOARD:

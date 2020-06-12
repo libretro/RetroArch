@@ -635,12 +635,12 @@ static int16_t winraw_input_state(void *d,
                {
                   if (binds[port][i].valid)
                   {
-                     if (mouse && winraw_mouse_button_pressed(wr,
-                              mouse, port, binds[port][i].mbutton))
-                        ret |= (1 << i);
-                     else if (button_is_pressed(
+                     if (button_is_pressed(
                               wr->joypad,
                               joypad_info, binds[port], port, i))
+                        ret |= (1 << i);
+                     else if (mouse && winraw_mouse_button_pressed(wr,
+                              mouse, port, binds[port][i].mbutton))
                         ret |= (1 << i);
                   }
                }
@@ -649,17 +649,17 @@ static int16_t winraw_input_state(void *d,
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if ((binds[port][i].key < RETROK_LAST) && 
-                        winraw_keyboard_pressed(wr, binds[port][i].key))
-                     ret |= (1 << i);
-                  else if (binds[port][i].valid)
+                  if (binds[port][i].valid)
                   {
-                     if (mouse && winraw_mouse_button_pressed(wr,
-                              mouse, port, binds[port][i].mbutton))
-                           ret |= (1 << i);
-                     else if (button_is_pressed(
+                     if (button_is_pressed(
                                  wr->joypad,
                                  joypad_info, binds[port], port, i))
+                           ret |= (1 << i);
+                     else if ((binds[port][i].key < RETROK_LAST) && 
+                        winraw_keyboard_pressed(wr, binds[port][i].key))
+                        ret |= (1 << i);
+                     else if (mouse && winraw_mouse_button_pressed(wr,
+                              mouse, port, binds[port][i].mbutton))
                            ret |= (1 << i);
                   }
                }
@@ -671,19 +671,22 @@ static int16_t winraw_input_state(void *d,
          {
             if (id < RARCH_BIND_LIST_END)
             {
-               if ((binds[port][id].key < RETROK_LAST) 
-                     && winraw_keyboard_pressed(wr, binds[port][id].key))
-                  if ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                        || !input_winraw.keyboard_mapping_blocked)
-                     return 1;
                if (binds[port][id].valid)
                {
-                  if (mouse && winraw_mouse_button_pressed(wr,
+                  if (button_is_pressed(
+                        wr->joypad,
+                        joypad_info, binds[port], port, id))
+                     return 1;
+                  else if (
+                        (binds[port][id].key < RETROK_LAST) 
+                        && winraw_keyboard_pressed(wr, binds[port][id].key)
+                        && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
+                           || !input_winraw.keyboard_mapping_blocked)
+                        )
+                     return 1;
+                  else if (mouse && winraw_mouse_button_pressed(wr,
                            mouse, port, binds[port][id].mbutton))
                      return 1;
-                  return button_is_pressed(
-                        wr->joypad,
-                        joypad_info, binds[port], port, id);
                }
             }
          }

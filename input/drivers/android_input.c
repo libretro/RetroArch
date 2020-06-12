@@ -1435,10 +1435,10 @@ static int16_t android_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (
-                        android_keyboard_port_input_pressed(binds[port], i)
-                     || button_is_pressed(
+                        button_is_pressed(
                         android->joypad, joypad_info, binds[port],
                         port, i)
+                     || android_keyboard_port_input_pressed(binds[port], i)
                   )
                   ret |= (1 << i);
             }
@@ -1447,10 +1447,11 @@ static int16_t android_input_state(void *data,
          else
          {
             if ( 
-                     android_keyboard_port_input_pressed(binds[port], id)
-                 ||  button_is_pressed(
+                     button_is_pressed(
                      android->joypad, joypad_info, binds[port],
-                  port, id))
+                     port, id)
+                  || android_keyboard_port_input_pressed(binds[port], id)
+               )
                return 1;
          }
          break;

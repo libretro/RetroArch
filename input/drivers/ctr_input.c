@@ -74,11 +74,9 @@ static int16_t ctr_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-            {
                if (binds[port][id].valid)
                   return button_is_pressed(
                         ctr->joypad, joypad_info, binds[port], port, id);
-            }
          }
          break;
       case RETRO_DEVICE_ANALOG:

@@ -333,12 +333,8 @@ static int16_t x_input_state(void *data,
                   {
                      if (x_is_pressed(x11, x11->joypad,
                            joypad_info, binds[port], port, i))
-                     {
                         ret |= (1 << i);
-                        continue;
-                     }
-
-                     if ((binds[port][i].key < RETROK_LAST) &&
+                     else if ((binds[port][i].key < RETROK_LAST) &&
                            x_keyboard_pressed(x11, binds[port][i].key))
                         ret |= (1 << i);
                   }
@@ -351,14 +347,19 @@ static int16_t x_input_state(void *data,
          {
             if (id < RARCH_BIND_LIST_END)
             {
-               if ((binds[port][id].key < RETROK_LAST) && 
-                     x_keyboard_pressed(x11, binds[port][id].key) )
-                  if ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                        || !input_x.keyboard_mapping_blocked)
-                     return 1;
                if (binds[port][id].valid)
-                  return x_is_pressed(x11, x11->joypad,
-                        joypad_info, binds[port], port, id);
+               {
+                  if (x_is_pressed(x11, x11->joypad,
+                        joypad_info, binds[port], port, id))
+                     return 1;
+                  else if (
+                        ((binds[port][id].key < RETROK_LAST) && 
+                         x_keyboard_pressed(x11, binds[port][id].key)) 
+                        && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
+                           || !input_x.keyboard_mapping_blocked)
+                     )
+                     return 1;
+               }
             }
          }
          break;

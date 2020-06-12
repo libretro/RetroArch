@@ -1018,10 +1018,12 @@ static int16_t udev_input_state(void *data,
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
                   if (binds[port][i].valid)
+                  {
                      if (udev_is_pressed(
                               udev, udev->joypad,
                               joypad_info, binds[port], port, i))
                         ret |= (1 << i);
+                  }
                }
             }
             else
@@ -1032,12 +1034,8 @@ static int16_t udev_input_state(void *data,
                   {
                      if (udev_is_pressed(udev, udev->joypad,
                            joypad_info, binds[port], port, i))
-                     {
                         ret |= (1 << i);
-                        continue;
-                     }
-
-                     if ((binds[port][i].key < RETROK_LAST) &&
+                     else if ((binds[port][i].key < RETROK_LAST) &&
                            udev_keyboard_pressed(udev, binds[port][i].key))
                         ret |= (1 << i);
                   }
@@ -1050,14 +1048,19 @@ static int16_t udev_input_state(void *data,
          {
             if (id < RARCH_BIND_LIST_END)
             {
-               if ( (binds[port][id].key < RETROK_LAST) && 
-                     udev_keyboard_pressed(udev, binds[port][id].key))
-                  if ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                        || !input_udev.keyboard_mapping_blocked)
-                     return 1;
                if (binds[port][id].valid)
-                  return udev_is_pressed(udev, udev->joypad,
-                        joypad_info, binds[port], port, id);
+               {
+                  if (udev_is_pressed(udev, udev->joypad,
+                           joypad_info, binds[port], port, id))
+                     return 1;
+                  else if ( 
+                        (binds[port][id].key < RETROK_LAST) && 
+                        udev_keyboard_pressed(udev, binds[port][id].key)
+                        && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
+                           || !input_udev.keyboard_mapping_blocked)
+                        )
+                     return 1;
+               }
             }
          }
          break;
@@ -1222,17 +1225,25 @@ static int16_t udev_input_state(void *data,
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                {
                   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
-                  return (mouse) ? udev_mouse_get_x(mouse) : 0;
+                  if (mouse)
+                     return udev_mouse_get_x(mouse);
                }
+               break;
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
                {
                   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
-                  return (mouse) ? udev_mouse_get_y(mouse) : 0;
+                  if (mouse)
+                     return udev_mouse_get_y(mouse);
                }
+               break;
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-               return udev_is_pressed(udev, udev->joypad,
-                     joypad_info,
-                     binds[port], port, RARCH_LIGHTGUN_START);
+               if (binds[port][RARCH_LIGHTGUN_START].valid)
+               {
+                  return udev_is_pressed(udev, udev->joypad,
+                        joypad_info,
+                        binds[port], port, RARCH_LIGHTGUN_START);
+               }
+               break;
          }
          break;
    }
