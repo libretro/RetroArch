@@ -692,9 +692,8 @@ static bool core_info_list_update_missing_firmware_internal(
    return true;
 }
 
-void core_info_free_current_core(void)
+void core_info_free_current_core(core_info_state_t *p_coreinfo)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
    if (p_coreinfo->current)
       free(p_coreinfo->current);
    p_coreinfo->current = NULL;
@@ -760,10 +759,11 @@ bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
          set_missing_bios);
 }
 
-bool core_info_load(core_info_ctx_find_t *info)
+bool core_info_load(
+      core_info_ctx_find_t *info,
+      core_info_state_t *p_coreinfo)
 {
    core_info_t    *core_info     = NULL;
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
 
    if (!info)
       return false;

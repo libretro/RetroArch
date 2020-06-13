@@ -14328,7 +14328,7 @@ bool command_event(enum event_command cmd, void *data)
                return false;
             info_find.path = core_path;
 
-            if (!core_info_load(&info_find))
+            if (!core_info_load(&info_find, &p_rarch->core_info_st))
             {
 #ifdef HAVE_DYNAMIC
                return false;
@@ -14789,7 +14789,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_INFO_DEINIT:
          core_info_deinit_list();
-         core_info_free_current_core();
+         core_info_free_current_core(&p_rarch->core_info_st);
          break;
       case CMD_EVENT_CORE_INFO_INIT:
          {
@@ -32590,7 +32590,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
 static void driver_uninit(struct rarch_state *p_rarch, int flags)
 {
    core_info_deinit_list();
-   core_info_free_current_core();
+   core_info_free_current_core(&p_rarch->core_info_st);
 
 #if defined(HAVE_GFX_WIDGETS)
    /* This absolutely has to be done before video_driver_free_internal()

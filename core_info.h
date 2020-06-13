@@ -166,7 +166,7 @@ void core_info_get_name(const char *path, char *s, size_t len,
 
 core_info_t *core_info_get(core_info_list_t *list, size_t i);
 
-void core_info_free_current_core(void);
+void core_info_free_current_core(core_info_state_t *p_coreinfo);
 
 bool core_info_init_current_core(void);
 
@@ -184,7 +184,9 @@ bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
 
 bool core_info_find(core_info_ctx_find_t *info);
 
-bool core_info_load(core_info_ctx_find_t *info);
+bool core_info_load(
+      core_info_ctx_find_t *info,
+      core_info_state_t *p_coreinfo);
 
 bool core_info_database_supports_content_path(const char *database_path, const char *path);
 
