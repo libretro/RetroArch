@@ -609,7 +609,7 @@ static int16_t x_input_state(void *data,
                return x11->mouse_y - x11->mouse_last_y;
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                {
-                  unsigned new_id = RARCH_LIGHTGUN_PAUSE;
+                  unsigned new_id = RARCH_LIGHTGUN_START;
                   if (!input_x.keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
