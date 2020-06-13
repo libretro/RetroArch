@@ -22501,7 +22501,13 @@ static int16_t input_state(unsigned port, unsigned device,
    {
       int16_t bsv_result;
       if (intfstream_read(p_rarch->bsv_movie_state_handle->file, &bsv_result, 2) == 2)
+      {
+#ifdef HAVE_CHEEVOS
+         rcheevos_pause_hardcore();
+#endif
          return swap_if_big16(bsv_result);
+      }
+
       p_rarch->bsv_movie_state.movie_end = true;
    }
 
