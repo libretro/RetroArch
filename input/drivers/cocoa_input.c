@@ -345,17 +345,19 @@ static int16_t cocoa_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
+         if (binds[port])
          {
             int16_t ret = 0;
 #ifdef HAVE_MFI
             ret = input_joypad_analog(apple->sec_joypad, joypad_info, port,
                   idx, id, binds[port]);
 #endif
-            if (!ret && binds[port])
+            if (!ret)
                ret = input_joypad_analog(apple->joypad, joypad_info, port,
                      idx, id, binds[port]);
             return ret;
          }
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:

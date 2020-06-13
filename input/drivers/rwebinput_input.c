@@ -565,13 +565,15 @@ static int16_t rwebinput_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
+         if (binds[port])
          {
-            int16_t ret = rwebinput_analog_pressed(
+            int16_t ret = input_joypad_analog(
+                  rwebinput->joypad, joypad_info, port,
+                     idx, id, binds[port]);
+            if (!ret)
+               ret      = rwebinput_analog_pressed(
                   rwebinput, joypad_info, binds[port],
                   idx, id);
-            if (!ret && binds[port])
-               ret = input_joypad_analog(rwebinput->joypad, joypad_info, port,
-                     idx, id, binds[port]);
             return ret;
          }
       case RETRO_DEVICE_KEYBOARD:

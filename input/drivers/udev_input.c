@@ -1048,11 +1048,12 @@ static int16_t udev_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
+         if (binds[port])
          {
-            int16_t ret = udev_analog_pressed(binds[port], idx, id);
-            if (!ret && binds[port])
-               ret = input_joypad_analog(udev->joypad,
+            int16_t ret = input_joypad_analog(udev->joypad,
                         joypad_info, port, idx, id, binds[port]);
+            if (!ret)
+               ret = udev_analog_pressed(binds[port], idx, id);
             return ret;
          }
       case RETRO_DEVICE_KEYBOARD:

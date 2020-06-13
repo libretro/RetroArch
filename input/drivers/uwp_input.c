@@ -215,6 +215,7 @@ static int16_t uwp_input_state(void *data,
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return uwp_pressed_analog(uwp, joypad_info, binds[port], port, index, id);
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && uwp_keyboard_pressed(id);
 

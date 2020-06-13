@@ -333,12 +333,15 @@ static int16_t input_wl_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
+         if (binds[port])
          {
-            int16_t ret = input_wl_analog_pressed(wl, binds[port], idx, id);
-            if (!ret && binds[port])
-               ret = input_joypad_analog(wl->joypad, joypad_info, port, idx, id, binds[port]);
+            int16_t ret = input_joypad_analog(
+                  wl->joypad, joypad_info, port, idx, id, binds[port]);
+            if (!ret)
+               ret = input_wl_analog_pressed(wl, binds[port], idx, id);
             return ret;
          }
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return input_wl_state_kb(wl, binds, port, device, idx, id);
       case RETRO_DEVICE_MOUSE:

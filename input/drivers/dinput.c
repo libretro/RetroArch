@@ -635,10 +635,10 @@ static int16_t dinput_input_state(void *data,
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
-            int16_t ret = dinput_pressed_analog(di, binds[port], idx, id);
-            if (!ret)
-               ret = input_joypad_analog(di->joypad, joypad_info,
+            int16_t ret = input_joypad_analog(di->joypad, joypad_info,
                      port, idx, id, binds[port]);
+            if (!ret)
+               ret = dinput_pressed_analog(di, binds[port], idx, id);
             return ret;
          }
          break;
