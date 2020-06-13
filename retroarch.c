@@ -24127,9 +24127,6 @@ static void input_keys_pressed(
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
-      const struct retro_keybind *hotkey =
-         &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-
       if (  p_rarch->current_input->input_state(
             p_rarch->current_input_data, joypad_info,
             &binds[port], port, RETRO_DEVICE_JOYPAD, 0,
