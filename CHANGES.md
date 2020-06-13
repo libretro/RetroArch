@@ -3,6 +3,7 @@
 - BUILTIN CORES: Builtin cores like ffmpeg and imageviewer would previously try  to erroneously load a dynamic core named 'builtin' - this would fail and would just be a wasteful operation - this now skips dylib loading in libretro_get_system_info for builtin cores
 - CHEEVOS: Report API errors when unlocking achievements or submitting leaderboards
 - CHEEVOS: Support less common file extensions
+- CHEEVOS: Disable hardcore mode when playing bsv file
 - CHEEVOS/M3U: Bugfix - did not handle absolute/relative paths in M3U files correctly before
 - CHEEVOS/M3U: Bugfix - it didn't handle comments/directives
 - CHEEVOS/M3U: Bugfix - it doesn't handle trailing whitespace
@@ -27,6 +28,7 @@
 - MENU/HOTKEYS: Add sublabels to all hotkey bind entries
 - MENU/QUICK MENU: Suppress the display of 'empty' quick menu listings when closing content
 - MENU/OZONE: Performance improvements
+- MENU/SDL: Add mouse controls
 - OPENGL1/VITA: Initial changes for HW context without FBO
 - OVERLAYS: Add options for moving the on-screen overlay
 - PLAYLISTS/WINDOWS: Fix core path entries in image/video/music history playlists
