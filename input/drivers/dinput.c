@@ -653,7 +653,7 @@ static int16_t dinput_input_state(void *data,
       case RARCH_DEVICE_MOUSE_SCREEN:
          {
             settings                   = config_get_ptr();
-            if (settings->uints.input_mouse_index[ port ] != 0)
+            if (settings->uints.input_mouse_index[ port ] == 0)
                return dinput_mouse_state_screen(di, port, id);
          }
          break;
