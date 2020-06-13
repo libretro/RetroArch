@@ -212,7 +212,6 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
       winraw_mouse_t *mouse,
       unsigned port, unsigned id)
 {
-   unsigned i;
    struct video_viewport vp;
    const int edge_detect = 32700;
    bool inside           = false;

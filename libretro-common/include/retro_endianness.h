@@ -81,7 +81,7 @@ static INLINE uint64_t SWAP64(uint64_t val)
 #  undef MSB_FIRST
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(_XBOX)
 #include <winsock2.h>
 #endif
 
