@@ -26,6 +26,7 @@
 
 #include "../input_keymaps.h"
 
+#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
@@ -193,6 +194,7 @@ static int16_t sdl_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
+   settings_t        *settings = NULL;
    sdl_input_t            *sdl = (sdl_input_t*)data;
 
    switch (device)
@@ -243,7 +245,15 @@ static int16_t sdl_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_MOUSE:
-         return sdl_mouse_device_state(sdl, id);
+         settings = config_get_ptr();
+         if (settings->uints.input_mouse_index[ port ] == 0)
+            return sdl_mouse_device_state(sdl, id);
+         break;
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         settings = config_get_ptr();
+         if (settings->uints.input_mouse_index[ port ] == 0)
+            return sdl_mouse_device_state(sdl, id);
+         break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
