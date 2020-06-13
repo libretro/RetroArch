@@ -296,8 +296,8 @@ static int16_t x_input_state(void *data,
                {
                   if (binds[port][i].valid)
                   {
-                     if (x_is_pressed(
-                              x11, x11->joypad,
+                     if (button_is_pressed(
+                              x11->joypad,
                               joypad_info, binds[port], port, i))
                         ret |= (1 << i);
                      else if (x_mouse_button_pressed(x11, port,
@@ -609,7 +609,7 @@ static int16_t x_input_state(void *data,
                return x11->mouse_y - x11->mouse_last_y;
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                {
-                  unsigned new_id = RARCH_LIGHTGUN_DPAD_START;
+                  unsigned new_id = RARCH_LIGHTGUN_PAUSE;
                   if (!input_x.keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
