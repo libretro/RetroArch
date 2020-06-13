@@ -45,26 +45,6 @@ enum compare_op
    COMPARE_OP_GREATER_EQUAL
 };
 
-struct core_info_state
-{
-#ifdef HAVE_COMPRESSION
-   const struct string_list *tmp_list;
-#endif
-   const char *tmp_path;
-   core_info_t *current;
-   core_info_list_t *curr_list;
-};
-
-typedef struct core_info_state core_info_state_t;
-
-/* TODO/FIXME - global state - perhaps move outside this file */
-static core_info_state_t core_info_st;
-
-static core_info_state_t *coreinfo_get_ptr(void)
-{
-   return &core_info_st;
-}
-
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {

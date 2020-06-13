@@ -128,6 +128,18 @@ enum core_info_list_qsort_type
    CORE_INFO_LIST_SORT_SYSTEM_NAME
 };
 
+struct core_info_state
+{
+#ifdef HAVE_COMPRESSION
+   const struct string_list *tmp_list;
+#endif
+   const char *tmp_path;
+   core_info_t *current;
+   core_info_list_t *curr_list;
+};
+
+typedef struct core_info_state core_info_state_t;
+
 size_t core_info_list_num_info_files(core_info_list_t *list);
 
 /* Non-reentrant, does not allocate. Returns pointer to internal state. */
@@ -186,6 +198,8 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *path);
 
 bool core_info_hw_api_supported(core_info_t *info);
+
+core_info_state_t *coreinfo_get_ptr(void);
 
 RETRO_END_DECLS
 

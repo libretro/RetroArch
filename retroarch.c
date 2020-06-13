@@ -2168,6 +2168,8 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
+   /* TODO/FIXME - global state - perhaps move outside this file */
+   core_info_state_t core_info_st;
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t dispwidget_st;
 #endif
@@ -2723,6 +2725,12 @@ char **input_event_get_osk_grid(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    return p_rarch->osk_grid;
+}
+
+core_info_state_t *coreinfo_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->core_info_st;
 }
 
 #ifdef HAVE_MENU
