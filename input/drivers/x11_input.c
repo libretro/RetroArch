@@ -312,7 +312,7 @@ static int16_t x_input_state(void *data,
                {
                   if (binds[port][i].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port], port, i))
                         ret |= (1 << i);
                      else if ((binds[port][i].key < RETROK_LAST) &&
@@ -333,7 +333,7 @@ static int16_t x_input_state(void *data,
             {
                if (binds[port][id].valid)
                {
-                  if (x_is_pressed(x11, x11->joypad,
+                  if (button_is_pressed( x11->joypad,
                         joypad_info, binds[port], port, id))
                      return 1;
                   else if (
@@ -392,7 +392,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -412,7 +412,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -432,7 +432,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -452,7 +452,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -472,7 +472,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -492,7 +492,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -512,7 +512,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -532,7 +532,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -552,7 +552,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -572,7 +572,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -592,7 +592,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -617,7 +617,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (x_is_pressed(x11, x11->joypad,
+                     if (button_is_pressed( x11->joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
