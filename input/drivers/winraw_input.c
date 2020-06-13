@@ -570,41 +570,14 @@ static int16_t winraw_input_state(void *d,
    settings_t *settings  = NULL;
    winraw_mouse_t *mouse = NULL;
    winraw_input_t *wr    = (winraw_input_t*)d;
-   bool process_mouse    = (device == RETRO_DEVICE_JOYPAD);
+   bool process_mouse    = 
+         (device == RETRO_DEVICE_JOYPAD)
+      || (device == RETRO_DEVICE_MOUSE)
+      || (device == RARCH_DEVICE_MOUSE_SCREEN)
+      || (device == RETRO_DEVICE_LIGHTGUN);
 
    if (port >= MAX_USERS)
       return 0;
-
-   if (!process_mouse && device == RETRO_DEVICE_LIGHTGUN)
-   {
-      switch (id)
-      {
-         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-
-         case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-         case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-         case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-         case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-         case RETRO_DEVICE_ID_LIGHTGUN_START:
-         case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-         case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-         case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-         case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-         case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-
-         case RETRO_DEVICE_ID_LIGHTGUN_X:
-         case RETRO_DEVICE_ID_LIGHTGUN_Y:
-
-         case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-            process_mouse = true;
-            break;
-         default:
-            break;
-      }
-   }
 
    if (process_mouse)
    {
@@ -701,7 +674,8 @@ static int16_t winraw_input_state(void *d,
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (mouse)
             return winraw_mouse_state(wr, mouse, port,
-                  (device == RARCH_DEVICE_MOUSE_SCREEN) ? true : false,
+                  (device == RARCH_DEVICE_MOUSE_SCREEN) 
+                  ? true : false,
                   id);
          break;
       case RETRO_DEVICE_LIGHTGUN:
