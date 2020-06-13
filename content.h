@@ -85,9 +85,6 @@ bool content_reset_savestate_backups(void);
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
 
-/* Checks if launched from the commandline */
-bool content_launched_from_cli(void);
-
 /* Clears the pending subsystem rom buffer */
 bool content_is_subsystem_pending_load(void);
 

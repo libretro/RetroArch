@@ -204,8 +204,6 @@ typedef struct content_state
    struct string_list *temporary_content;
 } content_state_t;
 
-/* TODO/FIXME - global state - perhaps move outside this file */
-static bool _launched_from_cli = true;
 static content_state_t content_st;
 
 #ifdef HAVE_CDROM
@@ -1951,8 +1949,11 @@ end:
 }
 #endif
 
-static bool task_load_content_callback(content_ctx_info_t *content_info,
-      bool loading_from_menu, bool loading_from_cli, bool loading_from_companion_ui)
+static bool task_load_content_internal(
+      content_ctx_info_t *content_info,
+      bool loading_from_menu,
+      bool loading_from_cli,
+      bool loading_from_companion_ui)
 {
    content_information_ctx_t content_ctx;
 
@@ -2102,7 +2103,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 
-   _launched_from_cli = false;
+   global->launched_from_cli = false;
 
    if (global)
    {
@@ -2113,7 +2114,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    }
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false, true))
+   if (!task_load_content_internal(content_info, true, false, true))
       return false;
 
 #ifdef HAVE_MENU
@@ -2133,7 +2134,7 @@ bool task_push_load_content_from_cli(
       void *user_data)
 {
    /* Load content */
-   if (!task_load_content_callback(content_info, true, true, false))
+   if (!task_load_content_internal(content_info, true, true, false))
       return false;
 
    return true;
@@ -2153,7 +2154,7 @@ bool task_push_start_builtin_core(
    retroarch_set_current_core_type(type, true);
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false, false))
+   if (!task_load_content_internal(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
@@ -2187,7 +2188,7 @@ bool task_push_load_content_with_current_core_from_companion_ui(
     * > TODO/FIXME: Set loading_from_companion_ui 'false' for
     *   now, until someone can implement the required higher
     *   level functionality in 'win32_common.c' and 'ui_cocoa.m' */
-   if (!task_load_content_callback(content_info, true, false, false))
+   if (!task_load_content_internal(content_info, true, false, false))
       return false;
 
    /* Push quick menu onto menu stack */
@@ -2209,7 +2210,7 @@ bool task_push_load_content_with_core_from_menu(
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false, false))
+   if (!task_load_content_internal(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
@@ -2236,7 +2237,7 @@ bool task_push_load_subsystem_with_core_from_menu(
    p_content->pending_subsystem_init = true;
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false, false))
+   if (!task_load_content_internal(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
@@ -2278,12 +2279,6 @@ void content_clear_subsystem(void)
          p_content->pending_subsystem_roms[i] = NULL;
       }
    }
-}
-
-/* Checks if launched from the commandline */
-bool content_launched_from_cli(void)
-{
-   return _launched_from_cli;
 }
 
 /* Get the current subsystem */

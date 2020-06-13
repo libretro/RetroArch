@@ -34690,7 +34690,7 @@ bool retroarch_main_init(int argc, char *argv[])
    if (init_failed)
    {
       /* Check if menu was active prior to core initialization */
-      if (!content_launched_from_cli()
+      if (!global->launched_from_cli
 #ifdef HAVE_MENU
           || p_rarch->menu_driver_alive
 #endif

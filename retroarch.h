@@ -224,6 +224,7 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
+   bool launched_from_cli;
    struct
    {
       char savefile[8192];
