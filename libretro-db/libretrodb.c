@@ -75,7 +75,7 @@ typedef struct libretrodb_metadata
 
 typedef struct libretrodb_header
 {
-	char magic_number[sizeof(MAGIC_NUMBER)-1];
+	char magic_number[sizeof(MAGIC_NUMBER)];
 	uint64_t metadata_offset;
 } libretrodb_header_t;
 
