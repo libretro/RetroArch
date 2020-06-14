@@ -9181,6 +9181,39 @@ static void materialui_list_insert(
             node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
             node->has_icon           = true;
             break;
+         case FILE_TYPE_RPL_ENTRY:
+         case MENU_SETTING_DROPDOWN_ITEM:
+         case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
+         case MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PARAM:
+         case MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PRESET_PARAM:
+         case MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_NUM_PASS:
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE:
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE:
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE:
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE:
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_SORT_MODE:
+         case MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+         case MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME:
+         case MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX:
+         case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL:
+         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL:
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
+         case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
+         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
+         case MENU_SETTINGS_CORE_INFO_NONE:
+         case MENU_SETTING_ITEM_CORE_RESTORE_BACKUP:
+         case MENU_SETTING_ITEM_CORE_DELETE_BACKUP:
+            /* None of these entries have icons - catch them
+             * here (and leave icon_texture_index/has_icon
+             * set to the default 'disabled' state) to avoid
+             * having to process the 'default' case of this
+             * switch */
+            break;
          default:
             if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))              ||
