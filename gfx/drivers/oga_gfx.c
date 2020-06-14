@@ -71,6 +71,8 @@ typedef struct oga_video
     unsigned menu_width;
     unsigned menu_height;
     unsigned menu_pitch;
+
+    char menu_buf[NATIVE_WIDTH*NATIVE_HEIGHT*4];
 } oga_video_t;
 
 go2_rotation_t oga_rotation = GO2_ROTATION_DEGREES_0;
@@ -133,7 +135,7 @@ static void *oga_gfx_init(const video_info_t *video,
    vid->menu_frame = NULL;
    vid->display = go2_display_create();
    vid->presenter = go2_presenter_create(vid->display, DRM_FORMAT_RGB565, 0xff000000, false);
-   vid->menu_surface = go2_surface_create(vid->display, NATIVE_WIDTH, NATIVE_HEIGHT, DRM_FORMAT_RGB565);
+   vid->menu_surface = go2_surface_create(vid->display, NATIVE_WIDTH, NATIVE_HEIGHT, DRM_FORMAT_XRGB8888);
    vid->font = NULL;
    vid->font_driver = NULL;
 
@@ -316,10 +318,41 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
 
     vid->menu_width = width;
     vid->menu_height = height;
-    vid->menu_pitch = width * (rgb32 ? 4 : 2);
+    vid->menu_pitch = width * 4;
+
+
+   /* Borrowed from drm_gfx
+    *
+    * We have to go on a pixel format conversion adventure
+    * for now, until we can convince RGUI to output
+    * in an 8888 format. */
+   unsigned int src_pitch        = width * 2;
+   unsigned int dst_pitch        = width * 4;
+   unsigned int dst_width        = width;
+   uint32_t line[dst_width];
+
+   /* The output pixel array with the converted pixels. */
+   char *frame_output = vid->menu_buf;
+
+   /* Remember, memcpy() works with 8bits pointers for increments. */
+   char *dst_base_addr           = frame_output;
+
+   for (int i = 0; i < height; i++)
+   {
+      for (int j = 0; j < src_pitch / 2; j++)
+      {
+         uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j);
+         /* The hex AND is for keeping only the part we need for each component. */
+         uint32_t R = (src_pix << 8) & 0x00FF0000;
+         uint32_t G = (src_pix << 4) & 0x0000FF00;
+         uint32_t B = (src_pix << 0) & 0x000000FF;
+         line[j] = (0 | R | G | B);
+      }
+      memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
+   }
 
     if (unlikely(!vid->menu_frame))
-        vid->menu_frame = frame;
+        vid->menu_frame = frame_output;
 }
 
 static void oga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d)
