@@ -1153,7 +1153,7 @@ void rcheevos_get_achievement_state(unsigned index, char *buffer, size_t buffer_
    else
    {
       settings_t* settings = config_get_ptr();
-      bool hardcore        = settings->bools.cheevos_hardcore_mode_enable;
+      bool hardcore        = settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused;
       if (hardcore && !(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
          enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
       else if (!hardcore && !(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
