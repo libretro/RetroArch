@@ -2213,12 +2213,15 @@ static void gfx_widgets_achievement_next(void* userdata)
    dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
    SLOCK_LOCK(p_dispwidget->cheevo_popup_queue_lock);
 
-   gfx_widgets_achievement_free_current(p_dispwidget);
+   if (p_dispwidget->cheevo_popup_queue_read_index >= 0)
+   {
+      gfx_widgets_achievement_free_current(p_dispwidget);
 
-   /* start the next popup (if present) */
-   if (p_dispwidget->cheevo_popup_queue[
+      /* start the next popup (if present) */
+      if (p_dispwidget->cheevo_popup_queue[
          p_dispwidget->cheevo_popup_queue_read_index].title)
-      gfx_widgets_start_achievement_notification(p_dispwidget);
+         gfx_widgets_start_achievement_notification(p_dispwidget);
+   }
 
    SLOCK_UNLOCK(p_dispwidget->cheevo_popup_queue_lock);
 }
@@ -2590,6 +2593,10 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    int           start_notification = 1;
 
+   /* important - this must be done outside the lock because it has the potential to need to
+    * lock the video thread, which may be waiting for the popup queue lock to render popups */
+   uintptr_t     badge_id           = cheevos_get_badge_texture(badge, 0);
+
    if (p_dispwidget->cheevo_popup_queue_read_index < 0)
    {
       /* queue uninitialized */
@@ -2620,7 +2627,7 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
    else
       start_notification = 0; /* notification already being displayed */
 
-   p_dispwidget->cheevo_popup_queue[p_dispwidget->cheevo_popup_queue_write_index].badge = cheevos_get_badge_texture(badge, 0);
+   p_dispwidget->cheevo_popup_queue[p_dispwidget->cheevo_popup_queue_write_index].badge = badge_id;
    p_dispwidget->cheevo_popup_queue[p_dispwidget->cheevo_popup_queue_write_index].title = strdup(title);
 
    p_dispwidget->cheevo_popup_queue_write_index = (p_dispwidget->cheevo_popup_queue_write_index + 1) % CHEEVO_QUEUE_SIZE;
