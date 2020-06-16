@@ -66,6 +66,9 @@ typedef struct core_updater_list_handle
 enum core_updater_download_status
 {
    CORE_UPDATER_DOWNLOAD_BEGIN = 0,
+   CORE_UPDATER_DOWNLOAD_START_BACKUP,
+   CORE_UPDATER_DOWNLOAD_WAIT_BACKUP,
+   CORE_UPDATER_DOWNLOAD_START_TRANSFER,
    CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER,
    CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS,
    CORE_UPDATER_DOWNLOAD_END
@@ -73,14 +76,17 @@ enum core_updater_download_status
 
 typedef struct core_updater_download_handle
 {
+   bool auto_backup;
+   size_t auto_backup_history_size;
    char *path_dir_libretro;
+   char *path_dir_core_assets;
    char *remote_filename;
    char *remote_core_path;
    char *local_download_path;
    char *local_core_path;
    char *display_name;
+   uint32_t local_crc;
    uint32_t remote_crc;
-   bool check_crc;
    bool crc_match;
    retro_task_t *http_task;
    bool http_task_finished;
@@ -88,6 +94,8 @@ typedef struct core_updater_download_handle
    retro_task_t *decompress_task;
    bool decompress_task_finished;
    bool decompress_task_complete;
+   bool backup_enabled;
+   retro_task_t *backup_task;
    enum core_updater_download_status status;
 } core_updater_download_handle_t;
 
@@ -104,7 +112,10 @@ enum update_installed_cores_status
 
 typedef struct update_installed_cores_handle
 {
+   bool auto_backup;
+   size_t auto_backup_history_size;
    char *path_dir_libretro;
+   char *path_dir_core_assets;
    core_updater_list_t* core_list;
    retro_task_t *list_task;
    retro_task_t *download_task;
@@ -119,40 +130,37 @@ typedef struct update_installed_cores_handle
 /* Utility functions */
 /*********************/
 
-/* Returns true if local core has the same crc
- * value as core on buildbot */
-static bool local_core_matches_remote_crc(
-      const char *local_core_path, uint32_t remote_crc)
+/* Returns CRC32 of specified core file */
+static uint32_t task_core_updater_get_core_crc(const char *core_path)
 {
-   /* Sanity check */
-   if (string_is_empty(local_core_path) || (remote_crc == 0))
-      return false;
+   if (string_is_empty(core_path))
+      return 0;
 
-   if (path_is_valid(local_core_path))
+   if (path_is_valid(core_path))
    {
       /* Open core file */
-      intfstream_t *local_core_file = intfstream_open_file(
-            local_core_path, RETRO_VFS_FILE_ACCESS_READ,
+      intfstream_t *core_file = intfstream_open_file(
+            core_path, RETRO_VFS_FILE_ACCESS_READ,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-      if (local_core_file)
+      if (core_file)
       {
          uint32_t crc = 0;
+
          /* Get crc value */
-         bool success = intfstream_get_crc(local_core_file, &crc);
+         bool success = intfstream_get_crc(core_file, &crc);
 
          /* Close core file */
-         intfstream_close(local_core_file);
-         free(local_core_file);
-         local_core_file = NULL;
+         intfstream_close(core_file);
+         free(core_file);
+         core_file = NULL;
 
-         /* Check whether crc matches remote file */
-         if (success && (crc != 0) && (crc == remote_crc))
-            return true;
+         if (success)
+            return crc;
       }
    }
 
-   return false;
+   return 0;
 }
 
 /*************************/
@@ -184,7 +192,7 @@ finish:
 
    /* Log any error messages */
    if (!success)
-      RARCH_ERR("Download of core list '%s' failed: %s\n",
+      RARCH_ERR("[core updater] Download of core list '%s' failed: %s\n",
             (transf ? transf->path: "unknown"),
             (err ? err : "unknown"));
 
@@ -482,7 +490,7 @@ static void cb_decompress_task_core_updater_download(
 
    /* Log any error messages */
    if (!string_is_empty(err))
-      RARCH_ERR("%s", err);
+      RARCH_ERR("[core updater] %s", err);
 }
 
 void cb_http_task_core_updater_download(
@@ -576,7 +584,7 @@ finish:
 
    /* Log any error messages */
    if (!string_is_empty(err))
-      RARCH_ERR("Download of '%s' failed: %s\n",
+      RARCH_ERR("[core updater] Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
 
    if (data)
@@ -597,6 +605,9 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
 
    if (download_handle->path_dir_libretro)
       free(download_handle->path_dir_libretro);
+
+   if (download_handle->path_dir_core_assets)
+      free(download_handle->path_dir_core_assets);
 
    if (download_handle->remote_filename)
       free(download_handle->remote_filename);
@@ -636,13 +647,15 @@ static void task_core_updater_download_handler(retro_task_t *task)
    {
       case CORE_UPDATER_DOWNLOAD_BEGIN:
          {
-            file_transfer_t *transf = NULL;
+            /* Get CRC of existing core, if required */
+            if (download_handle->local_crc == 0)
+               download_handle->local_crc = task_core_updater_get_core_crc(
+                     download_handle->local_core_path);
 
-            /* Check CRC of existing core, if required */
-            if (download_handle->check_crc)
-               download_handle->crc_match = local_core_matches_remote_crc(
-                     download_handle->local_core_path,
-                     download_handle->remote_crc);
+            /* Check whether existing core and remote core
+             * have the same CRC */
+            download_handle->crc_match = (download_handle->local_crc != 0) &&
+                  (download_handle->local_crc == download_handle->remote_crc);
 
             /* If CRC matches, end task immediately */
             if (download_handle->crc_match)
@@ -650,6 +663,99 @@ static void task_core_updater_download_handler(retro_task_t *task)
                download_handle->status = CORE_UPDATER_DOWNLOAD_END;
                break;
             }
+
+            /* If automatic backups are enabled and core is
+             * already installed, trigger a backup - otherwise,
+             * initialise download */
+            download_handle->backup_enabled = download_handle->auto_backup &&
+                  path_is_valid(download_handle->local_core_path);
+
+            download_handle->status = download_handle->backup_enabled ?
+                  CORE_UPDATER_DOWNLOAD_START_BACKUP :
+                        CORE_UPDATER_DOWNLOAD_START_TRANSFER;
+         }
+         break;
+      case CORE_UPDATER_DOWNLOAD_START_BACKUP:
+         {
+            /* Request core backup */
+            download_handle->backup_task = (retro_task_t*)task_push_core_backup(
+                  download_handle->local_core_path,
+                  download_handle->display_name,
+                  download_handle->local_crc, CORE_BACKUP_MODE_AUTO,
+                  download_handle->auto_backup_history_size,
+                  download_handle->path_dir_core_assets, true);
+
+            if (download_handle->backup_task)
+            {
+               char task_title[PATH_MAX_LENGTH];
+
+               task_title[0] = '\0';
+
+               /* Update task title */
+               task_free_title(task);
+
+               strlcpy(
+                     task_title, msg_hash_to_str(MSG_BACKING_UP_CORE),
+                     sizeof(task_title));
+               strlcat(task_title, download_handle->display_name, sizeof(task_title));
+
+               task_set_title(task, strdup(task_title));
+
+               /* Start waiting for backup to complete */
+               download_handle->status = CORE_UPDATER_DOWNLOAD_WAIT_BACKUP;
+            }
+            else
+            {
+               /* This cannot realistically happen...
+                * > If it does, just log an error and initialise
+                *   download */
+               RARCH_ERR("[core updater] Failed to backup core: %s\n",
+                     download_handle->local_core_path);
+               download_handle->backup_enabled = false;
+               download_handle->status         = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
+            }
+         }
+         break;
+      case CORE_UPDATER_DOWNLOAD_WAIT_BACKUP:
+         {
+            bool backup_complete = false;
+
+            /* > If task is running, check 'is finished'
+             *   status
+             * > If task is NULL, then it is finished
+             *   by definition */
+            if (download_handle->backup_task)
+            {
+               backup_complete = task_get_finished(download_handle->backup_task);
+
+               /* If backup task is running, copy current
+                * progress value to *this* task */
+               if (!backup_complete)
+               {
+                  /* Backup accounts for first third of
+                   * task progress */
+                  int8_t progress = task_get_progress(download_handle->backup_task);
+
+                  task_set_progress(task, (int8_t)(((float)progress * (1.0f / 3.0f)) + 0.5f));
+               }
+            }
+            else
+               backup_complete = true;
+
+            /* If backup is complete, initialise download */
+            if (backup_complete)
+            {
+               download_handle->backup_task = NULL;
+               download_handle->status      = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
+            }
+         }
+         break;
+      case CORE_UPDATER_DOWNLOAD_START_TRANSFER:
+         {
+            file_transfer_t *transf = NULL;
+            char task_title[PATH_MAX_LENGTH];
+
+            task_title[0] = '\0';
 
             /* Configure file transfer object */
             transf = (file_transfer_t*)calloc(1, sizeof(file_transfer_t));
@@ -668,16 +774,6 @@ static void task_core_updater_download_handler(retro_task_t *task)
                   download_handle->remote_core_path, true, NULL,
                   cb_http_task_core_updater_download, transf);
 
-            /* Start waiting for HTTP transfer to complete */
-            download_handle->status = CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER;
-         }
-         break;
-      case CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER:
-         {
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
-
             /* Update task title */
             task_free_title(task);
 
@@ -688,6 +784,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             task_set_title(task, strdup(task_title));
 
+            /* Start waiting for HTTP transfer to complete */
+            download_handle->status = CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER;
+         }
+         break;
+      case CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER:
+         {
             /* If HTTP task is NULL, then it either finished
              * or an error occurred - in either case,
              * just move on to the next state */
@@ -703,36 +805,46 @@ static void task_core_updater_download_handler(retro_task_t *task)
                 * progress value to *this* task */
                if (!download_handle->http_task_finished)
                {
-                  /* Download accounts for first half of
-                   * task progress */
+                  /* > If backups are enabled, download accounts
+                   *   for second third of task progress
+                   * > Otherwise, download accounts for first half
+                   *   of task progress */
                   int8_t progress = task_get_progress(download_handle->http_task);
 
-                  task_set_progress(task, progress >> 1);
+                  if (download_handle->backup_enabled)
+                     progress = (int8_t)(((float)progress * (1.0f / 3.0f)) + (100.0f / 3.0f) + 0.5f);
+                  else
+                     progress = progress >> 1;
+
+                  task_set_progress(task, progress);
                }
             }
 
             /* Wait for task_push_http_transfer_file()
              * callback to trigger */
             if (download_handle->http_task_complete)
+            {
+               char task_title[PATH_MAX_LENGTH];
+
+               task_title[0] = '\0';
+
+               /* Update task title */
+               task_free_title(task);
+
+               strlcpy(
+                     task_title, msg_hash_to_str(MSG_EXTRACTING_CORE),
+                     sizeof(task_title));
+               strlcat(task_title, download_handle->display_name, sizeof(task_title));
+
+               task_set_title(task, strdup(task_title));
+
+               /* Start waiting for file to be extracted */
                download_handle->status = CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS;
+            }
          }
          break;
       case CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS:
          {
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
-
-            /* Update task title */
-            task_free_title(task);
-
-            strlcpy(
-                  task_title, msg_hash_to_str(MSG_EXTRACTING_CORE),
-                  sizeof(task_title));
-            strlcat(task_title, download_handle->display_name, sizeof(task_title));
-
-            task_set_title(task, strdup(task_title));
-
             /* If decompression task is NULL, then it either
              * finished or an error occurred - in either case,
              * just move on to the next state */
@@ -749,11 +861,18 @@ static void task_core_updater_download_handler(retro_task_t *task)
                 * current progress value to *this* task */
                if (!download_handle->decompress_task_finished)
                {
-                  /* Download accounts for second half
-                   * of task progress */
+                  /* > If backups are enabled, decompression accounts
+                   *   for last third of task progress
+                   * > Otherwise, decompression accounts for second
+                   *   half of task progress */
                   int8_t progress = task_get_progress(download_handle->decompress_task);
 
-                  task_set_progress(task, 50 + (progress >> 1));
+                  if (download_handle->backup_enabled)
+                     progress = (int8_t)(((float)progress * (1.0f / 3.0f)) + (200.0f / 3.0f) + 0.5f);
+                  else
+                     progress = 50 + (progress >> 1);
+
+                  task_set_progress(task, progress);
                }
             }
 
@@ -816,8 +935,10 @@ static bool task_core_updater_download_finder(retro_task_t *task, void *user_dat
 
 void *task_push_core_updater_download(
       core_updater_list_t* core_list,
-      const char *filename, bool mute, bool check_crc,
-      const char *path_dir_libretro)
+      const char *filename, uint32_t crc, bool mute,
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets)
 {
    task_finder_data_t find_data;
    char task_title[PATH_MAX_LENGTH];
@@ -861,14 +982,17 @@ void *task_push_core_updater_download(
          sizeof(local_download_path));
 
    /* Configure handle */
+   download_handle->auto_backup              = auto_backup;
+   download_handle->auto_backup_history_size = auto_backup_history_size;
    download_handle->path_dir_libretro        = strdup(path_dir_libretro);
+   download_handle->path_dir_core_assets     = string_is_empty(path_dir_core_assets) ? NULL : strdup(path_dir_core_assets);
    download_handle->remote_filename          = strdup(list_entry->remote_filename);
    download_handle->remote_core_path         = strdup(list_entry->remote_core_path);
    download_handle->local_download_path      = strdup(local_download_path);
    download_handle->local_core_path          = strdup(list_entry->local_core_path);
    download_handle->display_name             = strdup(list_entry->display_name);
+   download_handle->local_crc                = crc;
    download_handle->remote_crc               = list_entry->crc;
-   download_handle->check_crc                = check_crc;
    download_handle->crc_match                = false;
    download_handle->http_task                = NULL;
    download_handle->http_task_finished       = false;
@@ -876,6 +1000,8 @@ void *task_push_core_updater_download(
    download_handle->decompress_task          = NULL;
    download_handle->decompress_task_finished = false;
    download_handle->decompress_task_complete = false;
+   download_handle->backup_enabled           = false;
+   download_handle->backup_task              = NULL;
    download_handle->status                   = CORE_UPDATER_DOWNLOAD_BEGIN;
 
    /* Concurrent downloads of the same file are not allowed */
@@ -937,6 +1063,9 @@ static void free_update_installed_cores_handle(
 
    if (update_installed_handle->path_dir_libretro)
       free(update_installed_handle->path_dir_libretro);
+
+   if (update_installed_handle->path_dir_core_assets)
+      free(update_installed_handle->path_dir_core_assets);
 
    core_updater_list_free(update_installed_handle->core_list);
 
@@ -1063,7 +1192,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
       case UPDATE_INSTALLED_CORES_UPDATE_CORE:
          {
             const core_updater_list_entry_t *list_entry = NULL;
-            bool crc_match;
+            uint32_t local_crc;
 
             /* Get list entry
              * > In the event of an error, just return
@@ -1077,15 +1206,16 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                break;
             }
 
-            /* Check CRC of existing core */
-            crc_match = local_core_matches_remote_crc(
-                  list_entry->local_core_path,
-                  list_entry->crc);
+            /* Get CRC of existing core */
+            local_crc = task_core_updater_get_core_crc(
+                  list_entry->local_core_path);
 
-            /* If CRC matches, then core is already the most
-             * recent version - just return to
-             * UPDATE_INSTALLED_CORES_ITERATE state */
-            if (crc_match)
+            /* Check whether existing core and remote core
+             * have the same CRC
+             * > If CRC matches, then core is already the most
+             *   recent version - just return to
+             *   UPDATE_INSTALLED_CORES_ITERATE state */
+            if ((local_crc != 0) && (local_crc == list_entry->crc))
             {
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
                break;
@@ -1097,8 +1227,11 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                   task_push_core_updater_download(
                         update_installed_handle->core_list,
                         list_entry->remote_filename,
-                        true, false,
-                        update_installed_handle->path_dir_libretro);
+                        local_crc, true,
+                        update_installed_handle->auto_backup,
+                        update_installed_handle->auto_backup_history_size,
+                        update_installed_handle->path_dir_libretro,
+                        update_installed_handle->path_dir_core_assets);
 
             /* Again, if an error occurred, just return to
              * UPDATE_INSTALLED_CORES_ITERATE state */
@@ -1208,7 +1341,10 @@ static bool task_update_installed_cores_finder(retro_task_t *task, void *user_da
    return false;
 }
 
-void task_push_update_installed_cores(const char *path_dir_libretro)
+void task_push_update_installed_cores(
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets)
 {
    task_finder_data_t find_data;
    retro_task_t *task                                       = NULL;
@@ -1217,20 +1353,24 @@ void task_push_update_installed_cores(const char *path_dir_libretro)
                calloc(1, sizeof(update_installed_cores_handle_t));
 
    /* Sanity check */
-   if (!update_installed_handle)
+   if (!update_installed_handle ||
+       string_is_empty(path_dir_libretro))
       goto error;
 
    /* Configure handle */
-   update_installed_handle->core_list         = core_updater_list_init(
-         CORE_UPDATER_LIST_SIZE);
-   update_installed_handle->list_task         = NULL;
-   update_installed_handle->download_task     = NULL;
-   update_installed_handle->list_size         = 0;
-   update_installed_handle->list_index        = 0;
-   update_installed_handle->installed_index   = 0;
-   update_installed_handle->num_updated       = 0;
-   update_installed_handle->path_dir_libretro = strdup(path_dir_libretro);
-   update_installed_handle->status            = UPDATE_INSTALLED_CORES_BEGIN;
+   update_installed_handle->auto_backup              = auto_backup;
+   update_installed_handle->auto_backup_history_size = auto_backup_history_size;
+   update_installed_handle->path_dir_libretro        = strdup(path_dir_libretro);
+   update_installed_handle->path_dir_core_assets     = string_is_empty(path_dir_core_assets) ?
+         NULL : strdup(path_dir_core_assets);
+   update_installed_handle->core_list                = core_updater_list_init(CORE_UPDATER_LIST_SIZE);
+   update_installed_handle->list_task                = NULL;
+   update_installed_handle->download_task            = NULL;
+   update_installed_handle->list_size                = 0;
+   update_installed_handle->list_index               = 0;
+   update_installed_handle->installed_index          = 0;
+   update_installed_handle->num_updated              = 0;
+   update_installed_handle->status                   = UPDATE_INSTALLED_CORES_BEGIN;
 
    if (!update_installed_handle->core_list)
       goto error;

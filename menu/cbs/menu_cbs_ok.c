@@ -4338,16 +4338,20 @@ static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   core_updater_list_t *core_list = core_updater_list_get_cached();
-   settings_t          *settings  = config_get_ptr();
-   const char *path_dir_libretro  = settings->paths.directory_libretro;
+   core_updater_list_t *core_list    = core_updater_list_get_cached();
+   settings_t          *settings     = config_get_ptr();
+   bool auto_backup                  = settings->bools.core_updater_auto_backup;
+   unsigned auto_backup_history_size = settings->uints.core_updater_auto_backup_history_size;
+   const char *path_dir_libretro     = settings->paths.directory_libretro;
+   const char *path_dir_core_assets  = settings->paths.directory_core_assets;
 
    if (!core_list)
       return menu_cbs_exit();
 
    task_push_core_updater_download(
-      core_list, path, false, true,
-      path_dir_libretro);
+         core_list, path, 0, false,
+         auto_backup, (size_t)auto_backup_history_size,
+         path_dir_libretro, path_dir_core_assets);
 
 #endif
    return 0;
@@ -4357,14 +4361,19 @@ static int action_ok_core_updater_download(const char *path,
 static int action_ok_update_installed_cores(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t          *settings  = config_get_ptr();
-   const char *path_dir_libretro  = settings->paths.directory_libretro;
+   settings_t          *settings     = config_get_ptr();
+   bool auto_backup                  = settings->bools.core_updater_auto_backup;
+   unsigned auto_backup_history_size = settings->uints.core_updater_auto_backup_history_size;
+   const char *path_dir_libretro     = settings->paths.directory_libretro;
+   const char *path_dir_core_assets  = settings->paths.directory_core_assets;
 
    /* Ensure networking is initialised */
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
    /* Push update task */
-   task_push_update_installed_cores(path_dir_libretro);
+   task_push_update_installed_cores(
+         auto_backup, auto_backup_history_size,
+         path_dir_libretro, path_dir_core_assets);
 
    return 0;
 }
@@ -6253,15 +6262,16 @@ static int action_ok_netplay_disconnect(const char *path,
 static int action_ok_core_create_backup(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *core_path       = label;
-   settings_t *settings        = config_get_ptr();
-   const char *dir_core_assets = settings->paths.directory_core_assets;
+   const char *core_path             = label;
+   settings_t *settings              = config_get_ptr();
+   unsigned auto_backup_history_size = settings->uints.core_updater_auto_backup_history_size;
+   const char *dir_core_assets       = settings->paths.directory_core_assets;
 
    if (string_is_empty(core_path))
       return -1;
 
-   task_push_core_backup(core_path, 0, CORE_BACKUP_MODE_MANUAL,
-         dir_core_assets, false);
+   task_push_core_backup(core_path, NULL, 0, CORE_BACKUP_MODE_MANUAL,
+         (size_t)auto_backup_history_size, dir_core_assets, false);
 
    return 0;
 }

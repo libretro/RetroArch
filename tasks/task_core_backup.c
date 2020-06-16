@@ -44,6 +44,8 @@ enum core_backup_status
    CORE_BACKUP_CHECK_CRC,
    CORE_BACKUP_PRE_ITERATE,
    CORE_BACKUP_ITERATE,
+   CORE_BACKUP_CHECK_HISTORY,
+   CORE_BACKUP_PRUNE_HISTORY,
    CORE_BACKUP_END,
    CORE_RESTORE_GET_CORE_CRC,
    CORE_RESTORE_GET_BACKUP_CRC,
@@ -61,6 +63,9 @@ typedef struct core_backup_handle
    char *backup_path;
    enum core_backup_type backup_type;
    enum core_backup_mode backup_mode;
+   size_t auto_backup_history_size;
+   size_t num_auto_backups_to_remove;
+   size_t backup_index;
    int64_t core_file_size;
    int64_t backup_file_size;
    int64_t file_data_read;
@@ -348,7 +353,13 @@ static void task_core_backup_handler(retro_task_t *task)
                backup_handle->backup_file = NULL;
 
                backup_handle->success = true;
-               backup_handle->status  = CORE_BACKUP_END;
+
+               /* If this is an automatic backup, check whether
+                * any old backup files should be deleted.
+                * In all other cases, backup is complete */
+               backup_handle->status  = (backup_handle->backup_mode ==
+                     CORE_BACKUP_MODE_AUTO) ?
+                           CORE_BACKUP_CHECK_HISTORY : CORE_BACKUP_END;
                break;
             }
 
@@ -366,6 +377,103 @@ static void task_core_backup_handler(retro_task_t *task)
             /* Update progress display */
             task_set_progress(task,
                   (backup_handle->file_data_read * 100) / backup_handle->core_file_size);
+         }
+         break;
+      case CORE_BACKUP_CHECK_HISTORY:
+         {
+            size_t num_backups;
+
+            /* Sanity check: We can only reach this stage
+             * when performing automatic backups, but verify
+             * that this is true (i.e. don't inadvertently
+             * delete backups of the wrong type if someone
+             * edits the CORE_BACKUP_ITERATE case statement...) */
+            if (backup_handle->backup_mode != CORE_BACKUP_MODE_AUTO)
+            {
+               backup_handle->status = CORE_BACKUP_END;
+               break;
+            }
+
+            /* This is an automated backup
+             * > Fetch number of existing auto backups
+             *   in the list
+             * > If we reach this stage then a new backup
+             *   has been created successfully -> increment
+             *   count by one */
+            num_backups = core_backup_list_get_num_backups(
+                  backup_handle->backup_list,
+                  CORE_BACKUP_MODE_AUTO);
+            num_backups++;
+
+            /* Check whether we have exceeded the backup
+             * history size limit */
+            if (num_backups > backup_handle->auto_backup_history_size)
+            {
+               char task_title[PATH_MAX_LENGTH];
+
+               task_title[0]  = '\0';
+
+               /* Get number of old backups to remove */
+               backup_handle->num_auto_backups_to_remove = num_backups -
+                     backup_handle->auto_backup_history_size;
+
+               /* Update task title */
+               task_free_title(task);
+               strlcpy(task_title, msg_hash_to_str(MSG_PRUNING_CORE_BACKUP_HISTORY),
+                     sizeof(task_title));
+               strlcat(task_title, backup_handle->core_name, sizeof(task_title));
+               task_set_title(task, strdup(task_title));
+
+               /* Go to history clean-up phase */
+               backup_handle->status = CORE_BACKUP_PRUNE_HISTORY;
+            }
+            /* No backups to remove - task is complete */
+            else
+               backup_handle->status = CORE_BACKUP_END;
+         }
+         break;
+      case CORE_BACKUP_PRUNE_HISTORY:
+         {
+            size_t list_size = core_backup_list_size(backup_handle->backup_list);
+
+            /* The core backup list is automatically sorted
+             * by timestamp - simply loop from start to end
+             * and delete automatic backups until the required
+             * number have been removed */
+            while ((backup_handle->backup_index < list_size) &&
+                   (backup_handle->num_auto_backups_to_remove > 0))
+            {
+               const core_backup_list_entry_t *entry = NULL;
+
+               if (core_backup_list_get_index(
+                     backup_handle->backup_list,
+                     backup_handle->backup_index,
+                     &entry) &&
+                     entry &&
+                     (entry->backup_mode == CORE_BACKUP_MODE_AUTO))
+               {
+                  /* Delete backup file (if it exists) */
+                  if (path_is_valid(entry->backup_path))
+                     filestream_delete(entry->backup_path);
+
+                  backup_handle->num_auto_backups_to_remove--;
+                  backup_handle->backup_index++;
+
+                  /* Break here - only remove one file per
+                   * iteration of the task */
+                  break;
+               }
+
+               backup_handle->backup_index++;
+            }
+
+            /* Check whether all old backups have been
+             * removed (also handle error conditions by
+             * ensuring we quit if end of backup list is
+             * reached...) */
+            if ((backup_handle->num_auto_backups_to_remove < 1) ||
+                (backup_handle->backup_index >= list_size))
+               backup_handle->status = CORE_BACKUP_END;
          }
          break;
       case CORE_BACKUP_END:
@@ -409,14 +517,20 @@ task_finished:
    free_core_backup_handle(backup_handle);
 }
 
-/* Note: If crc is set to 0, crc of core_path file will
- * be calculated automatically */
-void *task_push_core_backup(const char *core_path,
+/* Note 1: If crc is set to 0, crc of core_path file will
+ * be calculated automatically
+ * Note 2: If core_display_name is set to NULL, display
+ * name will be determined automatically
+ * > core_display_name *must* be set to a non-empty
+ *   string if task_push_core_backup() is *not* called
+ *   on the main thread */
+void *task_push_core_backup(
+      const char *core_path, const char *core_display_name,
       uint32_t crc, enum core_backup_mode backup_mode,
+      size_t auto_backup_history_size,
       const char *dir_core_assets, bool mute)
 {
    task_finder_data_t find_data;
-   core_info_ctx_find_t core_info;
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
@@ -438,20 +552,27 @@ void *task_push_core_backup(const char *core_path,
       goto error;
 
    /* Get core name */
-   core_info.inf  = NULL;
-   core_info.path = core_path;
-
-   /* If core is found, use display name */
-   if (core_info_find(&core_info) &&
-       core_info.inf->display_name)
-      core_name = core_info.inf->display_name;
+   if (!string_is_empty(core_display_name))
+      core_name = core_display_name;
    else
    {
-      /* If not, use core file name */
-      core_name = path_basename(core_path);
+      core_info_ctx_find_t core_info;
 
-      if (string_is_empty(core_name))
-         goto error;
+      core_info.inf  = NULL;
+      core_info.path = core_path;
+
+      /* If core is found, use display name */
+      if (core_info_find(&core_info) &&
+          core_info.inf->display_name)
+         core_name = core_info.inf->display_name;
+      else
+      {
+         /* If not, use core file name */
+         core_name = path_basename(core_path);
+
+         if (string_is_empty(core_name))
+            goto error;
+      }
    }
 
    /* Configure handle */
@@ -460,23 +581,26 @@ void *task_push_core_backup(const char *core_path,
    if (!backup_handle)
       goto error;
 
-   backup_handle->dir_core_assets  = string_is_empty(dir_core_assets) ? NULL : strdup(dir_core_assets);
-   backup_handle->core_path        = strdup(core_path);
-   backup_handle->core_name        = strdup(core_name);
-   backup_handle->backup_path      = NULL;
-   backup_handle->backup_type      = CORE_BACKUP_TYPE_ARCHIVE;
-   backup_handle->backup_mode      = backup_mode;
-   backup_handle->core_file_size   = 0;
-   backup_handle->backup_file_size = 0;
-   backup_handle->file_data_read   = 0;
-   backup_handle->core_crc         = crc;
-   backup_handle->backup_crc       = 0;
-   backup_handle->crc_match        = false;
-   backup_handle->success          = false;
-   backup_handle->core_file        = NULL;
-   backup_handle->backup_file      = NULL;
-   backup_handle->backup_list      = NULL;
-   backup_handle->status           = CORE_BACKUP_BEGIN;
+   backup_handle->dir_core_assets            = string_is_empty(dir_core_assets) ? NULL : strdup(dir_core_assets);
+   backup_handle->core_path                  = strdup(core_path);
+   backup_handle->core_name                  = strdup(core_name);
+   backup_handle->backup_path                = NULL;
+   backup_handle->backup_type                = CORE_BACKUP_TYPE_ARCHIVE;
+   backup_handle->backup_mode                = backup_mode;
+   backup_handle->auto_backup_history_size   = auto_backup_history_size;
+   backup_handle->num_auto_backups_to_remove = 0;
+   backup_handle->backup_index               = 0;
+   backup_handle->core_file_size             = 0;
+   backup_handle->backup_file_size           = 0;
+   backup_handle->file_data_read             = 0;
+   backup_handle->core_crc                   = crc;
+   backup_handle->backup_crc                 = 0;
+   backup_handle->crc_match                  = false;
+   backup_handle->success                    = false;
+   backup_handle->core_file                  = NULL;
+   backup_handle->backup_file                = NULL;
+   backup_handle->backup_list                = NULL;
+   backup_handle->status                     = CORE_BACKUP_BEGIN;
 
    /* Create task */
    task = task_init();
@@ -899,23 +1023,26 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    if (!backup_handle)
       goto error;
 
-   backup_handle->dir_core_assets  = NULL;
-   backup_handle->core_path        = strdup(core_path);
-   backup_handle->core_name        = strdup(core_name);
-   backup_handle->backup_path      = strdup(backup_path);
-   backup_handle->backup_type      = backup_type;
-   backup_handle->backup_mode      = CORE_BACKUP_MODE_MANUAL;
-   backup_handle->core_file_size   = 0;
-   backup_handle->backup_file_size = 0;
-   backup_handle->file_data_read   = 0;
-   backup_handle->core_crc         = 0;
-   backup_handle->backup_crc       = 0;
-   backup_handle->crc_match        = false;
-   backup_handle->success          = false;
-   backup_handle->core_file        = NULL;
-   backup_handle->backup_file      = NULL;
-   backup_handle->backup_list      = NULL;
-   backup_handle->status           = CORE_RESTORE_GET_CORE_CRC;
+   backup_handle->dir_core_assets            = NULL;
+   backup_handle->core_path                  = strdup(core_path);
+   backup_handle->core_name                  = strdup(core_name);
+   backup_handle->backup_path                = strdup(backup_path);
+   backup_handle->backup_type                = backup_type;
+   backup_handle->backup_mode                = CORE_BACKUP_MODE_MANUAL;
+   backup_handle->auto_backup_history_size   = 0;
+   backup_handle->num_auto_backups_to_remove = 0;
+   backup_handle->backup_index               = 0;
+   backup_handle->core_file_size             = 0;
+   backup_handle->backup_file_size           = 0;
+   backup_handle->file_data_read             = 0;
+   backup_handle->core_crc                   = 0;
+   backup_handle->backup_crc                 = 0;
+   backup_handle->crc_match                  = false;
+   backup_handle->success                    = false;
+   backup_handle->core_file                  = NULL;
+   backup_handle->backup_file                = NULL;
+   backup_handle->backup_list                = NULL;
+   backup_handle->status                     = CORE_RESTORE_GET_CORE_CRC;
 
    /* Create task */
    task = task_init();
