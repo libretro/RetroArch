@@ -482,6 +482,10 @@ MSG_HASH(
    "Remove a file from the list of archived backups."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   "[Auto]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC,
    "CRC32: "
    )
@@ -4597,6 +4601,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
    "Include 'experimental' cores in the Core Downloader list. These are typically for development/testing purposes only, and are not recommended for general use."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
+   "Backup Cores When Updating"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   "Automatically create a backup of any installed cores when performing an online update. Enables easy rollback to a working core if an update introduces a regression."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "Core Backup History Size"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "Specifies how many automatically generated backups to keep for each installed core. When this limit is reached, creating a new backup via an online update will delete the oldest backup. Note: Manual core backups are unaffected by this setting."
    )
 
 /* Settings > Playlists */
@@ -10861,6 +10881,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BACKING_UP_CORE,
    "Backing up core: "
+   )
+MSG_HASH(
+   MSG_PRUNING_CORE_BACKUP_HISTORY,
+   "Removing obsolete backups: "
    )
 MSG_HASH(
    MSG_CORE_BACKUP_COMPLETE,

@@ -1438,6 +1438,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_font_enable",             &settings->bools.video_font_enable, true, DEFAULT_FONT_ENABLE, false);
    SETTING_BOOL("core_updater_auto_extract_archive", &settings->bools.network_buildbot_auto_extract_archive, true, DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE, false);
    SETTING_BOOL("core_updater_show_experimental_cores", &settings->bools.network_buildbot_show_experimental_cores, true, DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES, false);
+   SETTING_BOOL("core_updater_auto_backup",      &settings->bools.core_updater_auto_backup, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP, false);
    SETTING_BOOL("camera_allow",                  &settings->bools.camera_allow, true, false, false);
    SETTING_BOOL("discord_allow",                  &settings->bools.discord_enable, true, false, false);
 #if defined(VITA)
@@ -1913,6 +1914,8 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("playlist_sublabel_runtime_type",  &settings->uints.playlist_sublabel_runtime_type, true, DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE, false);
    SETTING_UINT("playlist_sublabel_last_played_style", &settings->uints.playlist_sublabel_last_played_style, true, DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, false);
 #endif
+
+   SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
 
    *size = count;
 

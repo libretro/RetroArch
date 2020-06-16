@@ -525,6 +525,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_show_physical_inputs_p
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_updater_buildbot_assets_url,      MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_updater_auto_extract_archive,     MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_updater_show_experimental_cores,  MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_updater_auto_backup,              MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_updater_auto_backup_history_size, MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_refresh_rooms,                 MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rename_entry,                          MENU_ENUM_SUBLABEL_RENAME_ENTRY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_delete_entry,                          MENU_ENUM_SUBLABEL_DELETE_ENTRY)
@@ -2374,6 +2376,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_show_experimental_cores);
+            break;
+         case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_auto_backup);
+            break;
+         case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_auto_backup_history_size);
             break;
          case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_buildbot_url);

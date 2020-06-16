@@ -453,7 +453,7 @@ static unsigned menu_displaylist_parse_core_backup_list(
          if (core_backup_list_get_index(backup_list, i, &entry) &&
              entry && !string_is_empty(entry->backup_path))
          {
-            char timestamp[32];
+            char timestamp[128];
             char crc[16];
 
             timestamp[0] = '\0';
@@ -464,6 +464,14 @@ static unsigned menu_displaylist_parse_core_backup_list(
                   entry, date_separator, timestamp, sizeof(timestamp));
             core_backup_list_get_entry_crc_str(
                   entry, crc, sizeof(crc));
+
+            /* Append 'auto backup' tag to timestamp, if required */
+            if (entry->backup_mode == CORE_BACKUP_MODE_AUTO)
+            {
+               strlcat(timestamp, " ", sizeof(timestamp));
+               strlcat(timestamp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO),
+                     sizeof(timestamp));
+            }
 
             /* Add menu entry */
             if (menu_entries_append_enum(info->list,
@@ -7323,6 +7331,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,                   PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,     PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,  PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP,              PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, PARSE_ONLY_UINT},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

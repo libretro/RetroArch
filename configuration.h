@@ -286,6 +286,7 @@ typedef struct settings
       bool network_buildbot_auto_extract_archive;
       bool network_buildbot_show_experimental_cores;
       bool network_on_demand_thumbnails;
+      bool core_updater_auto_backup;
 
       /* UI */
       bool ui_menubar_enable;
@@ -621,6 +622,8 @@ typedef struct settings
       unsigned ai_service_mode;
       unsigned ai_service_target_lang;
       unsigned ai_service_source_lang;
+
+      unsigned core_updater_auto_backup_history_size;
    } uints;
 
    struct

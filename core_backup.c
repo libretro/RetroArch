@@ -27,7 +27,6 @@
 
 #include "frontend/frontend_driver.h"
 #include "file_path_special.h"
-#include "core_info.h"
 #include "verbosity.h"
 
 #include "core_backup.h"
@@ -532,7 +531,8 @@ core_backup_list_t *core_backup_list_init(
    if (dir_list->size < 1)
       goto error;
 
-   /* Ensure list is sorted in alphabetical order */
+   /* Ensure list is sorted in alphabetical order
+    * > This corresponds to 'timestamp' order */
    dir_list_sort(dir_list, true);
 
    /* Create core backup list */
@@ -620,6 +620,30 @@ size_t core_backup_list_size(core_backup_list_t *backup_list)
       return 0;
 
    return backup_list->size;
+}
+
+/* Returns number of entries of specified 'backup mode'
+ * (manual or automatic) in core backup list */
+size_t core_backup_list_get_num_backups(
+      core_backup_list_t *backup_list,
+      enum core_backup_mode backup_mode)
+{
+   size_t i;
+   size_t num_backups = 0;
+
+   if (!backup_list || !backup_list->entries)
+      return 0;
+
+   for (i = 0; i < backup_list->size; i++)
+   {
+      core_backup_list_entry_t *current_entry = &backup_list->entries[i];
+
+      if (current_entry &&
+          (current_entry->backup_mode == backup_mode))
+         num_backups++;
+   }
+
+   return num_backups;
 }
 
 /* Fetches core backup list entry corresponding

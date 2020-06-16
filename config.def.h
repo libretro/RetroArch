@@ -965,6 +965,14 @@ static const uint16_t network_remote_base_port = 55400;
 #define DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE true
 #define DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES false
 
+/* Automatically create a backup whenever a core is
+ * updated via the online updater */
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP false
+/* Number of automatic core backups to retain
+ * (oldest backup will be deleted when creating
+ * a new one) */
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
+
 #if defined(ANDROID) || defined(IOS)
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
 #else

@@ -517,6 +517,14 @@ MSG_HASH(
    "core_updater_show_experimental_cores"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP,
+   "core_updater_auto_backup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "core_updater_auto_backup_history_size"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
    "core_updater_buildbot_url"
    )

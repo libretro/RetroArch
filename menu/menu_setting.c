@@ -16162,6 +16162,38 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.core_updater_auto_backup,
+               MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP,
+               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
+               DEFAULT_CORE_UPDATER_AUTO_BACKUP,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.core_updater_auto_backup_history_size,
+                  MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+                  MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+                  DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by = 1;
+            menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 500, 1, true, true);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

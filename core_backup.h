@@ -132,6 +132,12 @@ void core_backup_list_free(core_backup_list_t *backup_list);
 /* Returns number of entries in core backup list */
 size_t core_backup_list_size(core_backup_list_t *backup_list);
 
+/* Returns number of entries of specified 'backup mode'
+ * (manual or automatic) in core backup list */
+size_t core_backup_list_get_num_backups(
+      core_backup_list_t *backup_list,
+      enum core_backup_mode backup_mode);
+
 /* Fetches core backup list entry corresponding
  * to the specified entry index.
  * Returns false if index is invalid. */
