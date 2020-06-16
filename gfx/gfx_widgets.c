@@ -18,7 +18,6 @@
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 
-#include <lists/file_list.h>
 #include <queues/fifo_queue.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -200,7 +199,7 @@ unsigned gfx_widgets_get_last_video_height(void *data)
 size_t gfx_widgets_get_msg_queue_size(void *data)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->current_msgs ? p_dispwidget->current_msgs->size : 0;
+   return p_dispwidget->current_msgs_size;
 }
 
 /* Widgets list */
@@ -465,10 +464,11 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
    /* there should always be one and only one unfolded message */
    menu_widget_msg_t *unfold        = NULL; 
 
-   for (i = (int)(p_dispwidget->current_msgs->size-1); i >= 0; i--)
+   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+
+   for (i = (int)(p_dispwidget->current_msgs_size - 1); i >= 0; i--)
    {
-      menu_widget_msg_t *msg = (menu_widget_msg_t*)
-         p_dispwidget->current_msgs->list[i].userdata;
+      menu_widget_msg_t* msg = p_dispwidget->current_msgs[i];
 
       if (!msg || msg->dying)
          continue;
@@ -496,13 +496,14 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
          p_dispwidget->widgets_moving = true;
       }
    }
+
+   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
 }
 
 static void gfx_widgets_msg_queue_free(
       dispgfx_widget_t *p_dispwidget,
-      menu_widget_msg_t *msg, bool touch_list)
+      menu_widget_msg_t *msg)
 {
-   size_t i;
    uintptr_t tag = (uintptr_t)msg;
 
    if (msg->task_ptr)
@@ -532,31 +533,35 @@ static void gfx_widgets_msg_queue_free(
    if (msg->msg_new)
       free(msg->msg_new);
 
-   /* Remove it from the list */
-   if (touch_list)
-   {
-      file_list_free_userdata(p_dispwidget->current_msgs,
-            p_dispwidget->msg_queue_kill);
-
-      for (i = p_dispwidget->msg_queue_kill; i < 
-            p_dispwidget->current_msgs->size-1; i++)
-         p_dispwidget->current_msgs->list[i] = 
-            p_dispwidget->current_msgs->list[i+1];
-
-      p_dispwidget->current_msgs->size--;
-   }
-
    p_dispwidget->widgets_moving = false;
 }
 
 static void gfx_widgets_msg_queue_kill_end(void *userdata)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-   menu_widget_msg_t           *msg = (menu_widget_msg_t*)
-      p_dispwidget->current_msgs->list[p_dispwidget->msg_queue_kill].userdata;
+   menu_widget_msg_t* msg;
+   unsigned i;
 
+   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+
+   msg = p_dispwidget->current_msgs[p_dispwidget->msg_queue_kill];
    if (msg)
-      gfx_widgets_msg_queue_free(p_dispwidget, msg, true);
+   {
+      /* Remove it from the list */
+      for (i = p_dispwidget->msg_queue_kill; i < p_dispwidget->current_msgs_size - 1; i++)
+         p_dispwidget->current_msgs[i] = p_dispwidget->current_msgs[i + 1];
+
+      p_dispwidget->current_msgs_size--;
+      p_dispwidget->current_msgs[p_dispwidget->current_msgs_size] = NULL;
+
+      /* clean up the item */
+      gfx_widgets_msg_queue_free(p_dispwidget, msg);
+
+      /* free the associated memory */
+      free(msg);
+   }
+
+   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
 }
 
 static void gfx_widgets_msg_queue_kill(
@@ -564,8 +569,7 @@ static void gfx_widgets_msg_queue_kill(
       unsigned idx)
 {
    gfx_animation_ctx_entry_t entry;
-   menu_widget_msg_t           *msg = (menu_widget_msg_t*)
-      p_dispwidget->current_msgs->list[idx].userdata;
+   menu_widget_msg_t *msg = p_dispwidget->current_msgs[idx];
 
    if (!msg)
       return;
@@ -595,7 +599,7 @@ static void gfx_widgets_msg_queue_kill(
    gfx_animation_push(&entry);
 
    /* Move all messages back to their correct position */
-   if (p_dispwidget->current_msgs->size != 0)
+   if (p_dispwidget->current_msgs_size != 0)
       gfx_widgets_msg_queue_move(p_dispwidget);
 }
 
@@ -848,68 +852,67 @@ void gfx_widgets_iterate(
    /* Consume one message if available */
    if ((fifo_read_avail(p_dispwidget->msg_queue) > 0)
          && !p_dispwidget->widgets_moving 
-         && (p_dispwidget->current_msgs->size < MSG_QUEUE_ONSCREEN_MAX))
+         && (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs)))
    {
-      menu_widget_msg_t *msg_widget;
+      menu_widget_msg_t *msg_widget = NULL;
 
-      fifo_read(p_dispwidget->msg_queue, &msg_widget, sizeof(msg_widget));
+      SLOCK_LOCK(p_dispwidget->current_msgs_lock);
 
-      /* Task messages always appear from the bottom of the screen */
-      if (p_dispwidget->msg_queue_tasks_count == 0 || msg_widget->task_ptr)
+      if (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs))
       {
-         file_list_append(p_dispwidget->current_msgs,
-            NULL,
-            NULL,
-            0,
-            0,
-            0
-         );
+         if (fifo_read_avail(p_dispwidget->msg_queue) > 0)
+            fifo_read(p_dispwidget->msg_queue, &msg_widget, sizeof(msg_widget));
 
-         file_list_set_userdata(p_dispwidget->current_msgs,
-               p_dispwidget->current_msgs->size-1, msg_widget);
-      }
-      /* Regular messages are always above tasks */
-      else
-      {
-        unsigned idx = (unsigned)(p_dispwidget->current_msgs->size - 
-              p_dispwidget->msg_queue_tasks_count);
-         file_list_insert(p_dispwidget->current_msgs,
-            NULL,
-            NULL,
-            0,
-            0,
-            0,
-            idx
-         );
+         if (msg_widget)
+         {
+            /* Task messages always appear from the bottom of the screen, append it */
+            if (p_dispwidget->msg_queue_tasks_count == 0 || msg_widget->task_ptr)
+            {
+               p_dispwidget->current_msgs[p_dispwidget->current_msgs_size] = msg_widget;
+            }
+            /* Regular messages are always above tasks, make room and insert it */
+            else
+            {
+               unsigned idx = (unsigned)(p_dispwidget->current_msgs_size -
+                  p_dispwidget->msg_queue_tasks_count);
+               for (i = p_dispwidget->current_msgs_size; i > idx; i--)
+                  p_dispwidget->current_msgs[i] = p_dispwidget->current_msgs[i - 1];
+               p_dispwidget->current_msgs[idx] = msg_widget;
+            }
 
-         file_list_set_userdata(p_dispwidget->current_msgs, idx, msg_widget);
+            p_dispwidget->current_msgs_size++;
+         }
       }
 
-      /* Start expiration timer if not associated to a task */
-      if (!msg_widget->task_ptr)
+      SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+
+      if (msg_widget)
       {
-         if (!msg_widget->expiration_timer_started)
-            gfx_widgets_start_msg_expiration_timer(
-                  msg_widget, MSG_QUEUE_ANIMATION_DURATION * 2 
+         /* Start expiration timer if not associated to a task */
+         if (!msg_widget->task_ptr)
+         {
+            if (!msg_widget->expiration_timer_started)
+               gfx_widgets_start_msg_expiration_timer(
+                  msg_widget, MSG_QUEUE_ANIMATION_DURATION * 2
                   + msg_widget->duration);
-      }
-      /* Else, start hourglass animation timer */
-      else
-      {
-         p_dispwidget->msg_queue_tasks_count++;
-         gfx_widgets_hourglass_end(msg_widget);
-      }
+         }
+         /* Else, start hourglass animation timer */
+         else
+         {
+            p_dispwidget->msg_queue_tasks_count++;
+            gfx_widgets_hourglass_end(msg_widget);
+         }
 
-      if (p_dispwidget->current_msgs->size != 0)
-         gfx_widgets_msg_queue_move(p_dispwidget);
+         if (p_dispwidget->current_msgs_size != 0)
+            gfx_widgets_msg_queue_move(p_dispwidget);
+      }
    }
 
    /* Kill first expired message */
    /* Start expiration timer of dead tasks */
-   for (i = 0; i < p_dispwidget->current_msgs->size ; i++)
+   for (i = 0; i < p_dispwidget->current_msgs_size; i++)
    {
-      menu_widget_msg_t *msg_widget = (menu_widget_msg_t*)
-         p_dispwidget->current_msgs->list[i].userdata;
+      menu_widget_msg_t *msg_widget = p_dispwidget->current_msgs[i];
 
       if (!msg_widget)
          continue;
@@ -1748,24 +1751,30 @@ void gfx_widgets_frame(void *data)
    }
 
    /* Draw all messages */
-   for (i = 0; i < p_dispwidget->current_msgs->size; i++)
+   if (p_dispwidget->current_msgs_size)
    {
-      menu_widget_msg_t *msg = (menu_widget_msg_t*)
-         p_dispwidget->current_msgs->list[i].userdata;
+      SLOCK_LOCK(p_dispwidget->current_msgs_lock);
 
-      if (!msg)
-         continue;
+      for (i = 0; i < p_dispwidget->current_msgs_size; i++)
+      {
+         menu_widget_msg_t* msg = p_dispwidget->current_msgs[i];
 
-      if (msg->task_ptr)
-         gfx_widgets_draw_task_msg(
+         if (!msg)
+            continue;
+
+         if (msg->task_ptr)
+            gfx_widgets_draw_task_msg(
                p_dispwidget,
                msg, userdata,
                video_width, video_height);
-      else
-         gfx_widgets_draw_regular_msg(
+         else
+            gfx_widgets_draw_regular_msg(
                p_dispwidget,
                msg, userdata,
                video_width, video_height);
+      }
+
+      SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
    }
 
 #ifdef HAVE_MENU
@@ -1831,15 +1840,12 @@ bool gfx_widgets_init(uintptr_t widgets_active_ptr,
       if (!p_dispwidget->msg_queue)
          goto error;
 
-      p_dispwidget->current_msgs = (file_list_t*)
-         calloc(1, sizeof(file_list_t));
+      memset(&p_dispwidget->current_msgs[0], 0, sizeof(p_dispwidget->current_msgs));
+      p_dispwidget->current_msgs_size = 0;
 
-      if (!p_dispwidget->current_msgs)
-         goto error;
-
-      if (!file_list_reserve(p_dispwidget->current_msgs,
-               MSG_QUEUE_ONSCREEN_MAX))
-         goto error;
+#ifdef HAVE_THREADS
+      p_dispwidget->current_msgs_lock = slock_new();
+#endif
 
       p_dispwidget->widgets_inited = true;
    }
@@ -2265,7 +2271,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
           *   will generate heap-use-after-free errors */
          msg_widget->task_ptr = NULL;
 
-         gfx_widgets_msg_queue_free(p_dispwidget, msg_widget, false);
+         gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
          free(msg_widget);
       }
 
@@ -2274,28 +2280,33 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    p_dispwidget->msg_queue = NULL;
 
    /* Purge everything from the list */
-   if (p_dispwidget->current_msgs)
+   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+
+   p_dispwidget->current_msgs_size = 0;
+   for (i = 0; i < ARRAY_SIZE(p_dispwidget->current_msgs); i++)
    {
-      for (i = 0; i < p_dispwidget->current_msgs->size; i++)
-      {
-         menu_widget_msg_t *msg = (menu_widget_msg_t*)
-            p_dispwidget->current_msgs->list[i].userdata;
+      menu_widget_msg_t *msg = p_dispwidget->current_msgs[i];
+      if (!msg)
+         continue;
 
-         /* Note: gfx_widgets_free() is only called when
-          * main_exit() is invoked. At this stage, we cannot
-          * guarantee that any task pointers are valid (the
-          * task may have been free()'d, but we can't know
-          * that here) - so all we can do is unset the task
-          * pointer associated with each message
-          * > If we don't do this, gfx_widgets_msg_queue_free()
-          *   will generate heap-use-after-free errors */
-         msg->task_ptr = NULL;
+      /* Note: gfx_widgets_free() is only called when
+         * main_exit() is invoked. At this stage, we cannot
+         * guarantee that any task pointers are valid (the
+         * task may have been free()'d, but we can't know
+         * that here) - so all we can do is unset the task
+         * pointer associated with each message
+         * > If we don't do this, gfx_widgets_msg_queue_free()
+         *   will generate heap-use-after-free errors */
+      msg->task_ptr = NULL;
 
-         gfx_widgets_msg_queue_free(p_dispwidget, msg, false);
-      }
-      file_list_free(p_dispwidget->current_msgs);
+      gfx_widgets_msg_queue_free(p_dispwidget, msg);
    }
-   p_dispwidget->current_msgs = NULL;
+   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+
+#ifdef HAVE_THREADS
+   slock_free(p_dispwidget->current_msgs_lock);
+   p_dispwidget->current_msgs_lock = NULL;
+#endif
 
    p_dispwidget->msg_queue_tasks_count = 0;
 
@@ -2311,6 +2322,10 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 
       SLOCK_UNLOCK(p_dispwidget->cheevo_popup_queue_lock);
    }
+#ifdef HAVE_THREADS
+   slock_free(p_dispwidget->cheevo_popup_queue_lock);
+   p_dispwidget->cheevo_popup_queue_lock = NULL;
+#endif
 #endif
 
    /* Font */

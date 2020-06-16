@@ -24,7 +24,6 @@
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
 #include <queues/fifo_queue.h>
-#include <lists/file_list.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -246,11 +245,15 @@ typedef struct dispgfx_widget
 /* Achievement notification */
    cheevo_popup cheevo_popup_queue[CHEEVO_QUEUE_SIZE];
    gfx_timer_t cheevo_timer;
+#ifdef HAVE_THREADS
+   slock_t* cheevo_popup_queue_lock;
+#endif
 #endif
    fifo_buffer_t *msg_queue;
-   file_list_t *current_msgs;
-#if defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)
-   slock_t* cheevo_popup_queue_lock;
+   menu_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
+   size_t current_msgs_size;
+#ifdef HAVE_THREADS
+   slock_t* current_msgs_lock;
 #endif
 } dispgfx_widget_t;
 
