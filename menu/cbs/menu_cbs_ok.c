@@ -99,7 +99,6 @@ enum
    ACTION_OK_LOAD_RECORD_CONFIGFILE,
    ACTION_OK_LOAD_REMAPPING_FILE,
    ACTION_OK_LOAD_CHEAT_FILE,
-   ACTION_OK_APPEND_DISK_IMAGE,
    ACTION_OK_SUBSYSTEM_ADD,
    ACTION_OK_LOAD_CONFIG_FILE,
    ACTION_OK_LOAD_CORE,
@@ -1767,19 +1766,6 @@ static int generic_action_ok(const char *path,
             }
          }
          break;
-      case ACTION_OK_APPEND_DISK_IMAGE:
-         {
-            settings_t         *settings = config_get_ptr();
-            bool menu_insert_disk_resume = settings->bools.menu_insert_disk_resume;
-
-            flush_char           = msg_hash_to_str(
-                  MENU_ENUM_LABEL_DISK_OPTIONS);
-            command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
-
-            if (menu_insert_disk_resume)
-                  generic_action_ok_command(CMD_EVENT_RESUME);
-         }
-         break;
       case ACTION_OK_SUBSYSTEM_ADD:
          flush_type = MENU_SETTINGS;
          content_add_subsystem(action_path);
@@ -1876,7 +1862,6 @@ DEFAULT_ACTION_OK_SET(action_ok_set_path_video_layout,ACTION_OK_SET_PATH_VIDEO_L
 DEFAULT_ACTION_OK_SET(action_ok_set_path,             ACTION_OK_SET_PATH,              MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_load_core,            ACTION_OK_LOAD_CORE,             MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_config_load,          ACTION_OK_LOAD_CONFIG_FILE,      MSG_UNKNOWN)
-DEFAULT_ACTION_OK_SET(action_ok_disk_image_append,    ACTION_OK_APPEND_DISK_IMAGE,     MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_subsystem_add,        ACTION_OK_SUBSYSTEM_ADD,         MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_cheat_file_load,      ACTION_OK_LOAD_CHEAT_FILE,       MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)
 DEFAULT_ACTION_OK_SET(action_ok_cheat_file_load_append,      ACTION_OK_LOAD_CHEAT_FILE_APPEND,       MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)
@@ -6149,6 +6134,61 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    /* If disk is now inserted and user has enabled
     * 'menu_insert_disk_resume', resume running content */
    if (!disk_ejected && menu_insert_disk_resume)
+      generic_action_ok_command(CMD_EVENT_RESUME);
+
+   return 0;
+}
+
+static int action_ok_disk_image_append(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   rarch_system_info_t *sys_info = runloop_get_system_info();
+   menu_handle_t *menu           = menu_driver_get_ptr();
+   const char *menu_path         = NULL;
+   settings_t *settings          = config_get_ptr();
+#ifdef HAVE_AUDIOMIXER
+   bool audio_enable_menu        = settings->bools.audio_enable_menu;
+   bool audio_enable_menu_ok     = settings->bools.audio_enable_menu_ok;
+#endif
+   bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
+   char image_path[PATH_MAX_LENGTH];
+
+   image_path[0] = '\0';
+
+   if (!menu)
+      return menu_cbs_exit();
+
+#ifdef HAVE_AUDIOMIXER
+   if (audio_enable_menu && audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
+
+   /* Get file path of new disk image */
+   menu_entries_get_last_stack(&menu_path,
+         NULL, NULL, NULL, NULL);
+
+   if (!string_is_empty(menu_path))
+   {
+      if (!string_is_empty(path))
+         fill_pathname_join(image_path,
+               menu_path, path, sizeof(image_path));
+      else
+         strlcpy(image_path, menu_path, sizeof(image_path));
+   }
+
+   /* Append image */
+   command_event(CMD_EVENT_DISK_APPEND_IMAGE, image_path);
+
+   /* In all cases, return to the disk options menu */
+   menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS), 0);
+
+   /* > If disk tray is open, reset menu selection to
+    *   the 'insert disk' option
+    * > If disk try is closed and user has enabled
+    *   'menu_insert_disk_resume', resume running content */
+   if (sys_info && disk_control_get_eject_state(&sys_info->disk_control))
+      menu_navigation_set_selection(0);
+   else if (menu_insert_disk_resume)
       generic_action_ok_command(CMD_EVENT_RESUME);
 
    return 0;

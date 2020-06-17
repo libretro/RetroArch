@@ -489,6 +489,7 @@ bool disk_control_append_image(
       disk_control_interface_t *disk_control,
       const char *image_path)
 {
+   bool initial_disk_ejected   = false;
    unsigned initial_index      = 0;
    unsigned new_index          = 0;
    const char *image_filename  = NULL;
@@ -518,11 +519,15 @@ bool disk_control_append_image(
    if (string_is_empty(image_filename))
       return false;
 
+   /* Get initial disk eject state */
+   initial_disk_ejected = disk_control_get_eject_state(disk_control);
+
    /* Cache initial image index */
    initial_index = disk_control->cb.get_image_index();
 
-   /* Eject disk */
-   if (!disk_control_set_eject_state(disk_control, true, false))
+   /* If tray is currently closed, eject disk */
+   if (!initial_disk_ejected &&
+       !disk_control_set_eject_state(disk_control, true, false))
       goto error;
 
    /* Append image */
@@ -542,8 +547,10 @@ bool disk_control_append_image(
    if (!disk_control_set_index(disk_control, new_index, false))
       goto error;
 
-   /* Insert disk */
-   if (!disk_control_set_eject_state(disk_control, false, false))
+   /* If tray was initially closed, insert disk
+    * (i.e. leave system in the state we found it) */
+   if (!initial_disk_ejected &&
+       !disk_control_set_eject_state(disk_control, false, false))
       goto error;
 
    /* Display log */
@@ -573,7 +580,8 @@ error:
    if (!disk_control->cb.get_eject_state())
       disk_control_set_eject_state(disk_control, true, false);
    disk_control_set_index(disk_control, initial_index, false);
-   disk_control_set_eject_state(disk_control, false, false);
+   if (!initial_disk_ejected)
+      disk_control_set_eject_state(disk_control, false, false);
 
    snprintf(
          msg, sizeof(msg), "%s: %s",
