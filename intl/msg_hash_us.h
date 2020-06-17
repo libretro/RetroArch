@@ -1194,6 +1194,14 @@ MSG_HASH(
    "Camera driver to use."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
+   "Bluetooth"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Bluetooth driver to use."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Wi-Fi"
    )
@@ -6373,6 +6381,10 @@ MSG_HASH(
    "No Settings Found"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   "No Bluetooth Devices Found"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
    "No Networks Found"
    )
@@ -8963,6 +8975,10 @@ MSG_HASH(
    "No playlists."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "Connected"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
    "Online"
    )
@@ -10631,8 +10647,16 @@ MSG_HASH(
    "not configured, using fallback"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Bluetooth scan complete."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Wi-Fi scan complete."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Scanning bluetooth devices..."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
@@ -11043,6 +11067,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    "Soft Filter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
+   "Bluetooth"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   "Scans for bluetooth devices and connects them."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,

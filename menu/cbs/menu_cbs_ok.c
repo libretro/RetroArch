@@ -72,6 +72,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
+#include "../../bluetooth/bluetooth_driver.h"
 #include "../../wifi/wifi_driver.h"
 #include "../../gfx/video_display_server.h"
 #include "../../manual_content_scan.h"
@@ -371,6 +372,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST;
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST;
+      case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST;
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST;
       case ACTION_OK_DL_NETPLAY:
@@ -1233,6 +1236,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
+      case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
       case ACTION_OK_DL_NETPLAY:
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
@@ -2577,6 +2581,14 @@ int  generic_action_ok_help(const char *path,
 
    return generic_action_ok_displaylist_push(path, NULL, lbl, id2, idx,
          entry_idx, ACTION_OK_DL_HELP);
+}
+
+static int action_ok_bluetooth(const char *path, const char *label,
+         unsigned type, size_t idx, size_t entry_idx)
+{
+   driver_bluetooth_connect_device(idx);
+
+   return 0;
 }
 
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
@@ -4876,6 +4888,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIS
 DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_bluetooth_list, ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_cursor_manager_list, ACTION_OK_DL_CURSOR_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH)
@@ -6952,6 +6965,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,            action_ok_open_picker},
          {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
+         {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},
          {MENU_ENUM_LABEL_WIFI_SETTINGS,                       action_ok_wifi_list},
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
@@ -7373,6 +7387,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_RDB_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rdb_entry);
+            break;
+         case MENU_BLUETOOTH:
+            BIND_ACTION_OK(cbs, action_ok_bluetooth);
             break;
          case MENU_WIFI:
             BIND_ACTION_OK(cbs, action_ok_wifi);

@@ -271,9 +271,15 @@ enum camera_driver_enum
    CAMERA_NULL
 };
 
+enum bluetooth_driver_enum
+{
+   BLUETOOTH_BLUETOOTHCTL          = CAMERA_NULL + 1,
+   BLUETOOTH_NULL
+};
+
 enum wifi_driver_enum
 {
-   WIFI_CONNMANCTL          = CAMERA_NULL + 1,
+   WIFI_CONNMANCTL          = BLUETOOTH_NULL + 1,
    WIFI_NULL
 };
 
@@ -557,6 +563,12 @@ static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
 #else
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
+#endif
+
+#if defined(HAVE_BLUETOOTH)
+static const enum bluetooth_driver_enum BLUETOOTH_DEFAULT_DRIVER = BLUETOOTH_BLUETOOTHCTL;
+#else
+static const enum bluetooth_driver_enum BLUETOOTH_DEFAULT_DRIVER = BLUETOOTH_NULL;
 #endif
 
 #if defined(HAVE_LAKKA)
@@ -1015,6 +1027,28 @@ const char *config_get_default_camera(void)
 }
 
 /**
+ * config_get_default_bluetooth:
+ *
+ * Gets default bluetooth driver.
+ *
+ * Returns: Default bluetooth driver.
+ **/
+const char *config_get_default_bluetooth(void)
+{
+   enum bluetooth_driver_enum default_driver = BLUETOOTH_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case BLUETOOTH_BLUETOOTHCTL:
+         return "bluetoothctl";
+      case BLUETOOTH_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+/**
  * config_get_default_wifi:
  *
  * Gets default wifi driver.
@@ -1148,6 +1182,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("video_driver",             settings->arrays.video_driver,   false, NULL, true);
    SETTING_ARRAY("record_driver",            settings->arrays.record_driver,  false, NULL, true);
    SETTING_ARRAY("camera_driver",            settings->arrays.camera_driver,  false, NULL, true);
+   SETTING_ARRAY("bluetooth_driver",         settings->arrays.bluetooth_driver, false, NULL, true);
    SETTING_ARRAY("wifi_driver",              settings->arrays.wifi_driver,    false, NULL, true);
    SETTING_ARRAY("location_driver",          settings->arrays.location_driver,false, NULL, true);
 #ifdef HAVE_MENU
@@ -2020,6 +2055,7 @@ void config_set_defaults(void *data)
    const char *def_menu            = config_get_default_menu();
 #endif
    const char *def_camera          = config_get_default_camera();
+   const char *def_bluetooth       = config_get_default_bluetooth();
    const char *def_wifi            = config_get_default_wifi();
    const char *def_led             = config_get_default_led();
    const char *def_location        = config_get_default_location();
@@ -2091,6 +2127,10 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.camera_driver,
             def_camera);
+   if (def_bluetooth)
+      configuration_set_string(settings,
+            settings->arrays.bluetooth_driver,
+            def_bluetooth);
    if (def_wifi)
       configuration_set_string(settings,
             settings->arrays.wifi_driver,

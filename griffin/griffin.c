@@ -1153,6 +1153,13 @@ RETROARCH
 #include "../intl/msg_hash_us.c"
 
 /*============================================================
+BLUETOOTH
+============================================================ */
+#ifdef HAVE_BLUETOOTH
+#include "../bluetooth/drivers/bluetoothctl.c"
+#endif
+
+/*============================================================
 WIFI
 ============================================================ */
 #ifdef HAVE_LAKKA
@@ -1226,6 +1233,7 @@ NETPLAY
 #include "../tasks/task_http.c"
 #include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_netplay_nat_traversal.c"
+#include "../tasks/task_bluetooth.c"
 #include "../tasks/task_wifi.c"
 #include "../tasks/task_netplay_find_content.c"
 #include "../tasks/task_pl_thumbnail_download.c"

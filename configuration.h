@@ -310,6 +310,9 @@ typedef struct settings
       /* Camera */
       bool camera_allow;
 
+      /* Bluetooth */
+      bool bluetooth_allow;
+
       /* WiFi */
       bool wifi_allow;
 
@@ -639,6 +642,7 @@ typedef struct settings
       char video_driver[32];
       char record_driver[32];
       char camera_driver[32];
+      char bluetooth_driver[32];
       char wifi_driver[32];
       char led_driver[32];
       char location_driver[32];
@@ -758,6 +762,15 @@ typedef struct settings
  * Returns: Default camera driver.
  **/
 const char *config_get_default_camera(void);
+
+/**
+ * config_get_default_bluetooth:
+ *
+ * Gets default bluetooth driver.
+ *
+ * Returns: Default bluetooth driver.
+ **/
+const char *config_get_default_bluetooth(void);
 
 /**
  * config_get_default_wifi:

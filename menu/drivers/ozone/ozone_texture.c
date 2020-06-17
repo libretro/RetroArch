@@ -263,6 +263,7 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS];
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+      case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
       case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
@@ -411,6 +412,8 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 #endif
       case MENU_INFO_MESSAGE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
+      case MENU_BLUETOOTH:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_BLUETOOTH];
       case MENU_WIFI:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_WIFI];
 #ifdef HAVE_NETWORKING
@@ -593,6 +596,8 @@ switch (id)
          return "undo.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO:
          return "core-infos.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BLUETOOTH:
+         return "bluetooth.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_WIFI:
          return "wifi.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS:
