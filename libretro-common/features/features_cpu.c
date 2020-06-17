@@ -285,7 +285,9 @@ void x86_cpuid(int func, int flags[4])
 #elif defined(_MSC_VER)
    __cpuid(flags, func);
 #else
+#ifndef NDEBUG
    printf("Unknown compiler. Cannot check CPUID with inline assembly.\n");
+#endif
    memset(flags, 0, 4 * sizeof(int));
 #endif
 }
@@ -307,7 +309,9 @@ static uint64_t xgetbv_x86(uint32_t idx)
    /* Intrinsic only works on 2010 SP1 and above. */
    return _xgetbv(idx);
 #else
+#ifndef NDEBUG
    printf("Unknown compiler. Cannot check xgetbv bits.\n");
+#endif
    return 0;
 #endif
 }

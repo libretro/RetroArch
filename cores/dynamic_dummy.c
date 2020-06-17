@@ -144,7 +144,7 @@ void libretro_dummy_retro_get_system_av_info(
       refresh_rate    = 60.0;
 
    info->timing.fps           = refresh_rate;
-   info->timing.sample_rate   = 30000.0;
+   info->timing.sample_rate   = 48000.0;
 
    info->geometry.base_width  = frame_buf_width;
    info->geometry.base_height = frame_buf_height;
