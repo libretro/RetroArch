@@ -20,6 +20,7 @@
 - CORE DOWNLOADER: Installed cores are now highlighted via a [#] symbol
 - CORE DOWNLOADER: Pressing RetroPad start on a selected, installed entry opens the Core Information menu (when using Material UI, swiping left or right triggers the same action). This means we can now view bios info etc. - and more importantly delete cores - without jumping through all the hoops of loading a core first and navigating all over the place
 - CORE DOWNLOADER/UPDATER: Add option to automatically backup cores when updating
+- DISK CONTROL: Enable 'Load New Disc' while disk tray is open
 - INPUT: Added a hotkey delay option to allow hotkey input to work properly when it is assigned to another action
 - INPUT: Remove 'All Users Control Menu' setting, was buggy and will be properly reintroduced after input overhaul
 - LINUX: Set default saves/save states/system paths
