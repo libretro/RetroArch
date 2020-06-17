@@ -3087,6 +3087,22 @@ MSG_HASH(
    "video_shader_preset_save_as"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "video_shader_preset_save_global"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "video_shader_preset_save_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "video_shader_preset_save_parent"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "video_shader_preset_save_game"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
    "video_shader_scale_pass"
    )
