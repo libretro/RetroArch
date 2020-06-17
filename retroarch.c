@@ -15308,11 +15308,40 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_DISK_APPEND_IMAGE:
          {
-            const char *path = (const char*)data;
-            if (string_is_empty(path))
+            const char *path              = (const char*)data;
+            rarch_system_info_t *sys_info = &p_rarch->runloop_system;
+
+            if (string_is_empty(path) || !sys_info)
                return false;
-            if (!command_event_disk_control_append_image(p_rarch, path))
-               return false;
+
+            if (disk_control_enabled(&sys_info->disk_control))
+            {
+               bool success               = false;
+#if defined(HAVE_MENU)
+               bool refresh               = false;
+               /* Get initial disk eject state */
+               bool initial_disk_ejected  = disk_control_get_eject_state(&sys_info->disk_control);
+#endif
+               /* Append disk image */
+               success = command_event_disk_control_append_image(p_rarch, path);
+
+#if defined(HAVE_MENU)
+               /* Appending a disk image may or may not affect
+                * the disk tray eject status. If status has changed,
+                * must refresh the disk options menu */
+               if (initial_disk_ejected != disk_control_get_eject_state(&sys_info->disk_control))
+               {
+                  menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+                  menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+               }
+#endif
+               return success;
+            }
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
+                     1, 120, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
       case CMD_EVENT_DISK_EJECT_TOGGLE:
