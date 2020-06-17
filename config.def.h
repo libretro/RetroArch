@@ -966,8 +966,14 @@ static const uint16_t network_remote_base_port = 55400;
 #define DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES false
 
 /* Automatically create a backup whenever a core is
- * updated via the online updater */
+ * updated via the online updater
+ * > Enable by default on all modern platforms with
+ *   online updater support */
+#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS))
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP true
+#else
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP false
+#endif
 /* Number of automatic core backups to retain
  * (oldest backup will be deleted when creating
  * a new one) */
