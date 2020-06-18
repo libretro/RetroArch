@@ -57,6 +57,7 @@ typedef struct
    bool supports_no_game;
    bool database_match_archive_member;
    bool is_experimental;
+   bool is_locked;
    size_t firmware_count;
    char *path;
    void *config_data;
@@ -200,6 +201,22 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *path);
 
 bool core_info_hw_api_supported(core_info_t *info);
+
+/* Sets 'locked' status of specified core
+ * > Returns true if successful
+ * > Like all functions that access the cached
+ *   core info list this is *not* thread safe */
+bool core_info_set_core_lock(const char *core_path, bool lock);
+/* Fetches 'locked' status of specified core
+ * > If 'validate_path' is 'true', will search
+ *   cached core info list for a corresponding
+ *   'sanitised' core file path. This is *not*
+ *   thread safe
+ * > If 'validate_path' is 'false', performs a
+ *   direct filesystem check. This *is* thread
+ *   safe, but validity of specified core path
+ *   must be checked externally */
+bool core_info_get_core_lock(const char *core_path, bool validate_path);
 
 core_info_state_t *coreinfo_get_ptr(void);
 

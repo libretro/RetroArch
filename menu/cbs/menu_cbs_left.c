@@ -46,6 +46,9 @@
 #define BIND_ACTION_LEFT(cbs, name) (cbs)->action_left = (name)
 #endif
 
+/* Forward declarations */
+int action_ok_core_lock(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -680,6 +683,12 @@ static int core_setting_left(unsigned type, const char *label,
    return 0;
 }
 
+static int action_left_core_lock(unsigned type, const char *label,
+      bool wraparound)
+{
+   return action_ok_core_lock(label, label, type, 0, 0);
+}
+
 static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1065,6 +1074,9 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION:
          case FILE_TYPE_CONTENTLIST_ENTRY:
             BIND_ACTION_LEFT(cbs, action_left_mainmenu);
+            break;
+         case MENU_SETTING_ACTION_CORE_LOCK:
+            BIND_ACTION_LEFT(cbs, action_left_core_lock);
             break;
          default:
             return -1;

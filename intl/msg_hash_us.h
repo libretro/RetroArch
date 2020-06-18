@@ -450,6 +450,14 @@ MSG_HASH(
    "Required"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   "Lock Installed Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Prevent modification of the currently installed core. May be used to avoid unwanted updates when content requires a specific core version (e.g. Arcade ROM sets)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Delete Core"
    )
@@ -9727,6 +9735,14 @@ MSG_HASH(
    "cores updated: "
    )
 MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "cores skipped: "
+   )
+MSG_HASH(
+   MSG_CORE_UPDATE_DISABLED,
+   "Core update disabled - core is locked: "
+   )
+MSG_HASH(
    MSG_PLAYLIST_MANAGER_RESETTING_CORES,
    "Resetting cores: "
    )
@@ -10933,6 +10949,26 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Core installation failed: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_DISABLED,
+   "Core restoration disabled - core is locked: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_DISABLED,
+   "Core installation disabled - core is locked: "
+   )
+MSG_HASH(
+   MSG_CORE_LOCK_FAILED,
+   "Failed to lock core: "
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Failed to unlock core: "
+   )
+MSG_HASH(
+   MSG_CORE_DELETE_DISABLED,
+   "Core deletion disabled - core is locked: "
    )
 
 /* Lakka */

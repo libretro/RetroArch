@@ -123,6 +123,7 @@ typedef struct update_installed_cores_handle
    size_t list_index;
    size_t installed_index;
    unsigned num_updated;
+   unsigned num_locked;
    enum update_installed_cores_status status;
 } update_installed_cores_handle_t;
 
@@ -962,14 +963,37 @@ void *task_push_core_updater_download(
          core_list, filename, &list_entry))
       goto error;
 
-   if (string_is_empty(list_entry->remote_core_path))
+   if (string_is_empty(list_entry->remote_core_path) ||
+       string_is_empty(list_entry->local_core_path) ||
+       string_is_empty(list_entry->display_name))
       goto error;
 
-   if (string_is_empty(list_entry->local_core_path))
-      goto error;
+   /* Check whether core is locked
+    * > Have to set validate_path to 'false' here,
+    *   since this may not run on the main thread
+    * > Validation is not required anyway, since core
+    *   updater list provides 'sane' core paths */
+   if (core_info_get_core_lock(list_entry->local_core_path, false))
+   {
+      RARCH_ERR("[core updater] Update disabled - core is locked: %s\n",
+            list_entry->local_core_path);
 
-   if (string_is_empty(list_entry->display_name))
+      /* If task is not muted, generate notification */
+      if (!mute)
+      {
+         char msg[PATH_MAX_LENGTH];
+
+         msg[0] = '\0';
+
+         strlcpy(msg, msg_hash_to_str(MSG_CORE_UPDATE_DISABLED), sizeof(msg));
+         strlcat(msg, list_entry->display_name, sizeof(msg));
+
+         runloop_msg_queue_push(msg, 1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+
       goto error;
+   }
 
    /* Get local file download path */
    if (string_is_empty(path_dir_libretro))
@@ -1206,6 +1230,24 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                break;
             }
 
+            /* Check whether core is locked
+             * > Have to set validate_path to 'false' here,
+             *   since this does not run on the main thread
+             * > Validation is not required anyway, since core
+             *   updater list provides 'sane' core paths */
+            if (core_info_get_core_lock(list_entry->local_core_path, false))
+            {
+               RARCH_LOG("[core updater] Skipping locked core: %s\n",
+                     list_entry->display_name);
+
+               /* Core update is disabled
+                * > Just increment 'locked cores' counter and
+                *   return to UPDATE_INSTALLED_CORES_ITERATE state */
+               update_installed_handle->num_locked++;
+               update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+               break;
+            }
+
             /* Get CRC of existing core */
             local_crc = task_core_updater_get_core_crc(
                   list_entry->local_core_path);
@@ -1292,24 +1334,40 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              *   successfully */
             if (update_installed_handle->list_size > 0)
             {
-               /* > Check whether a non-zero number of cores
-                *   were updated */
+               char task_title[PATH_MAX_LENGTH];
+
+               task_title[0] = '\0';
+
+               /* > Generate final status message based on number
+                *   of cores that were updated/locked */
                if (update_installed_handle->num_updated > 0)
                {
-                  char task_title[PATH_MAX_LENGTH];
-
-                  task_title[0] = '\0';
-
+                  if (update_installed_handle->num_locked > 0)
+                     snprintf(
+                           task_title, sizeof(task_title), "%s [%s%u, %s%u]",
+                           msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                           msg_hash_to_str(MSG_NUM_CORES_UPDATED),
+                           update_installed_handle->num_updated,
+                           msg_hash_to_str(MSG_NUM_CORES_LOCKED),
+                           update_installed_handle->num_locked);
+                  else
+                     snprintf(
+                           task_title, sizeof(task_title), "%s [%s%u]",
+                           msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                           msg_hash_to_str(MSG_NUM_CORES_UPDATED),
+                           update_installed_handle->num_updated);
+               }
+               else if (update_installed_handle->num_locked > 0)
                   snprintf(
                         task_title, sizeof(task_title), "%s [%s%u]",
                         msg_hash_to_str(MSG_ALL_CORES_UPDATED),
-                        msg_hash_to_str(MSG_NUM_CORES_UPDATED),
-                        update_installed_handle->num_updated);
-
-                  task_set_title(task, strdup(task_title));
-               }
+                        msg_hash_to_str(MSG_NUM_CORES_LOCKED),
+                        update_installed_handle->num_locked);
                else
-                  task_set_title(task, strdup(msg_hash_to_str(MSG_ALL_CORES_UPDATED)));
+                  strlcpy(task_title, msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                        sizeof(task_title));
+
+               task_set_title(task, strdup(task_title));
             }
             else
                task_set_title(task, strdup(msg_hash_to_str(MSG_CORE_LIST_FAILED)));
@@ -1370,6 +1428,7 @@ void task_push_update_installed_cores(
    update_installed_handle->list_index               = 0;
    update_installed_handle->installed_index          = 0;
    update_installed_handle->num_updated              = 0;
+   update_installed_handle->num_locked               = 0;
    update_installed_handle->status                   = UPDATE_INSTALLED_CORES_BEGIN;
 
    if (!update_installed_handle->core_list)
