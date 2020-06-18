@@ -992,14 +992,6 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       goto error;
    }
 
-   /* Concurrent backup/restore tasks for the same core
-    * are not allowed */
-   find_data.func     = task_core_backup_finder;
-   find_data.userdata = (void*)core_path;
-
-   if (task_queue_find(&find_data))
-      goto error;
-
    /* Get core name */
    core_info.inf  = NULL;
    core_info.path = core_path;
@@ -1016,6 +1008,34 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       if (string_is_empty(core_name))
          goto error;
    }
+
+   /* Check whether core is locked */
+   if (core_info_get_core_lock(core_path, true))
+   {
+      char msg[PATH_MAX_LENGTH];
+
+      msg[0] = '\0';
+
+      strlcpy(msg,
+            (backup_type == CORE_BACKUP_TYPE_ARCHIVE) ?
+                  msg_hash_to_str(MSG_CORE_RESTORATION_DISABLED) :
+                        msg_hash_to_str(MSG_CORE_INSTALLATION_DISABLED),
+            sizeof(msg));
+      strlcat(msg, core_name, sizeof(msg));
+
+      RARCH_ERR("[core restore] Restoration disabled - core is locked: %s\n", core_path);
+      runloop_msg_queue_push(msg, 1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      goto error;
+   }
+
+   /* Concurrent backup/restore tasks for the same core
+    * are not allowed */
+   find_data.func     = task_core_backup_finder;
+   find_data.userdata = (void*)core_path;
+
+   if (task_queue_find(&find_data))
+      goto error;
 
    /* Configure handle */
    backup_handle = (core_backup_handle_t*)calloc(1, sizeof(core_backup_handle_t));

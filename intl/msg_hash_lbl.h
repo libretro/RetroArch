@@ -3541,6 +3541,10 @@ MSG_HASH(
    "menu_scroll_fast"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_LOCK,
+   "core_lock"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_DELETE,
    "core_delete"
    )

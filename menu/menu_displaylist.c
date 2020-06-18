@@ -367,6 +367,26 @@ end:
 #if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    if (!string_is_empty(core_path) && !kiosk_mode_enable)
    {
+      /* Check whether core is currently locked */
+      bool core_locked = core_info_get_core_lock(core_path, true);
+
+      /* Lock core
+       * > Note: Have to set core_path as both the
+       *   'path' and 'label' parameters (otherwise
+       *   cannot access it in menu_cbs_get_value.c
+       *   or menu_cbs_left/right.c), which means
+       *   entry name must be set as 'alt' text */
+      if (menu_entries_append_enum(info->list,
+            core_path,
+            core_path,
+            MENU_ENUM_LABEL_CORE_LOCK,
+            MENU_SETTING_ACTION_CORE_LOCK, 0, 0))
+      {
+         file_list_set_alt_at_offset(
+               info->list, count, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LOCK));
+         count++;
+      }
+
       /* Backup core */
       if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP),
@@ -376,12 +396,13 @@ end:
          count++;
 
       /* Restore core from backup */
-      if (menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST),
-            core_path,
-            MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,
-            MENU_SETTING_ACTION_CORE_RESTORE_BACKUP, 0, 0))
-         count++;
+      if (!core_locked)
+         if (menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST),
+               core_path,
+               MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,
+               MENU_SETTING_ACTION_CORE_RESTORE_BACKUP, 0, 0))
+            count++;
 
       /* Delete core backup */
       if (menu_entries_append_enum(info->list,
@@ -397,7 +418,7 @@ end:
        *   up in a situation where a core cannot be
        *   restored */
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
-      if (menu_show_core_updater)
+      if (menu_show_core_updater && !core_locked)
          if (menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
                core_path,
@@ -9641,26 +9662,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_CORE_INFO:
          {
-            /* There is a (infinitesimally small) chance that
-             * the number of items in the core info menu will
-             * change after performing a core restore operation
-             * (i.e. the core info files are reloaded, and if
-             * an unknown error occurs then info entries may
-             * not be available upon popping the stack). We
-             * therefore have to cache the last set menu size,
-             * and reset the navigation pointer if the current
-             * size is different */
-            static size_t prev_count = 0;
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            count           = menu_displaylist_parse_core_info(info);
+            /* The number of items in the core info menu:
+             * - *May* (possibly) change after performing a
+             *   core restore operation (i.e. the core info
+             *   files are reloaded, and if an unknown error
+             *   occurs then info entries may not be available
+             *   upon popping the stack)
+             * - *Will* change when toggling the core lock
+             *   status
+             * To prevent the menu selection from going out
+             * of bounds, we therefore have to check that the
+             * current selection index is less than the current
+             * number of menu entries - if not, we reset the
+             * navigation pointer */
+            size_t selection = menu_navigation_get_selection();
 
-            if (count != prev_count)
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            count            = menu_displaylist_parse_core_info(info);
+
+            if (selection >= count)
             {
                info->need_refresh          = true;
                info->need_navigation_clear = true;
-               prev_count                  = count;
             }
-            info->need_push = true;
+            info->need_push                = true;
          }
          break;
       case DISPLAYLIST_CORE_RESTORE_BACKUP_LIST:
