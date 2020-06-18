@@ -849,6 +849,9 @@ ifeq ($(HAVE_GFX_WIDGETS), 1)
           gfx/widgets/gfx_widget_volume.o \
           gfx/widgets/gfx_widget_generic_message.o \
           gfx/widgets/gfx_widget_libretro_message.o
+   ifeq ($(HAVE_CHEEVOS), 1)
+       OBJ += gfx/widgets/gfx_widget_achievement_popup.o
+   endif
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

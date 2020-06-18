@@ -32,10 +32,6 @@
 
 #include "../tasks/task_content.h"
 
-#ifdef HAVE_CHEEVOS
-#include "../cheevos/badges.h"
-#endif
-
 #ifdef HAVE_THREADS
 #define SLOCK_LOCK(x) slock_lock(x)
 #define SLOCK_UNLOCK(x) slock_unlock(x)
@@ -112,10 +108,6 @@ static const char
 };
 
 /* Forward declarations */
-#ifdef HAVE_CHEEVOS
-static void gfx_widgets_start_achievement_notification(
-     dispgfx_widget_t *p_dispwidget);
-#endif
 #ifdef HAVE_MENU
 bool menu_driver_get_load_content_animation_data(
       uintptr_t *icon, char **playlist_name);
@@ -206,6 +198,9 @@ size_t gfx_widgets_get_msg_queue_size(void *data)
 const static gfx_widget_t* const widgets[] = {
    &gfx_widget_screenshot,
    &gfx_widget_volume,
+#ifdef HAVE_CHEEVOS
+   &gfx_widget_achievement_popup,
+#endif
    &gfx_widget_generic_message,
    &gfx_widget_libretro_message
 };
@@ -1402,9 +1397,6 @@ static void INLINE gfx_widgets_font_unbind(gfx_widget_font_data_t *font_data)
 void gfx_widgets_frame(void *data)
 {
    size_t i;
-#ifdef HAVE_CHEEVOS
-   int scissor_me_timbers           = 0;
-#endif
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    video_frame_info_t *video_info   = (video_frame_info_t*)data;
    bool framecount_show             = video_info->framecount_show;
@@ -1503,143 +1495,6 @@ void gfx_widgets_frame(void *data)
 
       if (p_dispwidget->ai_service_overlay_state == 2)
           p_dispwidget->ai_service_overlay_state = 3;
-   }
-#endif
-
-#ifdef HAVE_CHEEVOS
-   /* Achievement notification */
-   if (p_dispwidget->cheevo_popup_queue_read_index >= 0 && 
-         p_dispwidget->cheevo_popup_queue[
-         p_dispwidget->cheevo_popup_queue_read_index].title)
-   {
-      SLOCK_LOCK(p_dispwidget->cheevo_popup_queue_lock);
-
-      if (p_dispwidget->cheevo_popup_queue[
-            p_dispwidget->cheevo_popup_queue_read_index].title)
-      {
-         unsigned unfold_offet = ((1.0f - p_dispwidget->cheevo_unfold) 
-               * p_dispwidget->cheevo_width / 2);
-
-         gfx_display_set_alpha(gfx_widgets_backdrop_orig, DEFAULT_BACKDROP);
-         gfx_display_set_alpha(gfx_widgets_pure_white, 1.0f);
-
-         /* Default icon */
-         if (!p_dispwidget->cheevo_popup_queue[
-               p_dispwidget->cheevo_popup_queue_read_index].badge)
-         {
-            /* Backdrop */
-            gfx_display_draw_quad(userdata,
-                  video_width, video_height,
-                  0, (int)p_dispwidget->cheevo_y,
-                  p_dispwidget->cheevo_height,
-                  p_dispwidget->cheevo_height,
-                  video_width, video_height,
-                  gfx_widgets_backdrop_orig);
-
-            /* Icon */
-            if (p_dispwidget->gfx_widgets_icons_textures[
-                  MENU_WIDGETS_ICON_ACHIEVEMENT])
-            {
-               gfx_display_blend_begin(userdata);
-               gfx_widgets_draw_icon(
-                     userdata,
-                     video_width,
-                     video_height,
-                     p_dispwidget->cheevo_height,
-                     p_dispwidget->cheevo_height,
-                     p_dispwidget->gfx_widgets_icons_textures[
-                     MENU_WIDGETS_ICON_ACHIEVEMENT],
-                     0,
-                     p_dispwidget->cheevo_y,
-                     video_width, video_height, 0, 1, gfx_widgets_pure_white);
-               gfx_display_blend_end(userdata);
-            }
-         }
-         /* Badge */
-         else
-         {
-            gfx_widgets_draw_icon(
-                  userdata,
-                  video_width,
-                  video_height,
-                  p_dispwidget->cheevo_height,
-                  p_dispwidget->cheevo_height,
-                  p_dispwidget->cheevo_popup_queue[
-                  p_dispwidget->cheevo_popup_queue_read_index].badge,
-                  0,
-                  p_dispwidget->cheevo_y,
-                  video_width,
-                  video_height,
-                  0,
-                  1,
-                  gfx_widgets_pure_white);
-         }
-
-         /* I _think_ cheevo_unfold changes in another thread */
-         scissor_me_timbers = (fabs(p_dispwidget->cheevo_unfold - 1.0f) > 0.01);
-         if (scissor_me_timbers)
-            gfx_display_scissor_begin(userdata,
-                  video_width,
-                  video_height,
-                  p_dispwidget->cheevo_height,
-                  0,
-                  (unsigned)((float)(p_dispwidget->cheevo_width)
-                     * p_dispwidget->cheevo_unfold),
-                  p_dispwidget->cheevo_height);
-
-         /* Backdrop */
-         gfx_display_draw_quad(
-               userdata,
-               video_width,
-               video_height,
-               p_dispwidget->cheevo_height,
-               (int)p_dispwidget->cheevo_y,
-               p_dispwidget->cheevo_width,
-               p_dispwidget->cheevo_height,
-               video_width,
-               video_height,
-               gfx_widgets_backdrop_orig);
-
-         /* Title */
-         gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-               msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
-               p_dispwidget->cheevo_height 
-               + p_dispwidget->simple_widget_padding - unfold_offet,
-               p_dispwidget->cheevo_y 
-               + p_dispwidget->gfx_widget_fonts.regular.line_height 
-               + p_dispwidget->gfx_widget_fonts.regular.line_ascender,
-               video_width, video_height,
-               TEXT_COLOR_FAINT,
-               TEXT_ALIGN_LEFT,
-               true);
-
-         /* Cheevo name */
-
-         /* TODO: is a ticker necessary ? */
-         gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-               p_dispwidget->cheevo_popup_queue[
-               p_dispwidget->cheevo_popup_queue_read_index].title,
-               p_dispwidget->cheevo_height 
-               + p_dispwidget->simple_widget_padding - unfold_offet,
-               p_dispwidget->cheevo_y 
-               + p_dispwidget->cheevo_height 
-               - p_dispwidget->gfx_widget_fonts.regular.line_height 
-               - p_dispwidget->gfx_widget_fonts.regular.line_descender,
-               video_width, video_height,
-               TEXT_COLOR_INFO,
-               TEXT_ALIGN_LEFT,
-               true);
-
-         if (scissor_me_timbers)
-         {
-            gfx_widgets_flush_text(video_width, video_height,
-                  &p_dispwidget->gfx_widget_fonts.regular);
-            gfx_display_scissor_end(userdata,
-                  video_width, video_height);
-         }
-      }
-
-      SLOCK_UNLOCK(p_dispwidget->cheevo_popup_queue_lock);
    }
 #endif
 
@@ -1811,9 +1666,6 @@ bool gfx_widgets_init(uintptr_t widgets_active_ptr,
 {
    dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)
       dispwidget_get_ptr();
-#ifdef HAVE_CHEEVOS
-   p_dispwidget->cheevo_popup_queue_read_index = -1;
-#endif
    p_dispwidget->divider_width_1px             = 1;
    p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)widgets_active_ptr;
 
@@ -2189,50 +2041,6 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
    gfx_widgets_font_free(&p_dispwidget->gfx_widget_fonts.msg_queue);
 }
 
-#ifdef HAVE_CHEEVOS
-static void gfx_widgets_achievement_free_current(dispgfx_widget_t *p_dispwidget)
-{
-   if (p_dispwidget->cheevo_popup_queue[
-         p_dispwidget->cheevo_popup_queue_read_index].title)
-   {
-      free(p_dispwidget->cheevo_popup_queue[
-            p_dispwidget->cheevo_popup_queue_read_index].title);
-      p_dispwidget->cheevo_popup_queue[
-         p_dispwidget->cheevo_popup_queue_read_index].title = NULL;
-   }
-
-   if (p_dispwidget->cheevo_popup_queue[
-         p_dispwidget->cheevo_popup_queue_read_index].badge)
-   {
-      video_driver_texture_unload(&p_dispwidget->cheevo_popup_queue[
-            p_dispwidget->cheevo_popup_queue_read_index].badge);
-      p_dispwidget->cheevo_popup_queue[
-         p_dispwidget->cheevo_popup_queue_read_index].badge = 0;
-   }
-
-   p_dispwidget->cheevo_popup_queue_read_index = (
-         p_dispwidget->cheevo_popup_queue_read_index + 1) % CHEEVO_QUEUE_SIZE;
-}
-
-static void gfx_widgets_achievement_next(void* userdata)
-{
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
-   SLOCK_LOCK(p_dispwidget->cheevo_popup_queue_lock);
-
-   if (p_dispwidget->cheevo_popup_queue_read_index >= 0)
-   {
-      gfx_widgets_achievement_free_current(p_dispwidget);
-
-      /* start the next popup (if present) */
-      if (p_dispwidget->cheevo_popup_queue[
-         p_dispwidget->cheevo_popup_queue_read_index].title)
-         gfx_widgets_start_achievement_notification(p_dispwidget);
-   }
-
-   SLOCK_UNLOCK(p_dispwidget->cheevo_popup_queue_lock);
-}
-#endif
-
 static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 {
    size_t i;
@@ -2309,24 +2117,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 #endif
 
    p_dispwidget->msg_queue_tasks_count = 0;
-
-#ifdef HAVE_CHEEVOS
-   /* Achievement notification */
-   if (p_dispwidget->cheevo_popup_queue_read_index >= 0)
-   {
-      SLOCK_LOCK(p_dispwidget->cheevo_popup_queue_lock);
-
-      while (p_dispwidget->cheevo_popup_queue[
-            p_dispwidget->cheevo_popup_queue_read_index].title)
-         gfx_widgets_achievement_free_current(p_dispwidget);
-
-      SLOCK_UNLOCK(p_dispwidget->cheevo_popup_queue_lock);
-   }
-#ifdef HAVE_THREADS
-   slock_free(p_dispwidget->cheevo_popup_queue_lock);
-   p_dispwidget->cheevo_popup_queue_lock = NULL;
-#endif
-#endif
 
    /* Font */
    video_coord_array_free(
@@ -2511,145 +2301,3 @@ void gfx_widgets_start_load_content_animation(
    p_dispwidget->load_content_animation_running = true;
 #endif
 }
-
-#ifdef HAVE_CHEEVOS
-static void gfx_widgets_achievement_dismiss(void *userdata)
-{
-   gfx_animation_ctx_entry_t entry;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-
-   /* Slide up animation */
-   entry.cb             = gfx_widgets_achievement_next;
-   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &p_dispwidget->cheevo_y;
-   entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
-   entry.target_value   = (float)(-(int)(p_dispwidget->cheevo_height));
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
-}
-
-static void gfx_widgets_achievement_fold(void *userdata)
-{
-   gfx_animation_ctx_entry_t entry;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-
-   /* Fold */
-   entry.cb             = gfx_widgets_achievement_dismiss;
-   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &p_dispwidget->cheevo_unfold;
-   entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
-   entry.target_value   = 0.0f;
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
-}
-
-static void gfx_widgets_achievement_unfold(void *userdata)
-{
-   gfx_timer_ctx_entry_t timer;
-   gfx_animation_ctx_entry_t entry;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-
-   /* Unfold */
-   entry.cb             = NULL;
-   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &p_dispwidget->cheevo_unfold;
-   entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
-   entry.target_value   = 1.0f;
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
-
-   /* Wait before dismissing */
-   timer.cb       = gfx_widgets_achievement_fold;
-   timer.duration = MSG_QUEUE_ANIMATION_DURATION + CHEEVO_NOTIFICATION_DURATION;
-   timer.userdata = NULL;
-
-   gfx_timer_start(&p_dispwidget->cheevo_timer, &timer);
-}
-
-static void gfx_widgets_start_achievement_notification(
-      dispgfx_widget_t *p_dispwidget)
-{
-   gfx_animation_ctx_entry_t entry;
-   p_dispwidget->cheevo_height      = 
-      p_dispwidget->gfx_widget_fonts.regular.line_height * 4;
-   p_dispwidget->cheevo_width       = MAX(
-         font_driver_get_message_width(
-            p_dispwidget->gfx_widget_fonts.regular.font,
-            msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), 0, 1),
-         font_driver_get_message_width(
-            p_dispwidget->gfx_widget_fonts.regular.font,
-            p_dispwidget->cheevo_popup_queue[
-            p_dispwidget->cheevo_popup_queue_read_index].title, 0, 1)
-   );
-   p_dispwidget->cheevo_width      += p_dispwidget->simple_widget_padding * 2;
-   p_dispwidget->cheevo_y           = (float)(-(int)p_dispwidget->cheevo_height);
-   p_dispwidget->cheevo_unfold      = 0.0f;
-
-   /* Slide down animation */
-   entry.cb                         = gfx_widgets_achievement_unfold;
-   entry.duration                   = MSG_QUEUE_ANIMATION_DURATION;
-   entry.easing_enum                = EASING_OUT_QUAD;
-   entry.subject                    = &p_dispwidget->cheevo_y;
-   entry.tag                        = p_dispwidget->gfx_widgets_generic_tag;
-   entry.target_value               = 0.0f;
-   entry.userdata                   = NULL;
-
-   gfx_animation_push(&entry);
-}
-
-void gfx_widgets_push_achievement(const char *title, const char *badge)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-   int           start_notification = 1;
-
-   /* important - this must be done outside the lock because it has the potential to need to
-    * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t     badge_id           = cheevos_get_badge_texture(badge, 0);
-
-   if (p_dispwidget->cheevo_popup_queue_read_index < 0)
-   {
-      /* queue uninitialized */
-      memset(&p_dispwidget->cheevo_popup_queue, 0,
-            sizeof(p_dispwidget->cheevo_popup_queue));
-      p_dispwidget->cheevo_popup_queue_read_index = 0;
-
-#ifdef HAVE_THREADS
-      p_dispwidget->cheevo_popup_queue_lock = slock_new();
-#endif
-   }
-
-   SLOCK_LOCK(p_dispwidget->cheevo_popup_queue_lock);
-
-   if (p_dispwidget->cheevo_popup_queue_write_index 
-         == p_dispwidget->cheevo_popup_queue_read_index)
-   {
-      if (p_dispwidget->cheevo_popup_queue[
-            p_dispwidget->cheevo_popup_queue_write_index].title)
-      {
-         /* queue full */
-         SLOCK_UNLOCK(p_dispwidget->cheevo_popup_queue_lock);
-         return;
-      }
-
-      /* queue empty */
-   }
-   else
-      start_notification = 0; /* notification already being displayed */
-
-   p_dispwidget->cheevo_popup_queue[p_dispwidget->cheevo_popup_queue_write_index].badge = badge_id;
-   p_dispwidget->cheevo_popup_queue[p_dispwidget->cheevo_popup_queue_write_index].title = strdup(title);
-
-   p_dispwidget->cheevo_popup_queue_write_index = (p_dispwidget->cheevo_popup_queue_write_index + 1) % CHEEVO_QUEUE_SIZE;
-
-   if (start_notification)
-      gfx_widgets_start_achievement_notification(p_dispwidget);
-
-   SLOCK_UNLOCK(p_dispwidget->cheevo_popup_queue_lock);
-}
-#endif

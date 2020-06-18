@@ -37,7 +37,6 @@
 #define MSG_QUEUE_ONSCREEN_MAX         4
 
 #define MSG_QUEUE_ANIMATION_DURATION      330
-#define CHEEVO_NOTIFICATION_DURATION      4000
 #define TASK_FINISHED_DURATION            3000
 #define HOURGLASS_INTERVAL                5000
 #define HOURGLASS_DURATION                1000
@@ -51,10 +50,6 @@
 #define TEXT_COLOR_ERROR 0xC23B22FF
 #endif
 #define TEXT_COLOR_FAINT 0x878787FF
-
-#ifdef HAVE_CHEEVOS
-#define CHEEVO_QUEUE_SIZE 8
-#endif
 
 enum gfx_widgets_icon
 {
@@ -155,18 +150,8 @@ typedef struct dispgfx_widget
    bool load_content_animation_running;
 #endif
 
-#ifdef HAVE_CHEEVOS
-   int cheevo_popup_queue_read_index;
-#endif
 #ifdef HAVE_TRANSLATE
    int ai_service_overlay_state;
-#endif
-#ifdef HAVE_CHEEVOS
-   int cheevo_popup_queue_write_index;
-#endif
-#ifdef HAVE_CHEEVOS
-   float cheevo_unfold;
-   float cheevo_y;
 #endif
 #ifdef HAVE_MENU
    float load_content_animation_icon_color[16];
@@ -189,10 +174,7 @@ typedef struct dispgfx_widget
    unsigned msg_queue_kill;
    /* Count of messages bound to a task in current_msgs */
    unsigned msg_queue_tasks_count;
-#ifdef HAVE_CHEEVOS
-   unsigned cheevo_width;
-   unsigned cheevo_height;
-#endif
+
    unsigned simple_widget_padding;
    unsigned simple_widget_height;
 
@@ -241,14 +223,6 @@ typedef struct dispgfx_widget
 #endif
    uintptr_t gfx_widgets_generic_tag;
    gfx_widget_fonts_t gfx_widget_fonts;
-#ifdef HAVE_CHEEVOS
-/* Achievement notification */
-   cheevo_popup cheevo_popup_queue[CHEEVO_QUEUE_SIZE];
-   gfx_timer_t cheevo_timer;
-#ifdef HAVE_THREADS
-   slock_t* cheevo_popup_queue_lock;
-#endif
-#endif
    fifo_buffer_t *msg_queue;
    menu_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    size_t current_msgs_size;
@@ -296,6 +270,8 @@ struct gfx_widget
 
    /* called every frame
     * (on the video thread if threaded video is on)
+    * -- data is a video_frame_info_t
+    * -- userdata is a dispgfx_widget_t
     * -> draw the widget here */
    void (*frame)(void* data, void *userdata);
 };
@@ -401,7 +377,9 @@ void gfx_widgets_start_load_content_animation(
 
 void gfx_widgets_cleanup_load_content_animation(void);
 
+#ifdef HAVE_CHEEVOS
 void gfx_widgets_push_achievement(const char *title, const char *badge);
+#endif
 
 /* Warning: not thread safe! */
 void gfx_widget_set_message(char *message);
@@ -427,5 +405,8 @@ extern const gfx_widget_t gfx_widget_volume;
 extern const gfx_widget_t gfx_widget_generic_message;
 extern const gfx_widget_t gfx_widget_libretro_message;
 
+#ifdef HAVE_CHEEVOS
+extern const gfx_widget_t gfx_widget_achievement_popup;
+#endif
 
 #endif

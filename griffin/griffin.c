@@ -1276,6 +1276,9 @@ MENU
 #include "../gfx/widgets/gfx_widget_volume.c"
 #include "../gfx/widgets/gfx_widget_generic_message.c"
 #include "../gfx/widgets/gfx_widget_libretro_message.c"
+#ifdef HAVE_CHEEVOS
+#include "../gfx/widgets/gfx_widget_achievement_popup.c"
+#endif
 #endif
 
 #ifdef HAVE_MENU
