@@ -2579,7 +2579,10 @@ bool content_init(void)
       {
          RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
       }
-      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      /* Do not flush the message queue here
+       * > This allows any core-generated error messages
+       *   to propagate through to the frontend */
+      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(error_string);
    }
 

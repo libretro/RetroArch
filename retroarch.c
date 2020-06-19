@@ -14833,9 +14833,16 @@ bool command_event(enum event_command cmd, void *data)
             break;
          }
       case CMD_EVENT_CORE_INIT:
-         content_reset_savestate_backups();
          {
-            enum rarch_core_type *type = (enum rarch_core_type*)data;
+            enum rarch_core_type *type    = (enum rarch_core_type*)data;
+            rarch_system_info_t *sys_info = &p_rarch->runloop_system;
+
+            content_reset_savestate_backups();
+
+            /* Ensure that disk control interface is reset */
+            if (sys_info)
+               disk_control_set_ext_callback(&sys_info->disk_control, NULL);
+
             if (!type || !command_event_init_core(p_rarch, *type))
                return false;
          }
@@ -17175,7 +17182,7 @@ static void runloop_core_msg_queue_push(
    }
 
    /* Get duration in frames */
-   fps             = av_info ? av_info->timing.fps : 60.0;
+   fps             = (av_info && (av_info->timing.fps > 0)) ? av_info->timing.fps : 60.0;
    duration_frames = (unsigned)((fps * (float)msg->duration / 1000.0f) + 0.5f);
 
    runloop_msg_queue_push(msg->msg,
