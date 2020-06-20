@@ -34,10 +34,9 @@
 #include <pspkernel.h>
 #include <pspaudio.h>
 #elif defined(ORBIS)
-#include <audioout.h>
-#define SCE_AUDIO_OUT_PORT_TYPE_MAIN   0
-#define SCE_AUDIO_OUT_MODE_STEREO      1
-#define SceUID uint32_t
+#include <libSceAudioOut.h>
+#include <defines/ps4_defines.h>
+#include <verbosity.h>
 #endif
 
 #include "../audio_driver.h"
@@ -55,6 +54,7 @@ typedef struct psp_audio
    SceUID thread;
 
    int port;
+   int rate;
 
    volatile uint16_t read_pos;
    volatile uint16_t write_pos;
@@ -138,23 +138,24 @@ static void *psp_audio_init(const char *device,
    if (port < 0)
       return NULL;
 
-#ifdef ORBIS
-   psp->buffer      = (uint32_t*)
-      malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-#else
-   /* Cache aligned, not necessary but helpful. */
-   psp->buffer      = (uint32_t*)
-      memalign(64, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+#if defined(ORBIS)
+   sceAudioOutInit();
 #endif
+   /* Cache aligned, not necessary but helpful. */
+   psp->buffer      = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+   //(uint32_t*)memalign(64, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+   if(!psp->buffer)
+   {
+      RARCH_LOG("[%s][%s][%d]  psp->buffer  NULL\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
+   }
+   else
+   {
+      RARCH_LOG("[%s][%s][%d]  psp->buffer  NOT NULL %d %x\n",__FILE__,__PRETTY_FUNCTION__,__LINE__,AUDIO_BUFFER_SIZE * sizeof(uint32_t),psp->buffer);
+   }
    memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
 
-#ifdef ORBIS
-   psp->zeroBuffer      = (uint32_t*)
-      malloc(AUDIO_OUT_COUNT * sizeof(uint32_t));
-#else
-   psp->zeroBuffer  = (uint32_t*)
-      memalign(64, AUDIO_OUT_COUNT   * sizeof(uint32_t));
-#endif
+   psp->zeroBuffer  = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
+   //(uint32_t*)memalign(64, AUDIO_OUT_COUNT   * sizeof(uint32_t));
    memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
 
    psp->read_pos    = 0;
@@ -263,6 +264,9 @@ static bool psp_audio_stop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
+#if defined(ORBIS)
+   return false;
+#else
    if (psp){
       psp->running = false;
 
@@ -273,6 +277,7 @@ static bool psp_audio_stop(void *data)
       psp->worker_thread = NULL;
    }
    return true;
+#endif
 }
 
 static bool psp_audio_start(void *data, bool is_shutdown)

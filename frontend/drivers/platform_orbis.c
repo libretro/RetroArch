@@ -25,6 +25,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(HAVE_OOSDK)
+#include <unistd.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include <orbis/libkernel.h>
+#include <orbis/SystemService.h>
+#include <orbis/UserService.h>
+#include <orbis/Sysmodule.h>
+#elif defined(HAVE_LIBORBIS)
 #include <kernel.h>
 #include <systemservice.h>
 #include <orbis2d.h>
@@ -35,6 +44,17 @@
 #include <orbisKeyboard.h>
 #include <debugnet.h>
 #include <orbisFile.h>
+#endif
+
+#include <signal.h>
+#include <unistd.h>
+#include <orbis/libkernel.h>
+#include <libSceUserService.h>
+#include <libSceSystemService.h>
+#include <libSceSysmodule.h>
+#include <defines/ps4_defines.h>
+
+#include "../../memory/ps4/user_mem.h"
 
 #include <pthread.h>
 
@@ -56,6 +76,29 @@
 #include "../../paths.h"
 #include "../../verbosity.h"
 
+#if defined(HAVE_LIBORBIS)
+#define CONTENT_PATH_ARG_INDEX 2
+#define EBOOT_PATH "host0:app"
+#define USER_PATH "host0:app/data/retroarch/"
+#define CORE_PATH EBOOT_PATH
+#define CORE_DIR ""
+#define CORE_INFO_PATH EBOOT_PATH
+#else
+#define CONTENT_PATH_ARG_INDEX 1
+#define EBOOT_PATH "/app0/"
+#define USER_PATH "/data/retroarch/"
+#define CORE_DIR "cores"
+#define CORE_INFO_PATH USER_PATH
+#if defined(BUNDLE_CORES)
+#define CORE_PATH EBOOT_PATH
+#else
+#define CORE_PATH "/data/self/retroarch/"
+#endif
+#endif
+#define MODULE_PATH "/data/self/system/common/lib/"
+#define MODULE_PATH_EXT "/app0/sce_module/"
+
+#if defined(HAVE_LIBORBIS)
 typedef struct OrbisGlobalConf
 {
 	Orbis2dConfig *conf;
@@ -67,33 +110,24 @@ typedef struct OrbisGlobalConf
 }OrbisGlobalConf;
 
 OrbisGlobalConf *myConf;
+#endif
 
+#if defined(HAVE_OOSDK)
+FILE _Stdin, _Stderr, _Stdout;
+#endif
 char eboot_path[512];
 char user_path[512];
+SceKernelModule s_piglet_module;
+SceKernelModule s_shacc_module;
 
 static enum frontend_fork orbis_fork_mode = FRONTEND_FORK_NONE;
 
-#ifdef __cplusplus
-extern "C"
-#endif
-int main(int argc, char *argv[])
+#if defined(HAVE_TAUON_SDK)
+void catchReturnFromMain(int exit_code)
 {
-   int ret;
-
-   sceSystemServiceHideSplashScreen();
-
-	uintptr_t intptr=0;
-	sscanf(argv[1],"%p",&intptr);
-	myConf=(OrbisGlobalConf *)intptr;
-	ret=ps4LinkInitWithConf(myConf->confLink);
-	if(!ret)
-	{
-		ps4LinkFinish();
-		return -1;
-	}
-
-   return rarch_main(argc, argv, NULL);
+  kill(getpid(), SIGTERM);
 }
+#endif
 
 static void frontend_orbis_get_env(int *argc, char *argv[],
       void *args, void *params_data)
@@ -107,7 +141,11 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
+#if defined(HAVE_LIBORBIS)
    retro_main_log_file_init("host0:app/temp/retroarch-log.txt");
+#else
+   retro_main_log_file_init("/data/retroarch/temp/retroarch-log.txt");
+#endif
 #endif
 #endif
 
@@ -115,6 +153,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 
    sceSystemServiceHideSplashScreen();
 
+#if defined(HAVE_LIBORBIS)
 	uintptr_t intptr=0;
 	sscanf(argv[1],"%p",&intptr);
    argv[1] = NULL;
@@ -128,17 +167,23 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
    orbisFileInit();
    orbisPadInitWithConf(myConf->confPad);
    scePadClose(myConf->confPad->padHandle);
+#else
+   // SceUserServiceInitializeParams param;
+   // memset(&param, 0, sizeof(param));
+   // param.priority = SCE_KERNEL_PRIO_FIFO_DEFAULT;
+   // sceUserServiceInitialize(&param);
+#endif
 
-   strcpy_literal(eboot_path, "host0:app");
+   strlcpy(eboot_path, EBOOT_PATH, sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   strcpy_literal(user_path, "host0:app/data/retroarch/");
+   strlcpy(user_path, USER_PATH, sizeof(user_path));
 
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
-   /* bundle data*/
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
+   /* bundle data */
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], CORE_PATH,
+         CORE_DIR, sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], CORE_INFO_PATH,
          "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    /* user data*/
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], user_path,
@@ -163,6 +208,8 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
          "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
          "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], user_path,
+	       "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path,
          "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], user_path,
@@ -184,7 +231,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
    params          = (struct rarch_main_wrap*)params_data;
    params->verbose = true;
 
-   if (!string_is_empty(argv[2]))
+   if (!string_is_empty(argv[CONTENT_PATH_ARG_INDEX]))
    {
       static char path[PATH_MAX_LENGTH] = {0};
       struct rarch_main_wrap      *args =
@@ -192,7 +239,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 
       if (args)
       {
-         strlcpy(path, argv[2], sizeof(path));
+         strlcpy(path, argv[CONTENT_PATH_ARG_INDEX], sizeof(path));
 
          args->touched        = true;
          args->no_content     = false;
@@ -207,7 +254,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
          RARCH_LOG("argv[1]: %s\n", argv[1]);
          RARCH_LOG("argv[2]: %s\n", argv[2]);
 
-         RARCH_LOG("Auto-start game %s.\n", argv[2]);
+         RARCH_LOG("Auto-start game %s.\n", argv[CONTENT_PATH_ARG_INDEX]);
       }
    }
 
@@ -218,13 +265,9 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 static void frontend_orbis_deinit(void *data)
 {
    (void)data;
-#ifndef IS_SALAMANDER
-   verbosity_disable();
-#ifdef HAVE_FILE_LOGGER
-   retro_main_log_file_deinit();
-#endif
-#endif
+#if defined(HAVE_LIBORBIS)
 	ps4LinkFinish();
+#endif
 }
 
 static void frontend_orbis_shutdown(bool unused)
@@ -235,28 +278,61 @@ static void frontend_orbis_shutdown(bool unused)
 
 static void frontend_orbis_init(void *data)
 {
+   int ret=initOrbisLinkAppVanillaGl();
 
+   sceSystemServiceHideSplashScreen();
+
+
+   logger_init();
+   RARCH_LOG("[%s][%s][%d] Hello from retroarch level info\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
+   RARCH_ERR("[%s][%s][%d] Hello from retroarch level error\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
+   RARCH_WARN("[%s][%s][%d] Hello from retroarch level warning no warning level on debugnet yet\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
+   RARCH_DBG("[%s][%s][%d] Hello from retroarch level debug\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
+
+   ret=sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_AUDIO_OUT);
+    if (ret) 
+    {
+        RARCH_LOG("sceSysmoduleLoadModuleInternal(%s) failed: 0x%08X\n", "SCE_SYSMODULE_INTERNAL_AUDIO_OUT", ret);
+
+    }
+   
+
+   verbosity_enable();
 }
 
 static void frontend_orbis_exec(const char *path, bool should_load_game)
 {
+   int ret;
    char argp[512] = {0};
    int   args = 0;
+
+#if !defined(HAVE_LIBORBIS)
+   // SceKernelStat sb;
+   // sceKernelStat(path, &sb);
+   // if (!(sb.st_mode & S_IXUSR))
+   //    sceKernelChmod(path, S_IRWXU);
+#endif
 
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
-      argp[args] = '\0';
-      strlcat(argp + args, path_get(RARCH_PATH_CONTENT), sizeof(argp) - args);
-      args += strlen(argp + args) + 1;
+      char game_path[PATH_MAX_LENGTH];
+      strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
+      const char * const argp[] = {
+         eboot_path,
+         game_path,
+         NULL
+      };
+      args = 2;
+      RARCH_LOG("Attempt to load executable: %d [%s].\n", args, argp);
+      // ret = sceSystemServiceLoadExec(path, (char *const *)argp);
    }
+   else
 #endif
-
-   RARCH_LOG("Attempt to load executable: [%s].\n", path);
-   RARCH_LOG("Attempt to load executable: %d [%s].\n", args, argp);
-   //int ret =  sceAppMgrLoadExec(path, args==0? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
+   {
+      // ret =  sceSystemServiceLoadExec(path, NULL);
+   }
    //RARCH_LOG("Attempt to load executable: [%d].\n", ret);
-
 }
 
 #ifndef IS_SALAMANDER
@@ -325,18 +401,51 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
+#if defined(HAVE_LIBORBIS)
    menu_entries_append_enum(list,
          "host0:app",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
+#else
+   menu_entries_append_enum(list,
+         "/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+
+   menu_entries_append_enum(list,
+         "/data",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+
+   menu_entries_append_enum(list,
+         "/usb0",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+#endif
 #endif
    return 0;
-
 }
 
+// static size_t frontend_orbis_get_mem_total(void)
+// {
+//   size_t max_mem = 0, cur_mem = 0;
+//   get_user_mem_size(&max_mem, &cur_mem);
+//   return max_mem;
+// }
+
+// static size_t frontend_orbis_get_mem_used(void)
+// {
+//   size_t max_mem = 0, cur_mem = 0;
+//   get_user_mem_size(&max_mem, &cur_mem);
+//   return cur_mem;
+// }
+
 frontend_ctx_driver_t frontend_ctx_orbis = {
-   frontend_orbis_get_env,
+   NULL, /*frontend_orbis_get_env,*/
    frontend_orbis_init,
    frontend_orbis_deinit,
    frontend_orbis_exitspawn,
@@ -355,8 +464,8 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    frontend_orbis_get_arch,
    NULL,
    frontend_orbis_parse_drive_list,
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem */
+   NULL, /* TODO: frontend_orbis_get_mem_total,*/
+   NULL, /* TODO: frontend_orbis_get_mem_used,*/
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */

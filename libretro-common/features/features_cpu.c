@@ -75,6 +75,11 @@
 #include <psp2/rtc.h>
 #endif
 
+#if defined(ORBIS)
+#include <orbis/libkernel.h>
+// #include <orbis/Rtc.h>
+#endif
+
 #if defined(PS2)
 #include <ps2sdkapi.h>
 #endif
@@ -195,6 +200,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    __asm__ volatile( "mrs %0, cntvct_el0" : "=r"(time_ticks) );
 #elif defined(PSP) || defined(VITA)
    time_ticks = sceKernelGetSystemTimeWide();
+#elif defined(ORBIS)
+   sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
 #elif defined(PS2)
    time_ticks = ps2_clock();
 #elif defined(_3DS)
@@ -255,6 +262,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return sceKernelGetSystemTimeWide();
 #elif defined(DJGPP)
    return uclock() * 1000000LL / UCLOCKS_PER_SEC;
+#elif defined(ORBIS)
+   return sceKernelGetProcessTime();
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif

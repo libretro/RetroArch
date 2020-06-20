@@ -25,13 +25,19 @@
 #include <dynamic/dylib.h>
 #include <encodings/utf.h>
 
+#if defined(ORBIS)
+#include <orbis/libkernel.h>
+#endif
+
 #ifdef NEED_DYNAMIC
 
 #ifdef _WIN32
 #include <compat/posix_string.h>
 #include <windows.h>
 #else
+#if !defined(ORBIS)
 #include <dlfcn.h>
+#endif
 #endif
 
 /* Assume W-functions do not work below Win2K and Xbox platforms */
@@ -118,6 +124,9 @@ dylib_t dylib_load(const char *path)
       return NULL;
    }
    last_dyn_error[0] = 0;
+#elif defined(ORBIS)
+   int res;
+   dylib_t lib = (dylib_t)sceKernelLoadStartModule(path, 0, NULL, 0, NULL, &res);
 #else
    dylib_t lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
 #endif
@@ -161,6 +170,14 @@ function_t dylib_proc(dylib_t lib, const char *proc)
       return NULL;
    }
    last_dyn_error[0] = 0;
+#elif defined(ORBIS)
+   void *ptr_sym = NULL;
+   sym = NULL;
+
+   if (lib) {
+     sceKernelDlsym((SceKernelModule)lib, proc, &ptr_sym);
+     memcpy(&sym, &ptr_sym, sizeof(void*));
+   }
 #else
    void *ptr_sym = NULL;
 
@@ -196,6 +213,9 @@ void dylib_close(dylib_t lib)
    if (!FreeLibrary((HMODULE)lib))
       set_dl_error();
    last_dyn_error[0] = 0;
+#elif defined(ORBIS)
+   int res;
+   sceKernelStopUnloadModule((SceKernelModule)lib, 0, NULL, 0, NULL, &res);
 #else
 #ifndef NO_DLCLOSE
    dlclose(lib);

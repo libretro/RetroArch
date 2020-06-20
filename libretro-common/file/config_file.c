@@ -28,7 +28,9 @@
 
 #ifdef ORBIS
 #include <sys/fcntl.h>
+#if defined(HAVE_LIBORBIS)
 #include <orbisFile.h>
+#endif
 #endif
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
@@ -1338,13 +1340,6 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
 
    if (!string_is_empty(path))
    {
-#ifdef ORBIS
-      int fd     = orbisOpen(path,O_RDWR|O_CREAT,0644);
-      if (fd < 0)
-         return false;
-      config_file_dump_orbis(conf,fd);
-      orbisClose(fd);
-#else
       void* buf  = NULL;
       FILE *file = (FILE*)fopen_utf8(path, "wb");
       if (!file)
@@ -1359,7 +1354,6 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
          fclose(file);
       if (buf)
          free(buf);
-#endif
 
       /* Only update modified flag if config file
        * is actually written to disk */
@@ -1370,53 +1364,6 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
 
    return true;
 }
-
-#ifdef ORBIS
-void config_file_dump_orbis(config_file_t *conf, int fd)
-{
-   struct config_entry_list       *list = NULL;
-   struct config_include_list *includes = conf->includes;
-  
-   if (conf->reference)
-   {
-      pathname_make_slashes_portable(conf->reference);
-      fprintf(file, "#reference \"%s\"\n", conf->reference);
-   }
-
-
-   list          = config_file_merge_sort_linked_list(
-         (struct config_entry_list*)conf->entries,
-         config_file_sort_compare_func);
-   conf->entries = list;
-
-   while (list)
-   {
-      if (!list->readonly && list->key)
-      {
-         char newlist[256];
-         snprintf(newlist, sizeof(newlist),
-               "%s = %s\n", list->key, list->value);
-         orbisWrite(fd, newlist, strlen(newlist));
-      }
-      list = list->next;
-   }
-
-   /* Config files are read from the top down - if
-    * duplicate entries are found then the topmost
-    * one in the list takes precedence. This means
-    * '#include' directives must go *after* individual
-    * config entries, otherwise they will override
-    * any custom-set values */
-   while (includes)
-   {
-      char cad[256];
-      snprintf(cad, sizeof(cad),
-            "#include %s\n", includes->path);
-      orbisWrite(fd, cad, strlen(cad));
-      includes = includes->next;
-   }
-}
-#endif
 
 void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {

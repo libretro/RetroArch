@@ -21,7 +21,8 @@
 #include "../../config.h"
 #endif
 
-#include <pad.h>
+#include <orbis/libScePad.h>
+#include <defines/ps4_defines.h>
 
 #include <boolean.h>
 #include <libretro.h>
