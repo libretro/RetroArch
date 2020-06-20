@@ -303,28 +303,39 @@ static bool win32_display_server_set_resolution(void *data,
 void *win32_display_server_get_resolution_list(void *data,
       unsigned *len)
 {
-   DEVMODE dm;
-   unsigned i, count                 = 0;
+   DEVMODE dm                        = {0};
+   unsigned i, j, count              = 0;
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;
    unsigned curr_refreshrate         = 0;
+#if _WIN32_WINNT >= 0x0500
+   unsigned curr_orientation         = 0;
+#endif
    struct video_display_config *conf = NULL;
 
-   for (i = 0;; i++)
-   {
-      if (!win32_get_video_output(&dm, i, sizeof(dm)))
-         break;
-
-      count++;
-   }
-
-   if (win32_get_video_output(&dm, -1, sizeof(dm)))
-   {
+   if (win32_get_video_output(&dm, -1, sizeof(dm))) {
       curr_width       = dm.dmPelsWidth;
       curr_height      = dm.dmPelsHeight;
       curr_bpp         = dm.dmBitsPerPel;
       curr_refreshrate = dm.dmDisplayFrequency;
+#if _WIN32_WINNT >= 0x0500
+      curr_orientation = dm.dmDisplayOrientation;
+#endif
+   }
+
+   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
+   {
+      if (dm.dmBitsPerPel != curr_bpp)
+         continue;
+#if _WIN32_WINNT >= 0x0500
+      if (dm.dmDisplayOrientation != curr_orientation)
+         continue;
+      if (dm.dmDisplayFixedOutput != DMDFO_DEFAULT)
+         continue;
+#endif
+
+      count++;
    }
 
    *len = count;
@@ -333,24 +344,32 @@ void *win32_display_server_get_resolution_list(void *data,
    if (!conf)
       return NULL;
 
-   for (i = 0;; i++)
+   for (i = 0, j = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
-      if (!win32_get_video_output(&dm, i, sizeof(dm)))
-         break;
+      if (dm.dmBitsPerPel != curr_bpp)
+         continue;
+#if _WIN32_WINNT >= 0x0500
+      if (dm.dmDisplayOrientation != curr_orientation)
+         continue;
+      if (dm.dmDisplayFixedOutput != DMDFO_DEFAULT)
+         continue;
+#endif
 
-      conf[i].width       = dm.dmPelsWidth;
-      conf[i].height      = dm.dmPelsHeight;
-      conf[i].bpp         = dm.dmBitsPerPel;
-      conf[i].refreshrate = dm.dmDisplayFrequency;
-      conf[i].idx         = i;
-      conf[i].current     = false;
+      conf[j].width       = dm.dmPelsWidth;
+      conf[j].height      = dm.dmPelsHeight;
+      conf[j].bpp         = dm.dmBitsPerPel;
+      conf[j].refreshrate = dm.dmDisplayFrequency;
+      conf[j].idx         = j;
+      conf[j].current     = false;
 
-      if (     (conf[i].width       == curr_width)
-            && (conf[i].height      == curr_height)
-            && (conf[i].refreshrate == curr_refreshrate)
-            && (conf[i].bpp         == curr_bpp)
+      if (     (conf[j].width       == curr_width)
+            && (conf[j].height      == curr_height)
+            && (conf[j].bpp         == curr_bpp)
+            && (conf[j].refreshrate == curr_refreshrate)
          )
-         conf[i].current  = true;
+         conf[j].current  = true;
+
+      j++;
    }
 
    return conf;
