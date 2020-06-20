@@ -108,6 +108,8 @@ uint32_t intfstream_get_frame_size(intfstream_internal_t *intf);
 
 bool intfstream_is_compressed(intfstream_internal_t *intf);
 
+bool intfstream_get_crc(intfstream_internal_t *intf, uint32_t *crc);
+
 intfstream_t *intfstream_open_file(const char *path,
       unsigned mode, unsigned hints);
 

@@ -135,6 +135,7 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 };
 
 #ifndef IS_SALAMANDER
+/* TODO/FIXME - static public global variable */
 static frontend_ctx_driver_t *current_frontend_ctx;
 #endif
 

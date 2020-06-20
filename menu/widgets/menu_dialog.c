@@ -36,22 +36,6 @@
 #include "../../input/input_driver.h"
 #include "../../performance_counters.h"
 
-struct menu_dialog
-{
-   bool                  pending_push;
-   unsigned              current_id;
-   enum menu_dialog_type current_type;
-};
-
-typedef struct menu_dialog menu_dialog_t;
-
-static menu_dialog_t dialog;
-
-static menu_dialog_t *dialog_get_ptr(void)
-{
-   return &dialog;
-}
-
 int menu_dialog_iterate(char *s, size_t len,
       retro_time_t current_time)
 {
@@ -64,11 +48,16 @@ int menu_dialog_iterate(char *s, size_t len,
             static rarch_timer_t timer;
 
             if (!rarch_timer_is_running(&timer))
-               rarch_timer_begin_us(&timer, 3 * 1000000);
+            {
+               rarch_timer_begin_new_time_us(&timer,
+                     3 * 1000000);
+               timer.timer_begin = true;
+               timer.timer_end   = false;
+            }
 
             rarch_timer_tick(&timer, current_time);
 
-            menu_hash_get_help_enum(
+            msg_hash_get_help_enum(
                   MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
                   s, len);
 
@@ -114,7 +103,8 @@ int menu_dialog_iterate(char *s, size_t len,
 
             s2[0] = '\0';
 
-            menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG,
+            msg_hash_get_help_enum(
+                  MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG,
                   s2, sizeof(s2));
 
             snprintf(s, len,
@@ -193,30 +183,30 @@ int menu_dialog_iterate(char *s, size_t len,
 #endif
 
       case MENU_DIALOG_HELP_WHAT_IS_A_CORE:
-         menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
+         msg_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
                s, len);
          break;
       case MENU_DIALOG_HELP_LOADING_CONTENT:
-         menu_hash_get_help_enum(MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
+         msg_hash_get_help_enum(MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
                s, len);
          break;
       case MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD:
-         menu_hash_get_help_enum(
+         msg_hash_get_help_enum(
                MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC,
                s, len);
          break;
       case MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-         menu_hash_get_help_enum(
+         msg_hash_get_help_enum(
                MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
                s, len);
          break;
       case MENU_DIALOG_HELP_SEND_DEBUG_INFO:
-         menu_hash_get_help_enum(
+         msg_hash_get_help_enum(
                MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO_DESC,
                s, len);
          break;
       case MENU_DIALOG_HELP_SCANNING_CONTENT:
-         menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC,
+         msg_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC,
                s, len);
          break;
       case MENU_DIALOG_HELP_EXTRACT:
@@ -224,7 +214,7 @@ int menu_dialog_iterate(char *s, size_t len,
             settings_t *settings      = config_get_ptr();
             bool bundle_finished      = settings->bools.bundle_finished;
 
-            menu_hash_get_help_enum(
+            msg_hash_get_help_enum(
                   MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                   s, len);
 
@@ -242,7 +232,7 @@ int menu_dialog_iterate(char *s, size_t len,
       case MENU_DIALOG_QUESTION:
       case MENU_DIALOG_WARNING:
       case MENU_DIALOG_ERROR:
-         menu_hash_get_help_enum(MSG_UNKNOWN,
+         msg_hash_get_help_enum(MSG_UNKNOWN,
                s, len);
          break;
       case MENU_DIALOG_NONE:

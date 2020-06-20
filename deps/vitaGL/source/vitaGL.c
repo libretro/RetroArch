@@ -1,4 +1,23 @@
 /*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ * Copyright 2020 Asakura Reiko
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *
  */
 #include "vitaGL.h"
@@ -23,13 +42,20 @@ typedef struct gpubuffer {
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
-float y_port = -272.0f;
+float y_port = 272.0f;
 float z_port = 0.5f;
 float x_scale = 480.0f;
-float y_scale = 272.0f;
+float y_scale = -272.0f;
 float z_scale = 0.5f;
 
-uint8_t viewport_mode = 0; // Current setting for viewport mode
+// Fullscreen sceGxm viewport (NOTE: origin is on center screen)
+float fullscreen_x_port = 480.0f;
+float fullscreen_y_port = 272.0f;
+float fullscreen_z_port = 0.5f;
+float fullscreen_x_scale = 480.0f;
+float fullscreen_y_scale = -272.0f;
+float fullscreen_z_scale = 0.5f;
+
 GLboolean vblank = GL_TRUE; // Current setting for VSync
 
 extern int _newlib_heap_memblock; // Newlib Heap memblock
@@ -51,14 +77,14 @@ uint16_t *depth_clear_indices = NULL; // Memblock starting address for clear scr
 
 // Clear shaders
 SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
-vector2f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
+vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 
 // Internal stuffs
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 
-static SceGxmBlendInfo *cur_blend_info_ptr = NULL;
 extern uint8_t use_vram;
+extern uint8_t use_vram_for_usse;
 
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
@@ -129,7 +155,6 @@ void change_blend_factor() {
 	blend_info.alphaDst = blend_dfactor_a;
 
 	_change_blend_factor(&blend_info);
-	cur_blend_info_ptr = &blend_info;
 	if (cur_program != 0) {
 		reloadCustomShader();
 	}
@@ -138,15 +163,14 @@ void change_blend_factor() {
 void change_blend_mask() {
 	static SceGxmBlendInfo blend_info;
 	blend_info.colorMask = blend_color_mask;
-	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
-	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_ADD;
+	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_NONE;
+	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_NONE;
 	blend_info.colorSrc = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
 	blend_info.colorDst = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	blend_info.alphaSrc = SCE_GXM_BLEND_FACTOR_ONE;
 	blend_info.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
 
 	_change_blend_factor(&blend_info);
-	cur_blend_info_ptr = &blend_info;
 	if (cur_program != 0) {
 		reloadCustomShader();
 	}
@@ -155,7 +179,6 @@ void change_blend_mask() {
 void disable_blend() {
 	if (blend_color_mask == SCE_GXM_COLOR_MASK_ALL) {
 		_change_blend_factor(NULL);
-		cur_blend_info_ptr = NULL;
 		if (cur_program != 0) {
 			reloadCustomShader();
 		}
@@ -163,21 +186,21 @@ void disable_blend() {
 		change_blend_mask();
 }
 
-void vector2f_convert_to_local_space(vector2f *out, int x, int y, int width, int height) {
-	out[0].x = (float)(2 * x) / (float)DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[1].x = (float)(2 * (x + width)) / (float)DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[2].x = (float)(2 * (x + width)) / (float)DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[3].x = (float)(2 * x) / (float)DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[0].y = 1.0f - (float)(2 * y) / (float)DISPLAY_HEIGHT_FLOAT;
-	out[1].y = 1.0f - (float)(2 * y) / (float)DISPLAY_HEIGHT_FLOAT;
-	out[2].y = 1.0f - (float)(2 * (y + height)) / (float)DISPLAY_HEIGHT_FLOAT;
-	out[3].y = 1.0f - (float)(2 * (y + height)) / (float)DISPLAY_HEIGHT_FLOAT;
+void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) {
+	out[0].x = (float)(2 * x) / DISPLAY_WIDTH_FLOAT - 1.0f;
+	out[0].y = (float)(2 * (x + width)) / DISPLAY_WIDTH_FLOAT - 1.0f;
+	out[0].z = 1.0f - (float)(2 * y) / DISPLAY_HEIGHT_FLOAT;
+	out[0].w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
 }
 
 // vitaGL specific functions
 
 void vglUseVram(GLboolean usage) {
 	use_vram = usage;
+}
+
+void vglUseVramForUSSE(GLboolean usage) {
+	use_vram_for_usse = usage;
 }
 
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
@@ -187,20 +210,23 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	DISPLAY_HEIGHT = height;
 	DISPLAY_WIDTH_FLOAT = width * 1.0f;
 	DISPLAY_HEIGHT_FLOAT = height * 1.0f;
-	switch (DISPLAY_WIDTH) {
-	case 480:
-		DISPLAY_STRIDE = 512;
-		break;
-	case 640:
-		DISPLAY_STRIDE = 640;
-		break;
-	case 720:
-		DISPLAY_STRIDE = 768;
-		break;
-	default:
-		DISPLAY_STRIDE = 960;
-		break;
-	}
+	DISPLAY_STRIDE = ALIGN(DISPLAY_WIDTH, 64);
+
+	// Adjusting default values for internal viewport
+	x_port  = DISPLAY_WIDTH_FLOAT / 2.0f;
+	x_scale = x_port;
+	y_scale = -(DISPLAY_HEIGHT_FLOAT / 2.0f);
+	y_port  = -y_scale;
+	fullscreen_x_port = x_port;
+	fullscreen_x_scale = x_scale;
+	fullscreen_y_port = y_port;
+	fullscreen_y_scale = y_scale;
+	
+	// Init viewport state
+	gl_viewport.x = 0;
+	gl_viewport.y = 0;
+	gl_viewport.w = DISPLAY_WIDTH;
+	gl_viewport.h = DISPLAY_HEIGHT;
 
 	// Initializing sceGxm
 	initGxm();
@@ -211,7 +237,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	sceKernelGetFreeMemorySize(&info);
 
 	// Initializing memory heap for CDRAM and RAM memory
-	vitagl_mem_init(info.size_user - ram_threshold, info.size_cdram - 1 * 1024 * 1024, info.size_phycont - 1 * 1024 * 1024); // leave some just in case
+	vgl_mem_init(info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024); // leave some just in case
 
 	// Initializing sceGxm context
 	initGxmContext();
@@ -255,10 +281,10 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		&disable_color_buffer_fragment_program_patched);
 
 	vglMemType type = VGL_MEM_RAM;
-	clear_vertices = gpu_alloc_mapped(4 * sizeof(vector2f), &type);
+	clear_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), &type);
 	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), &type);
 
-	vector2f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+	vector4f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
 	depth_clear_indices[0] = 0;
 	depth_clear_indices[1] = 1;
@@ -280,20 +306,8 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	clear_color = sceGxmProgramFindParameterByName(
 		clear_fragment_program, "u_clear_color");
 
-	SceGxmVertexAttribute clear_vertex_attribute;
-	SceGxmVertexStream clear_vertex_stream;
-	clear_vertex_attribute.streamIndex = 0;
-	clear_vertex_attribute.offset = 0;
-	clear_vertex_attribute.format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	clear_vertex_attribute.componentCount = 2;
-	clear_vertex_attribute.regIndex = sceGxmProgramParameterGetResourceIndex(
-		clear_position);
-	clear_vertex_stream.stride = sizeof(vector2f);
-	clear_vertex_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-		clear_vertex_id, &clear_vertex_attribute,
-		1, &clear_vertex_stream, 1, &clear_vertex_program_patched);
+		clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched);
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -425,9 +439,6 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	texture2d_fog_color = sceGxmProgramFindParameterByName(
 		texture2d_fragment_program, "fogColor");
 
-	texture2d_fog_mode2 = sceGxmProgramFindParameterByName(
-		texture2d_vertex_program, "fog_mode");
-
 	texture2d_clip_plane0 = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "clip_plane0");
 
@@ -438,13 +449,13 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		texture2d_vertex_program, "modelview");
 
 	texture2d_fog_near = sceGxmProgramFindParameterByName(
-		texture2d_vertex_program, "fog_near");
+		texture2d_fragment_program, "fog_near");
 
 	texture2d_fog_far = sceGxmProgramFindParameterByName(
-		texture2d_vertex_program, "fog_far");
+		texture2d_fragment_program, "fog_far");
 
 	texture2d_fog_density = sceGxmProgramFindParameterByName(
-		texture2d_vertex_program, "fog_density");
+		texture2d_fragment_program, "fog_density");
 
 	texture2d_tex_env_color = sceGxmProgramFindParameterByName(
 		texture2d_fragment_program, "texEnvColor");
@@ -509,9 +520,6 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	texture2d_rgba_fog_mode = sceGxmProgramFindParameterByName(
 		texture2d_rgba_fragment_program, "fog_mode");
 
-	texture2d_rgba_fog_mode2 = sceGxmProgramFindParameterByName(
-		texture2d_rgba_vertex_program, "fog_mode");
-
 	texture2d_rgba_clip_plane0 = sceGxmProgramFindParameterByName(
 		texture2d_rgba_vertex_program, "clip_plane0");
 
@@ -522,13 +530,13 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		texture2d_rgba_vertex_program, "modelview");
 
 	texture2d_rgba_fog_near = sceGxmProgramFindParameterByName(
-		texture2d_rgba_vertex_program, "fog_near");
+		texture2d_rgba_fragment_program, "fog_near");
 
 	texture2d_rgba_fog_far = sceGxmProgramFindParameterByName(
-		texture2d_rgba_vertex_program, "fog_far");
+		texture2d_rgba_fragment_program, "fog_far");
 
 	texture2d_rgba_fog_density = sceGxmProgramFindParameterByName(
-		texture2d_rgba_vertex_program, "fog_density");
+		texture2d_rgba_fragment_program, "fog_density");
 
 	texture2d_rgba_fog_color = sceGxmProgramFindParameterByName(
 		texture2d_rgba_fragment_program, "fogColor");
@@ -586,7 +594,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 
-	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(vector2f), &type);
+	scissor_test_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), &type);
 
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
@@ -615,15 +623,9 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		buffers[i] = BUFFERS_ADDR + i;
 		gpu_buffers[i].ptr = NULL;
 	}
-
+	
 	// Init scissor test state
 	resetScissorTestRegion();
-
-	// Init viewport state
-	gl_viewport.x = 0;
-	gl_viewport.y = 0;
-	gl_viewport.w = DISPLAY_WIDTH;
-	gl_viewport.h = DISPLAY_HEIGHT;
 
 	// Getting newlib heap memblock starting address
 	void *addr = NULL;
@@ -642,10 +644,10 @@ void vglEnd(void) {
 	waitRenderingDone();
 
 	// Deallocating default vertices buffers
-	vitagl_mempool_free(clear_vertices, VGL_MEM_RAM);
-	vitagl_mempool_free(depth_vertices, VGL_MEM_RAM);
-	vitagl_mempool_free(depth_clear_indices, VGL_MEM_RAM);
-	vitagl_mempool_free(scissor_test_vertices, VGL_MEM_RAM);
+	vgl_mem_free(clear_vertices, VGL_MEM_RAM);
+	vgl_mem_free(depth_vertices, VGL_MEM_RAM);
+	vgl_mem_free(depth_clear_indices, VGL_MEM_RAM);
+	vgl_mem_free(scissor_test_vertices, VGL_MEM_RAM);
 
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
@@ -697,7 +699,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 	int i = 0, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -714,7 +716,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 void glBindBuffer(GLenum target, GLuint buffer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((buffer != 0x0000) && ((buffer >= BUFFERS_ADDR + BUFFERS_NUM) || (buffer < BUFFERS_ADDR))) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -726,7 +728,7 @@ void glBindBuffer(GLenum target, GLuint buffer) {
 		index_array_unit = buffer - BUFFERS_ADDR;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -734,7 +736,7 @@ void glBindBuffer(GLenum target, GLuint buffer) {
 void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -744,7 +746,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 			uint8_t idx = gl_buffers[j] - BUFFERS_ADDR;
 			buffers[idx] = gl_buffers[j];
 			if (gpu_buffers[idx].ptr != NULL) {
-				vitagl_mempool_free(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
+				vgl_mem_free(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
 				gpu_buffers[idx].ptr = NULL;
 			}
 		}
@@ -754,7 +756,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage) {
 #ifndef SKIP_ERROR_HANDLING
 	if (size < 0) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -767,7 +769,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		idx = index_array_unit;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	vglMemType type = VGL_MEM_VRAM;
@@ -811,7 +813,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (dfactor) {
@@ -849,7 +851,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (blend_state)
@@ -892,7 +894,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (dstRGB) {
@@ -930,7 +932,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (srcAlpha) {
@@ -968,7 +970,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (dstAlpha) {
@@ -1006,7 +1008,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (blend_state)
@@ -1031,7 +1033,7 @@ void glBlendEquation(GLenum mode) {
 		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (blend_state)
@@ -1056,7 +1058,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 		blend_func_rgb = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (modeAlpha) {
@@ -1076,7 +1078,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 		blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (blend_state)
@@ -1101,8 +1103,8 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 2) && (size > 4))) {
-		_vitagl_error = GL_INVALID_VALUE;
+	if ((stride < 0) || (size < 2) || (size > 4)) {
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1115,7 +1117,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 		tex_unit->vertex_array.size = sizeof(GLshort);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -1126,8 +1128,8 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 3) && (size > 4))) {
-		_vitagl_error = GL_INVALID_VALUE;
+	if ((stride < 0) || (size < 3) || (size > 4)) {
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1140,7 +1142,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 		tex_unit->color_array.size = sizeof(GLshort);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -1151,8 +1153,8 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 2) && (size > 4))) {
-		_vitagl_error = GL_INVALID_VALUE;
+	if ((stride < 0) || (size < 2) || (size > 4)) {
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1165,7 +1167,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 		tex_unit->texture_array.size = sizeof(GLshort);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -1178,8 +1180,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	SceGxmPrimitiveType gxm_p;
-	GLboolean skip_draw = GL_FALSE;
 	if (tex_unit->vertex_array_state) {
+		GLboolean skip_draw = GL_FALSE;
 		switch (mode) {
 		case GL_POINTS:
 			gxm_p = SCE_GXM_PRIMITIVE_POINTS;
@@ -1207,7 +1209,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 				skip_draw = GL_TRUE;
 			break;
 		default:
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 			break;
 		}
 		if (!skip_draw) {
@@ -1233,6 +1235,9 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_mode, 0, 1, &fogmode);
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_color, 0, 4, &fog_color.r);
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_tex_env_color, 0, 4, &texenv_color.r);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_near, 0, 1, (const float *)&fog_near);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_far, 0, 1, (const float *)&fog_far);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_density, 0, 1, (const float *)&fog_density);
 				} else {
 					sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
 					sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
@@ -1248,6 +1253,9 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_mode, 0, 1, &fogmode);
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_color, 0, 4, &fog_color.r);
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_near, 0, 1, (const float *)&fog_near);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_far, 0, 1, (const float *)&fog_far);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_density, 0, 1, (const float *)&fog_density);
 				}
 			} else if (tex_unit->color_array_state && (tex_unit->color_array.num == 3)) {
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
@@ -1261,27 +1269,18 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 
 			if (tex_unit->texture_array_state) {
-				float fogmode = (float)internal_fog_mode;
 				if (tex_unit->color_array_state) {
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_wvp, 0, 16, (const float *)mvp_matrix);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_mode, 0, 1, (const float *)&fogmode);
 					float clipplane0 = (float)clip_plane0;
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_clip_plane0, 0, 1, &clipplane0);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_mv, 0, 16, (const float *)modelview_matrix);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_near, 0, 1, (const float *)&fog_near);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_far, 0, 1, (const float *)&fog_far);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_density, 0, 1, (const float *)&fog_density);
 				} else {
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float *)mvp_matrix);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_mode2, 0, 1, (const float *)&fogmode);
 					float clipplane0 = (float)clip_plane0;
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0, 0, 1, &clipplane0);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_near, 0, 1, (const float *)&fog_near);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_far, 0, 1, (const float *)&fog_far);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_density, 0, 1, (const float *)&fog_density);
 				}
 				sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 				vector3f *vertices = NULL;
@@ -1320,20 +1319,20 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 					uint8_t vec_set = 0, tex_set = 0, clr_set = 0;
 					if (tex_unit->vertex_array.stride == 0) {
 						ptr = ((uint8_t *)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size));
-						memcpy(&vertices[n], ptr, count * sizeof(vector3f));
+						memcpy(&vertices[0], ptr, count * sizeof(vector3f));
 						vec_set = 1;
 					} else
 						ptr = ((uint8_t *)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride);
 					if (tex_unit->texture_array.stride == 0) {
 						ptr_tex = ((uint8_t *)tex_unit->texture_array.pointer) + (first * (tex_unit->texture_array.num * tex_unit->texture_array.size));
-						memcpy(&uv_map[n], ptr_tex, count * sizeof(vector2f));
+						memcpy(&uv_map[0], ptr_tex, count * sizeof(vector2f));
 						tex_set = 1;
 					} else
 						ptr_tex = ((uint8_t *)tex_unit->texture_array.pointer) + (first * tex_unit->texture_array.stride);
 					if (tex_unit->color_array_state) {
 						if (tex_unit->color_array.stride == 0) {
 							ptr_clr = ((uint8_t *)tex_unit->color_array.pointer) + (first * sizeof(vector4f));
-							memcpy(&colors[n], ptr_clr, count * sizeof(vector4f));
+							memcpy(&colors[0], ptr_clr, count * sizeof(vector4f));
 							clr_set = 1;
 						} else
 							ptr_clr = ((uint8_t *)tex_unit->color_array.pointer) + (first * tex_unit->color_array.stride);
@@ -1466,18 +1465,17 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
 	SceGxmPrimitiveType gxm_p;
-	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	GLboolean skip_draw = GL_FALSE;
 	if (tex_unit->vertex_array_state) {
+		GLboolean skip_draw = GL_FALSE;
 #ifndef SKIP_ERROR_HANDLING
 		if (type != GL_UNSIGNED_SHORT)
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		else if (phase == MODEL_CREATION)
-			_vitagl_error = GL_INVALID_OPERATION;
+			vgl_error = GL_INVALID_OPERATION;
 		else if (count < 0)
-			_vitagl_error = GL_INVALID_VALUE;
+			vgl_error = GL_INVALID_VALUE;
 #endif
 		switch (mode) {
 		case GL_POINTS:
@@ -1502,7 +1500,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 				skip_draw = GL_TRUE;
 			break;
 		default:
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 			break;
 		}
 		if (!skip_draw) {
@@ -1528,6 +1526,9 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_mode, 0, 1, &fogmode);
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_color, 0, 4, &fog_color.r);
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_tex_env_color, 0, 4, &texenv_color.r);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_near, 0, 1, (const float *)&fog_near);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_far, 0, 1, (const float *)&fog_far);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_density, 0, 1, (const float *)&fog_density);
 				} else {
 					sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
 					sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
@@ -1543,6 +1544,9 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_mode, 0, 1, &fogmode);
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_color, 0, 4, &fog_color.r);
 					sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_near, 0, 1, (const float *)&fog_near);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_far, 0, 1, (const float *)&fog_far);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_density, 0, 1, (const float *)&fog_density);
 				}
 			} else if (tex_unit->color_array_state && (tex_unit->color_array.num == 3)) {
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
@@ -1556,27 +1560,18 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 
 			if (tex_unit->texture_array_state) {
-				float fogmode = (float)internal_fog_mode;
 				if (tex_unit->color_array_state) {
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_wvp, 0, 16, (const float *)mvp_matrix);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_mode, 0, 1, (const float *)&fogmode);
 					float clipplane0 = (float)clip_plane0;
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_clip_plane0, 0, 1, &clipplane0);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_mv, 0, 16, (const float *)modelview_matrix);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_near, 0, 1, (const float *)&fog_near);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_far, 0, 1, (const float *)&fog_far);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_density, 0, 1, (const float *)&fog_density);
 				} else {
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float *)mvp_matrix);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_mode2, 0, 1, (const float *)&fogmode);
 					float clipplane0 = (float)clip_plane0;
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0, 0, 1, &clipplane0);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_near, 0, 1, (const float *)&fog_near);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_far, 0, 1, (const float *)&fog_far);
-					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_density, 0, 1, (const float *)&fog_density);
 				}
 				sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
 				vector3f *vertices = NULL;
@@ -1739,7 +1734,7 @@ void glEnableClientState(GLenum array) {
 		tex_unit->texture_array_state = GL_TRUE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -1757,7 +1752,7 @@ void glDisableClientState(GLenum array) {
 		tex_unit->texture_array_state = GL_FALSE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -1765,7 +1760,7 @@ void glDisableClientState(GLenum array) {
 void glClientActiveTexture(GLenum texture) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE31))
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 	else
 #endif
 		client_texture_unit = texture - GL_TEXTURE0;
@@ -1775,8 +1770,8 @@ void glClientActiveTexture(GLenum texture) {
 
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 2) && (size > 4))) {
-		_vitagl_error = GL_INVALID_VALUE;
+	if ((stride < 0) || (size < 2) || (size > 4)) {
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1790,7 +1785,7 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	tex_unit->vertex_object = gpu_pool_memalign(count * bpe * size, bpe * size);
@@ -1810,8 +1805,8 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 3) && (size > 4))) {
-		_vitagl_error = GL_INVALID_VALUE;
+	if ((stride < 0) || (size < 3) || (size > 4)) {
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1828,7 +1823,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 		bpe = sizeof(uint8_t);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	tex_unit->color_object = gpu_pool_memalign(count * bpe * size, bpe * size);
@@ -1849,8 +1844,8 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 
 void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 2) && (size > 4))) {
-		_vitagl_error = GL_INVALID_VALUE;
+	if ((stride < 0) || (size < 2) || (size > 4)) {
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1864,7 +1859,7 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	tex_unit->texture_object = gpu_pool_memalign(count * bpe * size, bpe * size);
@@ -1885,7 +1880,7 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if (stride < 0) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1899,7 +1894,7 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	tex_unit->index_object = gpu_pool_memalign(count * bpe, bpe);
@@ -1944,9 +1939,9 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	int texture2d_idx = tex_unit->tex_id;
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION)
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 	else if (count < 0)
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 #endif
 	GLboolean skip_draw = GL_FALSE;
 	switch (mode) {
@@ -1972,7 +1967,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 			skip_draw = GL_TRUE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (!skip_draw) {
@@ -2008,6 +2003,9 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_mode, 0, 1, &fogmode);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_color, 0, 4, &fog_color.r);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_tex_env_color, 0, 4, &texenv_color.r);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_near, 0, 1, (const float *)&fog_near);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_far, 0, 1, (const float *)&fog_far);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_fog_density, 0, 1, (const float *)&fog_density);
 					} else {
 						sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
 						sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
@@ -2024,6 +2022,9 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_color, 0, 4, &fog_color.r);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_near, 0, 1, (const float *)&fog_near);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_far, 0, 1, (const float *)&fog_far);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_density, 0, 1, (const float *)&fog_density);
 					}
 				} else if (tex_unit->color_array_state && (tex_unit->color_array.num == 3)) {
 					if (tex_unit->color_object_type == GL_FLOAT)
@@ -2041,27 +2042,18 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 				void *vertex_wvp_buffer;
 				sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 				if (tex_unit->texture_array_state) {
-					float fogmode = (float)internal_fog_mode;
 					if (tex_unit->color_array_state) {
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_wvp, 0, 16, (const float *)mvp_matrix);
-						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_mode2, 0, 1, (const float *)&fogmode);
 						float clipplane0 = (float)clip_plane0;
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_clip_plane0, 0, 1, &clipplane0);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_mv, 0, 16, (const float *)modelview_matrix);
-						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_near, 0, 1, (const float *)&fog_near);
-						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_far, 0, 1, (const float *)&fog_far);
-						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_density, 0, 1, (const float *)&fog_density);
 					} else {
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float *)mvp_matrix);
-						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_mode2, 0, 1, (const float *)&fogmode);
 						float clipplane0 = (float)clip_plane0;
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0, 0, 1, &clipplane0);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
-						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_near, 0, 1, (const float *)&fog_near);
-						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_far, 0, 1, (const float *)&fog_far);
-						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_density, 0, 1, (const float *)&fog_density);
 					}
 					sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
@@ -2096,15 +2088,19 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 size_t vglMemFree(vglMemType type) {
 	if (type >= VGL_MEM_TYPE_COUNT)
 		return 0;
-	return vitagl_mempool_get_free_space(type);
+	return vgl_mempool_get_free_space(type);
 }
 
 void *vglAlloc(uint32_t size, vglMemType type) {
 	if (type >= VGL_MEM_TYPE_COUNT)
 		return NULL;
-	return vitagl_mempool_alloc(size, type);
+	return vgl_mempool_alloc(size, type);
 }
 
 void vglFree(void *addr) {
-	vitagl_mempool_free(addr, VGL_MEM_RAM); // Type is discarded so we just pass a random one
+	vgl_mem_free(addr, VGL_MEM_RAM); // Type is discarded so we just pass a random one
+}
+
+void vglUseExtraMem(GLboolean use) {
+	use_extra_mem = use;
 }

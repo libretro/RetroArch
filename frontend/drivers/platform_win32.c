@@ -51,32 +51,59 @@
 #include "../../msg_hash.h"
 #include "platform_win32.h"
 
+#include "../../verbosity.h"
+
+/*
 #ifdef HAVE_NVDA
 #include "../../nvda_controller.h"
 #endif
+*/
+
+#ifdef HAVE_SAPI
+#define COBJMACROS
+#include <sapi.h>
+#include <ole2.h>
+#endif
+
+#ifdef HAVE_SAPI
+static ISpVoice* pVoice = NULL;
+#endif
+#ifdef HAVE_NVDA
+bool USE_POWERSHELL     = false;
+bool USE_NVDA           = true;
+#else
+bool USE_POWERSHELL     = true;
+bool USE_NVDA           = false;
+#endif
+bool USE_NVDA_BRAILLE   = false;
 
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
 #endif
 
+/* static public global variable */
+VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
+
+/* static global variables */
+static bool dwm_composition_disabled = false;
+static bool console_needs_free       = false;
+static char win32_cpu_model_name[64] = {0};
+static bool pi_set                   = false;
+#ifdef HAVE_DYNAMIC
 /* We only load this library once, so we let it be
  * unloaded at application shutdown, since unloading
  * it early seems to cause issues on some systems.
  */
-
-#ifdef HAVE_DYNAMIC
 static dylib_t dwmlib;
 static dylib_t shell32lib;
+static dylib_t nvdalib;
 #endif
 
-static char win32_cpu_model_name[64] = {0};
-
-VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
-
-static bool dwm_composition_disabled = false;
-static bool console_needs_free       = false;
-
-static bool pi_set                   = false;
+/* Dynamic loading for Non-Visual Desktop Access support */
+unsigned long (__stdcall *nvdaController_testIfRunning_func)(void);
+unsigned long (__stdcall *nvdaController_cancelSpeech_func)(void);
+unsigned long (__stdcall *nvdaController_brailleMessage_func)(wchar_t*);
+unsigned long (__stdcall *nvdaController_speakText_func)(wchar_t*);
 
 #if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
 #if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
@@ -414,6 +441,35 @@ static void frontend_win32_init(void *data)
          if (setDPIAwareProc)
             setDPIAwareProc();
 }
+
+
+#ifdef HAVE_NVDA
+static void init_nvda(void)
+{
+#ifdef HAVE_DYNAMIC
+   if (USE_NVDA && !nvdalib)
+   {
+      nvdalib = dylib_load("nvdaControllerClient64.dll");
+      if (!nvdalib)
+      {
+         USE_NVDA = false;
+         USE_POWERSHELL = true;
+      }
+      else
+      {
+         nvdaController_testIfRunning_func = ( unsigned long (__stdcall*)(void))dylib_proc(nvdalib, "nvdaController_testIfRunning");
+         nvdaController_cancelSpeech_func = (unsigned long(__stdcall *)(void))dylib_proc(nvdalib, "nvdaController_cancelSpeech");
+         nvdaController_brailleMessage_func = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvdalib, "nvdaController_brailleMessage");
+         nvdaController_speakText_func = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvdalib, "nvdaController_speakText");
+      
+      }
+   }
+#else
+   USE_NVDA = false;
+   USE_POWERSHELL = true;
+#endif
+}
+#endif
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
 {
@@ -880,27 +936,12 @@ static bool create_win32_process(char* cmd)
    return true;
 }
 
-#ifdef HAVE_SAPI
-#define COBJMACROS
-#include <sapi.h>
-#include <ole2.h>
-#endif
-
-#ifdef HAVE_SAPI
-static ISpVoice* pVoice = NULL;
-#endif
-#ifdef HAVE_NVDA
-bool USE_POWERSHELL     = false;
-bool USE_NVDA           = true;
-#else
-bool USE_POWERSHELL     = true;
-bool USE_NVDA           = false;
-#endif
-bool USE_NVDA_BRAILLE   = false;
-
 static bool is_narrator_running_windows(void)
 {
    DWORD status = 0;
+#ifdef HAVE_NVDA
+   init_nvda();
+#endif
 
    if (USE_POWERSHELL)
    {
@@ -916,7 +957,8 @@ static bool is_narrator_running_windows(void)
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long res = nvdaController_testIfRunning();
+      long res;
+      res = nvdaController_testIfRunning_func();
 
       if (res != 0) 
       {
@@ -926,7 +968,7 @@ static bool is_narrator_running_windows(void)
          RARCH_LOG("Error communicating with NVDA\n");
          USE_POWERSHELL = true;
          USE_NVDA       = false;
-	     return false;
+	 return false;
       }
       return false;
    }
@@ -965,8 +1007,12 @@ static bool accessibility_speak_windows(int speed,
    {
       if (is_narrator_running_windows())
          return true;
+   
    }
-
+#ifdef HAVE_NVDA
+   init_nvda();
+#endif
+   
    if (USE_POWERSHELL)
    {
       if (strlen(language) > 0) 
@@ -988,10 +1034,11 @@ static bool accessibility_speak_windows(int speed,
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long           res = nvdaController_testIfRunning();
-      const size_t cSize = strlen(speak_text) + 1;
-      wchar_t        *wc = malloc(sizeof(wchar_t) * cSize);
-
+      long           res;
+      const size_t cSize = strlen(speak_text)+1;
+      wchar_t        *wc;
+      res = nvdaController_testIfRunning_func();
+      wc = malloc(sizeof(wchar_t) * cSize);
       mbstowcs(wc, speak_text, cSize);
 
       if (res != 0) 
@@ -1000,12 +1047,12 @@ static bool accessibility_speak_windows(int speed,
          return false;
       }
 
-      nvdaController_cancelSpeech();
+      nvdaController_cancelSpeech_func();
 
       if (USE_NVDA_BRAILLE)
-         nvdaController_brailleMessage(wc);
+         nvdaController_brailleMessage_func(wc);
       else
-         nvdaController_speakText(wc);
+         nvdaController_speakText_func(wc);
    }
 #endif
 #ifdef HAVE_SAPI

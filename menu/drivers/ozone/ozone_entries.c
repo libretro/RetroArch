@@ -101,29 +101,31 @@ static void ozone_draw_entry_value(
    {
       if (!string_is_empty(entry->value))
       {
-         if (
-               string_is_equal(entry->value, "...")     ||
-               string_is_equal(entry->value, "(PRESET)")  ||
-               string_is_equal(entry->value, "(SHADER)")  ||
-               string_is_equal(entry->value, "(COMP)")  ||
-               string_is_equal(entry->value, "(CORE)")  ||
-               string_is_equal(entry->value, "(MOVIE)") ||
-               string_is_equal(entry->value, "(MUSIC)") ||
-               string_is_equal(entry->value, "(DIR)")   ||
-               string_is_equal(entry->value, "(RDB)")   ||
-               string_is_equal(entry->value, "(CURSOR)")||
-               string_is_equal(entry->value, "(CFILE)") ||
-               string_is_equal(entry->value, "(FILE)")  ||
-               string_is_equal(entry->value, "(IMAGE)")
+         if (string_is_equal(entry->value, "..."))
+            return;
+         if (string_starts_with(entry->value, "(") &&
+             string_ends_with  (entry->value, ")")
             )
          {
-            return;
+            if (
+                  string_is_equal(entry->value, "(PRESET)")  ||
+                  string_is_equal(entry->value, "(SHADER)")  ||
+                  string_is_equal(entry->value, "(COMP)")  ||
+                  string_is_equal(entry->value, "(CORE)")  ||
+                  string_is_equal(entry->value, "(MOVIE)") ||
+                  string_is_equal(entry->value, "(MUSIC)") ||
+                  string_is_equal(entry->value, "(DIR)")   ||
+                  string_is_equal(entry->value, "(RDB)")   ||
+                  string_is_equal(entry->value, "(CURSOR)")||
+                  string_is_equal(entry->value, "(CFILE)") ||
+                  string_is_equal(entry->value, "(FILE)")  ||
+                  string_is_equal(entry->value, "(IMAGE)")
+               )
+               return;
          }
-         else
-            do_draw_text = true;
       }
-      else
-         do_draw_text = true;
+
+      do_draw_text = true;
    }
 
    if (do_draw_text)
@@ -150,7 +152,7 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
    float new_scroll = 0, entries_middle;
    float bottom_boundary, current_selection_middle_onscreen;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   gfx_animation_ctx_tag tag  = (uintptr_t) selection_buf;
+   uintptr_t tag              = (uintptr_t) selection_buf;
 
    video_driver_get_size(NULL, &video_info_height);
 
@@ -240,7 +242,6 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
       /* Entry */
       menu_entry_t entry;
       ozone_node_t *node       = NULL;
-      const char *sublabel_str = NULL;
 
       menu_entry_init(&entry);
       entry.path_enabled       = false;
@@ -258,9 +259,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
          ozone->empty_playlist = tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       }
       else
-      {
          ozone->empty_playlist = false;
-      }
 
       /* Cache node */
       node = (ozone_node_t*)file_list_get_userdata_at_offset(selection_buf, i);
@@ -272,11 +271,9 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
       node->wrap           = false;
       node->sublabel_lines = 0;
 
-      menu_entry_get_sublabel(&entry, &sublabel_str);
-
       if (menu_show_sublabels)
       {
-         if (!string_is_empty(sublabel_str))
+         if (!string_is_empty(entry.sublabel))
          {
             int sublabel_max_width;
             char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
@@ -295,7 +292,9 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
                   sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
             }
 
-            word_wrap(wrapped_sublabel_str, sublabel_str, sublabel_max_width / ozone->fonts.entries_sublabel.glyph_width, false, 0);
+            word_wrap(wrapped_sublabel_str, entry.sublabel,
+                  sublabel_max_width / 
+                  ozone->fonts.entries_sublabel.glyph_width, false, 0);
 
             node->sublabel_lines = ozone_count_lines(wrapped_sublabel_str);
 
@@ -326,7 +325,7 @@ static void ozone_thumbnail_bar_hide_end(void *userdata)
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation)
 {
    struct gfx_animation_ctx_entry entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) &ozone->show_thumbnail_bar;
+   uintptr_t tag     = (uintptr_t)&ozone->show_thumbnail_bar;
 
    entry.duration    = ANIMATION_CURSOR_DURATION;
    entry.easing_enum = EASING_OUT_QUAD;
@@ -567,23 +566,33 @@ border_iterate:
          ticker.spacer               = ticker_spacer;
       }
 
-      entry_selected                 = selection == i;
       node                           = (ozone_node_t*)
          file_list_get_userdata_at_offset(selection_buf, i);
-
-      menu_entry_init(&entry);
-      entry.path_enabled  = false;
-      entry.label_enabled = false;
-      menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
-      menu_entry_get_value(&entry, &entry_value);
 
       if (!node)
          continue;
 
-      if (y + scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
-         goto icons_iterate;
-      else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
-         goto icons_iterate;
+      if (y + scroll_y + node->height + 20 * scale_factor 
+            < ozone->dimensions.header_height 
+            + ozone->dimensions.entry_padding_vertical)
+      {
+         y += node->height;
+         continue;
+      }
+      else if (y + scroll_y - node->height - 20 * scale_factor 
+            > bottom_boundary)
+      {
+         y += node->height;
+         continue;
+      }
+
+      entry_selected                 = selection == i;
+
+      menu_entry_init(&entry);
+      entry.path_enabled             = false;
+      entry.label_enabled            = false;
+      menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
+      menu_entry_get_value(&entry, &entry_value);
 
       /* Prepare text */
       menu_entry_get_rich_label(&entry, &entry_rich_label);
@@ -617,7 +626,7 @@ border_iterate:
          y = video_info_height / 2 - 60 * scale_factor;
       }
 
-      menu_entry_get_sublabel(&entry, &sublabel_str);
+      sublabel_str = entry.sublabel;
 
       if (menu_show_sublabels)
       {
@@ -746,7 +755,6 @@ border_iterate:
             alpha_uint32,
             &entry);
 
-icons_iterate:
       y += node->height;
    }
 

@@ -201,7 +201,9 @@ static bool d3d9_init_chain(d3d9_video_t *d3d,
 {
    unsigned i = 0;
    struct LinkInfo link_info;
+#ifndef _XBOX
    unsigned current_width, current_height, out_width, out_height;
+#endif
 
    /* Setup information for first pass. */
    link_info.pass  = NULL;
@@ -1627,7 +1629,8 @@ static bool d3d9_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)

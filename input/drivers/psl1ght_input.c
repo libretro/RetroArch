@@ -162,11 +162,7 @@ static void ps3_input_poll(void *data)
 
 #ifdef HAVE_MOUSE
 static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
-      unsigned user, unsigned id)
-{
-  RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
-}
-
+      unsigned user, unsigned id) { }
 #endif
 
 static bool psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
@@ -227,46 +223,31 @@ static int16_t ps3_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               /* Auto-binds are per joypad, not per user. */
-               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-
-               if ((uint16_t)joykey != NO_BTN && ps3->joypad->button(
-                        joypad_info->joy_idx, (uint16_t)joykey))
+               if (binds[port][i].valid)
                {
-                  ret |= (1 << i);
-                  continue;
+                  if (
+                        button_is_pressed(ps3->joypad, joypad_info, binds[port],
+                           port, i))
+                     ret |= (1 << i);
+                  else if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][i].key))
+                     ret |= (1 << i);
                }
-               else if (((float)abs(ps3->joypad->axis(
-                              joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               {
-                  ret |= (1 << i);
-                  continue;
-               }
-               else if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][i].key))
-                  ret |= (1 << i);
-
             }
 
             return ret;
          }
          else
          {
-            /* Auto-binds are per joypad, not per user. */
-            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-            if ((uint16_t)joykey != NO_BTN && ps3->joypad->button(
-                     joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
-            if (((float)abs(ps3->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
-            if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][id].key))
-               return true;
+            if (binds[port][id].valid)
+            {
+               if (
+                     button_is_pressed(ps3->joypad, joypad_info, binds[port],
+                        port, id))
+                  return 1;
+               else if (psl1ght_keyboard_port_input_pressed(
+                        ps3, binds[port][id].key))
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -288,7 +269,6 @@ static void ps3_input_free_input(void *data)
 
 static void* ps3_input_init(const char *joypad_driver)
 {
-   int status;
    unsigned i;
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
    if (!ps3)
@@ -303,13 +283,8 @@ static void* ps3_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_psl1ght);
 
-   status = ioKbInit(MAX_KB_PORT_NUM);
-   RARCH_LOG("Calling ioKbInit(%d) returned %d\r\n", MAX_KB_PORT_NUM, status);
-
-   status = ioKbGetInfo(&ps3->kbinfo);
-   RARCH_LOG("Calling ioKbGetInfo() returned %d\r\n", status);
-
-   RARCH_LOG("KbInfo:\r\nMax Kbs: %u\r\nConnected Kbs: %u\r\nInfo Field: %08x\r\n", ps3->kbinfo.max, ps3->kbinfo.connected, ps3->kbinfo.info);
+   ioKbInit(MAX_KB_PORT_NUM);
+   ioKbGetInfo(&ps3->kbinfo);
 
    for (i = 0; i < MAX_KB_PORT_NUM; i++)
    {
@@ -335,14 +310,12 @@ static uint64_t ps3_input_get_capabilities(void *data)
 static bool ps3_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
-   RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
    return false;
 }
 
 static bool ps3_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
    return false;
 }
 

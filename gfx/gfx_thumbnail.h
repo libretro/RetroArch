@@ -92,6 +92,39 @@ typedef struct
    } outline;
 } gfx_thumbnail_shadow_t;
 
+/* Structure containing all gfx_thumbnail
+ * global variables */
+struct gfx_thumbnail_state
+{
+   /* When streaming thumbnails, to minimise the processing
+    * of unnecessary images (i.e. when scrolling rapidly through
+    * playlists), we delay loading until an entry has been on screen
+    * for at least gfx_thumbnail_delay ms */
+   float stream_delay;
+
+   /* Duration in ms of the thumbnail 'fade in' animation */
+   float fade_duration;
+
+   /* When true, 'fade in' animation will also be
+    * triggered for missing thumbnails */
+   bool fade_missing;
+
+   /* Due to the asynchronous nature of thumbnail
+    * loading, it is quite possible to trigger a load
+    * then navigate to a different menu list before
+    * the load is complete/handled. As an additional
+    * safety check, we therefore tag the current menu
+    * list with counter value that is incremented whenever
+    * a list is cleared/set. This is sent as userdata when
+    * requesting a thumbnail, and the upload is only
+    * handled if the tag matches the most recent value
+    * at the time when the load completes */
+   uint64_t list_id;
+};
+
+typedef struct gfx_thumbnail_state gfx_thumbnail_state_t;
+
+
 /* Setters */
 
 /* When streaming thumbnails, sets time in ms that an
@@ -238,6 +271,8 @@ void gfx_thumbnail_draw(
       enum gfx_thumbnail_alignment alignment,
       float alpha, float scale_factor,
       gfx_thumbnail_shadow_t *shadow);
+
+gfx_thumbnail_state_t *gfx_thumb_get_ptr(void);
 
 RETRO_END_DECLS
 

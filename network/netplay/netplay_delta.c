@@ -76,11 +76,13 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
  *
  * Get the CRC for the serialization of this frame.
  */
-uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta)
+uint32_t netplay_delta_frame_crc(netplay_t *netplay,
+      struct delta_frame *delta)
 {
    if (!netplay->state_size)
       return 0;
-   return encoding_crc32(0L, (const unsigned char*)delta->state, netplay->state_size);
+   return encoding_crc32(0L, (const unsigned char*)delta->state,
+         netplay->state_size);
 }
 
 /*
@@ -127,8 +129,10 @@ void netplay_delta_frame_free(struct delta_frame *delta)
  *
  * Get an input state for a particular client
  */
-netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
-      uint32_t client_num, size_t size, bool must_create, bool must_not_create)
+netplay_input_state_t netplay_input_state_for(
+      netplay_input_state_t *list,
+      uint32_t client_num, size_t size,
+      bool must_create, bool must_not_create)
 {
    netplay_input_state_t ret;
    while (*list)

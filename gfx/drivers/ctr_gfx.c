@@ -87,8 +87,8 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum vid
             ctr->enable_3d = true;
          }
          break;
-      case CTR_VIDEO_MODE_2D_400x240:
-      case CTR_VIDEO_MODE_2D_800x240:
+      case CTR_VIDEO_MODE_2D_400X240:
+      case CTR_VIDEO_MODE_2D_800X240:
          if (ctr->supports_parallax_disable)
          {
             ctr->video_mode = video_mode;
@@ -269,7 +269,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       ctr->p3d_event_pending = false;
    }
 
-   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_2D_400x240))
+   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_2D_400X240))
    {
       memcpy(gfxTopRightFramebuffers[ctr->current_buffer_top],
             gfxTopLeftFramebuffers[ctr->current_buffer_top],
@@ -483,7 +483,7 @@ static void* ctr_init(const video_info_t* video,
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
     * mode with the parallax barrier disabled
     * (i.e. these are the only platforms that can use
-    * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
+    * CTR_VIDEO_MODE_2D_400X240 and CTR_VIDEO_MODE_2D_800X240) */
    CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
    ctr->supports_parallax_disable = (device_model == 0) || (device_model == 1);
 
@@ -523,7 +523,6 @@ static bool ctr_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
-   extern bool select_pressed;
    static uint64_t currentTick,lastTick;
    touchPosition state_tmp_touch;
    extern GSPGPU_FramebufferInfo topFramebufferInfo;
@@ -555,12 +554,6 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    if(!aptMainLoop())
-   {
-      command_event(CMD_EVENT_QUIT, NULL);
-      return true;
-   }
-
-   if (select_pressed)
    {
       command_event(CMD_EVENT_QUIT, NULL);
       return true;
@@ -810,7 +803,7 @@ static bool ctr_frame(void* data, const void* frame,
    GPU_SetViewport(NULL,
                    VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                    0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                   ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+                   ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    if (ctr->video_mode == CTR_VIDEO_MODE_3D)
    {
@@ -859,7 +852,7 @@ static bool ctr_frame(void* data, const void* frame,
          GPU_SetViewport(NULL,
                          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                         ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+                         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
          GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
          if (ctr->video_mode == CTR_VIDEO_MODE_3D)
@@ -895,11 +888,11 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctrGuDisplayTransfer(true, ctr->drawbuffers.top.left,
                         240,
-                        ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? 800 : 400,
+                        ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ? 800 : 400,
                         CTRGU_RGBA8,
                         gfxTopLeftFramebuffers[ctr->current_buffer_top], 240, CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
-   if ((ctr->video_mode == CTR_VIDEO_MODE_2D_400x240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
+   if ((ctr->video_mode == CTR_VIDEO_MODE_2D_400X240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
       ctrGuDisplayTransfer(true, ctr->drawbuffers.top.right,
                            240,
                            400,
@@ -913,7 +906,7 @@ static bool ctr_frame(void* data, const void* frame,
    topFramebufferInfo.
       framebuf0_vaddr           = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
 
-   if(ctr->video_mode == CTR_VIDEO_MODE_2D_800x240)
+   if(ctr->video_mode == CTR_VIDEO_MODE_2D_800X240)
    {
       topFramebufferInfo.
          framebuf1_vaddr        = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);

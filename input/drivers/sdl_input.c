@@ -26,6 +26,7 @@
 
 #include "../input_keymaps.h"
 
+#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
@@ -52,7 +53,6 @@ static void *sdl_input_init(const char *joypad_driver)
 
    sdl->joypad = input_joypad_init_driver(joypad_driver, sdl);
 
-   RARCH_LOG("[SDL]: Input driver initialized.\n");
    return sdl;
 }
 
@@ -90,39 +90,6 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id, enum input_device_type *device)
-{
-   /* Auto-binds are per joypad, not per user. */
-   const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-      ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
-   const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-   if ((binds[id].key < RETROK_LAST) && sdl_key_pressed(binds[id].key))
-   {
-      *device = INPUT_DEVICE_TYPE_KEYBOARD;
-      return 1;
-   }
-
-   if ((uint16_t)joykey != NO_BTN && sdl->joypad->button(
-            joypad_info->joy_idx, (uint16_t)joykey))
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
-      return 1;
-   }
-
-   if (((float)abs(sdl->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
-      return 1;
-   }
-
-   return 0;
-}
-
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
 {
    switch (id)
@@ -154,6 +121,7 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       unsigned idx, unsigned id, bool screen)
 {
    struct video_viewport vp;
+   const int edge_detect       = 32700;
    bool inside                 = false;
    int16_t res_x               = 0;
    int16_t res_y               = 0;
@@ -167,8 +135,9 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
    vp.full_width               = 0;
    vp.full_height              = 0;
 
-   if (!(video_driver_translate_coord_viewport_wrap(&vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
+   if (!(video_driver_translate_coord_viewport_wrap(
+               &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
+               &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -177,10 +146,10 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       res_y = res_screen_y;
    }
 
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-   if (!inside)
-      return 0;
+   inside =    (res_x >= -edge_detect) 
+            && (res_y >= -edge_detect)
+            && (res_x <= edge_detect)
+            && (res_y <= edge_detect);
 
    switch (id)
    {
@@ -190,6 +159,8 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
          return res_y;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return sdl->mouse_l;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return !inside;
    }
 
    return 0;
@@ -223,7 +194,6 @@ static int16_t sdl_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
    sdl_input_t            *sdl = (sdl_input_t*)data;
 
    switch (device)
@@ -236,11 +206,13 @@ static int16_t sdl_input_state(void *data,
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (sdl_joypad_device_state(
-                        sdl, joypad_info, binds[port], port, i, &type))
+               if (binds[port][i].valid)
                {
-                  ret |= (1 << i);
-                  continue;
+                  if (button_is_pressed(
+                           sdl->joypad, joypad_info, binds[port], port, i))
+                     ret |= (1 << i);
+                  else if (sdl_key_pressed(binds[port][i].key))
+                     ret |= (1 << i);
                }
             }
 
@@ -249,23 +221,36 @@ static int16_t sdl_input_state(void *data,
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               if (sdl_joypad_device_state(sdl,
-                     joypad_info, binds[port], port, id, &type))
-                  return true;
+            {
+               if (binds[port][id].valid)
+               {
+                  if (button_is_pressed(sdl->joypad,
+                           joypad_info, binds[port], port, id))
+                     return 1;
+                  else if (sdl_key_pressed(binds[port][id].key))
+                     return 1;
+               }
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
-            int16_t ret = sdl_analog_pressed(sdl, binds[port], idx, id);
-            if (!ret)
-               ret = input_joypad_analog(sdl->joypad,
+            int16_t ret = input_joypad_analog(sdl->joypad,
                         joypad_info, port, idx, id, binds[port]);
+            if (!ret)
+               ret      = sdl_analog_pressed(sdl, binds[port], idx, id);
             return ret;
          }
          break;
       case RETRO_DEVICE_MOUSE:
-         return sdl_mouse_device_state(sdl, id);
+         if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
+            return sdl_mouse_device_state(sdl, id);
+         break;
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
+            return sdl_mouse_device_state(sdl, id);
+         break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
@@ -366,15 +351,18 @@ static void sdl_input_poll(void *data)
    sdl_poll_mouse(sdl);
 
 #ifdef HAVE_SDL2
-   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_KEYDOWN, SDL_MOUSEWHEEL) > 0)
+   while (SDL_PeepEvents(&event, 1,
+            SDL_GETEVENT, SDL_KEYDOWN, SDL_MOUSEWHEEL) > 0)
 #else
-   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_KEYEVENTMASK) > 0)
+   while (SDL_PeepEvents(&event, 1,
+            SDL_GETEVENT, SDL_KEYEVENTMASK) > 0)
 #endif
    {
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
       {
          uint16_t mod = 0;
-         unsigned code = input_keymaps_translate_keysym_to_rk(event.key.keysym.sym);
+         unsigned code = input_keymaps_translate_keysym_to_rk(
+               event.key.keysym.sym);
 
          if (event.key.keysym.mod & KMOD_SHIFT)
             mod |= RETROKMOD_SHIFT;

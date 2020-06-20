@@ -73,45 +73,21 @@ typedef struct db_handle
    database_state_handle_t state;
 } db_handle_t;
 
+/* Forward declarations */
 int cue_find_track(const char *cue_path, bool first,
       uint64_t *offset, uint64_t *size,
       char *track_path, uint64_t max_len);
-
 bool cue_next_file(intfstream_t *fd, const char *cue_path,
       char *path, uint64_t max_len);
-
 int gdi_find_track(const char *gdi_path, bool first,
       char *track_path, uint64_t max_len);
-
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *path, uint64_t max_len);
-
 int detect_system(intfstream_t *fd, const char** system_name);
-
 int detect_ps1_game(intfstream_t *fd, char *game_id);
-
 int detect_psp_game(intfstream_t *fd, char *game_id);
-
 int detect_gc_game(intfstream_t *fd, char *game_id);
-
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
-
-static void database_info_set_type(
-      database_info_handle_t *handle,
-      enum database_type type)
-{
-   if (!handle)
-      return;
-   handle->type = type;
-}
-
-static enum database_type database_info_get_type(
-      database_info_handle_t *handle)
-{
-   if (!handle)
-      return DATABASE_TYPE_NONE;
-   return handle->type;
-}
 
 static const char *database_info_get_current_name(
       database_state_handle_t *handle)
@@ -158,7 +134,9 @@ static int task_database_iterate_start(retro_task_t *task,
       task_free_title(task);
       task_set_title(task, strdup(msg));
       if (db->list->size != 0)
-         task_set_progress(task, roundf((float)db->list_ptr / ((float)db->list->size / 100.0f)));
+         task_set_progress(task,
+               roundf((float)db->list_ptr / 
+                  ((float)db->list->size / 100.0f)));
 #else
       fprintf(stderr, "msg: %s\n", msg);
 #endif
@@ -206,9 +184,8 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial)
       return 0;
     RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
   }
-  else {
+  else
     return 0;
-  }
 
   return 1;
 }
@@ -348,27 +325,10 @@ static int task_database_chd_get_serial(const char *name, char* serial)
    return result;
 }
 
-static int intfstream_get_crc(intfstream_t *fd, uint32_t *crc)
-{
-   int64_t read = 0;
-   uint32_t acc = 0;
-   uint8_t buffer[4096];
-
-   while ((read = intfstream_read(fd, buffer, sizeof(buffer))) > 0)
-      acc = encoding_crc32(acc, buffer, (size_t)read);
-
-   if (read < 0)
-      return 0;
-
-   *crc = acc;
-
-   return 1;
-}
-
 static bool intfstream_file_get_crc(const char *name,
       uint64_t offset, size_t size, uint32_t *crc)
 {
-   int rv;
+   bool rv;
    intfstream_t *fd  = intfstream_open_file(name,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    uint8_t *data     = NULL;
@@ -490,7 +450,7 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 
 static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
 {
-   int rv;
+   bool rv;
    intfstream_t *fd = intfstream_open_chd_track(
          name,
          RETRO_VFS_FILE_ACCESS_READ,
@@ -500,7 +460,7 @@ static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
       return 0;
 
    rv = intfstream_get_crc(fd, crc);
-   if (rv == 1)
+   if (rv)
    {
       RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
    }
@@ -577,43 +537,42 @@ end:
 
 static enum msg_file_type extension_to_file_type(const char *ext)
 {
+   char ext_lower[6];
+
+   ext_lower[0] = '\0';
+
+   /* Copy and convert to lower case */
+   strlcpy(ext_lower, ext, sizeof(ext_lower));
+   string_to_lower(ext_lower);
+
    if (
-         string_is_equal(ext, "7z")  ||
-         string_is_equal(ext, "7Z")  ||
-         string_is_equal(ext, "zip") ||
-         string_is_equal(ext, "ZIP") ||
-         string_is_equal(ext, "apk") ||
-         string_is_equal(ext, "APK")
+         string_is_equal(ext_lower, "7z")  ||
+         string_is_equal(ext_lower, "zip") ||
+         string_is_equal(ext_lower, "apk")
       )
       return FILE_TYPE_COMPRESSED;
    if (
-         string_is_equal(ext, "cue")  ||
-         string_is_equal(ext, "CUE")
+         string_is_equal(ext_lower, "cue")
       )
       return FILE_TYPE_CUE;
    if (
-         string_is_equal(ext, "gdi")  ||
-         string_is_equal(ext, "GDI")
+         string_is_equal(ext_lower, "gdi")
       )
       return FILE_TYPE_GDI;
    if (
-         string_is_equal(ext, "iso")  ||
-         string_is_equal(ext, "ISO")
+         string_is_equal(ext_lower, "iso")
       )
       return FILE_TYPE_ISO;
    if (
-         string_is_equal(ext, "chd")  ||
-         string_is_equal(ext, "CHD")
+         string_is_equal(ext_lower, "chd")
       )
       return FILE_TYPE_CHD;
    if (
-         string_is_equal(ext, "wbfs")  ||
-         string_is_equal(ext, "WBFS")
+         string_is_equal(ext_lower, "wbfs")
       )
       return FILE_TYPE_WBFS;
    if (
-         string_is_equal(ext, "lutro")  ||
-         string_is_equal(ext, "LUTRO")
+         string_is_equal(ext_lower, "lutro")
       )
       return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;
@@ -627,7 +586,7 @@ static int task_database_iterate_playlist(
    {
       case FILE_TYPE_COMPRESSED:
 #ifdef HAVE_COMPRESSION
-         database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
+         db->type = DATABASE_TYPE_CRC_LOOKUP;
          /* first check crc of archive itself */
          return intfstream_file_get_crc(name,
                0, SIZE_MAX, &db_state->archive_crc);
@@ -638,10 +597,10 @@ static int task_database_iterate_playlist(
          task_database_cue_prune(db, name);
          db_state->serial[0] = '\0';
          if (task_database_cue_get_serial(name, db_state->serial))
-            database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+            db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
-            database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
+            db->type = DATABASE_TYPE_CRC_LOOKUP;
             return task_database_cue_get_crc(name, &db_state->crc);
          }
          break;
@@ -651,10 +610,10 @@ static int task_database_iterate_playlist(
          /* There are no serial databases, so don't bother with
             serials at the moment */
          if (0 && task_database_gdi_get_serial(name, db_state->serial))
-            database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+            db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
-            database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
+            db->type = DATABASE_TYPE_CRC_LOOKUP;
             return task_database_gdi_get_crc(name, &db_state->crc);
          }
          break;
@@ -663,23 +622,23 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
          intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial);
-         database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+         db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';
          if (task_database_chd_get_serial(name, db_state->serial))
-            database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+            db->type         = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
-            database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
+            db->type         = DATABASE_TYPE_CRC_LOOKUP;
             return task_database_chd_get_crc(name, &db_state->crc);
          }
          break;
       case FILE_TYPE_LUTRO:
-         database_info_set_type(db, DATABASE_TYPE_ITERATE_LUTRO);
+         db->type            = DATABASE_TYPE_ITERATE_LUTRO;
          break;
       default:
-         database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
+         db->type            = DATABASE_TYPE_CRC_LOOKUP;
          return intfstream_file_get_crc(name, 0, SIZE_MAX, &db_state->crc);
    }
 
@@ -748,22 +707,14 @@ static int database_info_list_iterate_end_no_match(
    return 0;
 }
 
-static int task_database_iterate_next(database_info_handle_t *db)
-{
-   db->list_ptr++;
-
-   if (db->list_ptr < db->list->size)
-      return 0;
-   return -1;
-}
-
 static int database_info_list_iterate_new(database_state_handle_t *db_state,
       const char *query)
 {
    const char *new_database = database_info_get_current_name(db_state);
 
 #ifndef RARCH_INTERNAL
-   fprintf(stderr, "Check database [%d/%d] : %s\n", (unsigned)db_state->list_index,
+   fprintf(stderr, "Check database [%d/%d] : %s\n",
+         (unsigned)db_state->list_index,
          (unsigned)db_state->list->size, new_database);
 #endif
    if (db_state->info)
@@ -858,7 +809,8 @@ static int database_info_list_iterate_found_match(
    {
       struct playlist_entry entry;
 
-      /* the push function reads our entry as const, so these casts are safe */
+      /* the push function reads our entry as const,
+       * so these casts are safe */
       entry.path              = entry_path_str;
       entry.label             = db_info_entry->name;
       entry.core_path         = (char*)"DETECT";
@@ -901,7 +853,8 @@ static int database_info_list_iterate_found_match(
       again */
    if (db_state->list_index != 0)
    {
-      struct string_list_elem entry = db_state->list->elems[db_state->list_index];
+      struct string_list_elem entry = 
+         db_state->list->elems[db_state->list_index];
       memmove(&db_state->list->elems[1],
               &db_state->list->elems[0],
               sizeof(entry) * db_state->list_index);
@@ -934,12 +887,12 @@ static int task_database_iterate_crc_lookup(
       const char *name,
       const char *archive_entry)
 {
-
    if (!db_state->list ||
          (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db, db_state, name);
 
-   /* archive did not contain a CRC for this entry, or the file is empty */
+   /* Archive did not contain a CRC for this entry, 
+    * or the file is empty. */
    if (!db_state->crc)
    {
       db_state->crc = file_archive_get_file_crc32(name);
@@ -1023,19 +976,6 @@ static int task_database_iterate_crc_lookup(
    return 0;
 }
 
-static int task_database_iterate_playlist_archive(
-      db_handle_t *_db,
-      database_state_handle_t *db_state,
-      database_info_handle_t *db, const char *name)
-{
-#ifdef HAVE_COMPRESSION
-   return task_database_iterate_crc_lookup(
-         _db, db_state, db, name, db_state->archive_name);
-#else
-   return 1;
-#endif
-}
-
 static int task_database_iterate_playlist_lutro(
       db_handle_t *_db,
       database_state_handle_t *db_state,
@@ -1061,32 +1001,34 @@ static int task_database_iterate_playlist_lutro(
             _db->pl_fuzzy_archive_match))
    {
       struct playlist_entry entry;
-      char *game_title            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char *game_title            = (char*)
+         malloc(PATH_MAX_LENGTH * sizeof(char));
 
-      game_title[0] = '\0';
+      game_title[0]               = '\0';
 
       fill_short_pathname_representation_noext(game_title,
             path, PATH_MAX_LENGTH * sizeof(char));
 
-      /* the push function reads our entry as const, so these casts are safe */
-      entry.path              = (char*)path;
-      entry.label             = game_title;
-      entry.core_path         = (char*)"DETECT";
-      entry.core_name         = (char*)"DETECT";
-      entry.db_name           = (char*)"Lutro.lpl";
-      entry.crc32             = (char*)"DETECT";
-      entry.subsystem_ident   = NULL;
-      entry.subsystem_name    = NULL;
-      entry.subsystem_roms    = NULL;
-      entry.runtime_hours     = 0;
-      entry.runtime_minutes   = 0;
-      entry.runtime_seconds   = 0;
-      entry.last_played_year  = 0;
-      entry.last_played_month = 0;
-      entry.last_played_day   = 0;
-      entry.last_played_hour  = 0;
-      entry.last_played_minute= 0;
-      entry.last_played_second= 0;
+      /* the push function reads our entry as const, 
+       * so these casts are safe */
+      entry.path                  = (char*)path;
+      entry.label                 = game_title;
+      entry.core_path             = (char*)"DETECT";
+      entry.core_name             = (char*)"DETECT";
+      entry.db_name               = (char*)"Lutro.lpl";
+      entry.crc32                 = (char*)"DETECT";
+      entry.subsystem_ident       = NULL;
+      entry.subsystem_name        = NULL;
+      entry.subsystem_roms        = NULL;
+      entry.runtime_hours         = 0;
+      entry.runtime_minutes       = 0;
+      entry.runtime_seconds       = 0;
+      entry.last_played_year      = 0;
+      entry.last_played_month     = 0;
+      entry.last_played_day       = 0;
+      entry.last_played_hour      = 0;
+      entry.last_played_minute    = 0;
+      entry.last_played_second    = 0;
 
       playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
 
@@ -1105,15 +1047,18 @@ static int task_database_iterate_serial_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   if (!db_state->list ||
-         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
+   if (
+         !db_state->list ||
+         (unsigned)db_state->list_index == (unsigned)db_state->list->size
+      )
       return database_info_list_iterate_end_no_match(db, db_state, name);
 
    if (db_state->entry_index == 0)
    {
       char query[50];
-      char *serial_buf =
-         bin_to_hex_alloc((uint8_t*)db_state->serial, strlen(db_state->serial) * sizeof(uint8_t));
+      char *serial_buf = bin_to_hex_alloc(
+            (uint8_t*)db_state->serial,
+            strlen(db_state->serial) * sizeof(uint8_t));
 
       if (!serial_buf)
          return 1;
@@ -1164,24 +1109,21 @@ static int task_database_iterate_serial_lookup(
 
 static int task_database_iterate(
       db_handle_t *_db,
+      const char *name,
       database_state_handle_t *db_state,
       database_info_handle_t *db)
 {
-   const char *name = database_info_get_current_element_name(db);
-
-   if (!name)
-      return 0;
-
-   if (database_info_get_type(db) == DATABASE_TYPE_ITERATE)
-      if (path_contains_compressed_file(name))
-         database_info_set_type(db, DATABASE_TYPE_ITERATE_ARCHIVE);
-
-   switch (database_info_get_type(db))
+   switch (db->type)
    {
       case DATABASE_TYPE_ITERATE:
          return task_database_iterate_playlist(db_state, db, name);
       case DATABASE_TYPE_ITERATE_ARCHIVE:
-         return task_database_iterate_playlist_archive(_db, db_state, db, name);
+#ifdef HAVE_COMPRESSION
+         return task_database_iterate_crc_lookup(
+               _db, db_state, db, name, db_state->archive_name);
+#else
+         return 1;
+#endif
       case DATABASE_TYPE_ITERATE_LUTRO:
          return task_database_iterate_playlist_lutro(_db, db_state, db, name);
       case DATABASE_TYPE_SERIAL_LOOKUP:
@@ -1229,9 +1171,13 @@ static void task_database_handler(retro_task_t *task)
       if (!string_is_empty(db->fullpath))
       {
          if (db->is_directory)
-            db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task, db->show_hidden_files);
+            db->handle = database_info_dir_init(
+                  db->fullpath, DATABASE_TYPE_ITERATE,
+                  task, db->show_hidden_files);
          else
-            db->handle = database_info_file_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+            db->handle = database_info_file_init(
+                  db->fullpath, DATABASE_TYPE_ITERATE,
+                  task);
       }
 
       if (db->handle)
@@ -1277,8 +1223,8 @@ static void task_database_handler(retro_task_t *task)
 
                      path_remove_extension(dbpath);
 
-                     dbname         = find_last_slash(dbpath) + 1;
-                     strmatch       = strcasecmp(dbname, dirname) == 0;
+                     dbname           = find_last_slash(dbpath) + 1;
+                     strmatch         = strcasecmp(dbname, dirname) == 0;
 
                      free(dbpath);
 
@@ -1299,21 +1245,32 @@ static void task_database_handler(retro_task_t *task)
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
-         name = database_info_get_current_element_name(dbinfo);
+         name                 = database_info_get_current_element_name(dbinfo);
          task_database_cleanup_state(dbstate);
          dbstate->list_index  = 0;
          dbstate->entry_index = 0;
          task_database_iterate_start(task, dbinfo, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         if (task_database_iterate(db, dbstate, dbinfo) == 0)
          {
-            dbinfo->status = DATABASE_STATUS_ITERATE_NEXT;
-            dbinfo->type   = DATABASE_TYPE_ITERATE;
+            const char *name     = database_info_get_current_element_name(
+                  dbinfo);
+
+            if (dbinfo->type == DATABASE_TYPE_ITERATE)
+               if (path_contains_compressed_file(name))
+                  dbinfo->type   = DATABASE_TYPE_ITERATE_ARCHIVE;
+
+            if (task_database_iterate(db, name, dbstate, dbinfo) == 0)
+            {
+               dbinfo->status    = DATABASE_STATUS_ITERATE_NEXT;
+               dbinfo->type      = DATABASE_TYPE_ITERATE;
+            }
          }
          break;
       case DATABASE_STATUS_ITERATE_NEXT:
-         if (task_database_iterate_next(dbinfo) == 0)
+         dbinfo->list_ptr++;
+
+         if (dbinfo->list_ptr < dbinfo->list->size)
          {
             dbinfo->status = DATABASE_STATUS_ITERATE_START;
             dbinfo->type   = DATABASE_TYPE_ITERATE;
@@ -1376,9 +1333,9 @@ task_finished:
 #ifdef RARCH_INTERNAL
 static void task_database_progress_cb(retro_task_t *task)
 {
-   if (!task)
-      return;
-   video_display_server_set_window_progress(task->progress, task->finished);
+   if (task)
+      video_display_server_set_window_progress(task->progress,
+            task->finished);
 }
 #endif
 
@@ -1402,7 +1359,8 @@ bool task_push_dbscan(
    t->handler                  = task_database_handler;
    t->state                    = db;
    t->callback                 = cb;
-   t->title                    = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
+   t->title                    = strdup(msg_hash_to_str(
+            MSG_PREPARING_FOR_CONTENT_SCAN));
    t->alternative_look         = true;
 
 #ifdef RARCH_INTERNAL

@@ -96,7 +96,7 @@ static void ozone_cursor_animation_cb(void *userdata)
 
 void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t) &ozone_default_theme;
+   uintptr_t tag = (uintptr_t) &ozone_default_theme;
 
    if (!ozone->has_all_assets)
       return;

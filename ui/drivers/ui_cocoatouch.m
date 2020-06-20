@@ -39,7 +39,6 @@
 
 #import <AVFoundation/AVFoundation.h>
 
-static char msg_old[PATH_MAX_LENGTH];
 #ifdef HAVE_COCOA_METAL
 id<ApplePlatform> apple_platform;
 #else
@@ -47,9 +46,7 @@ static id apple_platform;
 #endif
 static CFRunLoopObserverRef iterate_observer;
 
-static size_t old_size = 0;
-
-/* forward declaration */
+/* Forward declaration */
 static void apple_rarch_exited(void);
 
 static void rarch_enable_ui(void)
@@ -326,14 +323,15 @@ enum
 }
 
 -(NSString*)documentsDirectory {
-    if ( _documentsDirectory == nil ) {
+    if (_documentsDirectory == nil)
+    {
 #if TARGET_OS_IOS
-        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+       NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 #elif TARGET_OS_TV
-        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+       NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
 #endif
 
-        _documentsDirectory = paths.firstObject;
+       _documentsDirectory = paths.firstObject;
     }
     return _documentsDirectory;
 }
@@ -489,7 +487,7 @@ enum
 - (void)mainMenuPushPop: (bool)pushp
 {
 #if TARGET_OS_IOS
-  if ( pushp )
+  if (pushp)
   {
      self.menu_count++;
      RAMenuBase* next_menu = [RAMainMenu new];
@@ -499,7 +497,7 @@ enum
   }
   else
   {
-     if ( self.menu_count == 0 )
+     if (self.menu_count == 0)
         [self.mainmenu reloadData];
      else
      {
@@ -592,28 +590,29 @@ static void *ui_companion_cocoatouch_init(void)
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)
 {
-   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
-   bool pushp          = false;
-   size_t new_size     = file_list_get_size( menu_list );
+   static size_t old_size = 0;
+   RetroArch_iOS *ap      = (RetroArch_iOS *)apple_platform;
+   bool pushp             = false;
+   size_t new_size        = file_list_get_size(menu_list);
 
    /* FIXME workaround for the double call */
-   if ( old_size == 0 )
+   if (old_size == 0)
    {
       old_size = new_size;
       return;
    }
 
-   if ( old_size == new_size )
-     pushp = false;
-   else if ( old_size < new_size )
-     pushp = true;
-   else if ( old_size > new_size )
-     printf( "notify_list_pushed: old size should not be larger\n" );
+   if (old_size == new_size)
+      pushp = false;
+   else if (old_size < new_size)
+      pushp = true;
+   else if (old_size > new_size)
+      printf("notify_list_pushed: old size should not be larger\n" );
 
    old_size = new_size;
 
    if (ap)
-     [ap mainMenuPushPop: pushp];
+      [ap mainMenuPushPop: pushp];
 }
 
 static void ui_companion_cocoatouch_notify_refresh(void *data)
@@ -626,6 +625,7 @@ static void ui_companion_cocoatouch_notify_refresh(void *data)
 
 static void ui_companion_cocoatouch_render_messagebox(const char *msg)
 {
+   static char msg_old[PATH_MAX_LENGTH];
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
    if (ap && !string_is_equal(msg, msg_old))

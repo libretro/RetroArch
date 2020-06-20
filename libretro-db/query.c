@@ -91,6 +91,7 @@ struct registered_func
    rarch_query_func func;
 };
 
+/* TODO/FIXME - static global variable */
 static char tmp_error_buff [MAX_ERROR_LEN] = {0};
 
 /* Forward declarations */

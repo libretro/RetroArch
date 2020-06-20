@@ -49,6 +49,7 @@
 #include "../core.h"
 #include "../verbosity.h"
 
+/* TODO/FIXME - public global variables */
 cheat_manager_t cheat_manager_state;
 
 unsigned cheat_manager_get_buf_size(void)
@@ -435,26 +436,32 @@ static void cheat_manager_load_cb_second_pass(char *key, char *value)
       cheat_st->cheats[cheat_idx].handler = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "memory_search_size"))
       cheat_st->cheats[cheat_idx].memory_search_size = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "repeat_add_to_address"))
-      cheat_st->cheats[cheat_idx].repeat_add_to_address = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "repeat_add_to_value"))
-      cheat_st->cheats[cheat_idx].repeat_add_to_value = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "repeat_count"))
-      cheat_st->cheats[cheat_idx].repeat_count = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "rumble_port"))
-      cheat_st->cheats[cheat_idx].rumble_port = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "rumble_primary_duration"))
-      cheat_st->cheats[cheat_idx].rumble_primary_duration = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "rumble_primary_strength"))
-      cheat_st->cheats[cheat_idx].rumble_primary_strength = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "rumble_secondary_duration"))
-      cheat_st->cheats[cheat_idx].rumble_secondary_duration = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "rumble_secondary_strength"))
-      cheat_st->cheats[cheat_idx].rumble_secondary_strength = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "rumble_type"))
-      cheat_st->cheats[cheat_idx].rumble_type = (unsigned)strtoul(value, NULL, 0);
-   else if (string_is_equal(key, "rumble_value"))
-      cheat_st->cheats[cheat_idx].rumble_value = (unsigned)strtoul(value, NULL, 0);
+   else if (string_starts_with(key, "repeat_"))
+   {
+      if (string_is_equal(key, "repeat_add_to_address"))
+         cheat_st->cheats[cheat_idx].repeat_add_to_address = (unsigned)strtoul(value, NULL, 0);
+      else if (string_is_equal(key, "repeat_add_to_value"))
+         cheat_st->cheats[cheat_idx].repeat_add_to_value = (unsigned)strtoul(value, NULL, 0);
+      else if (string_is_equal(key, "repeat_count"))
+         cheat_st->cheats[cheat_idx].repeat_count = (unsigned)strtoul(value, NULL, 0);
+   }
+   else if (string_starts_with(key, "rumble"))
+   {
+      if (string_is_equal(key, "rumble_port"))
+         cheat_st->cheats[cheat_idx].rumble_port = (unsigned)strtoul(value, NULL, 0);
+      else if (string_is_equal(key, "rumble_primary_duration"))
+         cheat_st->cheats[cheat_idx].rumble_primary_duration = (unsigned)strtoul(value, NULL, 0);
+      else if (string_is_equal(key, "rumble_primary_strength"))
+         cheat_st->cheats[cheat_idx].rumble_primary_strength = (unsigned)strtoul(value, NULL, 0);
+      else if (string_is_equal(key, "rumble_secondary_duration"))
+         cheat_st->cheats[cheat_idx].rumble_secondary_duration = (unsigned)strtoul(value, NULL, 0);
+      else if (string_is_equal(key, "rumble_secondary_strength"))
+         cheat_st->cheats[cheat_idx].rumble_secondary_strength = (unsigned)strtoul(value, NULL, 0);
+      else if (string_is_equal(key, "rumble_type"))
+         cheat_st->cheats[cheat_idx].rumble_type = (unsigned)strtoul(value, NULL, 0);
+      else if (string_is_equal(key, "rumble_value"))
+         cheat_st->cheats[cheat_idx].rumble_value = (unsigned)strtoul(value, NULL, 0);
+   }
    else if (string_is_equal(key, "value"))
       cheat_st->cheats[cheat_idx].value = (unsigned)strtoul(value, NULL, 0);
 }

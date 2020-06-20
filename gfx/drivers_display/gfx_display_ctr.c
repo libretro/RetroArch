@@ -112,7 +112,7 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ?
+         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ?
          CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);

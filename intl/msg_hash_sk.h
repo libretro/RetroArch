@@ -6,7 +6,7 @@
 #pragma warning(disable:4566)
 #endif
 
-/* Top-level Menu */
+/* Top-Level Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
@@ -119,10 +119,6 @@ MSG_HASH(
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_COMPILER,
    "Kompiler"
-   )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_UNKNOWN_COMPILER,
-   "Neznámy kompiler"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -365,16 +361,16 @@ MSG_HASH(
 /* Settings > Recording */
 
 
-/* Settings > Onscreen Display */
+/* Settings > On-Screen Display */
 
 
-/* Settings > Onscreen Display > Onscreen Overlay */
+/* Settings > On-Screen Display > On-Screen Overlay */
 
 
-/* Settings > Onscreen Display > Video Layout */
+/* Settings > On-Screen Display > Video Layout */
 
 
-/* Settings > Onscreen Display > Onscreen Notifications */
+/* Settings > On-Screen Display > On-Screen Notifications */
 
 
 /* Settings > User Interface */
@@ -584,7 +580,7 @@ MSG_HASH(
    "Kód"
    )
 
-/* Quick Menu > Disk Control */
+/* Quick Menu > Disc Control */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -637,101 +633,9 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CZECH,
-   "Čeština"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
-   "Holandčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
-   "Francúzština"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
-   "Nemčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
-   "Gréčtina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HINDI,
-   "Hindčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
-   "Írčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
-   "Taliančina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
-   "Japončina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Kórejčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_LATIN,
-   "Latinčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_MALAY,
-   "Malajčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_POLISH,
-   "Poľština"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
-   "Portugalčina (Brazília)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-   "Portugalčina (Portugalsko)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
-   "Ruština"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
-   "Španielčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
-   "Tamilčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_THAI,
-   "Thajčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
-   "Turečtina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_URDU,
-   "Urdčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
-   "Vietnamčina"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
-   "Waleština"
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_UNKNOWN_COMPILER,
+   "Neznámy kompiler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
@@ -1192,6 +1096,7 @@ MSG_HASH(
 #ifdef GEKKO
 #endif
 #ifdef HAVE_ODROIDGO2
+#else
 #endif
 #if defined(_3DS)
 #endif

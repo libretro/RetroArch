@@ -29,17 +29,10 @@ static int rcheevos_cmpaddr(const void* e1, const void* e2)
    const rcheevos_fixup_t* f2 = (const rcheevos_fixup_t*)e2;
 
    if (f1->address < f2->address)
-   {
       return -1;
-   }
    else if (f1->address > f2->address)
-   {
       return 1;
-   }
-   else
-   {
-      return 0;
-   }
+   return 0;
 }
 
 static size_t rcheevos_var_reduce(size_t addr, size_t mask)
@@ -47,8 +40,8 @@ static size_t rcheevos_var_reduce(size_t addr, size_t mask)
    while (mask)
    {
       size_t tmp = (mask - 1) & ~mask;
-      addr = (addr & tmp) | ((addr >> 1) & ~tmp);
-      mask = (mask & (mask - 1)) >> 1;
+      addr       = (addr & tmp) | ((addr >> 1) & ~tmp);
+      mask       = (mask & (mask - 1)) >> 1;
    }
 
    return addr;
@@ -69,7 +62,7 @@ void rcheevos_fixup_init(rcheevos_fixups_t* fixups)
 {
    fixups->elements = NULL;
    fixups->capacity = fixups->count = 0;
-   fixups->dirty = false;
+   fixups->dirty    = false;
 }
 
 void rcheevos_fixup_destroy(rcheevos_fixups_t* fixups)
@@ -78,7 +71,8 @@ void rcheevos_fixup_destroy(rcheevos_fixups_t* fixups)
    rcheevos_fixup_init(fixups);
 }
 
-const uint8_t* rcheevos_fixup_find(rcheevos_fixups_t* fixups, unsigned address, int console)
+const uint8_t* rcheevos_fixup_find(
+      rcheevos_fixups_t* fixups, unsigned address, int console)
 {
    rcheevos_fixup_t key;
    rcheevos_fixup_t* found;
@@ -86,17 +80,18 @@ const uint8_t* rcheevos_fixup_find(rcheevos_fixups_t* fixups, unsigned address, 
 
    if (fixups->dirty)
    {
-      qsort(fixups->elements, fixups->count, sizeof(rcheevos_fixup_t), rcheevos_cmpaddr);
+      qsort(fixups->elements, fixups->count,
+            sizeof(rcheevos_fixup_t), rcheevos_cmpaddr);
       fixups->dirty = false;
    }
 
    key.address = address;
-   found = (rcheevos_fixup_t*)bsearch(&key, fixups->elements, fixups->count, sizeof(rcheevos_fixup_t), rcheevos_cmpaddr);
+   found       = (rcheevos_fixup_t*)bsearch(&key,
+         fixups->elements, fixups->count,
+         sizeof(rcheevos_fixup_t), rcheevos_cmpaddr);
 
-   if (found != NULL)
-   {
+   if (found)
       return found->location;
-   }
 
    if (fixups->count == fixups->capacity)
    {
@@ -104,19 +99,17 @@ const uint8_t* rcheevos_fixup_find(rcheevos_fixups_t* fixups, unsigned address, 
       rcheevos_fixup_t* new_elements = (rcheevos_fixup_t*)
          realloc(fixups->elements, new_capacity * sizeof(rcheevos_fixup_t));
 
-      if (new_elements == NULL)
-      {
+      if (!new_elements)
          return NULL;
-      }
 
       fixups->elements = new_elements;
       fixups->capacity = new_capacity;
    }
 
-   fixups->elements[fixups->count].address = address;
+   fixups->elements[fixups->count].address    = address;
    fixups->elements[fixups->count++].location = location =
       rcheevos_patch_address(address, console);
-   fixups->dirty = true;
+   fixups->dirty                              = true;
 
    return location;
 }
@@ -124,26 +117,30 @@ const uint8_t* rcheevos_fixup_find(rcheevos_fixups_t* fixups, unsigned address, 
 const uint8_t* rcheevos_patch_address(unsigned address, int console)
 {
    rarch_system_info_t* system = runloop_get_system_info();
-   const void* pointer = NULL;
-   unsigned original_address = address;
+   const void* pointer         = NULL;
+   unsigned original_address   = address;
 
-   if (console == RC_CONSOLE_NINTENDO)
+   switch (console)
    {
-      if (address >= 0x0800 && address < 0x2000)
-      {
-         /* Address in the mirrorred RAM, adjust to real RAM. */
-         CHEEVOS_LOG(RCHEEVOS_TAG "NES memory address in mirrorred RAM %X, adjusted to %X\n", address, address & 0x07ff);
-         address &= 0x07ff;
-      }
-   }
-   else if (console == RC_CONSOLE_GAMEBOY_COLOR)
-   {
-      if (address >= 0xe000 && address <= 0xfdff)
-      {
-         /* Address in the echo RAM, adjust to real RAM. */
-         CHEEVOS_LOG(RCHEEVOS_TAG "GBC memory address in echo RAM %X, adjusted to %X\n", address, address - 0x2000);
-         address -= 0x2000;
-      }
+      case RC_CONSOLE_NINTENDO:
+         if (address >= 0x0800 && address < 0x2000)
+         {
+            /* Address in the mirrorred RAM, 
+             * adjust to real RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "NES memory address in mirrorred RAM %X, adjusted to %X\n", address, address & 0x07ff);
+            address &= 0x07ff;
+         }
+         break;
+      case RC_CONSOLE_GAMEBOY_COLOR:
+         if (address >= 0xe000 && address <= 0xfdff)
+         {
+            /* Address in the echo RAM, adjust to real RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "GBC memory address in echo RAM %X, adjusted to %X\n", address, address - 0x2000);
+            address -= 0x2000;
+         }
+         break;
+      default:
+         break;
    }
 
    if (system->mmaps.num_descriptors != 0)
@@ -153,77 +150,78 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
       const rarch_memory_descriptor_t* end  = NULL;
 
       /* Patch the address to correctly map it to the mmaps. */
-      if (console == RC_CONSOLE_GAMEBOY_ADVANCE)
+      switch (console)
       {
-         if (address < 0x8000)
-         {
-            /* Internal RAM. */
-            CHEEVOS_LOG(RCHEEVOS_TAG "GBA memory address %X adjusted to %X\n", address, address + 0x3000000);
-            address += 0x3000000;
-         }
-         else
-         {
-            /* Work RAM. */
-            CHEEVOS_LOG(RCHEEVOS_TAG "GBA memory address %X adjusted to %X\n", address, address + 0x2000000 - 0x8000);
-            address += 0x2000000 - 0x8000;
-         }
-      }
-      else if (console == RC_CONSOLE_PC_ENGINE)
-      {
-         if (address < 0x002000)
-         {
-            /* RAM. */
-            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1f0000);
-            address += 0x1f0000;
-         }
-         else if (address < 0x012000)
-         {
-            /* CD-ROM RAM. */
-            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x100000 - 0x002000);
-            address += 0x100000 - 0x002000;
-         }
-         else if (address < 0x042000)
-         {
-            /* Super System Card RAM. */
-            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x0d0000 - 0x012000);
-            address += 0x0d0000 - 0x012000;
-         }
-         else
-         {
-            /* CD-ROM battery backed RAM. */
-            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1ee000 - 0x042000);
-            address += 0x1ee000 - 0x042000;
-         }
-      }
-      else if (console == RC_CONSOLE_SUPER_NINTENDO)
-      {
-         if (address < 0x020000)
-         {
-            /* Work RAM. */
-            CHEEVOS_LOG(RCHEEVOS_TAG "SNES memory address %X adjusted to %X\n", address, address + 0x7e0000);
-            address += 0x7e0000;
-         }
-         else
-         {
-            /* Save RAM. */
-            CHEEVOS_LOG(RCHEEVOS_TAG "SNES memory address %X adjusted to %X\n", address, address + 0x006000 - 0x020000);
-            address += 0x006000 - 0x020000;
-         }
-      }
-      else if (console == RC_CONSOLE_SEGA_CD)
-      {
-         if (address < 0x010000)
-         {
-            /* Work RAM. */
-            address += 0xFF0000;
-            CHEEVOS_LOG(RCHEEVOS_TAG "Sega CD memory address %X adjusted to %X\n", original_address, address);
-         }
-         else
-         {
-            /* CD-ROM peripheral RAM - exposed at virtual address to avoid banking */
-            address += 0x80020000 - 0x010000;
-            CHEEVOS_LOG(RCHEEVOS_TAG "Sega CD memory address %X adjusted to %X\n", original_address, address);
-         }
+         case RC_CONSOLE_GAMEBOY_ADVANCE:
+            if (address < 0x8000)
+            {
+               /* Internal RAM. */
+               CHEEVOS_LOG(RCHEEVOS_TAG "GBA memory address %X adjusted to %X\n", address, address + 0x3000000);
+               address += 0x3000000;
+            }
+            else
+            {
+               /* Work RAM. */
+               CHEEVOS_LOG(RCHEEVOS_TAG "GBA memory address %X adjusted to %X\n", address, address + 0x2000000 - 0x8000);
+               address += 0x2000000 - 0x8000;
+            }
+            break;
+         case RC_CONSOLE_PC_ENGINE:
+            if (address < 0x002000)
+            {
+               /* RAM. */
+               CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1f0000);
+               address += 0x1f0000;
+            }
+            else if (address < 0x012000)
+            {
+               /* CD-ROM RAM. */
+               CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x100000 - 0x002000);
+               address += 0x100000 - 0x002000;
+            }
+            else if (address < 0x042000)
+            {
+               /* Super System Card RAM. */
+               CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x0d0000 - 0x012000);
+               address += 0x0d0000 - 0x012000;
+            }
+            else
+            {
+               /* CD-ROM battery backed RAM. */
+               CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1ee000 - 0x042000);
+               address += 0x1ee000 - 0x042000;
+            }
+            break;
+         case RC_CONSOLE_SUPER_NINTENDO:
+            if (address < 0x020000)
+            {
+               /* Work RAM. */
+               CHEEVOS_LOG(RCHEEVOS_TAG "SNES memory address %X adjusted to %X\n", address, address + 0x7e0000);
+               address += 0x7e0000;
+            }
+            else
+            {
+               /* Save RAM. */
+               CHEEVOS_LOG(RCHEEVOS_TAG "SNES memory address %X adjusted to %X\n", address, address + 0x006000 - 0x020000);
+               address += 0x006000 - 0x020000;
+            }
+            break;
+         case RC_CONSOLE_SEGA_CD:
+            if (address < 0x010000)
+            {
+               /* Work RAM. */
+               address += 0xFF0000;
+               CHEEVOS_LOG(RCHEEVOS_TAG "Sega CD memory address %X adjusted to %X\n", original_address, address);
+            }
+            else
+            {
+               /* CD-ROM peripheral RAM - exposed at virtual address to avoid banking */
+               address += 0x80020000 - 0x010000;
+               CHEEVOS_LOG(RCHEEVOS_TAG "Sega CD memory address %X adjusted to %X\n", original_address, address);
+            }
+            break;
+         default:
+            break;
       }
 
       desc = system->mmaps.descriptors;
@@ -237,22 +235,27 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
             address -= desc->core.start;
 
             if (desc->disconnect_mask)
-               address = (unsigned)rcheevos_var_reduce(address & desc->disconnect_mask, desc->core.disconnect);
+               address = (unsigned)rcheevos_var_reduce(
+                     address & desc->disconnect_mask, desc->core.disconnect);
 
             if (address >= desc->core.len)
                address -= rcheevos_var_highest_bit(address);
 
             address += desc->core.offset;
 
-            CHEEVOS_LOG(RCHEEVOS_TAG "address %X set to descriptor %d at offset %X\n", original_address, (int)((desc - system->mmaps.descriptors) + 1), address);
+            CHEEVOS_LOG(RCHEEVOS_TAG "address %X set to descriptor %d at offset %X\n", original_address,
+                  (int)((desc - system->mmaps.descriptors) + 1), address);
             break;
          }
       }
    }
    else if (console == RC_CONSOLE_GAMEBOY_ADVANCE)
    {
-      /* The RetroAchievements implementation of memory access for GBA puts the save RAM first,
-       * so the default looping behavior below is backwards. If the core doesn't expose a
+      /* The RetroAchievements implementation of memory access 
+       * for GBA puts the save RAM first,
+       * so the default looping behavior below is backwards. 
+       *
+       * If the core doesn't expose a
        * memory map, say it isn't supported.
        */
        pointer = NULL;
@@ -290,8 +293,9 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
          }
 
          /**
-          * HACK Subtract the correct amount of bytes to reach the save RAM as
-          * it's size is not always set correctly in the core.
+          * HACK Subtract the correct amount of bytes to 
+          * reach the save RAM as its size is not always 
+          * set correctly in the core.
           */
          if (i == 0 && console == RC_CONSOLE_NINTENDO)
             address -= 0x6000;
@@ -300,7 +304,7 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
       }
    }
 
-   if (pointer == NULL)
+   if (!pointer)
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "address %X not supported\n", original_address);
       return NULL;

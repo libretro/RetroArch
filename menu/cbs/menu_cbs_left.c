@@ -46,6 +46,9 @@
 #define BIND_ACTION_LEFT(cbs, name) (cbs)->action_left = (name)
 #endif
 
+/* Forward declarations */
+int action_ok_core_lock(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -373,16 +376,18 @@ static int action_left_video_resolution(unsigned type, const char *label,
 static int playlist_association_left(unsigned type, const char *label,
       bool wraparound)
 {
-   char core_path[PATH_MAX_LENGTH];
+   char core_filename[PATH_MAX_LENGTH];
    size_t i, next, current          = 0;
    settings_t *settings             = config_get_ptr();
    bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
    bool playlist_compression        = settings->bools.playlist_compression;
    playlist_t *playlist             = playlist_get_cached();
+   const char *default_core_path    = playlist_get_default_core_path(playlist);
+   bool default_core_set            = false;
    core_info_list_t *core_info_list = NULL;
    core_info_t *core_info           = NULL;
 
-   core_path[0]     = '\0';
+   core_filename[0] = '\0';
 
    if (!playlist)
       return -1;
@@ -392,52 +397,62 @@ static int playlist_association_left(unsigned type, const char *label,
       return menu_cbs_exit();
 
    /* Get current core path association */
-   if (string_is_empty(playlist_get_default_core_path(playlist)))
+   if (!string_is_empty(default_core_path) &&
+       !string_is_equal(default_core_path, "DETECT"))
    {
-      core_path[0] = 'D';
-      core_path[1] = 'E';
-      core_path[2] = 'T';
-      core_path[3] = 'E';
-      core_path[4] = 'C';
-      core_path[5] = 'T';
-      core_path[6] = '\0';
+      const char *default_core_filename = path_basename(default_core_path);
+      if (!string_is_empty(default_core_filename))
+      {
+         strlcpy(core_filename, default_core_filename, sizeof(core_filename));
+         default_core_set = true;
+      }
    }
-   else
-      strlcpy(core_path, playlist_get_default_core_path(playlist), sizeof(core_path));
 
    /* Sort cores alphabetically */
    core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
 
-   /* Get the index of the currently associated core */
-   for (i = 0; i < core_info_list->count; i++)
+   /* If a core is currently associated... */
+   if (default_core_set)
    {
-      core_info = NULL;
-      core_info = core_info_get(core_info_list, i);
-      if (!core_info)
-         return -1;
-      if (string_is_equal(core_info->path, core_path))
-         current = i;
+      /* ...get its index */
+      for (i = 0; i < core_info_list->count; i++)
+      {
+         core_info = NULL;
+         core_info = core_info_get(core_info_list, i);
+         if (!core_info)
+            continue;
+         if (string_starts_with(core_filename, core_info->core_file_id.str))
+            current = i;
+      }
+
+      /* ...then decrement it */
+      if (current == 0)
+      {
+         /* Unset core association (DETECT) */
+         next             = 0;
+         default_core_set = false;
+      }
+      else
+         next = current - 1;
+   }
+   /* If a core is *not* currently associated and
+    * wraparound is enabled, select last core in
+    * the list */
+   else if (wraparound && (core_info_list->count > 1))
+   {
+      next             = core_info_list->count - 1;
+      default_core_set = true;
    }
 
-   /* Decrement core index */
-   if (current > 0)
-      next = current - 1;
-   else if (wraparound && (core_info_list->count > 1))
-      next = core_info_list->count - 1;
-   else
-      next = 0; /* Silence 'next' may be used uninitialized warning */
-
-   /* Get new core info */
+   /* If a core is now associated, get new core info */
    core_info = NULL;
-   core_info = core_info_get(core_info_list, next);
-   if (!core_info)
-      return -1;
+   if (default_core_set)
+      core_info = core_info_get(core_info_list, next);
 
    /* Update playlist */
-   playlist_set_default_core_path(playlist, core_info->path);
-   playlist_set_default_core_name(playlist, core_info->display_name);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_set_default_core_path(playlist, core_info ? core_info->path         : "DETECT");
+   playlist_set_default_core_name(playlist, core_info ? core_info->display_name : "DETECT");
+   playlist_write_file(playlist, playlist_use_old_format, playlist_compression);
 
    return 0;
 }
@@ -668,6 +683,12 @@ static int core_setting_left(unsigned type, const char *label,
    return 0;
 }
 
+static int action_left_core_lock(unsigned type, const char *label,
+      bool wraparound)
+{
+   return action_ok_core_lock(label, label, type, 0, 0);
+}
+
 static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -895,14 +916,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
                if (
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB))   ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))       ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+                        string_ends_with(menu_label, "_tab")
+                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
+                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
                   )
                {
                   BIND_ACTION_LEFT(cbs, action_left_mainmenu);
@@ -915,16 +931,8 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
             case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
                if (
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB))   ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB))
+                        string_ends_with(menu_label, "_tab")
+                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
                   )
                {
                   BIND_ACTION_LEFT(cbs, action_left_mainmenu);
@@ -1053,17 +1061,10 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_FONT:
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
-            if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB))
-                  )
+            if (  
+                  string_ends_with(menu_label, "_tab")
+                  || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+               )
             {
                BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                break;
@@ -1073,6 +1074,9 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION:
          case FILE_TYPE_CONTENTLIST_ENTRY:
             BIND_ACTION_LEFT(cbs, action_left_mainmenu);
+            break;
+         case MENU_SETTING_ACTION_CORE_LOCK:
+            BIND_ACTION_LEFT(cbs, action_left_core_lock);
             break;
          default:
             return -1;
@@ -1093,17 +1097,10 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
 
    if (type == MENU_SETTING_NO_ITEM)
    {
-      if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
-            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB))
+      if (  
+               string_ends_with(menu_label, "_tab")
+            || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
+            || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
          )
       {
             BIND_ACTION_LEFT(cbs, action_left_mainmenu);

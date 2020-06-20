@@ -148,14 +148,13 @@ static bool get_thumbnail_paths(
       return false;
    
    /* Generate remote path */
-   strlcpy(raw_url, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(raw_url));
-   strlcat(raw_url, "/", sizeof(raw_url));
-   strlcat(raw_url, system_name, sizeof(raw_url));
-   strlcat(raw_url, "/", sizeof(raw_url));
-   strlcat(raw_url, sub_dir, sizeof(raw_url));
-   strlcat(raw_url, "/", sizeof(raw_url));
-   strlcat(raw_url, img_name, sizeof(raw_url));
-   
+   snprintf(raw_url, sizeof(raw_url), "%s/%s/%s/%s",
+         file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
+         system_name,
+         sub_dir,
+         img_name
+         );
+
    if (string_is_empty(raw_url))
       return false;
    
@@ -492,14 +491,12 @@ bool task_push_pl_thumbnail_download(
       goto error;
    
    /* Only parse supported playlist types */
-   if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-       string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)) ||
-       string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
-       string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
-       string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) ||
-       string_is_equal(system, "history") ||
-       string_is_equal(system, "favorites") ||
-       string_is_equal(system, "images_history"))
+   if (
+            string_ends_with(playlist_path, "_history.lpl") 
+         || string_is_equal(playlist_file,
+            file_path_str(FILE_PATH_CONTENT_FAVORITES))
+         || string_is_equal(system, "history")
+         || string_is_equal(system, "favorites"))
       goto error;
    
    /* Concurrent download of thumbnails for the same
@@ -799,14 +796,12 @@ bool task_push_pl_entry_thumbnail_download(
       goto error;
    
    /* Only parse supported playlist types */
-   if (string_is_equal(system, "images_history") ||
-       string_is_equal(system, "music_history") ||
-       string_is_equal(system, "video_history"))
+   if (string_ends_with(system, "_history"))
       goto error;
    
    /* Copy playlist path
     * (required for task finder and menu refresh functionality) */
-   playlist_path = strdup(playlist_get_conf_path(playlist));
+   playlist_path                 = strdup(playlist_get_conf_path(playlist));
    
    /* Concurrent download of thumbnails for the same
     * playlist entry is not allowed */

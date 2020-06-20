@@ -27,7 +27,7 @@
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
 
-int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
+int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
     settings_t *settings = config_get_ptr();
 
@@ -658,6 +658,14 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_OVERLAY_SCALE:
             snprintf(s, len,
                      "Overlay scale.");
+            break;
+        case MENU_ENUM_LABEL_OVERLAY_CENTER_X:
+            snprintf(s, len,
+                     "Overlay X offset.");
+            break;
+        case MENU_ENUM_LABEL_OVERLAY_CENTER_Y:
+            snprintf(s, len,
+                     "Overlay Y offset.");
             break;
         case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
             snprintf(s, len,

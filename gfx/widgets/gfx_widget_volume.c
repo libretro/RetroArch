@@ -49,7 +49,7 @@ struct gfx_widget_volume_state
 
    float alpha;
    float text_alpha;
-   gfx_animation_ctx_tag tag;
+   uintptr_t tag;
    bool mute;
 
    unsigned widget_width;
@@ -91,83 +91,83 @@ gfx_widget_volume_state_t* gfx_widget_volume_get_ptr(void)
    return &p_w_volume_st;
 }
 
-static void gfx_widget_volume_frame(void* data)
+static void gfx_widget_volume_frame(void* data, void *user_data)
 {
    gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
 
    if (state->alpha > 0.0f)
    {
-      video_frame_info_t *video_info = (video_frame_info_t*)data;
-
       char msg[255];
       char percentage_msg[255];
+      video_frame_info_t *video_info       = (video_frame_info_t*)data;
+      gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular(user_data);
 
-      gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
+      void *userdata                       = video_info->userdata;
+      unsigned video_width                 = video_info->width;
+      unsigned video_height                = video_info->height;
 
-      void *userdata                = video_info->userdata;
-      unsigned video_width          = video_info->width;
-      unsigned video_height         = video_info->height;
+      unsigned padding                     = gfx_widgets_get_padding(user_data);
 
-      unsigned padding              = gfx_widgets_get_padding();
+      float* backdrop_orig                 = gfx_widgets_get_backdrop_orig();
+      float* pure_white                    = gfx_widgets_get_pure_white();
 
-      float* backdrop_orig          = gfx_widgets_get_backdrop_orig();
-      float* pure_white             = gfx_widgets_get_pure_white();
+      uintptr_t volume_icon                = 0;
+      unsigned icon_size                   = state->textures[ICON_MED] ? state->widget_height : padding;
+      unsigned text_color                  = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->text_alpha*255.0f));
+      unsigned text_color_db               = COLOR_TEXT_ALPHA(TEXT_COLOR_FAINT, (unsigned)(state->text_alpha*255.0f));
 
-      uintptr_t volume_icon         = 0;
-      unsigned icon_size            = state->textures[ICON_MED] ? state->widget_height : padding;
-      unsigned text_color           = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->text_alpha*255.0f));
-      unsigned text_color_db        = COLOR_TEXT_ALPHA(TEXT_COLOR_FAINT, (unsigned)(state->text_alpha*255.0f));
+      unsigned bar_x                       = icon_size;
+      unsigned bar_height                  = font_regular->line_height / 2;
+      unsigned bar_width                   = state->widget_width - bar_x - padding;
+      unsigned bar_y                       = state->widget_height / 2 + bar_height;
 
-      unsigned bar_x                = icon_size;
-      unsigned bar_height           = font_regular->line_height / 2;
-      unsigned bar_width            = state->widget_width - bar_x - padding;
-      unsigned bar_y                = state->widget_height / 2 + bar_height;
-
-      float *bar_background         = NULL;
-      float *bar_foreground         = NULL;
-      float bar_percentage          = 0.0f;
+      float *bar_background                = NULL;
+      float *bar_foreground                = NULL;
+      float bar_percentage                 = 0.0f;
 
       /* Note: Volume + percentage text has no component
        * that extends below the baseline, so we shift
        * the text down by the font descender to achieve
        * better spacing */
-      unsigned volume_text_y        = (bar_y / 2.0f) + font_regular->line_centre_offset + font_regular->line_descender;
+      unsigned volume_text_y               = (bar_y / 2.0f) 
+         + font_regular->line_centre_offset 
+         + font_regular->line_descender;
 
-      msg[0] = '\0';
-      percentage_msg[0] = '\0';
+      msg[0]                               = '\0';
+      percentage_msg[0]                    = '\0';
 
       if (state->mute)
-         volume_icon = state->textures[ICON_MUTE];
+         volume_icon                       = state->textures[ICON_MUTE];
       else if (state->percent <= 1.0f)
       {
          if (state->percent <= 0.5f)
-            volume_icon = state->textures[ICON_MIN];
+            volume_icon                    = state->textures[ICON_MIN];
          else
-            volume_icon = state->textures[ICON_MED];
+            volume_icon                    = state->textures[ICON_MED];
 
-         bar_background = state->bar_background;
-         bar_foreground = state->bar_normal;
-         bar_percentage = state->percent;
+         bar_background                    = state->bar_background;
+         bar_foreground                    = state->bar_normal;
+         bar_percentage                    = state->percent;
       }
       else if (state->percent > 1.0f && state->percent <= 2.0f)
       {
-         volume_icon = state->textures[ICON_MAX];
+         volume_icon                       = state->textures[ICON_MAX];
 
-         bar_background = state->bar_normal;
-         bar_foreground = state->bar_loud;
-         bar_percentage = state->percent - 1.0f;
+         bar_background                    = state->bar_normal;
+         bar_foreground                    = state->bar_loud;
+         bar_percentage                    = state->percent - 1.0f;
       }
       else
       {
-         volume_icon = state->textures[ICON_MAX];
+         volume_icon                       = state->textures[ICON_MAX];
 
-         bar_background = state->bar_loud;
-         bar_foreground = state->bar_loudest;
-         bar_percentage = state->percent - 2.0f;
+         bar_background                    = state->bar_loud;
+         bar_foreground                    = state->bar_loudest;
+         bar_percentage                    = state->percent - 2.0f;
       }
 
       if (bar_percentage > 1.0f)
-         bar_percentage = 1.0f;
+         bar_percentage                    = 1.0f;
 
       /* Backdrop */
       gfx_display_set_alpha(backdrop_orig, state->alpha);
@@ -209,7 +209,9 @@ static void gfx_widget_volume_frame(void* data)
             const char *text  = msg_hash_to_str(MSG_AUDIO_MUTED);
             gfx_widgets_draw_text(font_regular,
                   text,
-                  state->widget_width/2, state->widget_height/2.0f + font_regular->line_centre_offset,
+                  state->widget_width / 2,
+                  state->widget_height / 2.0f 
+                  + font_regular->line_centre_offset,
                   video_width, video_height,
                   text_color, TEXT_ALIGN_CENTER,
                   true);
@@ -305,14 +307,16 @@ void gfx_widget_volume_update_and_show(float new_volume, bool mute)
    gfx_timer_start(&state->timer, &entry);
 }
 
-static void gfx_widget_volume_layout(bool is_threaded, const char *dir_assets, char *font_path)
+static void gfx_widget_volume_layout(
+      void *data,
+      bool is_threaded, const char *dir_assets, char *font_path)
 {
    gfx_widget_volume_state_t* state     = gfx_widget_volume_get_ptr();
-   unsigned last_video_width            = gfx_widgets_get_last_video_width();
-   gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
+   unsigned last_video_width            = gfx_widgets_get_last_video_width(data);
+   gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular(data);
 
-   state->widget_height = font_regular->line_height * 4;
-   state->widget_width  = state->widget_height * 4;
+   state->widget_height                 = font_regular->line_height * 4;
+   state->widget_width                  = state->widget_height * 4;
 
    /* Volume widget cannot exceed screen width
     * > If it does, scale it down */

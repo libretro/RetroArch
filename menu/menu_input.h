@@ -190,6 +190,7 @@ void menu_input_get_pointer_state(menu_input_pointer_t *pointer);
  * device
  * Note: Each menu driver is responsible for setting this */
 unsigned menu_input_get_pointer_selection(void);
+
 void menu_input_set_pointer_selection(unsigned selection);
 
 /* Allows pointer y acceleration to be overridden
@@ -200,12 +201,6 @@ void menu_input_set_pointer_y_accel(float y_accel);
 /* Inhibits pointer 'select' and 'cancel' actions
  * (until the next time 'select'/'cancel' are released) */
 void menu_input_set_pointer_inhibit(bool inhibit);
-
-void menu_input_reset(void);
-
-bool menu_input_pointer_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox);
-
-void menu_input_post_iterate(int *ret, unsigned action);
 
 RETRO_END_DECLS
 

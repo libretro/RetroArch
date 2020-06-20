@@ -42,19 +42,15 @@ typedef struct discord_userdata
    enum discord_presence status;
 } discord_userdata_t;
 
-void discord_init(const char *discord_app_id, char *args);
-
-void discord_shutdown(void);
-
-void discord_update(enum discord_presence presence, bool fuzzy_archive_match);
+void discord_update(
+      enum discord_presence presence,
+      bool fuzzy_archive_match);
 
 bool discord_is_ready(void);
 
 void discord_avatar_set_ready(bool ready);
 
 bool discord_avatar_is_ready(void);
-
-char* discord_get_own_username(void);
 
 char* discord_get_own_avatar(void);
 

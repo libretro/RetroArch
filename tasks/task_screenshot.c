@@ -243,7 +243,8 @@ static void task_screenshot_callback(retro_task_t *task,
       return;
 
    if (!state->silence && state->widgets_ready)
-      gfx_widget_screenshot_taken(state->shotname, state->filename);
+      gfx_widget_screenshot_taken(dispwidget_get_ptr(),
+            state->shotname, state->filename);
 
    free(state);
    /* Must explicitly set task->state to NULL here,
@@ -273,7 +274,8 @@ static bool screenshot_dump(
    struct retro_system_info system_info;
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
-   screenshot_task_state_t *state = (screenshot_task_state_t*)calloc(1, sizeof(*state));
+   screenshot_task_state_t *state = (screenshot_task_state_t*)
+      calloc(1, sizeof(*state));
 
    state->shotname[0]             = '\0';
 
@@ -319,7 +321,10 @@ static bool screenshot_dump(
             if (path_is_empty(RARCH_PATH_CONTENT))
             {
                if (!core_get_system_info(&system_info))
+               {
+                  free(state);
                   return false;
+               }
 
                if (string_is_empty(system_info.library_name))
                   screenshot_name = "RetroArch";

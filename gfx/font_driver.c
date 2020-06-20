@@ -45,6 +45,7 @@ static const font_renderer_driver_t *font_backends[] = {
    NULL
 };
 
+/* TODO/FIXME - global */
 static void *video_font_driver = NULL;
 
 int font_renderer_create_default(
@@ -72,7 +73,7 @@ int font_renderer_create_default(
          return 1;
       }
       else
-         RARCH_ERR("Failed to create rendering backend: %s.\n",
+         RARCH_ERR("[Font]: Failed to create rendering backend: %s.\n",
                font_backends[i]->ident);
    }
 
@@ -1225,7 +1226,7 @@ void font_driver_init_osd(
          video_info->font_size, threading_hint, is_threaded, api);
 
    if (!video_font_driver)
-      RARCH_ERR("[font]: Failed to initialize OSD font.\n");
+      RARCH_ERR("[Font]: Failed to initialize OSD font.\n");
 }
 
 void font_driver_free_osd(void)

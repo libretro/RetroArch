@@ -106,6 +106,72 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    manual_scan = NULL;
 }
 
+static void cb_task_manual_content_scan(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   manual_scan_handle_t *manual_scan = NULL;
+   playlist_t *cached_playlist       = playlist_get_cached();
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+   menu_ctx_environment_t menu_environ;
+   if (!task)
+      goto end;
+#else
+   if (!task)
+      return;
+#endif
+
+   manual_scan = (manual_scan_handle_t*)task->state;
+
+   if (!manual_scan)
+   {
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+      goto end;
+#else
+      return;
+#endif
+   }
+
+   /* If the manual content scan task has modified the
+    * currently cached playlist, then it must be re-cached
+    * (otherwise changes will be lost if the currently
+    * cached playlist is saved to disk for any reason...) */
+   if (cached_playlist)
+   {
+      if (string_is_equal(
+            manual_scan->task_config->playlist_file,
+            playlist_get_conf_path(cached_playlist)))
+      {
+         playlist_free_cached();
+         playlist_init_cached(
+               manual_scan->task_config->playlist_file, COLLECTION_SIZE,
+               manual_scan->use_old_format, manual_scan->compress);
+      }
+   }
+
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+end:
+   /* When creating playlists, the playlist tabs of
+    * any active menu driver must be refreshed */
+   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
+   menu_environ.data = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+#endif
+}
+
+static void task_manual_content_scan_free(retro_task_t *task)
+{
+   manual_scan_handle_t *manual_scan = NULL;
+
+   if (!task)
+      return;
+
+   manual_scan = (manual_scan_handle_t*)task->state;
+
+   free_manual_content_scan_handle(manual_scan);
+}
+
 static void task_manual_content_scan_handler(retro_task_t *task)
 {
    manual_scan_handle_t *manual_scan = NULL;
@@ -299,7 +365,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          break;
       case MANUAL_SCAN_END:
          {
-            playlist_t *cached_playlist = playlist_get_cached();
             char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
@@ -314,23 +379,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->playlist,
                   manual_scan->use_old_format,
                   manual_scan->compress);
-
-            /* If this is the currently cached playlist, then
-             * it must be re-cached (otherwise changes will be
-             * lost if the currently cached playlist is saved
-             * to disk for any reason...) */
-            if (cached_playlist)
-            {
-               if (string_is_equal(
-                     manual_scan->task_config->playlist_file,
-                     playlist_get_conf_path(cached_playlist)))
-               {
-                  playlist_free_cached();
-                  playlist_init_cached(
-                        manual_scan->task_config->playlist_file, COLLECTION_SIZE,
-                        manual_scan->use_old_format, manual_scan->compress);
-               }
-            }
 
             /* Update progress display */
             task_free_title(task);
@@ -355,8 +403,6 @@ task_finished:
 
    if (task)
       task_set_finished(task, true);
-
-   free_manual_content_scan_handle(manual_scan);
 }
 
 static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
@@ -375,19 +421,6 @@ static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
 
    return string_is_equal(
          (const char*)user_data, manual_scan->task_config->playlist_file);
-}
-
-static void cb_task_manual_content_scan_refresh_menu(
-      retro_task_t *task, void *task_data,
-      void *user_data, const char *err)
-{
-#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
-   menu_ctx_environment_t menu_environ;
-   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
-   menu_environ.data = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-#endif
 }
 
 bool task_push_manual_content_scan(void)
@@ -468,7 +501,8 @@ bool task_push_manual_content_scan(void)
    task->title                   = strdup(task_title);
    task->alternative_look        = true;
    task->progress                = 0;
-   task->callback                = cb_task_manual_content_scan_refresh_menu;
+   task->callback                = cb_task_manual_content_scan;
+   task->cleanup                 = task_manual_content_scan_free;
 
    /* > Push task */
    task_queue_push(task);

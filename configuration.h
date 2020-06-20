@@ -145,7 +145,6 @@ typedef struct settings
       bool input_overlay_auto_hide;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
-      bool input_all_users_control_menu;
       bool input_menu_swap_ok_cancel_buttons;
       bool input_backtouch_enable;
       bool input_backtouch_toggle;
@@ -288,6 +287,7 @@ typedef struct settings
       bool network_buildbot_auto_extract_archive;
       bool network_buildbot_show_experimental_cores;
       bool network_on_demand_thumbnails;
+      bool core_updater_auto_backup;
 
       /* UI */
       bool ui_menubar_enable;
@@ -439,6 +439,8 @@ typedef struct settings
 
       float input_overlay_opacity;
       float input_overlay_scale;
+      float input_overlay_center_x;
+      float input_overlay_center_y;
 
       float slowmotion_ratio;
       float fastforward_ratio;
@@ -493,6 +495,7 @@ typedef struct settings
 #ifdef GEKKO
       unsigned input_mouse_scale;
 #endif
+      unsigned input_hotkey_block_delay;
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
@@ -620,6 +623,8 @@ typedef struct settings
       unsigned ai_service_mode;
       unsigned ai_service_target_lang;
       unsigned ai_service_source_lang;
+
+      unsigned core_updater_auto_backup_history_size;
    } uints;
 
    struct

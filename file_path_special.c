@@ -343,6 +343,7 @@ void fill_pathname_application_special(char *s,
             switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
             {
                case RETRO_LANGUAGE_ARABIC:
+               case RETRO_LANGUAGE_PERSIAN:
                   fill_pathname_application_special(s1,
                         PATH_MAX_LENGTH * sizeof(char),
                         APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
@@ -389,6 +390,7 @@ void fill_pathname_application_special(char *s,
                switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
                {
                   case RETRO_LANGUAGE_ARABIC:
+                  case RETRO_LANGUAGE_PERSIAN:
                      fill_pathname_application_special(s1,
                            PATH_MAX_LENGTH * sizeof(char),
                            APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);

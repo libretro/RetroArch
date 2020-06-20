@@ -53,8 +53,6 @@ extern "C" {
 #define GROUPED_DRAGGING static_cast<QMainWindow::DockOption>(0)
 #endif
 
-static bool already_started = false;
-
 typedef struct ui_companion_qt
 {
    ui_application_qt_t *app;
@@ -652,11 +650,12 @@ static void ui_companion_qt_notify_content_loaded(void *data) { }
 
 static void ui_companion_qt_toggle(void *data, bool force)
 {
-   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
-   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
-   settings_t *settings       = config_get_ptr();
-   bool ui_companion_toggle   = settings->bools.ui_companion_toggle;
-   bool video_fullscreen      = settings->bools.video_fullscreen;
+   static bool already_started = false;
+   ui_companion_qt_t *handle   = (ui_companion_qt_t*)data;
+   ui_window_qt_t *win_handle  = (ui_window_qt_t*)handle->window;
+   settings_t *settings        = config_get_ptr();
+   bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
+   bool video_fullscreen       = settings->bools.video_fullscreen;
 
    if (ui_companion_toggle || force)
    {

@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * shared.h:
  * All functions/definitions that shouldn't be exposed to
@@ -77,6 +95,7 @@ typedef enum SceGxmPrimitiveTypeExtra {
 extern void *frag_uniforms;
 extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
+extern GLboolean use_extra_mem;
 
 // Debugging tool
 #ifdef ENABLE_LOG
@@ -96,8 +115,16 @@ extern float x_scale;
 extern float y_scale;
 extern float z_scale;
 
+// Fullscreen sceGxm viewport (NOTE: origin is on center screen)
+extern float fullscreen_x_port;
+extern float fullscreen_y_port;
+extern float fullscreen_z_port;
+extern float fullscreen_x_scale;
+extern float fullscreen_y_scale;
+extern float fullscreen_z_scale;
+
 extern SceGxmContext *gxm_context; // sceGxm context instance
-extern GLenum _vitagl_error; // Error returned by glGetError
+extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix
@@ -106,21 +133,20 @@ matrix4x4 modelview_matrix; // ModelView Matrix
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
-extern uint8_t viewport_mode; // Current setting for viewport mode
 extern GLboolean vblank; // Current setting for VSync
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 
 // Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
-extern vector2f *scissor_test_vertices; // Scissor test region vertices
+extern vector4f *scissor_test_vertices; // Scissor test region vertices
 extern SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
 
 extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
 
 // Clear screen shaders
 extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
-extern vector2f *clear_vertices; // Memblock starting address for clear screen vertices
+extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
 /* gxm.c */
 void initGxm(void); // Inits sceGxm
@@ -160,6 +186,6 @@ void reloadCustomShader(void); // Reloads in use custom shader inside sceGxm
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
 
 /* misc functions */
-void vector2f_convert_to_local_space(vector2f *out, int x, int y, int width, int height); // Converts screen coords to local space
+void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space
 
 #endif

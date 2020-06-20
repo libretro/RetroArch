@@ -38,6 +38,7 @@
 #include "../../content.h"
 #include "../../dynamic.h"
 
+/* TODO/FIXME - static public global variables */
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
 
 enum filebrowser_enums filebrowser_get_type(void)

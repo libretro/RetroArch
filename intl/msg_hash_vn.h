@@ -6,7 +6,7 @@
 #pragma warning(disable:4566)
 #endif
 
-/* Top-level Menu */
+/* Top-Level Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
@@ -95,10 +95,6 @@ MSG_HASH(
 
 /* Main Menu > Online Updater */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Cập nhật cho Core"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Tải về nội dung"
@@ -589,20 +585,20 @@ MSG_HASH(
    "Kích hoạt Post Filter Recording"
    )
 
-/* Settings > Onscreen Display */
+/* Settings > On-Screen Display */
 
 
-/* Settings > Onscreen Display > Onscreen Overlay */
+/* Settings > On-Screen Display > On-Screen Overlay */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Tự động tải Preferred Overlay"
    )
 
-/* Settings > Onscreen Display > Video Layout */
+/* Settings > On-Screen Display > Video Layout */
 
 
-/* Settings > Onscreen Display > Onscreen Notifications */
+/* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -972,7 +968,7 @@ MSG_HASH(
 /* Quick Menu > Cheats > Cheat Details */
 
 
-/* Quick Menu > Disk Control */
+/* Quick Menu > Disc Control */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -1025,78 +1021,6 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Tiếng Ả Rập"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-   "Tiếng Trung Quốc (Chữ Hán giản thể)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-   "Tiếng Trung Quốc (Chữ Hán phồn thể)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
-   "Tiếng Hà Lan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
-   "Tiếng Anh"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
-   "Tiếng Quốc tế ngữ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
-   "Tiếng Pháp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
-   "Tiếng Đức"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
-   "Tiếng NGƯỜI HY LẠP"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
-   "Tiếng Ý"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
-   "Tiếng Nhật"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Tiếng Hàn Quốc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
-   "Tiếng Bồ Đào Nha (Brazil)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-   "Tiếng Bồ Đào Nha (Portugal)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
-   "Tiếng Nga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
-   "Tiếng Tây Ban Nha"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
-   "Tiếng Thổ Nhĩ Kỳ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
-   "Tiếng Việt"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
    "<Mục nội dung>"
@@ -1524,6 +1448,7 @@ MSG_HASH(
 #ifdef GEKKO
 #endif
 #ifdef HAVE_ODROIDGO2
+#else
 #endif
 #if defined(_3DS)
 MSG_HASH(

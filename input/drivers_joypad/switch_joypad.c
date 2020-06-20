@@ -87,11 +87,6 @@ static bool switch_joypad_button(unsigned port_num, uint16_t key)
 {
    if (port_num >= DEFAULT_MAX_PADS)
       return false;
-
-#if 0
-   RARCH_LOG("button(%d, %d)\n", port_num, key);
-#endif
-
    return (pad_state[port_num] & (1 << key));
 }
 

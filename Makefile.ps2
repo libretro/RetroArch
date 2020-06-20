@@ -1,16 +1,13 @@
 BUILD_FOR_PCSX2    = 0
 DEBUG              = 0
-HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
 HAVE_THREADS       = 0
-BIG_STACK          = 0
 MUTE_WARNINGS      = 1
 PS2_IP = 192.168.1.150
 
 TARGET = retroarchps2.elf
 TARGET_RELEASE = retroarchps2-release.elf
-
 
 # Compile the IRXs first
 IRX_DIR = ps2/irx
@@ -20,7 +17,7 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 	RARCH_DEFINES += -DDEBUG
 else
-   OPTIMIZE_LV	:= -O2
+   OPTIMIZE_LV	:= -O3
 	LDFLAGS :=  -s
 endif
 
@@ -29,19 +26,17 @@ ifeq ($(MUTE_WARNINGS), 1)
 endif
 
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
-INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
+INCDIR += -Ips2/include -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
 INCDIR += -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
-GPVAL = -G0
 CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
-RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_NO_BUILTINZLIB -DHAVE_RPNG -DHAVE_RJPEG
-RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
+RARCH_DEFINES += -DPS2 -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_RGUI
+RARCH_DEFINES += -DHAVE_ZLIB -DHAVE_NO_BUILTINZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
-LIBDIR =
-LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
-LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio -lz
-LIBS += -lpatches -lpoweroff
+LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
+# Lib cdvd is needed to get proper time
+LIBS += -lretro_ps2 -lpatches -lpoweroff -lgskit -ldmakit -laudsrv -lpadx -lmtap -lz -lcdvd
 
 ifeq ($(BUILD_FOR_PCSX2), 1)
 RARCH_DEFINES += -DBUILD_FOR_PCSX2
@@ -55,20 +50,13 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS += -DHAVE_FILE_LOGGER
 endif
 
-ifeq ($(HAVE_KERNEL_PRX), 1)
-CFLAGS += -DHAVE_KERNEL_PRX
-endif
-
-ifeq ($(BIG_STACK), 1)
-CFLAGS += -DBIG_STACK
-endif
-
 CFLAGS += $(RARCH_DEFINES)
 
 # All the IRX objects
 EE_OBJS += $(IRX_DIR)/freemtap_irx.o $(IRX_DIR)/freepad_irx.o $(IRX_DIR)/freesio2_irx.o $(IRX_DIR)/iomanX_irx.o
 EE_OBJS += $(IRX_DIR)/fileXio_irx.o $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o $(IRX_DIR)/usbd_irx.o
 EE_OBJS += $(IRX_DIR)/usbhdfsd_irx.o $(IRX_DIR)/freesd_irx.o $(IRX_DIR)/audsrv_irx.o $(IRX_DIR)/poweroff_irx.o
+EE_OBJS += $(IRX_DIR)/cdfs_irx.o
 
 # Missing objecst on the PS2SDK
 EE_OBJS += ps2/compat_files/ps2_devices.o 

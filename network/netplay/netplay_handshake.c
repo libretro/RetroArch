@@ -66,11 +66,11 @@ struct info_buf_s
    } \
    else if (recvd < 0)
 
+#define NETPLAY_MAGIC 0x52414E50 /* RANP */
+
+/* TODO/FIXME - static global variables */
 static netplay_t *handshake_password_netplay = NULL;
-
-const uint32_t netplay_magic = 0x52414E50; /* RANP */
-
-static unsigned long simple_rand_next = 1;
+static unsigned long simple_rand_next        = 1;
 
 /* TODO/FIXME - replace netplay_log_connection with calls
  * to inet_ntop_compat and move runloop message queue pushing
@@ -205,7 +205,7 @@ static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
 static int simple_rand(void)
 {
    simple_rand_next = simple_rand_next * 1103515245 + 12345;
-   return((unsigned)(simple_rand_next/65536) % 32768);
+   return((unsigned)(simple_rand_next / 65536) % 32768);
 }
 
 static void simple_srand(unsigned int seed)
@@ -236,7 +236,7 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    unsigned conn_salt   = 0;
    settings_t *settings = config_get_ptr();
 
-   header[0] = htonl(netplay_magic);
+   header[0] = htonl(NETPLAY_MAGIC);
    header[1] = htonl(netplay_platform_magic());
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
    header[3] = 0;
@@ -322,7 +322,7 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
-   if (ntohl(header[0]) != netplay_magic)
+   if (ntohl(header[0]) != NETPLAY_MAGIC)
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
       goto error;

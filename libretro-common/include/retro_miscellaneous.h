@@ -106,8 +106,8 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 #define BIT16_GET(a, bit)    (((a) >> ((bit) & 15)) & 1)
 #define BIT16_CLEAR_ALL(a)   ((a) = 0)
 
-#define BIT32_SET(a, bit)    ((a) |=  (1 << ((bit) & 31)))
-#define BIT32_CLEAR(a, bit)  ((a) &= ~(1 << ((bit) & 31)))
+#define BIT32_SET(a, bit)    ((a) |=  (UINT32_C(1) << ((bit) & 31)))
+#define BIT32_CLEAR(a, bit)  ((a) &= ~(UINT32_C(1) << ((bit) & 31)))
 #define BIT32_GET(a, bit)    (((a) >> ((bit) & 31)) & 1)
 #define BIT32_CLEAR_ALL(a)   ((a) = 0)
 
@@ -116,8 +116,8 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 #define BIT64_GET(a, bit)    (((a) >> ((bit) & 63)) & 1)
 #define BIT64_CLEAR_ALL(a)   ((a) = 0)
 
-#define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |=  (1 << ((bit) & 31)))
-#define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(1 << ((bit) & 31)))
+#define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |=  (UINT32_C(1) << ((bit) & 31)))
+#define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(UINT32_C(1) << ((bit) & 31)))
 #define BIT128_GET(a, bit)   (((a).data[(bit) >> 5] >> ((bit) & 31)) & 1)
 #define BIT128_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a))
 

@@ -154,6 +154,7 @@ typedef struct android_input
    state_device_t pad_states[MAX_USERS];
    int16_t analog_state[MAX_USERS][MAX_AXIS];
    int8_t hat_state[MAX_USERS][2];
+   char device_model[256];
 
    unsigned pads_connected;
    sensor_t accelerometer_state;
@@ -205,36 +206,28 @@ static bool android_input_lookup_name_prekitkat(char *buf,
    JNIEnv     *env   = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
-      goto error;
-
-   RARCH_LOG("Using old lookup");
+      return false;
 
    FIND_CLASS(env, class, "android/view/InputDevice");
    if (!class)
-      goto error;
+      return false;
 
    GET_STATIC_METHOD_ID(env, method, class, "getDevice",
          "(I)Landroid/view/InputDevice;");
    if (!method)
-      goto error;
+      return false;
 
    CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
    if (!device)
-   {
-      RARCH_ERR("Failed to find device for ID: %d\n", id);
-      goto error;
-   }
+      return false;
 
    GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
    if (!getName)
-      goto error;
+      return false;
 
    CALL_OBJ_METHOD(env, name, device, getName);
    if (!name)
-   {
-      RARCH_ERR("Failed to find name for device ID: %d\n", id);
-      goto error;
-   }
+      return false;
 
    buf[0] = '\0';
 
@@ -243,11 +236,7 @@ static bool android_input_lookup_name_prekitkat(char *buf,
       strlcpy(buf, str, size);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
-   RARCH_LOG("device name: %s\n", buf);
-
    return true;
-error:
-   return false;
 }
 
 static bool android_input_lookup_name(char *buf,
@@ -264,36 +253,28 @@ static bool android_input_lookup_name(char *buf,
    JNIEnv     *env        = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
-      goto error;
-
-   RARCH_LOG("Using new lookup");
+      return false;
 
    FIND_CLASS(env, class, "android/view/InputDevice");
    if (!class)
-      goto error;
+      return false;
 
    GET_STATIC_METHOD_ID(env, method, class, "getDevice",
          "(I)Landroid/view/InputDevice;");
    if (!method)
-      goto error;
+      return false;
 
    CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
    if (!device)
-   {
-      RARCH_ERR("Failed to find device for ID: %d\n", id);
-      goto error;
-   }
+      return false;
 
    GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
    if (!getName)
-      goto error;
+      return false;
 
    CALL_OBJ_METHOD(env, name, device, getName);
    if (!name)
-   {
-      RARCH_ERR("Failed to find name for device ID: %d\n", id);
-      goto error;
-   }
+      return false;
 
    buf[0] = '\0';
 
@@ -302,28 +283,20 @@ static bool android_input_lookup_name(char *buf,
       strlcpy(buf, str, size);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
-   RARCH_LOG("device name: %s\n", buf);
-
    GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I");
    if (!getVendorId)
-      goto error;
+      return false;
 
    CALL_INT_METHOD(env, *vendorId, device, getVendorId);
 
-   RARCH_LOG("device vendor id: %d\n", *vendorId);
-
    GET_METHOD_ID(env, getProductId, class, "getProductId", "()I");
    if (!getProductId)
-      goto error;
+      return false;
 
    *productId = 0;
    CALL_INT_METHOD(env, *productId, device, getProductId);
 
-   RARCH_LOG("device product id: %d\n", *productId);
-
    return true;
-error:
-   return false;
 }
 
 static void android_input_poll_main_cmd(void)
@@ -354,12 +327,9 @@ static void android_input_poll_main_cmd(void)
          android_app->inputQueue = android_app->pendingInputQueue;
 
          if (android_app->inputQueue)
-         {
-            RARCH_LOG("Attaching input queue to looper");
             AInputQueue_attachLooper(android_app->inputQueue,
                   android_app->looper, LOOPER_ID_INPUT, NULL,
                   NULL);
-         }
 
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
@@ -451,7 +421,6 @@ static void android_input_poll_main_cmd(void)
          break;
 
       case APP_CMD_DESTROY:
-         RARCH_LOG("APP_CMD_DESTROY\n");
          android_app->destroyRequested = 1;
          break;
       case APP_CMD_VIBRATE_KEYPRESS:
@@ -534,10 +503,7 @@ static bool android_input_init_handle(void)
 
    if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT,
                "AMotionEvent_getAxisValue")))
-   {
-      RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
       engine_handle_dpad = engine_handle_dpad_getaxisvalue;
-   }
 
    p_AMotionEvent_getButtonState = dlsym(RTLD_DEFAULT,"AMotionEvent_getButtonState");
 #endif
@@ -566,8 +532,6 @@ static void *android_input_init(const char *joypad_driver)
 
    frontend_android_get_version_sdk(&sdk);
 
-   RARCH_LOG("sdk version: %d\n", sdk);
-
    if (sdk >= 19)
       engine_lookup_name = android_input_lookup_name;
    else
@@ -579,6 +543,9 @@ static void *android_input_init(const char *joypad_driver)
    {
       RARCH_WARN("Unable to open libandroid.so\n");
    }
+
+   frontend_android_get_name(android->device_model,
+         sizeof(android->device_model));
 
    android_app->input_alive = true;
 
@@ -710,23 +677,15 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    android->mouse_y_delta = ceil(y) * y_scale;
 }
 
-static INLINE int android_input_poll_event_type_motion(
+static INLINE void android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
-      int port, int source)
+      int port, int source, bool vibrate_on_keypress)
 {
-   int getaction, action;
-   size_t motion_ptr;
-   bool keyup;
    int btn;
-
-   /* Only handle events from a touchscreen or mouse */
-   if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
-      return 1;
-
-   getaction  = AMotionEvent_getAction(event);
-   action     = getaction & AMOTION_EVENT_ACTION_MASK;
-   motion_ptr = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   keyup      = (
+   int getaction     = AMotionEvent_getAction(event);
+   int action        = getaction & AMOTION_EVENT_ACTION_MASK;
+   size_t motion_ptr = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+   bool keyup        = (
          action == AMOTION_EVENT_ACTION_UP ||
          action == AMOTION_EVENT_ACTION_CANCEL ||
          action == AMOTION_EVENT_ACTION_POINTER_UP) ||
@@ -765,7 +724,7 @@ static INLINE int android_input_poll_event_type_motion(
 
       android_mouse_calculate_deltas(android,event,motion_ptr);
 
-      return 0;
+      return;
    }
 
    if (keyup && motion_ptr < MAX_TOUCH)
@@ -789,8 +748,6 @@ static INLINE int android_input_poll_event_type_motion(
    {
       int      pointer_max     = MIN(
             AMotionEvent_getPointerCount(event), MAX_TOUCH);
-      settings_t *settings     = config_get_ptr();
-      bool vibrate_on_keypress = settings ? settings->bools.vibrate_on_keypress : false;
 
       if (vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
          android_app_write_cmd(g_android, APP_CMD_VIBRATE_KEYPRESS);
@@ -847,14 +804,14 @@ static INLINE int android_input_poll_event_type_motion(
     * then count it as a mouse right click */
    if (ENABLE_TOUCH_SCREEN_MOUSE)
       android->mouse_r = (android->pointer_count == 2);
-
-   return 0;
 }
 
-bool is_keyboard_id(int id)
+static bool android_is_keyboard_id(int id)
 {
-   for(int i=0; i<kbd_num; i++)
-      if (id == kbd_id[i]) return true;
+   unsigned i;
+   for (i = 0;  i < (unsigned)kbd_num; i++)
+      if (id == kbd_id[i])
+         return true;
 
    return false;
 }
@@ -950,29 +907,16 @@ static void handle_hotplug(android_input_t *android,
       int source)
 {
    char device_name[256];
-   char device_model[256];
    char name_buf[256];
    int vendorId                 = 0;
    int productId                = 0;
+   const char *device_model     = android->device_model;
 
-   device_name[0] = device_model[0] = name_buf[0] = '\0';
-
-   frontend_android_get_name(device_model, sizeof(device_model));
-
-   RARCH_LOG("Device model: (%s).\n", device_model);
-
-   if (*port > DEFAULT_MAX_PADS)
-   {
-      RARCH_ERR("Max number of pads reached.\n");
-      return;
-   }
+   device_name[0] = name_buf[0] = '\0';
 
    if (!engine_lookup_name(device_name, &vendorId,
             &productId, sizeof(device_name), id))
-   {
-      RARCH_ERR("Could not look up device name or IDs.\n");
       return;
-   }
 
    /* FIXME - per-device hacks for NVidia Shield, Xperia Play and
     * similar devices
@@ -1010,7 +954,7 @@ static void handle_hotplug(android_input_t *android,
          RARCH_LOG("- Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d",
                android->pads_connected, device_name, id, pad_id1, pad_id2);
 #endif
-         /* remove the remote or virtual controller device if it is mapped */
+         /* Remove the remote or virtual controller device if it is mapped */
          if (strstr(android->pad_states[0].name,"SHIELD Remote") ||
             strstr(android->pad_states[0].name,"SHIELD Virtual Controller"))
          {
@@ -1276,7 +1220,8 @@ static int android_input_get_id(AInputEvent *event)
    return id;
 }
 
-static void android_input_poll_input(android_input_t *android)
+static void android_input_poll_input(android_input_t *android,
+      bool vibrate_on_keypress)
 {
    AInputEvent              *event = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
@@ -1293,22 +1238,25 @@ static void android_input_poll_input(android_input_t *android)
          int            id = android_input_get_id(event);
          int          port = android_input_get_id_port(android, id, source);
 
-         if (port < 0 && !is_keyboard_id(id))
+         if (port < 0 && !android_is_keyboard_id(id))
             handle_hotplug(android, android_app,
             &port, id, source);
 
          switch (type_event)
          {
             case AINPUT_EVENT_TYPE_MOTION:
-               if (android_input_poll_event_type_motion(android, event,
-                        port, source))
+               /* Only handle events from a touchscreen or mouse */
+               if ((source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
+                  android_input_poll_event_type_motion(android, event,
+                        port, source, vibrate_on_keypress);
+               else
                   engine_handle_dpad(android, event, port, source);
                break;
             case AINPUT_EVENT_TYPE_KEY:
                {
                   int keycode = AKeyEvent_getKeyCode(event);
 
-                  if (is_keyboard_id(id))
+                  if (android_is_keyboard_id(id))
                   {
                      if (!predispatched)
                      {
@@ -1409,10 +1357,15 @@ static void android_input_poll(void *data)
                ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
+      bool vibrate_on_keypress     = settings 
+         ? settings->bools.vibrate_on_keypress 
+         : false;
+
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_poll_input(android);
+            android_input_poll_input(android,
+                  vibrate_on_keypress);
             break;
          case LOOPER_ID_USER:
             android_input_poll_user(android);
@@ -1481,43 +1434,31 @@ static int16_t android_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               /* Auto-binds are per joypad, not per user. */
-               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-               if ((uint16_t)joykey != NO_BTN && android->joypad->button(
-                        joypad_info->joy_idx, (uint16_t)joykey))
+               if (binds[port][i].valid)
                {
-                  ret |= (1 << i);
-                  continue;
+                  if (
+                        button_is_pressed(
+                           android->joypad, joypad_info, binds[port],
+                           port, i)
+                        || android_keyboard_port_input_pressed(binds[port], i)
+                     )
+                     ret |= (1 << i);
                }
-               if (((float)abs(android->joypad->axis(
-                              joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               {
-                  ret |= (1 << i);
-                  continue;
-               }
-               if (android_keyboard_port_input_pressed(binds[port], i))
-                  ret |= (1 << i);
             }
             return ret;
          }
          else
          {
-            /* Auto-binds are per joypad, not per user. */
-            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-            if ((uint16_t)joykey != NO_BTN && android->joypad->button(
-                     joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
-            if (((float)abs(android->joypad->axis(
-                           joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
-            if (android_keyboard_port_input_pressed(binds[port], id))
-               return true;
+            if (binds[port][id].valid)
+            {
+               if ( 
+                     button_is_pressed(
+                        android->joypad, joypad_info, binds[port],
+                        port, id)
+                     || android_keyboard_port_input_pressed(binds[port], id)
+                  )
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:

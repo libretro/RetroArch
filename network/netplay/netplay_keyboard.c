@@ -28,7 +28,7 @@ const uint16_t netplay_key_ntoh_mapping[] = {
    0
 };
 
-static bool mapping_defined = false;
+/* TODO/FIXME - static global variables */
 static uint16_t mapping[RETROK_LAST];
 
 /* The mapping of keys from libretro (host) to netplay (network) */
@@ -43,6 +43,8 @@ uint32_t netplay_key_hton(unsigned key)
  * netplay_key_hton */
 void netplay_key_hton_init(void)
 {
+   static bool mapping_defined = false;
+
    if (!mapping_defined)
    {
       uint16_t i;

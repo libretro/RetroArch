@@ -932,7 +932,12 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save state files, compress
  * written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+/* TODO/FIXME Apparently this is an issue on UWP for now, so disable it for now */
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION false
+#else
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION true
+#endif
 
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0
@@ -961,6 +966,20 @@ static const uint16_t network_remote_base_port = 55400;
 
 #define DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE true
 #define DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES false
+
+/* Automatically create a backup whenever a core is
+ * updated via the online updater
+ * > Enable by default on all modern platforms with
+ *   online updater support */
+#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS))
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP true
+#else
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP false
+#endif
+/* Number of automatic core backups to retain
+ * (oldest backup will be deleted when creating
+ * a new one) */
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
 
 #if defined(ANDROID) || defined(IOS)
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
@@ -1076,6 +1095,8 @@ static const unsigned input_poll_type_behavior = 2;
 static const unsigned input_bind_timeout = 5;
 
 static const unsigned input_bind_hold = 2;
+
+#define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
 
 static const unsigned gfx_thumbnails_default = 3;
 

@@ -19,10 +19,6 @@ ifeq ($(HAVE_CXX11), 1)
    CXXFLAGS += $(CXX11_CFLAGS)
 endif
 
-ifeq ($(HAVE_NVDA), 1)
-   LIBS += nvdaControllerClient64.dll
-endif
-
 ifeq ($(HAVE_SAPI), 1)
    LIBS += sapi.dll
 endif
@@ -186,6 +182,7 @@ OBJ += frontend/frontend_driver.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
        tasks/task_manual_content_scan.o \
+       tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o \
@@ -229,7 +226,6 @@ OBJ += \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        input/common/input_hid_common.o \
-       input/input_mapper.o \
        led/led_driver.o \
        gfx/video_coord_array.o \
        gfx/video_crt_switch.o \
@@ -251,6 +247,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o \
        managers/cheat_manager.o \
        core_info.o \
+       core_backup.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
@@ -270,9 +267,9 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
-       performance_counters.o \
        verbosity.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
+       $(LIBRETRO_COMM_DIR)/time/rtime.o \
        manual_content_scan.o \
        disk_control_interface.o
 
@@ -328,7 +325,10 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_ar.o \
           intl/msg_hash_el.o \
           intl/msg_hash_tr.o \
-          intl/msg_hash_sk.o
+          intl/msg_hash_sk.o \
+          intl/msg_hash_fa.o \
+          intl/msg_hash_he.o \
+          intl/msg_hash_ast.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -818,18 +818,11 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
-# Does not depend on HAVE_MENU
-ifeq ($(HAVE_SHADERS_COMMON), 1)
-   OBJ += menu/menu_shader.o
-endif
-
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += menu/menu_driver.o \
-          menu/menu_setting.o \
+   OBJ += menu/menu_setting.o \
           menu/widgets/menu_filebrowser.o \
           menu/widgets/menu_dialog.o \
           menu/widgets/menu_input_bind_dialog.o \
-          menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
@@ -850,14 +843,15 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_displaylist.o
 endif
 
-   OBJ += input/input_osk.o
-
 ifeq ($(HAVE_GFX_WIDGETS), 1)
    OBJ += gfx/gfx_widgets.o \
           gfx/widgets/gfx_widget_screenshot.o \
           gfx/widgets/gfx_widget_volume.o \
           gfx/widgets/gfx_widget_generic_message.o \
           gfx/widgets/gfx_widget_libretro_message.o
+   ifeq ($(HAVE_CHEEVOS), 1)
+       OBJ += gfx/widgets/gfx_widget_achievement_popup.o
+   endif
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)
@@ -1831,15 +1825,14 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
    OBJ += network/netplay/netplay_delta.o \
-               network/netplay/netplay_frontend.o \
-               network/netplay/netplay_handshake.o \
-               network/netplay/netplay_init.o \
-               network/netplay/netplay_io.o \
-               network/netplay/netplay_keyboard.o \
-               network/netplay/netplay_sync.o \
-               network/netplay/netplay_discovery.o \
-               network/netplay/netplay_buf.o \
-               network/netplay/netplay_room_parse.o
+			 network/netplay/netplay_handshake.o \
+			 network/netplay/netplay_init.o \
+			 network/netplay/netplay_io.o \
+			 network/netplay/netplay_keyboard.o \
+			 network/netplay/netplay_sync.o \
+			 network/netplay/netplay_discovery.o \
+			 network/netplay/netplay_buf.o \
+			 network/netplay/netplay_room_parse.o
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
@@ -1924,8 +1917,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
       OBJ     += deps/discord-rpc/src/discord_rpc.o \
                  deps/discord-rpc/src/rpc_connection.o \
-                 deps/discord-rpc/src/serialization.o \
-                 network/discord.o
+                 deps/discord-rpc/src/serialization.o
 
       ifneq ($(findstring Win32,$(OS)),)
          OBJ  += deps/discord-rpc/src/discord_register_win.o \
@@ -2101,7 +2093,7 @@ ifeq ($(HAVE_MATH_NEON), 1)
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
-   DEFINES += -DHAVE_VITAGL -DTRANSPOSE_MATRICES
+   DEFINES += -DHAVE_VITAGL -DSTB_DXT_IMPLEMENTATION -DSKIP_ERROR_HANDLING
    INCLUDE_DIRS += -I$(DEPS_DIR)/vitaGL/source
    SOURCES := $(DEPS_DIR)/vitaGL/source $(DEPS_DIR)/vitaGL/source/utils
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))

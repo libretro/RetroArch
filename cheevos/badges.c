@@ -24,6 +24,7 @@
 #ifdef HAVE_MENU
 
 #define CHEEVOS_MENU_BADGE_LIMIT 256
+/* TODO/FIXME - public global variables */
 static uintptr_t cheevos_badge_menu_texture_list[CHEEVOS_MENU_BADGE_LIMIT] = { 0 };
 
 void cheevos_reset_menu_badges(void)
@@ -70,7 +71,10 @@ uintptr_t cheevos_get_badge_texture(const char *badge, bool locked)
    if (!badge)
       return 0;
 
-   snprintf(badge_file, sizeof(badge_file), "%s%s.png", badge, locked ? "_lock" : "");
+   strlcpy(badge_file, badge, sizeof(badge_file));
+   if (locked)
+      strlcat(badge_file, "_lock", sizeof(badge_file));
+   strlcat(badge_file, ".png", sizeof(badge_file));
 
    fill_pathname_application_special(fullpath,
       PATH_MAX_LENGTH * sizeof(char),

@@ -1443,10 +1443,10 @@ static bool gl_glsl_set_coords(void *shader_data,
       elems        *= coords->vertices * sizeof(GLfloat);
 
       buffer        = (GLfloat*)malloc(elems);
-   }
 
-   if (!buffer)
-      return false;
+      if (!buffer)
+         return false;
+   }
 
    if (uni->tex_coord >= 0)
    {

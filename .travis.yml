@@ -41,11 +41,15 @@ matrix:
     - compiler: gcc
       env: DISABLE_MENU=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: DISABLE_NETWORKING=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
       env: DISABLE_OVERLAY=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: DISABLE_CDROM=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: DISABLE_VIDEO_LAYOUT=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: DISABLE_THREADS=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: DISABLE_AUDIOMIXER=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
@@ -137,12 +141,20 @@ before_script:
        ARGS="$ARGS --disable-overlay"
      fi
   - |
+     if [ -n "$DISABLE_NETWORKING" ]; then
+       ARGS="$ARGS --disable-networking"
+     fi
+  - |
      if [ -n "$DISABLE_CDROM" ]; then
        ARGS="$ARGS --disable-cdrom"
      fi
   - |
      if [ -n "$DISABLE_VIDEO_LAYOUT" ]; then
        ARGS="$ARGS --disable-video_layout"
+     fi
+  - |
+     if [ -n "$DISABLE_THREADS" ]; then
+       ARGS="$ARGS --disable-threads --disable-glslang"
      fi
   - |
      if [ -n "$DISABLE_AUDIOMIXER" ]; then

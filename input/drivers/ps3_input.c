@@ -91,7 +91,6 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 
    return 0;
 }
-
 #endif
 
 static int16_t ps3_input_state(void *data,
@@ -114,23 +113,12 @@ static int16_t ps3_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               /* Auto-binds are per joypad, not per user. */
-               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-
-               if ((uint16_t)joykey != NO_BTN && ps3->joypad->button(
-                        joypad_info->joy_idx, (uint16_t)joykey))
+               if (binds[port][i].valid)
                {
-                  ret |= (1 << i);
-                  continue;
-               }
-               else if (((float)abs(ps3->joypad->axis(
-                              joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               {
-                  ret |= (1 << i);
-                  continue;
+                  if (
+                        button_is_pressed(ps3->joypad, joypad_info, binds[port],
+                           port, i))
+                     ret |= (1 << i);
                }
             }
 
@@ -138,22 +126,18 @@ static int16_t ps3_input_state(void *data,
          }
          else
          {
-            /* Auto-binds are per joypad, not per user. */
-            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-            if ((uint16_t)joykey != NO_BTN && ps3->joypad->button(
-                     joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
-            if (((float)abs(ps3->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+            if (binds[port][id].valid)
+            {
+               if (button_is_pressed(ps3->joypad, joypad_info, binds[port],
+                        port, id))
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return input_joypad_analog(ps3->joypad, joypad_info, port, idx, id, binds[port]);
+            return input_joypad_analog(
+                  ps3->joypad, joypad_info, port, idx, id, binds[port]);
          break;
 #if 0
       case RETRO_DEVICE_SENSOR_ACCELEROMETER:

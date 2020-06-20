@@ -100,7 +100,8 @@ typedef struct qnx_input
 
 extern screen_context_t screen_ctx;
 
-static void qnx_init_controller(qnx_input_t *qnx, qnx_input_device_t* controller)
+static void qnx_init_controller(
+      qnx_input_t *qnx, qnx_input_device_t* controller)
 {
    if (!qnx)
       return;
@@ -291,6 +292,7 @@ static void qnx_handle_device(qnx_input_t *qnx,
     * we still might need to adjust. */
    qnx_input_autodetect_gamepad(qnx, controller);
 
+#ifdef DEBUG
    if (controller->type == SCREEN_EVENT_GAMEPAD)
       RARCH_LOG("Gamepad Device Connected:\n");
    else if (controller->type == SCREEN_EVENT_JOYSTICK)
@@ -303,6 +305,7 @@ static void qnx_handle_device(qnx_input_t *qnx,
    RARCH_LOG("\tProduct ID: %s\n", controller->pid);
    RARCH_LOG("\tButton Count: %d\n", controller->buttonCount);
    RARCH_LOG("\tAnalog Count: %d\n", controller->analogCount);
+#endif
 }
 
 /* Find currently connected gamepads. */
@@ -716,7 +719,7 @@ static void qnx_input_poll(void *data)
    for (;;)
    {
       bps_event_t *event = NULL;
-      int rc = bps_get_event(&event, 0);
+      int rc             = bps_get_event(&event, 0);
 
       if(rc == BPS_SUCCESS)
       {
@@ -738,39 +741,6 @@ static bool qnx_keyboard_pressed(qnx_input_t *qnx, unsigned id)
 {
     unsigned bit = rarch_keysym_lut[(enum retro_key)id];
     return id < RETROK_LAST && BIT_GET(qnx->keyboard_state, bit);
-}
-
-static bool qnx_is_pressed(qnx_input_t *qnx,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id)
-{
-   const struct retro_keybind *bind = &binds[id];
-   int key                          = bind->key;
-
-   if (id >= RARCH_BIND_LIST_END)
-      return false;
-
-   if (qnx_keyboard_pressed(qnx, key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_qnx.keyboard_mapping_blocked)
-         return true;
-
-   if (binds && binds[id].valid)
-   {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-         ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
-      const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-         ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-      if ((uint16_t)joykey != NO_BTN && qnx->joypad->button(
-               joypad_info->joy_idx, (uint16_t)joykey))
-         return true;
-      if (((float)abs(qnx->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-         return true;
-   }
-
-   return false;
 }
 
 static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
@@ -819,34 +789,68 @@ static int16_t qnx_input_state(void *data,
          {
             unsigned i;
             int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (input_qnx.keyboard_mapping_blocked)
             {
-               if (qnx_is_pressed(
-                        qnx, joypad_info, binds[port], port, i))
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  ret |= (1 << i);
-                  continue;
+                  if (binds[port][i].valid)
+                  {
+                     if (button_is_pressed(
+                              qnx->joypad,
+                              joypad_info, binds[port], port, i))
+                        ret |= (1 << i);
+                  }
+               }
+            }
+            else
+            {
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               {
+                  if (binds[port][i].valid)
+                  {
+                     if (button_is_pressed(
+                              qnx->joypad,
+                              joypad_info, binds[port], port, i))
+                        ret |= (1 << i);
+                     else if (qnx_keyboard_pressed(qnx, key))
+                        ret |= (1 << i);
+                  }
                }
             }
 
             return ret;
          }
          else
-            if (qnx_is_pressed(qnx, joypad_info, binds[port], port, id))
-               return true;
+         {
+            if (id < RARCH_BIND_LIST_END)
+            {
+               if (binds[port][id].valid)
+               {
+                  if (button_is_pressed(qnx->joypad,
+                           joypad_info, binds[port], port, id))
+                     return 1;
+                  else if (
+                        ((id == RARCH_GAME_FOCUS_TOGGLE) || 
+                         !input_qnx.keyboard_mapping_blocked) && 
+                        qnx_keyboard_pressed(qnx, key)
+                        )
+                     return 1;
+               }
+            }
+         }
          break;
       case RETRO_DEVICE_ANALOG:
-	if (binds[port])
+         if (binds[port])
             return input_joypad_analog(qnx->joypad, joypad_info,
                   port, idx, id, binds[port]);
-	 return 0;
+         return 0;
       case RETRO_DEVICE_KEYBOARD:
          return qnx_keyboard_pressed(qnx, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          return qnx_pointer_input_state(qnx, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
       default:
-          break;
+         break;
    }
 
    return 0;

@@ -6,7 +6,7 @@
 #pragma warning(disable:4566)
 #endif
 
-/* Top-level Menu */
+/* Top-Level Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -192,7 +192,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Installer un cœur depuis la mise à jour en ligne."
+   "Télécharger et installer un cœur depuis la mise à jour en ligne."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
@@ -269,7 +269,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Mise à jour des cœurs"
+   "Téléchargement de cœurs"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
@@ -472,10 +472,6 @@ MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_COMPILER,
    "Compilateur "
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_UNKNOWN_COMPILER,
-   "Compilateur inconnu"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
    "Modèle du processeur "
@@ -538,7 +534,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "Prise en charge de l'interface de commande "
+   "Prise en charge de l'interface de commandes "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -570,11 +566,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   "Prise en charge de SDL1.2 "
+   "Prise en charge de SDL 1.2 "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   "Prise en charge de SDL2 "
+   "Prise en charge de SDL 2 "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
@@ -602,7 +598,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   "Prise en charge de Udev "
+   "Prise en charge de udev "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
@@ -678,7 +674,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-   "Prise en charge de Zlib "
+   "Prise en charge de zlib "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
@@ -1270,8 +1266,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Applique un filtre vidéo produit par le processeur.\n"
-   "REMARQUE : Peut avoir un coût élevé pour les performances. Certains filtres vidéo ne peuvent fonctionner qu'avec les cœurs utilisant les modes de couleurs 32 bits ou 16 bits."
+   "Applique un filtre vidéo produit par le processeur.\nREMARQUE : Peut avoir un coût élevé pour les performances. Certains filtres vidéo ne peuvent fonctionner qu'avec les cœurs utilisant les modes de couleurs 32 bits ou 16 bits."
    )
 
 /* Settings > Video > CRT SwitchRes */
@@ -1345,8 +1340,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Renseigne la fréquence de rafraîchissement vertical actuelle de votre écran. Elle sera utilisée pour calculer un débit audio approprié.\n"
-   "REMARQUE : Cette option sera ignorée si 'Vidéo sur plusieurs fils d'exécution' est activé."
+   "Renseigne la fréquence de rafraîchissement vertical actuelle de votre écran. Elle sera utilisée pour calculer un débit audio approprié.\nREMARQUE : Cette option sera ignorée si 'Vidéo sur plusieurs fils d'exécution' est activé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1467,11 +1461,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Configurer le rapport d'aspect"
+   "Rapport d'aspect personnalisé"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valeur en virgule flottante du rapport d'aspect (largeur/hauteur), si le rapport d'aspect est réglé sur 'Configurer'."
+   "Valeur en virgule flottante du rapport d'aspect (largeur/hauteur), si le rapport d'aspect est réglé sur 'Rapport d'aspect personnalisé'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
@@ -1495,7 +1489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Largeur de la fenêtre d'affichage si le rapport d'aspect est réglé sur 'Personnalisé'."
+   "Largeur de la fenêtre d'affichage si le rapport d'aspect est réglé sur 'Rapport d'aspect personnalisé'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -1503,7 +1497,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Hauteur de la fenêtre d'affichage si le rapport d'aspect est réglé sur 'Personnalisé'."
+   "Hauteur de la fenêtre d'affichage si le rapport d'aspect est réglé sur 'Rapport d'aspect personnalisé'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
@@ -1538,8 +1532,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "La synchronisation verticale (V-Sync) est activée jusqu'à ce que les performances descendent en dessous de la fréquence de rafraîchissement cible.\n"
-   "Cela peut minimiser les saccades lorsque les performances sont inférieures au temps réel, et être plus économe en énergie."
+   "La synchronisation verticale (V-Sync) est activée jusqu'à ce que les performances descendent en dessous de la fréquence de rafraîchissement cible.\nCela peut minimiser les saccades lorsque les performances sont inférieures au temps réel, et être plus économe en énergie."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -1610,7 +1603,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   "Afficher et/ou modifier les réglages du mixeur audio."
+   "Modifier les réglages du mixeur audio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
@@ -2666,8 +2659,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-   "Compteurs de performance pour RetroArch (et les cœurs).\n"
-   "Les données de compteur peuvent aider à déterminer les goulots d'étranglement du système et à ajuster les performances du système et de l'application"
+   "Compteurs de performance pour RetroArch (et les cœurs).\nLes données de compteur peuvent aider à déterminer les goulots d'étranglement du système et à ajuster les performances du système et de l'application"
    )
 
 /* Settings > File Browser */
@@ -2748,8 +2740,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "Vous avez fait une erreur ? Utilisez le rembobinage et réessayez.\n"
-   "Attention, activer cette option entraîne une baisse des performances lors du jeu."
+   "Vous avez fait une erreur ? Utilisez le rembobinage et réessayez.\nAttention, activer cette option entraîne une baisse des performances lors du jeu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -2858,7 +2849,7 @@ MSG_HASH(
    "Port de stream UDP "
    )
 
-/* Settings > Onscreen Display */
+/* Settings > On-Screen Display */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
@@ -2885,7 +2876,7 @@ MSG_HASH(
    "Ajuste les notifications à l'écran"
    )
 
-/* Settings > Onscreen Display > Onscreen Overlay */
+/* Settings > On-Screen Display > On-Screen Overlay */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
@@ -2968,7 +2959,7 @@ MSG_HASH(
    "Échelle de tous les éléments d'interface utilisateur de la surimpression."
    )
 
-/* Settings > Onscreen Display > Video Layout */
+/* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
@@ -2995,7 +2986,7 @@ MSG_HASH( /* FIXME Unused */
    "Sélectionne une vue pour la disposition d'affichage."
    )
 
-/* Settings > Onscreen Display > Onscreen Notifications */
+/* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -3059,7 +3050,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
-   "Affiche le compteur d'images actuel à l'écran."
+   "Affiche le compteur d'images à l'écran."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
@@ -3095,7 +3086,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
-   "Position X des notifications "
+   "Position horizontale des notifications "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
@@ -3103,7 +3094,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
-   "Position Y des notifications "
+   "Position verticale des notifications "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
@@ -3111,15 +3102,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-   "Valeur de rouge (Notifications)"
+   "Couleur des notifications (Rouge)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-   "Valeur de vert (Notifications)"
+   "Couleur des notifications (Vert)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-   "Valeur de bleu (Notifications)"
+   "Couleur des notifications (Bleu)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
@@ -3127,15 +3118,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-   "Valeur de rouge (Arrière-plan des notifications)"
+   "Couleur d'arrière-plan des notifications (Rouge)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "Valeur de vert (Arrière-plan des notifications)"
+   "Couleur d'arrière-plan des notifications (Vert)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "Valeur de bleu (Arrière-plan des notifications)"
+   "Couleur d'arrière-plan des notifications (Bleu)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
@@ -3345,7 +3336,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Afficher la mise à jour des cœurs"
+   "Afficher 'Téléchargement de cœurs'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
@@ -3494,6 +3485,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
    "Change le style dans lequel la date et/ou l'heure sont affichées dans le menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
+   "Séparateur de date"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
+   "Spécifie le caractère à utiliser comme séparateur entre les composants année/mois/jour lorsque la date actuelle est affichée dans le menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
@@ -4041,8 +4040,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "Rivalisez pour gagner des succès sur mesure dans des jeux rétro.\n"
-   "Pour plus d'informations, veuillez visiter http://retroachievements.org"
+   "Rivalisez pour gagner des succès sur mesure dans des jeux rétro.\nPour plus d'informations, veuillez visiter http://retroachievements.org"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -4050,9 +4048,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Double le nombre de points gagnés.\n"
-   "Désactive les sauvegardes instantanées, les cheats, le rembobinage, la mise en pause et le ralenti pour tous les jeux.\n"
-   "Cette option redémarrera votre jeu."
+   "Double le nombre de points gagnés.\nDésactive les sauvegardes instantanées, les cheats, le rembobinage, la mise en pause et le ralenti pour tous les jeux.\nCette option redémarrera votre jeu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -4060,8 +4056,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Classements spécifiques au jeu.\n"
-   "N'a aucun effet si le mode Hardcore est désactivé."
+   "Classements spécifiques au jeu.\nN'a aucun effet si le mode Hardcore est désactivé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -4313,6 +4308,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    "Après le téléchargement, extraire automatiquement les fichiers contenus dans les archives téléchargées."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Afficher les cœurs expérimentaux"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Inclure les cœurs 'expérimentaux' dans la liste de 'Téléchargement de cœurs'. Ils sont généralement destinés à des fins de développement/test uniquement, et ne sont pas recommandés pour une utilisation générale."
+   )
 
 /* Settings > Playlists */
 
@@ -4551,8 +4554,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permet à l'application discord d'afficher plus de données sur le contenu joué.\n"
-   "REMARQUE : Cela ne fonctionnera pas avec la version pour navigateur, mais uniquement avec l'application bureau native."
+   "Permet à l'application discord d'afficher plus de données sur le contenu joué.\nREMARQUE : Cela ne fonctionnera pas avec la version pour navigateur, mais uniquement avec l'application bureau native."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -5410,8 +5412,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Gros-boutienne : 258 = 0x0102,\n"
-   "Petit-boutienne : 258 = 0x0201"
+   "Gros-boutienne : 258 = 0x0102,\nPetit-boutienne : 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -5576,8 +5577,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "Nombre de fois que le cheat sera appliqué.\n"
-   "Utiliser avec les deux autres options d'itération pour affecter de grandes zones de mémoire."
+   "Nombre de fois que le cheat sera appliqué.\nUtiliser avec les deux autres options d'itération pour affecter de grandes zones de mémoire."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
@@ -5644,7 +5644,7 @@ MSG_HASH(
    "Supprimer ce cheat"
    )
 
-/* Quick Menu > Disk Control */
+/* Quick Menu > Disc Control */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
@@ -5993,213 +5993,9 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
-   "Albanais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabe"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
-   "Azerbaïdjanais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
-   "Bulgare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-   "Chinois (Simplifié)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-   "Chinois (Traditionnel)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
-   "Croate"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CZECH,
-   "Tchèque"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_DANISH,
-   "Danois"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
-   "Néerlandais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
-   "Anglais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
-   "Espéranto"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
-   "Estonien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
-   "Philippin"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
-   "Finlandais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
-   "Français"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
-   "Galicien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
-   "Géorgien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
-   "Allemand"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
-   "Grec"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
-   "Créole haïtien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
-   "Hébreu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
-   "Hongrois"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
-   "Islandais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
-   "Indonésien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
-   "Irlandais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
-   "Italien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
-   "Japonais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Coréen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
-   "Letton"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
-   "Lituanien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
-   "Macédonien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_MALAY,
-   "Malais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_MALTESE,
-   "Maltais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN,
-   "Norvégien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
-   "Persan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_POLISH,
-   "Polonais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
-   "Portugais (Brésil)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-   "Portugais (Portugal)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
-   "Roumain"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
-   "Russe"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
-   "Serbe"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
-   "Slovaque"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
-   "Slovène"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
-   "Espagnol"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
-   "Suédois"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_THAI,
-   "Thaïlandais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
-   "Turc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
-   "Ukrainien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_URDU,
-   "Ourdou"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
-   "Vietnamien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
-   "Gallois"
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_UNKNOWN_COMPILER,
+   "Compilateur inconnu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
@@ -6710,14 +6506,6 @@ MSG_HASH(
    "JJ-MM"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS,
-   "HH:MM:SS"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_HM,
-   "HH:MM"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM,
    "AAAA-MM-JJ HH:MM:SS (AM/PM)"
    )
@@ -6748,14 +6536,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM,
    "JJ-MM HH:MM (AM/PM)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM,
-   "HH:MM:SS (AM/PM)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM,
-   "HH:MM (AM/PM)"
    )
 
 /* RGUI: Settings > User Interface > Appearance */
@@ -7184,8 +6964,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Ajouter des ombres portées pour toutes les icônes.\n"
-   "Cette option aura un impact mineur sur les performances."
+   "Ajouter des ombres portées pour toutes les icônes.\nCette option aura un impact mineur sur les performances."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -7384,6 +7163,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Si cette option est activée, le nom des systèmes sera retiré des listes de lecture. Par exemple, 'PlayStation' sera affiché au lieu de 'Sony - PlayStation'. Les changements requièrent un redémarrage pour prendre effet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Trier les listes de lecture après la troncature du nom"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Si cette option est activée, les listes de lecture seront re-triées par ordre alphabétique après avoir supprimé le composant 'système' de leurs noms. Les changements requièrent un redémarrage pour prendre effet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
@@ -10410,11 +10197,11 @@ MSG_HASH(
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+   MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
    "Mise à l'échelle RGA"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+   MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
    "Mise à l'échelle RGA et filtrage bicubique. Peut affecter les widgets."
    )
 #else
@@ -10445,23 +10232,17 @@ MSG_HASH(
    "Sélectionne le mode d'affichage entre les modes 2D et 3D. En mode '3D', les pixels sont carrés et un effet de profondeur est appliqué lors de l'affichage du menu rapide. Le mode '2D' offre la meilleure performance."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400x240,
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
    "2D (Effet grille de pixels)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800x240,
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (Haute résolution)"
    )
 #endif
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Scan terminé.<br><br>\n"
-   "Pour que le contenu soit correctement analysé, vous devez :\n"
-   "<ul><li>avoir un cœur compatible déjà téléchargé</li>\n"
-   "<li>avoir les \"Fichiers d'information de cœurs\" à jour via la mise à jour en ligne</li>\n"
-   "<li>avoir les \"Bases de données\" à jour via la mise à jour en ligne</li>\n"
-   "<li>redémarrer RetroArch si l'une des opérations ci-dessus vient d'être effectuée</li></ul>\n"
-   "Enfin, le contenu doit correspondre aux bases de données existantes <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">ici</a>. Si cela ne fonctionne toujours pas, veuillez envisager de <a href=\"https://www.github.com/libretro/RetroArch/issues\">soumettre un rapport d'erreur</a>."
+   "Scan terminé.<br><br>\nPour que le contenu soit correctement analysé, vous devez :\n<ul><li>avoir un cœur compatible déjà téléchargé</li>\n<li>avoir les \"Fichiers d'information de cœurs\" à jour via la mise à jour en ligne</li>\n<li>avoir les \"Bases de données\" à jour via la mise à jour en ligne</li>\n<li>redémarrer RetroArch si l'une des opérations ci-dessus vient d'être effectuée</li></ul>\nEnfin, le contenu doit correspondre aux bases de données existantes <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">ici</a>. Si cela ne fonctionne toujours pas, veuillez envisager de <a href=\"https://www.github.com/libretro/RetroArch/issues\">soumettre un rapport d'erreur</a>."
    )
 #endif

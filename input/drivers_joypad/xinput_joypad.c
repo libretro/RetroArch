@@ -171,7 +171,7 @@ static const char* const XBOX_ONE_CONTROLLER_NAMES[4] =
    "XBOX One Controller (User 4)"
 };
 
-const char *xinput_joypad_name(unsigned pad)
+static const char *xinput_joypad_name(unsigned pad)
 {
    int xuser = pad_index_to_xuser_index(pad);
 #ifdef HAVE_DINPUT
@@ -293,8 +293,6 @@ static bool xinput_joypad_init(void *data)
    for (i = 0; i < 4; ++i)
    {
       g_xinput_states[i].connected = !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
-      if (g_xinput_states[i].connected)
-         RARCH_LOG("[XInput]: Found controller, user #%u\n", i);
    }
 
    if (  (!g_xinput_states[0].connected) &&
@@ -306,12 +304,6 @@ static bool xinput_joypad_init(void *data)
 #else
       goto error;
 #endif
-
-   RARCH_LOG("[XInput]: Pads connected: %d\n",
-         g_xinput_states[0].connected +
-         g_xinput_states[1].connected + 
-         g_xinput_states[2].connected + 
-         g_xinput_states[3].connected);
 
 #ifdef HAVE_DINPUT
    g_xinput_block_pads = true;
@@ -327,10 +319,7 @@ static bool xinput_joypad_init(void *data)
 
    for (j = 0; j < MAX_USERS; j++)
    {
-      if (xinput_joypad_name(j))
-         RARCH_LOG("[XInput]: Attempting autoconf for \"%s\", user #%u\n", xinput_joypad_name(j), j);
-      else
-         RARCH_LOG("[XInput]: Attempting autoconf for user #%u\n", j);
+      const char *name = xinput_joypad_name(j);
 
       if (pad_index_to_xuser_index(j) > -1)
       {
@@ -340,14 +329,11 @@ static bool xinput_joypad_init(void *data)
          int32_t dinput_index = 0;
          bool success     = dinput_joypad_get_vidpid_from_xinput_index((int32_t)pad_index_to_xuser_index(j), (int32_t*)&vid, (int32_t*)&pid,
 			 (int32_t*)&dinput_index);
-
-         if (success)
-            RARCH_LOG("[XInput]: Found VID/PID (%04X/%04X) from DINPUT index %d for \"%s\", user #%u\n",
-                  vid, pid, dinput_index, xinput_joypad_name(j), j);
+         /* On success, found VID/PID from dinput index */
 #endif
 
          input_autoconfigure_connect(
-               xinput_joypad_name(j),
+               name,
                NULL,
                xinput_joypad.ident,
                j,

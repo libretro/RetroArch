@@ -224,6 +224,7 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
+   bool launched_from_cli;
    struct
    {
       char savefile[8192];
@@ -1086,6 +1087,7 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
+   bool widgets_active;
    bool menu_mouse_enable;
    bool widgets_is_paused;
    bool widgets_is_fast_forwarding;
@@ -1976,8 +1978,6 @@ const char* config_get_camera_driver_options(void);
 
 bool menu_driver_is_alive(void);
 
-void menu_driver_set_binding_state(bool on);
-
 bool gfx_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);
@@ -1988,12 +1988,6 @@ bool is_input_keyboard_display_on(void);
 
 /* creates folder and core options stub file for subsequent runs */
 bool create_folder_and_core_options(void);
-
-/* Input overrides  */
-
-extern unsigned get_gamepad_input_override(void);
-extern void set_gamepad_input_override(unsigned i, bool val);
-extern void reset_gamepad_input_override(void);
 
 RETRO_END_DECLS
 

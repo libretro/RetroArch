@@ -38,38 +38,6 @@
 #define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  83.333333f
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
 
-/* Structure containing all gfx_thumbnail
- * global variables */
-struct gfx_thumbnail_state
-{
-   /* When streaming thumbnails, to minimise the processing
-    * of unnecessary images (i.e. when scrolling rapidly through
-    * playlists), we delay loading until an entry has been on screen
-    * for at least gfx_thumbnail_delay ms */
-   float stream_delay;
-
-   /* Duration in ms of the thumbnail 'fade in' animation */
-   float fade_duration;
-
-   /* When true, 'fade in' animation will also be
-    * triggered for missing thumbnails */
-   bool fade_missing;
-
-   /* Due to the asynchronous nature of thumbnail
-    * loading, it is quite possible to trigger a load
-    * then navigate to a different menu list before
-    * the load is complete/handled. As an additional
-    * safety check, we therefore tag the current menu
-    * list with counter value that is incremented whenever
-    * a list is cleared/set. This is sent as userdata when
-    * requesting a thumbnail, and the upload is only
-    * handled if the tag matches the most recent value
-    * at the time when the load completes */
-   uint64_t list_id;
-};
-
-typedef struct gfx_thumbnail_state gfx_thumbnail_state_t;
-
 /* Utility structure, sent as userdata when pushing
  * an image load */
 typedef struct
@@ -77,18 +45,6 @@ typedef struct
    gfx_thumbnail_t *thumbnail;
    retro_time_t list_id;
 } gfx_thumbnail_tag_t;
-
-/* Global gfx_thumbnail_state structure */
-static gfx_thumbnail_state_t gfx_thumb_state;
-
-/* Global variable access */
-
-/* Returns pointer to global gfx_thumbnail_state
- * structure */
-static gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
-{
-   return &gfx_thumb_state;
-}
 
 /* Setters */
 
@@ -168,10 +124,10 @@ static void gfx_thumbnail_fade_cb(void *userdata)
 }
 
 /* Initialises thumbnail 'fade in' animation */
-static void gfx_thumbnail_init_fade(gfx_thumbnail_t *thumbnail)
+static void gfx_thumbnail_init_fade(
+      gfx_thumbnail_state_t *p_gfx_thumb,
+      gfx_thumbnail_t *thumbnail)
 {
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
-
    /* Sanity check */
    if (!thumbnail)
       return;
@@ -275,7 +231,8 @@ end:
    {
       /* Trigger 'fade in' animation, if required */
       if (fade_enabled)
-         gfx_thumbnail_init_fade(thumbnail_tag->thumbnail);
+         gfx_thumbnail_init_fade(p_gfx_thumb,
+               thumbnail_tag->thumbnail);
 
       free(thumbnail_tag);
    }
@@ -315,11 +272,15 @@ void gfx_thumbnail_request(
       bool network_on_demand_thumbnails
       )
 {
-   const char *thumbnail_path = NULL;
-   bool has_thumbnail         = false;
-
+   const char *thumbnail_path         = NULL;
+   bool has_thumbnail                 = false;
+   gfx_thumbnail_state_t *p_gfx_thumb = NULL;
+   p_gfx_thumb                        = NULL;
+   
    if (!path_data || !thumbnail)
       return;
+
+   p_gfx_thumb                        = gfx_thumb_get_ptr();
 
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
@@ -336,7 +297,6 @@ void gfx_thumbnail_request(
    {
       if (path_is_valid(thumbnail_path))
       {
-         gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
          gfx_thumbnail_tag_t *thumbnail_tag =
                (gfx_thumbnail_tag_t*)calloc(1, sizeof(gfx_thumbnail_tag_t));
 
@@ -402,7 +362,8 @@ void gfx_thumbnail_request(
 end:
    /* Trigger 'fade in' animation, if required */
    if (thumbnail->status != GFX_THUMBNAIL_STATUS_PENDING)
-      gfx_thumbnail_init_fade(thumbnail);
+      gfx_thumbnail_init_fade(p_gfx_thumb,
+            thumbnail);
 }
 
 /* Requests loading of a specific thumbnail image file
@@ -469,7 +430,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    /* Ensure any 'fade in' animation is killed */
    if (thumbnail->fade_active)
    {
-      gfx_animation_ctx_tag tag = (uintptr_t)&thumbnail->alpha;
+      uintptr_t tag = (uintptr_t)&thumbnail->alpha;
       gfx_animation_kill_by_tag(&tag);
    }
 

@@ -99,7 +99,7 @@ void* rc_file_open(const char* path)
   handle = filereader->open(path);
   if (handle && verbose_message_callback)
   {
-    char message[2048];
+    char message[1024];
     snprintf(message, sizeof(message), "Opened %s", rc_path_get_filename(path));
     verbose_message_callback(message);
   }
@@ -264,12 +264,12 @@ static const char* rc_path_get_extension(const char* path)
   do
   {
     if (ptr[-1] == '.')
-      break;
+      return ptr;
 
     --ptr;
   } while (ptr > path);
 
-  return ptr;
+  return path + strlen(path);
 }
 
 int rc_path_compare_extension(const char* path, const char* ext)
@@ -363,8 +363,8 @@ static int rc_hash_3do(char hash[33], const char* path)
   {
     if (verbose_message_callback)
     {
-      char message[4096];
-      snprintf(message, sizeof(message), "Found 3DO CD, title=%s", &buffer[0x28]);
+      char message[128];
+      snprintf(message, sizeof(message), "Found 3DO CD, title=%.32s", &buffer[0x28]);
       verbose_message_callback(message);
     }
 
@@ -414,7 +414,7 @@ static int rc_hash_3do(char hash[33], const char* path)
             if (verbose_message_callback)
             {
               char message[128];
-              snprintf(message, sizeof(message), "Hashing header (%u bytes) and %s (%u bytes) ", 132, &buffer[offset + 0x20], (unsigned)size);
+              snprintf(message, sizeof(message), "Hashing header (%u bytes) and %.32s (%u bytes) ", 132, &buffer[offset + 0x20], (unsigned)size);
               verbose_message_callback(message);
             }
 
@@ -475,9 +475,74 @@ static int rc_hash_3do(char hash[33], const char* path)
 static int rc_hash_arcade(char hash[33], const char* path)
 {
   /* arcade hash is just the hash of the filename (no extension) - the cores are pretty stringent about having the right ROM data */
-  const char* ptr = rc_path_get_filename(path);
-  const char* ext = rc_path_get_extension(ptr);
-  return rc_hash_buffer(hash, (uint8_t*)ptr, ext - ptr - 1);
+  const char* filename = rc_path_get_filename(path);
+  const char* ext = rc_path_get_extension(filename);
+  size_t filename_length = ext - filename - 1;
+
+  /* fbneo supports loading subsystems by using specific folder names.
+   * if one is found, include it in the hash.
+   * https://github.com/libretro/FBNeo/blob/master/src/burner/libretro/README.md#emulating-consoles
+   */
+  if (filename > path + 1)
+  {
+    int include_folder = 0;
+    const char* folder = filename - 1;
+    size_t parent_folder_length = 0;
+
+    do
+    {
+      if (folder[-1] == '/' || folder[-1] == '\\')
+        break;
+
+      --folder;
+    } while (folder > path);
+
+    parent_folder_length = filename - folder - 1;
+    switch (parent_folder_length)
+    {
+      case 3:
+        if (memcmp(folder, "nes", 3) == 0 ||
+            memcmp(folder, "fds", 3) == 0 ||
+            memcmp(folder, "sms", 3) == 0 ||
+            memcmp(folder, "msx", 3) == 0 ||
+            memcmp(folder, "ngp", 3) == 0 ||
+            memcmp(folder, "pce", 3) == 0 ||
+            memcmp(folder, "sgx", 3) == 0)
+          include_folder = 1;
+        break;
+      case 4:
+        if (memcmp(folder, "tg16", 4) == 0)
+          include_folder = 1;
+        break;
+      case 6:
+        if (memcmp(folder, "coleco", 6) == 0 ||
+            memcmp(folder, "sg1000", 6) == 0)
+          include_folder = 1;
+        break;
+      case 8:
+        if (memcmp(folder, "gamegear", 8) == 0 ||
+            memcmp(folder, "megadriv", 8) == 0 ||
+            memcmp(folder, "spectrum", 8) == 0)
+          include_folder = 1;
+        break;
+      default:
+        break;
+    }
+
+    if (include_folder)
+    {
+      char buffer[128]; /* realistically, this should never need more than ~20 characters */
+      if (parent_folder_length + filename_length + 1 < sizeof(buffer))
+      {
+        memcpy(&buffer[0], folder, parent_folder_length);
+        buffer[parent_folder_length] = '_';
+        memcpy(&buffer[parent_folder_length + 1], filename, filename_length);
+        return rc_hash_buffer(hash, (uint8_t*)&buffer[0], parent_folder_length + filename_length + 1);
+      }
+    }
+  }
+
+  return rc_hash_buffer(hash, (uint8_t*)filename, filename_length);
 }
 
 static int rc_hash_lynx(char hash[33], uint8_t* buffer, size_t buffer_size)
@@ -653,9 +718,9 @@ static int rc_hash_pce_cd(char hash[33], const char* path)
 
     if (verbose_message_callback)
     {
-      char message[4096];
+      char message[128];
       buffer[128] = '\0';
-      snprintf(message, sizeof(message), "Found PC Engine CD, title=%s", &buffer[106]);
+      snprintf(message, sizeof(message), "Found PC Engine CD, title=%.22s", &buffer[106]);
       verbose_message_callback(message);
     }
 
@@ -913,6 +978,7 @@ int rc_hash_generate_from_buffer(char hash[33], int console_id, uint8_t* buffer,
     case RC_CONSOLE_INTELLIVISION:
     case RC_CONSOLE_MASTER_SYSTEM:
     case RC_CONSOLE_MEGA_DRIVE:
+    case RC_CONSOLE_MSX:
     case RC_CONSOLE_NEOGEO_POCKET:
     case RC_CONSOLE_NINTENDO_64:
     case RC_CONSOLE_ORIC:
@@ -1035,12 +1101,37 @@ static int rc_hash_buffered_file(char hash[33], int console_id, const char* path
   return result;
 }
 
+static int rc_hash_path_is_absolute(const char* path)
+{
+  if (!path[0])
+    return 0;
+
+  /* "/path/to/file" or "\path\to\file" */
+  if (path[0] == '/' || path[0] == '\\')
+    return 1;
+
+  /* "C:\path\to\file" */
+  if (path[1] == ':' && path[2] == '\\')
+    return 1;
+
+  /* "scheme:/path/to/file" */
+  while (*path)
+  {
+    if (path[0] == ':' && path[1] == '/')
+      return 1;
+
+    ++path;
+  }
+
+  return 0;
+}
+
 static const char* rc_hash_get_first_item_from_playlist(const char* path)
 {
   char buffer[1024];
   char* disc_path;
-  char* ptr, *start;
-  size_t num_read;
+  char* ptr, *start, *next;
+  size_t num_read, path_len, file_len;
   void* file_handle;
 
   file_handle = rc_file_open(path);
@@ -1056,39 +1147,61 @@ static const char* rc_hash_get_first_item_from_playlist(const char* path)
   rc_file_close(file_handle);
 
   ptr = start = buffer;
-  /* ignore empty and commented lines */
-  while (*ptr == '#' || *ptr == '\r' || *ptr == '\n')
+  do
   {
+    /* ignore empty and commented lines */
+    while (*ptr == '#' || *ptr == '\r' || *ptr == '\n')
+    {
+      while (*ptr && *ptr != '\n')
+        ++ptr;
+      if (*ptr)
+        ++ptr;
+    }
+
+    /* find and extract the current line */
+    start = ptr;
     while (*ptr && *ptr != '\n')
       ++ptr;
-    if (*ptr)
-      ++ptr;
-    start = ptr;
-  }
+    next = ptr;
 
-  /* find and extract the current line */
-  while (*ptr && *ptr != '\n')
-    ++ptr;
-  if (ptr > start && ptr[-1] == '\r')
-    --ptr;
-  *ptr = '\0';
+    /* remove trailing whitespace - especially '\r' */
+    while (ptr > start && isspace(ptr[-1]))
+      --ptr;
+
+    /* if we found a non-empty line, break out of the loop to process it */
+    file_len = ptr - start;
+    if (file_len)
+      break;
+
+    /* did we reach the end of the file? */
+    if (!*next)
+      return NULL;
+
+    /* if the line only contained whitespace, keep searching */
+    ptr = next + 1;
+  } while (1);
 
   if (verbose_message_callback)
   {
-    char message[2048];
-    snprintf(message, sizeof(message), "Extracted %s from playlist", buffer);
+    char message[1024];
+    snprintf(message, sizeof(message), "Extracted %.*s from playlist", (int)file_len, start);
     verbose_message_callback(message);
   }
 
-  ptr = (char*)rc_path_get_filename(path);
-  num_read = (ptr - path) + strlen(start) + 1;
+  start[file_len++] = '\0';
+  if (rc_hash_path_is_absolute(start))
+    path_len = 0;
+  else
+    path_len = rc_path_get_filename(path) - path;
 
-  disc_path = (char*)malloc(num_read);
+  disc_path = (char*)malloc(path_len + file_len + 1);
   if (!disc_path)
     return NULL;
 
-  memcpy(disc_path, path, ptr - path);
-  strcpy(disc_path + (ptr - path), start);
+  if (path_len)
+    memcpy(disc_path, path, path_len);
+
+  memcpy(&disc_path[path_len], start, file_len);
   return disc_path;
 }
 
@@ -1149,6 +1262,14 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
       /* generic whole-file hash - don't buffer */
       return rc_hash_whole_file(hash, console_id, path);
 
+    case RC_CONSOLE_MSX:
+    case RC_CONSOLE_PC8800:
+      /* generic whole-file hash with m3u support - don't buffer */
+      if (rc_path_compare_extension(path, "m3u"))
+        return rc_hash_generate_from_playlist(hash, console_id, path);
+
+      return rc_hash_whole_file(hash, console_id, path);
+
     case RC_CONSOLE_ATARI_LYNX:
     case RC_CONSOLE_NINTENDO:
     case RC_CONSOLE_SUPER_NINTENDO:
@@ -1176,12 +1297,6 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
 
       return rc_hash_whole_file(hash, console_id, path);
 
-    case RC_CONSOLE_PC8800:
-      if (rc_path_compare_extension(path, "m3u"))
-        return rc_hash_generate_from_playlist(hash, console_id, path);
-
-      return rc_hash_whole_file(hash, console_id, path);
-
     case RC_CONSOLE_PLAYSTATION:
       if (rc_path_compare_extension(path, "m3u"))
         return rc_hash_generate_from_playlist(hash, console_id, path);
@@ -1197,6 +1312,69 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
   }
 }
 
+static void rc_hash_iterator_append_console(struct rc_hash_iterator* iterator, int console_id)
+{
+  int i = 0;
+  while (iterator->consoles[i] != 0)
+  {
+    if (iterator->consoles[i] == console_id)
+      return;
+
+    ++i;
+  }
+
+  iterator->consoles[i] = console_id;
+}
+
+static void rc_hash_initialize_dsk_iterator(struct rc_hash_iterator* iterator, const char* path)
+{
+  size_t size = iterator->buffer_size;
+  if (size == 0)
+  {
+    /* attempt to use disk size to determine system */
+    void* file = rc_file_open(path);
+    if (file)
+    {
+      rc_file_seek(file, 0, SEEK_END);
+      size = rc_file_tell(file);
+      rc_file_close(file);
+    }
+  }
+
+  if (size == 512 * 9 * 80) /* 360KB */
+  {
+    /* FAT-12 3.5" DD (512 byte sectors, 9 sectors per track, 80 tracks per side */
+    /* FAT-12 5.25" DD double-sided (512 byte sectors, 9 sectors per track, 80 tracks per side */
+    iterator->consoles[0] = RC_CONSOLE_MSX;
+  }
+  else if (size == 512 * 9 * 80 * 2) /* 720KB */
+  {
+    /* FAT-12 3.5" DD double-sided (512 byte sectors, 9 sectors per track, 80 tracks per side */
+    iterator->consoles[0] = RC_CONSOLE_MSX;
+  }
+  else if (size == 512 * 9 * 40) /* 180KB */
+  {
+    /* FAT-12 5.25" DD (512 byte sectors, 9 sectors per track, 40 tracks per side */
+    iterator->consoles[0] = RC_CONSOLE_MSX;
+  }
+  else if (size == 256 * 16 * 35) /* 140KB */
+  {
+    /* Apple II new format - 256 byte sectors, 16 sectors per track, 35 tracks per side */
+    iterator->consoles[0] = RC_CONSOLE_APPLE_II;
+  }
+  else if (size == 256 * 13 * 35) /* 113.75KB */
+  {
+    /* Apple II old format - 256 byte sectors, 13 sectors per track, 35 tracks per side */
+    iterator->consoles[0] = RC_CONSOLE_APPLE_II;
+  }
+
+  /* once a best guess has been identified, make sure the others are added as fallbacks */
+
+  /* check MSX first, as Apple II isn't supported by RetroArch, and RAppleWin won't use the iterator */
+  rc_hash_iterator_append_console(iterator, RC_CONSOLE_MSX);
+  rc_hash_iterator_append_console(iterator, RC_CONSOLE_APPLE_II);
+}
+
 void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, uint8_t* buffer, size_t buffer_size)
 {
   int need_path = !buffer;
@@ -1210,8 +1388,17 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
   do
   {
     const char* ext = rc_path_get_extension(path);
-    switch (tolower(*ext--))
+    switch (tolower(*ext))
     {
+      case '7':
+        if (rc_path_compare_extension(ext, "7z"))
+        {
+          /* decompressing zip file not supported */
+          iterator->consoles[0] = RC_CONSOLE_ARCADE;
+          need_path = 1;
+        }
+        break;
+
       case 'a':
         if (rc_path_compare_extension(ext, "a78"))
         {
@@ -1236,12 +1423,14 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
 
                  if (size > 32 * 1024 * 1024)
                  {
-                    /* 3DO and Sega CD are the only cores that supports directly opening the bin file. */
-                    iterator->consoles[0] = RC_CONSOLE_3DO;
-                    iterator->consoles[1] = RC_CONSOLE_SEGA_CD;
+                    iterator->consoles[0] = RC_CONSOLE_3DO; /* 4DO supports directly opening the bin file */
+                    iterator->consoles[1] = RC_CONSOLE_PLAYSTATION; /* PCSX ReARMed supports directly opening the bin file*/
 
-                    /* fallback to megadrive - see comment below */
-                    iterator->consoles[2] = RC_CONSOLE_MEGA_DRIVE;
+                    /* SEGA CD hash doesn't have any logic to ensure it's being used against a SEGA CD, so it should always be last */
+                    iterator->consoles[2] = RC_CONSOLE_SEGA_CD; /* Genesis Plus GX supports directly opening the bin file*/
+
+                    /* fallback to megadrive - will only be checked if SEGA CD hash does not match */
+                    iterator->consoles[3] = RC_CONSOLE_MEGA_DRIVE;
                     break;
                  }
               }
@@ -1250,6 +1439,10 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
           /* bin is associated with MegaDrive, Sega32X and Atari 2600. Since they all use the same
            * hashing algorithm, only specify one of them */
           iterator->consoles[0] = RC_CONSOLE_MEGA_DRIVE;
+        }
+        else if (rc_path_compare_extension(ext, "bs"))
+        {
+           iterator->consoles[0] = RC_CONSOLE_SUPER_NINTENDO;
         }
         break;
 
@@ -1267,12 +1460,16 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           iterator->consoles[0] = RC_CONSOLE_COLECOVISION;
         }
+        else if (rc_path_compare_extension(ext, "cas"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_MSX;
+        }
         break;
 
       case 'd':
         if (rc_path_compare_extension(ext, "dsk"))
         {
-          iterator->consoles[0] = RC_CONSOLE_APPLE_II;
+          rc_hash_initialize_dsk_iterator(iterator, path);
         }
         else if (rc_path_compare_extension(ext, "d88"))
         {
@@ -1337,11 +1534,11 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         if (rc_path_compare_extension(ext, "m3u"))
         {
           const char* disc_path = rc_hash_get_first_item_from_playlist(path);
-          if (disc_path)
-          {
-            path = iterator->path = disc_path;
-            continue; /* retry with disc_path */
-          }
+          if (!disc_path) /* did not find a disc */
+            return;
+
+          path = iterator->path = disc_path;
+          continue; /* retry with disc_path */
         }
         else if (rc_path_compare_extension(ext, "md"))
         {
@@ -1350,6 +1547,14 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         else if (rc_path_compare_extension(ext, "min"))
         {
           iterator->consoles[0] = RC_CONSOLE_POKEMON_MINI;
+        }
+        else if (rc_path_compare_extension(ext, "mx1"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_MSX;
+        }
+        else if (rc_path_compare_extension(ext, "mx2"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_MSX;
         }
         break;
 
@@ -1379,8 +1584,21 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         }
         break;
 
+      case 'r':
+        if (rc_path_compare_extension(ext, "rom"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_MSX;
+        }
+        if (rc_path_compare_extension(ext, "ri"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_MSX;
+        }
+        break;
+
       case 's':
-        if (rc_path_compare_extension(ext, "smc") || rc_path_compare_extension(ext, "sfc"))
+        if (rc_path_compare_extension(ext, "smc") ||
+            rc_path_compare_extension(ext, "sfc") ||
+            rc_path_compare_extension(ext, "swc"))
         {
           iterator->consoles[0] = RC_CONSOLE_SUPER_NINTENDO;
         }
@@ -1412,6 +1630,10 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         if (rc_path_compare_extension(ext, "wsc"))
         {
           iterator->consoles[0] = RC_CONSOLE_WONDERSWAN;
+        }
+        else if (rc_path_compare_extension(ext, "woz"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_APPLE_II;
         }
         break;
 

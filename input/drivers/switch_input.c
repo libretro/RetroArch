@@ -16,19 +16,24 @@
 #ifdef HAVE_LIBNX
 #include <switch.h>
 
-#define MULTITOUCH_LIMIT 4 /* supports up to this many fingers at once */
-#define TOUCH_AXIS_MAX 0x7fff /* abstraction of pointer coords */
-#define SWITCH_NUM_SCANCODES 114 /* size of rarch_key_map_switch */
-#define SWITCH_MAX_SCANCODE 0xfb /* see https://switchbrew.github.io/libnx/hid_8h.html */
+/* Supports up to this many fingers at once */
+#define MULTITOUCH_LIMIT 4
+/* Abstraction of pointer coords */
+#define TOUCH_AXIS_MAX 0x7fff
+/* Size of rarch_key_map_switch */
+#define SWITCH_NUM_SCANCODES 114 
+/* See https://switchbrew.github.io/libnx/hid_8h.html */
+#define SWITCH_MAX_SCANCODE 0xfb 
 #define MOUSE_MAX_X 1920
 #define MOUSE_MAX_Y 1080
 
-/* beginning of touch mouse defines and types */
+/* Beginning of touch mouse defines and types */
 #define TOUCH_MAX_X 1280
 #define TOUCH_MAX_Y 720
 #define TOUCH_MOUSE_BUTTON_LEFT 0
 #define TOUCH_MOUSE_BUTTON_RIGHT 1
-#define NO_TOUCH -1 /* finger id setting if finger is not touching the screen */
+/* Finger ID setting if finger is not touching the screen */
+#define NO_TOUCH -1 
 
 enum
 {
@@ -144,16 +149,16 @@ static void finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTi
 
 static void switch_input_poll(void *data)
 {
-   switch_input_t *sw = (switch_input_t*) data;
 #ifdef HAVE_LIBNX
-   uint32_t touch_count;
-   unsigned int i = 0;
-   int keySym = 0;
-   unsigned keyCode = 0;
-   uint16_t mod = 0;
    MousePosition mouse_pos;
+   uint32_t touch_count;
+   unsigned int i                = 0;
+   int keySym                    = 0;
+   unsigned keyCode              = 0;
+   uint16_t mod                  = 0;
    uint64_t mouse_current_report = 0;
 #endif
+   switch_input_t *sw            = (switch_input_t*) data;
 
    if (sw->joypad)
       sw->joypad->poll();
@@ -163,7 +168,7 @@ static void switch_input_poll(void *data)
    for (i = 0; i < MULTITOUCH_LIMIT; i++)
    {
       sw->previous_touch_state[i] = sw->touch_state[i];
-      sw->touch_state[i] = touch_count > i;
+      sw->touch_state[i]          = touch_count > i;
 
       if (sw->touch_state[i])
       {
@@ -171,10 +176,10 @@ static void switch_input_poll(void *data)
          touchPosition touch_position;
          hidTouchRead(&touch_position, i);
 
-         sw->touch_previous_x[i] = sw->touch_x[i];
-         sw->touch_previous_y[i] = sw->touch_y[i];
-         sw->touch_x[i] = touch_position.px;
-         sw->touch_y[i] = touch_position.py;
+         sw->touch_previous_x[i]     = sw->touch_x[i];
+         sw->touch_previous_y[i]     = sw->touch_y[i];
+         sw->touch_x[i]              = touch_position.px;
+         sw->touch_y[i]              = touch_position.py;
 
          /* convert from event coordinates to core and screen coordinates */
          vp.x                        = 0;
@@ -223,7 +228,8 @@ static void switch_input_poll(void *data)
    /* update physical mouse buttons only when they change
     * this allows the physical mouse and touch mouse to coexist */
    mouse_current_report = hidMouseButtonsHeld();
-   if ((mouse_current_report & MOUSE_LEFT) != (sw->mouse_previous_report & MOUSE_LEFT))
+   if ((mouse_current_report & MOUSE_LEFT) 
+         != (sw->mouse_previous_report & MOUSE_LEFT))
    {
       if (mouse_current_report & MOUSE_LEFT)
          sw->mouse_button_left = true;
@@ -231,7 +237,8 @@ static void switch_input_poll(void *data)
          sw->mouse_button_left = false;
    }
 
-   if ((mouse_current_report & MOUSE_RIGHT) != (sw->mouse_previous_report & MOUSE_RIGHT))
+   if ((mouse_current_report & MOUSE_RIGHT) 
+         != (sw->mouse_previous_report & MOUSE_RIGHT))
    {
       if (mouse_current_report & MOUSE_RIGHT)
          sw->mouse_button_right = true;
@@ -239,7 +246,8 @@ static void switch_input_poll(void *data)
          sw->mouse_button_right = false;
    }
 
-   if ((mouse_current_report & MOUSE_MIDDLE) != (sw->mouse_previous_report & MOUSE_MIDDLE))
+   if ((mouse_current_report & MOUSE_MIDDLE) 
+         != (sw->mouse_previous_report & MOUSE_MIDDLE))
    {
       if (mouse_current_report & MOUSE_MIDDLE)
          sw->mouse_button_middle = true;
@@ -298,7 +306,8 @@ static int16_t switch_pointer_screen_device_state(switch_input_t *sw,
    return 0;
 }
 
-static int16_t switch_pointer_device_state(switch_input_t *sw,
+static int16_t switch_pointer_device_state(
+      switch_input_t *sw,
       unsigned id, unsigned idx)
 {
    if (idx >= MULTITOUCH_LIMIT)
@@ -317,7 +326,8 @@ static int16_t switch_pointer_device_state(switch_input_t *sw,
    return 0;
 }
 
-static int16_t switch_input_mouse_state(switch_input_t *sw, unsigned id, bool screen)
+static int16_t switch_input_mouse_state(
+      switch_input_t *sw, unsigned id, bool screen)
 {
    int val = 0;
    switch (id)
@@ -389,21 +399,12 @@ static int16_t switch_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               /* Auto-binds are per joypad, not per user. */
-               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-
-               if ((uint16_t)joykey != NO_BTN && sw->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
+               if (binds[port][i].valid)
                {
-                  ret |= (1 << i);
-                  continue;
-               }
-               if (((float)abs(sw->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               {
-                  ret |= (1 << i);
-                  continue;
+                  if (
+                        button_is_pressed(sw->joypad, joypad_info, binds[port],
+                           port, i))
+                     ret |= (1 << i);
                }
             }
 
@@ -411,15 +412,13 @@ static int16_t switch_input_state(void *data,
          }
          else
          {
-            /* Auto-binds are per joypad, not per user. */
-            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-            if ((uint16_t)joykey != NO_BTN && sw->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
-            if (((float)abs(sw->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+            if (binds[port][id].valid)
+            {
+               if (
+                     button_is_pressed(sw->joypad, joypad_info, binds[port],
+                        port, id))
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -430,19 +429,14 @@ static int16_t switch_input_state(void *data,
 #ifdef HAVE_LIBNX
       case RETRO_DEVICE_KEYBOARD:
          return ((id < RETROK_LAST) && sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
-         break;
       case RETRO_DEVICE_MOUSE:
          return switch_input_mouse_state(sw, id, false);
-         break;
       case RARCH_DEVICE_MOUSE_SCREEN:
          return switch_input_mouse_state(sw, id, true);
-         break;
       case RETRO_DEVICE_POINTER:
          return switch_pointer_device_state(sw, id, idx);
-         break;
       case RARCH_DEVICE_POINTER_SCREEN:
          return switch_pointer_screen_device_state(sw, id, idx);
-         break;
 #endif
    }
 
@@ -452,17 +446,17 @@ static int16_t switch_input_state(void *data,
 #ifdef HAVE_LIBNX
 void handle_touch_mouse(switch_input_t *sw)
 {
-   int finger_id = 0;
-   uint64_t current_time = svcGetSystemTick() * 1000 / 19200000;
    unsigned int i;
+   int finger_id         = 0;
+   uint64_t current_time = svcGetSystemTick() * 1000 / 19200000;
    finish_simulated_mouse_clicks(sw, current_time);
 
    for (i = 0; i < MULTITOUCH_LIMIT; i++)
    {
       if (sw->touch_state[i])
       {
-         float x = 0;
-         float y = 0;
+         float x   = 0;
+         float y   = 0;
          normalize_touch_mouse_xy(&x, &y, sw->touch_x[i], sw->touch_y[i]);
          finger_id = i;
 
@@ -470,11 +464,11 @@ void handle_touch_mouse(switch_input_t *sw)
          if (!sw->previous_touch_state[i])
          {
             TouchEvent ev;
-            ev.type = FINGERDOWN;
+            ev.type              = FINGERDOWN;
             ev.tfinger.timestamp = current_time;
-            ev.tfinger.fingerId = finger_id;
-            ev.tfinger.x = x;
-            ev.tfinger.y = y;
+            ev.tfinger.fingerId  = finger_id;
+            ev.tfinger.x         = x;
+            ev.tfinger.y         = y;
             process_touch_mouse_event(sw, &ev);
          }
          else
@@ -483,47 +477,47 @@ void handle_touch_mouse(switch_input_t *sw)
             if (sw->touch_x[i] != sw->touch_previous_x[i] ||
                 sw->touch_y[i] != sw->touch_previous_y[i])
             {
+               TouchEvent ev;
                float oldx = 0;
                float oldy = 0;
-               TouchEvent ev;
                normalize_touch_mouse_xy(&oldx, &oldy, sw->touch_previous_x[i], sw->touch_previous_y[i]);
-               ev.type = FINGERMOTION;
+               ev.type              = FINGERMOTION;
                ev.tfinger.timestamp = current_time;
-               ev.tfinger.fingerId = finger_id;
-               ev.tfinger.x = x;
-               ev.tfinger.y = y;
-               ev.tfinger.dx = x - oldx;
-               ev.tfinger.dy = y - oldy;
+               ev.tfinger.fingerId  = finger_id;
+               ev.tfinger.x         = x;
+               ev.tfinger.y         = y;
+               ev.tfinger.dx        = x - oldx;
+               ev.tfinger.dy        = y - oldy;
                process_touch_mouse_event(sw, &ev);
             }
          }
       }
 
       /* some fingers might have been let go */
-      if (sw->previous_touch_state[i] == true && sw->touch_state[i] == false)
+      if (sw->previous_touch_state[i] && sw->touch_state[i] == false)
       {
          float x = 0;
          float y = 0;
          TouchEvent ev;
-         normalize_touch_mouse_xy(&x, &y, sw->touch_previous_x[i], sw->touch_previous_y[i]);
-         finger_id = i;
+         normalize_touch_mouse_xy(&x, &y,
+               sw->touch_previous_x[i], sw->touch_previous_y[i]);
+         finger_id            = i;
          /* finger released from screen */
-         ev.type = FINGERUP;
+         ev.type              = FINGERUP;
          ev.tfinger.timestamp = current_time;
-         ev.tfinger.fingerId = finger_id;
-         ev.tfinger.x = x;
-         ev.tfinger.y = y;
+         ev.tfinger.fingerId  = finger_id;
+         ev.tfinger.x         = x;
+         ev.tfinger.y         = y;
          process_touch_mouse_event(sw, &ev);
       }
    }
 }
 
-void normalize_touch_mouse_xy(float *normalized_x, float *normalized_y, int reported_x, int reported_y)
+void normalize_touch_mouse_xy(float *normalized_x,
+      float *normalized_y, int reported_x, int reported_y)
 {
-   float x = 0;
-   float y = 0;
-   x = (float) reported_x / TOUCH_MAX_X;
-   y = (float) reported_y / TOUCH_MAX_Y;
+   float x = (float) reported_x / TOUCH_MAX_X;
+   float y = (float) reported_y / TOUCH_MAX_Y;
 
    if (x < 0.0)
       x = 0.0;
@@ -543,10 +537,13 @@ void process_touch_mouse_event(switch_input_t *sw, TouchEvent *event)
    /* supported touch gestures:
     * pointer motion = single finger drag
     * left mouse click = single finger short tap
-    * right mouse click = second finger short tap while first finger is still down
+    * right mouse click = second finger short tap 
+    * while first finger is still down
     * left click drag and drop = dual finger drag
     * right click drag and drop = triple finger drag */
-   if (event->type == FINGERDOWN || event->type == FINGERUP || event->type == FINGERMOTION)
+   if (     event->type == FINGERDOWN 
+         || event->type == FINGERUP
+         || event->type == FINGERMOTION)
    {
       switch (event->type)
       {
@@ -566,8 +563,8 @@ void process_touch_mouse_event(switch_input_t *sw, TouchEvent *event)
 void process_touch_mouse_finger_down(switch_input_t *sw, TouchEvent *event)
 {
    /* id (for multitouch) */
-   int id = event->tfinger.fingerId;
    unsigned int i;
+   int id = event->tfinger.fingerId;
 
    /* make sure each finger is not reported down multiple times */
    for (i = 0; i < MAX_NUM_FINGERS; i++)
@@ -576,17 +573,19 @@ void process_touch_mouse_finger_down(switch_input_t *sw, TouchEvent *event)
          sw->finger[i].id = NO_TOUCH;
    }
 
-   /* we need the timestamps to decide later if the user performed a short tap (click)
+   /* we need the timestamps to decide later if the 
+    * user performed a short tap (click)
     * or a long tap (drag)
-    * we also need the last coordinates for each finger to keep track of dragging */
+    * we also need the last coordinates for each finger 
+    * to keep track of dragging */
    for (i = 0; i < MAX_NUM_FINGERS; i++)
    {
       if (sw->finger[i].id == NO_TOUCH)
       {
-         sw->finger[i].id = id;
+         sw->finger[i].id             = id;
          sw->finger[i].time_last_down = event->tfinger.timestamp;
-         sw->finger[i].last_down_x = event->tfinger.x;
-         sw->finger[i].last_down_y = event->tfinger.y;
+         sw->finger[i].last_down_x    = event->tfinger.x;
+         sw->finger[i].last_down_y    = event->tfinger.y;
          break;
       }
    }
@@ -594,13 +593,12 @@ void process_touch_mouse_finger_down(switch_input_t *sw, TouchEvent *event)
 
 void process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event)
 {
+   unsigned int i;
    /* id (for multitouch) */
    int id = event->tfinger.fingerId;
-   int num_fingers_down;
-   unsigned int i;
-
    /* find out how many fingers were down before this event */
-   num_fingers_down = 0;
+   int num_fingers_down = 0;
+
    for (i = 0; i < MAX_NUM_FINGERS; i++)
    {
       if (sw->finger[i].id >= 0)
@@ -620,11 +618,14 @@ void process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event)
          float max_r_squared;
          int simulated_button;
 
-         if ((event->tfinger.timestamp - sw->finger[i].time_last_down) > MAX_TAP_TIME)
+         if ((event->tfinger.timestamp - sw->finger[i].time_last_down) 
+               > MAX_TAP_TIME)
             continue;
 
-         /* short (<MAX_TAP_TIME ms) tap is interpreted as right/left mouse click depending on # fingers already down
-          * but only if the finger hasn't moved since it was pressed down by more than MAX_TAP_MOTION_DISTANCE pixels */
+         /* short (<MAX_TAP_TIME ms) tap is interpreted as 
+          * right/left mouse click depending on # fingers already down
+          * but only if the finger hasn't moved since it was 
+          * pressed down by more than MAX_TAP_MOTION_DISTANCE pixels */
          xrel = ((event->tfinger.x * TOUCH_MAX_X) - (sw->finger[i].last_down_x * TOUCH_MAX_X));
          yrel = ((event->tfinger.y * TOUCH_MAX_Y) - (sw->finger[i].last_down_y * TOUCH_MAX_Y));
          max_r_squared = (float) (MAX_TAP_MOTION_DISTANCE * MAX_TAP_MOTION_DISTANCE);
@@ -676,15 +677,14 @@ void process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event)
 
 void process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event)
 {
-   /* id (for multitouch) */
-   int id = event->tfinger.fingerId;
    unsigned int i;
    unsigned int j;
-   int num_fingers_down;
    bool update_pointer;
-
+   /* id (for multitouch) */
+   int id = event->tfinger.fingerId;
    /* find out how many fingers were down before this event */
-   num_fingers_down = 0;
+   int num_fingers_down = 0;
+
    for (i = 0; i < MAX_NUM_FINGERS; i++)
    {
       if (sw->finger[i].id >= 0)
@@ -694,16 +694,19 @@ void process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event)
    if (num_fingers_down == 0)
       return;
 
-   /* If we are starting a multi-finger drag, start holding down the mouse button */
+   /* If we are starting a multi-finger drag, 
+    * start holding down the mouse button */
    if (num_fingers_down >= 2 && !sw->multi_finger_dragging)
    {
-      /* only start a multi-finger drag if at least two fingers have been down long enough */
+      /* only start a multi-finger drag if at least 
+       * two fingers have been down long enough */
       int num_fingers_down_long = 0;
       for (i = 0; i < MAX_NUM_FINGERS; i++)
       {
          if (sw->finger[i].id == NO_TOUCH)
             continue;
-         if (event->tfinger.timestamp - sw->finger[i].time_last_down > MAX_TAP_TIME)
+         if (event->tfinger.timestamp - sw->finger[i].time_last_down 
+               > MAX_TAP_TIME)
             num_fingers_down_long++;
       }
       if (num_fingers_down_long >= 2)
@@ -711,19 +714,19 @@ void process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event)
          int simulated_button = 0;
          if (num_fingers_down_long == 2)
          {
-            simulated_button = TOUCH_MOUSE_BUTTON_LEFT;
+            simulated_button          = TOUCH_MOUSE_BUTTON_LEFT;
             sw->multi_finger_dragging = DRAG_TWO_FINGER;
          }
          else
          {
-            simulated_button = TOUCH_MOUSE_BUTTON_RIGHT;
+            simulated_button          = TOUCH_MOUSE_BUTTON_RIGHT;
             sw->multi_finger_dragging = DRAG_THREE_FINGER;
          }
 
          if (simulated_button == TOUCH_MOUSE_BUTTON_LEFT)
-            sw->mouse_button_left = true;
+            sw->mouse_button_left     = true;
          else if (simulated_button == TOUCH_MOUSE_BUTTON_RIGHT)
-            sw->mouse_button_right = true;
+            sw->mouse_button_right    = true;
       }
    }
 
@@ -755,38 +758,42 @@ void process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event)
       normalized_to_screen_xy(&x, &y, event->tfinger.x, event->tfinger.y);
       sw->mouse_x_delta = x - sw->mouse_x;
       sw->mouse_y_delta = y - sw->mouse_y;
-      sw->mouse_x = x;
-      sw->mouse_y = y;
+      sw->mouse_x       = x;
+      sw->mouse_y       = y;
    }
    else
    {
       /* for relative mode, use the pointer speed setting */
-      int dx = event->tfinger.dx * TOUCH_MAX_X * 256 * sw->touch_mouse_speed_factor;
-      int dy = event->tfinger.dy * TOUCH_MAX_Y * 256 * sw->touch_mouse_speed_factor;
+      int dx        = event->tfinger.dx * TOUCH_MAX_X * 256 * 
+         sw->touch_mouse_speed_factor;
+      int dy        = event->tfinger.dy * TOUCH_MAX_Y * 256 * 
+         sw->touch_mouse_speed_factor;
       sw->hires_dx += dx;
       sw->hires_dy += dy;
-      int x_rel = sw->hires_dx / 256;
-      int y_rel = sw->hires_dy / 256;
+      int x_rel     = sw->hires_dx / 256;
+      int y_rel     = sw->hires_dy / 256;
       if (x_rel || y_rel)
       {
-         sw->mouse_x_delta = x_rel;
-         sw->mouse_y_delta = y_rel;
-         sw->mouse_x += x_rel;
-         sw->mouse_y += y_rel;
+         sw->mouse_x_delta  = x_rel;
+         sw->mouse_y_delta  = y_rel;
+         sw->mouse_x       += x_rel;
+         sw->mouse_y       += y_rel;
       }
-      sw->hires_dx %= 256;
-      sw->hires_dy %= 256;
+      sw->hires_dx         %= 256;
+      sw->hires_dy         %= 256;
    }
 }
 
-void normalized_to_screen_xy(int *screenX, int *screenY, float x, float y)
+static void normalized_to_screen_xy(
+      int *screenX, int *screenY, float x, float y)
 {
    /* map to display */
    *screenX = x * TOUCH_MAX_X;
    *screenY = y * TOUCH_MAX_Y;
 }
 
-void finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTime)
+static void finish_simulated_mouse_clicks(
+      switch_input_t *sw, uint64_t currentTime)
 {
    unsigned int i;
    for (i = 0; i < 2; i++)
@@ -794,7 +801,8 @@ void finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTime)
       if (sw->simulated_click_start_time[i] == 0)
          continue;
 
-      if (currentTime - sw->simulated_click_start_time[i] < SIMULATED_CLICK_DURATION)
+      if (currentTime - sw->simulated_click_start_time[i] 
+            < SIMULATED_CLICK_DURATION)
          continue;
 
       if (i == 0)
@@ -851,14 +859,15 @@ static void* switch_input_init(const char *joypad_driver)
    input_keymaps_init_keyboard_lut(rarch_key_map_switch);
    unsigned int i;
    for (i = 0; i <= SWITCH_MAX_SCANCODE; i++)
-      sw->keyboard_state[i] = false;
+      sw->keyboard_state[i]     = false;
 
-   sw->mouse_x = 0;
-   sw->mouse_y = 0;
-   sw->mouse_previous_report = 0;
+   sw->mouse_x                  = 0;
+   sw->mouse_y                  = 0;
+   sw->mouse_previous_report    = 0;
 
    /* touch mouse init */
-   sw->touch_mouse_indirect = true; /* direct mode is not calibrated it seems */
+   sw->touch_mouse_indirect     = true;
+   /* direct mode is not calibrated it seems */
    sw->touch_mouse_speed_factor = 1.0;
    for (i = 0; i < MAX_NUM_FINGERS; i++)
       sw->finger[i].id = NO_TOUCH;
@@ -869,7 +878,7 @@ static void* switch_input_init(const char *joypad_driver)
       sw->simulated_click_start_time[i] = 0;
 
    for(i = 0; i < DEFAULT_MAX_PADS; i++)
-      sw->sixaxis_handles_count[i] = 0;
+      sw->sixaxis_handles_count[i]      = 0;
 #endif
 
    return sw;

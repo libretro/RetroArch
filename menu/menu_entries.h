@@ -35,8 +35,6 @@ RETRO_BEGIN_DECLS
 enum menu_entries_ctl_state
 {
    MENU_ENTRIES_CTL_NONE = 0,
-   MENU_ENTRIES_CTL_LIST_GET,
-   MENU_ENTRIES_CTL_LIST_DEINIT,
    MENU_ENTRIES_CTL_SETTINGS_GET,
    MENU_ENTRIES_CTL_SET_REFRESH,
    MENU_ENTRIES_CTL_UNSET_REFRESH,
@@ -204,14 +202,6 @@ typedef struct menu_entry
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
-void menu_entry_get_path(menu_entry_t *entry, const char **path);
-
-void menu_entry_get_label(menu_entry_t *entry, const char **label);
-
-unsigned menu_entry_get_spacing(menu_entry_t *entry);
-
-unsigned menu_entry_get_type_new(menu_entry_t *entry);
-
 uint32_t menu_entry_get_bool_value(uint32_t i);
 
 struct string_list *menu_entry_enum_values(uint32_t i);
@@ -238,21 +228,15 @@ void menu_entry_reset(uint32_t i);
 
 void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label);
 
-void menu_entry_get_sublabel(menu_entry_t *entry, const char **sublabel);
-
 void menu_entry_get_value(menu_entry_t *entry, const char **value);
 
 void menu_entry_set_value(uint32_t i, const char *s);
-
-bool menu_entry_is_password(menu_entry_t *entry);
 
 uint32_t menu_entry_num_has_range(uint32_t i);
 
 float menu_entry_num_min(uint32_t i);
 
 float menu_entry_num_max(uint32_t i);
-
-bool menu_entry_is_currently_selected(unsigned id);
 
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation);

@@ -34,10 +34,6 @@ extern "C" {
 #endif
 
 #ifdef HAVE_MENU
-
-static const int MAX_MIN_WIDTH = 250;
-static const int MAX_MIN_HEIGHT = 250;
-
 QPixmap getColorizedPixmap(const QPixmap& oldPixmap, const QColor& color)
 {
    QPixmap pixmap = oldPixmap;
@@ -90,7 +86,9 @@ private:
 
    QSize minimumSizeHint() const final
    {
-      QWidget *inner = widget();
+      static const int max_min_width  = 250;
+      static const int max_min_height = 250;
+      QWidget *inner                  = widget();
 
       if (inner)
       {
@@ -99,8 +97,8 @@ private:
 
          minSize += QSize(fw, fw);
          minSize += QSize(scrollBarWidth(), 0);
-         minSize.setWidth(qMin(minSize.width(), MAX_MIN_WIDTH));
-         minSize.setHeight(qMin(minSize.height(), MAX_MIN_HEIGHT));
+         minSize.setWidth(qMin(minSize.width(), max_min_width));
+         minSize.setHeight(qMin(minSize.height(), max_min_height));
          return minSize;
       }
       return QSize(0, 0);
@@ -236,9 +234,7 @@ void ViewOptionsDialog::repaintIcons()
    for (i = 0; i < m_categoryList.size(); i++)
       m_optionsList->item(i)->setIcon(getIcon(m_categoryList.at(i)));
 }
-
 #else
-
 ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    QDialog(mainwindow)
    , m_viewOptionsWidget(new ViewOptionsWidget(mainwindow))
@@ -261,7 +257,6 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
 
    setLayout(layout);
 }
-
 #endif
 
 void ViewOptionsDialog::showDialog()
@@ -336,8 +331,10 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST), m_suggestLoadedCoreFirstCheckBox);
-   /* form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT), m_allPlaylistsListMaxCountSpinBox); */
-   /* form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT), m_allPlaylistsGridMaxCountSpinBox); */
+#if 0
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT), m_allPlaylistsListMaxCountSpinBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT), m_allPlaylistsGridMaxCountSpinBox);
+#endif
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST), m_startupPlaylistComboBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT), m_thumbnailCacheSpinBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT), m_thumbnailDropSizeSpinBox);
@@ -392,12 +389,16 @@ void ViewOptionsWidget::onThemeComboBoxIndexChanged(int)
 void ViewOptionsWidget::onHighlightColorChoose()
 {
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
-   QColor currentHighlightColor = m_settings->value("highlight_color", QApplication::palette().highlight().color()).value<QColor>();
-   QColor newHighlightColor = QColorDialog::getColor(currentHighlightColor, this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR));
+   QColor currentHighlightColor = m_settings->value("highlight_color",
+         QApplication::palette().highlight().color()).value<QColor>();
+   QColor newHighlightColor     = QColorDialog::getColor(
+         currentHighlightColor, this,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR));
 
    if (newHighlightColor.isValid())
    {
-      MainWindow::Theme theme = static_cast<MainWindow::Theme>(m_themeComboBox->currentData(Qt::UserRole).toInt());
+      MainWindow::Theme theme = static_cast<MainWindow::Theme>(
+            m_themeComboBox->currentData(Qt::UserRole).toInt());
 
       m_highlightColor = newHighlightColor;
       m_settings->setValue("highlight_color", m_highlightColor);
@@ -422,8 +423,10 @@ void ViewOptionsWidget::loadViewOptions()
    m_saveLastTabCheckBox->setChecked(m_settings->value("save_last_tab", false).toBool());
    m_showHiddenFilesCheckBox->setChecked(m_settings->value("show_hidden_files", true).toBool());
    m_suggestLoadedCoreFirstCheckBox->setChecked(m_settings->value("suggest_loaded_core_first", false).toBool());
-   /* m_allPlaylistsListMaxCountSpinBox->setValue(m_settings->value("all_playlists_list_max_count", 0).toInt()); */
-   /* m_allPlaylistsGridMaxCountSpinBox->setValue(m_settings->value("all_playlists_grid_max_count", 5000).toInt()); */
+#if 0
+   m_allPlaylistsListMaxCountSpinBox->setValue(m_settings->value("all_playlists_list_max_count", 0).toInt());
+   m_allPlaylistsGridMaxCountSpinBox->setValue(m_settings->value("all_playlists_grid_max_count", 5000).toInt());
+#endif
    m_thumbnailCacheSpinBox->setValue(m_settings->value("thumbnail_cache_limit", 512).toInt());
    m_thumbnailDropSizeSpinBox->setValue(m_settings->value("thumbnail_max_size", 0).toInt());
 
@@ -479,8 +482,10 @@ void ViewOptionsWidget::saveViewOptions()
    m_settings->setValue("show_hidden_files", m_showHiddenFilesCheckBox->isChecked());
    m_settings->setValue("highlight_color", m_highlightColor);
    m_settings->setValue("suggest_loaded_core_first", m_suggestLoadedCoreFirstCheckBox->isChecked());
-   /* m_settings->setValue("all_playlists_list_max_count", m_allPlaylistsListMaxCountSpinBox->value()); */
-   /* m_settings->setValue("all_playlists_grid_max_count", m_allPlaylistsGridMaxCountSpinBox->value()); */
+#if 0
+   m_settings->setValue("all_playlists_list_max_count", m_allPlaylistsListMaxCountSpinBox->value());
+   m_settings->setValue("all_playlists_grid_max_count", m_allPlaylistsGridMaxCountSpinBox->value());
+#endif
    m_settings->setValue("initial_playlist", m_startupPlaylistComboBox->currentData(Qt::UserRole).toString());
    m_settings->setValue("thumbnail_cache_limit", m_thumbnailCacheSpinBox->value());
    m_settings->setValue("thumbnail_max_size", m_thumbnailDropSizeSpinBox->value());
@@ -488,8 +493,10 @@ void ViewOptionsWidget::saveViewOptions()
    if (!m_mainwindow->customThemeString().isEmpty())
       m_settings->setValue("custom_theme", m_customThemePath);
 
-   /* m_mainwindow->setAllPlaylistsListMaxCount(m_allPlaylistsListMaxCountSpinBox->value()); */
-   /* m_mainwindow->setAllPlaylistsGridMaxCount(m_allPlaylistsGridMaxCountSpinBox->value()); */
+#if 0
+   m_mainwindow->setAllPlaylistsListMaxCount(m_allPlaylistsListMaxCountSpinBox->value());
+   m_mainwindow->setAllPlaylistsGridMaxCount(m_allPlaylistsGridMaxCountSpinBox->value());
+#endif
    m_mainwindow->setThumbnailCacheLimit(m_thumbnailCacheSpinBox->value());
 }
 

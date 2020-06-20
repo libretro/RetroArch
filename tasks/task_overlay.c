@@ -48,6 +48,8 @@ struct overlay_loader
    unsigned pos_increment;
    float overlay_opacity;
    float overlay_scale;
+   float overlay_center_x;
+   float overlay_center_y;
 
    config_file_t *conf;
    char *overlay_path;
@@ -699,13 +701,15 @@ static void task_overlay_handler(retro_task_t *task)
       overlay_task_data_t *data = (overlay_task_data_t*)
          calloc(1, sizeof(*data));
 
-      data->overlays        = loader->overlays;
-      data->size            = loader->size;
-      data->active          = loader->active;
-      data->hide_in_menu    = loader->overlay_hide_in_menu;
-      data->overlay_enable  = loader->overlay_enable;
-      data->overlay_opacity = loader->overlay_opacity;
-      data->overlay_scale   = loader->overlay_scale;
+      data->overlays         = loader->overlays;
+      data->size             = loader->size;
+      data->active           = loader->active;
+      data->hide_in_menu     = loader->overlay_hide_in_menu;
+      data->overlay_enable   = loader->overlay_enable;
+      data->overlay_opacity  = loader->overlay_opacity;
+      data->overlay_scale    = loader->overlay_scale;
+      data->overlay_center_x = loader->overlay_center_x;
+      data->overlay_center_y = loader->overlay_center_y;
 
       task_set_data(task, data);
    }
@@ -735,6 +739,8 @@ bool task_push_overlay_load_default(
       bool input_overlay_enable,
       float input_overlay_opacity,
       float input_overlay_scale,
+      float input_overlay_center_x,
+      float input_overlay_center_y,
       void *user_data)
 {
    task_finder_data_t find_data;
@@ -785,6 +791,8 @@ bool task_push_overlay_load_default(
    loader->overlay_enable       = input_overlay_enable;
    loader->overlay_opacity      = input_overlay_opacity;
    loader->overlay_scale        = input_overlay_scale;
+   loader->overlay_center_x     = input_overlay_center_x;
+   loader->overlay_center_y     = input_overlay_center_y;
    loader->conf                 = conf;
    loader->state                = OVERLAY_STATUS_DEFERRED_LOAD;
    loader->pos_increment        = (loader->size / 4) ? (loader->size / 4) : 4;

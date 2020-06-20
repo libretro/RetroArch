@@ -70,6 +70,7 @@ OBJ		= frontend/frontend_salamander.o \
 				  libretro-common/streams/file_stream.o \
 				  libretro-common/vfs/vfs_implementation.o \
 				  libretro-common/file/config_file.o \
+				  libretro-common/time/rtime.c \
 				  file_path_str.o \
 				   verbosity.o
 

@@ -32,6 +32,7 @@
 #include <formats/jsonsax_full.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
+#include <time/rtime.h>
 
 #include "file_path_special.h"
 #include "paths.h"
@@ -274,21 +275,19 @@ runtime_log_t *runtime_log_init(
       const char *dir_playlist,
       bool log_per_core)
 {
-   unsigned i;
    char content_name[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
    char log_file_dir[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
-   core_info_list_t *core_info    = NULL;
-   runtime_log_t *runtime_log     = NULL;
-   const char *core_path_basename = NULL;
+   core_info_ctx_find_t core_info;
+   runtime_log_t *runtime_log = NULL;
 
-   content_name[0]                = '\0';
-   core_name[0]                   = '\0';
-   log_file_dir[0]                = '\0';
-   log_file_path[0]               = '\0';
-   tmp_buf[0]                     = '\0';
+   content_name[0]            = '\0';
+   core_name[0]               = '\0';
+   log_file_dir[0]            = '\0';
+   log_file_path[0]           = '\0';
+   tmp_buf[0]                 = '\0';
 
    if (  string_is_empty(dir_runtime_log) &&
          string_is_empty(dir_playlist))
@@ -300,13 +299,8 @@ runtime_log_t *runtime_log_init(
 
    if (  string_is_empty(core_path) ||
          string_is_equal(core_path, "builtin") ||
-         string_is_equal(core_path, "DETECT"))
-      return NULL;
-
-   core_path_basename = path_basename(core_path);
-
-   if (  string_is_empty(content_path) ||
-         string_is_empty(core_path_basename))
+         string_is_equal(core_path, "DETECT") ||
+         string_is_empty(content_path))
       return NULL;
 
    /* Get core name
@@ -314,24 +308,12 @@ runtime_log_t *runtime_log_init(
     * we are performing aggregate (not per core) logging,
     * since content name is sometimes dependent upon core
     * (e.g. see TyrQuake below) */
-   core_info_get_list(&core_info);
+   core_info.inf  = NULL;
+   core_info.path = core_path;
 
-   if (!core_info)
-      return NULL;
-
-   for (i = 0; i < core_info->count; i++)
-   {
-      const char *entry_core_name = core_info->list[i].core_name;
-      if (!string_is_equal(
-               path_basename(core_info->list[i].path), core_path_basename))
-         continue;
-
-      if (string_is_empty(entry_core_name))
-         return NULL;
-
-      strlcpy(core_name, entry_core_name, sizeof(core_name));
-      break;
-   }
+   if (core_info_find(&core_info) &&
+       core_info.inf->core_name)
+      strlcpy(core_name, core_info.inf->core_name, sizeof(core_name));
 
    if (string_is_empty(core_name))
       return NULL;
@@ -534,30 +516,22 @@ void runtime_log_set_last_played(runtime_log_t *runtime_log,
 void runtime_log_set_last_played_now(runtime_log_t *runtime_log)
 {
    time_t current_time;
-   struct tm *time_info;
+   struct tm time_info;
 
    if (!runtime_log)
       return;
 
    /* Get current time */
    time(&current_time);
-   time_info = localtime(&current_time);
-
-   /* This can actually happen, but if does we probably
-    * have bigger problems to worry about... */
-   if(!time_info)
-   {
-      RARCH_ERR("Failed to get current time.\n");
-      return;
-   }
+   rtime_localtime(&current_time, &time_info);
 
    /* Extract values */
-   runtime_log->last_played.year   = (unsigned)time_info->tm_year + 1900;
-   runtime_log->last_played.month  = (unsigned)time_info->tm_mon + 1;
-   runtime_log->last_played.day    = (unsigned)time_info->tm_mday;
-   runtime_log->last_played.hour   = (unsigned)time_info->tm_hour;
-   runtime_log->last_played.minute = (unsigned)time_info->tm_min;
-   runtime_log->last_played.second = (unsigned)time_info->tm_sec;
+   runtime_log->last_played.year   = (unsigned)time_info.tm_year + 1900;
+   runtime_log->last_played.month  = (unsigned)time_info.tm_mon + 1;
+   runtime_log->last_played.day    = (unsigned)time_info.tm_mday;
+   runtime_log->last_played.hour   = (unsigned)time_info.tm_hour;
+   runtime_log->last_played.minute = (unsigned)time_info.tm_min;
+   runtime_log->last_played.second = (unsigned)time_info.tm_sec;
 }
 
 /* Resets log to default (zero) values */

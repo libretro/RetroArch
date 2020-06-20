@@ -47,6 +47,8 @@ RETRO_BEGIN_DECLS
    HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha  \
 }
 
+#define gfx_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
+
 enum menu_driver_id_type
 {
    MENU_DRIVER_ID_UNKNOWN = 0,
@@ -199,7 +201,27 @@ typedef struct gfx_display_ctx_powerstate
    bool charging;
 } gfx_display_ctx_powerstate_t;
 
-#define gfx_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
+struct gfx_display
+{
+   bool has_windowed;
+   bool msg_force;
+   bool framebuf_dirty;
+   
+   /* Width, height and pitch of the display framebuffer */
+   unsigned framebuf_width;
+   unsigned framebuf_height;
+   size_t   framebuf_pitch;
+
+   /* Height of the display header */
+   unsigned header_height;
+
+   enum menu_driver_id_type menu_driver_id;
+
+   video_coord_array_t dispca;
+   gfx_display_ctx_driver_t *dispctx;
+};
+
+typedef struct gfx_display gfx_display_t;
 
 void gfx_display_free(void);
 
@@ -266,6 +288,8 @@ void gfx_display_set_framebuffer_dirty_flag(void);
 void gfx_display_unset_framebuffer_dirty_flag(void);
 bool gfx_display_init_first_driver(bool video_is_threaded);
 bool gfx_display_restore_clear_color(void);
+
+gfx_display_t *disp_get_ptr(void);
 
 /* TODO/FIXME - this is no longer used - consider getting rid of it */
 void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color, void *data);

@@ -247,53 +247,69 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
 
       if (intfstream_read(fd, game_id, 5) > 0)
       {
+         bool found = false;
          game_id[5] = '\0';
 
-         if (
-               (string_is_equal(game_id, "ULES-"))
-               || (string_is_equal(game_id, "ULUS-"))
-               || (string_is_equal(game_id, "ULJS-"))
-
-               || (string_is_equal(game_id, "ULEM-"))
-               || (string_is_equal(game_id, "ULUM-"))
-               || (string_is_equal(game_id, "ULJM-"))
-
-               || (string_is_equal(game_id, "UCES-"))
-               || (string_is_equal(game_id, "UCUS-"))
-               || (string_is_equal(game_id, "UCJS-"))
-               || (string_is_equal(game_id, "UCAS-"))
-               || (string_is_equal(game_id, "UCKS-"))
-
-               || (string_is_equal(game_id, "ULKS-"))
-               || (string_is_equal(game_id, "ULAS-"))
-
-               || (string_is_equal(game_id, "NPEH-"))
-               || (string_is_equal(game_id, "NPUH-"))
-               || (string_is_equal(game_id, "NPJH-"))
-
-               || (string_is_equal(game_id, "NPEG-"))
-               || (string_is_equal(game_id, "NPUG-"))
-               || (string_is_equal(game_id, "NPJG-"))
-               || (string_is_equal(game_id, "NPHG-"))
-
-               || (string_is_equal(game_id, "NPEZ-"))
-               || (string_is_equal(game_id, "NPUZ-"))
-               || (string_is_equal(game_id, "NPJZ-"))
+         if (string_starts_with(game_id, "UL"))
+         {
+            if (
+                   (string_is_equal(game_id, "ULES-"))
+                || (string_is_equal(game_id, "ULJS-"))
+                || (string_is_equal(game_id, "ULEM-"))
+                || (string_is_equal(game_id, "ULUM-"))
+                || (string_is_equal(game_id, "ULJM-"))
+                || (string_is_equal(game_id, "ULKS-"))
+                || (string_is_equal(game_id, "ULAS-"))
                )
-               {
-                  intfstream_seek(fd, pos, SEEK_SET);
-                  if (intfstream_read(fd, game_id, 10) > 0)
-                  {
+               found = true;
+         }
+         if (!found && string_starts_with(game_id, "UC"))
+         {
+            if (
+                   (string_is_equal(game_id, "UCES-"))
+                || (string_is_equal(game_id, "UCUS-"))
+                || (string_is_equal(game_id, "UCUS-"))
+                || (string_is_equal(game_id, "UCJS-"))
+                || (string_is_equal(game_id, "UCAS-"))
+                || (string_is_equal(game_id, "UCKS-"))
+               )
+               found = true;
+         }
+
+         if (!found && string_starts_with(game_id, "NP"))
+         {
+            if (
+                     (string_is_equal(game_id, "NPEH-"))
+                  || (string_is_equal(game_id, "NPUH-"))
+                  || (string_is_equal(game_id, "NPJH-"))
+
+                  || (string_is_equal(game_id, "NPEG-"))
+                  || (string_is_equal(game_id, "NPUG-"))
+                  || (string_is_equal(game_id, "NPJG-"))
+                  || (string_is_equal(game_id, "NPHG-"))
+
+                  || (string_is_equal(game_id, "NPEZ-"))
+                  || (string_is_equal(game_id, "NPUZ-"))
+                  || (string_is_equal(game_id, "NPJZ-"))
+               )
+               found = true;
+         }
+
+         if (found)
+         {
+            intfstream_seek(fd, pos, SEEK_SET);
+            if (intfstream_read(fd, game_id, 10) > 0)
+            {
 #if 0
-                     game_id[4] = '-';
-                     game_id[8] = game_id[9];
-                     game_id[9] = game_id[10];
+               game_id[4] = '-';
+               game_id[8] = game_id[9];
+               game_id[9] = game_id[10];
 #endif
-                     game_id[10] = '\0';
-                     rv = true;
-                  }
-                  break;
-               }
+               game_id[10] = '\0';
+               rv = true;
+            }
+            break;
+         }
       }
       else
          break;
@@ -323,8 +339,8 @@ int detect_gc_game(intfstream_t *fd, char *game_id)
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
 {
    unsigned pos;
-   int numberOfAscii = 0;
-   bool rv   = false;
+   int number_of_ascii = 0;
+   bool rv             = false;
 
    for (pos = 0; pos < 10000; pos++)
    {
@@ -332,30 +348,32 @@ int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
       if (intfstream_read(fd, game_id, 15) > 0)
       {
          unsigned i;
-         game_id[15] = '\0';
-         numberOfAscii = 0;
+         game_id[15]     = '\0';
+         number_of_ascii = 0;
 
          /* When scanning WBFS files, "WBFS" is discovered as the first serial. Ignore it. */
-         if (string_is_equal(game_id, "WBFS")) {
+         if (string_is_equal(game_id, "WBFS"))
             continue;
-         }
 
          /* Loop through until we run out of ASCII characters. */
          for (i = 0; i < 15; i++)
          {
             /* Is the given character ASCII? A-Z, 0-9, - */
-            if (game_id[i] == 45 || (game_id[i] >= 48 && game_id[i] <= 57) || (game_id[i] >= 65 && game_id[i] <= 90))
-               numberOfAscii++;
+            if (  (game_id[i] == 45) || 
+                  (game_id[i] >= 48 && game_id[i] <= 57) || 
+                  (game_id[i] >= 65 && game_id[i] <= 90))
+               number_of_ascii++;
             else
                break;
          }
 
-         /* If the length of the text is between 3 and 9 characters, it could be a serial. */
-         if (numberOfAscii > 3 && numberOfAscii < 9)
+         /* If the length of the text is between 3 and 9 characters, 
+          * it could be a serial. */
+         if (number_of_ascii > 3 && number_of_ascii < 9)
          {
             /* Cut the string off, and return it as a valid serial. */
-            game_id[numberOfAscii] = '\0';
-            rv = true;
+            game_id[number_of_ascii] = '\0';
+            rv                       = true;
             break;
          }
       }
@@ -366,17 +384,17 @@ int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
 
 int detect_system(intfstream_t *fd, const char **system_name)
 {
-   int rv;
-   char magic[MAGIC_LEN];
    int i;
+   int rv;
    int64_t read;
+   char magic[MAGIC_LEN];
 
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
    for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
    {
       intfstream_seek(fd, MAGIC_NUMBERS[i].offset, SEEK_SET);
 
       read = intfstream_read(fd, magic, MAGIC_LEN);
+
       if (read < 0)
       {
          RARCH_LOG("Could not read data at offset %d: %s\n",
@@ -430,8 +448,8 @@ static int64_t intfstream_get_file_size(const char *path)
 }
 
 static bool update_cand(int64_t *cand_index, int64_t *last_index,
-                        uint64_t *largest, char *last_file, uint64_t *offset,
-                        uint64_t *size, char *track_path, uint64_t max_len)
+      uint64_t *largest, char *last_file, uint64_t *offset,
+      uint64_t *size, char *track_path, uint64_t max_len)
 {
    if (*cand_index != -1)
    {
@@ -444,7 +462,7 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
          *cand_index = -1;
          return true;
       }
-      *cand_index = -1;
+      *cand_index    = -1;
    }
    return false;
 }
@@ -469,8 +487,8 @@ int cue_find_track(const char *cue_path, bool first,
 
    fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH);
 
-   info.type        = INTFSTREAM_FILE;
-   fd               = (intfstream_t*)intfstream_init(&info);
+   info.type                  = INTFSTREAM_FILE;
+   fd                         = (intfstream_t*)intfstream_init(&info);
 
    if (!fd)
       goto error;
@@ -498,8 +516,9 @@ int cue_find_track(const char *cue_path, bool first,
             last_index = file_size;
 
          /* We're changing files since the candidate, update it */
-         if (update_cand(&cand_index, &last_index, &largest, last_file, offset,
-                         size, track_path, max_len))
+         if (update_cand(&cand_index, &last_index,
+                  &largest, last_file, offset,
+                  size, track_path, max_len))
          {
             rv = 0;
             if (first)
@@ -507,7 +526,8 @@ int cue_find_track(const char *cue_path, bool first,
          }
 
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         fill_pathname_join(last_file, cue_dir, tmp_token, PATH_MAX_LENGTH);
+         fill_pathname_join(last_file, cue_dir,
+               tmp_token, PATH_MAX_LENGTH);
 
          file_size = intfstream_get_file_size(last_file);
 
@@ -537,8 +557,9 @@ int cue_find_track(const char *cue_path, bool first,
 
          /* If we've changed tracks since the candidate, update it */
          if (cand_track != -1 && track != cand_track &&
-             update_cand(&cand_index, &last_index, &largest, last_file, offset,
-                         size, track_path, max_len))
+             update_cand(&cand_index, &last_index, &largest,
+                last_file, offset,
+                size, track_path, max_len))
          {
             rv = 0;
             if (first)
@@ -559,8 +580,9 @@ int cue_find_track(const char *cue_path, bool first,
    if (file_size != -1)
       last_index = file_size;
 
-   if (update_cand(&cand_index, &last_index, &largest, last_file, offset,
-                   size, track_path, max_len))
+   if (update_cand(&cand_index, &last_index,
+            &largest, last_file, offset,
+            size, track_path, max_len))
       rv = 0;
 
 clean:
@@ -663,6 +685,7 @@ int gdi_find_track(const char *gdi_path, bool first,
          errno = EINVAL;
          goto error;
       }
+
       mode = atoi(tmp_token);
 
       /* Sector size */
@@ -671,6 +694,7 @@ int gdi_find_track(const char *gdi_path, bool first,
          errno = EINVAL;
          goto error;
       }
+
       size = atoi(tmp_token);
 
       /* File name */
@@ -758,13 +782,10 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
 
    /* Track number */
    get_token(fd, tmp_token, MAX_TOKEN_LEN);
-
    /* Offset */
    get_token(fd, tmp_token, MAX_TOKEN_LEN);
-
    /* Mode */
    get_token(fd, tmp_token, MAX_TOKEN_LEN);
-
    /* Sector size */
    get_token(fd, tmp_token, MAX_TOKEN_LEN);
 
@@ -778,7 +799,8 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       fill_pathname_basedir(gdi_dir, gdi_path, PATH_MAX_LENGTH);
 
       fill_pathname_join(path, gdi_dir, tmp_token, (size_t)max_len);
-      rv = true;
+
+      rv              = true;
 
       /* Disc offset */
       get_token(fd, tmp_token, MAX_TOKEN_LEN);

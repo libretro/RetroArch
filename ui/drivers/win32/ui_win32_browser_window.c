@@ -27,7 +27,8 @@
 #include "../../ui_companion_driver.h"
 #include "../../configuration.h"
 
-static bool ui_browser_window_win32_core(ui_browser_window_state_t *state, bool save)
+static bool ui_browser_window_win32_core(
+      ui_browser_window_state_t *state, bool save)
 {
    OPENFILENAME ofn;
    bool            okay  = false;

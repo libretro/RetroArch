@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * gpu_utils.h:
  * Header file for the GPU utilities exposed by gpu_utils.c
@@ -64,7 +82,10 @@ void gpu_pool_init(uint32_t temp_pool_size);
 int tex_format_to_bytespp(SceGxmTextureFormat format);
 
 // Alloc a texture
-void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t));
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), uint8_t fast_store);
+
+// Alloc a compresseed texture
+void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *));
 
 // Dealloc a texture
 void gpu_free_texture(texture *tex);

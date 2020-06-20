@@ -41,8 +41,6 @@ struct _wiimote_state
    uint8_t  type;
 };
 
-static bool kpad_ready = false;
-
 /* it would be nice to use designated initializers here,
  * but those are only in C99 and newer. Oh well.
  */
@@ -53,6 +51,8 @@ wiimote_state wiimotes[WIIU_WIIMOTE_CHANNELS] = {
   { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
 };
 
+/* static global variables */
+static bool kpad_ready        = false;
 static int channel_slot_map[] = { -1, -1, -1, -1 };
 
 static int to_wiimote_channel(unsigned pad)
@@ -71,7 +71,6 @@ static int get_slot_for_channel(unsigned channel)
    int slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
    if(slot >= 0)
    {
-      RARCH_LOG("[kpad]: got slot %d\n", slot);
       channel_slot_map[channel]             = slot;
       hid_instance.pad_list[slot].connected = true;
    }
@@ -257,7 +256,9 @@ static const char *kpad_name(unsigned pad)
          return PAD_NAME_WIIMOTE;
       case WIIMOTE_TYPE_NONE:
       default:
+#ifdef DEBUG
          RARCH_LOG("[kpad]: Unknown pad type %d\n", wiimotes[pad].type);
+#endif
          break;
    }
 

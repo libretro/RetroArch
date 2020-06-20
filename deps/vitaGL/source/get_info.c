@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * get_info.c:
  * Implementation for functions returning info to end user
@@ -32,7 +50,7 @@ const GLubyte *glGetString(GLenum name) {
 		return extensions;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		return NULL;
 		break;
 	}
@@ -62,12 +80,13 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 		*params = GL_FALSE;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
 
 void glGetFloatv(GLenum pname, GLfloat *data) {
+	int i, j;
 	switch (pname) {
 	case GL_POLYGON_OFFSET_FACTOR: // Polygon offset factor
 		*data = pol_factor;
@@ -76,7 +95,20 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		*data = pol_units;
 		break;
 	case GL_MODELVIEW_MATRIX: // Modelview matrix
-		memcpy(data, &modelview_matrix, sizeof(matrix4x4));
+		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++) {
+				data[i*4+j] = modelview_matrix[j][i];
+			}
+		}
+		break;
+	case GL_PROJECTION_MATRIX: // Projection matrix
+		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++) {
+				data[i*4+j] = projection_matrix[j][i];
+			}
+		}
 		break;
 	case GL_ACTIVE_TEXTURE: // Active texture
 		*data = (1.0f * (server_texture_unit + GL_TEXTURE0));
@@ -91,7 +123,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		*data = GENERIC_STACK_DEPTH;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -124,7 +156,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[3] = gl_viewport.h;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -157,14 +189,14 @@ GLboolean glIsEnabled(GLenum cap) {
 		ret = pol_offset_point;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	return ret;
 }
 
 GLenum glGetError(void) {
-	GLenum ret = _vitagl_error;
-	_vitagl_error = GL_NO_ERROR;
+	GLenum ret = vgl_error;
+	vgl_error = GL_NO_ERROR;
 	return ret;
 }

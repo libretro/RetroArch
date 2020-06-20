@@ -128,6 +128,13 @@ void ozone_draw_sidebar(
    enum gfx_animation_ticker_type
       menu_ticker_type      = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
 
+   selection_y          = 0;
+   selection_old_y      = 0;
+   horizontal_list_size = 0;
+
+   if (!ozone->draw_sidebar)
+      return;
+
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
@@ -145,13 +152,6 @@ void ozone_draw_sidebar(
       ticker.type_enum            = menu_ticker_type;
       ticker.spacer               = ticker_spacer;
    }
-
-   selection_y          = 0;
-   selection_old_y      = 0;
-   horizontal_list_size = 0;
-
-   if (!ozone->draw_sidebar)
-      return;
 
    if (ozone->horizontal_list)
       horizontal_list_size = (unsigned)ozone->horizontal_list->size;
@@ -468,7 +468,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    struct gfx_animation_ctx_entry entry;
    settings_t *settings      = config_get_ptr();
    bool is_playlist          = ozone_is_playlist(ozone, false);
-   gfx_animation_ctx_tag tag = (uintptr_t) &ozone->sidebar_collapsed;
+   uintptr_t tag             = (uintptr_t)&ozone->sidebar_collapsed;
    bool collapse_sidebar     = settings->bools.ozone_collapse_sidebar;
 
    entry.easing_enum    = EASING_OUT_QUAD;
@@ -564,7 +564,7 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 {
    unsigned video_info_height;
    struct gfx_animation_ctx_entry entry;
-   gfx_animation_ctx_tag tag = (uintptr_t)ozone;
+   uintptr_t tag = (uintptr_t)ozone;
 
    video_driver_get_size(NULL, &video_info_height);
 
@@ -608,22 +608,18 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    gfx_animation_push(&entry);
 
    if (new_selection > ozone->system_tab_end)
-   {
       ozone_change_tab(ozone, MENU_ENUM_LABEL_HORIZONTAL_MENU, MENU_SETTING_HORIZONTAL_MENU);
-   }
    else
-   {
       ozone_change_tab(ozone, ozone_system_tabs_idx[ozone->tabs[new_selection]], ozone_system_tabs_type[ozone->tabs[new_selection]]);
-   }
 }
 
 void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height)
 {
    settings_t *settings                 = config_get_ptr();
-   gfx_animation_ctx_tag collapsed_tag  = (uintptr_t)&ozone->sidebar_collapsed;
-   gfx_animation_ctx_tag offset_tag     = (uintptr_t)&ozone->sidebar_offset;
-   gfx_animation_ctx_tag thumbnail_tag  = (uintptr_t)&ozone->show_thumbnail_bar;
-   gfx_animation_ctx_tag scroll_tag     = (uintptr_t)ozone;
+   uintptr_t collapsed_tag              = (uintptr_t)&ozone->sidebar_collapsed;
+   uintptr_t offset_tag                 = (uintptr_t)&ozone->sidebar_offset;
+   uintptr_t thumbnail_tag              = (uintptr_t)&ozone->show_thumbnail_bar;
+   uintptr_t scroll_tag                 = (uintptr_t)ozone;
    bool is_playlist                     = ozone_is_playlist(ozone, false);
    bool collapse_sidebar                = settings->bools.ozone_collapse_sidebar;
 
@@ -984,9 +980,7 @@ bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
    bool is_playlist;
 
    if (ozone->categories_selection_ptr > ozone->system_tab_end)
-   {
       is_playlist = true;
-   }
    else
    {
       switch (ozone->tabs[ozone->categories_selection_ptr])
@@ -1013,8 +1007,6 @@ bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
             break;
       }
    }
-
-
 
    if (depth)
       return is_playlist && ozone->depth == 1;

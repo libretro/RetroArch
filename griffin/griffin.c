@@ -142,7 +142,6 @@ ENCODINGS
 PERFORMANCE
 ============================================================ */
 #include "../libretro-common/features/features_cpu.c"
-#include "../performance_counters.c"
 
 /*============================================================
 CONFIG FILE
@@ -1097,6 +1096,7 @@ FRONTEND
 #endif
 
 #include "../core_info.c"
+#include "../core_backup.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../core_updater_list.c"
@@ -1148,6 +1148,9 @@ RETROARCH
 #include "../intl/msg_hash_el.c"
 #include "../intl/msg_hash_tr.c"
 #include "../intl/msg_hash_sk.c"
+#include "../intl/msg_hash_fa.c"
+#include "../intl/msg_hash_he.c"
+#include "../intl/msg_hash_ast.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1209,7 +1212,6 @@ NETPLAY
 #ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_handshake.c"
-#include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_init.c"
 #include "../network/netplay/netplay_io.c"
 #include "../network/netplay/netplay_keyboard.c"
@@ -1243,6 +1245,7 @@ DATA RUNLOOP
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_playlist_manager.c"
 #include "../tasks/task_manual_content_scan.c"
+#include "../tasks/task_core_backup.c"
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
@@ -1267,24 +1270,19 @@ PLAYLISTS
 /*============================================================
 MENU
 ============================================================ */
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
-#include "../menu/menu_shader.c"
-#endif
-
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.c"
 #include "../gfx/widgets/gfx_widget_screenshot.c"
 #include "../gfx/widgets/gfx_widget_volume.c"
 #include "../gfx/widgets/gfx_widget_generic_message.c"
 #include "../gfx/widgets/gfx_widget_libretro_message.c"
+#ifdef HAVE_CHEEVOS
+#include "../gfx/widgets/gfx_widget_achievement_popup.c"
+#endif
 #endif
 
-#include "../input/input_osk.c"
-
 #ifdef HAVE_MENU
-#include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
-#include "../menu/menu_cbs.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../menu/menu_networking.c"
@@ -1345,8 +1343,6 @@ MENU
 #ifdef HAVE_NETWORKGAMEPAD
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
-
-#include "../input/input_mapper.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
@@ -1496,16 +1492,12 @@ XML
 HTTP SERVER
 ============================================================ */
 #if defined(HAVE_DISCORD)
-#include "../network/discord.c"
-
 #if defined(_WIN32)
 #include "../deps/discord-rpc/src/discord_register_win.c"
 #endif
-
 #if defined(__linux__)
 #include "../deps/discord-rpc/src/discord_register_linux.c"
 #endif
-
 #endif
 
 /*============================================================
@@ -1616,3 +1608,8 @@ DISK CONTROL INTERFACE
 MISC FILE FORMATS
 ============================================================ */
 #include "../libretro-common/formats/m3u/m3u_file.c"
+
+/*============================================================
+TIME
+============================================================ */
+#include "../libretro-common/time/rtime.c"

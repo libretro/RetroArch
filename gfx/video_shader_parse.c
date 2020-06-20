@@ -43,6 +43,7 @@
 #include "drivers_shader/slang_process.h"
 #endif
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static path_change_data_t *file_change_data = NULL;
 
 /**
@@ -91,7 +92,7 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
    else if (string_is_equal(wrap_mode, "mirrored_repeat"))
       return RARCH_WRAP_MIRRORED_REPEAT;
 
-   RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border"
+   RARCH_WARN("[Shaders]: Invalid wrapping type %s. Valid ones are: clamp_to_border"
          " (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
          wrap_mode);
    return RARCH_WRAP_DEFAULT;
@@ -145,7 +146,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
    if (!config_get_path(conf, shader_name, tmp_path, path_size))
    {
-      RARCH_ERR("Couldn't parse shader source (%s).\n", shader_name);
+      RARCH_ERR("[Shaders]: Couldn't parse shader source (%s).\n", shader_name);
       free(tmp_path);
       return false;
    }
@@ -229,7 +230,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->type_x = RARCH_SCALE_ABSOLUTE;
       else
       {
-         RARCH_ERR("Invalid attribute.\n");
+         RARCH_ERR("[Shaders]: Invalid attribute.\n");
          return false;
       }
    }
@@ -244,7 +245,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->type_y = RARCH_SCALE_ABSOLUTE;
       else
       {
-         RARCH_ERR("Invalid attribute.\n");
+         RARCH_ERR("[Shaders]: Invalid attribute.\n");
          return false;
       }
    }
@@ -346,7 +347,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
 
       if (!config_get_array(conf, id, tmp_path, path_size))
       {
-         RARCH_ERR("Cannot find path to texture \"%s\" ...\n", id);
+         RARCH_ERR("[Shaders]: Cannot find path to texture \"%s\" ...\n", id);
          free(textures);
          return false;
       }
@@ -554,14 +555,14 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          param->desc[63] = '\0';
 
          if (ret == 5)
-            param->step = 0.1f * (param->maximum - param->minimum);
+            param->step  = 0.1f * (param->maximum - param->minimum);
 
-         param->pass = i;
+         param->pass     = i;
 
-         RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
+         RARCH_LOG("[Shaders]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
                param->desc,    param->id,      param->initial,
                param->minimum, param->maximum, param->step, param->pass);
-         param->current = param->initial;
+         param->current  = param->initial;
 
          shader->num_parameters++;
          param++;
@@ -623,8 +624,7 @@ bool video_shader_write_preset(const char *path,
    {
       /* write a reference preset */
       char buf[STRLEN_CONST("#reference \"") + PATH_MAX_LENGTH + 1] = "#reference \"";
-      size_t len = STRLEN_CONST("#reference \"");
-
+      size_t       len = STRLEN_CONST("#reference \"");
       char *preset_ref = buf + len;
 
       strlcpy(clean_path, path, PATH_MAX_LENGTH);
@@ -733,9 +733,7 @@ char *video_shader_read_reference_path(const char *path)
             p++;
 
          if (*p == '\"')
-         {
             *p = '\0';
-         }
          else
          {
             /* if there's no second ", remove whitespace at the end */
@@ -762,10 +760,8 @@ char *video_shader_read_reference_path(const char *path)
 
       /* rebase relative reference path */
       if (!path_is_absolute(ref_path))
-      {
          fill_pathname_resolve_relative(reference,
                path, ref_path, PATH_MAX_LENGTH);
-      }
       else
          strlcpy(reference, ref_path, PATH_MAX_LENGTH);
    }
@@ -828,13 +824,13 @@ bool video_shader_read_conf_preset(config_file_t *conf,
 
    if (!config_get_uint(conf, "shaders", &shaders))
    {
-      RARCH_ERR("Cannot find \"shaders\" param.\n");
+      RARCH_ERR("[Shaders]: Cannot find \"shaders\" param.\n");
       return false;
    }
 
    if (!shaders)
    {
-      RARCH_ERR("Need to define at least 1 shader.\n");
+      RARCH_ERR("[Shaders]: Need to define at least 1 shader.\n");
       return false;
    }
 
@@ -888,10 +884,7 @@ bool video_shader_read_conf_preset(config_file_t *conf,
          string_list_free(file_list);
    }
 
-   if (!video_shader_parse_textures(conf, shader))
-      return false;
-
-   return true;
+   return video_shader_parse_textures(conf, shader);
 }
 
 /* CGP store */

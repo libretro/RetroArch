@@ -903,7 +903,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   entry_type = menu_entry_get_type_new(&entry);
+   entry_type = entry.type;
 
    if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
    {
@@ -1192,18 +1192,16 @@ static unsigned stripes_get_system_tab(stripes_handle_t *stripes, unsigned i)
 static void stripes_selection_pointer_changed(
       stripes_handle_t *stripes, bool allow_animations)
 {
+   uintptr_t tag;
    unsigned i, end, height;
-   gfx_animation_ctx_tag tag;
    menu_entry_t entry;
    size_t num                 = 0;
    int threshold              = 0;
-   menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
    const char *thumb_ident    = stripes_thumbnails_ident('R');
    const char *lft_thumb_ident= stripes_thumbnails_ident('L');
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
    menu_entry_init(&entry);
 
    if (!stripes)
@@ -2247,13 +2245,13 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
       case MENU_SETTING_ACTION_RUN:
          return stripes->textures.list[STRIPES_TEXTURE_RUN];
       case MENU_SETTING_ACTION_CLOSE:
+      case MENU_SETTING_ACTION_CLOSE_HORIZONTAL:
          return stripes->textures.list[STRIPES_TEXTURE_CLOSE];
       case MENU_SETTING_ACTION_SAVESTATE:
          return stripes->textures.list[STRIPES_TEXTURE_SAVESTATE];
       case MENU_SETTING_ACTION_LOADSTATE:
          return stripes->textures.list[STRIPES_TEXTURE_LOADSTATE];
       case FILE_TYPE_RDB_ENTRY:
-      case MENU_SETTING_ACTION_CORE_INFORMATION:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
       case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
@@ -2403,7 +2401,7 @@ static int stripes_draw_item(
    if (icon_x < -half_size || icon_x > width)
       goto iterate;
 
-   entry_type = menu_entry_get_type_new(entry);
+   entry_type = entry.type;
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
@@ -3898,7 +3896,7 @@ static void stripes_list_insert(void *userdata,
 
 static void stripes_list_clear(file_list_t *list)
 {
-   gfx_animation_ctx_tag tag = (uintptr_t)list;
+   uintptr_t tag = (uintptr_t)list;
 
    gfx_animation_kill_by_tag(&tag);
 
@@ -3913,8 +3911,8 @@ static void stripes_list_free(file_list_t *list, size_t a, size_t b)
 static void stripes_list_deep_copy(const file_list_t *src, file_list_t *dst,
       size_t first, size_t last)
 {
-   size_t i, j = 0;
-   gfx_animation_ctx_tag tag = (uintptr_t)dst;
+   size_t i, j   = 0;
+   uintptr_t tag = (uintptr_t)dst;
 
    gfx_animation_kill_by_tag(&tag);
 

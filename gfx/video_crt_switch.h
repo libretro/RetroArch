@@ -27,13 +27,33 @@
 
 RETRO_BEGIN_DECLS
 
-void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt_mode, int crt_switch_center_adjust, int monitor_index, bool dynamic);
+typedef struct videocrt_switch
+{
+   int center_adjust;
+   int tmp_center_adjust;
+   unsigned ra_core_width;
+   unsigned ra_core_height;
+   unsigned ra_tmp_width;
+   unsigned ra_tmp_height;
+   unsigned ra_set_core_hz;
+   unsigned index;
 
-void crt_aspect_ratio_switch(unsigned width, unsigned height);
+   float ra_core_hz;
+   float ra_tmp_core_hz;
+   float fly_aspect;
 
-void crt_video_restore(void);
+   double p_clock;
+} videocrt_switch_t;
 
-int crt_compute_dynamic_width(int width);
+void crt_switch_res_core(
+      videocrt_switch_t *p_switch,
+      unsigned width,
+      unsigned height,
+      float hz,
+      unsigned crt_mode,
+      int crt_switch_center_adjust,
+      int monitor_index,
+      bool dynamic);
 
 RETRO_END_DECLS
 

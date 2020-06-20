@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef _VITAGL_H_
 #define _VITAGL_H_
 
@@ -81,6 +99,7 @@ extern "C" {
 #define GL_STENCIL_TEST                   0x0B90
 #define GL_VIEWPORT                       0x0BA2
 #define GL_MODELVIEW_MATRIX               0x0BA6
+#define GL_PROJECTION_MATRIX              0x0BA7
 #define GL_ALPHA_TEST                     0x0BC0
 #define GL_BLEND                          0x0BE2
 #define GL_SCISSOR_BOX                    0x0C10
@@ -163,6 +182,9 @@ extern "C" {
 #define GL_RG                             0x8227
 #define GL_UNSIGNED_SHORT_5_6_5           0x8363
 #define GL_MIRRORED_REPEAT                0x8370
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT   0x83F0
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT  0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
 #define GL_TEXTURE0                       0x84C0
 #define GL_TEXTURE1                       0x84C1
 #define GL_TEXTURE2                       0x84C2
@@ -197,6 +219,7 @@ extern "C" {
 #define GL_TEXTURE31                      0x84DF
 #define GL_ACTIVE_TEXTURE                 0x84E0
 #define GL_INCR_WRAP                      0x8507
+#define GL_MIRROR_CLAMP_EXT               0x8742
 #define GL_DECR_WRAP                      0x8508
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_ELEMENT_ARRAY_BUFFER           0x8893
@@ -217,6 +240,9 @@ extern "C" {
 #define GL_FRAMEBUFFER                    0x8D40
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 32
+
+// Aliases
+#define GL_CLAMP GL_CLAMP_TO_EDGE
 
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
@@ -321,6 +347,7 @@ void glTexCoord2fv(GLfloat *f);
 void glTexCoord2i(GLint s, GLint t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
+void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param);
 void glTexEnvi(GLenum target, GLenum pname, GLint param);
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
@@ -328,6 +355,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param);
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glUniform1f(GLint location, GLfloat v0);
+void glUniform1i(GLint location, GLint v0);
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
@@ -351,6 +379,7 @@ void vglVertexPointerMapped(const GLvoid *pointer);
 
 // VGL_EXT_gxp_shaders extension implementation
 void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type);
+void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride);
 void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer);
 void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer);
 
@@ -377,6 +406,8 @@ void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglUpdateCommonDialog();
 void vglUseVram(GLboolean usage);
+void vglUseVramForUSSE(GLboolean usage);
+void vglUseExtraMem(GLboolean usage);
 void vglWaitVblankStart(GLboolean enable);
 
 #ifdef __cplusplus

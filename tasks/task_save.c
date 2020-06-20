@@ -36,6 +36,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../core.h"
@@ -60,9 +61,6 @@
 #else
 #define SAVE_STATE_CHUNK 4096
 #endif
-
-static bool save_state_in_background = false;
-static struct string_list *task_save_files = NULL;
 
 struct ram_type
 {
@@ -105,16 +103,6 @@ typedef struct
    bool compress_files;
 } save_task_state_t;
 
-typedef save_task_state_t load_task_data_t;
-
-/* Holds the previous saved state
- * Can be restored to disk with undo_save_state(). */
-static struct save_state_buf undo_save_buf;
-
-/* Holds the data from before a load_state() operation
- * Can be restored with undo_load_state(). */
-static struct save_state_buf undo_load_buf;
-
 #ifdef HAVE_THREADS
 typedef struct autosave autosave_t;
 
@@ -139,9 +127,29 @@ struct autosave
    scond_t *cond;
    sthread_t *thread;
 };
+#endif
 
+typedef save_task_state_t load_task_data_t;
+
+/* Holds the previous saved state
+ * Can be restored to disk with undo_save_state(). */
+/* TODO/FIXME - global state - perhaps move outside this file */
+static struct save_state_buf undo_save_buf;
+
+/* Holds the data from before a load_state() operation
+ * Can be restored with undo_load_state(). */
+static struct save_state_buf undo_load_buf;
+
+#ifdef HAVE_THREADS
+/* TODO/FIXME - global state - perhaps move outside this file */
 static struct autosave_st autosave_state;
+#endif
 
+/* TODO/FIXME - global state - perhaps move outside this file */
+static bool save_state_in_background       = false;
+static struct string_list *task_save_files = NULL;
+
+#ifdef HAVE_THREADS
 /**
  * autosave_thread:
  * @data            : pointer to autosave object
@@ -419,7 +427,7 @@ bool content_undo_load_state(void)
    if (block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
-      RARCH_LOG("%s.\n",
+      RARCH_LOG("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
       blocks = (struct sram_block*)
          calloc(task_save_files->size, sizeof(*blocks));
@@ -982,7 +990,7 @@ static void content_load_state_cb(retro_task_t *task,
    if (block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
-      RARCH_LOG("%s.\n",
+      RARCH_LOG("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
       blocks = (struct sram_block*)
          calloc(task_save_files->size, sizeof(*blocks));
@@ -1299,7 +1307,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    {
       if (path_is_valid(path) && !autosave)
       {
-         /* Before overwritting the savestate file, load it into a buffer
+         /* Before overwriting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
          /* TODO/FIXME - Use msg_hash_to_str here */
          RARCH_LOG("%s ...\n",
@@ -1346,6 +1354,31 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    }
 
    return true;
+}
+
+static bool task_save_state_finder(retro_task_t *task, void *user_data)
+{
+   if (!task)
+      return false;
+
+   if (task->handler == task_save_handler)
+      return true;
+
+   return false;
+}
+
+/* Returns true if a save state task is in progress */
+bool content_save_state_in_progress(void)
+{
+   task_finder_data_t find_data;
+
+   find_data.func     = task_save_state_finder;
+   find_data.userdata = NULL;
+
+   if (task_queue_find(&find_data))
+      return true;
+
+   return false;
 }
 
 /**
@@ -1509,7 +1542,7 @@ bool content_load_ram_file(unsigned slot)
    {
       if (rc > (ssize_t)mem_info.size)
       {
-         RARCH_WARN("SRAM is larger than implementation expects, "
+         RARCH_WARN("[SRAM]: SRAM is larger than implementation expects, "
                "doing partial load (truncating %u %s %s %u).\n",
                (unsigned)rc,
                msg_hash_to_str(MSG_BYTES),
@@ -1538,6 +1571,7 @@ static bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
    time_t time_;
+   struct tm tm_;
    char *timebuf;
    char *path;
    char *application_data = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1555,9 +1589,11 @@ static bool dump_to_file_desperate(const void *data,
    timebuf    = (char*)malloc(256 * sizeof(char));
    timebuf[0] = '\0';
 
+   rtime_localtime(&time_, &tm_);
+
    strftime(timebuf,
          256 * sizeof(char),
-         "%Y-%m-%d-%H-%M-%S", localtime(&time_));
+         "%Y-%m-%d-%H-%M-%S", &tm_);
 
    path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    path[0] = '\0';
@@ -1585,7 +1621,7 @@ static bool dump_to_file_desperate(const void *data,
       return false;
    }
 
-   RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
+   RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
    free(path);
    return true;
 }
@@ -1607,7 +1643,7 @@ bool content_save_ram_file(unsigned slot, bool compress)
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
 
-   RARCH_LOG("%s #%u %s \"%s\".\n",
+   RARCH_LOG("[SRAM]: %s #%u %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_RAM_TYPE),
          ram.type,
          msg_hash_to_str(MSG_TO),
@@ -1624,9 +1660,9 @@ bool content_save_ram_file(unsigned slot, bool compress)
 
    if (!write_success)
    {
-      RARCH_ERR("%s.\n",
+      RARCH_ERR("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
-      RARCH_WARN("Attempting to recover ...\n");
+      RARCH_WARN("[SRAM]: Attempting to recover ...\n");
 
       /* In case the file could not be written to,
        * the fallback function 'dump_to_file_desperate'
@@ -1634,12 +1670,12 @@ bool content_save_ram_file(unsigned slot, bool compress)
       if (!dump_to_file_desperate(
                mem_info.data, mem_info.size, ram.type))
       {
-         RARCH_WARN("Failed ... Cannot recover save file.\n");
+         RARCH_WARN("[SRAM]: Failed ... Cannot recover save file.\n");
       }
       return false;
    }
 
-   RARCH_LOG("%s \"%s\".\n",
+   RARCH_LOG("[SRAM]: %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
          ram.path);
 

@@ -61,6 +61,7 @@ typedef struct oga_video
 
     go2_frame_buffer_t* frameBuffer[NUM_PAGES];
     int cur_page;
+    bool threaded;
 
     const font_renderer_driver_t *font_driver;
     void *font;
@@ -70,6 +71,8 @@ typedef struct oga_video
     unsigned menu_width;
     unsigned menu_height;
     unsigned menu_pitch;
+
+    char menu_buf[NATIVE_WIDTH*NATIVE_HEIGHT*4];
 } oga_video_t;
 
 go2_rotation_t oga_rotation = GO2_ROTATION_DEGREES_0;
@@ -132,16 +135,19 @@ static void *oga_gfx_init(const video_info_t *video,
    vid->menu_frame = NULL;
    vid->display = go2_display_create();
    vid->presenter = go2_presenter_create(vid->display, DRM_FORMAT_RGB565, 0xff000000, false);
-   vid->menu_surface = go2_surface_create(vid->display, NATIVE_WIDTH, NATIVE_HEIGHT, DRM_FORMAT_RGB565);
+   vid->menu_surface = go2_surface_create(vid->display, NATIVE_WIDTH, NATIVE_HEIGHT, DRM_FORMAT_XRGB8888);
    vid->font = NULL;
    vid->font_driver = NULL;
+
+   vid->threaded = video->is_threaded;
 
    int aw = MAX(ALIGN(av_info->geometry.max_width, 32), NATIVE_WIDTH);
    int ah = MAX(ALIGN(av_info->geometry.max_height, 32), NATIVE_HEIGHT);
 
-   printf("oga_gfx_init video %dx%d rgb32 %d smooth %d input_scale %u force_aspect %d fullscreen %d aw %d ah %d rgb %d\n",
-         video->width, video->height, video->rgb32, video->smooth, video->input_scale, video->force_aspect,
-         video->fullscreen, aw, ah, video->rgb32);
+   RARCH_LOG("oga_gfx_init video %dx%d rgb32 %d smooth %d input_scale %u force_aspect %d"
+           " fullscreen %d aw %d ah %d rgb %d threaded %d\n",
+         video->width, video->height, video->rgb32, video->smooth, video->input_scale,
+         video->force_aspect, video->fullscreen, aw, ah, video->rgb32, video->is_threaded);
 
    vid->frame = go2_surface_create(vid->display, aw, ah, video->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565);
 
@@ -259,6 +265,12 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
    if (unlikely(!frame || width == 0 || height == 0))
       return true;
 
+   if (unlikely(video_info->input_driver_nonblock_state) && !vid->threaded)
+   {
+      if (frame_count % 4 != 0)
+          return true;
+   }
+
    /* copy buffer to surface */
    dst        = (uint8_t*)go2_surface_map(dst_surface);
    yy         = height;
@@ -306,10 +318,41 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
 
     vid->menu_width = width;
     vid->menu_height = height;
-    vid->menu_pitch = width * (rgb32 ? 4 : 2);
+    vid->menu_pitch = width * 4;
+
+
+   /* Borrowed from drm_gfx
+    *
+    * We have to go on a pixel format conversion adventure
+    * for now, until we can convince RGUI to output
+    * in an 8888 format. */
+   unsigned int src_pitch        = width * 2;
+   unsigned int dst_pitch        = width * 4;
+   unsigned int dst_width        = width;
+   uint32_t line[dst_width];
+
+   /* The output pixel array with the converted pixels. */
+   char *frame_output = vid->menu_buf;
+
+   /* Remember, memcpy() works with 8bits pointers for increments. */
+   char *dst_base_addr           = frame_output;
+
+   for (int i = 0; i < height; i++)
+   {
+      for (int j = 0; j < src_pitch / 2; j++)
+      {
+         uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j);
+         /* The hex AND is for keeping only the part we need for each component. */
+         uint32_t R = (src_pix << 8) & 0x00FF0000;
+         uint32_t G = (src_pix << 4) & 0x0000FF00;
+         uint32_t B = (src_pix << 0) & 0x000000FF;
+         line[j] = (0 | R | G | B);
+      }
+      memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
+   }
 
     if (unlikely(!vid->menu_frame))
-        vid->menu_frame = frame;
+        vid->menu_frame = frame_output;
 }
 
 static void oga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d)

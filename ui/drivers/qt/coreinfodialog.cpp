@@ -39,22 +39,24 @@ CoreInfoDialog::CoreInfoDialog(MainWindow *mainwindow, QWidget *parent) :
 
 void CoreInfoDialog::showCoreInfo()
 {
-   int row = 0;
-   int rowCount = m_formLayout->rowCount();
-   int i = 0;
-   QVector<QHash<QString, QString> > infoList = m_mainwindow->getCoreInfo();
+   int      row  = 0;
+   int row_count = m_formLayout->rowCount();
+   int       i   = 0;
+   QVector<QHash<QString, QString> > info_list 
+                 = m_mainwindow->getCoreInfo();
 
-   if (rowCount > 0)
+   if (row_count > 0)
    {
-      for (row = 0; row < rowCount; row++)
+      for (row = 0; row < row_count; row++)
       {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
          /* removeRow() and takeRow() was only added in 5.8! */
          m_formLayout->removeRow(0);
 #else
-         /* something is buggy here... sometimes items appear duplicated, and other times not */
+         /* something is buggy here... 
+          * sometimes items appear duplicated, and other times not */
          QLayoutItem *item = m_formLayout->itemAt(0);
-         QWidget *w = NULL;
+         QWidget        *w = NULL;
 
          if (item)
          {
@@ -76,12 +78,12 @@ void CoreInfoDialog::showCoreInfo()
       }
    }
 
-   if (infoList.count() == 0)
+   if (info_list.count() == 0)
       return;
 
-   for (i = 0; i < infoList.count(); i++)
+   for (i = 0; i < info_list.count(); i++)
    {
-      const QHash<QString, QString> &line = infoList.at(i);
+      const QHash<QString, QString> &line = info_list.at(i);
       QLabel                       *label = new QLabel(line.value("key"));
       CoreInfoLabel                *value = new CoreInfoLabel(line.value("value"));
       QString                  labelStyle = line.value("label_style");

@@ -319,6 +319,8 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 {
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER) || defined(VITA)
    char argp[512] = {0};
+   char boot_params[1024];
+   char core_name[256];
    SceSize   args = 0;
 
 #if !defined(VITA)
@@ -338,8 +340,23 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 #if defined(VITA)
    RARCH_LOG("Attempt to load executable: %d [%s].\n", args, argp);
-   int ret =  sceAppMgrLoadExec(path, args==0? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
-   RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+#ifdef IS_SALAMANDER
+   sceAppMgrGetAppParam(boot_params);
+   if (strstr(boot_params,"psgm:play")) {
+      char *param1 = strstr(boot_params, "&param=")+7;
+      char *param2 = strstr(boot_params, "&param2=");
+      memcpy(core_name, param1, param2 - param1);
+      core_name[param2-param1] = 0;
+      sprintf(argp, param2 + 8);
+      int ret =  sceAppMgrLoadExec(core_name, (char * const*)((const char*[]){argp, 0}), NULL);
+      RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+   }
+   else
+#endif
+   {
+      int ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
+      RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+   }
 #else
    exitspawn_kernel(path, args, argp);
 #endif

@@ -56,6 +56,10 @@
 #include "../video_thread_wrapper.h"
 #endif
 
+#ifdef VITA
+static bool vgl_inited = false;
+#endif
+
 static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
 
 /* Used for the last pass when rendering to the back buffer. */
@@ -272,12 +276,12 @@ static void *gl1_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 #ifdef VITA
-   if (!gl1->vgl_inited)
+   if (!vgl_inited)
    {
       vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
       vglStartRendering();
-      gl1->vgl_inited = true;
+      vgl_inited = true;
    }
 #endif
    /* Clear out potential error flags in case we use cached context. */
@@ -723,11 +727,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
             video_width, video_height, false, true);
    }
 
-   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-   glClear(GL_COLOR_BUFFER_BIT);
 
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    if (  gl1->video_width  != frame_width  ||
          gl1->video_height != frame_height ||
@@ -756,9 +756,10 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    pot_width = get_pot(width);
    pot_height = get_pot(height);
 
-   if (  frame_width  == 4 &&
+   if (  frame == RETRO_HW_FRAME_BUFFER_VALID || (
+         frame_width  == 4 &&
          frame_height == 4 &&
-         (frame_width < width && frame_height < height)
+         (frame_width < width && frame_height < height))
       )
       draw = false;
 
@@ -790,6 +791,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (draw)
    {
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   
       if (frame_to_copy)
          draw_tex(gl1, pot_width, pot_height,
                width, height, gl1->tex, frame_to_copy);
@@ -859,7 +866,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
 #ifdef HAVE_OVERLAY

@@ -32,7 +32,7 @@ End of setup
 *****************************************************************************/
 
 #define RCHEEVOS_TAG "[RCHEEVOS]: "
-#define CHEEVOS_FREE(p) do { void* q = (void*)p; if (q != NULL) free(q); } while (0)
+#define CHEEVOS_FREE(p) do { void* q = (void*)p; if (q) free(q); } while (0)
 
 #ifdef CHEEVOS_VERBOSE
 

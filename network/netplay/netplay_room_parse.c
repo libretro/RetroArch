@@ -49,6 +49,7 @@ typedef struct tag_Context
    void *cur_member;
 } Context;
 
+/* TODO/FIXME - static global variable */
 static struct netplay_rooms *netplay_rooms_data;
 
 static void parse_context_init(Context* pCtx)

@@ -203,6 +203,8 @@ typedef struct
     size_t size;
     float overlay_opacity;
     float overlay_scale;
+    float overlay_center_x;
+    float overlay_center_y;
     struct overlay *overlays;
     struct overlay *active;
 } overlay_task_data_t;

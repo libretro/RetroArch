@@ -99,32 +99,48 @@ static void free_pl_manager_handle(pl_manager_handle_t *pl_manager)
    pl_manager = NULL;
 }
 
-static void pl_manager_write_playlist(
-      playlist_t *playlist, const char *playlist_path,
-      bool use_old_format, bool compress)
+static void cb_task_pl_manager(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
 {
-   playlist_t *cached_playlist = playlist_get_cached();
-   
-   /* Sanity check */
-   if (!playlist || string_is_empty(playlist_path))
+   pl_manager_handle_t *pl_manager = NULL;
+   playlist_t *cached_playlist     = playlist_get_cached();
+
+   /* If no playlist is currently cached, no action
+    * is required */
+   if (!task || !cached_playlist)
       return;
-   
-   /* Write any changes to playlist file */
-   playlist_write_file(playlist, use_old_format, compress);
-   
-   /* If this is the currently cached playlist, then
-    * it must be re-cached (otherwise changes will be
-    * lost if the currently cached playlist is saved
-    * to disk for any reason...) */
-   if (cached_playlist)
+
+   pl_manager = (pl_manager_handle_t*)task->state;
+
+   if (!pl_manager)
+      return;
+
+   /* If the playlist manager task has modified the
+    * currently cached playlist, then it must be re-cached
+    * (otherwise changes will be lost if the currently
+    * cached playlist is saved to disk for any reason...) */
+   if (string_is_equal(
+         pl_manager->playlist_path,
+         playlist_get_conf_path(cached_playlist)))
    {
-      if (string_is_equal(playlist_path, playlist_get_conf_path(cached_playlist)))
-      {
-         playlist_free_cached();
-         playlist_init_cached(
-               playlist_path, COLLECTION_SIZE, use_old_format, compress);
-      }
+      playlist_free_cached();
+      playlist_init_cached(
+            pl_manager->playlist_path, COLLECTION_SIZE,
+            pl_manager->use_old_format, pl_manager->compress);
    }
+}
+
+static void task_pl_manager_free(retro_task_t *task)
+{
+   pl_manager_handle_t *pl_manager = NULL;
+
+   if (!task)
+      return;
+
+   pl_manager = (pl_manager_handle_t*)task->state;
+
+   free_pl_manager_handle(pl_manager);
 }
 
 /**************************/
@@ -227,9 +243,8 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             task_title[0] = '\0';
             
             /* Save playlist changes to disk */
-            pl_manager_write_playlist(
+            playlist_write_file(
                   pl_manager->playlist,
-                  pl_manager->playlist_path,
                   pl_manager->use_old_format,
                   pl_manager->compress);
             
@@ -255,8 +270,6 @@ task_finished:
    
    if (task)
       task_set_finished(task, true);
-   
-   free_pl_manager_handle(pl_manager);
 }
 
 static bool task_pl_manager_reset_cores_finder(retro_task_t *task, void *user_data)
@@ -319,6 +332,8 @@ bool task_push_pl_manager_reset_cores(const char *playlist_path)
    task->title                   = strdup(task_title);
    task->alternative_look        = true;
    task->progress                = 0;
+   task->callback                = cb_task_pl_manager;
+   task->cleanup                 = task_pl_manager_free;
    
    /* Configure handle */
    pl_manager->playlist_path       = strdup(playlist_path);
@@ -345,11 +360,8 @@ error:
       task = NULL;
    }
    
-   if (pl_manager)
-   {
-      free(pl_manager);
-      pl_manager = NULL;
-   }
+   free_pl_manager_handle(pl_manager);
+   pl_manager = NULL;
    
    return false;
 }
@@ -463,35 +475,19 @@ static void pl_manager_validate_core_association(
       goto reset_core;
    else
    {
-      const char *core_path_basename = path_basename(core_path);
-      core_info_list_t *core_info    = NULL;
       char core_display_name[PATH_MAX_LENGTH];
-      size_t i;
+      core_info_ctx_find_t core_info;
       
       core_display_name[0] = '\0';
       
-      if (string_is_empty(core_path_basename))
-         goto reset_core;
+      /* Search core info */
+      core_info.inf  = NULL;
+      core_info.path = core_path;
       
-      /* Final check - search core info */
-      core_info_get_list(&core_info);
-      
-      if (core_info)
-      {
-         for (i = 0; i < core_info->count; i++)
-         {
-            const char *info_display_name = core_info->list[i].display_name;
-            
-            if (!string_is_equal(
-                  path_basename(core_info->list[i].path), core_path_basename))
-               continue;
-            
-            if (!string_is_empty(info_display_name))
-               strlcpy(core_display_name, info_display_name, sizeof(core_display_name));
-            
-            break;
-         }
-      }
+      if (core_info_find(&core_info) &&
+          !string_is_empty(core_info.inf->display_name))
+         strlcpy(core_display_name, core_info.inf->display_name,
+               sizeof(core_display_name));
       
       /* If core_display_name string is empty, it means the
        * core wasn't found -> reset association */
@@ -774,9 +770,8 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             task_title[0] = '\0';
             
             /* Save playlist changes to disk */
-            pl_manager_write_playlist(
+            playlist_write_file(
                   pl_manager->playlist,
-                  pl_manager->playlist_path,
                   pl_manager->use_old_format,
                   pl_manager->compress);
             
@@ -802,8 +797,6 @@ task_finished:
    
    if (task)
       task_set_finished(task, true);
-   
-   free_pl_manager_handle(pl_manager);
 }
 
 static bool task_pl_manager_clean_playlist_finder(retro_task_t *task, void *user_data)
@@ -866,6 +859,8 @@ bool task_push_pl_manager_clean_playlist(const char *playlist_path)
    task->title                   = strdup(task_title);
    task->alternative_look        = true;
    task->progress                = 0;
+   task->callback                = cb_task_pl_manager;
+   task->cleanup                 = task_pl_manager_free;
    
    /* Configure handle */
    pl_manager->playlist_path       = strdup(playlist_path);
@@ -895,11 +890,8 @@ error:
       task = NULL;
    }
    
-   if (pl_manager)
-   {
-      free(pl_manager);
-      pl_manager = NULL;
-   }
+   free_pl_manager_handle(pl_manager);
+   pl_manager = NULL;
    
    return false;
 }

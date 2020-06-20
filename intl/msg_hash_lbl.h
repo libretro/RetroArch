@@ -449,6 +449,26 @@ MSG_HASH(
    "core_information"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_CREATE_BACKUP,
+   "core_create_backup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,
+   "core_restore_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST,
+   "deferred_core_restore_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,
+   "core_delete_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST,
+   "deferred_core_delete_backup_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DISC_INFORMATION,
    "disc_information"
    )
@@ -497,12 +517,24 @@ MSG_HASH(
    "core_updater_show_experimental_cores"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP,
+   "core_updater_auto_backup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "core_updater_auto_backup_history_size"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
    "core_updater_buildbot_url"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_UPDATER_LIST,
    "core_updater_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_MANAGER_LIST,
+   "core_manager_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CPU_ARCHITECTURE,
@@ -733,8 +765,16 @@ MSG_HASH(
    "deferred_core_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST,
+   "deferred_core_information_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
    "core_updater"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST,
+   "deferred_core_manager_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST,
@@ -1275,6 +1315,10 @@ MSG_HASH(
    "input_hotkey_binds_begin"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "input_hotkey_block_delay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
    "input_icade_enable"
    )
@@ -1791,6 +1835,10 @@ MSG_HASH(
    "no_core_information_available"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NO_CORE_BACKUPS_AVAILABLE,
+   "no_core_backups_available"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
    "no_core_options_available"
    )
@@ -1893,6 +1941,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SCALE,
    "input_overlay_scale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_CENTER_X,
+   "input_overlay_center_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_CENTER_Y,
+   "input_overlay_center_y"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PAL60_ENABLE,
@@ -3035,6 +3091,22 @@ MSG_HASH(
    "video_shader_preset_save_as"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "video_shader_preset_save_global"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "video_shader_preset_save_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "video_shader_preset_save_parent"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "video_shader_preset_save_game"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
    "video_shader_scale_pass"
    )
@@ -3471,6 +3543,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SCROLL_FAST,
    "menu_scroll_fast"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_LOCK,
+   "core_lock"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_DELETE,
@@ -4427,6 +4503,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
    "manual_content_scan_file_exts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "manual_content_scan_search_recursively"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,

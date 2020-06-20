@@ -57,7 +57,7 @@ static void ps2_font_free_font(void *data, bool is_threaded)
 }
 
 static void ps2_font_render_msg(
-      video_frame_info_t *video_info,
+      void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
 {
