@@ -1759,14 +1759,6 @@ MSG_HASH(
    "タイミングスキューの最大値"
    )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
-    "オーバーレイを自動回転"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-    "端末回転時にオーバーレイを自動回転"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_HIDE,
     "オーバーレイを自動非表示"
     )

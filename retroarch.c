@@ -36566,7 +36566,7 @@ static enum runloop_state runloop_check_state(
    bool is_auto_hide_enabled = settings->bools.input_overlay_auto_hide;
    if (is_auto_hide_enabled && is_input_device_connected)
    {
-      retroarch_overlay_deinit();
+      retroarch_overlay_deinit(p_rarch);
    }
    else if (settings->bools.input_overlay_enable)
    {
@@ -36579,7 +36579,7 @@ static enum runloop_state runloop_check_state(
 
       if (is_auto_hide_enabled && was_input_device_connected && !is_input_device_connected)
       {
-         retroarch_overlay_init();
+         retroarch_overlay_init(p_rarch);
       }
 
       /* Check next overlay */
