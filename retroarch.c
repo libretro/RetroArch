@@ -17185,9 +17185,11 @@ static void runloop_core_msg_queue_push(
    fps             = (av_info && (av_info->timing.fps > 0)) ? av_info->timing.fps : 60.0;
    duration_frames = (unsigned)((fps * (float)msg->duration / 1000.0f) + 0.5f);
 
+   /* Note: Do not flush the message queue here - a core
+    * may need to send multiple notifications simultaneously */
    runloop_msg_queue_push(msg->msg,
          msg->priority, duration_frames,
-         true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+         false, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
          category);
 }
 
