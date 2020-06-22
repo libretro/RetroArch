@@ -12,4 +12,8 @@
       "source": "/steam_us.json",
       "translation": "/steam_%two_letters_code%.json",
     },
+    {
+      "source": "/googleplay_us.json",
+      "translation": "/googleplay_%two_letters_code%.json",
+    },    
   ]
