@@ -145,8 +145,8 @@ typedef struct rcheevos_async_io_request
    int attempt_count;
    char type;
    char hardcore;
-   char* success_message;
-   char* failure_message;
+   const char* success_message;
+   const char* failure_message;
    char user_agent[256];
 } rcheevos_async_io_request;
 
@@ -1150,16 +1150,23 @@ void rcheevos_get_achievement_state(unsigned index, char *buffer, size_t buffer_
    {
       enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY;
    }
+   else if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
+   {
+      enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
+   }
+   else if (!(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
+   {
+      /* if in hardcore mode, track progress towards hardcore unlock */
+      const settings_t* settings = config_get_ptr();
+      const bool hardcore = settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused;
+      check_measured = hardcore;
+
+      enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
+   }
    else
    {
-      settings_t* settings = config_get_ptr();
-      bool hardcore        = settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused;
-      if (hardcore && !(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
-         enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
-      else if (!hardcore && !(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
-         enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
-      else /* Use either "Locked" for core or "Unofficial" for unofficial as set above */
-         check_measured = true;
+      /* Use either "Locked" for core or "Unofficial" for unofficial as set above and track progress */
+      check_measured = true;
    }
 
    strlcpy(buffer, msg_hash_to_str(enum_idx), buffer_size);
@@ -1548,7 +1555,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          CORO_STOP();
 
       /* iterate over the possible hashes for the file being loaded */
-      rc_hash_initialize_iterator(&coro->iterator, coro->path, coro->data, coro->len);
+      rc_hash_initialize_iterator(&coro->iterator, coro->path, (uint8_t*)coro->data, coro->len);
 #ifdef CHEEVOS_TIME_HASH
       start = cpu_features_get_time_usec();
 #endif
