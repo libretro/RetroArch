@@ -32,7 +32,7 @@
 #pragma warning(disable:4566)
 #endif
 
-int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
+int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    settings_t      *settings = config_get_ptr();
 
@@ -1502,6 +1502,15 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "用双线性过滤使图像平滑。 \n"
                "如果你使用了渲染器，请关闭它。");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+         snprintf(s, len,
+#ifdef HAVE_ODROIDGO2
+               "RGA scaling and bicubic filtering. May break widgets."
+#else
+               "Hardware context scaling (if available)."
+#endif
+         );
          break;
       case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
          snprintf(s, len,

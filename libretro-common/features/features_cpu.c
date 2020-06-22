@@ -39,7 +39,11 @@
 #include <windows.h>
 #endif
 
-#if defined(__CELLOS_LV2__) || ( defined(__OpenBSD__) && defined(__powerpc__) )
+#ifdef __PSL1GHT__
+#include <lv2/systime.h>
+#endif
+
+#if defined(__CELLOS_LV2__)
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
 #endif
@@ -66,9 +70,7 @@
 #endif
 
 #if defined(PS2)
-#include <kernel.h>
-#include <timer.h>
-#include <time.h>
+#include <ps2sdkapi.h>
 #endif
 
 #if defined(__PSL1GHT__)
@@ -167,7 +169,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    tv_sec     = (long)((ularge.QuadPart - epoch) / 10000000L);
    tv_usec    = (long)(system_time.wMilliseconds * 1000);
    time_ticks = (1000000 * tv_sec + tv_usec);
-#elif defined(__linux__) || defined(__QNX__) || defined(__MACH__)
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv = {0};
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
@@ -181,26 +183,22 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
 #elif defined(__ARM_ARCH_6__)
    __asm__ volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
-#elif defined(__CELLOS_LV2__) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
+#elif defined(__CELLOS_LV2__) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__)
    time_ticks = __mftb();
 #elif defined(GEKKO)
    time_ticks = gettime();
-#elif defined(PSP)
-   sceRtcGetCurrentTick((uint64_t*)&time_ticks);
-#elif defined(VITA)
-   sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
+#elif defined(PSP) || defined(VITA)
+   time_ticks = sceKernelGetSystemTimeWide();
 #elif defined(PS2)
-   time_ticks = clock()*294912; // 294,912MHZ / 1000 msecs
+   time_ticks = ps2_clock();
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
    time_ticks = OSGetSystemTime();
-#elif defined(__mips__)
-   struct timeval tv;
-   gettimeofday(&tv,NULL);
-   time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
 #elif defined(HAVE_LIBNX)
    time_ticks = armGetSystemTick();
+#elif defined(EMSCRIPTEN)
+   time_ticks = emscripten_get_now() * 1000;
 #endif
 
    return time_ticks;
@@ -226,6 +224,8 @@ retro_time_t cpu_features_get_time_usec(void)
    if (!QueryPerformanceCounter(&count))
       return 0;
    return (count.QuadPart / freq.QuadPart * 1000000) + (count.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
+#elif defined(__PSL1GHT__)
+   return sysGetSystemTime();
 #elif defined(__CELLOS_LV2__)
    return sys_time_get_system_time();
 #elif defined(GEKKO)
@@ -234,7 +234,7 @@ retro_time_t cpu_features_get_time_usec(void)
    return ticks_to_us(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
    return (svcGetSystemTick() * 10) / 192;
-#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__) || defined(DJGPP)
    struct timespec tv = {0};
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
@@ -242,15 +242,11 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
 #elif defined(PS2)
-      return clock()*1000;
-#elif defined(__mips__) || defined(DJGPP)
-   struct timeval tv;
-   gettimeofday(&tv,NULL);
-   return (1000000 * tv.tv_sec + tv.tv_usec);
+   return ps2_clock() / PS2_CLOCKS_PER_MSEC * 1000;
+#elif defined(VITA) || defined(PSP)
+   return sceKernelGetSystemTimeWide();
 #elif defined(_3DS)
    return osGetTime() * 1000;
-#elif defined(VITA)
-   return sceKernelGetProcessTimeWide();
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
@@ -289,7 +285,9 @@ void x86_cpuid(int func, int flags[4])
 #elif defined(_MSC_VER)
    __cpuid(flags, func);
 #else
+#ifndef NDEBUG
    printf("Unknown compiler. Cannot check CPUID with inline assembly.\n");
+#endif
    memset(flags, 0, 4 * sizeof(int));
 #endif
 }
@@ -311,7 +309,9 @@ static uint64_t xgetbv_x86(uint32_t idx)
    /* Intrinsic only works on 2010 SP1 and above. */
    return _xgetbv(idx);
 #else
+#ifndef NDEBUG
    printf("Unknown compiler. Cannot check xgetbv bits.\n");
+#endif
    return 0;
 #endif
 }
@@ -492,7 +492,7 @@ unsigned cpu_features_get_core_amount(void)
    return sysinfo.dwNumberOfProcessors;
 #elif defined(GEKKO)
    return 1;
-#elif defined(PSP) || defined(PS2)
+#elif defined(PSP) || defined(PS2) || defined(__CELLOS_LV2__)
    return 1;
 #elif defined(VITA)
    return 4;

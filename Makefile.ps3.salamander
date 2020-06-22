@@ -59,6 +59,7 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 				  libretro-common/streams/file_stream.c \
 				  libretro-common/vfs/vfs_implementation.c \
 				  libretro-common/file/config_file.c \
+				  libretro-common/time/rtime.c \
 				  file_path_str.c \
 				  verbosity.c
 

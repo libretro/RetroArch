@@ -35,7 +35,7 @@
 #pragma warning(disable:4566)
 #endif
 
-int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
+int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
     settings_t *settings = config_get_ptr();
 
@@ -653,7 +653,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Opacidade da sobreposição.");
             break;
-#ifdef HAVE_VIDEO_LAYOUT
         case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
             snprintf(s, len,
                      "Ativar ou desativar o esquema de vídeo atual.");
@@ -667,7 +666,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Os esquemas podem conter várias visualizações. \n"
                      "Selecione uma visualização.");
             break;
-#endif
         case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
             snprintf(s, len,
                      "Tempo limite para vínculo de entrada \n"
@@ -1863,6 +1861,15 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Suaviza a imagem com filtragem bilinear. \n"
                              "Deve ser desativado se estiver usando shaders.");
             break;
+      case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+         snprintf(s, len,
+#ifdef HAVE_ODROIDGO2
+               "Escala RGA e filtragem bicúbica. Pode quebrar os widgets."
+#else
+               "Escala de contexto de hardware (se disponível)."
+#endif
+         );
+         break;
         case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             snprintf(s, len,
                      "Exibir data e/ou hora atuais dentro do menu.");
@@ -1929,7 +1936,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Define um diretório onde as sobreposições \n"
                              "são mantidas para fácil acesso.");
             break;
-#ifdef HAVE_VIDEO_LAYOUT
         case MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY:
             snprintf(s, len,
                      "Diretório do esquema de vídeo. \n"
@@ -1937,7 +1943,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Define um diretório onde os esquemas de vídeo \n"
                              "são mantidos para facilitar o acesso.");
             break;
-#endif
         case MENU_ENUM_LABEL_INPUT_MAX_USERS:
             snprintf(s, len,
                      "Número máximo de usuários \n"

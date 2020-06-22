@@ -193,7 +193,6 @@
 		05A8C52D20DB72F000FF7857 /* menu_cbs_up.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_up.c; sourceTree = "<group>"; };
 		05A8C52E20DB72F000FF7857 /* gfx_animation.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gfx_animation.c; sourceTree = "<group>"; };
 		05A8C52F20DB72F000FF7857 /* menu_displaylist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_displaylist.h; sourceTree = "<group>"; };
-		05A8C53020DB72F000FF7857 /* menu_content.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_content.h; sourceTree = "<group>"; };
 		05A8C53220DB72F000FF7857 /* xmb.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xmb.c; sourceTree = "<group>"; };
 		05A8C53B20DB72F000FF7857 /* xui.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = xui.cpp; sourceTree = "<group>"; };
 		05A8C53C20DB72F000FF7857 /* rgui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rgui.c; sourceTree = "<group>"; };
@@ -205,7 +204,6 @@
 		05A8C54520DB72F000FF7857 /* menu_entries.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_entries.c; sourceTree = "<group>"; };
 		05A8C54620DB72F000FF7857 /* menu_setting.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_setting.c; sourceTree = "<group>"; };
 		05A8C54720DB72F000FF7857 /* menu_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_input.c; sourceTree = "<group>"; };
-		05A8C54820DB72F000FF7857 /* menu_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_content.c; sourceTree = "<group>"; };
 		05A8C54920DB72F000FF7857 /* menu_displaylist.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_displaylist.c; sourceTree = "<group>"; };
 		05A8C54A20DB72F000FF7857 /* menu_shader.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_shader.c; sourceTree = "<group>"; };
 		05A8C54B20DB72F000FF7857 /* gfx_animation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gfx_animation.h; sourceTree = "<group>"; };
@@ -479,7 +477,6 @@
 		05C5D56C20E3DD0900654EE4 /* input_overlay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_overlay.h; sourceTree = "<group>"; };
 		05C5D56D20E3DD0900654EE4 /* input_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_defines.h; sourceTree = "<group>"; };
 		05C5D56F20E3DD0900654EE4 /* btstack_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = btstack_hid.c; sourceTree = "<group>"; };
-		05C5D57020E3DD0900654EE4 /* null_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = null_hid.c; sourceTree = "<group>"; };
 		05C5D57320E3DD0900654EE4 /* iohidmanager_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = iohidmanager_hid.c; sourceTree = "<group>"; };
 		05C5D57620E3DD0900654EE4 /* input_hid_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_hid_common.c; sourceTree = "<group>"; };
 		05C5D57720E3DD0900654EE4 /* input_x11_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_x11_common.c; sourceTree = "<group>"; };
@@ -762,8 +759,6 @@
 				05A8C54B20DB72F000FF7857 /* gfx_animation.h */,
 				05A8C54120DB72F000FF7857 /* menu_cbs.c */,
 				05A8C54C20DB72F000FF7857 /* menu_cbs.h */,
-				05A8C54820DB72F000FF7857 /* menu_content.c */,
-				05A8C53020DB72F000FF7857 /* menu_content.h */,
 				05A8C54920DB72F000FF7857 /* menu_displaylist.c */,
 				05A8C52F20DB72F000FF7857 /* menu_displaylist.h */,
 				05A8C54D20DB72F000FF7857 /* menu_driver.c */,
@@ -939,7 +934,6 @@
 				A9020EE4BE2C6A15024A32E0 /* ui_cocoa_metal.m */,
 				A9020BD6594399DDAB0E2563 /* ui_cocoatouch_metal.m */,
 				05A8C5CF20DB72F000FF7857 /* ui_cocoatouch.m */,
-				05A8C5B920DB72F000FF7857 /* ui_null.c */,
 				05A8C5D020DB72F000FF7857 /* ui_qt.cpp */,
 				05A8C5C820DB72F000FF7857 /* ui_qt.h */,
 				05A8C5B820DB72F000FF7857 /* ui_win32_resource.h */,

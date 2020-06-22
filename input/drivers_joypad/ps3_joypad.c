@@ -158,24 +158,6 @@ static void ps3_joypad_poll(void)
       {
          uint64_t *state_cur = &pad_state[port];
          *state_cur = 0;
-#ifdef __PSL1GHT__
-         *state_cur |= (state_tmp.BTN_LEFT)     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-         *state_cur |= (state_tmp.BTN_DOWN)     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-         *state_cur |= (state_tmp.BTN_RIGHT)    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-         *state_cur |= (state_tmp.BTN_UP)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-         *state_cur |= (state_tmp.BTN_START)    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-         *state_cur |= (state_tmp.BTN_R3)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
-         *state_cur |= (state_tmp.BTN_L3)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
-         *state_cur |= (state_tmp.BTN_SELECT)   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-         *state_cur |= (state_tmp.BTN_TRIANGLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-         *state_cur |= (state_tmp.BTN_SQUARE)   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-         *state_cur |= (state_tmp.BTN_CROSS)    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-         *state_cur |= (state_tmp.BTN_CIRCLE)   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-         *state_cur |= (state_tmp.BTN_R1)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-         *state_cur |= (state_tmp.BTN_L1)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-         *state_cur |= (state_tmp.BTN_R2)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-         *state_cur |= (state_tmp.BTN_L2)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-#else
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
@@ -208,7 +190,6 @@ static void ps3_joypad_poll(void)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         //RARCH_LOG("lsx : %d (%hd) lsy : %d (%hd) rsx : %d (%hd) rsy : %d (%hd)\n", lsx, ls_x, lsy, ls_y, rsx, rs_x, rsy, rs_y);
          uint8_t lsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X]);
          uint8_t lsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
          uint8_t rsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
@@ -222,7 +203,6 @@ static void ps3_joypad_poll(void)
          accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
          accelerometer_state[port].y = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Y];
          accelerometer_state[port].z = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Z];
-#endif
 #endif
       }
 

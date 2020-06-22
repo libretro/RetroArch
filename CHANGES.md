@@ -1,9 +1,208 @@
 # Future
+
+# 1.8.9
+- AUTO SAVESTATES: Ensure save states are correctly flushed to disk when quitting RetroArch (fixes broken save states when exiting RetroArch - without first closing content - with 'Auto Save State' enabled)
+- BUILTIN CORES: Builtin cores like ffmpeg and imageviewer would previously try  to erroneously load a dynamic core named 'builtin' - this would fail and would just be a wasteful operation - this now skips dylib loading in libretro_get_system_info for builtin cores
+- CHEEVOS: Report API errors when unlocking achievements or submitting leaderboards
+- CHEEVOS: Support less common file extensions
+- CHEEVOS: Disable hardcore mode when playing BSV file
+- CHEEVOS: Correctly report unlocked non-hardcore achievements when hardcore is paused
+- CHEEVOS/M3U: Bugfix - did not handle absolute/relative paths in M3U files correctly before
+- CHEEVOS/M3U: Bugfix - it didn't handle comments/directives
+- CHEEVOS/M3U: Bugfix - it doesn't handle trailing whitespace
+- CHEEVOS/M3U: Bugfix - failed when loading M3U files with certain line endings
+- CORE MANAGEMENT: Add 'core management' menu (Settings -> Core)
+- CORE MANAGEMENT: Add option to backup/restore installed cores
+- CORE MANAGEMENT: Improved core selection logic
+- CORE INFO: Search search optimisations
+- CORE DOWNLOADER: Rename 'Core Updater' to 'Core Downloader'
+- CORE DOWNLOADER: Add 'Show Experimental Cores' setting under Settings > Network > Updater
+- CORE DOWNLOADER: Core licenses are now shown for all entries in the Core Updater menu
+- CORE DOWNLOADER: Pressing RetroPad select on a Core Updater entry will now display any text in the description field of its info file
+- CORE DOWNLOADER: Installed cores are now highlighted via a [#] symbol
+- CORE DOWNLOADER: Pressing RetroPad start on a selected, installed entry opens the Core Information menu (when using Material UI, swiping left or right triggers the same action). This means we can now view bios info etc. - and more importantly delete cores - without jumping through all the hoops of loading a core first and navigating all over the place
+- CORE DOWNLOADER/UPDATER: Add option to automatically backup cores when updating
+- DISK CONTROL: Enable 'Load New Disc' while disk tray is open
+- INPUT: Added a hotkey delay option to allow hotkey input to work properly when it is assigned to another action
+- INPUT: Remove 'All Users Control Menu' setting, was buggy and will be properly reintroduced after input overhaul
+- LINUX: Set default saves/save states/system paths
+- LOCALIZATION: Add Persian language
+- LOCALIZATION: Add Hebrew language
+- LOCALIZATION: Add Asturian language
+- MENU: Proper line wrapping for message dialog boxes
+- MENU/HOTKEYS: Add sublabels to all hotkey bind entries
+- MENU/QUICK MENU: Suppress the display of 'empty' quick menu listings when closing content
+- MENU/OZONE: Performance improvements
+- MENU/SDL: Add mouse controls
+- OPENGL1/VITA: Initial changes for HW context without FBO
+- OVERLAYS: Add options for moving the on-screen overlay
+- PLAYLISTS/WINDOWS: Fix core path entries in image/video/music history playlists
+- PS2: Add back CDFS support
+- SDL/GL: Advertise GLSL support
+- VIDEO/WIDGETS: Fix heap-use-after-free errors, leading to memory corruption
+- VITA: Added custom bubbles support
+- VITA: VitaGL update
+- VULKAN/WSI: Better frame pacing
+- VULKAN/WSI: Fix Intel Mesa being broken when using Fences, we have to use Semaphores to acquire the swapchain or the entire GPU stalls
+- VULKAN/WSI: Add support for either using fences or semaphores when syncing
+- VULKAN/WSI: Prefer using semaphores for integrated GPUs as it promotes better throughput over fences
+- VULKAN/WSI/ANDROID: Do not use mailbox emulation on Android
+- UWP/XBOX: Potentially improve performance by enabling 'Game Mode'
+
+# 1.8.8
+- AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
+- CHEEVOS: Disable hardcore when cheats are enabled
+- CHD: Return false when special track cannot be found
+- DISCORD/MATCHMAKING: Fix Discord 'Ask To Join' functionality
+- FILE PATH: Various file path handling optimisations
+- FONT: Fix Arabic, Chinese and Korean font rendering
+- INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
+- INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
+- LOCALIZATION: Update Arabic translation
+- LOCALIZATION: Update Chinese (Simplified) translation
+- LOCALIZATION: Update Chinese (Traditional) translation
+- LOCALIZATION: Update German translation
+- LOCALIZATION: Update Greek translation
+- LOCALIZATION: Update Spanish translation
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update Japanese translation
+- LOCALIZATION: Update Korean translation
+- LOCALIZATION: Update Dutch translation
+- LOCALIZATION: Update Polish translation
+- LOCALIZATION: Update Portuguese Brazilian translation
+- LOCALIZATION: Update Russian translation
+- LOCALIZATION: Update Turkish translation
+- LOCALIZATION: Update Vietnamese translation
+- LOCALIZATION: Add Slovak translation
+- MENU: Small buffer optimizations
+- MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
+- MENU/OZONE: Add option to sort playlists after name truncation
+- MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
+- MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
+- NETPLAY: Lower announcement rate
+- OVERLAYS: Fix memory leak when loading overlays
+- SHADER PRESETS: Improved shader preset dirs
+- TIME/DATE: Enable configuration of date seperator in clock and runtime 'last played' displays
+- VITA: Fix upside-down vertical games
+- UWP: Enable playlist and savefile compression by default (because of slow file I/O)
+- WIIU: Gamepad hotplugging support
+- WIIU: Theoretical multi-gamepad support
+- VIDEO/WIDGETS: Fix overlapping text when simultaneous pop-up notifications and core/shader messages are being displayed
+- X11: Fix crash in x11_display_server_get_screen_orientation
+- X11/XSHM: Allow X11/XHSM video driver to operate without SHM extension
+- X11/XSHM: Fix compatibility with X11 input driver
+- XVIDEO: Fix keyboard input initialization
+- XVIDEO/XWAYLAND: Fix XVideo support on xwayland (by supporting I420 and YZ12)
+
+# 1.8.7
+- 3DS: Add IDs for Frodo
+- 3DS: Enable basic networking / cheevos
+- CHEEVOS/BUGFIX: Opening achievements list would crash RetroArch with badges enabled (on new games)
+- CHEEVOS: Option to start a session with all achievements active
+- CHEEVOS: Don't perform unnecessary cheevos initialisation when cheevos are disabled. Should reduce startup times when loading content.
+- CORE OPTIONS: Disable 'Use Global Core Options File' by default
+- DOS/DJGPP: Add 32bit color support for cores
+- GLCORE: Switch to glcore video driver when requested by a core
+- LINUX/XDG: Use GenericName correctly in desktop entry
+- MAC/COCOA: Fix mouse cursor tracking
+- MENU/MATERIALUI: Add desktop-style playlist view mode
+- MENU/MATERIALUI/DESKTOPVIEW: When scrolling playlists, show last selected thumbnails while waiting for next entry to load
+- MENU/MATERIALUI: Limit tab switch rate when input repeat is active
+- MENU/OZONE: Fix sidebar playlist sort order when 'Truncate Playlist Names' is enabled
+- MENU/RGUI: Adjusted menu defaults, adjusted default scrolling speed
+- MENU/RGUI: Enable custom wallpaper when menu size is reduced at low resolutions
+- MENU/XMB: Limit tab switch rate when input repeat is active
+- NETPLAY: Fix regressions introduced in 1.8.5
+- RGUI: Add option to always stretch menu to fill the screen
+- WIIU: Enable graphics widgets
+
+# 1.8.6
+- 3DS: Add IDs for UZEM, TGB Dual, and NeoCD
+- 3DS: Fix font driver horizontal text alignment
+- 3DS: Allow button presses up to INPUT_MAX_USERS - this enables the 3DS to bind and use buttons and axis for users up to the maximum set by 'Max Users' in the input settings menu.
+- 3DS: Disable video filter if upscaled resolution exceeds hardware limits. The 3DS has a maximum video buffer size of 2048x2048. This is sufficient for every core that it supports, but when using software video filters the core output resolution is doubled. This is made worse by the fact that the video filter upscaling buffer size is dependent upon the maximum output resolution of the core - which in some cases is very large indeed (e.g. pcsx-rearmed sets a maximum width of 1024, for enhanced resolution support). The 3DS has very limited 'linear memory' for graphics buffer purposes, and a large base core buffer + video filter buffer can easily exceed this - which may also disable video output, or cause a crash. This PR very simply adds a 3DS-specific check to the video filter initialisation: if the resultant upscaling buffer exceeds the hardware limitation, then the filter is automatically disabled.
+- 3DS/FONT/BUGFIX: Text colour was wrong: the RGBA channels were muddled, and R was always set to 255
+- 3DS/FONT/BUGFIX: When drawing multiline strings, the line spacing was completely incorrect
+- 3DS/FONT: Improves the appearance of the drop shadow effect on notification text.
+- 3DS/ARCHIVE/7Z: Re-enable 7zip support.
+- ARCHIVE/ZIP: Expand functionality of 'rzip_stream' interface. This PR expands the functionality of the new rzip_stream archived stream interface such that it now has almost complete feature parity with the standard file_stream interface, and can therefore be used as a drop-in replacement in most situations
+- AI SERVICE: Hide redundant entries when service is disabled
+- AI SERVICE: Added in auto-translate support
+- AI SERVICE: support for NVDA and SAPI narration
+- AUTOCONFIG: Use correct port index in input device configured/disconnected notifications
+- BUGFIX: Fix race condition where task could momentarily not be in the queue when reordering
+- CHEEVOS/BUGFIX: Prevent null reference rendering achievement list while closing application
+- CHEEVOS/BUGFIX: Report non-memorymap GBA cores as unsupported
+- COMMANDLINE: Advise against using -s and -S variables on the command line. …
+- CONFIG FILE: Only write config files to disk when parameters change
+- CONFIG FILE/BUGFIX: RetroArch no longer crashes when attempting to save a config file after 'unsetting' a parameter (currently, this can be triggered quite easily by manipulating input remaps)
+- CONFIG FILE/BUGFIX: When using Material UI, RetroArch no longer modifies the wrong setting (or segfaults...) when tapping entries in the Quick Menu > Controls input remapping submenu
+- CONFIG FILE/BUGFIX: Quite a few real and potential memory leaks have been fixed.
+- CHD: Fixes a crash caused by ignoring the return value from one of the CHD library functions
+- FASTFORWARDING: A new Mute When Fast-Forwarding option has been added under Settings > Audio. When enabled, users can fast forward without having to listen to distorted audio.
+- GLCORE/SLANG: Set filter and wrap mode correctly when intialising shader textures. Before, the glcore shader driver did not correctly initialise loaded textures. The texture filtering and wrap mode were forced on texture creation, but these settings were not recorded - subsequent updates would set garbage values, that would resolve to linear filtering OFF and wrap mode = CLAMP_TO_EDGE.
+- LOCALIZATION: Update Japanese translation
+- LOCALIZATION: Update Spanish translation
+- LOCALIZATION: Update Portuguese Brazilian translation
+- IOS: Set audio session category to ambient so sound does not get cut off on interruption (phone call/playing back audio)
+- MAC/IOHIDMANAGER/BUGFIX: Fix for Mayflash N64 adapter. In case last hatswitch does not match cookie. For the mayflash N64 adapter, I was getting a BAD EXC ADDRESS (in mac OS 10.13) for this line (tmp was NULL). Retroarch would crash in the gui if I pressed a button from the DPAD on controller 2. With this change, it no longer crashes in the gui and still registers the button push.
+- MAC/COCOA: Fix mouse input - this brings back two lines of code that have been removed over time but
+appear to be required in order for mouse input to work on macOS
+- METAL/BUGFIX: GPU capture on Metal/OSX/NVidia could crash
+- METAL/BUGFIX: Taking screenshots could capture black frames. Resulting PNG screenshots were black.
+- METAL/BUGFIX: Corrupted image due to incorrect viewport copy when taking screenshot
+- MENU: Prevent font-related segfaults when using extremely small scales/window sizes
+- MENU: Fix 'gfx_display_draw_texture_slice()'
+- MENU/FONT: Enable correct vertical alignment of text (+ font rendering fixes)
+- MENU/RGUI: Enable automatic menu size reduction when running at low resolutions (down to 256x192)
+- MENU/OZONE: Update timedate style options for Last Played sublabel metadata
+- MENU/OZONE: Hide 'Menu Color Theme' setting when 'Use preferred system color theme' is enabled
+- MENU/OZONE: Fix thumbnail switching via 'scan' button functionality
+- MENU/OZONE: Prevent glitches when rendering Ozone's selection cursor
+- MENU/OZONE: Enable proper vertical text alignment + thumbnail display improvements
+- MENU/OZONE: Enable second thumbnail/content metadata toggle using RetroPad 'select'
+- MENU/OZONE: Refactor footer display
+- MENU/OZONE: Hide thumbnail button hints when viewing file browser lists
+- MENU/OZONE/INPUT/BUGFIX: Fix undefined behaviour when using touch screen to change input remaps
+- MENU/OZONE/INPUT/BUGFIX: It turns out that Windows reports negative pointer coordinates when the mouse cursor goes beyond the left hand edge of the RetroArch window (this doesn't happen on Linux, so I never encountered this issue before!). As a result, if Ozone is currently not showing the sidebar (menu depth > 1), moving the cursor off the left edge of the window generates a false positive 'cursor in sidebar' event - which breaks menu navigation, as described in #10419. With this PR, we now handle 'cursor in sidebar' status correctly in all cases
+- MENU/OZONE/INPUT/BUGFIX: Pointer input is now correctly disabled when message boxes are displayed
+- MENU/XMB: Fix thumbnail switching via 'scan' button functionality
+- ODROID GO ADVANCE: Add DRM HW context driver
+- PSL1GHT: Initial port
+- PSL1GHT/KEYBOARD: Implement PSL1GHT keyboard
+- PLAYLIST/BUGFIX: Improve handling of 'broken' playlists - RetroArch will no longer segfault when attempting to run content via a playlist entry with missing path or core path fields.
+- PLAYLIST/BUGFIX: Improve handling of 'broken' playlists - when a playlist entry has either core path and/or core name set to NULL, DETECT or an empty string, attempting to load content will fallback to the normal 'core selection' code (currently this happens only if both core path and core name are DETECT - this is wholly inadequate!)
+- PLAYLIST/BUGFIX: RetroArch will no longer segfault when attempting to fetch content runtime information when core path is NULL
+- PLAYLIST/BUGFIX: Core name + runtime info will only be displayed on playlists and in the Information submenu if both the core path and core name fields are 'valid' (i.e. not NULL or DETECT)
+- PLAYLIST/BUGFIX: When handling entries with missing path fields, the menu sorting order now matches that of the playlist sorting order (at present, everything goes out of sync when paths are empty). Moreover, entries with missing path fields can now be 'selected', so users can remove them (currently, hitting A on such an entry immediately tries - and fails - to load the content, so the only way to remove the broken entry is via the Playlist Management > Clean Playlist feature)
+- PLAYLIST: Add optional per-playlist alphabetical sorting
+- PLAYLIST: Omit whitespace when writing compressed JSON format playlists
+- PLAYLIST: Add optional playlist compression
+- QNX: Support analog sticks
+- SAVESTATES: Add optional save state compression (enabled by default now)
+- SRAM: Add optional save (SRAM) file compression
+- SCANNER: Prevent redundant playlist entries when handling M3U content
+- SCANNER/ANDROID: Fix content scanner being unable to identify certain games from CHD images (raw data sector/subcode)
+- TASKS/BUGFIX: Fix task deadlocks
+- TASKS/SCREENSHOT/BUGFIX: Fix heap-use-after-free error when widgets are disabled
+- TVOS: Disable overlays for tvOS, fix app icon
+- VIDEO/WIDGETS/BUGFIX: The font ascender/descender metrics added in #10375 are now used to achieve 'pixel perfect' vertical text alignment
+- VIDEO/WIDGETS/BUGFIX: Message queue text now uses its own dedicated font. Previously, a single (larger) font was used for all active widgets, and this was scaled down for message queue items. This 'squished' the text a little; more importantly, when using the stb font renderers (on Android. etc.) it caused ugly artefacts around the edges of glyphs due to pixel interpolation errors. Now that a correctly sized font is used, the message queue is always rendered cleanly.
+- VIDEO/WIDGETS/BUGFIX: Previously, each widget font was 'flushed' (font_driver_flush()) at least once a frame. This is quite a slow operation. Now we only flush fonts if they have actually been used.
+- VULKAN/BUGFIX: Fix display of statistics text
+- UNIX/BUGFIX: Fix overflow when computing total memory on i386
+- WIIU/BUGFIX: Fix font driver horizontal text alignment
+- WIIU/BUGFIX: Fix non-vertex coordinates in draws using tex shader
+- WIIU/BUGFIX: Update and fix meta.xml file for the WiiU release. This change makes it so the information from the meta.xml file parsed for the WiiU's Homebrew Launcher is displayed properly.
+
+# 1.8.5
 - 3DS: Keep the bottom screen hidden on sleep/wakeup. When the 3DS wakes back up after being closed, the bottom screen needs to be reinitialized. Adding the condition here will cause the screen to be turned on or off based on the state of ctr_bottom_screen_enabled, as you'd expect
 - ANDROID/CHROMEBOOK/CRASH: Fix Chromebook crashes (on x86 x64) when touching the screen
 - BUGFIX: Prevent double input when using 'return' key (hardware) to close on-screen keyboard
 - BUGFIX: Fix mouse capture hotkey not working
 - BUGFIX: Avoid overflow when calculating multiplying performance counter
+- BUGFIX: Retroarch overlay displaying "Game remap file loaded." on the overlay instead of "Core remap file loaded." when only a core remap file is present
 - CHEEVOS/BUGFIX: Achievement triggers could cause Retroarch to Crash
 - CHEEVOS: Don't block Sameboy core because it only exposes some memory
 - CHEEVOS: Support for extended Sega CD memory
@@ -21,14 +220,19 @@
 - FFMPEG CORE: Fix crash on seeking when using HW decoding in some cases
 - LIBRETRO: Add disk control interface API extension
 - LINUX: Avoid possible crash when running retroarch at startup
+- LINUX/GLX: Fix threaded video crashes/instability because of GLX OML sync callbacks
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Spanish translation
 - LOCALIZATION: Update Portuguese Brazilian translation
+- MENU: Add Menu Scroll Acceleration option
 - MENU: Automatically select currently checked item when opening drop-down lists
 - MENU: Fix smooth (vertical) line ticker scroll speed
 - MENU: Don't flush on override/remap messages
+- MENU/DATETIME: Adds some new timedate styles that follow the DD/MM/YYYY format, found in several European countries
+- MENU/DATETIME: Modifies the existing translation files in order to accommodate the new options that are now available
+- MENU/DATETIME: Reorders the timedate view options based on a decreasing order of the quantity of information displayed, so that they are more convenient to switch around and easily categorized
 - MENU/BUGFIX: Fix bug - if you were in XMB and you would set menu driver to RGUI, you could no longer go to the left or right tab
 - MENU/MATERIALUI: Add option to remove navigation bar
 - MENU/OZONE: Add DPI-based scaling
@@ -47,6 +251,8 @@
 - ODROID GO ADVANCE: Rotation support
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - SCANNER: Add 'Arcade DAT Filter' Option
+- SCANNER: Add scanning Korea and Asia PS1 discs
+- SCANNER: Add support for scanning PSP Korean
 - VIDEO: Set hardware 'Bilinear filtering' off by default
 - VIDEO/WIDGETS: Widgets are now menu-independent
 - VIDEO/WIDGETS: Allow notifications to use full screen width when not displaying menu
@@ -54,6 +260,7 @@
 - VIDEO/WIDGETS: Fix volume widget scaling
 - VIDEO/WIDGETS: Add independent widget scale override settings for fullscreen/windowed modes
 - VIDEO/WIDGETS/BUGFIX: Prevent improper display of (old style) OSD text when widgets are enabled
+- VIDEO/WIDGETS/THREADED/BUGFIX: Fix issue - corruption of menu widgets when running some cores (e.g. VICE) with threaded video enabled
 - WIFI/CONNMANCTL: Display more characters from SSID
 
 # 1.8.4

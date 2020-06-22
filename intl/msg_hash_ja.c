@@ -25,7 +25,7 @@
 #include "../verbosity.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX)
-#if (_MSC_VER >= 1700 && _MSC_VER < 1910)
+#if (_MSC_VER >= 1700 && _MSC_VER < 1900)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
 #endif
@@ -35,7 +35,7 @@
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
 
-int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
+int msg_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
@@ -638,7 +638,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Overlay opacity.");
          break;
-#ifdef HAVE_VIDEO_LAYOUT
       case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
          snprintf(s, len,
                   "Enable or disable the current video layout.");
@@ -652,7 +651,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Layouts can contain multiple views. \n"
                   "Select a view.");
          break;
-#endif
       case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
          snprintf(s, len,
                "Input bind timer timeout (in seconds). \n"
@@ -1777,6 +1775,15 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Smoothens picture with bilinear filtering. \n"
                "Should be disabled if using shaders.");
          break;
+      case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+         snprintf(s, len,
+#ifdef HAVE_ODROIDGO2
+               "RGA scaling and bicubic filtering. May break widgets."
+#else
+               "Hardware context scaling (if available)."
+#endif
+         );
+         break;
       case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
          snprintf(s, len,
                "Shows current date and/or time inside menu.");
@@ -1841,7 +1848,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Defines a directory where overlays are \n"
                "kept for easy access.");
          break;
-#ifdef HAVE_VIDEO_LAYOUT
       case MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY:
          snprintf(s, len,
                   "Video Layout Directory. \n"
@@ -1849,7 +1855,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Defines a directory where video layouts are \n"
                   "kept for easy access.");
          break;
-#endif
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          snprintf(s, len,
                "Maximum amount of users supported by \n"

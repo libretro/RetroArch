@@ -39,7 +39,7 @@
 #include <Xtl.h>
 #endif
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sys/fs_external.h>
 #endif
 
@@ -75,7 +75,7 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 }
 
 #ifndef PATH_MAX_LENGTH
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #define PATH_MAX_LENGTH CELL_FS_MAX_FS_PATH_LENGTH
 #elif defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) || defined(GEKKO)|| defined(WIIU) || defined(ORBIS)
 #define PATH_MAX_LENGTH 512
@@ -106,8 +106,8 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 #define BIT16_GET(a, bit)    (((a) >> ((bit) & 15)) & 1)
 #define BIT16_CLEAR_ALL(a)   ((a) = 0)
 
-#define BIT32_SET(a, bit)    ((a) |=  (1 << ((bit) & 31)))
-#define BIT32_CLEAR(a, bit)  ((a) &= ~(1 << ((bit) & 31)))
+#define BIT32_SET(a, bit)    ((a) |=  (UINT32_C(1) << ((bit) & 31)))
+#define BIT32_CLEAR(a, bit)  ((a) &= ~(UINT32_C(1) << ((bit) & 31)))
 #define BIT32_GET(a, bit)    (((a) >> ((bit) & 31)) & 1)
 #define BIT32_CLEAR_ALL(a)   ((a) = 0)
 
@@ -116,8 +116,8 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 #define BIT64_GET(a, bit)    (((a) >> ((bit) & 63)) & 1)
 #define BIT64_CLEAR_ALL(a)   ((a) = 0)
 
-#define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |=  (1 << ((bit) & 31)))
-#define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(1 << ((bit) & 31)))
+#define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |=  (UINT32_C(1) << ((bit) & 31)))
+#define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(UINT32_C(1) << ((bit) & 31)))
 #define BIT128_GET(a, bit)   (((a).data[(bit) >> 5] >> ((bit) & 31)) & 1)
 #define BIT128_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a))
 

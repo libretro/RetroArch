@@ -30,13 +30,4 @@
 #include "config.h"
 #endif
 
-
-RETRO_BEGIN_DECLS
-
-bool is_accessibility_enabled(void);
-
-bool accessibility_speak_priority(const char* speak_text, int priority);
-
-RETRO_END_DECLS
-
 #endif

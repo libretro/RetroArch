@@ -224,6 +224,7 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
+   bool launched_from_cli;
    struct
    {
       char savefile[8192];
@@ -280,12 +281,12 @@ typedef struct global
 #ifdef HAVE_MENU
    struct
    {
-      retro_time_t prev_start_time ;
-      retro_time_t noop_press_time ;
-      retro_time_t noop_start_time  ;
-      retro_time_t action_start_time  ;
-      retro_time_t action_press_time ;
-      enum menu_action prev_action ;
+      retro_time_t prev_start_time;
+      retro_time_t noop_press_time;
+      retro_time_t noop_start_time;
+      retro_time_t action_start_time;
+      retro_time_t action_press_time;
+      enum menu_action prev_action;
    } menu;
 #endif
 } global_t;
@@ -301,8 +302,6 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
-bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
-
 bool retroarch_is_forced_fullscreen(void);
 
 void retroarch_set_current_core_type(
@@ -314,15 +313,6 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
 const char* retroarch_get_shader_preset(void);
 
 bool retroarch_is_switching_display_mode(void);
-
-/**
- * retroarch_fail:
- * @error_code  : Error code.
- * @error       : Error message to show.
- *
- * Sanely kills the program.
- **/
-void retroarch_fail(int error_code, const char *error);
 
 /**
  * retroarch_main_init:
@@ -1052,6 +1042,8 @@ typedef struct video_info
     * otherwise nearest filtering. */
    bool smooth;
 
+   bool ctx_scaling;
+
    bool is_threaded;
 
    /* Use 32bit RGBA rather than native RGB565/XBGR1555.
@@ -1095,21 +1087,20 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
+   bool widgets_active;
    bool menu_mouse_enable;
-   bool widgets_inited;
    bool widgets_is_paused;
    bool widgets_is_fast_forwarding;
    bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
-   bool shared_context;
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
    bool memory_show;
    bool statistics_show;
    bool framecount_show;
-   bool scale_integer;
+   bool core_status_msg_show;
    bool post_filter_record;
    bool windowed_fullscreen;
    bool fullscreen;
@@ -1120,9 +1111,7 @@ typedef struct video_frame_info
    bool battery_level_enable;
    bool timedate_enable;
    bool runloop_is_slowmotion;
-   bool runloop_is_idle;
    bool runloop_is_paused;
-   bool is_perfcnt_enable;
    bool menu_is_alive;
    bool msg_bgcolor_enable;
 
@@ -1130,7 +1119,6 @@ typedef struct video_frame_info
    int custom_vp_y;
    int crt_switch_center_adjust;
 
-   unsigned fps_update_interval;
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
@@ -1161,13 +1149,7 @@ typedef struct video_frame_info
    float font_msg_color_b;
    float xmb_alpha_factor;
 
-   char fps_text[128];
    char stat_text[512];
-   char chat_text[256];
-
-   uint64_t frame_count;
-   float frame_time;
-   float frame_rate;
 
    struct
    {
@@ -1187,10 +1169,7 @@ typedef struct video_frame_info
       enum text_alignment text_align;
    } osd_stat_params;
 
-   void (*cb_update_window_title)(void*);
    void (*cb_swap_buffers)(void*);
-   bool (*cb_get_metrics)(void *data, enum display_metric_types type,
-      float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
    void *context_data;
@@ -1382,7 +1361,7 @@ typedef struct video_poke_interface
    void (*set_video_mode)(void *data, unsigned width,
          unsigned height, bool fullscreen);
    float (*get_refresh_rate)(void *data);
-   void (*set_filtering)(void *data, unsigned index, bool smooth);
+   void (*set_filtering)(void *data, unsigned index, bool smooth, bool ctx_scaling);
    void (*get_video_output_size)(void *data,
          unsigned *width, unsigned *height);
 
@@ -1402,7 +1381,7 @@ typedef struct video_poke_interface
          unsigned width, unsigned height, float alpha);
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-   void (*set_osd_msg)(void *data, video_frame_info_t *video_info,
+   void (*set_osd_msg)(void *data, 
          const char *msg,
          const void *params, void *font);
 
@@ -1503,7 +1482,7 @@ typedef struct video_driver
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 
 #if defined(HAVE_GFX_WIDGETS)
-   /* if set to true, will use menu widgets when applicable
+   /* if set to true, will use display widgets when applicable
     * if set to false, will use OSD as a fallback */
    bool (*gfx_widgets_enabled)(void *data);
 #endif
@@ -1620,7 +1599,7 @@ const video_layout_render_interface_t *video_driver_layout_render_interface(void
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
 
-void video_driver_set_filtering(unsigned index, bool smooth);
+void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
 
 const char *video_driver_get_ident(void);
 
@@ -1800,7 +1779,7 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
 
-bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
+void video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
@@ -1861,6 +1840,7 @@ extern video_driver_t video_psp1;
 extern video_driver_t video_vita2d;
 extern video_driver_t video_ps2;
 extern video_driver_t video_ctr;
+extern video_driver_t video_gcm;
 extern video_driver_t video_switch;
 extern video_driver_t video_d3d8;
 extern video_driver_t video_d3d9;
@@ -1887,6 +1867,7 @@ extern video_driver_t video_vga;
 extern video_driver_t video_fpga;
 extern video_driver_t video_sixel;
 extern video_driver_t video_network;
+extern video_driver_t video_oga;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
@@ -1895,6 +1876,7 @@ extern const gfx_ctx_driver_t gfx_ctx_uwp;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_x;
 extern const gfx_ctx_driver_t gfx_ctx_drm;
+extern const gfx_ctx_driver_t gfx_ctx_go2_drm;
 extern const gfx_ctx_driver_t gfx_ctx_mali_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_vivante_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_android;
@@ -1996,8 +1978,6 @@ const char* config_get_camera_driver_options(void);
 
 bool menu_driver_is_alive(void);
 
-void menu_driver_set_binding_state(bool on);
-
 bool gfx_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);
@@ -2005,6 +1985,9 @@ unsigned int retroarch_get_rotation(void);
 void retroarch_init_task_queue(void);
 
 bool is_input_keyboard_display_on(void);
+
+/* creates folder and core options stub file for subsequent runs */
+bool create_folder_and_core_options(void);
 
 RETRO_END_DECLS
 

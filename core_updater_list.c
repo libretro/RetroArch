@@ -82,6 +82,18 @@ static void core_updater_list_free_entry(core_updater_list_entry_t *entry)
       free(entry->display_name);
       entry->display_name = NULL;
    }
+
+   if (entry->description)
+   {
+      free(entry->description);
+      entry->description = NULL;
+   }
+
+   if (entry->licenses_list)
+   {
+      string_list_free(entry->licenses_list);
+      entry->licenses_list = NULL;
+   }
 }
 
 /* Creates a new, empty core updater list.
@@ -410,13 +422,11 @@ static bool core_updater_list_set_paths(
    char remote_core_path[PATH_MAX_LENGTH];
    char local_core_path[PATH_MAX_LENGTH];
    char local_info_path[PATH_MAX_LENGTH];
-   char display_name[255];
    bool is_archive;
 
    remote_core_path[0] = '\0';
    local_core_path[0]  = '\0';
    local_info_path[0]  = '\0';
-   display_name[0]     = '\0';
 
    if (!entry || string_is_empty(filename_str))
       return false;
@@ -499,10 +509,8 @@ static bool core_updater_list_set_paths(
    last_underscore = (char*)strrchr(local_info_path, '_');
 
    if (!string_is_empty(last_underscore))
-   {
-      if (string_is_not_equal_fast(last_underscore, "_libretro", 9))
+      if (!string_is_equal(last_underscore, "_libretro"))
          *last_underscore = '\0';
-   }
 
    /* > Add proper file extension */
    strlcat(
@@ -518,29 +526,94 @@ static bool core_updater_list_set_paths(
 
    entry->local_info_path = strdup(local_info_path);
 
-   /* display_name
-    * > Note: It's a bit rubbish that we have to
-    *   read the actual core info files here...
-    *   Would be better to cache this globally
-    *   (at present, we only cache info for
-    *    *installed* cores...) */
-   if (path_is_valid(local_info_path))
-      if (!core_info_get_display_name(
-            local_info_path, display_name, sizeof(display_name)))
-         display_name[0] = '\0';
+   return true;
+}
 
-   /* > If info file does not exist, just use
-    *   core filename */
-   if (string_is_empty(display_name))
-      strlcpy(display_name, filename_str, sizeof(display_name));
+/* Reads info file associated with core and
+ * adds relevant information to updater list
+ * entry */
+static bool core_updater_list_set_core_info(
+      core_updater_list_entry_t *entry,
+      const char *local_info_path,
+      const char *filename_str)
+{
+   core_updater_info_t *core_info = NULL;
 
+   if (!entry ||
+       string_is_empty(local_info_path) ||
+       string_is_empty(filename_str))
+      return false;
+
+   /* Clear any existing core info */
    if (entry->display_name)
    {
       free(entry->display_name);
       entry->display_name = NULL;
    }
 
-   entry->display_name = strdup(display_name);
+   if (entry->description)
+   {
+      free(entry->description);
+      entry->description = NULL;
+   }
+
+   if (entry->licenses_list)
+   {
+      /* Note: We can safely leave this as NULL if
+       * the core info file is invalid */
+      string_list_free(entry->licenses_list);
+      entry->licenses_list = NULL;
+   }
+
+   entry->is_experimental = false;
+
+   /* Read core info file
+    * > Note: It's a bit rubbish that we have to
+    *   read the actual core info files here...
+    *   Would be better to cache this globally
+    *   (at present, we only cache info for
+    *    *installed* cores...) */
+   core_info = core_info_get_core_updater_info(local_info_path);
+
+   if (core_info)
+   {
+      /* display_name + is_experimental */
+      if (!string_is_empty(core_info->display_name))
+      {
+         entry->display_name    = strdup(core_info->display_name);
+         entry->is_experimental = core_info->is_experimental;
+      }
+      else
+      {
+         /* If display name is blank, use core filename and
+          * assume core is experimental (i.e. all 'fit for consumption'
+          * cores must have a valid/complete core info file) */
+         entry->display_name    = strdup(filename_str);
+         entry->is_experimental = true;
+      }
+
+      /* description */
+      if (!string_is_empty(core_info->description))
+         entry->description     = strdup(core_info->description);
+      else
+         entry->description     = strdup("");
+
+      /* licenses_list */
+      if (!string_is_empty(core_info->licenses))
+         entry->licenses_list   = string_split(core_info->licenses, "|");
+
+      /* Clean up */
+      core_info_free_core_updater_info(core_info);
+   }
+   else
+   {
+      /* If info file is missing, use core filename and
+       * assume core is experimental (i.e. all 'fit for consumption'
+       * cores must have a valid/complete core info file) */
+      entry->display_name       = strdup(filename_str);
+      entry->is_experimental    = true;
+      entry->description        = strdup("");
+   }
 
    return true;
 }
@@ -576,10 +649,15 @@ static bool core_updater_list_push_entry(
    list_entry->remote_core_path = entry->remote_core_path;
    list_entry->local_core_path  = entry->local_core_path;
    list_entry->local_info_path  = entry->local_info_path;
+
+   /* Assign core info */
    list_entry->display_name     = entry->display_name;
+   list_entry->description      = entry->description;
+   list_entry->licenses_list    = entry->licenses_list;
+   list_entry->is_experimental  = entry->is_experimental;
 
    /* Copy crc */
-   list_entry->crc = entry->crc;
+   list_entry->crc              = entry->crc;
 
    /* Copy date */
    memcpy(&list_entry->date, &entry->date, sizeof(core_updater_list_date_t));
@@ -642,6 +720,12 @@ static void core_updater_list_add_entry(
             path_libretro_info,
             network_buildbot_url,
             filename_str))
+      goto error;
+
+   if (!core_updater_list_set_core_info(
+         &entry,
+         entry.local_info_path,
+         filename_str))
       goto error;
 
    /* Add entry to list */

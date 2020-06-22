@@ -152,7 +152,8 @@ void cb_net_generic_subdir(retro_task_t *task,
    subdir_path[data->len] = '\0';
 
 finish:
-   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   if (!err && !string_ends_with(subdir_path,
+            file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
       char parent_dir[PATH_MAX_LENGTH];
 
@@ -219,7 +220,8 @@ finish:
       free(data);
    }
 
-   if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   if (!err && 
+         !string_ends_with(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
       char *parent_dir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       char *parent_dir_encoded         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));

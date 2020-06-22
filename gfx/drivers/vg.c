@@ -127,6 +127,8 @@ static void *vg_init(const video_info_t *video,
    const gfx_ctx_driver_t *ctx     = video_context_driver_init_first(
          vg, settings->arrays.video_context_driver,
          GFX_CTX_OPENVG_API, 0, 0, false, &ctx_data);
+   bool adaptive_vsync_enabled     = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && video->adaptive_vsync;
 
    if (!vg || !ctx)
       goto error;
@@ -153,8 +155,6 @@ static void *vg_init(const video_info_t *video,
 
    if (ctx->swap_interval)
    {
-      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
-            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && video->adaptive_vsync;
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
       ctx->swap_interval(vg->ctx_data, interval);
@@ -221,10 +221,10 @@ static void *vg_init(const video_info_t *video,
          vg->mTexType,
          vg->mTextureWidth,
          vg->mTextureHeight,
-         video->smooth 
-         ? VG_IMAGE_QUALITY_BETTER 
+         video->smooth
+         ? VG_IMAGE_QUALITY_BETTER
          : VG_IMAGE_QUALITY_NONANTIALIASED);
-   vg_set_nonblock_state(vg, !video->vsync);
+   vg_set_nonblock_state(vg, !video->vsync, adaptive_vsync_enabled, interval);
 
    inp.input      = input;
    inp.input_data = input_data;
@@ -318,11 +318,9 @@ static void vg_free(void *data)
    free(vg);
 }
 
-static void vg_calculate_quad(vg_t *vg, video_frame_info_t *video_info)
+static void vg_calculate_quad(vg_t *vg,
+      unsigned width, unsigned height)
 {
-   unsigned width  = video_info->width;
-   unsigned height = video_info->height;
-
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->keep_aspect)
    {
@@ -418,8 +416,9 @@ static bool vg_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    vg_t                           *vg = (vg_t*)data;
-   unsigned width                            = video_info->width;
-   unsigned height                           = video_info->height;
+   unsigned width                     = video_info->width;
+   unsigned height                    = video_info->height;
+   bool menu_is_alive                 = video_info->menu_is_alive;
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
@@ -427,7 +426,7 @@ static bool vg_frame(void *data, const void *frame,
    {
       vg->mRenderWidth  = frame_width;
       vg->mRenderHeight = frame_height;
-      vg_calculate_quad(vg, video_info);
+      vg_calculate_quad(vg, width, height);
       matrix_3x3_quad_to_quad(
          vg->x1, vg->y1, vg->x2, vg->y1, vg->x2, vg->y2, vg->x1, vg->y2,
          /* needs to be flipped, Khronos loves their bottom-left origin */
@@ -446,7 +445,7 @@ static bool vg_frame(void *data, const void *frame,
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    vgDrawImage(vg->mImage);
@@ -456,9 +455,10 @@ static bool vg_frame(void *data, const void *frame,
       vg_draw_message(vg, msg);
 #endif
 
-   video_info->cb_update_window_title(
-         video_info->context_data);
-   video_info->cb_swap_buffers(video_info->context_data);
+   if (vg->ctx_driver->update_window_title)
+      vg->ctx_driver->update_window_title(video_info->context_data);
+
+   vg->ctx_driver->swap_buffers(video_info->context_data);
 
    return true;
 }

@@ -437,7 +437,9 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    struct dispmanx_video *_dispvars = data;
-   float aspect = video_driver_get_aspect_ratio();
+   float                     aspect = video_driver_get_aspect_ratio();
+   unsigned    max_swapchain_images = video_info->max_swapchain_images;
+   bool menu_is_alive               = video_info->menu_is_alive;
 
    if (!frame)
       return true;
@@ -455,7 +457,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       _dispvars->core_pitch    = pitch;
       _dispvars->aspect_ratio  = aspect;
 
-      if (_dispvars->main_surface != NULL)
+      if (_dispvars->main_surface)
          dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
 
       /* Internal resolution or ratio has changed, so we need
@@ -468,7 +470,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
             _dispvars->aspect_ratio,
-            video_info->max_swapchain_images,
+            max_swapchain_images,
             0,
             &_dispvars->main_surface);
 
@@ -479,7 +481,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    /* Update main surface: locate free page, blit and flip. */

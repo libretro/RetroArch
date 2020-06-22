@@ -87,8 +87,8 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum vid
             ctr->enable_3d = true;
          }
          break;
-      case CTR_VIDEO_MODE_2D_400x240:
-      case CTR_VIDEO_MODE_2D_800x240:
+      case CTR_VIDEO_MODE_2D_400X240:
+      case CTR_VIDEO_MODE_2D_800X240:
          if (ctr->supports_parallax_disable)
          {
             ctr->video_mode = video_mode;
@@ -141,7 +141,14 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
 }
 
-static void ctr_update_viewport(ctr_video_t* ctr, settings_t *settings, video_frame_info_t *video_info)
+static void ctr_update_viewport(
+      ctr_video_t* ctr,
+      settings_t *settings,
+      int custom_vp_x,
+      int custom_vp_y,
+      unsigned custom_vp_width,
+      unsigned custom_vp_height
+      )
 {
    int x                     = 0;
    int y                     = 0;
@@ -164,10 +171,10 @@ static void ctr_update_viewport(ctr_video_t* ctr, settings_t *settings, video_fr
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         x      = video_info->custom_vp_x;
-         y      = video_info->custom_vp_y;
-         width  = video_info->custom_vp_width;
-         height = video_info->custom_vp_height;
+         x      = custom_vp_x;
+         y      = custom_vp_y;
+         width  = custom_vp_width;
+         height = custom_vp_height;
       }
       else
 #endif
@@ -262,7 +269,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       ctr->p3d_event_pending = false;
    }
 
-   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_2D_400x240))
+   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_2D_400X240))
    {
       memcpy(gfxTopRightFramebuffers[ctr->current_buffer_top],
             gfxTopLeftFramebuffers[ctr->current_buffer_top],
@@ -476,7 +483,7 @@ static void* ctr_init(const video_info_t* video,
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
     * mode with the parallax barrier disabled
     * (i.e. these are the only platforms that can use
-    * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
+    * CTR_VIDEO_MODE_2D_400X240 and CTR_VIDEO_MODE_2D_800X240) */
    CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
    ctr->supports_parallax_disable = (device_model == 0) || (device_model == 1);
 
@@ -516,20 +523,29 @@ static bool ctr_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
-   extern bool select_pressed;
    static uint64_t currentTick,lastTick;
    touchPosition state_tmp_touch;
    extern GSPGPU_FramebufferInfo topFramebufferInfo;
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
    uint32_t diff;
-   uint32_t state_tmp      = 0;
-   settings_t    *settings = config_get_ptr();
-   ctr_video_t       *ctr  = (ctr_video_t*)data;
-   static float        fps = 0.0;
-   static int total_frames = 0;
-   static int       frames = 0;
-   unsigned disp_mode      = settings->uints.video_3ds_display_mode;
+   uint32_t state_tmp             = 0;
+   ctr_video_t       *ctr         = (ctr_video_t*)data;
+   static float        fps        = 0.0;
+   static int total_frames        = 0;
+   static int       frames        = 0;
+   settings_t    *settings        = config_get_ptr();
+   unsigned disp_mode             = settings->uints.video_3ds_display_mode;
+   bool statistics_show           = video_info->statistics_show;
+   const char *stat_text          = video_info->stat_text;
+   float video_refresh_rate       = video_info->refresh_rate;
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
+   int custom_vp_x                = video_info->custom_vp_x;
+   int custom_vp_y                = video_info->custom_vp_y;
+   unsigned custom_vp_width       = video_info->custom_vp_width;
+   unsigned custom_vp_height      = video_info->custom_vp_height;
+   bool menu_is_alive             = video_info->menu_is_alive;
 
    if (!width || !height || !settings)
    {
@@ -538,12 +554,6 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    if(!aptMainLoop())
-   {
-      command_event(CMD_EVENT_QUIT, NULL);
-      return true;
-   }
-
-   if (select_pressed)
    {
       command_event(CMD_EVENT_QUIT, NULL);
       return true;
@@ -620,7 +630,7 @@ static bool ctr_frame(void* data, const void* frame,
       bool next_event = false;
       struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
       if (av_info)
-         next_event = av_info->timing.fps < video_info->refresh_rate * 0.9f;
+         next_event = av_info->timing.fps < video_refresh_rate * 0.9f;
       gspWaitForEvent(GSPGPU_EVENT_VBlank0, next_event);
    }
 
@@ -693,7 +703,12 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    if (ctr->should_resize)
-      ctr_update_viewport(ctr, settings, video_info);
+      ctr_update_viewport(ctr, settings,
+            custom_vp_x,
+            custom_vp_y,
+            custom_vp_width,
+            custom_vp_height
+            );
 
    ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
                     (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,
@@ -788,7 +803,7 @@ static bool ctr_frame(void* data, const void* frame,
    GPU_SetViewport(NULL,
                    VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                    0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                   ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+                   ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    if (ctr->video_mode == CTR_VIDEO_MODE_3D)
    {
@@ -837,7 +852,7 @@ static bool ctr_frame(void* data, const void* frame,
          GPU_SetViewport(NULL,
                          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                         ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+                         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
          GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
          if (ctr->video_mode == CTR_VIDEO_MODE_3D)
@@ -851,25 +866,21 @@ static bool ctr_frame(void* data, const void* frame,
       }
 
       ctr->msg_rendering_enabled = true;
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
       ctr->msg_rendering_enabled = false;
-
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
       {
-         font_driver_render_msg(ctr, video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         font_driver_render_msg(ctr, stat_text,
+               (const struct font_params*)osd_params, NULL);
       }
    }
 #endif
 
    if (msg)
-      font_driver_render_msg(ctr, video_info, msg, NULL, NULL);
+      font_driver_render_msg(ctr, msg, NULL, NULL);
 
    GPU_FinishDrawing();
    GPU_Finalize();
@@ -877,11 +888,11 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctrGuDisplayTransfer(true, ctr->drawbuffers.top.left,
                         240,
-                        ctr->video_mode == CTR_VIDEO_MODE_2D_800x240 ? 800 : 400,
+                        ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ? 800 : 400,
                         CTRGU_RGBA8,
                         gfxTopLeftFramebuffers[ctr->current_buffer_top], 240, CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
-   if ((ctr->video_mode == CTR_VIDEO_MODE_2D_400x240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
+   if ((ctr->video_mode == CTR_VIDEO_MODE_2D_400X240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
       ctrGuDisplayTransfer(true, ctr->drawbuffers.top.right,
                            240,
                            400,
@@ -895,7 +906,7 @@ static bool ctr_frame(void* data, const void* frame,
    topFramebufferInfo.
       framebuf0_vaddr           = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
 
-   if(ctr->video_mode == CTR_VIDEO_MODE_2D_800x240)
+   if(ctr->video_mode == CTR_VIDEO_MODE_2D_800X240)
    {
       topFramebufferInfo.
          framebuf1_vaddr        = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
@@ -1053,7 +1064,7 @@ static void ctr_set_rotation(void* data, unsigned rotation)
    ctr->rotation = rotation;
    ctr->should_resize = true;
 }
-static void ctr_set_filtering(void* data, unsigned index, bool smooth)
+static void ctr_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
@@ -1183,14 +1194,13 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
 }
 
 static void ctr_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(data, video_info, msg, params, font);
+      font_driver_render_msg(data, msg, params, font);
 }
 
 static uint32_t ctr_get_flags(void *data)

@@ -22,16 +22,17 @@
 #include "../../frontend/frontend_driver.h"
 #include "tasks_internal.h"
 
-static int              powerstate_percent        = 0;
-static enum frontend_powerstate powerstate_status = FRONTEND_POWERSTATE_NONE;
-
 typedef struct powerstate powerstate_t;
 
 struct powerstate
 {
-   int percent;
    enum frontend_powerstate state;
+   int percent;
 };
+
+/* TODO/FIXME - global state - perhaps move outside this file */
+static int              powerstate_percent        = 0;
+static enum frontend_powerstate powerstate_status = FRONTEND_POWERSTATE_NONE;
 
 enum frontend_powerstate get_last_powerstate(int *percent)
 {

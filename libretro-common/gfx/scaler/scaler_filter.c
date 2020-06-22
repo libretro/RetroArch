@@ -85,7 +85,9 @@ static bool validate_filter(struct scaler_ctx *ctx)
    {
       if (ctx->horiz.filter_pos[i] > max_w_pos || ctx->horiz.filter_pos[i] < 0)
       {
+#ifndef NDEBUG
          fprintf(stderr, "Out X = %d => In X = %d\n", i, ctx->horiz.filter_pos[i]);
+#endif
          return false;
       }
    }
@@ -96,7 +98,9 @@ static bool validate_filter(struct scaler_ctx *ctx)
    {
       if (ctx->vert.filter_pos[i] > max_h_pos || ctx->vert.filter_pos[i] < 0)
       {
+#ifndef NDEBUG
          fprintf(stderr, "Out Y = %d => In Y = %d\n", i, ctx->vert.filter_pos[i]);
+#endif
          return false;
       }
    }

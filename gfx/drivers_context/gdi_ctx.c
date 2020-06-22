@@ -54,7 +54,7 @@ typedef struct gfx_ctx_gdi_data
    void *empty;
 } gfx_ctx_gdi_data_t;
 
-void *dinput_gdi;
+static void *dinput_gdi;
 
 static void gfx_ctx_gdi_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)

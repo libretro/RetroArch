@@ -92,6 +92,9 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita->tex_filter   = video->smooth
       ? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
 
+   vita->video_width  = temp_width;
+   vita->video_height = temp_height;
+
    video_driver_set_size(temp_width, temp_height);
    vita2d_gfx_set_viewport(vita, temp_width, temp_height, false, true);
 
@@ -142,6 +145,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 {
    void *tex_p;
    vita_video_t *vita = (vita_video_t *)data;
+   bool menu_is_alive = video_info->menu_is_alive;
 
    if (frame)
    {
@@ -206,7 +210,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
                PSP_FB_HEIGHT / (float)vita->height);
       else
       {
-         const float radian = 90 * 0.0174532925f;
+         const float radian = 270 * 0.0174532925f;
          const float rad = vita->rotation * radian;
          float scalex = vita->vp.width / (float)vita->width;
          float scaley = vita->vp.height / (float)vita->height;
@@ -218,7 +222,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    if (vita->menu.active)
    {
 #ifdef HAVE_MENU
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
 #endif
 
       if(vita->menu.texture)
@@ -255,7 +259,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-         font_driver_render_msg(vita, video_info, video_info->stat_text,
+         font_driver_render_msg(vita, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
@@ -265,11 +269,12 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_frame(video_info);
+   if (video_info->widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
    if(!string_is_empty(msg))
-      font_driver_render_msg(vita, video_info, msg, NULL, NULL);
+      font_driver_render_msg(vita, msg, NULL, NULL);
 
    vita2d_end_drawing();
    vita2d_swap_buffers();
@@ -576,7 +581,7 @@ static void vita2d_gfx_viewport_info(void *data,
        *vp = vita->vp;
 }
 
-static void vita_set_filtering(void *data, unsigned index, bool smooth)
+static void vita_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    vita_video_t *vita = (vita_video_t *)data;
 

@@ -32,7 +32,8 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 
-bool video_layout_load_internal(view_array_t *view_array, rxml_document_t *doc);
+bool video_layout_load_internal(view_array_t *view_array,
+      rxml_document_t *doc);
 
 typedef struct io
 {
@@ -65,6 +66,7 @@ typedef struct video_layout_state
 }
 video_layout_state_t;
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static video_layout_state_t *video_layout_state = NULL;
 
 void video_layout_init(void *video_driver_data,
@@ -374,15 +376,13 @@ int video_layout_layer_count(void)
    return video_layout_state->view->layers_count;
 }
 
-void video_layout_layer_render(void *video_driver_frame_data, int index)
+void video_layout_layer_render(int index)
 {
    unsigned i, j;
    video_layout_render_info_t        *info  = &video_layout_state->render_info;
    const video_layout_render_interface_t *r = video_layout_state->render;
    layer_t *layer                           = 
       &video_layout_state->view->layers[index];
-
-   info->video_driver_frame_data            = video_driver_frame_data;
 
    r->layer_begin(info);
 

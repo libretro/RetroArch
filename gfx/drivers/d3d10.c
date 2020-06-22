@@ -236,7 +236,7 @@ static void d3d10_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-static void d3d10_set_filtering(void* data, unsigned index, bool smooth)
+static void d3d10_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    unsigned       i;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
@@ -784,7 +784,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
       }
    }
 
-   d3d10_set_filtering(d3d10, 0, video->smooth);
+   d3d10_set_filtering(d3d10, 0, video->smooth, video->ctx_scaling);
 
    {
       D3D10_BUFFER_DESC desc;
@@ -1206,6 +1206,12 @@ static bool d3d10_gfx_frame(
    D3D10Device       context  = d3d10->device;
    unsigned video_width       = video_info->width;
    unsigned video_height      = video_info->height;
+   bool statistics_show       = video_info->statistics_show;
+   struct font_params 
+      *osd_params             = (struct font_params*)
+      &video_info->osd_stat_params;
+   const char *stat_text      = video_info->stat_text;
+   bool menu_is_alive         = video_info->menu_is_alive;
 
    if (d3d10->resize_chain)
    {
@@ -1466,21 +1472,19 @@ static bool d3d10_gfx_frame(
 
 #ifdef HAVE_MENU
    if (d3d10->menu.enabled)
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    else
 #endif
-      if (video_info->statistics_show)
+      if (statistics_show)
       {
-         struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
-
          if (osd_params)
          {
             D3D10SetViewports(context, 1, &d3d10->viewport);
             D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
             D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
             font_driver_render_msg(d3d10,
-                  video_info, video_info->stat_text,
-                  (const struct font_params*)&video_info->osd_stat_params, NULL);
+                  stat_text,
+                  (const struct font_params*)osd_params, NULL);
          }
       }
 
@@ -1506,7 +1510,7 @@ static bool d3d10_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
+   if (video_info->widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1515,7 +1519,7 @@ static bool d3d10_gfx_frame(
       D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
       D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
       D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
-      font_driver_render_msg(d3d10, video_info, msg, NULL, NULL);
+      font_driver_render_msg(d3d10, msg, NULL, NULL);
       dxgi_update_title();
    }
    d3d10->sprites.enabled = false;
@@ -1638,16 +1642,16 @@ static void d3d10_gfx_apply_state_changes(void* data)
 }
 
 static void d3d10_gfx_set_osd_msg(
-      void* data, video_frame_info_t* video_info, const char* msg, const void* params, void* font)
+      void* data,
+      const char* msg, const void* params, void* font)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (d3d10)
    {
       if (d3d10->sprites.enabled)
-         font_driver_render_msg(d3d10, video_info, msg, (const struct font_params*)params, font);
-      else
-         printf("OSD msg: %s\n", msg);
+         font_driver_render_msg(d3d10, msg,
+               (const struct font_params*)params, font);
    }
 }
 

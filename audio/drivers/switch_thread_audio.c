@@ -86,7 +86,7 @@ static void mainLoop(void* data)
       if (!released_out_buffer)
       {
 #ifdef HAVE_LIBNX
-         rc = audoutWaitPlayFinish(&released_out_buffer, &released_out_count, U64_MAX);
+         rc = audoutWaitPlayFinish(&released_out_buffer, &released_out_count, UINT64_MAX);
 #else
          uint32_t handle_idx = 0;
          svcWaitSynchronization(&handle_idx, &swa->event, 1, 33333333);

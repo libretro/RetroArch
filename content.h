@@ -43,13 +43,16 @@ typedef struct content_ctx_info
 bool content_load_ram_file(unsigned slot);
 
 /* Save a RAM state from memory to disk. */
-bool content_save_ram_file(unsigned slot);
+bool content_save_ram_file(unsigned slot, bool compress);
 
 /* Load a state from disk to memory. */
 bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk, bool autosave);
+
+/* Returns true if a save state task is in progress */
+bool content_save_state_in_progress(void);
 
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);
@@ -81,9 +84,6 @@ bool content_reset_savestate_backups(void);
 /* Checks if the buffers are empty */
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
-
-/* Checks if launched from the commandline */
-bool content_launched_from_cli(void);
 
 /* Clears the pending subsystem rom buffer */
 bool content_is_subsystem_pending_load(void);

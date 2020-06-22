@@ -47,17 +47,10 @@ enum osk_type
    OSK_TYPE_LAST
 };
 
-enum osk_type input_event_get_osk_idx(void);
-
-void input_event_set_osk_idx(enum osk_type idx);
-
 int input_event_get_osk_ptr(void);
 
-void input_event_set_osk_ptr(int a);
-
-void input_event_osk_append(int a, bool is_rgui);
-
-void input_event_osk_iterate(void);
+void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui,
+      const char *word);
 
 char **input_event_get_osk_grid(void);
 

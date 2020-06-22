@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * tests.c:
  * Implementation for all drawing tests functions
@@ -16,7 +34,7 @@ GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
 scissor_region region; // Current scissor test region setup
 GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
-vector2f *scissor_test_vertices = NULL; // Scissor test region vertices
+vector4f *scissor_test_vertices = NULL; // Scissor test region vertices
 SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
 
 // Stencil Test
@@ -55,7 +73,7 @@ void change_depth_func() {
 	sceGxmSetBackDepthFunc(gxm_context, depth_test_state ? gxm_depth : SCE_GXM_DEPTH_FUNC_ALWAYS);
 
 	// Calling an update for the depth write mode
-	change_depth_write((depth_mask_state && depth_test_state) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+	change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 }
 
 void invalidate_depth_test() {
@@ -68,11 +86,21 @@ void invalidate_depth_test() {
 }
 
 void validate_depth_test() {
-	// Resetting original depth test state
+	// Restoring original depth test state
 	depth_test_state = orig_depth_test;
 
 	// Invoking a depth function update
 	change_depth_func();
+}
+
+void invalidate_viewport() {
+	// Invalidating current viewport
+	sceGxmSetViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
+}
+
+void validate_viewport() {
+	// Restoring original viewport
+	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void change_stencil_settings() {
@@ -215,30 +243,39 @@ void update_alpha_test_settings() {
 }
 
 void update_scissor_test() {
-	// Calculating scissor test region vertices
-	if (scissor_test_state) {
-		vector2f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
-	}
-
 	// Setting current vertex program to clear screen one and fragment program to scissor test one
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
-
-	// Cleaning stencil surface mask update bit on the whole screen
-	sceGxmSetFrontStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_NEVER,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0, 0);
-	sceGxmSetBackStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_NEVER,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0, 0);
-	sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	
+	// Invalidating viewport
+	invalidate_viewport();
+	
+	// Invalidating internal tile based region clip
+	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+	
+	if (scissor_test_state) {
+		// Calculating scissor test region vertices
+		vector4f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
+		
+		void *vertex_buffer;
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
+	
+		// Cleaning stencil surface mask update bit on the whole screen
+		sceGxmSetFrontStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_NEVER,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0, 0);
+		sceGxmSetBackStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_NEVER,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0, 0);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	}
 
 	// Setting stencil surface mask update bit on the scissor test region
 	sceGxmSetFrontStencilFunc(gxm_context,
@@ -253,16 +290,24 @@ void update_scissor_test() {
 		SCE_GXM_STENCIL_OP_KEEP,
 		SCE_GXM_STENCIL_OP_KEEP,
 		0, 0);
+		
+	void *vertex_buffer;
+	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
 	if (scissor_test_state)
-		sceGxmSetVertexStream(gxm_context, 0, scissor_test_vertices);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &scissor_test_vertices->x);
 	else
-		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-
+	
+	// Restoring viewport
+	validate_viewport();
+	
+	// Reducing GPU workload by performing tile granularity clipping
 	if (scissor_test_state)
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w, region.y + region.h);
-	else
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, gl_viewport.x, DISPLAY_HEIGHT - gl_viewport.y - gl_viewport.h, gl_viewport.x + gl_viewport.w, gl_viewport.y + gl_viewport.h);
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
+	
+	// Restoring original stencil test settings
+	change_stencil_settings();
 }
 
 void resetScissorTestRegion(void) {
@@ -282,7 +327,7 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if ((width < 0) || (height < 0)) {
-		_vitagl_error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -340,14 +385,14 @@ void glDepthMask(GLboolean flag) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		_vitagl_error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
 
 	// Set current in use depth mask and invoking a depth write mode update
 	depth_mask_state = flag;
-	change_depth_write((depth_mask_state && depth_test_state) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+	change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 }
 
 void glAlphaFunc(GLenum func, GLfloat ref) {
@@ -362,36 +407,36 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 	switch (face) {
 	case GL_FRONT:
 		if (!change_stencil_config(&stencil_fail_front, sfail))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_fail_front, dpfail))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_pass_front, dppass))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		break;
 	case GL_BACK:
 		if (!change_stencil_config(&stencil_fail_back, sfail))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_fail_back, dpfail))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_pass_front, dppass))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		break;
 	case GL_FRONT_AND_BACK:
 		if (!change_stencil_config(&stencil_fail_front, sfail))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&stencil_fail_back, sfail))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_fail_front, dpfail))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_fail_back, dpfail))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_pass_front, dppass))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_pass_back, dppass))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	change_stencil_settings();
@@ -406,26 +451,26 @@ void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask) {
 	switch (face) {
 	case GL_FRONT:
 		if (!change_stencil_func_config(&stencil_func_front, func))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		stencil_mask_front = mask;
 		stencil_ref_front = ref;
 		break;
 	case GL_BACK:
 		if (!change_stencil_func_config(&stencil_func_back, func))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		stencil_mask_back = mask;
 		stencil_ref_back = ref;
 		break;
 	case GL_FRONT_AND_BACK:
 		if (!change_stencil_func_config(&stencil_func_front, func))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		if (!change_stencil_func_config(&stencil_func_back, func))
-			_vitagl_error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		stencil_mask_front = stencil_mask_back = mask;
 		stencil_ref_front = stencil_ref_back = ref;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	change_stencil_settings();
@@ -448,7 +493,7 @@ void glStencilMaskSeparate(GLenum face, GLuint mask) {
 		stencil_mask_front_write = stencil_mask_back_write = mask;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		return;
 	}
 	change_stencil_settings();

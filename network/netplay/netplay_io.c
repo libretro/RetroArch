@@ -29,10 +29,12 @@
 #include "../../command.h"
 #include "../../tasks/tasks_internal.h"
 
-#include "../../discord/discord.h"
+#ifdef HAVE_DISCORD
+#include "../discord.h"
 
-/* TODO/FIXME - global */
+/* TODO/FIXME - global public variable */
 extern bool discord_is_inited;
+#endif
 
 static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
       struct netplay_connection *connection, uint32_t cmd, uint32_t cmd_size,
@@ -73,7 +75,8 @@ static void print_state(netplay_t *netplay)
  * Mark a particular remote connection as unpaused and, if relevant, inform
  * every one else that they may resume.
  */
-static void remote_unpaused(netplay_t *netplay, struct netplay_connection *connection)
+static void remote_unpaused(netplay_t *netplay,
+      struct netplay_connection *connection)
 {
     size_t i;
     connection->paused = false;
@@ -96,7 +99,8 @@ static void remote_unpaused(netplay_t *netplay, struct netplay_connection *conne
  *
  * Disconnects an active Netplay connection due to an error
  */
-void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
+void netplay_hangup(netplay_t *netplay,
+      struct netplay_connection *connection)
 {
    char msg[512];
    const char *dmsg;
@@ -186,8 +190,8 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
 /**
  * netplay_delayed_state_change:
  *
- * Handle any pending state changes which are ready as of the beginning of the
- * current frame.
+ * Handle any pending state changes which are ready 
+ * as of the beginning of the current frame.
  */
 void netplay_delayed_state_change(netplay_t *netplay)
 {
@@ -730,20 +734,20 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
       case NETPLAY_CMD_PLAY:
       {
          uint32_t mode, devices = 0, device;
-         uint8_t share_mode   = 0;
-         bool           slave = false;
+         uint8_t share_mode;
+         bool slave = false;
          settings_t *settings = config_get_ptr();
 
          if (cmd_size != sizeof(uint32_t) || !in_payload)
             return;
-         mode       = ntohl(in_payload[0]);
+         mode = ntohl(in_payload[0]);
 
          /* Check the requested mode */
-         slave      = (mode & NETPLAY_CMD_PLAY_BIT_SLAVE)?true:false;
-         share_mode = (mode>>16) & 0xFF;
+         slave = (mode&NETPLAY_CMD_PLAY_BIT_SLAVE)?true:false;
+         share_mode = (mode>>16)&0xFF;
 
          /* And the requested devices */
-         devices = mode & 0xFFFF;
+         devices = mode&0xFFFF;
 
          /* Check if their slave mode request corresponds with what we allow */
          if (connection)
@@ -964,8 +968,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                return false;
             RECV(&client_num, sizeof(client_num))
                return false;
-            frame_num   = ntohl(frame_num);
-            client_num  = ntohl(client_num);
+            frame_num = ntohl(frame_num);
+            client_num = ntohl(client_num);
             client_num &= 0xFFFF;
 
             if (netplay->is_server)
@@ -1246,9 +1250,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
          if (frame < netplay->self_frame_count)
             netplay->force_rewind = true;
 
-         mode       = ntohl(payload[1]);
+         mode = ntohl(payload[1]);
          client_num = mode & 0xFFFF;
-
          if (client_num >= MAX_CLIENTS)
          {
             RARCH_ERR("Received NETPLAY_CMD_MODE for a higher player number than we support.\n");

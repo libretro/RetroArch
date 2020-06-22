@@ -128,6 +128,7 @@ COMPRESSION
 
 #ifdef HAVE_ZLIB
 #include "../libretro-common/streams/trans_stream_zlib.c"
+#include "../libretro-common/streams/rzip_stream.c"
 #endif
 
 /*============================================================
@@ -141,7 +142,6 @@ ENCODINGS
 PERFORMANCE
 ============================================================ */
 #include "../libretro-common/features/features_cpu.c"
-#include "../performance_counters.c"
 
 /*============================================================
 CONFIG FILE
@@ -173,24 +173,27 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
-#include "../cheevos-new/cheevos.c"
-#include "../cheevos-new/badges.c"
-#include "../cheevos-new/fixup.c"
-#include "../cheevos-new/hash.c"
-#include "../cheevos-new/parser.c"
+#include "../cheevos/cheevos.c"
+#include "../cheevos/badges.c"
+#include "../cheevos/fixup.c"
+#include "../cheevos/hash.c"
+#include "../cheevos/parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
+#include "../deps/rcheevos/src/rcheevos/compat.c"
 #include "../deps/rcheevos/src/rcheevos/condition.c"
 #include "../deps/rcheevos/src/rcheevos/condset.c"
-#include "../deps/rcheevos/src/rcheevos/expression.c"
+#include "../deps/rcheevos/src/rcheevos/consoleinfo.c"
 #include "../deps/rcheevos/src/rcheevos/format.c"
 #include "../deps/rcheevos/src/rcheevos/lboard.c"
+#include "../deps/rcheevos/src/rcheevos/memref.c"
 #include "../deps/rcheevos/src/rcheevos/operand.c"
-#include "../deps/rcheevos/src/rcheevos/term.c"
+#include "../deps/rcheevos/src/rcheevos/richpresence.c"
+#include "../deps/rcheevos/src/rcheevos/runtime.c"
+#include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
-#include "../deps/rcheevos/src/rcheevos/memref.c"
-#include "../deps/rcheevos/src/rcheevos/richpresence.c"
+#include "../deps/rcheevos/src/rhash/hash.c"
 #include "../deps/rcheevos/src/rurl/url.c"
 
 #endif
@@ -240,7 +243,7 @@ VIDEO CONTEXT
 
 #endif
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/android_ctx.c"
@@ -488,7 +491,9 @@ VIDEO DRIVER
 #include "../gfx/drivers/xvideo.c"
 #endif
 
-#if defined(GEKKO)
+#if defined(__PSL1GHT__)
+#include "../gfx/drivers/gcm_gfx.c"
+#elif defined(GEKKO)
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
@@ -648,8 +653,12 @@ INPUT
 #include "../input/input_autodetect_builtin.c"
 
 #if defined(__CELLOS_LV2__)
+#ifdef __PSL1GHT__
+#include "../input/drivers/psl1ght_input.c"
+#else
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
+#endif
 #elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
@@ -1087,6 +1096,7 @@ FRONTEND
 #endif
 
 #include "../core_info.c"
+#include "../core_backup.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../core_updater_list.c"
@@ -1137,6 +1147,10 @@ RETROARCH
 #include "../intl/msg_hash_ar.c"
 #include "../intl/msg_hash_el.c"
 #include "../intl/msg_hash_tr.c"
+#include "../intl/msg_hash_sk.c"
+#include "../intl/msg_hash_fa.c"
+#include "../intl/msg_hash_he.c"
+#include "../intl/msg_hash_ast.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1231,6 +1245,7 @@ DATA RUNLOOP
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_playlist_manager.c"
 #include "../tasks/task_manual_content_scan.c"
+#include "../tasks/task_core_backup.c"
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
@@ -1255,20 +1270,19 @@ PLAYLISTS
 /*============================================================
 MENU
 ============================================================ */
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
-#include "../menu/menu_shader.c"
-#endif
-
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.c"
+#include "../gfx/widgets/gfx_widget_screenshot.c"
+#include "../gfx/widgets/gfx_widget_volume.c"
+#include "../gfx/widgets/gfx_widget_generic_message.c"
+#include "../gfx/widgets/gfx_widget_libretro_message.c"
+#ifdef HAVE_CHEEVOS
+#include "../gfx/widgets/gfx_widget_achievement_popup.c"
+#endif
 #endif
 
-#include "../input/input_osk.c"
-
 #ifdef HAVE_MENU
-#include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
-#include "../menu/menu_cbs.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../menu/menu_networking.c"
@@ -1329,8 +1343,6 @@ MENU
 #ifdef HAVE_NETWORKGAMEPAD
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
-
-#include "../input/input_mapper.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
@@ -1480,16 +1492,12 @@ XML
 HTTP SERVER
 ============================================================ */
 #if defined(HAVE_DISCORD)
-#include "../discord/discord.c"
-
 #if defined(_WIN32)
 #include "../deps/discord-rpc/src/discord_register_win.c"
 #endif
-
 #if defined(__linux__)
 #include "../deps/discord-rpc/src/discord_register_linux.c"
 #endif
-
 #endif
 
 /*============================================================
@@ -1595,3 +1603,13 @@ MANUAL CONTENT SCAN
 DISK CONTROL INTERFACE
 ============================================================ */
 #include "../disk_control_interface.c"
+
+/*============================================================
+MISC FILE FORMATS
+============================================================ */
+#include "../libretro-common/formats/m3u/m3u_file.c"
+
+/*============================================================
+TIME
+============================================================ */
+#include "../libretro-common/time/rtime.c"

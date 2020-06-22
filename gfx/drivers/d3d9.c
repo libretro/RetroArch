@@ -195,22 +195,20 @@ static void d3d9_log_info(const struct LinkInfo *info)
          info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
-static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
+static bool d3d9_init_chain(d3d9_video_t *d3d,
+      unsigned input_scale,
+      bool rgb32)
 {
+   unsigned i = 0;
    struct LinkInfo link_info;
+#ifndef _XBOX
    unsigned current_width, current_height, out_width, out_height;
-   unsigned i                   = 0;
-
-   (void)i;
-   (void)current_width;
-   (void)current_height;
-   (void)out_width;
-   (void)out_height;
+#endif
 
    /* Setup information for first pass. */
    link_info.pass  = NULL;
-   link_info.tex_w = video_info->input_scale * RARCH_SCALE_BASE;
-   link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
+   link_info.tex_w = input_scale * RARCH_SCALE_BASE;
+   link_info.tex_h = input_scale * RARCH_SCALE_BASE;
    link_info.pass  = &d3d->shader.pass[0];
 
    if (!renderchain_d3d_init_first(GFX_CTX_DIRECT3D9_API,
@@ -228,7 +226,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
          !d3d->renderchain_driver->init(
             d3d,
             d3d->dev, &d3d->final_viewport, &link_info,
-            d3d->video_info.rgb32)
+            rgb32)
       )
    {
       RARCH_ERR("[D3D9]: Failed to init render chain.\n");
@@ -255,8 +253,8 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
 
-      current_width = out_width;
-      current_height = out_height;
+      current_width   = out_width;
+      current_height  = out_height;
 
       if (!d3d->renderchain_driver->add_pass(
                d3d->renderchain_data, &link_info))
@@ -423,7 +421,8 @@ void d3d9_set_mvp(void *data, const void *mat_data)
 
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
 static void d3d9_overlay_render(d3d9_video_t *d3d,
-      video_frame_info_t *video_info,
+      unsigned width,
+      unsigned height,
       overlay_t *overlay, bool force_linear)
 {
    D3DTEXTUREFILTERTYPE filter_type;
@@ -442,8 +441,6 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
          D3DDECLUSAGE_COLOR, 0},
       D3DDECL_END()
    };
-   unsigned width      = video_info->width;
-   unsigned height     = video_info->height;
 
    if (!d3d || !overlay || !overlay->tex)
       return;
@@ -650,8 +647,8 @@ void d3d9_make_d3dpp(void *data,
 #ifdef _XBOX
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global               = global_get_ptr();
-   bool gamma_enable              = global ?
-      global->console.screen.gamma_correction : false;
+   int gamma_enable               = global ?
+      global->console.screen.gamma_correction : 0;
 #endif
    bool windowed_enable           = d3d9_is_windowed_enable(info->fullscreen);
 
@@ -942,7 +939,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    if (!ret)
       return ret;
 
-   if (!d3d9_init_chain(d3d, info))
+   if (!d3d9_init_chain(d3d, info->input_scale, info->rgb32))
    {
       RARCH_ERR("[D3D9]: Failed to initialize render chain.\n");
       return false;
@@ -1111,7 +1108,6 @@ static void d3d9_apply_state_changes(void *data)
 }
 
 static void d3d9_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
@@ -1122,7 +1118,7 @@ static void d3d9_set_osd_msg(void *data,
 
    d3d9_set_font_rect(d3d, d3d_font_params);
    d3d9_begin_scene(dev);
-   font_driver_render_msg(d3d, video_info,
+   font_driver_render_msg(d3d,
          msg, d3d_font_params, font);
    d3d9_end_scene(dev);
 }
@@ -1533,7 +1529,12 @@ static bool d3d9_frame(void *data, const void *frame,
    d3d9_video_t *d3d                   = (d3d9_video_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
-   (void)i;
+   bool statistics_show                = video_info->statistics_show;
+   bool black_frame_insertion          = video_info->black_frame_insertion;
+   struct font_params *osd_params      = (struct font_params*)
+      &video_info->osd_stat_params;
+   const char *stat_text               = video_info->stat_text;
+   bool menu_is_alive                  = video_info->menu_is_alive;
 
    if (!frame)
       return true;
@@ -1577,7 +1578,7 @@ static bool d3d9_frame(void *data, const void *frame,
 
    /* Insert black frame first, so we
     * can screenshot, etc. */
-   if (video_info->black_frame_insertion)
+   if (black_frame_insertion)
    {
       if (!d3d9_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;
@@ -1596,26 +1597,23 @@ static bool d3d9_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d9_set_mvp(d3d->dev, &d3d->mvp);
-      d3d9_overlay_render(d3d, video_info, d3d->menu, false);
+      d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
       d3d9_set_vertex_declaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
       d3d9_set_stream_source(d3d->dev, 0, (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer, 0, sizeof(Vertex));
 
       d3d9_set_viewports(d3d->dev, &screen_vp);
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
       {
          d3d9_set_viewports(d3d->dev, &screen_vp);
          d3d9_begin_scene(d3d->dev);
-         font_driver_render_msg(d3d, video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         font_driver_render_msg(d3d, stat_text,
+               (const struct font_params*)osd_params, NULL);
          d3d9_end_scene(d3d->dev);
       }
    }
@@ -1626,12 +1624,12 @@ static bool d3d9_frame(void *data, const void *frame,
    {
       d3d9_set_mvp(d3d->dev, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d9_overlay_render(d3d, video_info, &d3d->overlays[i], true);
+         d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
+   if (video_info->widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1639,7 +1637,7 @@ static bool d3d9_frame(void *data, const void *frame,
    {
       d3d9_set_viewports(d3d->dev, &screen_vp);
       d3d9_begin_scene(d3d->dev);
-      font_driver_render_msg(d3d, video_info, msg, NULL, NULL);
+      font_driver_render_msg(d3d, msg, NULL, NULL);
       d3d9_end_scene(d3d->dev);
    }
 

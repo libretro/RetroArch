@@ -1604,7 +1604,7 @@ static void ffmpeg_flush_video(ffmpeg_t *handle)
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 {
    void *audio_buf       = NULL;
-   bool did_work         = false;;
+   bool did_work         = false;
    void *video_buf       = av_malloc(2 * handle->params.fb_width *
          handle->params.fb_height * handle->video.pix_size);
    size_t audio_buf_size = handle->config.audio_enable ?

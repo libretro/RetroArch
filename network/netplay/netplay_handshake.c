@@ -37,14 +37,48 @@
 #include "../../retroarch.h"
 #include "../../version.h"
 
-const uint32_t netplay_magic = 0x52414E50; /* RANP */
+struct nick_buf_s
+{
+   uint32_t cmd[2];
+   char nick[NETPLAY_NICK_LEN];
+};
+
+struct password_buf_s
+{
+   uint32_t cmd[2];
+   char password[NETPLAY_PASS_HASH_LEN];
+};
+
+struct info_buf_s
+{
+   uint32_t cmd[2];
+   char core_name[NETPLAY_NICK_LEN];
+   char core_version[NETPLAY_NICK_LEN];
+   uint32_t content_crc;
+};
+
+#define RECV(buf, sz) \
+   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
+   if (recvd >= 0 && recvd < (ssize_t) (sz)) \
+   { \
+      netplay_recv_reset(&connection->recv_packet_buffer); \
+      return true; \
+   } \
+   else if (recvd < 0)
+
+#define NETPLAY_MAGIC 0x52414E50 /* RANP */
+
+/* TODO/FIXME - static global variables */
+static netplay_t *handshake_password_netplay = NULL;
+static unsigned long simple_rand_next        = 1;
 
 /* TODO/FIXME - replace netplay_log_connection with calls
  * to inet_ntop_compat and move runloop message queue pushing
  * outside */
-#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
+#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU) && !defined(_3DS)
 /* Custom inet_ntop. Win32 doesn't seem to support this ... */
-void netplay_log_connection(const struct sockaddr_storage *their_addr,
+static void netplay_log_connection(
+      const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick, char *s, size_t len)
 {
    union
@@ -94,22 +128,25 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
    }
 
    if (str)
+   {
       snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM_NAME),
             nick, str);
+   }
    else
+   {
       snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
             nick);
+   }
 }
-
 #else
-void netplay_log_connection(const struct sockaddr_storage *their_addr,
+static void netplay_log_connection(
+      const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick, char *s, size_t len)
 {
    /* Stub code - will need to be implemented */
    snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
          nick);
 }
-
 #endif
 
 /**
@@ -118,7 +155,7 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
  * A pseudo-hash of the RetroArch and Netplay version, so only compatible
  * versions play together.
  */
-uint32_t netplay_impl_magic(void)
+static uint32_t netplay_impl_magic(void)
 {
    size_t i;
    uint32_t res                        = 0;
@@ -165,12 +202,10 @@ static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
    return (pma & ebit) != (pmb & ebit);
 }
 
-static unsigned long simple_rand_next = 1;
-
 static int simple_rand(void)
 {
    simple_rand_next = simple_rand_next * 1103515245 + 12345;
-   return((unsigned)(simple_rand_next/65536) % 32768);
+   return((unsigned)(simple_rand_next / 65536) % 32768);
 }
 
 static void simple_srand(unsigned int seed)
@@ -195,14 +230,13 @@ static uint32_t simple_rand_uint32(void)
  * Initialize our handshake and send the first part of the handshake protocol.
  */
 bool netplay_handshake_init_send(netplay_t *netplay,
-   struct netplay_connection *connection,
-   const char *netplay_password,
-   const char *netplay_spectate_password)
+   struct netplay_connection *connection)
 {
    uint32_t header[6];
-   unsigned conn_salt = 0;
+   unsigned conn_salt   = 0;
+   settings_t *settings = config_get_ptr();
 
-   header[0] = htonl(netplay_magic);
+   header[0] = htonl(NETPLAY_MAGIC);
    header[1] = htonl(netplay_platform_magic());
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
    header[3] = 0;
@@ -210,8 +244,8 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    header[5] = htonl(netplay_impl_magic());
 
    if (netplay->is_server &&
-       (netplay_password[0] ||
-        netplay_spectate_password[0]))
+       (settings->paths.netplay_password[0] ||
+        settings->paths.netplay_spectate_password[0]))
    {
       /* Demand a password */
       if (simple_rand_next == 1)
@@ -231,37 +265,6 @@ bool netplay_handshake_init_send(netplay_t *netplay,
 
    return true;
 }
-
-struct nick_buf_s
-{
-   uint32_t cmd[2];
-   char nick[NETPLAY_NICK_LEN];
-};
-
-struct password_buf_s
-{
-   uint32_t cmd[2];
-   char password[NETPLAY_PASS_HASH_LEN];
-};
-
-struct info_buf_s
-{
-   uint32_t cmd[2];
-   char core_name[NETPLAY_NICK_LEN];
-   char core_version[NETPLAY_NICK_LEN];
-   uint32_t content_crc;
-};
-
-#define RECV(buf, sz) \
-   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
-   if (recvd >= 0 && recvd < (ssize_t) (sz)) \
-   { \
-      netplay_recv_reset(&connection->recv_packet_buffer); \
-      return true; \
-   } \
-   else if (recvd < 0)
-
-static netplay_t *handshake_password_netplay = NULL;
 
 #ifdef HAVE_MENU
 static void handshake_password(void *ignore, const char *line)
@@ -319,7 +322,7 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
-   if (ntohl(header[0]) != netplay_magic)
+   if (ntohl(header[0]) != NETPLAY_MAGIC)
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
       goto error;
@@ -688,10 +691,7 @@ static bool netplay_handshake_sync(netplay_t *netplay,
  * nickname.
  */
 static bool netplay_handshake_pre_nick(netplay_t *netplay,
-   struct netplay_connection *connection, bool *had_input,
-   const char *netplay_password,
-   const char *netplay_spectate_password
-   )
+   struct netplay_connection *connection, bool *had_input)
 {
    struct nick_buf_s nick_buf;
    ssize_t recvd;
@@ -724,9 +724,11 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
 
    if (netplay->is_server)
    {
+      settings_t *settings = config_get_ptr();
+
       /* There's a password, so just put them in PRE_PASSWORD mode */
-      if (  netplay_password[0] ||
-            netplay_spectate_password[0])
+      if (  settings->paths.netplay_password[0] ||
+            settings->paths.netplay_spectate_password[0])
          connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
       else
       {
@@ -752,9 +754,7 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
  * the password and sending core/content info.
  */
 static bool netplay_handshake_pre_password(netplay_t *netplay,
-   struct netplay_connection *connection, bool *had_input,
-   const char *netplay_password,
-   const char *netplay_spectate_password)
+   struct netplay_connection *connection, bool *had_input)
 {
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt */
@@ -762,6 +762,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
    ssize_t recvd;
    char msg[512];
    bool correct         = false;
+   settings_t *settings = config_get_ptr();
 
    msg[0] = '\0';
 
@@ -788,10 +789,10 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
    correct = false;
    snprintf(password, sizeof(password), "%08X", connection->salt);
 
-   if (netplay_password[0])
+   if (settings->paths.netplay_password[0])
    {
       strlcpy(password + 8,
-            netplay_password, sizeof(password)-8);
+            settings->paths.netplay_password, sizeof(password)-8);
 
       sha256_hash(hash, (uint8_t *) password, strlen(password));
 
@@ -801,10 +802,10 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
          connection->can_play = true;
       }
    }
-   if (netplay_spectate_password[0])
+   if (settings->paths.netplay_spectate_password[0])
    {
       strlcpy(password + 8,
-            netplay_spectate_password, sizeof(password)-8);
+            settings->paths.netplay_spectate_password, sizeof(password)-8);
 
       sha256_hash(hash, (uint8_t *) password, strlen(password));
 
@@ -937,8 +938,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
  * synchronization information.
  */
 static bool netplay_handshake_pre_sync(netplay_t *netplay,
-   struct netplay_connection *connection, bool *had_input,
-   bool netplay_start_as_spectator)
+   struct netplay_connection *connection, bool *had_input)
 {
    uint32_t cmd[2];
    uint32_t new_frame_count, client_num;
@@ -1069,8 +1069,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
       snprintf(msg, sizeof(msg),
             msg_hash_to_str(MSG_NETPLAY_CHANGED_NICK), netplay->nick);
       RARCH_LOG("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* Now check the SRAM */
@@ -1103,8 +1102,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
       uint32_t quickbuf;
       while (remote_sram_size > 0)
       {
-         RECV(&quickbuf, (remote_sram_size > sizeof(uint32_t)) 
-               ? sizeof(uint32_t) : remote_sram_size)
+         RECV(&quickbuf, (remote_sram_size > sizeof(uint32_t)) ? sizeof(uint32_t) : remote_sram_size)
          {
             RARCH_ERR("%s\n",
                   msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
@@ -1125,15 +1123,18 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
 #endif
 
    /* We're ready! */
-   *had_input         = true;
+   *had_input = true;
    netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-   connection->mode   = NETPLAY_CONNECTION_PLAYING;
+   connection->mode = NETPLAY_CONNECTION_PLAYING;
    netplay_handshake_ready(netplay, connection);
    netplay_recv_flush(&connection->recv_packet_buffer);
 
    /* Ask to switch to playing mode if we should */
-   if (!netplay_start_as_spectator)
-      return netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
+   {
+      settings_t *settings = config_get_ptr();
+      if (!settings->bools.netplay_start_as_spectator)
+         return netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
+   }
 
    return true;
 }
@@ -1146,7 +1147,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
 bool netplay_handshake(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
-   bool ret             = false;
+   bool ret = false;
 
    switch (connection->mode)
    {
@@ -1154,32 +1155,16 @@ bool netplay_handshake(netplay_t *netplay,
          ret = netplay_handshake_init(netplay, connection, had_input);
          break;
       case NETPLAY_CONNECTION_PRE_NICK:
-         {
-            settings_t *settings = config_get_ptr();
-            ret = netplay_handshake_pre_nick(netplay, connection, had_input,
-                  settings->paths.netplay_password,
-                  settings->paths.netplay_spectate_password
-                  );
-         }
+         ret = netplay_handshake_pre_nick(netplay, connection, had_input);
          break;
       case NETPLAY_CONNECTION_PRE_PASSWORD:
-         {
-            settings_t *settings = config_get_ptr();
-            ret = netplay_handshake_pre_password(netplay, connection, had_input,
-                  settings->paths.netplay_password,
-                  settings->paths.netplay_spectate_password
-                  );
-         }
+         ret = netplay_handshake_pre_password(netplay, connection, had_input);
          break;
       case NETPLAY_CONNECTION_PRE_INFO:
          ret = netplay_handshake_pre_info(netplay, connection, had_input);
          break;
       case NETPLAY_CONNECTION_PRE_SYNC:
-         {
-            settings_t *settings = config_get_ptr();
-            ret = netplay_handshake_pre_sync(netplay, connection, had_input,
-                  settings->bools.netplay_start_as_spectator);
-         }
+         ret = netplay_handshake_pre_sync(netplay, connection, had_input);
          break;
       case NETPLAY_CONNECTION_NONE:
       default:

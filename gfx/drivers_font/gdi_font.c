@@ -84,8 +84,9 @@ static const struct font_glyph *gdi_font_get_glyph(
 }
 
 static void gdi_render_msg(
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *userdata,
+      void *data,
+      const char *msg,
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
@@ -95,9 +96,10 @@ static void gdi_render_msg(
    unsigned align;
    unsigned red, green, blue;
    unsigned drop_red, drop_green, drop_blue;
+   gdi_t *gdi                       = (gdi_t*)userdata;
    gdi_raster_t *font               = (gdi_raster_t*)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
+   unsigned width                   = gdi->video_width;
+   unsigned height                  = gdi->video_height;
    SIZE textSize                    = {0};
    struct string_list *msg_list     = NULL;
    settings_t *settings             = config_get_ptr();
@@ -207,8 +209,9 @@ font_renderer_t gdi_font = {
    gdi_render_free_font,
    gdi_render_msg,
    "gdi font",
-   gdi_font_get_glyph,       /* get_glyph */
-   NULL,      /* bind_block */
-   NULL,     /* flush */
-   gdi_get_message_width     /* get_message_width */
+   gdi_font_get_glyph,        /* get_glyph */
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   gdi_get_message_width,     /* get_message_width */
+   NULL                       /* get_line_metrics */
 };

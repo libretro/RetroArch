@@ -6,8 +6,10 @@
   [
     {
       "source": "/msg_hash_us.json",
-      "translation": "/msg_hash_%locale%.json",
-      "translation_replace": { "_us": "" },
-      "languages_mapping": { "zh-CN": "zhs", "zh-TW": "zht" },
+      "translation": "/msg_hash_%two_letters_code%.json",
+    },
+    {
+      "source": "/steam_us.json",
+      "translation": "/steam_%two_letters_code%.json",
     },
   ]

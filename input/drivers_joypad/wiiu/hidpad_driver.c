@@ -16,15 +16,7 @@
 
 #include "../../include/wiiu/input.h"
 
-static bool hidpad_init(void *data);
-static bool hidpad_query_pad(unsigned pad);
-static void hidpad_destroy(void);
-static bool hidpad_button(unsigned pad, uint16_t button);
-static void hidpad_get_buttons(unsigned pad, input_bits_t *state);
-static int16_t hidpad_axis(unsigned pad, uint32_t axis);
-static void hidpad_poll(void);
-static const char *hidpad_name(unsigned pad);
-
+/* TODO/FIXME - static global variables */
 static bool hidpad_ready = false;
 
 static bool init_hid_driver(void)
@@ -32,10 +24,15 @@ static bool init_hid_driver(void)
    return hid_init(&hid_instance, &wiiu_hid, &hidpad_driver, MAX_USERS);
 }
 
+static void hidpad_poll(void)
+{
+   if (hidpad_ready)
+      HID_POLL();
+}
+
 static bool hidpad_init(void *data)
 {
-   (void *)data;
-   int i;
+   (void)data;
 
    if(!init_hid_driver())
    {
@@ -83,12 +80,6 @@ static int16_t hidpad_axis(unsigned pad, uint32_t axis)
       return 0;
 
    return HID_AXIS(pad, axis);
-}
-
-static void hidpad_poll(void)
-{
-   if (hidpad_ready)
-      HID_POLL();
 }
 
 static const char *hidpad_name(unsigned pad)

@@ -26,5 +26,6 @@
     <Capability Name="internetClient" />
     <Capability Name="internetClientServer" />
     <rescap:Capability Name="broadFileSystemAccess" />
+    <rescap:Capability Name="expandedResources" />
   </Capabilities>
 </Package>

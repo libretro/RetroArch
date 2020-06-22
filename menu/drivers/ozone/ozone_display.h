@@ -26,18 +26,23 @@ void ozone_draw_text(
       const char *str, float x,
       float y,
       enum text_alignment text_align,
-      unsigned width, unsigned height, font_data_t* font,
+      unsigned width, unsigned height, ozone_font_data_t *font_data,
       uint32_t color,
       bool draw_outside);
 
-void ozone_draw_cursor(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+void ozone_draw_cursor(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x_offset,
       unsigned width, unsigned height,
       size_t y, float alpha);
 
 void ozone_draw_icon(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned icon_width,
       unsigned icon_height,
       uintptr_t texture,
@@ -48,15 +53,29 @@ void ozone_draw_icon(
 
 void ozone_restart_cursor_animation(ozone_handle_t *ozone);
 
-void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha);
+void ozone_draw_backdrop(
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      float alpha);
 
-void ozone_draw_osk(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+void ozone_draw_osk(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       const char *label, const char *str);
 
-void ozone_draw_messagebox(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+void ozone_draw_messagebox(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       const char *message);
 
 void ozone_draw_fullscreen_thumbnails(
-      ozone_handle_t *ozone, video_frame_info_t *video_info);
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height
+      );

@@ -95,6 +95,7 @@ static bool metal_frame(void *data, const void *frame,
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    return [md renderFrame:frame
+                     data:data
                     width:frame_width
                    height:frame_height
                frameCount:frame_count
@@ -234,7 +235,7 @@ static float metal_get_refresh_rate(void *data)
    return 0.0f;
 }
 
-static void metal_set_filtering(void *data, unsigned index, bool smooth)
+static void metal_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    [md.frameView setFilteringIndex:index smooth:smooth];

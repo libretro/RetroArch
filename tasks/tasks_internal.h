@@ -37,6 +37,9 @@
 #include "../playlist.h"
 #endif
 
+/* Required for task_push_core_backup() */
+#include "../core_backup.h"
+
 RETRO_BEGIN_DECLS
 
 typedef struct nbio_buf
@@ -93,12 +96,21 @@ bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb);
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 
 /* Core updater tasks */
+
 void *task_push_get_core_updater_list(
       core_updater_list_t* core_list, bool mute, bool refresh_menu);
+/* Note: If crc is set to 0, crc of local core file
+ * will be calculated automatically */
 void *task_push_core_updater_download(
-      core_updater_list_t* core_list, const char *filename,
-      bool mute, bool check_crc, const char *path_dir_libretro);
-void task_push_update_installed_cores(const char *path_dir_libretro);
+      core_updater_list_t* core_list,
+      const char *filename, uint32_t crc, bool mute,
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets);
+void task_push_update_installed_cores(
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets);
 
 bool task_push_pl_entry_thumbnail_download(
       const char *system,
@@ -114,6 +126,26 @@ bool task_push_pl_thumbnail_download(
 #endif
 
 #endif
+
+/* Core backup/restore tasks */
+
+/* Note 1: If crc is set to 0, crc of core_path file will
+ * be calculated automatically
+ * Note 2: If core_display_name is set to NULL, display
+ * name will be determined automatically
+ * > core_display_name *must* be set to a non-empty
+ *   string if task_push_core_backup() is *not* called
+ *   on the main thread */
+void *task_push_core_backup(
+      const char *core_path, const char *core_display_name,
+      uint32_t crc, enum core_backup_mode backup_mode,
+      size_t auto_backup_history_size,
+      const char *dir_core_assets, bool mute);
+/* Note: If 'core_loaded' is true, menu stack should be
+ * flushed if task_push_core_restore() returns true */
+bool task_push_core_restore(const char *backup_path,
+      const char *dir_libretro,
+      bool *core_loaded);
 
 bool task_push_pl_manager_reset_cores(const char *playlist_path);
 bool task_push_pl_manager_clean_playlist(const char *playlist_path);
@@ -141,6 +173,8 @@ bool task_push_overlay_load_default(
       bool input_overlay_enable,
       float input_overlay_opacity,
       float input_overlay_scale,
+      float input_overlay_center_x,
+      float input_overlay_center_y,
       void *user_data);
 #endif
 

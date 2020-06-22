@@ -49,6 +49,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/rhash.o \
+		 libretro-common/time/rtime.o \
 		 file_path_str.o \
 		 verbosity.o \
 		 bootstrap/psp1/kernel_functions.o

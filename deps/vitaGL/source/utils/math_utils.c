@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * math_utils.c:
  * Utilities for math operations
@@ -22,13 +40,13 @@ void matrix4x4_copy(matrix4x4 dst, const matrix4x4 src) {
 }
 
 void matrix4x4_multiply(matrix4x4 dst, const matrix4x4 src1, const matrix4x4 src2) {
-	matmul4_neon((float*)src2, (float*)src1, (float*)dst);
+	matmul4_neon((float *)src2, (float *)src1, (float *)dst);
 }
 
 void matrix4x4_init_rotation_x(matrix4x4 m, float rad) {
 	float cs[2];
 	sincosf_c(rad, cs);
-	
+
 	matrix4x4_identity(m);
 
 	m[1][1] = cs[1];
@@ -179,39 +197,51 @@ void matrix4x4_init_perspective(matrix4x4 m, float fov, float aspect, float near
 
 int matrix4x4_invert(matrix4x4 out, const matrix4x4 m) {
 	int i, j;
-	float det;
-	matrix4x4 inv;
 
-	inv[0][0] = m[1][1] * m[2][2] * m[3][3] - m[1][1] * m[3][2] * m[2][3] - m[1][2] * m[2][1] * m[3][3] + m[1][2] * m[3][1] * m[2][3] + m[1][3] * m[2][1] * m[3][2] - m[1][3] * m[3][1] * m[2][2];
-	inv[0][1] = -m[0][1] * m[2][2] * m[3][3] + m[0][1] * m[3][2] * m[2][3] + m[0][2] * m[2][1] * m[3][3] - m[0][2] * m[3][1] * m[2][3] - m[0][3] * m[2][1] * m[3][2] + m[0][3] * m[3][1] * m[2][2];
-	inv[0][2] = m[0][1] * m[1][2] * m[3][3] - m[0][1] * m[3][2] * m[1][3] - m[0][2] * m[1][1] * m[3][3] + m[0][2] * m[3][1] * m[1][3] + m[0][3] * m[1][1] * m[3][2] - m[0][3] * m[3][1] * m[1][2];
-	inv[0][3] = -m[0][1] * m[1][2] * m[2][3] + m[0][1] * m[2][2] * m[1][3] + m[0][2] * m[1][1] * m[2][3] - m[0][2] * m[2][1] * m[1][3] - m[0][3] * m[1][1] * m[2][2] + m[0][3] * m[2][1] * m[1][2];
-	inv[1][0] = -m[1][0] * m[2][2] * m[3][3] + m[1][0] * m[3][2] * m[2][3] + m[1][2] * m[2][0] * m[3][3] - m[1][2] * m[3][0] * m[2][3] - m[1][3] * m[2][0] * m[3][2] + m[1][3] * m[3][0] * m[2][2];
-	inv[1][1] = m[0][0] * m[2][2] * m[3][3] - m[0][0] * m[3][2] * m[2][3] - m[0][2] * m[2][0] * m[3][3] + m[0][2] * m[3][0] * m[2][3] + m[0][3] * m[2][0] * m[3][2] - m[0][3] * m[3][0] * m[2][2];
-	inv[1][2] = -m[0][0] * m[1][2] * m[3][3] + m[0][0] * m[3][2] * m[1][3] + m[0][2] * m[1][0] * m[3][3] - m[0][2] * m[3][0] * m[1][3] - m[0][3] * m[1][0] * m[3][2] + m[0][3] * m[3][0] * m[1][2];
-	inv[1][3] = m[0][0] * m[1][2] * m[2][3] - m[0][0] * m[2][2] * m[1][3] - m[0][2] * m[1][0] * m[2][3] + m[0][2] * m[2][0] * m[1][3] + m[0][3] * m[1][0] * m[2][2] - m[0][3] * m[2][0] * m[1][2];
-	inv[2][0] = m[1][0] * m[2][1] * m[3][3] - m[1][0] * m[3][1] * m[2][3] - m[1][1] * m[2][0] * m[3][3] + m[1][1] * m[3][0] * m[2][3] + m[1][3] * m[2][0] * m[3][1] - m[1][3] * m[3][0] * m[2][1];
-	inv[2][1] = -m[0][0] * m[2][1] * m[3][3] + m[0][0] * m[3][1] * m[2][3] + m[0][1] * m[2][0] * m[3][3] - m[0][1] * m[3][0] * m[2][3] - m[0][3] * m[2][0] * m[3][1] + m[0][3] * m[3][0] * m[2][1];
-	inv[2][2] = m[0][0] * m[1][1] * m[3][3] - m[0][0] * m[3][1] * m[1][3] - m[0][1] * m[1][0] * m[3][3] + m[0][1] * m[3][0] * m[1][3] + m[0][3] * m[1][0] * m[3][1] - m[0][3] * m[3][0] * m[1][1];
-	inv[2][3] = -m[0][0] * m[1][1] * m[2][3] + m[0][0] * m[2][1] * m[1][3] + m[0][1] * m[1][0] * m[2][3] - m[0][1] * m[2][0] * m[1][3] - m[0][3] * m[1][0] * m[2][1] + m[0][3] * m[2][0] * m[1][1];
-	inv[3][0] = -m[1][0] * m[2][1] * m[3][2] + m[1][0] * m[3][1] * m[2][2] + m[1][1] * m[2][0] * m[3][2] - m[1][1] * m[3][0] * m[2][2] - m[1][2] * m[2][0] * m[3][1] + m[1][2] * m[3][0] * m[2][1];
-	inv[3][1] = m[0][0] * m[2][1] * m[3][2] - m[0][0] * m[3][1] * m[2][2] - m[0][1] * m[2][0] * m[3][2] + m[0][1] * m[3][0] * m[2][2] + m[0][2] * m[2][0] * m[3][1] - m[0][2] * m[3][0] * m[2][1];
-	inv[3][2] = -m[0][0] * m[1][1] * m[3][2] + m[0][0] * m[3][1] * m[1][2] + m[0][1] * m[1][0] * m[3][2] - m[0][1] * m[3][0] * m[1][2] - m[0][2] * m[1][0] * m[3][1] + m[0][2] * m[3][0] * m[1][1];
-	inv[3][3] = m[0][0] * m[1][1] * m[2][2] - m[0][0] * m[2][1] * m[1][2] - m[0][1] * m[1][0] * m[2][2] + m[0][1] * m[2][0] * m[1][2] + m[0][2] * m[1][0] * m[2][1] - m[0][2] * m[2][0] * m[1][1];
+	const float a0 = m[0][0] * m[1][1] - m[0][1] * m[1][0];
+	const float a1 = m[0][0] * m[1][2] - m[0][2] * m[1][0];
+	const float a2 = m[0][0] * m[1][3] - m[0][3] * m[1][0];
+	const float a3 = m[0][1] * m[1][2] - m[0][2] * m[1][1];
+	const float a4 = m[0][1] * m[1][3] - m[0][3] * m[1][1];
+	const float a5 = m[0][2] * m[1][3] - m[0][3] * m[1][2];
+	const float b0 = m[2][0] * m[3][1] - m[2][1] * m[3][0];
+	const float b1 = m[2][0] * m[3][2] - m[2][2] * m[3][0];
+	const float b2 = m[2][0] * m[3][3] - m[2][3] * m[3][0];
+	const float b3 = m[2][1] * m[3][2] - m[2][2] * m[3][1];
+	const float b4 = m[2][1] * m[3][3] - m[2][3] * m[3][1];
+	const float b5 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
 
-	det = m[0][0] * inv[0][0] + m[1][0] * inv[0][1] + m[2][0] * inv[0][2] + m[3][0] * inv[0][3];
+	float det = a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
 
-	if (det == 0)
-		return 0;
+	if (fabsf(det) > 0.0001f) {
+		out[0][0] = m[0][1] * b5 - m[1][2] * b4 + m[1][3] * b3;
+		out[1][0] = -m[1][0] * b5 + m[1][2] * b2 - m[1][3] * b1;
+		out[2][0] = m[1][0] * b4 - m[1][1] * b2 + m[1][3] * b0;
+		out[3][0] = -m[1][0] * b3 + m[1][1] * b1 - m[1][2] * b0;
+		out[0][1] = -m[0][1] * b5 + m[0][2] * b4 - m[0][3] * b3;
+		out[1][1] = m[0][0] * b5 - m[0][2] * b2 + m[0][3] * b1;
+		out[2][1] = -m[0][0] * b4 + m[0][1] * b2 - m[0][3] * b0;
+		out[3][1] = m[0][0] * b3 - m[0][1] * b1 + m[0][2] * b0;
+		out[0][2] = m[3][1] * a5 - m[3][2] * a4 + m[3][3] * a3;
+		out[1][2] = -m[3][0] * a5 + m[3][2] * a2 - m[3][3] * a1;
+		out[2][2] = m[3][0] * a4 - m[3][1] * a2 + m[3][3] * a0;
+		out[3][2] = -m[3][0] * a3 + m[3][1] * a1 - m[3][2] * a0;
+		out[0][3] = -m[2][1] * a5 + m[2][2] * a4 - m[2][3] * a3;
+		out[1][3] = m[2][0] * a5 - m[2][2] * a2 + m[2][3] * a1;
+		out[2][3] = -m[2][0] * a4 + m[2][1] * a2 - m[2][3] * a0;
+		out[3][3] = m[2][0] * a3 - m[2][1] * a1 + m[2][2] * a0;
 
-	det = 1.0 / det;
+		det = 1.0f / det;
 
-	for (i = 0; i < 4; i++) {
-		for (j = 0; j < 4; j++)
-			out[i][j] = inv[i][j] * det;
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++)
+				out[i][j] *= det;
+		}
+
+		return 1;
 	}
 
-	return 1;
+	return 0;
 }
 
 void vector4f_matrix4x4_mult(vector4f *u, const matrix4x4 m, const vector4f *v) {

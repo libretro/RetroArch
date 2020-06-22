@@ -431,7 +431,7 @@ public:
                  unsigned width, unsigned height,
                  bool linear,
                  bool mipmap,
-                 GLenum address);
+                 gl_core_filter_chain_address address);
    ~StaticTexture();
 
    StaticTexture(StaticTexture&&) = delete;
@@ -449,17 +449,27 @@ private:
 
 StaticTexture::StaticTexture(string id_, GLuint image_,
       unsigned width, unsigned height, bool linear, bool mipmap,
-      GLenum address)
+      gl_core_filter_chain_address address)
    : id(std::move(id_)), image(image_)
 {
-   texture.texture.width = width;
+   GLenum gl_address      = address_to_gl(address);
+
+   texture.filter         = GL_CORE_FILTER_CHAIN_NEAREST;
+   texture.mip_filter     = GL_CORE_FILTER_CHAIN_NEAREST;
+   texture.address        = address;
+   texture.texture.width  = width;
    texture.texture.height = height;
    texture.texture.format = 0;
-   texture.texture.image = image;
+   texture.texture.image  = image;
+
+   if (linear)
+      texture.filter      = GL_CORE_FILTER_CHAIN_LINEAR;
+   if (mipmap && linear)
+      texture.mip_filter  = GL_CORE_FILTER_CHAIN_LINEAR;
 
    glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, address);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, address);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl_address);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl_address);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
    if (linear && mipmap)
@@ -2126,7 +2136,7 @@ static unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
             tex, image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             levels > 1,
-            gl_core_shader::address_to_gl(gl_core_shader::wrap_to_address(shader->wrap))));
+            gl_core_shader::wrap_to_address(shader->wrap)));
 }
 
 static bool gl_core_filter_chain_load_luts(

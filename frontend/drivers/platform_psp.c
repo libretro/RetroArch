@@ -287,7 +287,7 @@ static void frontend_psp_init(void *data)
    scePowerSetGpuClockFrequency(222);
    scePowerSetGpuXbarClockFrequency(166);
    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
-   
+
    SceAppUtilInitParam appUtilParam;
    SceAppUtilBootParam appUtilBootParam;
    memset(&appUtilParam, 0, sizeof(SceAppUtilInitParam));
@@ -319,6 +319,8 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 {
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER) || defined(VITA)
    char argp[512] = {0};
+   char boot_params[1024];
+   char core_name[256];
    SceSize   args = 0;
 
 #if !defined(VITA)
@@ -338,8 +340,23 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 #if defined(VITA)
    RARCH_LOG("Attempt to load executable: %d [%s].\n", args, argp);
-   int ret =  sceAppMgrLoadExec(path, args==0? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
-   RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+#ifdef IS_SALAMANDER
+   sceAppMgrGetAppParam(boot_params);
+   if (strstr(boot_params,"psgm:play")) {
+      char *param1 = strstr(boot_params, "&param=")+7;
+      char *param2 = strstr(boot_params, "&param2=");
+      memcpy(core_name, param1, param2 - param1);
+      core_name[param2-param1] = 0;
+      sprintf(argp, param2 + 8);
+      int ret =  sceAppMgrLoadExec(core_name, (char * const*)((const char*[]){argp, 0}), NULL);
+      RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+   }
+   else
+#endif
+   {
+      int ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
+      RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+   }
 #else
    exitspawn_kernel(path, args, argp);
 #endif
@@ -532,6 +549,11 @@ enum retro_language psp_get_retro_lang_from_langid(int langid)
       return RETRO_LANGUAGE_PORTUGUESE_BRAZIL;
    case SCE_SYSTEM_PARAM_LANG_TURKISH:
       return RETRO_LANGUAGE_TURKISH;
+#if 0
+   /* TODO/FIXME - this doesn't seem to actually exist */
+   case SCE_SYSTEM_PARAM_LANG_SLOVAK:
+      return RETRO_LANGUAGE_SLOVAK;
+#endif
    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US:
    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB:
    default:
@@ -540,7 +562,7 @@ enum retro_language psp_get_retro_lang_from_langid(int langid)
 }
 
 enum retro_language frontend_psp_get_user_language(void)
-{ 
+{
    int langid;
    sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, &langid);
    return psp_get_retro_lang_from_langid(langid);

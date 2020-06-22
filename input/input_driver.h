@@ -60,6 +60,7 @@ enum input_toggle_type
    INPUT_TOGGLE_L3_R,
    INPUT_TOGGLE_L_R,
    INPUT_TOGGLE_HOLD_START,
+   INPUT_TOGGLE_HOLD_SELECT,
    INPUT_TOGGLE_DOWN_SELECT,
    INPUT_TOGGLE_LAST
 };
@@ -468,6 +469,8 @@ unsigned input_config_bind_map_get_meta(unsigned i);
 
 const char *input_config_bind_map_get_desc(unsigned i);
 
+uint8_t input_config_bind_map_get_retro_key(unsigned i);
+
 /* auto_bind can be NULL. */
 void input_config_get_bind_string(char *buf,
       const struct retro_keybind *bind,
@@ -629,6 +632,12 @@ bool menu_input_dialog_get_display_kb(void);
 bool menu_input_dialog_start(menu_input_ctx_line_t *line);
 
 void menu_input_dialog_end(void);
+
+int16_t button_is_pressed(
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port, unsigned id);
 
 RETRO_END_DECLS
 

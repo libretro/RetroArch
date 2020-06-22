@@ -35,12 +35,6 @@
 #include "../../core_info.h"
 #include "../../verbosity.h"
 
-#ifndef BIND_ACTION_DEFERRED_PUSH
-#define BIND_ACTION_DEFERRED_PUSH(cbs, name) \
-   cbs->action_deferred_push = name; \
-   cbs->action_deferred_push_ident = #name;
-#endif
-
 enum
 {
    PUSH_ARCHIVE_OPEN_DETECT_CORE = 0,
@@ -49,7 +43,38 @@ enum
    PUSH_DETECT_CORE_LIST
 };
 
-static int deferred_push_dlist(menu_displaylist_info_t *info, enum menu_displaylist_ctl_state state)
+#ifndef BIND_ACTION_DEFERRED_PUSH
+#define BIND_ACTION_DEFERRED_PUSH(cbs, name) (cbs)->action_deferred_push = (name)
+#endif
+
+#define GENERIC_DEFERRED_PUSH(name, type) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return deferred_push_dlist(info, type); \
+}
+
+#define GENERIC_DEFERRED_CURSOR_MANAGER(name, type) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return deferred_push_cursor_manager_list_generic(info, type); \
+}
+
+#define GENERIC_DEFERRED_PUSH_GENERAL(name, a, b) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return general_push(info, a, b); \
+}
+
+#define GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(name, a, b) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list); \
+   return general_push(info, a, b); \
+}
+
+static int deferred_push_dlist(
+      menu_displaylist_info_t *info,
+      enum menu_displaylist_ctl_state state)
 {
    if (!menu_displaylist_ctl(state, info))
       return menu_cbs_exit();
@@ -71,173 +96,172 @@ static int deferred_push_database_manager_list_deferred(
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
 
-#define generic_deferred_push(name, type) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   return deferred_push_dlist(info, type); \
-}
-
 static int deferred_push_remappings_port(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_REMAPPINGS_PORT);
 }
 
-generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
-generic_deferred_push(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
-generic_deferred_push(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
-generic_deferred_push(deferred_push_video_shader_preset_remove,       DISPLAYLIST_SHADER_PRESET_REMOVE)
-generic_deferred_push(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
-generic_deferred_push(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
-generic_deferred_push(deferred_push_quick_menu_override_options,    DISPLAYLIST_OPTIONS_OVERRIDES)
-generic_deferred_push(deferred_push_options,                        DISPLAYLIST_OPTIONS)
-generic_deferred_push(deferred_push_netplay,                        DISPLAYLIST_NETPLAY_ROOM_LIST)
-generic_deferred_push(deferred_push_netplay_sublist,                DISPLAYLIST_NETPLAY)
-generic_deferred_push(deferred_push_content_settings,               DISPLAYLIST_CONTENT_SETTINGS)
-generic_deferred_push(deferred_push_add_content_list,               DISPLAYLIST_ADD_CONTENT_LIST)
-generic_deferred_push(deferred_push_history_list,                   DISPLAYLIST_HISTORY)
-generic_deferred_push(deferred_push_database_manager_list,          DISPLAYLIST_DATABASES)
-generic_deferred_push(deferred_push_cursor_manager_list,            DISPLAYLIST_DATABASE_CURSORS)
-generic_deferred_push(deferred_push_content_collection_list,        DISPLAYLIST_DATABASE_PLAYLISTS)
-generic_deferred_push(deferred_push_configurations_list,            DISPLAYLIST_CONFIGURATIONS_LIST)
-generic_deferred_push(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
-generic_deferred_push(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
-generic_deferred_push(deferred_push_dump_disk_list,                 DISPLAYLIST_DUMP_DISC)
-generic_deferred_push(deferred_push_cdrom_info_detail_list,         DISPLAYLIST_CDROM_DETAIL_INFO)
-generic_deferred_push(deferred_push_load_disk_list,                 DISPLAYLIST_LOAD_DISC)
-generic_deferred_push(deferred_push_information_list,               DISPLAYLIST_INFORMATION_LIST)
-generic_deferred_push(deferred_push_information,                    DISPLAYLIST_INFORMATION)
-generic_deferred_push(deferred_archive_action_detect_core,          DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE)
-generic_deferred_push(deferred_archive_action,                      DISPLAYLIST_ARCHIVE_ACTION)
-generic_deferred_push(deferred_push_management_options,             DISPLAYLIST_OPTIONS_MANAGEMENT)
-generic_deferred_push(deferred_push_core_counters,                  DISPLAYLIST_PERFCOUNTERS_CORE)
-generic_deferred_push(deferred_push_frontend_counters,              DISPLAYLIST_PERFCOUNTERS_FRONTEND)
-generic_deferred_push(deferred_push_core_cheat_options,             DISPLAYLIST_OPTIONS_CHEATS)
-generic_deferred_push(deferred_push_core_input_remapping_options,   DISPLAYLIST_OPTIONS_REMAPPINGS)
-generic_deferred_push(deferred_push_core_options,                   DISPLAYLIST_CORE_OPTIONS)
-generic_deferred_push(deferred_push_disk_options,                   DISPLAYLIST_OPTIONS_DISK)
-generic_deferred_push(deferred_push_browse_url_list,                DISPLAYLIST_BROWSE_URL_LIST)
-generic_deferred_push(deferred_push_browse_url_start,               DISPLAYLIST_BROWSE_URL_START)
-generic_deferred_push(deferred_push_core_list,                      DISPLAYLIST_CORES)
-generic_deferred_push(deferred_push_configurations,                 DISPLAYLIST_CONFIG_FILES)
-generic_deferred_push(deferred_push_video_shader_preset,            DISPLAYLIST_SHADER_PRESET)
-generic_deferred_push(deferred_push_video_shader_pass,              DISPLAYLIST_SHADER_PASS)
-generic_deferred_push(deferred_push_video_filter,                   DISPLAYLIST_VIDEO_FILTERS)
-generic_deferred_push(deferred_push_images,                         DISPLAYLIST_IMAGES)
-generic_deferred_push(deferred_push_audio_dsp_plugin,               DISPLAYLIST_AUDIO_FILTERS)
-generic_deferred_push(deferred_push_cheat_file_load,                DISPLAYLIST_CHEAT_FILES)
-generic_deferred_push(deferred_push_cheat_file_load_append,         DISPLAYLIST_CHEAT_FILES)
-generic_deferred_push(deferred_push_remap_file_load,                DISPLAYLIST_REMAP_FILES)
-generic_deferred_push(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
-generic_deferred_push(deferred_push_stream_configfile,              DISPLAYLIST_STREAM_CONFIG_FILES)
-generic_deferred_push(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_remove,       DISPLAYLIST_SHADER_PRESET_REMOVE)
+GENERIC_DEFERRED_PUSH(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
+GENERIC_DEFERRED_PUSH(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
+GENERIC_DEFERRED_PUSH(deferred_push_quick_menu_override_options,    DISPLAYLIST_OPTIONS_OVERRIDES)
+GENERIC_DEFERRED_PUSH(deferred_push_options,                        DISPLAYLIST_OPTIONS)
+GENERIC_DEFERRED_PUSH(deferred_push_netplay,                        DISPLAYLIST_NETPLAY_ROOM_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_netplay_sublist,                DISPLAYLIST_NETPLAY)
+GENERIC_DEFERRED_PUSH(deferred_push_content_settings,               DISPLAYLIST_CONTENT_SETTINGS)
+GENERIC_DEFERRED_PUSH(deferred_push_add_content_list,               DISPLAYLIST_ADD_CONTENT_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_history_list,                   DISPLAYLIST_HISTORY)
+GENERIC_DEFERRED_PUSH(deferred_push_database_manager_list,          DISPLAYLIST_DATABASES)
+GENERIC_DEFERRED_PUSH(deferred_push_cursor_manager_list,            DISPLAYLIST_DATABASE_CURSORS)
+GENERIC_DEFERRED_PUSH(deferred_push_content_collection_list,        DISPLAYLIST_DATABASE_PLAYLISTS)
+GENERIC_DEFERRED_PUSH(deferred_push_configurations_list,            DISPLAYLIST_CONFIGURATIONS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_dump_disk_list,                 DISPLAYLIST_DUMP_DISC)
+GENERIC_DEFERRED_PUSH(deferred_push_cdrom_info_detail_list,         DISPLAYLIST_CDROM_DETAIL_INFO)
+GENERIC_DEFERRED_PUSH(deferred_push_load_disk_list,                 DISPLAYLIST_LOAD_DISC)
+GENERIC_DEFERRED_PUSH(deferred_push_information_list,               DISPLAYLIST_INFORMATION_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_information,                    DISPLAYLIST_INFORMATION)
+GENERIC_DEFERRED_PUSH(deferred_archive_action_detect_core,          DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE)
+GENERIC_DEFERRED_PUSH(deferred_archive_action,                      DISPLAYLIST_ARCHIVE_ACTION)
+GENERIC_DEFERRED_PUSH(deferred_push_management_options,             DISPLAYLIST_OPTIONS_MANAGEMENT)
+GENERIC_DEFERRED_PUSH(deferred_push_core_counters,                  DISPLAYLIST_PERFCOUNTERS_CORE)
+GENERIC_DEFERRED_PUSH(deferred_push_frontend_counters,              DISPLAYLIST_PERFCOUNTERS_FRONTEND)
+GENERIC_DEFERRED_PUSH(deferred_push_core_cheat_options,             DISPLAYLIST_OPTIONS_CHEATS)
+GENERIC_DEFERRED_PUSH(deferred_push_core_input_remapping_options,   DISPLAYLIST_OPTIONS_REMAPPINGS)
+GENERIC_DEFERRED_PUSH(deferred_push_core_options,                   DISPLAYLIST_CORE_OPTIONS)
+GENERIC_DEFERRED_PUSH(deferred_push_disk_options,                   DISPLAYLIST_OPTIONS_DISK)
+GENERIC_DEFERRED_PUSH(deferred_push_browse_url_list,                DISPLAYLIST_BROWSE_URL_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_browse_url_start,               DISPLAYLIST_BROWSE_URL_START)
+GENERIC_DEFERRED_PUSH(deferred_push_core_list,                      DISPLAYLIST_CORES)
+GENERIC_DEFERRED_PUSH(deferred_push_configurations,                 DISPLAYLIST_CONFIG_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset,            DISPLAYLIST_SHADER_PRESET)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_pass,              DISPLAYLIST_SHADER_PASS)
+GENERIC_DEFERRED_PUSH(deferred_push_video_filter,                   DISPLAYLIST_VIDEO_FILTERS)
+GENERIC_DEFERRED_PUSH(deferred_push_images,                         DISPLAYLIST_IMAGES)
+GENERIC_DEFERRED_PUSH(deferred_push_audio_dsp_plugin,               DISPLAYLIST_AUDIO_FILTERS)
+GENERIC_DEFERRED_PUSH(deferred_push_cheat_file_load,                DISPLAYLIST_CHEAT_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_cheat_file_load_append,         DISPLAYLIST_CHEAT_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_remap_file_load,                DISPLAYLIST_REMAP_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_stream_configfile,              DISPLAYLIST_STREAM_CONFIG_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
 #ifdef HAVE_VIDEO_LAYOUT
-generic_deferred_push(deferred_push_video_layout_path,              DISPLAYLIST_VIDEO_LAYOUT_PATH)
+GENERIC_DEFERRED_PUSH(deferred_push_video_layout_path,              DISPLAYLIST_VIDEO_LAYOUT_PATH)
 #endif
-generic_deferred_push(deferred_push_video_font_path,                DISPLAYLIST_FONTS)
-generic_deferred_push(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
-generic_deferred_push(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
-generic_deferred_push(deferred_push_core_information,               DISPLAYLIST_CORE_INFO)
-generic_deferred_push(deferred_push_disc_information,               DISPLAYLIST_DISC_INFO)
-generic_deferred_push(deferred_push_system_information,             DISPLAYLIST_SYSTEM_INFO)
-generic_deferred_push(deferred_push_network_information,            DISPLAYLIST_NETWORK_INFO)
-generic_deferred_push(deferred_push_achievement_list,               DISPLAYLIST_ACHIEVEMENT_LIST)
-generic_deferred_push(deferred_push_rdb_collection,                 DISPLAYLIST_PLAYLIST_COLLECTION)
-generic_deferred_push(deferred_main_menu_list,                      DISPLAYLIST_MAIN_MENU)
-generic_deferred_push(deferred_music_list,                          DISPLAYLIST_MUSIC_LIST)
-generic_deferred_push(deferred_user_binds_list,                     DISPLAYLIST_USER_BINDS_LIST)
-generic_deferred_push(deferred_push_accounts_list,                  DISPLAYLIST_ACCOUNTS_LIST)
-generic_deferred_push(deferred_push_driver_settings_list,           DISPLAYLIST_DRIVER_SETTINGS_LIST)
-generic_deferred_push(deferred_push_core_settings_list,             DISPLAYLIST_CORE_SETTINGS_LIST)
-generic_deferred_push(deferred_push_video_settings_list,            DISPLAYLIST_VIDEO_SETTINGS_LIST)
-generic_deferred_push(deferred_push_video_fullscreen_mode_settings_list,    DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST)
-generic_deferred_push(deferred_push_video_windowed_mode_settings_list,    DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST)
-generic_deferred_push(deferred_push_video_synchronization_settings_list,    DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST)
-generic_deferred_push(deferred_push_video_output_settings_list,    DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST)
-generic_deferred_push(deferred_push_video_scaling_settings_list,    DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST)
-generic_deferred_push(deferred_push_crt_switchres_settings_list,    DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST)
-generic_deferred_push(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
-generic_deferred_push(deferred_push_saving_settings_list,           DISPLAYLIST_SAVING_SETTINGS_LIST)
-generic_deferred_push(deferred_push_mixer_stream_settings_list,     DISPLAYLIST_MIXER_STREAM_SETTINGS_LIST)
-generic_deferred_push(deferred_push_logging_settings_list,          DISPLAYLIST_LOGGING_SETTINGS_LIST)
-generic_deferred_push(deferred_push_frame_throttle_settings_list,   DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST)
-generic_deferred_push(deferred_push_rewind_settings_list,           DISPLAYLIST_REWIND_SETTINGS_LIST)
-generic_deferred_push(deferred_push_frame_time_counter_settings_list,           DISPLAYLIST_FRAME_TIME_COUNTER_SETTINGS_LIST)
-generic_deferred_push(deferred_push_cheat_details_settings_list,    DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST)
-generic_deferred_push(deferred_push_cheat_search_settings_list,     DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST)
-generic_deferred_push(deferred_push_onscreen_display_settings_list, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST)
-generic_deferred_push(deferred_push_onscreen_notifications_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
-generic_deferred_push(deferred_push_onscreen_overlay_settings_list, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_font_path,                DISPLAYLIST_FONTS)
+GENERIC_DEFERRED_PUSH(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
+GENERIC_DEFERRED_PUSH(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
+GENERIC_DEFERRED_PUSH(deferred_push_disc_information,               DISPLAYLIST_DISC_INFO)
+GENERIC_DEFERRED_PUSH(deferred_push_system_information,             DISPLAYLIST_SYSTEM_INFO)
+GENERIC_DEFERRED_PUSH(deferred_push_network_information,            DISPLAYLIST_NETWORK_INFO)
+GENERIC_DEFERRED_PUSH(deferred_push_achievement_list,               DISPLAYLIST_ACHIEVEMENT_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_rdb_collection,                 DISPLAYLIST_PLAYLIST_COLLECTION)
+GENERIC_DEFERRED_PUSH(deferred_main_menu_list,                      DISPLAYLIST_MAIN_MENU)
+GENERIC_DEFERRED_PUSH(deferred_music_list,                          DISPLAYLIST_MUSIC_LIST)
+GENERIC_DEFERRED_PUSH(deferred_user_binds_list,                     DISPLAYLIST_USER_BINDS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_accounts_list,                  DISPLAYLIST_ACCOUNTS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_driver_settings_list,           DISPLAYLIST_DRIVER_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_core_settings_list,             DISPLAYLIST_CORE_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_core_information_list,          DISPLAYLIST_CORE_INFO)
+GENERIC_DEFERRED_PUSH(deferred_push_video_settings_list,            DISPLAYLIST_VIDEO_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_fullscreen_mode_settings_list,    DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_windowed_mode_settings_list,    DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_synchronization_settings_list,    DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_output_settings_list,    DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_scaling_settings_list,    DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_crt_switchres_settings_list,    DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_saving_settings_list,           DISPLAYLIST_SAVING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_mixer_stream_settings_list,     DISPLAYLIST_MIXER_STREAM_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_logging_settings_list,          DISPLAYLIST_LOGGING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_frame_throttle_settings_list,   DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_rewind_settings_list,           DISPLAYLIST_REWIND_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_frame_time_counter_settings_list,           DISPLAYLIST_FRAME_TIME_COUNTER_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_cheat_details_settings_list,    DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_cheat_search_settings_list,     DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_onscreen_display_settings_list, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_onscreen_notifications_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_onscreen_overlay_settings_list, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST)
 #ifdef HAVE_VIDEO_LAYOUT
-generic_deferred_push(deferred_push_onscreen_video_layout_settings_list, DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_onscreen_video_layout_settings_list, DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST)
 #endif
-generic_deferred_push(deferred_push_menu_file_browser_settings_list,DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST)
-generic_deferred_push(deferred_push_menu_views_settings_list,       DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST)
-generic_deferred_push(deferred_push_quick_menu_views_settings_list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST)
-generic_deferred_push(deferred_push_settings_views_settings_list, DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST)
-generic_deferred_push(deferred_push_menu_settings_list,             DISPLAYLIST_MENU_SETTINGS_LIST)
-generic_deferred_push(deferred_push_user_interface_settings_list,   DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST)
-generic_deferred_push(deferred_push_power_management_settings_list, DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST)
-generic_deferred_push(deferred_push_retro_achievements_settings_list,DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
-generic_deferred_push(deferred_push_updater_settings_list,          DISPLAYLIST_UPDATER_SETTINGS_LIST)
-generic_deferred_push(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
-generic_deferred_push(deferred_push_network_settings_list,          DISPLAYLIST_NETWORK_SETTINGS_LIST)
-generic_deferred_push(deferred_push_subsystem_settings_list,          DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST)
-generic_deferred_push(deferred_push_network_hosting_settings_list,          DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST)
-generic_deferred_push(deferred_push_lakka_services_list,            DISPLAYLIST_LAKKA_SERVICES_LIST)
-generic_deferred_push(deferred_push_user_settings_list,             DISPLAYLIST_USER_SETTINGS_LIST)
-generic_deferred_push(deferred_push_directory_settings_list,        DISPLAYLIST_DIRECTORY_SETTINGS_LIST)
-generic_deferred_push(deferred_push_privacy_settings_list,          DISPLAYLIST_PRIVACY_SETTINGS_LIST)
-generic_deferred_push(deferred_push_midi_settings_list,             DISPLAYLIST_MIDI_SETTINGS_LIST)
-generic_deferred_push(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
-generic_deferred_push(deferred_push_audio_output_settings_list,            DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST)
-generic_deferred_push(deferred_push_audio_resampler_settings_list,            DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST)
-generic_deferred_push(deferred_push_audio_synchronization_settings_list,            DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST)
-generic_deferred_push(deferred_push_audio_mixer_settings_list,      DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST)
-generic_deferred_push(deferred_push_input_settings_list,            DISPLAYLIST_INPUT_SETTINGS_LIST)
-generic_deferred_push(deferred_push_input_menu_settings_list,            DISPLAYLIST_INPUT_MENU_SETTINGS_LIST)
-generic_deferred_push(deferred_push_input_haptic_feedback_settings_list,            DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
-generic_deferred_push(deferred_push_ai_service_settings_list,            DISPLAYLIST_AI_SERVICE_SETTINGS_LIST)
-generic_deferred_push(deferred_push_accessibility_settings_list,            DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST)
-generic_deferred_push(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
-generic_deferred_push(deferred_push_recording_settings_list,        DISPLAYLIST_RECORDING_SETTINGS_LIST)
-generic_deferred_push(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
-generic_deferred_push(deferred_push_playlist_manager_list,          DISPLAYLIST_PLAYLIST_MANAGER_LIST)
-generic_deferred_push(deferred_push_playlist_manager_settings,      DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS)
-generic_deferred_push(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
-generic_deferred_push(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
-generic_deferred_push(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
-generic_deferred_push(deferred_push_accounts_youtube_list,          DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST)
-generic_deferred_push(deferred_push_help,                           DISPLAYLIST_HELP_SCREEN_LIST)
-generic_deferred_push(deferred_push_rdb_entry_detail,               DISPLAYLIST_DATABASE_ENTRY)
-generic_deferred_push(deferred_push_rpl_entry_actions,              DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS)
-generic_deferred_push(deferred_push_core_list_deferred,             DISPLAYLIST_CORES_SUPPORTED)
-generic_deferred_push(deferred_push_core_collection_list_deferred,  DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
-generic_deferred_push(deferred_push_menu_sounds_list,               DISPLAYLIST_MENU_SOUNDS_LIST)
-generic_deferred_push(deferred_push_rgui_theme_preset,              DISPLAYLIST_RGUI_THEME_PRESETS)
+GENERIC_DEFERRED_PUSH(deferred_push_menu_file_browser_settings_list,DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_menu_views_settings_list,       DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_quick_menu_views_settings_list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_settings_views_settings_list, DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_menu_settings_list,             DISPLAYLIST_MENU_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_user_interface_settings_list,   DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_power_management_settings_list, DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_retro_achievements_settings_list,DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_updater_settings_list,          DISPLAYLIST_UPDATER_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_network_settings_list,          DISPLAYLIST_NETWORK_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_subsystem_settings_list,          DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_network_hosting_settings_list,          DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_lakka_services_list,            DISPLAYLIST_LAKKA_SERVICES_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_user_settings_list,             DISPLAYLIST_USER_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_directory_settings_list,        DISPLAYLIST_DIRECTORY_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_privacy_settings_list,          DISPLAYLIST_PRIVACY_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_midi_settings_list,             DISPLAYLIST_MIDI_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_audio_output_settings_list,            DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_audio_resampler_settings_list,            DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_audio_synchronization_settings_list,            DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_audio_mixer_settings_list,      DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_input_settings_list,            DISPLAYLIST_INPUT_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_input_menu_settings_list,            DISPLAYLIST_INPUT_MENU_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_input_haptic_feedback_settings_list,            DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_ai_service_settings_list,            DISPLAYLIST_AI_SERVICE_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_accessibility_settings_list,            DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_recording_settings_list,        DISPLAYLIST_RECORDING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_list,          DISPLAYLIST_PLAYLIST_MANAGER_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_settings,      DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS)
+GENERIC_DEFERRED_PUSH(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_accounts_youtube_list,          DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_help,                           DISPLAYLIST_HELP_SCREEN_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_rdb_entry_detail,               DISPLAYLIST_DATABASE_ENTRY)
+GENERIC_DEFERRED_PUSH(deferred_push_rpl_entry_actions,              DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS)
+GENERIC_DEFERRED_PUSH(deferred_push_core_list_deferred,             DISPLAYLIST_CORES_SUPPORTED)
+GENERIC_DEFERRED_PUSH(deferred_push_core_collection_list_deferred,  DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
+GENERIC_DEFERRED_PUSH(deferred_push_menu_sounds_list,               DISPLAYLIST_MENU_SOUNDS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_rgui_theme_preset,              DISPLAYLIST_RGUI_THEME_PRESETS)
 
 #ifdef HAVE_NETWORKING
-generic_deferred_push(deferred_push_thumbnails_updater_list,        DISPLAYLIST_THUMBNAILS_UPDATER)
-generic_deferred_push(deferred_push_pl_thumbnails_updater_list,     DISPLAYLIST_PL_THUMBNAILS_UPDATER)
-generic_deferred_push(deferred_push_core_updater_list,              DISPLAYLIST_CORES_UPDATER)
-generic_deferred_push(deferred_push_core_content_list,              DISPLAYLIST_CORE_CONTENT)
-generic_deferred_push(deferred_push_core_content_dirs_list,         DISPLAYLIST_CORE_CONTENT_DIRS)
-generic_deferred_push(deferred_push_core_content_dirs_subdir_list,  DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR)
-generic_deferred_push(deferred_push_lakka_list,                     DISPLAYLIST_LAKKA)
+GENERIC_DEFERRED_PUSH(deferred_push_thumbnails_updater_list,        DISPLAYLIST_THUMBNAILS_UPDATER)
+GENERIC_DEFERRED_PUSH(deferred_push_pl_thumbnails_updater_list,     DISPLAYLIST_PL_THUMBNAILS_UPDATER)
+GENERIC_DEFERRED_PUSH(deferred_push_core_updater_list,              DISPLAYLIST_CORES_UPDATER)
+GENERIC_DEFERRED_PUSH(deferred_push_core_content_list,              DISPLAYLIST_CORE_CONTENT)
+GENERIC_DEFERRED_PUSH(deferred_push_core_content_dirs_list,         DISPLAYLIST_CORE_CONTENT_DIRS)
+GENERIC_DEFERRED_PUSH(deferred_push_core_content_dirs_subdir_list,  DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR)
+GENERIC_DEFERRED_PUSH(deferred_push_lakka_list,                     DISPLAYLIST_LAKKA)
 #endif
 
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
-generic_deferred_push(deferred_push_switch_cpu_profile,             DISPLAYLIST_SWITCH_CPU_PROFILE)
+GENERIC_DEFERRED_PUSH(deferred_push_switch_cpu_profile,             DISPLAYLIST_SWITCH_CPU_PROFILE)
 #endif
 
 #ifdef HAVE_LAKKA_SWITCH
-generic_deferred_push(deferred_push_switch_gpu_profile,             DISPLAYLIST_SWITCH_GPU_PROFILE)
-generic_deferred_push(deferred_push_switch_backlight_control,       DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL)
+GENERIC_DEFERRED_PUSH(deferred_push_switch_gpu_profile,             DISPLAYLIST_SWITCH_GPU_PROFILE)
+GENERIC_DEFERRED_PUSH(deferred_push_switch_backlight_control,       DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
-generic_deferred_push(deferred_push_manual_content_scan_list,       DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST)
-generic_deferred_push(deferred_push_manual_content_scan_dat_file,   DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_manual_content_scan_list,       DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_manual_content_scan_dat_file,   DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES)
 
-generic_deferred_push(deferred_push_file_browser_select_sideload_core, DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE)
+GENERIC_DEFERRED_PUSH(deferred_push_core_restore_backup_list,       DISPLAYLIST_CORE_RESTORE_BACKUP_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_core_delete_backup_list,        DISPLAYLIST_CORE_DELETE_BACKUP_LIST)
+
+GENERIC_DEFERRED_PUSH(deferred_push_core_manager_list,              DISPLAYLIST_CORE_MANAGER_LIST)
+
+GENERIC_DEFERRED_PUSH(deferred_push_file_browser_select_sideload_core, DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE)
 
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
@@ -333,28 +357,22 @@ end:
    return ret;
 }
 
-#define generic_deferred_cursor_manager(name, type) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   return deferred_push_cursor_manager_list_generic(info, type); \
-}
-
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users, DATABASE_QUERY_ENTRY_MAX_USERS)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating, DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating, DATABASE_QUERY_ENTRY_ELSPA_RATING)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating, DATABASE_QUERY_ENTRY_CERO_RATING)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating, DATABASE_QUERY_ENTRY_PEGI_RATING)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating, DATABASE_QUERY_ENTRY_BBFC_RATING)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating, DATABASE_QUERY_ENTRY_ESRB_RATING)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw, DATABASE_QUERY_ENTRY_ENHANCEMENT_HW)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise, DATABASE_QUERY_ENTRY_FRANCHISE)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher, DATABASE_QUERY_ENTRY_PUBLISHER)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer, DATABASE_QUERY_ENTRY_DEVELOPER)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin, DATABASE_QUERY_ENTRY_ORIGIN)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth, DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH)
-generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear, DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users, DATABASE_QUERY_ENTRY_MAX_USERS)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating, DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating, DATABASE_QUERY_ENTRY_ELSPA_RATING)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating, DATABASE_QUERY_ENTRY_CERO_RATING)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating, DATABASE_QUERY_ENTRY_PEGI_RATING)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating, DATABASE_QUERY_ENTRY_BBFC_RATING)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating, DATABASE_QUERY_ENTRY_ESRB_RATING)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw, DATABASE_QUERY_ENTRY_ENHANCEMENT_HW)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise, DATABASE_QUERY_ENTRY_FRANCHISE)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher, DATABASE_QUERY_ENTRY_PUBLISHER)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer, DATABASE_QUERY_ENTRY_DEVELOPER)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin, DATABASE_QUERY_ENTRY_ORIGIN)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth, DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH)
+GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear, DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR)
 
 #endif
 
@@ -639,46 +657,34 @@ static int general_push(menu_displaylist_info_t *info,
    return deferred_push_dlist(info, state);
 }
 
-#define generic_deferred_push_general(name, a, b) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   return general_push(info, a, b); \
-}
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_archive_open_detect_core, PUSH_ARCHIVE_OPEN_DETECT_CORE, DISPLAYLIST_DEFAULT)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_archive_open, PUSH_ARCHIVE_OPEN, DISPLAYLIST_DEFAULT)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_default, PUSH_DEFAULT, DISPLAYLIST_DEFAULT)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_favorites_list, PUSH_DEFAULT, DISPLAYLIST_FAVORITES)
 
-#define generic_deferred_push_clear_general(name, a, b) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list); \
-   return general_push(info, a, b); \
-}
-
-generic_deferred_push_general(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)
-generic_deferred_push_general(deferred_archive_open_detect_core, PUSH_ARCHIVE_OPEN_DETECT_CORE, DISPLAYLIST_DEFAULT)
-generic_deferred_push_general(deferred_archive_open, PUSH_ARCHIVE_OPEN, DISPLAYLIST_DEFAULT)
-generic_deferred_push_general(deferred_push_default, PUSH_DEFAULT, DISPLAYLIST_DEFAULT)
-generic_deferred_push_general(deferred_push_favorites_list, PUSH_DEFAULT, DISPLAYLIST_FAVORITES)
-
-generic_deferred_push_clear_general(deferred_playlist_list, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST)
-generic_deferred_push_clear_general(deferred_music_history_list, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY)
-generic_deferred_push_clear_general(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
-generic_deferred_push_clear_general(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_video_shader_num_passes, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_NUM_PASSES)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_shader_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PARAMETER)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_shader_preset_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PRESET_PARAMETER)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_default_core, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_label_display_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_right_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_left_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_manual_content_scan_system_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
-generic_deferred_push_clear_general(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_playlist_list, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_music_history_list, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_video_shader_num_passes, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_NUM_PASSES)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_shader_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PARAMETER)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_shader_preset_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PRESET_PARAMETER)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_default_core, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_label_display_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_right_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_left_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_sort_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_system_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash)
+      const char *label)
 {
    unsigned i;
    typedef struct deferred_info_list 
@@ -701,10 +707,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE, deferred_push_dropdown_box_list_playlist_label_display_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE, deferred_push_dropdown_box_list_playlist_right_thumbnail_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, deferred_push_dropdown_box_list_playlist_left_thumbnail_mode},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE, deferred_push_dropdown_box_list_playlist_sort_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, deferred_push_dropdown_box_list_disk_index},
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST, deferred_push_browse_url_list},
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START, deferred_push_browse_url_start},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST, deferred_push_core_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST, deferred_push_core_information_list},
       {MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST, deferred_push_configuration_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST, deferred_push_saving_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST, deferred_push_mixer_stream_settings_list},
@@ -757,7 +765,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST, deferred_push_input_haptic_feedback_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST, deferred_push_ai_service_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST, deferred_push_accessibility_settings_list},
-      {MENU_ENUM_LABEL_CORE_INFORMATION, deferred_push_core_information},
       {MENU_ENUM_LABEL_DISC_INFORMATION, deferred_push_disc_information},
       {MENU_ENUM_LABEL_SYSTEM_INFORMATION, deferred_push_system_information},
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS, deferred_push_rpl_entry_actions},
@@ -809,6 +816,80 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_CONFIGURATIONS_LIST, deferred_push_configurations_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST, deferred_push_playlist_manager_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, deferred_push_playlist_manager_settings},
+      {MENU_ENUM_LABEL_LOAD_CONTENT_LIST, deferred_push_load_content_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST, deferred_push_playlist_settings_list},
+      {MENU_ENUM_LABEL_MANAGEMENT, deferred_push_management_options},
+      {MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST, deferred_push_database_manager_list_deferred},
+      {MENU_ENUM_LABEL_CONFIGURATIONS, deferred_push_configurations},
+      {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST, deferred_push_accounts_cheevos_list},
+      {MENU_ENUM_LABEL_DATABASE_MANAGER_LIST, deferred_push_database_manager_list},
+      {MENU_ENUM_LABEL_CURSOR_MANAGER_LIST, deferred_push_cursor_manager_list},
+#ifdef HAVE_LIBRETRODB
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST, deferred_push_cursor_manager_list_deferred},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER, deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER, deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN, deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE, deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW, deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING, deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING, deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING, deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING, deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING, deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING, deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS, deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear},
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+      {MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH, deferred_push_video_layout_path}, 
+#endif
+      {MENU_ENUM_LABEL_ACHIEVEMENT_LIST, deferred_push_achievement_list},
+      {MENU_ENUM_LABEL_CORE_COUNTERS, deferred_push_core_counters},
+      {MENU_ENUM_LABEL_FRONTEND_COUNTERS, deferred_push_frontend_counters},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS, deferred_push_video_shader_preset_parameters},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS, deferred_push_video_shader_parameters},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE, deferred_push_video_shader_preset_save},
+      {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS, deferred_push_core_cheat_options},
+      {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS, deferred_push_core_input_remapping_options},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET, deferred_push_video_shader_preset},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PASS, deferred_push_video_shader_pass},
+      {MENU_ENUM_LABEL_VIDEO_FILTER, deferred_push_video_filter},
+      {MENU_ENUM_LABEL_MENU_WALLPAPER, deferred_push_images},
+      {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN, deferred_push_audio_dsp_plugin},
+      {MENU_ENUM_LABEL_INPUT_OVERLAY, deferred_push_input_overlay},
+      {MENU_ENUM_LABEL_VIDEO_FONT_PATH, deferred_push_video_font_path},
+      {MENU_ENUM_LABEL_XMB_FONT, deferred_push_xmb_font_path},
+      {MENU_ENUM_LABEL_CHEAT_FILE_LOAD, deferred_push_cheat_file_load},
+      {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND, deferred_push_cheat_file_load_append},
+      {MENU_ENUM_LABEL_REMAP_FILE_LOAD, deferred_push_remap_file_load},
+      {MENU_ENUM_LABEL_RECORD_CONFIG, deferred_push_record_configfile},
+      {MENU_ENUM_LABEL_STREAM_CONFIG, deferred_push_stream_configfile},
+      {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET, deferred_push_rgui_theme_preset},
+      {MENU_ENUM_LABEL_NETPLAY, deferred_push_netplay},
+      {MENU_ENUM_LABEL_CONTENT_SETTINGS, deferred_push_content_settings},
+      {MENU_ENUM_LABEL_ADD_CONTENT_LIST, deferred_push_add_content_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_LIST, deferred_push_core_list_deferred},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET, deferred_push_core_collection_list_deferred},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_FILTER, deferred_push_video_filter},
+      {MENU_ENUM_LABEL_CONTENT_HISTORY_PATH, deferred_push_content_history_path},
+      {MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST, deferred_push_detect_core_list},
+      {MENU_ENUM_LABEL_FAVORITES, deferred_push_detect_core_list},
+      {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST, deferred_push_manual_content_scan_list},
+      {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE, deferred_push_manual_content_scan_dat_file},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST, deferred_push_core_restore_backup_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST, deferred_push_core_delete_backup_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST, deferred_push_core_manager_list},
+      {MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, deferred_push_file_browser_select_sideload_core},
+      {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE, deferred_archive_action_detect_core},
+      {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION, deferred_archive_action},
+      {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE, deferred_archive_open_detect_core},
+      {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN, deferred_archive_open},
+#ifdef HAVE_NETWORKING
+      {MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST, deferred_push_lakka_list},
+#endif
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -824,7 +905,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
     * treatment, since the label has the format:
     *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
     * i.e. cannot use a normal string_is_equal() */
-   if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+   if (string_starts_with(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
    }
@@ -1175,6 +1257,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dump_disk_list);
             break;
@@ -1191,222 +1276,26 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_manual_content_scan_dat_file);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_restore_backup_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_delete_backup_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_manager_list);
+            break;
          case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_file_browser_select_sideload_core);
             break;
          default:
             return -1;
       }
-   }
-   else
-   {
-      switch (label_hash)
-      {
-         case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_ACTION:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open_detect_core);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open);
-            break;
-         case MENU_LABEL_DEFERRED_LAKKA_LIST:
-#ifdef HAVE_NETWORKING
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);
-#endif
-            break;
-         case MENU_LABEL_DATABASE_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
-            break;
-         case MENU_LABEL_CURSOR_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list);
-            break;
-         case MENU_LABEL_CHEAT_FILE_LOAD:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);
-            break;
-         case MENU_LABEL_CHEAT_FILE_LOAD_APPEND:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load_append);
-            break;
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
-            break;
-         case MENU_LABEL_RECORD_CONFIG:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
-            break;
-         case MENU_LABEL_STREAM_CONFIG:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_stream_configfile);
-            break;
-         case MENU_LABEL_RGUI_MENU_THEME_PRESET:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rgui_theme_preset);
-            break;
-         case MENU_LABEL_NETPLAY:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay);
-            break;
-         case MENU_LABEL_CONTENT_SETTINGS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
-            break;
-         case MENU_LABEL_ADD_CONTENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_content_list);
-            break;
-         case MENU_LABEL_LOAD_CONTENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
-            break;
-         case MENU_LABEL_MANAGEMENT:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
-            break;
-         case MENU_LABEL_DEFERRED_CORE_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
-            break;
-         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_collection_list_deferred);
-            break;
-         case MENU_LABEL_DEFERRED_VIDEO_FILTER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
-            break;
-         case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list_deferred);
-            break;
-#ifdef HAVE_LIBRETRODB
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
-            break;
-#endif
-         case MENU_LABEL_ACHIEVEMENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
-            break;
-         case MENU_LABEL_CORE_COUNTERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_counters);
-            break;
-         case MENU_LABEL_FRONTEND_COUNTERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frontend_counters);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_parameters);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_parameters);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_save);
-            break;
-         case MENU_LABEL_CORE_CHEAT_OPTIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);
-            break;
-         case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
-            break;
-         case MENU_LABEL_CONFIGURATIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PASS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);
-            break;
-         case MENU_LABEL_VIDEO_FILTER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
-            break;
-         case MENU_LABEL_MENU_WALLPAPER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_images);
-            break;
-         case MENU_LABEL_AUDIO_DSP_PLUGIN:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_dsp_plugin);
-            break;
-         case MENU_LABEL_INPUT_OVERLAY:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
-            break;
-#ifdef HAVE_VIDEO_LAYOUT
-         case MENU_LABEL_VIDEO_LAYOUT_PATH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_layout_path);
-            break;
-#endif
-         case MENU_LABEL_VIDEO_FONT_PATH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
-            break;
-         case MENU_LABEL_XMB_FONT:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_xmb_font_path);
-            break;
-         case MENU_LABEL_CONTENT_HISTORY_PATH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
-            break;
-         case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         case MENU_LABEL_FAVORITES:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
-            break;
-         case MENU_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_manual_content_scan_list);
-            break;
-         case MENU_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_manual_content_scan_dat_file);
-            break;
-         case MENU_LABEL_SIDELOAD_CORE_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_file_browser_select_sideload_core);
-            break;
-         default:
-            return -1;
-      }
+
+      return 0;
    }
 
-   return 0;
+   return -1;
 }
 
 static int menu_cbs_init_bind_deferred_push_compare_type(
@@ -1432,8 +1321,7 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
 }
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
@@ -1441,7 +1329,7 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_default);
 
    if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
-       menu_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
+       menu_cbs_init_bind_deferred_push_compare_label(cbs, label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_deferred_push_compare_type(

@@ -123,7 +123,6 @@ static void app_terminate(void)
         case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
-            NSPoint mouse_pos;
             apple              = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
@@ -131,25 +130,29 @@ static void app_terminate(void)
             pos.x              = 0;
             pos.y              = 0;
 
-            /* Relative */
-            apple->mouse_rel_x = (int16_t)event.deltaX;
-            apple->mouse_rel_y = (int16_t)event.deltaY;
-
-            /* Absolute */
 #if defined(HAVE_COCOA_METAL)
             pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #elif defined(HAVE_COCOA)
+            pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
+
+            /* FIXME: Disable clipping until graphical offset issues 
+             * are fixed */
+#if 0
+            NSInteger window_number = [[[NSApplication sharedApplication] keyWindow] windowNumber];
+            if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number)
+               return;
+#endif
+
+            /* Relative */
+            apple->mouse_rel_x += (int16_t)event.deltaX;
+            apple->mouse_rel_y += (int16_t)event.deltaY;
+
+            /* Absolute */
             apple->touches[0].screen_x = (int16_t)pos.x;
             apple->touches[0].screen_y = (int16_t)pos.y;
-
-#if defined(HAVE_COCOA_METAL)
-            mouse_pos = [apple_platform.renderView convertPoint:[event locationInWindow]  fromView:nil];
-#elif defined(HAVE_COCOA)
-            mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
-#endif
-            apple->window_pos_x = (int16_t)mouse_pos.x;
-            apple->window_pos_y = (int16_t)mouse_pos.y;
+            apple->window_pos_x = (int16_t)pos.x;
+            apple->window_pos_y = (int16_t)pos.y;
          }
          break;
 #if defined(HAVE_COCOA_METAL)
@@ -172,6 +175,7 @@ static void app_terminate(void)
            if (!apple || pos.y < 0)
                return;
            apple->mouse_buttons |= (1 << event.buttonNumber);
+           apple->touch_count = 1;
        }
            break;
       case NSEventTypeLeftMouseUp:
@@ -197,8 +201,9 @@ static void app_terminate(void)
 
 @end
 
+/* TODO/FIXME - static global variables */
 static int waiting_argc;
-static char** waiting_argv;
+static char **waiting_argv;
 
 @implementation RetroArch_OSX
 
@@ -346,7 +351,7 @@ static char** waiting_argv;
 
    if (mode.width > 0)
    {
-      // HACK(sgc): ensure MTKView posts a drawable resize event
+      /* HACK(sgc): ensure MTKView posts a drawable resize event */
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    }
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
@@ -431,10 +436,10 @@ static char** waiting_argv;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-	if ((filenames.count == 1) && [filenames objectAtIndex:0])
+  if ((filenames.count == 1) && [filenames objectAtIndex:0])
    {
       struct retro_system_info *system = runloop_get_libretro_system_info();
-	  NSString *__core                 = [filenames objectAtIndex:0];
+    NSString *__core                 = [filenames objectAtIndex:0];
       const char *core_name            = system->library_name;
 
       if (core_name)
@@ -483,7 +488,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
    path_set(RARCH_PATH_CORE, state->result);
    ui_companion_event_command(CMD_EVENT_LOAD_CORE);
 
-   if (info 
+   if (info
          && info->load_no_content
          && set_supports_no_game_enable)
    {
@@ -554,7 +559,7 @@ static void open_document_handler(
 
     if (browser)
     {
-       ui_browser_window_state_t 
+       ui_browser_window_state_t
           browser_state                  = {{0}};
        bool result                       = false;
        settings_t *settings              = config_get_ptr();

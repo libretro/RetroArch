@@ -1,5 +1,6 @@
 TARGET		    := retroarch_vita
 DEBUG               ?= 0
+HAVE_FILE_LOGGER	= 1
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
 
@@ -59,6 +60,7 @@ else
 	RARCH_CONSOLE		:= 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
 	HAVE_STATIC_AUDIO_FILTERS = 1
+	HAVE_AUDIOMIXER 	:= 1
 
 	ifeq ($(DEBUG), 1)
 		HAVE_NETLOGGER = 1
@@ -86,7 +88,7 @@ AR      := $(PREFIX)ar
 OBJCOPY := $(PREFIX)objcopy
 STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
-LD      := $(CXX)
+LD      := $(CC)
 
 LIBDIRS := -L.
 
@@ -121,7 +123,7 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lstdc++ -lpthread -lpng -lz
 
 LIBS	:= $(WHOLE_START) -lretro_vita $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
@@ -179,6 +181,10 @@ vpksend: $(TARGET).vpk
 
 send: $(TARGET).self
 	curl -T $< ftp://$(PSVITAIP):1337/ux0:/app/$(VITA_TITLE_ID)/eboot.bin
+
+launch: $(TARGET).self
+	curl -T $< ftp://$(PSVITAIP):1337/ux0:/app/$(VITA_TITLE_ID)/eboot.bin
+	echo "launch $(VITA_TITLE_ID)" | nc ${PSVITAIP} 1338
 
 .PHONY: clean all send vpksend
 .PRECIOUS: %.depend

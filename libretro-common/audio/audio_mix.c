@@ -20,7 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <audio/audio_mix.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <memalign.h>
 
 #if defined(__SSE2__)
 #include <emmintrin.h>
@@ -28,10 +31,6 @@
 #include <altivec.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <memalign.h>
 #include <retro_miscellaneous.h>
 #include <audio/audio_mix.h>
 #include <streams/file_stream.h>

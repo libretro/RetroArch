@@ -1,11 +1,11 @@
 Name:           retroarch
-Version:        1.8.4
-Release:        v1.8.4
+Version:        1.8.9
+Release:        v1.8.9
 Summary:        Official reference frontend for libretro
 
 Group:          Applications/Emulators
 License:        GPLv3+
-URL:            http://www.libretro.com/
+URL:            https://www.libretro.com/
 
 BuildRequires:  mesa-llvmpipe-libwayland-egl-devel
 BuildRequires:  pulseaudio-devel

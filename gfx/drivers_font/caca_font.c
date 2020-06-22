@@ -76,7 +76,8 @@ static const struct font_glyph *caca_font_get_glyph(
    return NULL;
 }
 
-static void caca_render_msg(video_frame_info_t *video_info,
+static void caca_render_msg(
+      void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
 {
@@ -142,5 +143,6 @@ font_renderer_t caca_font = {
    caca_font_get_glyph,       /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   caca_get_message_width     /* get_message_width */
+   caca_get_message_width,    /* get_message_width */
+   NULL                       /* get_line_metrics */
 };

@@ -26,6 +26,7 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <formats/logiqx_dat.h>
+#include <formats/m3u_file.h>
 
 #include "tasks_internal.h"
 
@@ -45,6 +46,7 @@ enum manual_scan_status
 {
    MANUAL_SCAN_BEGIN = 0,
    MANUAL_SCAN_ITERATE_CONTENT,
+   MANUAL_SCAN_ITERATE_M3U,
    MANUAL_SCAN_END
 };
 
@@ -56,9 +58,12 @@ typedef struct manual_scan_handle
    logiqx_dat_t *dat_file;
    size_t list_size;
    size_t list_index;
+   struct string_list *m3u_list;
+   size_t m3u_index;
    enum manual_scan_status status;
    bool fuzzy_archive_match;
    bool use_old_format;
+   bool compress;
 } manual_scan_handle_t;
 
 /* Frees task handle + all constituent objects */
@@ -85,6 +90,12 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       manual_scan->content_list = NULL;
    }
 
+   if (manual_scan->m3u_list)
+   {
+      string_list_free(manual_scan->m3u_list);
+      manual_scan->m3u_list = NULL;
+   }
+
    if (manual_scan->dat_file)
    {
       logiqx_dat_free(manual_scan->dat_file);
@@ -93,6 +104,72 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
 
    free(manual_scan);
    manual_scan = NULL;
+}
+
+static void cb_task_manual_content_scan(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   manual_scan_handle_t *manual_scan = NULL;
+   playlist_t *cached_playlist       = playlist_get_cached();
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+   menu_ctx_environment_t menu_environ;
+   if (!task)
+      goto end;
+#else
+   if (!task)
+      return;
+#endif
+
+   manual_scan = (manual_scan_handle_t*)task->state;
+
+   if (!manual_scan)
+   {
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+      goto end;
+#else
+      return;
+#endif
+   }
+
+   /* If the manual content scan task has modified the
+    * currently cached playlist, then it must be re-cached
+    * (otherwise changes will be lost if the currently
+    * cached playlist is saved to disk for any reason...) */
+   if (cached_playlist)
+   {
+      if (string_is_equal(
+            manual_scan->task_config->playlist_file,
+            playlist_get_conf_path(cached_playlist)))
+      {
+         playlist_free_cached();
+         playlist_init_cached(
+               manual_scan->task_config->playlist_file, COLLECTION_SIZE,
+               manual_scan->use_old_format, manual_scan->compress);
+      }
+   }
+
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+end:
+   /* When creating playlists, the playlist tabs of
+    * any active menu driver must be refreshed */
+   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
+   menu_environ.data = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+#endif
+}
+
+static void task_manual_content_scan_free(retro_task_t *task)
+{
+   manual_scan_handle_t *manual_scan = NULL;
+
+   if (!task)
+      return;
+
+   manual_scan = (manual_scan_handle_t*)task->state;
+
+   free_manual_content_scan_handle(manual_scan);
 }
 
 static void task_manual_content_scan_handler(retro_task_t *task)
@@ -201,42 +278,107 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      manual_scan->task_config, manual_scan->playlist,
                      content_path, content_type, manual_scan->dat_file,
                      manual_scan->fuzzy_archive_match);
+
+               /* If this is an M3U file, add it to the
+                * M3U list for later processing */
+               if (m3u_file_is_m3u(content_path))
+               {
+                  union string_list_elem_attr attr;
+                  attr.i = 0;
+                  /* Note: If string_list_append() fails, there is
+                   * really nothing we can do. The M3U file will
+                   * just be ignored... */
+                  string_list_append(
+                        manual_scan->m3u_list, content_path, attr);
+               }
             }
 
             /* Increment content index */
             manual_scan->list_index++;
             if (manual_scan->list_index >= manual_scan->list_size)
+            {
+               /* Check whether we have any M3U files
+                * to process */
+               if (manual_scan->m3u_list->size > 0)
+                  manual_scan->status = MANUAL_SCAN_ITERATE_M3U;
+               else
+                  manual_scan->status = MANUAL_SCAN_END;
+            }
+         }
+         break;
+      case MANUAL_SCAN_ITERATE_M3U:
+         {
+            const char *m3u_path =
+                  manual_scan->m3u_list->elems[manual_scan->m3u_index].data;
+
+            if (!string_is_empty(m3u_path))
+            {
+               const char *m3u_name = path_basename(m3u_path);
+               m3u_file_t *m3u_file = NULL;
+               char task_title[PATH_MAX_LENGTH];
+
+               task_title[0] = '\0';
+
+               /* Update progress display */
+               task_free_title(task);
+
+               strlcpy(
+                     task_title, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP),
+                     sizeof(task_title));
+
+               if (!string_is_empty(m3u_name))
+                  strlcat(task_title, m3u_name, sizeof(task_title));
+
+               task_set_title(task, strdup(task_title));
+               task_set_progress(task, (manual_scan->m3u_index * 100) / manual_scan->m3u_list->size);
+
+               /* Load M3U file */
+               m3u_file = m3u_file_init(m3u_path, M3U_FILE_SIZE);
+
+               if (m3u_file)
+               {
+                  size_t i;
+
+                  /* Loop over M3U entries */
+                  for (i = 0; i < m3u_file_get_size(m3u_file); i++)
+                  {
+                     m3u_file_entry_t *m3u_entry = NULL;
+
+                     /* Delete any playlist items matching the
+                      * content path of the M3U entry */
+                     if (m3u_file_get_entry(m3u_file, i, &m3u_entry))
+                        playlist_delete_by_path(
+                              manual_scan->playlist,
+                              m3u_entry->full_path,
+                              manual_scan->fuzzy_archive_match);
+                  }
+
+                  m3u_file_free(m3u_file);
+               }
+            }
+
+            /* Increment M3U file index */
+            manual_scan->m3u_index++;
+            if (manual_scan->m3u_index >= manual_scan->m3u_list->size)
                manual_scan->status = MANUAL_SCAN_END;
          }
          break;
       case MANUAL_SCAN_END:
          {
-            playlist_t *cached_playlist = playlist_get_cached();
             char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
 
-            /* Ensure playlist is alphabetically sorted */
+            /* Ensure playlist is alphabetically sorted
+             * > Override user settings here */
+            playlist_set_sort_mode(manual_scan->playlist, PLAYLIST_SORT_MODE_DEFAULT);
             playlist_qsort(manual_scan->playlist);
 
             /* Save playlist changes to disk */
-            playlist_write_file(manual_scan->playlist, manual_scan->use_old_format);
-
-            /* If this is the currently cached playlist, then
-             * it must be re-cached (otherwise changes will be
-             * lost if the currently cached playlist is saved
-             * to disk for any reason...) */
-            if (cached_playlist)
-            {
-               if (string_is_equal(
-                     manual_scan->task_config->playlist_file,
-                     playlist_get_conf_path(cached_playlist)))
-               {
-                  playlist_free_cached();
-                  playlist_init_cached(
-                        manual_scan->task_config->playlist_file, COLLECTION_SIZE);
-               }
-            }
+            playlist_write_file(
+                  manual_scan->playlist,
+                  manual_scan->use_old_format,
+                  manual_scan->compress);
 
             /* Update progress display */
             task_free_title(task);
@@ -261,8 +403,6 @@ task_finished:
 
    if (task)
       task_set_finished(task, true);
-
-   free_manual_content_scan_handle(manual_scan);
 }
 
 static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
@@ -281,19 +421,6 @@ static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
 
    return string_is_equal(
          (const char*)user_data, manual_scan->task_config->playlist_file);
-}
-
-static void cb_task_manual_content_scan_refresh_menu(
-      retro_task_t *task, void *task_data,
-      void *user_data, const char *err)
-{
-#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
-   menu_ctx_environment_t menu_environ;
-   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
-   menu_environ.data = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-#endif
 }
 
 bool task_push_manual_content_scan(void)
@@ -318,9 +445,15 @@ bool task_push_manual_content_scan(void)
    manual_scan->dat_file            = NULL;
    manual_scan->list_size           = 0;
    manual_scan->list_index          = 0;
+   manual_scan->m3u_list            = string_list_new();
+   manual_scan->m3u_index           = 0;
    manual_scan->status              = MANUAL_SCAN_BEGIN;
    manual_scan->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    manual_scan->use_old_format      = settings->bools.playlist_use_old_format;
+   manual_scan->compress            = settings->bools.playlist_compression;
+
+   if (!manual_scan->m3u_list)
+      goto error;
 
    /* > Get current manual content scan configuration */
    manual_scan->task_config = (manual_content_scan_task_config_t*)
@@ -368,7 +501,8 @@ bool task_push_manual_content_scan(void)
    task->title                   = strdup(task_title);
    task->alternative_look        = true;
    task->progress                = 0;
-   task->callback                = cb_task_manual_content_scan_refresh_menu;
+   task->callback                = cb_task_manual_content_scan;
+   task->cleanup                 = task_manual_content_scan_free;
 
    /* > Push task */
    task_queue_push(task);

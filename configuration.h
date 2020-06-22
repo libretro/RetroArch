@@ -91,6 +91,7 @@ typedef struct settings
       bool video_black_frame_insertion;
       bool video_vfilter;
       bool video_smooth;
+      bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
@@ -130,6 +131,7 @@ typedef struct settings
       bool audio_rate_control;
       bool audio_wasapi_exclusive_mode;
       bool audio_wasapi_float_format;
+      bool audio_fastforward_mute;
 
       /* Input */
       bool input_remap_binds_enable;
@@ -142,7 +144,6 @@ typedef struct settings
       bool input_overlay_auto_rotate;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
-      bool input_all_users_control_menu;
       bool input_menu_swap_ok_cancel_buttons;
       bool input_backtouch_enable;
       bool input_backtouch_toggle;
@@ -176,6 +177,7 @@ typedef struct settings
       bool menu_throttle_framerate;
       bool menu_linear_filter;
       bool menu_horizontal_animation;
+      bool menu_scroll_fast;
       bool menu_show_online_updater;
       bool menu_show_core_updater;
       bool menu_show_load_core;
@@ -282,7 +284,9 @@ typedef struct settings
 
       /* Network */
       bool network_buildbot_auto_extract_archive;
+      bool network_buildbot_show_experimental_cores;
       bool network_on_demand_thumbnails;
+      bool core_updater_auto_backup;
 
       /* UI */
       bool ui_menubar_enable;
@@ -301,6 +305,7 @@ typedef struct settings
       bool cheevos_badges_enable;
       bool cheevos_verbose_enable;
       bool cheevos_auto_screenshot;
+      bool cheevos_start_active;
 
       /* Camera */
       bool camera_allow;
@@ -342,6 +347,8 @@ typedef struct settings
       bool savestate_auto_save;
       bool savestate_auto_load;
       bool savestate_thumbnail_enable;
+      bool save_file_compression;
+      bool savestate_file_compression;
       bool network_cmd_enable;
       bool stdin_cmd_enable;
       bool keymapper_enable;
@@ -375,6 +382,7 @@ typedef struct settings
 
       bool sustained_performance_mode;
       bool playlist_use_old_format;
+      bool playlist_compression;
       bool content_runtime_log;
       bool content_runtime_log_aggregate;
 
@@ -387,6 +395,7 @@ typedef struct settings
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;
       bool ozone_truncate_playlist_name;
+      bool ozone_sort_after_truncate_playlist_name;
       bool ozone_scroll_content_metadata;
 
       bool log_to_file;
@@ -429,6 +438,8 @@ typedef struct settings
 
       float input_overlay_opacity;
       float input_overlay_scale;
+      float input_overlay_center_x;
+      float input_overlay_center_y;
 
       float slowmotion_ratio;
       float fastforward_ratio;
@@ -483,6 +494,7 @@ typedef struct settings
 #ifdef GEKKO
       unsigned input_mouse_scale;
 #endif
+      unsigned input_hotkey_block_delay;
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
@@ -538,6 +550,7 @@ typedef struct settings
       unsigned accessibility_narrator_speech_speed;
 
       unsigned menu_timedate_style;
+      unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
       unsigned gfx_thumbnail_upscale_threshold;
@@ -609,6 +622,8 @@ typedef struct settings
       unsigned ai_service_mode;
       unsigned ai_service_target_lang;
       unsigned ai_service_source_lang;
+
+      unsigned core_updater_auto_backup_history_size;
    } uints;
 
    struct

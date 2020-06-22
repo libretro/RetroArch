@@ -74,8 +74,9 @@ static void xfonts_free_font(void *data, bool is_threaded)
 }
 
 static void xfonts_render_msg(
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *userdata,
+      void *data,
+      const char *msg,
       const struct font_params *params)
 {
    float x, y;
@@ -117,5 +118,6 @@ font_renderer_t d3d_xdk1_font = {
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   NULL                       /* get_message_width */
+   NULL,                      /* get_message_width */
+   NULL                       /* get_line_metrics */
 };

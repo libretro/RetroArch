@@ -37,10 +37,11 @@
 #error "An UDP port for the PC logging server was not set in the Makefile, cannot continue."
 #endif
 
+/* TODO/FIXME - static global variables */
 static int g_sid;
 static struct sockaddr_in target;
 
-void logger_init (void)
+void logger_init(void)
 {
    socket_target_t in_target;
    const char *server = PC_DEVELOPMENT_IP_ADDRESS;
@@ -65,7 +66,7 @@ void logger_init (void)
    socket_set_target(&target, &in_target);
 }
 
-void logger_shutdown (void)
+void logger_shutdown(void)
 {
    if (socket_close(g_sid) < 0)
       printf("Could not close socket.\n");

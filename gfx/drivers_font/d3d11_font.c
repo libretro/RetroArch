@@ -234,14 +234,16 @@ static void d3d11_font_render_message(
       unsigned            height,
       unsigned            text_align)
 {
+   struct font_line_metrics *line_metrics = NULL;
+   int lines                              = 0;
    float line_height;
-   int       lines = 0;
 
    if (!msg || !*msg)
       return;
 
-   /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   /* If font line metrics are not supported just draw as usual */
+   if (!font->font_driver->get_line_metrics ||
+       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       d3d11_font_render_line(d3d11,
             font, msg, strlen(msg), scale, color, pos_x, pos_y,
@@ -249,7 +251,7 @@ static void d3d11_font_render_message(
       return;
    }
 
-   line_height = font->font_driver->get_line_height(font->font_data) * scale / height;
+   line_height = line_metrics->height * scale / height;
 
    for (;;)
    {
@@ -279,8 +281,10 @@ static void d3d11_font_render_message(
 }
 
 static void d3d11_font_render_msg(
-      video_frame_info_t* video_info, void* data,
-      const char* msg, const struct font_params *params)
+      void *userdata,
+      void* data,
+      const char* msg,
+      const struct font_params *params)
 {
    float                     x, y, scale, drop_mod, drop_alpha;
    int                       drop_x, drop_y;
@@ -288,9 +292,9 @@ static void d3d11_font_render_msg(
    unsigned                  color, color_dark, r, g, b,
                              alpha, r_dark, g_dark, b_dark, alpha_dark;
    d3d11_font_t*             font   = (d3d11_font_t*)data;
-   d3d11_video_t           * d3d11  = (d3d11_video_t*)video_info->userdata;
-   unsigned                  width  = video_info->width;
-   unsigned                  height = video_info->height;
+   d3d11_video_t           * d3d11  = (d3d11_video_t*)userdata;
+   unsigned                  width  = d3d11->vp.full_width;
+   unsigned                  height = d3d11->vp.full_height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
@@ -370,14 +374,14 @@ static const struct font_glyph* d3d11_font_get_glyph(void *data, uint32_t code)
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static int d3d11_font_get_line_height(void *data)
+static bool d3d11_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    d3d11_font_t* font = (d3d11_font_t*)data;
 
    if (!font || !font->font_driver || !font->font_data)
       return -1;
 
-   return font->font_driver->get_line_height(font->font_data);
+   return font->font_driver->get_line_metrics(font->font_data, metrics);
 }
 
 font_renderer_t d3d11_font = {
@@ -389,5 +393,5 @@ font_renderer_t d3d11_font = {
    NULL, /* bind_block */
    NULL, /* flush */
    d3d11_font_get_message_width,
-   d3d11_font_get_line_height
+   d3d11_font_get_line_metrics
 };

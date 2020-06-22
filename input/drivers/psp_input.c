@@ -94,36 +94,39 @@ typedef struct psp_input
 
 static void psp_input_poll(void *data)
 {
+#ifdef VITA
+   unsigned int i       = 0;
+   int key_sym          = 0;
+   unsigned key_code    = 0;
+   uint8_t mod_code     = 0;
+   uint16_t mod         = 0;
+   uint8_t modifiers[2] = { 0, 0 };
+   bool key_held        = false;
+   int numReports       = 0;
+   int mouse_velocity_x = 0;
+   int mouse_velocity_y = 0;
+   SceHidKeyboardReport k_reports[SCE_HID_MAX_REPORT];
+   SceHidMouseReport m_reports[SCE_HID_MAX_REPORT];
+#endif
    psp_input_t *psp = (psp_input_t*)data;
 
    if (psp && psp->joypad)
       psp->joypad->poll();
 
 #ifdef VITA
-   unsigned int i = 0;
-   int key_sym = 0;
-   unsigned key_code = 0;
-   uint8_t mod_code = 0;
-   uint16_t mod = 0;
-   uint8_t modifiers[2] = { 0, 0 };
-   bool key_held = false;
-   int numReports = 0;
-   int mouse_velocity_x = 0;
-   int mouse_velocity_y = 0;
-   SceHidKeyboardReport k_reports[SCE_HID_MAX_REPORT];
-   SceHidMouseReport m_reports[SCE_HID_MAX_REPORT];
-
    if (psp->keyboard_hid_handle > 0)
    {
-      numReports = sceHidKeyboardRead(psp->keyboard_hid_handle, (SceHidKeyboardReport**)&k_reports, SCE_HID_MAX_REPORT);
+      numReports = sceHidKeyboardRead(
+            psp->keyboard_hid_handle,
+            (SceHidKeyboardReport**)&k_reports, SCE_HID_MAX_REPORT);
 
-      if (numReports < 0) {
+      if (numReports < 0)
          psp->keyboard_hid_handle = 0;
-      }
-      else if (numReports) {
+      else if (numReports)
+      {
          modifiers[0] = k_reports[numReports - 1].modifiers[0];
          modifiers[1] = k_reports[numReports - 1].modifiers[1];
-         mod = 0;
+         mod          = 0;
          if (modifiers[0] & 0x11)
             mod |= RETROKMOD_CTRL;
          if (modifiers[0] & 0x22)
@@ -145,23 +148,21 @@ static void psp_input_poll(void *data)
             mod_code = modifier_lut[i][1];
             key_code = input_keymaps_translate_keysym_to_rk(key_sym);
             if (i < 8)
-            {
                key_held = (modifiers[0] & mod_code);
-            }
             else
-            {
                key_held = (modifiers[1] & mod_code);
-            }
 
             if (key_held && !(psp->keyboard_state[key_sym]))
             {
                psp->keyboard_state[key_sym] = true;
-               input_keyboard_event(true, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
+               input_keyboard_event(true, key_code, 0, mod,
+                     RETRO_DEVICE_KEYBOARD);
             }
             else if (!key_held && (psp->keyboard_state[key_sym]))
             {
                psp->keyboard_state[key_sym] = false;
-               input_keyboard_event(false, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
+               input_keyboard_event(false, key_code, 0, mod,
+                     RETRO_DEVICE_KEYBOARD);
             }
          }
 
@@ -174,14 +175,20 @@ static void psp_input_poll(void *data)
                if (psp->prev_keys[i])
                {
                   psp->keyboard_state[psp->prev_keys[i]] = false;
-                  key_code = input_keymaps_translate_keysym_to_rk(psp->prev_keys[i]);
-                  input_keyboard_event(false, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
+                  key_code = 
+                     input_keymaps_translate_keysym_to_rk(
+                           psp->prev_keys[i]);
+                  input_keyboard_event(false, key_code, 0, mod,
+                        RETRO_DEVICE_KEYBOARD);
                }
                if (key_sym)
                {
                   psp->keyboard_state[key_sym] = true;
-                  key_code = input_keymaps_translate_keysym_to_rk(key_sym);
-                  input_keyboard_event(true, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
+                  key_code = 
+                     input_keymaps_translate_keysym_to_rk(
+                           key_sym);
+                  input_keyboard_event(true, key_code, 0, mod,
+                        RETRO_DEVICE_KEYBOARD);
                }
                psp->prev_keys[i] = key_sym;
             }
@@ -191,7 +198,9 @@ static void psp_input_poll(void *data)
 
    if (psp->mouse_hid_handle > 0)
    {
-      numReports = sceHidMouseRead(psp->mouse_hid_handle, (SceHidMouseReport**)&m_reports, SCE_HID_MAX_REPORT);
+      numReports = sceHidMouseRead(psp->mouse_hid_handle,
+            (SceHidMouseReport**)&m_reports, SCE_HID_MAX_REPORT);
+
       if (numReports > 0)
       {
          for (i = 0; i <= numReports - 1; i++)
@@ -199,31 +208,19 @@ static void psp_input_poll(void *data)
             uint8_t buttons = m_reports[i].buttons;
 
             if (buttons & 0x1)
-            {
                psp->mouse_button_left = true;
-            }
             else
-            {
                psp->mouse_button_left = false;
-            }
 
             if (buttons & 0x2)
-            {
                psp->mouse_button_right = true;
-            }
             else
-            {
                psp->mouse_button_right = false;
-            }
 
             if (buttons & 0x4)
-            {
                psp->mouse_button_middle = true;
-            }
             else
-            {
                psp->mouse_button_middle = false;
-            }
 
             mouse_velocity_x += m_reports[i].rel_x;
             mouse_velocity_y += m_reports[i].rel_y;
@@ -235,27 +232,20 @@ static void psp_input_poll(void *data)
    psp->mouse_x += mouse_velocity_x;
    psp->mouse_y += mouse_velocity_y;
    if (psp->mouse_x < 0)
-   {
       psp->mouse_x = 0;
-   }
    else if (psp->mouse_x > MOUSE_MAX_X)
-   {
       psp->mouse_x = MOUSE_MAX_X;
-   }
 
    if (psp->mouse_y < 0)
-   {
       psp->mouse_y = 0;
-   }
    else if (psp->mouse_y > MOUSE_MAX_Y)
-   {
       psp->mouse_y = MOUSE_MAX_Y;
-   }
 #endif
 }
 
 #ifdef VITA
-static int16_t psp_input_mouse_state(psp_input_t *psp, unsigned id, bool screen)
+static int16_t psp_input_mouse_state(
+      psp_input_t *psp, unsigned id, bool screen)
 {
    int val = 0;
    switch (id)
@@ -271,9 +261,7 @@ static int16_t psp_input_mouse_state(psp_input_t *psp, unsigned id, bool screen)
          break;
       case RETRO_DEVICE_ID_MOUSE_X:
          if (screen)
-         {
             val = psp->mouse_x;
-         }
          else
          {
             val = psp->mouse_x_delta;
@@ -282,9 +270,7 @@ static int16_t psp_input_mouse_state(psp_input_t *psp, unsigned id, bool screen)
          break;
       case RETRO_DEVICE_ID_MOUSE_Y:
          if (screen)
-         {
             val = psp->mouse_y;
-         }
          else
          {
             val = psp->mouse_y_delta;
@@ -296,7 +282,6 @@ static int16_t psp_input_mouse_state(psp_input_t *psp, unsigned id, bool screen)
    return val;
 }
 #endif
-
 
 static int16_t psp_input_state(void *data,
       rarch_joypad_info_t *joypad_info,
@@ -320,21 +305,12 @@ static int16_t psp_input_state(void *data,
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               /* Auto-binds are per joypad, not per user. */
-               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-
-               if ((uint16_t)joykey != NO_BTN && psp->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
+               if (binds[port][i].valid)
                {
-                  ret |= (1 << i);
-                  continue;
-               }
-               if (((float)abs(psp->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               {
-                  ret |= (1 << i);
-                  continue;
+                  if (
+                        button_is_pressed(psp->joypad, joypad_info, binds[port],
+                           port, i))
+                     ret |= (1 << i);
                }
             }
 
@@ -342,16 +318,13 @@ static int16_t psp_input_state(void *data,
          }
          else
          {
-            /* Auto-binds are per joypad, not per user. */
-            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
-
-            if ((uint16_t)joykey != NO_BTN && psp->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
-               return true;
-            if (((float)abs(psp->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
-               return true;
+            if (binds[port][id].valid)
+            {
+               if (
+                     button_is_pressed(psp->joypad, joypad_info, binds[port],
+                        port, id))
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:

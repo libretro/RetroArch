@@ -153,9 +153,6 @@ static void sdl_pad_connect(unsigned id)
          vendor,
          product);
 
-   RARCH_LOG("[SDL]: Device #%u (%04x:%04x) connected: %s.\n", id, vendor,
-             product, sdl_joypad_name(id));
-
 #ifdef HAVE_SDL2
    if (pad->controller)
    {
@@ -175,7 +172,7 @@ static void sdl_pad_connect(unsigned id)
       pad->num_hats    = 0;
       pad->num_balls   = 0;
 
-      RARCH_LOG("[SDL]: Device #%u supports game controller api.\n", id);
+      /* SDL Device supports Game Controller API. */
    }
    else
    {
@@ -183,9 +180,6 @@ static void sdl_pad_connect(unsigned id)
       pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
       pad->num_hats    = SDL_JoystickNumHats(pad->joypad);
       pad->num_balls   = SDL_JoystickNumBalls(pad->joypad);
-
-      RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats and %u trackballs.\n",
-                id, pad->num_axes, pad->num_buttons, pad->num_hats, pad->num_balls);
    }
 
    pad->haptic = g_has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
@@ -214,9 +208,6 @@ static void sdl_pad_connect(unsigned id)
    pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
    pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
    pad->num_hats    = SDL_JoystickNumHats(pad->joypad);
-
-   RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats.\n",
-             id, pad->num_axes, pad->num_buttons, pad->num_hats);
 #endif
 }
 

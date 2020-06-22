@@ -69,6 +69,7 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/compat/compat_strcasestr.o \
 		libretro-common/compat/fopen_utf8.o \
 		libretro-common/file/config_file.o \
+		libretro-common/time/rtime.o \
 		file_path_str.o \
 		verbosity.o \
 		$(APP_BOOTER_DIR)/app_booter.binobj

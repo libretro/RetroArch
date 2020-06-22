@@ -189,6 +189,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    gdi_t *gdi                = (gdi_t*)data;
    unsigned bits             = gdi->video_bits;
    HWND hwnd                 = win32_get_window();
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
@@ -198,7 +199,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (  gdi->video_width  != frame_width  ||
@@ -345,12 +346,13 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    free(info);
 
    if (msg)
-      font_driver_render_msg(gdi, video_info, msg, NULL, NULL);
+      font_driver_render_msg(gdi, msg, NULL, NULL);
 
    InvalidateRect(hwnd, NULL, false);
 
-   video_info->cb_update_window_title(
-         video_info->context_data);
+   if (gdi->ctx_driver->update_window_title)
+      gdi->ctx_driver->update_window_title(
+            video_info->context_data);
 
    return true;
 }
@@ -490,25 +492,6 @@ static void gdi_set_texture_frame(void *data,
    }
 }
 
-static void gdi_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   gfx_ctx_size_t size_data;
-   size_data.width  = width;
-   size_data.height = height;
-   video_context_driver_get_video_output_size(&size_data);
-}
-
-static void gdi_get_video_output_prev(void *data)
-{
-   video_context_driver_get_video_output_prev();
-}
-
-static void gdi_get_video_output_next(void *data)
-{
-   video_context_driver_get_video_output_next();
-}
-
 static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -589,9 +572,9 @@ static const video_poke_interface_t gdi_poke_interface = {
    gdi_set_video_mode,
    win32_get_refresh_rate,
    NULL,
-   gdi_get_video_output_size,
-   gdi_get_video_output_prev,
-   gdi_get_video_output_next,
+   NULL,                         /* get_video_output_size */
+   NULL,                         /* get_video_output_prev */
+   NULL,                         /* get_video_output_next */
    NULL,
    NULL,
    NULL,
@@ -616,12 +599,6 @@ static void gdi_gfx_get_poke_interface(void *data,
 static void gdi_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-}
-
-bool gdi_has_menu_frame(void *data)
-{
-   gdi_t *gdi = (gdi_t*)data;
-   return (gdi->menu_frame != NULL);
 }
 
 video_driver_t video_gdi = {

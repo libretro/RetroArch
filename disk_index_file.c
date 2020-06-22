@@ -152,6 +152,7 @@ static void disk_index_file_reset(disk_index_file_t *disk_index_file)
  * Does nothing if disk index file does not exist. */
 static bool disk_index_file_read(disk_index_file_t *disk_index_file)
 {
+   const char *file_path   = NULL;
    bool success            = false;
    DCifJSONContext context = {0};
    RFILE *file             = NULL;
@@ -160,14 +161,16 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    if (!disk_index_file)
       return false;
 
-   if (   string_is_empty(disk_index_file->file_path) ||
-         !path_is_valid(disk_index_file->file_path)
+   file_path = disk_index_file->file_path;
+
+   if (   string_is_empty(file_path) ||
+         !path_is_valid(file_path)
       )
       return false;
 
    /* Attempt to open disk index file */
    file = filestream_open(
-         disk_index_file->file_path,
+         file_path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -175,7 +178,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    {
       RARCH_ERR(
             "[disk index file] Failed to open disk index record file: %s\n",
-            disk_index_file->file_path);
+            file_path);
       return false;
    }
 
@@ -210,7 +213,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
       {
          RARCH_ERR(
                "[disk index file] Failed to read disk index file: %s\n",
-               disk_index_file->file_path);
+               file_path);
          JSON_Parser_Free(context.parser);
          goto end;
       }
@@ -220,7 +223,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
       {
          RARCH_ERR(
                "[disk index file] Error parsing chunk of disk index file: %s\n---snip---\n%s\n---snip---\n",
-               disk_index_file->file_path, chunk);
+               file_path, chunk);
          DCifJSONLogError(&context);
          JSON_Parser_Free(context.parser);
          goto end;
@@ -232,7 +235,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    {
       RARCH_WARN(
             "[disk index file] Error parsing disk index file: %s\n",
-            disk_index_file->file_path);
+            file_path);
       DCifJSONLogError(&context);
       JSON_Parser_Free(context.parser);
       goto end;
@@ -403,11 +406,12 @@ void disk_index_file_set(
 /* Saves specified disk index file to disk */
 bool disk_index_file_save(disk_index_file_t *disk_index_file)
 {
+   int n;
    char value_string[32];
+   const char *file_path;
    DCifJSONContext context = {0};
    RFILE *file             = NULL;
    bool success            = false;
-   int n;
 
    value_string[0] = '\0';
 
@@ -421,17 +425,19 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
     *   'failure' */
    if (!disk_index_file->modified)
       return true;
+
+   file_path = disk_index_file->file_path;
    
-   if (string_is_empty(disk_index_file->file_path))
+   if (string_is_empty(file_path))
       return false;
 
    RARCH_LOG(
          "[disk index file] Saving disk index file: %s\n",
-         disk_index_file->file_path);
+         file_path);
    
    /* Attempt to open disk index file */
    file = filestream_open(
-         disk_index_file->file_path,
+         file_path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -439,7 +445,7 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    {
       RARCH_ERR(
             "[disk index file] Failed to open disk index file: %s\n",
-            disk_index_file->file_path);
+            file_path);
       return false;
    }
 

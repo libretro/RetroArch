@@ -114,6 +114,8 @@ static gfx_ctx_vulkan_data_t win32_vk;
 static egl_ctx_data_t win32_egl;
 #endif
 
+static void             *dinput_wgl       = NULL;
+
 static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
 static int              win32_interval    = 0;
@@ -465,8 +467,6 @@ void create_graphics_context(HWND hwnd, bool *quit)
          break;
    }
 }
-
-void *dinput_wgl;
 
 static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 {

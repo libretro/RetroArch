@@ -29,8 +29,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../font_driver.h"
-
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -112,7 +110,6 @@ static void *fpga_gfx_init(const video_info_t *video,
    unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
-   bool video_font_enable               = settings->bools.video_font_enable;
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    *input                               = NULL;
@@ -190,13 +187,6 @@ static void *fpga_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (video_font_enable)
-      font_driver_init_osd(NULL,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_FPGA);
-
    RARCH_LOG("[FPGA]: Init complete.\n");
 
    return fpga;
@@ -219,12 +209,13 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    fpga_t *fpga              = (fpga_t*)data;
    unsigned bits             = fpga->video_bits;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    if (!frame || !frame_width || !frame_height)
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (  fpga->video_width  != frame_width  || 
@@ -319,9 +310,6 @@ static bool fpga_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (msg)
-      font_driver_render_msg(fpga, video_info, msg, NULL, NULL);
-
    return true;
 }
 
@@ -381,7 +369,6 @@ static void fpga_gfx_free(void *data)
       free(fpga->menu_frame);
    fpga->menu_frame = NULL;
 
-   font_driver_free_osd();
    video_context_driver_free();
 
    free(fpga);
@@ -456,11 +443,9 @@ static void fpga_set_texture_frame(void *data,
 }
 
 static void fpga_set_osd_msg(void *data, 
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(data, video_info, msg, params, font);
 }
 
 static void fpga_get_video_output_size(void *data,

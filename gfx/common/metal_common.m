@@ -156,7 +156,7 @@
       *input = NULL;
       *inputData = NULL;
 
-      // menu display
+      // graphics display driver
       _display = [[MenuDisplay alloc] initWithContext:_context];
 
       // menu view
@@ -282,7 +282,8 @@
 
 }
 
-- (bool)renderFrame:(const void *)data
+- (bool)renderFrame:(const void *)frame
+               data:(void*)data
               width:(unsigned)width
              height:(unsigned)height
          frameCount:(uint64_t)frameCount
@@ -293,20 +294,17 @@
    @autoreleasepool
    {
       bool statistics_show = video_info->statistics_show;
-#ifdef HAVE_GFX_WIDGETS
-      bool widgets_inited  = video_info->widgets_inited;
-#endif
 
       [self _beginFrame];
 
       _frameView.frameCount = frameCount;
-      if (data && width && height)
+      if (frame && width && height)
       {
          _frameView.size = CGSizeMake(width, height);
-         [_frameView updateFrame:data pitch:pitch];
+         [_frameView updateFrame:frame pitch:pitch];
       }
 
-      [self _drawCore:video_info];
+      [self _drawCore];
       [self _drawMenu:video_info];
 
       id<MTLRenderCommandEncoder> rce = _context.rce;
@@ -331,24 +329,22 @@
          if (osd_params)
          {
             [rce pushDebugGroup:@"video stats"];
-            font_driver_render_msg(data, video_info, video_info->stat_text, osd_params, NULL);
+            font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
             [rce popDebugGroup];
          }
       }
 
 #ifdef HAVE_GFX_WIDGETS
-      if (widgets_inited)
-      {
-         [rce pushDebugGroup:@"menu widgets"];
+      [rce pushDebugGroup:@"display widgets"];
+      if (video_info->widgets_active)
          gfx_widgets_frame(video_info);
-         [rce popDebugGroup];
-      }
+      [rce popDebugGroup];
 #endif
 
       if (msg && *msg)
       {
          [rce pushDebugGroup:@"message"];
-         [self _renderMessage:msg info:video_info];
+         [self _renderMessage:msg data:data];
          [rce popDebugGroup];
       }
 
@@ -359,7 +355,7 @@
 }
 
 - (void)_renderMessage:(const char *)msg
-                  info:(video_frame_info_t *)video_info
+                  data:(void*)data
 {
    settings_t *settings     = config_get_ptr();
    bool msg_bgcolor_enable  = settings->bools.video_msg_bgcolor_enable;
@@ -377,8 +373,8 @@
       unsigned bgcolor_blue 
                             = settings->uints.video_msg_bgcolor_blue;
       float bgcolor_opacity = settings->floats.video_msg_bgcolor_opacity;
-      float x               = video_info->font_msg_pos_x;
-      float y               = 1.0f - video_info->font_msg_pos_y;
+      float x               = settings->floats.video_msg_pos_x;
+      float y               = 1.0f - settings->floats.video_msg_pos_y;
       float width           = msg_width / (float)_viewport->full_width;
       float height          = font_size / (float)_viewport->full_height;
 
@@ -401,7 +397,7 @@
       [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
    }
 
-   font_driver_render_msg(NULL, video_info, msg, NULL, NULL);
+   font_driver_render_msg(data, msg, NULL, NULL);
 }
 
 - (void)_beginFrame
@@ -415,7 +411,7 @@
    [_context begin];
 }
 
-- (void)_drawCore:(video_frame_info_t *)video_info
+- (void)_drawCore
 {
    id<MTLRenderCommandEncoder> rce = _context.rce;
 
@@ -442,6 +438,8 @@
 
 - (void)_drawMenu:(video_frame_info_t *)video_info
 {
+   bool menu_is_alive = video_info->menu_is_alive;
+
    if (!_menu.enabled)
       return;
 
@@ -469,7 +467,7 @@
    {
       [rce pushDebugGroup:@"menu"];
       [_context resetRenderViewport:kFullscreenViewport];
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
       [rce popDebugGroup];
    }
 #endif

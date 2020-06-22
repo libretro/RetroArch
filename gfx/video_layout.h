@@ -29,14 +29,11 @@
 
 typedef struct video_layout_render_info
 {
-   void                      *video_driver_data;
-   void                      *video_driver_frame_data;
-
    video_layout_bounds_t      bounds;
    video_layout_orientation_t orientation;
    video_layout_color_t       color;
-}
-video_layout_render_info_t;
+   void                      *video_driver_data;
+} video_layout_render_info_t;
 
 typedef enum video_layout_led
 {
@@ -46,8 +43,7 @@ typedef enum video_layout_led
    VIDEO_LAYOUT_LED_14_SC,    /* alphanumeric with ., */
    VIDEO_LAYOUT_LED_16,       /* full alphanumeric */
    VIDEO_LAYOUT_LED_16_SC     /* full alphanumeric with ., */
-}
-video_layout_led_t;
+} video_layout_led_t;
 
 typedef struct video_layout_render_interface
 {
@@ -66,8 +62,7 @@ typedef struct video_layout_render_interface
    void  (*led_seg)     (const video_layout_render_info_t *info, video_layout_led_t seg_layout, int seg_mask);
 
    void  (*layer_end)   (const video_layout_render_info_t *info, video_layout_blend_t blend_type);
-}
-video_layout_render_interface_t;
+} video_layout_render_interface_t;
 
 void        video_layout_init       (void *video_driver_data, const video_layout_render_interface_t *render);
 void        video_layout_deinit     (void);
@@ -91,7 +86,7 @@ bool        video_layout_view_on_change    (void);
 void        video_layout_view_fit_bounds   (video_layout_bounds_t bounds);
 
 int         video_layout_layer_count       (void);
-void        video_layout_layer_render      (void *video_driver_frame_data, int index);
+void        video_layout_layer_render      (int index);
 
 const video_layout_bounds_t
            *video_layout_screen            (int index);

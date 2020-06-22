@@ -22,14 +22,12 @@
 
 #include "../../configuration.h"
 
-#ifndef BIND_ACTION_INFO
-#define BIND_ACTION_INFO(cbs, name) \
-   cbs->action_info = name; \
-   cbs->action_info_ident = #name;
-#endif
-
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay_discovery.h"
+#endif
+
+#ifndef BIND_ACTION_INFO
+#define BIND_ACTION_INFO(cbs, name) (cbs)->action_info = (name)
 #endif
 
 static int action_info_default(unsigned type, const char *label)

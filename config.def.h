@@ -340,6 +340,9 @@
 #define DEFAULT_VIDEO_SMOOTH false
 #endif
 
+/* Graphics context specific scaling */
+#define DEFAULT_VIDEO_CTX_SCALING false
+
 /* On resize and fullscreen, rendering area will stay 4:3 */
 #define DEFAULT_FORCE_ASPECT true
 
@@ -406,8 +409,11 @@
 #endif
 
 #ifdef HAVE_OZONE
+/* Ozone colour theme: 1 == Basic Black */
+#define DEFAULT_OZONE_COLOR_THEME 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME true
+#define DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME true
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
 #endif
 
@@ -510,8 +516,10 @@ static const bool menu_show_core_updater       = true;
 static const bool menu_show_legacy_thumbnail_updater = false;
 static const bool menu_show_sublabels          = true;
 
-#define DEFAULT_MENU_TICKER_TYPE                 (TICKER_TYPE_BOUNCE)
-static const float menu_ticker_speed           = 1.0f;
+static const bool menu_scroll_fast             = false;
+
+#define DEFAULT_MENU_TICKER_TYPE                 (TICKER_TYPE_LOOP)
+static const float menu_ticker_speed           = 2.0f;
 
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
@@ -532,11 +540,15 @@ static const bool content_show_music        = true;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 static const bool content_show_video        = true;
 #endif
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING)
+#if defined(_3DS)
+static const bool content_show_netplay      = false;
+#else
 static const bool content_show_netplay      = true;
 #endif
+#endif
 static const bool content_show_history      = true;
-static const bool content_show_add     	  = true;
+static const bool content_show_add     	    = true;
 static const bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
@@ -544,7 +556,11 @@ static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
 static const unsigned menu_font_color_green = 255;
 static const unsigned menu_font_color_blue  = 255;
+#ifdef HAVE_ODROIDGO2
+static const unsigned xmb_menu_layout       = 2;
+#else
 static const unsigned xmb_menu_layout       = 0;
+#endif
 static const unsigned xmb_icon_theme        = XMB_ICON_THEME_MONOCHROME;
 static const unsigned xmb_theme             = XMB_THEME_ELECTRIC_BLUE;
 
@@ -599,7 +615,7 @@ static const bool rgui_extended_ascii = false;
 static const bool default_game_specific_options = true;
 static const bool default_auto_overrides_enable = true;
 static const bool default_auto_remaps_enable = true;
-static const bool default_global_core_options = true;
+static const bool default_global_core_options = false;
 static const bool default_auto_shaders_enable = true;
 
 static const bool default_sort_savefiles_enable = false;
@@ -792,6 +808,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
 #endif
 
+/* Automatically mute audio when fast forward
+ * is enabled */
+#define DEFAULT_AUDIO_FASTFORWARD_MUTE false
+
 /* MISC */
 
 /* Enables displaying the current frames per second. */
@@ -900,6 +920,23 @@ static const bool savestate_auto_load = false;
 
 static const bool savestate_thumbnail_enable = false;
 
+/* When creating save (srm) files, compress
+ * written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_SAVE_FILE_COMPRESSION true
+#else
+#define DEFAULT_SAVE_FILE_COMPRESSION false
+#endif
+
+/* When creating save state files, compress
+ * written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+/* TODO/FIXME Apparently this is an issue on UWP for now, so disable it for now */
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION false
+#else
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION true
+#endif
+
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0
 
@@ -925,10 +962,27 @@ static const bool stdin_cmd_enable = false;
 
 static const uint16_t network_remote_base_port = 55400;
 
-#if defined(ANDROID) || defined(IOS)
-static const bool network_on_demand_thumbnails = true;
+#define DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE true
+#define DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES false
+
+/* Automatically create a backup whenever a core is
+ * updated via the online updater
+ * > Enable by default on all modern platforms with
+ *   online updater support */
+#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS))
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP true
 #else
-static const bool network_on_demand_thumbnails = false;
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP false
+#endif
+/* Number of automatic core backups to retain
+ * (oldest backup will be deleted when creating
+ * a new one) */
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
+
+#if defined(ANDROID) || defined(IOS)
+#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
+#else
+#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
 #endif
 
 /* Number of entries that will be kept in content history playlist file. */
@@ -939,22 +993,29 @@ static const unsigned default_content_history_size = 200;
 static const int default_content_favorites_size = 200;
 
 /* Sort all playlists (apart from histories) alphabetically */
-static const bool playlist_sort_alphabetical = true;
+#define DEFAULT_PLAYLIST_SORT_ALPHABETICAL true
 
 /* File format to use when writing playlists to disk */
-static const bool playlist_use_old_format = false;
+#define DEFAULT_PLAYLIST_USE_OLD_FORMAT false
+
+/* When creating/updating playlists, compress written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_PLAYLIST_COMPRESSION true
+#else
+#define DEFAULT_PLAYLIST_COMPRESSION false
+#endif
 
 #ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
-static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV;
+#define DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV
 
 /* Specifies which runtime record to use on playlist sublabels */
-static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+#define DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE PLAYLIST_RUNTIME_PER_CORE
 
 /* Specifies time/date display format for runtime 'last played' data */
 #define DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS
 
-static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABLE_ALL;
+#define DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
 #endif
 
 #define DEFAULT_SCAN_WITHOUT_CORE_MATCH false
@@ -972,16 +1033,16 @@ static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABL
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 
-/* Default scale factor for non-frambuffer-based menu
- * drivers and menu widgets */
+/* Default scale factor for non-frambuffer-based display
+ * drivers and display widgets */
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
-/* Specifies whether menu widgets should be scaled
+/* Specifies whether display widgets should be scaled
  * automatically using the default menu scale factor */
 #define DEFAULT_MENU_WIDGET_SCALE_AUTO true
-/* Default scale factor for menu widgets when widget
+/* Default scale factor for display widgets when widget
  * auto scaling is disabled (fullscreen mode) */
 #define DEFAULT_MENU_WIDGET_SCALE_FACTOR 1.0f
-/* Default scale factor for menu widgets when widget
+/* Default scale factor for display widgets when widget
  * auto scaling is disabled (windowed mode) */
 #define DEFAULT_MENU_WIDGET_SCALE_FACTOR_WINDOWED 1.0f
 
@@ -1033,6 +1094,8 @@ static const unsigned input_bind_timeout = 5;
 
 static const unsigned input_bind_hold = 2;
 
+#define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
+
 static const unsigned gfx_thumbnails_default = 3;
 
 static const unsigned menu_left_thumbnails_default = 0;
@@ -1040,7 +1103,8 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned gfx_thumbnail_upscale_threshold = 0;
 
 #ifdef HAVE_MENU
-static const unsigned menu_timedate_style = MENU_TIMEDATE_STYLE_DM_HM;
+#define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
+#define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #endif
 
 static const bool xmb_vertical_thumbnails = false;

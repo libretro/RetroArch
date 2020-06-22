@@ -56,7 +56,8 @@ static size_t buf_remaining(struct socket_buffer *sbuf)
  *
  * Initialize a new socket buffer.
  */
-bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size)
+bool netplay_init_socket_buffer(
+      struct socket_buffer *sbuf, size_t size)
 {
    sbuf->data = (unsigned char*)malloc(size);
    if (!sbuf->data)
@@ -71,7 +72,8 @@ bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size)
  *
  * Resize the given socket_buffer's buffer to the requested size.
  */
-bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize)
+bool netplay_resize_socket_buffer(
+      struct socket_buffer *sbuf, size_t newsize)
 {
    unsigned char *newdata = (unsigned char*)malloc(newsize);
    if (!newdata)
@@ -80,11 +82,17 @@ bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize)
     /* Copy in the old data */
     if (sbuf->end < sbuf->start)
     {
-       memcpy(newdata, sbuf->data + sbuf->start, sbuf->bufsz - sbuf->start);
-       memcpy(newdata + sbuf->bufsz - sbuf->start, sbuf->data, sbuf->end);
+       memcpy(newdata,
+             sbuf->data + sbuf->start,
+             sbuf->bufsz - sbuf->start);
+       memcpy(newdata + sbuf->bufsz - sbuf->start,
+             sbuf->data,
+             sbuf->end);
     }
     else if (sbuf->end > sbuf->start)
-       memcpy(newdata, sbuf->data + sbuf->start, sbuf->end - sbuf->start);
+       memcpy(newdata,
+             sbuf->data + sbuf->start,
+             sbuf->end - sbuf->start);
 
     /* Adjust our read offset */
     if (sbuf->read < sbuf->start)
@@ -93,13 +101,14 @@ bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize)
        sbuf->read -= sbuf->start;
 
     /* Adjust start and end */
-    sbuf->end = buf_used(sbuf);
-    sbuf->start = 0;
+    sbuf->end      = buf_used(sbuf);
+    sbuf->start    = 0;
 
     /* Free the old one and replace it with the new one */
     free(sbuf->data);
-    sbuf->data = newdata;
-    sbuf->bufsz = newsize;
+    sbuf->data     = newdata;
+    sbuf->bufsz    = newsize;
+
     return true;
 }
 
@@ -124,8 +133,10 @@ void netplay_clear_socket_buffer(struct socket_buffer *sbuf)
  *
  * Queue the given data for sending.
  */
-bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf,
-   size_t len)
+bool netplay_send(
+      struct socket_buffer *sbuf,
+      int sockfd, const void *buf,
+      size_t len)
 {
    if (buf_remaining(sbuf) < len)
    {
@@ -136,8 +147,9 @@ bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf,
 
    if (buf_remaining(sbuf) < len)
    {
-      /* Can only be that this is simply too big for our buffer, in which case
-       * we just need to do a blocking send */
+      /* Can only be that this is simply too big 
+       * for our buffer, in which case we just 
+       * need to do a blocking send */
       if (!socket_send_all_blocking(sockfd, buf, len, false))
          return false;
       return true;
@@ -150,7 +162,7 @@ bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf,
       size_t chunka = sbuf->bufsz - sbuf->end,
              chunkb = len - chunka;
       memcpy(sbuf->data + sbuf->end, buf, chunka);
-      memcpy(sbuf->data, (const unsigned char *) buf + chunka, chunkb);
+      memcpy(sbuf->data, (const unsigned char *)buf + chunka, chunkb);
       sbuf->end = chunkb;
 
    }
@@ -159,7 +171,6 @@ bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf,
       /* Straight in */
       memcpy(sbuf->data + sbuf->end, buf, len);
       sbuf->end += len;
-
    }
 
    return true;
@@ -186,49 +197,57 @@ bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block)
       if (block)
       {
          if (!socket_send_all_blocking(
-                  sockfd, sbuf->data + sbuf->start, buf_used(sbuf), true))
+                  sockfd, sbuf->data + sbuf->start,
+                  buf_used(sbuf), true))
             return false;
-         sbuf->start = sbuf->end = 0;
 
+         sbuf->start = sbuf->end = 0;
       }
       else
       {
-         sent = socket_send_all_nonblocking(sockfd, sbuf->data + sbuf->start, buf_used(sbuf), true);
+         sent = socket_send_all_nonblocking(
+               sockfd, sbuf->data + sbuf->start,
+               buf_used(sbuf), true);
+
          if (sent < 0)
             return false;
+
          sbuf->start += sent;
 
          if (sbuf->start == sbuf->end)
             sbuf->start = sbuf->end = 0;
-
       }
-
    }
    else
    {
       /* Unusual case: Buffer overlaps break */
       if (block)
       {
-         if (!socket_send_all_blocking(sockfd, sbuf->data + sbuf->start, sbuf->bufsz - sbuf->start, true))
+         if (!socket_send_all_blocking(
+                  sockfd, sbuf->data + sbuf->start,
+                  sbuf->bufsz - sbuf->start, true))
             return false;
-         sbuf->start = 0;
-         return netplay_send_flush(sbuf, sockfd, true);
 
+         sbuf->start = 0;
+
+         return netplay_send_flush(sbuf, sockfd, true);
       }
       else
       {
-         sent = socket_send_all_nonblocking(sockfd, sbuf->data + sbuf->start, sbuf->bufsz - sbuf->start, true);
+         sent = socket_send_all_nonblocking(
+               sockfd, sbuf->data + sbuf->start,
+               sbuf->bufsz - sbuf->start, true);
+
          if (sent < 0)
             return false;
+
          sbuf->start += sent;
 
          if (sbuf->start >= sbuf->bufsz)
          {
             sbuf->start = 0;
             return netplay_send_flush(sbuf, sockfd, false);
-
          }
-
       }
 
    }
@@ -246,39 +265,44 @@ bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block)
 ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
    size_t len, bool block)
 {
-   bool error;
    ssize_t recvd;
+   bool error    = false;
 
    /* Receive whatever we can into the buffer */
    if (sbuf->end >= sbuf->start)
    {
-      error = false;
       recvd = socket_receive_all_nonblocking(sockfd, &error,
          sbuf->data + sbuf->end, sbuf->bufsz - sbuf->end -
          ((sbuf->start == 0) ? 1 : 0));
+
       if (recvd < 0 || error)
          return -1;
+
       sbuf->end += recvd;
+
       if (sbuf->end >= sbuf->bufsz)
       {
          sbuf->end = 0;
-         error = false;
-         recvd = socket_receive_all_nonblocking(sockfd, &error, sbuf->data, sbuf->start - 1);
+         error     = false;
+         recvd     = socket_receive_all_nonblocking(
+               sockfd, &error, sbuf->data, sbuf->start - 1);
+
          if (recvd < 0 || error)
             return -1;
+
          sbuf->end += recvd;
-
       }
-
    }
    else
    {
-      error = false;
-      recvd = socket_receive_all_nonblocking(sockfd, &error, sbuf->data + sbuf->end, sbuf->start - sbuf->end - 1);
+      recvd = socket_receive_all_nonblocking(
+            sockfd, &error, sbuf->data + sbuf->end,
+            sbuf->start - sbuf->end - 1);
+
       if (recvd < 0 || error)
          return -1;
-      sbuf->end += recvd;
 
+      sbuf->end += recvd;
    }
 
    /* Now copy it into the reader */
@@ -321,10 +345,10 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
       sbuf->start = sbuf->read;
       if (recvd < 0 || recvd < (ssize_t) len)
       {
-         if (!socket_receive_all_blocking(sockfd, (unsigned char *) buf + recvd, len - recvd))
+         if (!socket_receive_all_blocking(
+                  sockfd, (unsigned char *)buf + recvd, len - recvd))
             return -1;
          recvd = len;
-
       }
    }
 
@@ -334,8 +358,8 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
 /**
  * netplay_recv_reset
  *
- * Reset our recv buffer so that future netplay_recvs will read the same data
- * again.
+ * Reset our recv buffer so that future netplay_recvs 
+ * will read the same data again.
  */
 void netplay_recv_reset(struct socket_buffer *sbuf)
 {

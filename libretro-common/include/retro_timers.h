@@ -37,8 +37,6 @@
 #include <pspthreadman.h>
 #elif defined(VITA)
 #include <psp2/kernel/threadmgr.h>
-#elif defined(PS2)
-#include <SDL/SDL_timer.h>
 #elif defined(_3DS)
 #include <3ds.h>
 #else
@@ -68,7 +66,7 @@ extern int nanosleep(const struct timespec *rqtp, struct timespec *rmtp);
 
 static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 {
-   usleep(1000000 * rqtp->tv_sec + rqtp->tv_nsec / 1000);
+   usleep(1000000L * rqtp->tv_sec + rqtp->tv_nsec / 1000);
 
    if (rmtp)
       rmtp->tv_sec = rmtp->tv_nsec=0;
@@ -91,8 +89,6 @@ static INLINE void retro_sleep(unsigned msec)
    sys_timer_usleep(1000 * msec);
 #elif defined(PSP) || defined(VITA)
    sceKernelDelayThread(1000 * msec);
-#elif defined(PS2)
-   SDL_Delay(msec);
 #elif defined(_3DS)
    svcSleepThread(1000000 * (s64)msec);
 #elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP

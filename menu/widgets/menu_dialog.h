@@ -48,7 +48,18 @@ enum menu_dialog_type
    MENU_DIALOG_LAST
 };
 
+struct menu_dialog
+{
+   bool                  pending_push;
+   unsigned              current_id;
+   enum menu_dialog_type current_type;
+};
+
+typedef struct menu_dialog menu_dialog_t;
+
 RETRO_BEGIN_DECLS
+
+menu_dialog_t *dialog_get_ptr(void);
 
 bool menu_dialog_push_pending(
       bool push, enum menu_dialog_type type);

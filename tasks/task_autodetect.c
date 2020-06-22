@@ -42,6 +42,7 @@ struct autoconfig_disconnect
    char *msg;
 };
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static bool input_autoconfigured[MAX_USERS];
 static unsigned input_device_name_index[MAX_INPUT_DEVICES];
 static bool input_autoconfigure_swap_override;
@@ -176,7 +177,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    {
       static bool remote_is_bound        = false;
       const char *autoconfig_str         = (string_is_empty(display_name) &&
-            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
+            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) 
+            ? display_name 
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       strlcpy(msg, autoconfig_str, sizeof(msg));
       strlcat(msg, " configured.", sizeof(msg));
 
@@ -194,12 +197,14 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       bool tmp                    = false;
       const char *autoconfig_str  = (string_is_empty(display_name) &&
             !string_is_empty(params->name))
-            ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
+            ? params->name : (!string_is_empty(display_name) 
+                  ? display_name 
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             autoconfig_str,
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
-            params->idx);
+            params->idx + 1);
 
       /* allow overriding the swap menu controls for player 1*/
       if (params->idx == 0)
@@ -227,8 +232,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
    else
    {
-      input_config_set_device_config_name(params->idx, "N/A");
-      input_config_set_device_config_path(params->idx, "N/A");
+      input_config_set_device_config_name(params->idx, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+      input_config_set_device_config_path(params->idx, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 
    input_autoconfigure_joypad_reindex_devices();
@@ -254,14 +259,14 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    size_t i;
    char path[PATH_MAX_LENGTH];
    char best_path[PATH_MAX_LENGTH];
-   int ret                    = 0;
-   int index                  = -1;
-   int current_best           = 0;
-   config_file_t *best_conf   = NULL;
-   struct string_list *list   = NULL;
+   bool found                  = false;
+   int index                   = -1;
+   int current_best            = 0;
+   config_file_t *best_conf    = NULL;
+   struct string_list *list    = NULL;
 
-   best_path[0]               = '\0';
-   path[0]                    = '\0';
+   best_path[0]                = '\0';
+   path[0]                     = '\0';
 
    fill_pathname_application_special(path, sizeof(path),
          APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG);
@@ -311,7 +316,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if (index >= 0 && current_best > 0 && best_conf)
    {
       input_autoconfigure_joypad_add(best_conf, params, task);
-      ret = 1;
+      found = true;
    }
 
    if (best_conf)
@@ -319,9 +324,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    string_list_free(list);
 
-   if (ret == 0)
-      return false;
-   return true;
+   return found;
 }
 
 static bool input_autoconfigure_joypad_from_conf_internal(
@@ -374,13 +377,17 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       if (input_autoconfigure_joypad_from_conf_internal(params, task))
       {
          snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-               !string_is_empty(params->name) ? params->name : "N/A",
+               !string_is_empty(params->name) 
+               ? params->name 
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                (long)params->vid, (long)params->pid,
                msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
       }
 #else
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-            !string_is_empty(params->name) ? params->name : "N/A",
+            !string_is_empty(params->name) 
+            ? params->name 
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
             (long)params->vid, (long)params->pid,
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
 #endif
@@ -425,7 +432,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).",
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-         i, ident);
+         i + 1, ident);
 
    state->msg    = strdup(msg);
 

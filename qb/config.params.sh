@@ -1,5 +1,7 @@
 HAVE_LIBRETRO=             # Libretro library used
 HAVE_ASSETS_DIR=           # Assets install directory
+HAVE_NVDA=yes               # NVDA support
+HAVE_SAPI=no               # SAPI support
 HAVE_BLISSBOX=auto         # Blissbox support
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
 HAVE_CONFIGFILE=yes        # Config file support
@@ -132,7 +134,7 @@ HAVE_IMAGEVIEWER=yes       # Built-in image viewer support.
 HAVE_MMAP=auto             # MMAP support
 HAVE_QT=auto               # Qt companion support
 C89_QT=no
-HAVE_XSHM=no               # XShm video driver support
+HAVE_XSHM=auto             # XShm video driver support
 HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_LUA=no                # Lua support (for Retro Achievements)
 HAVE_DISCORD=yes           # Discord Integration

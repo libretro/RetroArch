@@ -723,7 +723,7 @@ uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analo
  *
  * Poll the network if necessary.
  */
-void input_poll_net(netplay_t *netplay);
+void input_poll_net(void);
 
 /***************************************************************
  * NETPLAY-HANDSHAKE.C
@@ -735,9 +735,7 @@ void input_poll_net(netplay_t *netplay);
  * Initialize our handshake and send the first part of the handshake protocol.
  */
 bool netplay_handshake_init_send(netplay_t *netplay,
-   struct netplay_connection *connection,
-   const char *netplay_password,
-   const char *netplay_spectate_password);
+   struct netplay_connection *connection);
 
 /**
  * netplay_handshake
@@ -790,8 +788,6 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    bool stateless_mode, int check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
-   const char *netplay_password,
-   const char *netplay_spectate_password,
    uint64_t quirks);
 
 /**
@@ -969,10 +965,7 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim);
  *
  * Pre-frame for Netplay synchronization.
  */
-bool netplay_sync_pre_frame(netplay_t *netplay,
-      const char *netplay_password,
-      const char *netplay_spectate_password
-      );
+bool netplay_sync_pre_frame(netplay_t *netplay);
 
 /**
  * netplay_sync_post_frame

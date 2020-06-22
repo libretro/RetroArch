@@ -75,16 +75,18 @@ static const struct font_glyph *sixel_font_get_glyph(
    return NULL;
 }
 
-static void sixel_render_msg(video_frame_info_t *video_info,
-      void *data, const char *msg,
-      const struct font_params *userdata)
+static void sixel_render_msg(
+      void *userdata,
+      void *data,
+      const char *msg,
+      const struct font_params *_params)
 {
    float x, y, scale;
    unsigned width, height;
    unsigned newX, newY;
    unsigned align;
    sixel_raster_t              *font = (sixel_raster_t*)data;
-   const struct font_params *params  = (const struct font_params*)userdata;
+   const struct font_params *params  = (const struct font_params*)_params;
    settings_t *settings              = config_get_ptr();
    float video_msg_pos_x             = settings->floats.video_msg_pos_x;
    float video_msg_pos_y             = settings->floats.video_msg_pos_y;
@@ -139,5 +141,6 @@ font_renderer_t sixel_font = {
    sixel_font_get_glyph,       /* get_glyph */
    NULL,                       /* bind_block */
    NULL,                       /* flush */
-   sixel_get_message_width     /* get_message_width */
+   sixel_get_message_width,    /* get_message_width */
+   NULL                        /* get_line_metrics */
 };

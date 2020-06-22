@@ -290,7 +290,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                         while (tmp && tmp->cookie != (IOHIDElementCookie)cookie)
                            tmp = tmp->next;
 
-                        if (tmp->cookie == (IOHIDElementCookie)cookie)
+                        if (tmp && tmp->cookie == (IOHIDElementCookie)cookie)
                         {
                            CFIndex min = IOHIDElementGetLogicalMin(element);
                            CFIndex range = IOHIDElementGetLogicalMax(element) - min;

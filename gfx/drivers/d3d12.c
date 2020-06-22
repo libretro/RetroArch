@@ -224,7 +224,7 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
+static void d3d12_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    int            i;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
@@ -958,7 +958,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
 #endif
 
    d3d12_init_samplers(d3d12);
-   d3d12_set_filtering(d3d12, 0, video->smooth);
+   d3d12_set_filtering(d3d12, 0, video->smooth, video->ctx_scaling);
 
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
@@ -1166,10 +1166,16 @@ static bool d3d12_gfx_frame(
       video_frame_info_t* video_info)
 {
    unsigned         i;
-   d3d12_texture_t* texture = NULL;
-   d3d12_video_t*   d3d12   = (d3d12_video_t*)data;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
+   d3d12_texture_t* texture       = NULL;
+   d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
+   const char *stat_text          = video_info->stat_text;
+   bool statistics_show           = video_info->statistics_show;
+   unsigned video_width           = video_info->width;
+   unsigned video_height          = video_info->height;
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
+   bool menu_is_alive             = video_info->menu_is_alive;
+
 
    d3d12_gfx_sync(d3d12);
 
@@ -1508,22 +1514,19 @@ static bool d3d12_gfx_frame(
 
 #ifdef HAVE_MENU
    if (d3d12->menu.enabled)
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    else
 #endif
-      if (video_info->statistics_show)
+      if (statistics_show)
       {
-         struct font_params *osd_params = (struct font_params*)
-            &video_info->osd_stat_params;
-
          if (osd_params)
          {
             D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
             D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
             D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
             D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
-            font_driver_render_msg(d3d12, video_info, video_info->stat_text,
-                  (const struct font_params*)&video_info->osd_stat_params, NULL);
+            font_driver_render_msg(d3d12, stat_text,
+                  (const struct font_params*)osd_params, NULL);
          }
       }
 #ifdef HAVE_OVERLAY
@@ -1563,7 +1566,7 @@ static bool d3d12_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
+   if (video_info->widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1574,7 +1577,7 @@ static bool d3d12_gfx_frame(
       D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
-      font_driver_render_msg(d3d12, video_info, msg, NULL, NULL);
+      font_driver_render_msg(d3d12, msg, NULL, NULL);
       dxgi_update_title();
    }
    d3d12->sprites.enabled = false;
@@ -1726,15 +1729,17 @@ static void d3d12_gfx_apply_state_changes(void* data)
 }
 
 static void d3d12_gfx_set_osd_msg(
-      void* data, video_frame_info_t* video_info,
-      const char* msg, const void* params, void* font)
+      void* data,
+      const char* msg,
+      const void* params,
+      void* font)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    if (!d3d12 || !d3d12->sprites.enabled)
       return;
 
-   font_driver_render_msg(d3d12, video_info, msg,
+   font_driver_render_msg(d3d12, msg,
          (const struct font_params*)params, font);
 }
 

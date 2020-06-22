@@ -1342,22 +1342,25 @@ struct string_list* cdrom_get_available_drives(void)
 
    for (i = 0; i < (int)dir_list->size; i++)
    {
-      if (strstr(dir_list->elems[i].data, "/dev/sg"))
+      if (string_starts_with(dir_list->elems[i].data, "/dev/sg"))
       {
-         char drive_model[32] = {0};
-         char drive_string[33] = {0};
-         union string_list_elem_attr attr = {0};
-         int dev_index = 0;
-         RFILE *file = filestream_open(dir_list->elems[i].data, RETRO_VFS_FILE_ACCESS_READ, 0);
          libretro_vfs_implementation_file *stream;
-         bool is_cdrom = false;
+         char drive_model[32]             = {0};
+         char drive_string[33]            = {0};
+         union string_list_elem_attr attr = {0};
+         int dev_index                    = 0;
+         RFILE *file                      = filestream_open(
+               dir_list->elems[i].data, RETRO_VFS_FILE_ACCESS_READ, 0);
+         bool is_cdrom                    = false;
 
          found = true;
 
          if (!file)
          {
+#ifdef CDROM_DEBUG
             printf("[CDROM] Could not open %s, please check permissions.\n", dir_list->elems[i].data);
             fflush(stdout);
+#endif
             continue;
          }
 
@@ -1371,7 +1374,7 @@ struct string_list* cdrom_get_available_drives(void)
          sscanf(dir_list->elems[i].data + strlen("/dev/sg"), "%d", &dev_index);
 
          dev_index = '0' + dev_index;
-         attr.i = dev_index;
+         attr.i    = dev_index;
 
          if (!string_is_empty(drive_model))
             strlcat(drive_string, drive_model, sizeof(drive_string));
@@ -1384,22 +1387,25 @@ struct string_list* cdrom_get_available_drives(void)
 
    if (!found)
    {
-      char *buf = NULL;
+      char *buf   = NULL;
       int64_t len = 0;
 
       if (filestream_read_file("/proc/modules", (void**)&buf, &len))
       {
-         struct string_list *mods = string_split(buf, "\n");
+#ifdef CDROM_DEBUG
          bool found = false;
+#endif
+         struct string_list *mods = string_split(buf, "\n");
 
          if (mods)
          {
-
             for (i = 0; i < mods->size; i++)
             {
                if (strcasestr(mods->elems[i].data, "sg "))
                {
+#ifdef CDROM_DEBUG
                   found = true;
+#endif
                   break;
                }
             }
@@ -1407,6 +1413,7 @@ struct string_list* cdrom_get_available_drives(void)
             string_list_free(mods);
          }
 
+#ifdef CDROM_DEBUG
          if (found)
          {
             printf("[CDROM] No sg devices found but kernel module is loaded.\n");
@@ -1417,12 +1424,15 @@ struct string_list* cdrom_get_available_drives(void)
             printf("[CDROM] No sg devices found and sg kernel module is not loaded.\n");
             fflush(stdout);
          }
+#endif
       }
+#ifdef CDROM_DEBUG
       else
       {
          printf("[CDROM] No sg devices found, could not check if sg kernel module is loaded.\n");
          fflush(stdout);
       }
+#endif
    }
 
    string_list_free(dir_list);
