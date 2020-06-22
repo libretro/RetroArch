@@ -1255,6 +1255,8 @@ static void task_database_handler(retro_task_t *task)
          {
             const char *name     = database_info_get_current_element_name(
                   dbinfo);
+            if (name == NULL)
+               goto task_finished;
 
             if (dbinfo->type == DATABASE_TYPE_ITERATE)
                if (path_contains_compressed_file(name))
