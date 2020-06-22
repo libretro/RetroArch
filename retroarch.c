@@ -17622,58 +17622,55 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                if (desc->port >= MAX_USERS)
                   continue;
 
-               /* Ignore all others for now. */
-               if (
-                     desc->device != RETRO_DEVICE_JOYPAD  &&
-                     desc->device != RETRO_DEVICE_ANALOG)
-                  continue;
-
                if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
                   continue;
 
-               if (desc->device == RETRO_DEVICE_ANALOG)
+               switch (desc->device)
                {
-                  switch (retro_id)
-                  {
-                     case RETRO_DEVICE_ID_ANALOG_X:
-                        switch (desc->index)
-                        {
-                           case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                              system->input_desc_btn[retro_port]
-                                 [RARCH_ANALOG_LEFT_X_PLUS]  = desc->description;
-                              system->input_desc_btn[retro_port]
-                                 [RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
-                              break;
-                           case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                              system->input_desc_btn[retro_port]
-                                 [RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
-                              system->input_desc_btn[retro_port]
-                                 [RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
-                              break;
-                        }
-                        break;
-                     case RETRO_DEVICE_ID_ANALOG_Y:
-                        switch (desc->index)
-                        {
-                           case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                              system->input_desc_btn[retro_port]
-                                 [RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
-                              system->input_desc_btn[retro_port]
-                                 [RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
-                              break;
-                           case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                              system->input_desc_btn[retro_port]
-                                 [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
-                              system->input_desc_btn[retro_port]
-                                 [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
-                              break;
-                        }
-                        break;
-                  }
+                  case RETRO_DEVICE_JOYPAD:
+                     system->input_desc_btn[retro_port]
+                        [retro_id] = desc->description;
+                     break;
+                  case RETRO_DEVICE_ANALOG:
+                     switch (retro_id)
+                     {
+                        case RETRO_DEVICE_ID_ANALOG_X:
+                           switch (desc->index)
+                           {
+                              case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                                 system->input_desc_btn[retro_port]
+                                    [RARCH_ANALOG_LEFT_X_PLUS]  = desc->description;
+                                 system->input_desc_btn[retro_port]
+                                    [RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
+                                 break;
+                              case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                                 system->input_desc_btn[retro_port]
+                                    [RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
+                                 system->input_desc_btn[retro_port]
+                                    [RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
+                                 break;
+                           }
+                           break;
+                        case RETRO_DEVICE_ID_ANALOG_Y:
+                           switch (desc->index)
+                           {
+                              case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                                 system->input_desc_btn[retro_port]
+                                    [RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
+                                 system->input_desc_btn[retro_port]
+                                    [RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
+                                 break;
+                              case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                                 system->input_desc_btn[retro_port]
+                                    [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
+                                 system->input_desc_btn[retro_port]
+                                    [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
+                                 break;
+                           }
+                           break;
+                     }
+                     break;
                }
-               else
-                  system->input_desc_btn[retro_port]
-                     [retro_id] = desc->description;
             }
 
             RARCH_LOG("[Environ]: SET_INPUT_DESCRIPTORS:\n");
