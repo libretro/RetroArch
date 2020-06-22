@@ -236,10 +236,10 @@ static int16_t sdl_input_state(void *data,
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
-            int16_t ret = input_joypad_analog(sdl->joypad,
-                        joypad_info, port, idx, id, binds[port]);
+            int16_t ret = sdl_analog_pressed(sdl, binds[port], idx, id);
             if (!ret)
-               ret      = sdl_analog_pressed(sdl, binds[port], idx, id);
+               ret      = input_joypad_analog(sdl->joypad,
+                  joypad_info, port, idx, id, binds[port]);
             return ret;
          }
          break;
