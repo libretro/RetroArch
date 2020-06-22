@@ -222,64 +222,70 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 static bool win32_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset)
 {
-   DEVMODE curDevmode;
-   int iModeNum;
-   int freq               = int_hz;
-   int depth              = 0;
-   dispserv_win32_t *serv = (dispserv_win32_t*)data;
+   DEVMODE dm                = {0};
+   LONG res                  = 0;
+   unsigned i                = 0;
+   unsigned curr_bpp         = 0;
+#if _WIN32_WINNT >= 0x0500
+   unsigned curr_orientation = 0;
+#endif
+   dispserv_win32_t *serv    = (dispserv_win32_t*)data;
 
    if (!serv)
       return false;
 
-   win32_get_video_output(&curDevmode, -1, sizeof(curDevmode));
+   win32_get_video_output(&dm, -1, sizeof(dm));
 
    if (serv->orig_width == 0)
-      serv->orig_width          = GetSystemMetrics(SM_CXSCREEN);
-   serv->orig_refresh           = curDevmode.dmDisplayFrequency;
+      serv->orig_width  = GetSystemMetrics(SM_CXSCREEN);
    if (serv->orig_height == 0)
-      serv->orig_height         = GetSystemMetrics(SM_CYSCREEN);
+      serv->orig_height = GetSystemMetrics(SM_CYSCREEN);
+   serv->orig_refresh   = dm.dmDisplayFrequency;
 
    /* Used to stop super resolution bug */
-   if (width == curDevmode.dmPelsWidth)
-      width  = 0;
+   if (width == dm.dmPelsWidth)
+      width = 0;
    if (width == 0)
-      width = curDevmode.dmPelsWidth;
+      width = dm.dmPelsWidth;
    if (height == 0)
-      height = curDevmode.dmPelsHeight;
-   if (depth == 0)
-      depth = curDevmode.dmBitsPerPel;
-   if (freq == 0)
-      freq = curDevmode.dmDisplayFrequency;
+      height = dm.dmPelsHeight;
+   if (curr_bpp == 0)
+      curr_bpp = dm.dmBitsPerPel;
+   if (int_hz == 0)
+      int_hz = dm.dmDisplayFrequency;
+#if _WIN32_WINNT >= 0x0500
+   if (curr_orientation == 0)
+      curr_orientation = dm.dmDisplayOrientation;
+#endif
 
-   for (iModeNum = 0;; iModeNum++)
+   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
-      LONG res;
-      DEVMODE devmode;
-
-      if (!win32_get_video_output(&devmode, iModeNum, sizeof(devmode)))
-         break;
-
-      if (devmode.dmPelsWidth != width)
+      if (dm.dmPelsWidth != width)
          continue;
-
-      if (devmode.dmPelsHeight != height)
+      if (dm.dmPelsHeight != height)
          continue;
-
-      if (devmode.dmBitsPerPel != depth)
+      if (dm.dmBitsPerPel != curr_bpp)
          continue;
-
-      if (devmode.dmDisplayFrequency != freq)
+      if (dm.dmDisplayFrequency != int_hz)
          continue;
+#if _WIN32_WINNT >= 0x0500
+      if (dm.dmDisplayOrientation != curr_orientation)
+         continue;
+      if (dm.dmDisplayFixedOutput != DMDFO_DEFAULT)
+         continue;
+#endif
 
-      devmode.dmFields |=
-            DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
-      res               =
-            win32_change_display_settings(NULL, &devmode, CDS_TEST);
+      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
+#if _WIN32_WINNT >= 0x0500
+      dm.dmFields |= DM_DISPLAYORIENTATION;
+#endif
+
+      res = win32_change_display_settings(NULL, &dm, CDS_TEST);
 
       switch (res)
       {
       case DISP_CHANGE_SUCCESSFUL:
-         res = win32_change_display_settings(NULL, &devmode, 0);
+         res = win32_change_display_settings(NULL, &dm, 0);
          switch (res)
          {
             case DISP_CHANGE_SUCCESSFUL:
@@ -303,28 +309,39 @@ static bool win32_display_server_set_resolution(void *data,
 void *win32_display_server_get_resolution_list(void *data,
       unsigned *len)
 {
-   DEVMODE dm;
-   unsigned i, count                 = 0;
+   DEVMODE dm                        = {0};
+   unsigned i, j, count              = 0;
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;
    unsigned curr_refreshrate         = 0;
+#if _WIN32_WINNT >= 0x0500
+   unsigned curr_orientation         = 0;
+#endif
    struct video_display_config *conf = NULL;
 
-   for (i = 0;; i++)
-   {
-      if (!win32_get_video_output(&dm, i, sizeof(dm)))
-         break;
-
-      count++;
-   }
-
-   if (win32_get_video_output(&dm, -1, sizeof(dm)))
-   {
+   if (win32_get_video_output(&dm, -1, sizeof(dm))) {
       curr_width       = dm.dmPelsWidth;
       curr_height      = dm.dmPelsHeight;
       curr_bpp         = dm.dmBitsPerPel;
       curr_refreshrate = dm.dmDisplayFrequency;
+#if _WIN32_WINNT >= 0x0500
+      curr_orientation = dm.dmDisplayOrientation;
+#endif
+   }
+
+   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
+   {
+      if (dm.dmBitsPerPel != curr_bpp)
+         continue;
+#if _WIN32_WINNT >= 0x0500
+      if (dm.dmDisplayOrientation != curr_orientation)
+         continue;
+      if (dm.dmDisplayFixedOutput != DMDFO_DEFAULT)
+         continue;
+#endif
+
+      count++;
    }
 
    *len = count;
@@ -333,24 +350,32 @@ void *win32_display_server_get_resolution_list(void *data,
    if (!conf)
       return NULL;
 
-   for (i = 0;; i++)
+   for (i = 0, j = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
-      if (!win32_get_video_output(&dm, i, sizeof(dm)))
-         break;
+      if (dm.dmBitsPerPel != curr_bpp)
+         continue;
+#if _WIN32_WINNT >= 0x0500
+      if (dm.dmDisplayOrientation != curr_orientation)
+         continue;
+      if (dm.dmDisplayFixedOutput != DMDFO_DEFAULT)
+         continue;
+#endif
 
-      conf[i].width       = dm.dmPelsWidth;
-      conf[i].height      = dm.dmPelsHeight;
-      conf[i].bpp         = dm.dmBitsPerPel;
-      conf[i].refreshrate = dm.dmDisplayFrequency;
-      conf[i].idx         = i;
-      conf[i].current     = false;
+      conf[j].width       = dm.dmPelsWidth;
+      conf[j].height      = dm.dmPelsHeight;
+      conf[j].bpp         = dm.dmBitsPerPel;
+      conf[j].refreshrate = dm.dmDisplayFrequency;
+      conf[j].idx         = j;
+      conf[j].current     = false;
 
-      if (     (conf[i].width       == curr_width)
-            && (conf[i].height      == curr_height)
-            && (conf[i].refreshrate == curr_refreshrate)
-            && (conf[i].bpp         == curr_bpp)
+      if (     (conf[j].width       == curr_width)
+            && (conf[j].height      == curr_height)
+            && (conf[j].bpp         == curr_bpp)
+            && (conf[j].refreshrate == curr_refreshrate)
          )
-         conf[i].current  = true;
+         conf[j].current  = true;
+
+      j++;
    }
 
    return conf;
