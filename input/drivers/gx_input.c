@@ -199,7 +199,7 @@ static void gx_input_free_input(void *data)
    if (gx->joypad)
       gx->joypad->destroy();
 #ifdef HW_RVL
-   if(gx->mouse)
+   if (gx->mouse)
       free(gx->mouse);
 #endif
    free(gx);
@@ -208,18 +208,17 @@ static void gx_input_free_input(void *data)
 #ifdef HW_RVL
 static inline int gx_count_mouse(gx_input_t *gx)
 {
+   unsigned i;
    int count = 0;
 
-   if(gx)
+   if (gx)
    {
-      for(int i=0; i<DEFAULT_MAX_PADS; i++)
+      for (i = 0; i < DEFAULT_MAX_PADS; i++)
       {
-         if(gx->joypad->name(i))
+         if (gx->joypad->name(i))
          {
-            if(!strcmp(gx->joypad->name(i), "Wiimote Controller"))
-            {
+            if (string_is_equal(gx->joypad->name(i), "Wiimote Controller"))
                count++;
-            }
          }
       }
    }
@@ -234,11 +233,12 @@ static void *gx_input_init(const char *joypad_driver)
    if (!gx)
       return NULL;
 
-   gx->joypad = input_joypad_init_driver(joypad_driver, gx);
+   gx->joypad     = input_joypad_init_driver(joypad_driver, gx);
 #ifdef HW_RVL
    /* Allocate at least 1 mouse at startup */
-   gx->mouse_max = 1;
-   gx->mouse = (gx_input_mouse_t*) calloc(gx->mouse_max, sizeof(gx_input_mouse_t));
+   gx->mouse_max  = 1;
+   gx->mouse      = (gx_input_mouse_t*)calloc(
+         gx->mouse_max, sizeof(gx_input_mouse_t));
 #endif
    return gx;
 }
@@ -246,26 +246,25 @@ static void *gx_input_init(const char *joypad_driver)
 #ifdef HW_RVL
 static void gx_input_poll_mouse(gx_input_t *gx)
 {
-   int count = 0;
-   count = gx_count_mouse(gx);
+   int count = gx_count_mouse(gx);
 
-   if(gx && count > 0)
+   if (gx && count > 0)
    {
-      if(count != gx->mouse_max)
+      if (count != gx->mouse_max)
       {
          gx_input_mouse_t* tmp = NULL;
 
-         tmp = (gx_input_mouse_t*)realloc(gx->mouse, count * sizeof(gx_input_mouse_t));
-         if(!tmp) 
-         {
+         tmp = (gx_input_mouse_t*)realloc(
+               gx->mouse, count * sizeof(gx_input_mouse_t));
+         if (!tmp) 
             free(gx->mouse);
-         }
          else
          {
-            gx->mouse = tmp;
+            unsigned i;
+            gx->mouse     = tmp;
             gx->mouse_max = count;
 
-            for(int i=0; i<gx->mouse_max; i++)
+            for (i = 0; i < gx->mouse_max; i++)
             {
                gx->mouse[i].x_last = 0;
                gx->mouse[i].y_last = 0;
@@ -277,7 +276,8 @@ static void gx_input_poll_mouse(gx_input_t *gx)
       {
          gx->mouse[i].x_last = gx->mouse[i].x_abs;
          gx->mouse[i].y_last = gx->mouse[i].y_abs;
-         gx_joypad_read_mouse(i, &gx->mouse[i].x_abs, &gx->mouse[i].y_abs, &gx->mouse[i].button);
+         gx_joypad_read_mouse(i, &gx->mouse[i].x_abs,
+               &gx->mouse[i].y_abs, &gx->mouse[i].button);
       } 
    }
 }
@@ -291,7 +291,7 @@ static void gx_input_poll(void *data)
    {
       gx->joypad->poll();
 #ifdef HW_RVL
-      if(gx->mouse)
+      if (gx->mouse)
          gx_input_poll_mouse(gx);
 #endif
    }
