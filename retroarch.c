@@ -2682,7 +2682,6 @@ static void retro_frame_null(const void *data, unsigned width,
 static void retro_run_null(void);
 static void retro_input_poll_null(void);
 
-static const input_device_driver_t *input_driver_get_joypad_driver(void);
 static const input_device_driver_t *input_driver_get_sec_joypad_driver(void);
 static uint64_t input_driver_get_capabilities(void);
 
@@ -3054,8 +3053,9 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
       struct menu_bind_state *state)
 {
    unsigned a;
-   const input_device_driver_t     *joypad =
-      input_driver_get_joypad_driver();
+   struct rarch_state *p_rarch             = &rarch_st;
+   const input_device_driver_t *joypad     = 
+      p_rarch->current_input->get_joypad_driver(p_rarch->current_input_data);
    const input_device_driver_t *sec_joypad =
       input_driver_get_sec_joypad_driver();
    unsigned port                           = state->port;
@@ -3124,8 +3124,8 @@ static void menu_input_key_bind_poll_bind_state(
    input_driver_t *input_ptr               = p_rarch->current_input;
    void *input_data                        = p_rarch->current_input_data;
    unsigned port                           = state->port;
-   const input_device_driver_t *joypad     =
-      input_driver_get_joypad_driver();
+   const input_device_driver_t *joypad     = 
+      p_rarch->current_input->get_joypad_driver(p_rarch->current_input_data);
    const input_device_driver_t *sec_joypad =
       input_driver_get_sec_joypad_driver();
 
@@ -22447,14 +22447,6 @@ bool input_driver_set_rumble_state(unsigned port,
          port, effect, strength);
 }
 
-static const input_device_driver_t *input_driver_get_joypad_driver(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!p_rarch->current_input || !p_rarch->current_input->get_joypad_driver)
-      return NULL;
-   return p_rarch->current_input->get_joypad_driver(p_rarch->current_input_data);
-}
-
 static const input_device_driver_t *input_driver_get_sec_joypad_driver(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -22561,7 +22553,7 @@ static void input_driver_poll(void)
 #endif
       input_mapper_t *handle           = p_rarch->input_driver_mapper;
       const input_device_driver_t *joypad_driver 
-                                       = input_driver_get_joypad_driver();
+                                       = p_rarch->current_input->get_joypad_driver(p_rarch->current_input_data);
 
       memset(handle->keys, 0, sizeof(handle->keys));
 
