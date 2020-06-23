@@ -38,7 +38,8 @@
 		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
 		696012F219F3389A006A1088 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
 		69D31DE41A547EC800EF4C92 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
-		83EB676019EEAF050096F441 /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
+		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
+		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
@@ -47,8 +48,6 @@
 		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
 		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
-		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
-		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -85,7 +84,7 @@
 		041939EB22A0F4E400684552 /* GCDWebUploader.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = GCDWebUploader.bundle; sourceTree = "<group>"; };
 		041939EC22A0F4E400684552 /* GCDWebUploader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebUploader.h; sourceTree = "<group>"; };
 		041939ED22A0F4E400684552 /* GCDWebUploader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebUploader.m; sourceTree = "<group>"; };
-		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch_iOS9-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch_iOS9-Info.plist"; sourceTree = "<absolute>"; };
+		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch_iOS9-Info.plist"; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = "../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S"; sourceTree = SOURCE_ROOT; };
 		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
@@ -101,7 +100,6 @@
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
-		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
@@ -238,7 +236,6 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				83EB675F19EEAF050096F441 /* iOS/modules */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
 			);
 			name = Assets;
@@ -328,19 +325,19 @@
 		96AFAF3116C1E00A009DE44C /* gfx */ = {
 			isa = PBXGroup;
 			children = (
-				96AFAF4416C1E00A009DE44C /* fonts */,
+				96AFAF4416C1E00A009DE44C /* drivers_font_renderer */,
 			);
 			name = gfx;
-			path = ../gfx;
+			path = ../../gfx;
 			sourceTree = "<group>";
 		};
-		96AFAF4416C1E00A009DE44C /* fonts */ = {
+		96AFAF4416C1E00A009DE44C /* drivers_font_renderer */ = {
 			isa = PBXGroup;
 			children = (
 				96AFAF4516C1E00A009DE44C /* bitmap.bin */,
 				96AFAF4616C1E00A009DE44C /* bitmap.bmp */,
 			);
-			path = fonts;
+			path = drivers_font_renderer;
 			sourceTree = "<group>";
 		};
 		D48581DC16F823E2004BEB17 /* griffin */ = {
@@ -391,6 +388,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 96AFAE1A16C1D4EA009DE44C;
@@ -411,7 +409,6 @@
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
 				69D31DE41A547EC800EF4C92 /* iOS/Resources/Media.xcassets in Resources */,
 				041939FC22A0F4E400684552 /* GCDWebUploader.bundle in Resources */,
-				83EB676019EEAF050096F441 /* iOS/modules in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -630,14 +627,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				CURRENT_PROJECT_VERSION = 1.8.9;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					../../libretro-common/include,
-					../../libretro-common/include/compat/zlib,
+					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -647,6 +645,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.4;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
+				MARKETING_VERSION = 1.8.9;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETWORKGAMEPAD",
@@ -723,14 +722,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				CURRENT_PROJECT_VERSION = 1.8.9;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					../../libretro-common/include,
-					../../libretro-common/include/compat/zlib,
+					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -740,6 +740,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.4;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
+				MARKETING_VERSION = 1.8.9;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",

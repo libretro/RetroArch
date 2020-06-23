@@ -83,7 +83,7 @@
 		04193A2222A0F51200684552 /* GCDWebUploader.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = GCDWebUploader.bundle; sourceTree = "<group>"; };
 		04193A2322A0F51200684552 /* GCDWebUploader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebUploader.h; sourceTree = "<group>"; };
 		04193A2422A0F51200684552 /* GCDWebUploader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebUploader.m; sourceTree = "<group>"; };
-		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch_iOS9-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch_iOS9-Info.plist"; sourceTree = "<absolute>"; };
+		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch_iOS9-Info.plist"; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = "../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S"; sourceTree = SOURCE_ROOT; };
 		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
@@ -323,19 +323,19 @@
 		96AFAF3116C1E00A009DE44C /* gfx */ = {
 			isa = PBXGroup;
 			children = (
-				96AFAF4416C1E00A009DE44C /* fonts */,
+				96AFAF4416C1E00A009DE44C /* drivers_font_renderer */,
 			);
 			name = gfx;
-			path = ../gfx;
+			path = ../../gfx;
 			sourceTree = "<group>";
 		};
-		96AFAF4416C1E00A009DE44C /* fonts */ = {
+		96AFAF4416C1E00A009DE44C /* drivers_font_renderer */ = {
 			isa = PBXGroup;
 			children = (
 				96AFAF4516C1E00A009DE44C /* bitmap.bin */,
 				96AFAF4616C1E00A009DE44C /* bitmap.bmp */,
 			);
-			path = fonts;
+			path = drivers_font_renderer;
 			sourceTree = "<group>";
 		};
 		D48581DC16F823E2004BEB17 /* griffin */ = {
@@ -386,6 +386,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 96AFAE1A16C1D4EA009DE44C;
@@ -464,14 +465,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				CURRENT_PROJECT_VERSION = 1.8.9;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					../../libretro-common/include,
-					../../libretro-common/include/compat/zlib,
+					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -481,6 +483,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
+				MARKETING_VERSION = 1.8.9;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETWORKGAMEPAD",
@@ -554,14 +557,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				CURRENT_PROJECT_VERSION = 1.8.9;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					../../libretro-common/include,
-					../../libretro-common/include/compat/zlib,
+					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -571,6 +575,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
+				MARKETING_VERSION = 1.8.9;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
