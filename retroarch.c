@@ -31113,7 +31113,7 @@ static void video_driver_reinit_context(struct rarch_state *p_rarch,
    struct retro_hw_render_callback *hwr =
       VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
    const struct retro_hw_render_context_negotiation_interface *iface =
-      video_driver_get_context_negotiation_interface();
+      p_rarch->hw_render_context_negotiation;
    memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
    driver_uninit(p_rarch, flags);
