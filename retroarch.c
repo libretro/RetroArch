@@ -22732,7 +22732,7 @@ static void input_driver_poll(void)
                      {
                         BIT256_SET(handle->buttons[i], remap_button);
                      }
-                     else if (remap_button >= RARCH_FIRST_CUSTOM_BIND)
+                     else
                      {
                         int invert = 1;
 
