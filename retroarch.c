@@ -3347,7 +3347,8 @@ static bool menu_input_key_bind_poll_find_trigger(
       struct retro_keybind * output)
 {
    unsigned i;
-   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   struct rarch_state *p_rarch = &rarch_st;
+   unsigned max_users          = p_rarch->input_driver_max_users;
 
    if (!state || !new_state)
       return false;
@@ -3370,7 +3371,8 @@ static bool menu_input_key_bind_poll_find_hold(
       struct retro_keybind * output)
 {
    unsigned i;
-   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   struct rarch_state *p_rarch = &rarch_st;
+   unsigned        max_users   = p_rarch->input_driver_max_users;
 
    if (!new_state)
       return false;
@@ -3492,7 +3494,10 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
    if (_binds->begin > _binds->last)
    {
       /* Avoid new binds triggering things right away. */
-      input_driver_set_flushing_input();
+      /* Inhibits input for 2 frames
+       * > Required, since input is ignored for 1 frame
+       *   after certain events - e.g. closing the OSK */
+      p_rarch->input_driver_flushing_input = 2;
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
@@ -3554,7 +3559,10 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
             input_drv->keyboard_mapping_blocked = false;
 
          /* Avoid new binds triggering things right away. */
-         input_driver_set_flushing_input();
+         /* Inhibits input for 2 frames
+          * > Required, since input is ignored for 1 frame
+          *   after certain events - e.g. closing the OSK */
+         p_rarch->input_driver_flushing_input = 2;
 
          new_binds.begin++;
 
@@ -8319,6 +8327,7 @@ static bool get_self_input_state(netplay_t *netplay)
    unsigned i;
    struct delta_frame *ptr        = &netplay->buffer[netplay->self_ptr];
    netplay_input_state_t istate   = NULL;
+   struct rarch_state *p_rarch    = &rarch_st;
    uint32_t devices, used_devices = 0, devi, dev_type, local_device;
 
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
@@ -8361,7 +8370,8 @@ static bool get_self_input_state(netplay_t *netplay)
 
       /* First frame we always give zero input since relying on
        * input from first frame screws up when we use -F 0. */
-      if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
+      if (     !p_rarch->input_driver_block_libretro_input 
+            &&  netplay->self_frame_count > 0)
       {
          uint32_t *state        = istate->data;
          retro_input_state_t cb = netplay->cbs.state_cb;
@@ -11392,7 +11402,10 @@ void menu_input_dialog_end(void)
    p_rarch->menu_input_dialog_keyboard_label_setting[0]  = '\0';
 
    /* Avoid triggering states on pressing return. */
-   input_driver_set_flushing_input();
+   /* Inhibits input for 2 frames
+    * > Required, since input is ignored for 1 frame
+    *   after certain events - e.g. closing the OSK */
+   p_rarch->input_driver_flushing_input = 2;
 }
 
 const char *menu_input_dialog_get_buffer(void)
@@ -25016,21 +25029,6 @@ static bool input_driver_find_driver(struct rarch_state *p_rarch)
    }
 
    return true;
-}
-
-void input_driver_set_flushing_input(void)
-{
-   struct rarch_state          *p_rarch = &rarch_st;
-   /* Inhibits input for 2 frames
-    * > Required, since input is ignored for 1 frame
-    *   after certain events - e.g. closing the OSK */
-   p_rarch->input_driver_flushing_input = 2;
-}
-
-bool input_driver_is_libretro_input_blocked(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->input_driver_block_libretro_input;
 }
 
 void input_driver_set_nonblock_state(void)

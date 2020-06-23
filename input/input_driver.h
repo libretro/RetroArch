@@ -244,15 +244,9 @@ input_driver_t *input_get_ptr(void);
 
 void *input_get_data(void);
 
-void input_driver_set_flushing_input(void);
-
-bool input_driver_is_libretro_input_blocked(void);
-
 void input_driver_set_nonblock_state(void);
 
 void input_driver_unset_nonblock_state(void);
-
-void input_driver_set_own_driver(void);
 
 float *input_driver_get_float(enum input_action action);
 
