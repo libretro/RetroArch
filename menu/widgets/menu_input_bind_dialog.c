@@ -469,6 +469,28 @@ static bool menu_input_key_bind_poll_find_trigger(
    return false;
 }
 
+#ifdef ANDROID
+static bool menu_input_key_bind_poll_find_hold(
+      struct menu_bind_state *new_state,
+      struct retro_keybind * output)
+{
+   unsigned i;
+   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+   if (!new_state)
+      return false;
+
+   for (i = 0; i < max_users; i++)
+   {
+      if (!menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
+         continue;
+
+      return true;
+   }
+
+   return false;
+}
+#endif
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data)
@@ -513,27 +535,6 @@ bool menu_input_key_bind_set_mode(
    menu_input_set_pointer_inhibit(true);
 
    return true;
-}
-
-bool menu_input_key_bind_poll_find_hold(
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output)
-{
-   unsigned i;
-   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-
-   if (!new_state)
-      return false;
-
-   for (i = 0; i < max_users; i++)
-   {
-      if (!menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
-         continue;
-
-      return true;
-   }
-
-   return false;
 }
 
 bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
