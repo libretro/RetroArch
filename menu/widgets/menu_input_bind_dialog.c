@@ -260,51 +260,6 @@ static void menu_input_key_bind_poll_bind_state(
             sec_joypad, state, port, timed_out);
 }
 
-bool menu_input_key_bind_set_mode(
-      enum menu_input_binds_ctl_state state, void *data)
-{
-   unsigned index_offset;
-   input_keyboard_ctx_wait_t keys;
-   rarch_setting_t  *setting      = (rarch_setting_t*)data;
-   settings_t *settings           = config_get_ptr();
-   menu_handle_t       *menu      = menu_driver_get_ptr();
-   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    
-      * 1000000;
-   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout 
-      * 1000000;
-
-   if (!setting || !menu)
-      return false;
-   if (menu_input_key_bind_set_mode_common(state, setting) == -1)
-      return false;
-
-   index_offset             = setting->index_offset;
-   menu_input_binds.port    = settings->uints.input_joypad_map[index_offset];
-
-   menu_input_key_bind_poll_bind_get_rested_axes(
-         &menu_input_binds);
-   menu_input_key_bind_poll_bind_state(
-         &menu_input_binds, false);
-
-   rarch_timer_begin_new_time_us(
-         &menu_input_binds.timer_hold, input_bind_hold_us);
-   rarch_timer_begin_new_time_us(
-         &menu_input_binds.timer_timeout, input_bind_timeout_us);
-
-   keys.userdata = menu;
-   keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
-
-   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
-
-   /* Upon triggering an input bind operation,
-    * pointer input must be inhibited - otherwise
-    * attempting to bind mouse buttons will cause
-    * spurious menu actions */
-   menu_input_set_pointer_inhibit(true);
-
-   return true;
-}
-
 static bool menu_input_key_bind_poll_find_trigger_pad(
       struct menu_bind_state *state,
       struct menu_bind_state *new_state,
@@ -406,7 +361,6 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
    return false;
 }
 
-
 static bool menu_input_key_bind_poll_find_hold_pad(
       struct menu_bind_state *new_state,
      struct retro_keybind * output,
@@ -492,27 +446,6 @@ static bool menu_input_key_bind_poll_find_hold_pad(
    return false;
 }
 
-bool menu_input_key_bind_poll_find_hold(
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output)
-{
-   unsigned i;
-   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-
-   if (!new_state)
-      return false;
-
-   for (i = 0; i < max_users; i++)
-   {
-      if (!menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
-         continue;
-
-      return true;
-   }
-
-   return false;
-}
-
 static bool menu_input_key_bind_poll_find_trigger(
       struct menu_bind_state *state,
       struct menu_bind_state *new_state,
@@ -528,6 +461,73 @@ static bool menu_input_key_bind_poll_find_trigger(
    {
       if (!menu_input_key_bind_poll_find_trigger_pad(
                state, new_state, output, i))
+         continue;
+
+      return true;
+   }
+
+   return false;
+}
+
+
+bool menu_input_key_bind_set_mode(
+      enum menu_input_binds_ctl_state state, void *data)
+{
+   unsigned index_offset;
+   input_keyboard_ctx_wait_t keys;
+   rarch_setting_t  *setting      = (rarch_setting_t*)data;
+   settings_t *settings           = config_get_ptr();
+   menu_handle_t       *menu      = menu_driver_get_ptr();
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    
+      * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout 
+      * 1000000;
+
+   if (!setting || !menu)
+      return false;
+   if (menu_input_key_bind_set_mode_common(state, setting) == -1)
+      return false;
+
+   index_offset             = setting->index_offset;
+   menu_input_binds.port    = settings->uints.input_joypad_map[index_offset];
+
+   menu_input_key_bind_poll_bind_get_rested_axes(
+         &menu_input_binds);
+   menu_input_key_bind_poll_bind_state(
+         &menu_input_binds, false);
+
+   rarch_timer_begin_new_time_us(
+         &menu_input_binds.timer_hold, input_bind_hold_us);
+   rarch_timer_begin_new_time_us(
+         &menu_input_binds.timer_timeout, input_bind_timeout_us);
+
+   keys.userdata = menu;
+   keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
+
+   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
+
+   /* Upon triggering an input bind operation,
+    * pointer input must be inhibited - otherwise
+    * attempting to bind mouse buttons will cause
+    * spurious menu actions */
+   menu_input_set_pointer_inhibit(true);
+
+   return true;
+}
+
+bool menu_input_key_bind_poll_find_hold(
+      struct menu_bind_state *new_state,
+      struct retro_keybind * output)
+{
+   unsigned i;
+   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+   if (!new_state)
+      return false;
+
+   for (i = 0; i < max_users; i++)
+   {
+      if (!menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
          continue;
 
       return true;
