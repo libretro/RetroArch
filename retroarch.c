@@ -2647,6 +2647,9 @@ static bool init_libretro_symbols(
       struct retro_core_t *current_core);
 
 static void ui_companion_driver_deinit(struct rarch_state *p_rarch);
+static void ui_companion_driver_init_first(
+      settings_t *settings,
+      struct rarch_state *p_rarch);
 
 static bool audio_driver_stop(struct rarch_state *p_rarch);
 static bool audio_driver_start(struct rarch_state *p_rarch,
@@ -9996,23 +9999,22 @@ static void path_init_savefile(struct rarch_state *p_rarch)
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 }
 
-static void path_init_savefile_internal(struct rarch_state *p_rarch)
+static void path_init_savefile_internal(
+      global_t *global,
+      struct rarch_state *p_rarch)
 {
    path_deinit_savefile();
    path_init_savefile_new();
 
    if (!path_init_subsystem(p_rarch))
-   {
-      global_t   *global = &p_rarch->g_extern;
       path_init_savefile_rtc(global->name.savefile);
-   }
 }
 
 static void path_fill_names(struct rarch_state *p_rarch)
 {
    global_t            *global = &p_rarch->g_extern;
 
-   path_init_savefile_internal(p_rarch);
+   path_init_savefile_internal(global, p_rarch);
 
    if (global)
       strlcpy(p_rarch->bsv_movie_state.movie_path,
@@ -13337,10 +13339,18 @@ static void command_event_set_savestate_auto_index(struct rarch_state *p_rarch)
          max_idx);
 }
 
-static bool event_init_content(struct rarch_state *p_rarch)
+static bool event_init_content(
+      settings_t *settings,
+      struct rarch_state *p_rarch)
 {
    bool contentless                             = false;
    bool is_inited                               = false;
+#ifdef HAVE_CHEEVOS
+   bool cheevos_enable                          = 
+      settings->bools.cheevos_enable;
+   bool cheevos_hardcore_mode_enable            = 
+      settings->bools.cheevos_hardcore_mode_enable;
+#endif
    const enum rarch_core_type current_core_type = p_rarch->current_core_type;
 
    content_get_status(&contentless, &is_inited);
@@ -13382,16 +13392,9 @@ static bool event_init_content(struct rarch_state *p_rarch)
    are true.
 */
 #ifdef HAVE_CHEEVOS
-   {
-      settings_t *settings              = p_rarch->configuration_settings;
-      bool cheevos_enable               = settings->bools.cheevos_enable;
-      bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
-      if (!cheevos_enable || !cheevos_hardcore_mode_enable)
-         command_event_load_auto_state(p_rarch);
-   }
-#else
-   command_event_load_auto_state(p_rarch);
+   if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
+      command_event_load_auto_state(p_rarch);
 
    bsv_movie_deinit(p_rarch);
    bsv_movie_init(p_rarch);
@@ -13400,10 +13403,11 @@ static bool event_init_content(struct rarch_state *p_rarch)
    return true;
 }
 
-static void update_runtime_log(struct rarch_state *p_rarch,
+static void update_runtime_log(
+      settings_t *settings,
+      struct rarch_state *p_rarch,
       bool log_per_core)
 {
-   settings_t  *settings        = p_rarch->configuration_settings;
    const char  *dir_runtime_log = settings->paths.directory_runtime_log;
    const char  *dir_playlist    = settings->paths.directory_playlist;
 
@@ -13461,11 +13465,11 @@ static void command_event_runtime_log_deinit(struct rarch_state *p_rarch)
 
       /* Per core logging */
       if (content_runtime_log)
-         update_runtime_log(p_rarch, true);
+         update_runtime_log(settings, p_rarch, true);
 
       /* Aggregate logging */
       if (content_runtime_log_aggregate)
-         update_runtime_log(p_rarch, false);
+         update_runtime_log(settings, p_rarch, false);
    }
 
    /* Reset runtime + content/core paths, to prevent any
@@ -13603,7 +13607,7 @@ static bool command_event_init_core(
          path_get(RARCH_PATH_CONTENT),
          p_rarch->current_savefile_dir);
 
-   if (!event_init_content(p_rarch))
+   if (!event_init_content(settings, p_rarch))
       return false;
 
    /* Verify that initial disk index was set correctly */
@@ -13617,14 +13621,15 @@ static bool command_event_init_core(
    return true;
 }
 
-static bool command_event_save_auto_state(struct rarch_state *p_rarch)
+static bool command_event_save_auto_state(
+      settings_t *settings,
+      global_t *global,
+      struct rarch_state *p_rarch)
 {
    bool ret                    = false;
    char *savestate_name_auto   = NULL;
    size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
-   settings_t *settings        = p_rarch->configuration_settings;
-   global_t   *global          = &p_rarch->g_extern;
    bool savestate_auto_save    = settings->bools.savestate_auto_save;
    const enum rarch_core_type
       current_core_type        = p_rarch->current_core_type;
@@ -14447,6 +14452,7 @@ bool command_event(enum event_command cmd, void *data)
             bool contentless                = false;
             bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
+            global_t   *global              = &p_rarch->g_extern;
             rarch_system_info_t *sys_info   = &p_rarch->runloop_system;
 
             content_get_status(&contentless, &is_inited);
@@ -14458,7 +14464,8 @@ bool command_event(enum event_command cmd, void *data)
                disk_control_save_image_index(&sys_info->disk_control);
 
             command_event_runtime_log_deinit(p_rarch);
-            command_event_save_auto_state(p_rarch);
+            command_event_save_auto_state(settings, 
+                  global, p_rarch);
 
 #ifdef HAVE_CONFIGFILE
             if (p_rarch->runloop_overrides_active)
@@ -15987,7 +15994,8 @@ int rarch_main(int argc, char *argv[], void *data)
          return 1;
    }
 
-   ui_companion_driver_init_first(p_rarch);
+   ui_companion_driver_init_first(p_rarch->configuration_settings,
+         p_rarch);
 
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)
    for (;;)
@@ -19539,10 +19547,10 @@ static void ui_companion_driver_deinit(struct rarch_state *p_rarch)
    p_rarch->ui_companion_data = NULL;
 }
 
-void ui_companion_driver_init_first(void *data)
+static void ui_companion_driver_init_first(
+      settings_t *settings,
+      struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch     = (struct rarch_state*)data;
-   settings_t      *settings       = p_rarch->configuration_settings;
 #ifdef HAVE_QT
    bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
    bool ui_companion_toggle        = settings->bools.ui_companion_toggle;
@@ -21654,11 +21662,11 @@ static void input_remote_free(input_remote_t *handle, unsigned max_users)
 }
 
 static input_remote_t *input_remote_new(
+      settings_t *settings,
       struct rarch_state *p_rarch,
       uint16_t port, unsigned max_users)
 {
    unsigned user;
-   settings_t        *settings = p_rarch->configuration_settings;
    input_remote_t      *handle = (input_remote_t*)
       calloc(1, sizeof(*handle));
 
@@ -24420,28 +24428,28 @@ static void input_driver_deinit_mapper(struct rarch_state *p_rarch)
    p_rarch->input_driver_mapper = NULL;
 }
 
-static bool input_driver_init_remote(struct rarch_state *p_rarch)
-{
 #ifdef HAVE_NETWORKGAMEPAD
-   settings_t *settings              = p_rarch->configuration_settings;
-   bool network_remote_enable        = settings->bools.network_remote_enable;
+static void input_driver_init_remote(
+      settings_t *settings,
+      struct rarch_state *p_rarch)
+{
    unsigned network_remote_base_port = settings->uints.network_remote_base_port;
 
-   if (!network_remote_enable)
-      return false;
-
-   p_rarch->input_driver_remote      = input_remote_new(
+   input_remote_t *remote            = input_remote_new(
+         settings,
          p_rarch,
          network_remote_base_port,
          p_rarch->input_driver_max_users);
 
-   if (p_rarch->input_driver_remote)
-      return true;
+   if (!remote)
+   {
+      RARCH_ERR("Failed to initialize remote gamepad interface.\n");
+      return;
+   }
 
-   RARCH_ERR("Failed to initialize remote gamepad interface.\n");
-#endif
-   return false;
+   p_rarch->input_driver_remote      = remote;
 }
+#endif
 
 static bool input_driver_init_mapper(struct rarch_state *p_rarch)
 {
@@ -34752,7 +34760,12 @@ bool retroarch_main_init(int argc, char *argv[])
    input_driver_deinit_command(p_rarch);
    input_driver_init_command(p_rarch);
    input_driver_deinit_remote(p_rarch);
-   input_driver_init_remote(p_rarch);
+#ifdef HAVE_NETWORKGAMEPAD
+   {
+      if (p_rarch->configuration_settings->bools.network_remote_enable)
+         input_driver_init_remote(p_rarch->configuration_settings, p_rarch);
+   }
+#endif
    input_driver_deinit_mapper(p_rarch);
    input_driver_init_mapper(p_rarch);
    command_event(CMD_EVENT_REWIND_INIT, NULL);
@@ -35979,6 +35992,7 @@ static void retroarch_fail(int error_code, const char *error)
 bool retroarch_main_quit(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   global_t            *global = &p_rarch->g_extern;
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st = &p_rarch->discord_st;
    if (discord_is_inited)
@@ -35998,7 +36012,9 @@ bool retroarch_main_quit(void)
 
    if (!p_rarch->runloop_shutdown_initiated)
    {
-      command_event_save_auto_state(p_rarch);
+      command_event_save_auto_state(p_rarch->configuration_settings,
+            global,
+            p_rarch);
 
       /* If any save states are in progress, wait
        * until all tasks are complete (otherwise
