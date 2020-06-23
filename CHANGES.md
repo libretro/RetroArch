@@ -1,4 +1,5 @@
 # Future
+- ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 
 # 1.8.9
 - AUTO SAVESTATES: Ensure save states are correctly flushed to disk when quitting RetroArch (fixes broken save states when exiting RetroArch - without first closing content - with 'Auto Save State' enabled)
