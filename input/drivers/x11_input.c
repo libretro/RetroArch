@@ -352,14 +352,8 @@ static int16_t x_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = x_pressed_analog(x11, binds[port], idx, id);
-            if (!ret)
-               ret      = input_joypad_analog(x11->joypad, joypad_info,
-                     port, idx,
-                     id, binds[port]);
-            return ret;
-         }
+            return x_pressed_analog(x11, binds[port], idx, id);
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
       case RETRO_DEVICE_MOUSE:

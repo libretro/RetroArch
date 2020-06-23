@@ -2758,6 +2758,10 @@ static void driver_location_stop(void);
 static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
+static int16_t input_joypad_analog(const input_device_driver_t *drv,
+      rarch_joypad_info_t *joypad_info,
+      unsigned port, unsigned idx, unsigned ident,
+      const struct retro_keybind *binds);
 
 #ifdef HAVE_ACCESSIBILITY
 static bool is_accessibility_enabled(struct rarch_state *p_rarch);
@@ -23248,6 +23252,25 @@ static int16_t input_state(unsigned port, unsigned device,
          p_rarch->current_input_data, &joypad_info,
          p_rarch->libretro_input_binds, port, device, idx, id);
 
+   if (  (device == RETRO_DEVICE_ANALOG) &&
+         (ret == 0))
+   {
+      const input_device_driver_t *joypad     = 
+         p_rarch->current_input->get_joypad_driver(
+               p_rarch->current_input_data);
+      const input_device_driver_t *sec_joypad =
+         input_driver_get_sec_joypad_driver();
+      if (p_rarch->libretro_input_binds[port])
+      {
+         if (sec_joypad)
+            ret = input_joypad_analog(sec_joypad, &joypad_info,
+                  port, idx, id, p_rarch->libretro_input_binds[port]);
+         if (joypad && (ret == 0))
+            ret = input_joypad_analog(joypad, &joypad_info,
+                  port, idx, id, p_rarch->libretro_input_binds[port]);
+      }
+   }
+
    if (     (p_rarch->input_driver_flushing_input == 0)
          && !p_rarch->input_driver_block_libretro_input)
    {
@@ -25313,7 +25336,7 @@ int16_t button_is_pressed(
  *
  * Returns: analog value on success, otherwise 0.
  **/
-int16_t input_joypad_analog(const input_device_driver_t *drv,
+static int16_t input_joypad_analog(const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)

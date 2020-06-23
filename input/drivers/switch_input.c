@@ -422,9 +422,6 @@ static int16_t switch_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(sw->joypad,
-                  joypad_info, port, idx, id, binds[port]);
          break;
 #ifdef HAVE_LIBNX
       case RETRO_DEVICE_KEYBOARD:

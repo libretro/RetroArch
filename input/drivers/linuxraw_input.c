@@ -162,14 +162,9 @@ static int16_t linuxraw_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = linuxraw_analog_pressed(
+            return linuxraw_analog_pressed(
                   linuxraw, binds[port], idx, id);
-            if (!ret)
-               ret      = input_joypad_analog(linuxraw->joypad,
-                     joypad_info, port, idx, id, binds[port]);
-            return ret;
-         }
+         break;
    }
 
    return 0;

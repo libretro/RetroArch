@@ -92,8 +92,6 @@ static int16_t xdk_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(xdk->joypad, joypad_info, port, index, id, binds[port]);
          break;
    }
 

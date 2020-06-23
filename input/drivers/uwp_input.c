@@ -131,13 +131,7 @@ static int16_t uwp_pressed_analog(uwp_input_t *uwp,
          && uwp_keyboard_pressed(bind_plus->key))
       pressed_plus = 0x7fff;
 
-   pressed_keyboard = pressed_plus + pressed_minus;
-   if (pressed_keyboard != 0)
-      return pressed_keyboard;
-
-   /* Then, process the joypad bindings */
-   return input_joypad_analog(uwp->joypad,
-         joypad_info, port, idx, id, binds);
+   return pressed_plus + pressed_minus;
 }
 
 static int16_t uwp_input_state(void *data,

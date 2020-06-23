@@ -840,10 +840,7 @@ static int16_t qnx_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(qnx->joypad, joypad_info,
-                  port, idx, id, binds[port]);
-         return 0;
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return qnx_keyboard_pressed(qnx, id);
       case RETRO_DEVICE_POINTER:

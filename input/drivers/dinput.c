@@ -634,15 +634,8 @@ static int16_t dinput_input_state(void *data,
             di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = dinput_pressed_analog(di, binds[port], idx, id);
-            if (!ret)
-               ret      = input_joypad_analog(di->joypad, joypad_info,
-                     port, idx, id, binds[port]);
-            return ret;
-         }
+            return dinput_pressed_analog(di, binds[port], idx, id);
          break;
-
       case RETRO_DEVICE_MOUSE:
          {
             settings                   = config_get_ptr();

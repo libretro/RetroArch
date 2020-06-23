@@ -328,8 +328,6 @@ static int16_t psp_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(psp->joypad, joypad_info, port, idx, id, binds[port]);
          break;
 #ifdef VITA
       case RETRO_DEVICE_KEYBOARD:

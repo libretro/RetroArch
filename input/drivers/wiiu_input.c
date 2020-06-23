@@ -164,9 +164,6 @@ static int16_t wiiu_input_state(void *data,
             return 1;
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(wiiu->joypad,
-                  joypad_info, port, idx, id, binds[port]);
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:

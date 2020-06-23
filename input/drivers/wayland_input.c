@@ -334,13 +334,7 @@ static int16_t input_wl_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = input_wl_analog_pressed(wl, binds[port], idx, id);
-            if (!ret)
-               ret      = input_joypad_analog(
-                     wl->joypad, joypad_info, port, idx, id, binds[port]);
-            return ret;
-         }
+            return input_wl_analog_pressed(wl, binds[port], idx, id);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return input_wl_state_kb(wl, binds, port, device, idx, id);

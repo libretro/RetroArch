@@ -235,13 +235,7 @@ static int16_t sdl_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = sdl_analog_pressed(sdl, binds[port], idx, id);
-            if (!ret)
-               ret      = input_joypad_analog(sdl->joypad,
-                  joypad_info, port, idx, id, binds[port]);
-            return ret;
-         }
+            return sdl_analog_pressed(sdl, binds[port], idx, id);
          break;
       case RETRO_DEVICE_MOUSE:
          if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)

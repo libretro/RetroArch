@@ -1462,9 +1462,6 @@ static int16_t android_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(android->joypad, joypad_info,
-                  port, idx, id, binds[port]);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);

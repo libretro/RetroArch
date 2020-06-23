@@ -251,8 +251,6 @@ static int16_t ps3_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(ps3->joypad, joypad_info, port, idx, id, binds[port]);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (psl1ght_keyboard_port_input_pressed(ps3, id));

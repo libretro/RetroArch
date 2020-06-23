@@ -313,31 +313,6 @@ const input_device_driver_t *input_joypad_init_driver(
    }
 
 /**
- * input_joypad_analog:
- * @drv                     : Input device driver handle.
- * @port                    : User number.
- * @idx                     : Analog key index.
- *                            E.g.:
- *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
- *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
- *                            - RETRO_DEVICE_INDEX_ANALOG_BUTTON
- * @ident                   : Analog key identifier.
- *                            E.g.:
- *                            - RETRO_DEVICE_ID_ANALOG_X
- *                            - RETRO_DEVICE_ID_ANALOG_Y
- * @binds                   : Binds of user.
- *
- * Gets analog value of analog key identifiers @idx and @ident
- * from user with number @port with provided keybinds (@binds).
- *
- * Returns: analog value on success, otherwise 0.
- **/
-int16_t input_joypad_analog(const input_device_driver_t *driver,
-      rarch_joypad_info_t *joypad_info,
-      unsigned port, unsigned idx, unsigned ident,
-      const struct retro_keybind *binds);
-
-/**
  * input_joypad_set_rumble:
  * @drv                     : Input device driver handle.
  * @port                    : User number.

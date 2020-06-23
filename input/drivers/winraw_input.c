@@ -664,9 +664,6 @@ static int16_t winraw_input_state(void *d,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(wr->joypad, joypad_info,
-                  port, index, id, binds[port]);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && winraw_keyboard_pressed(wr, id);
