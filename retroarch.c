@@ -3410,8 +3410,8 @@ bool menu_input_key_bind_set_mode(
    unsigned index_offset;
    input_keyboard_ctx_wait_t keys;
    rarch_setting_t  *setting      = (rarch_setting_t*)data;
-   menu_handle_t       *menu      = menu_driver_get_ptr();
    struct rarch_state *p_rarch    = &rarch_st;
+   menu_handle_t       *menu      = p_rarch->menu_driver_data;
    settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    
