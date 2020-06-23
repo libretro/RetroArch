@@ -2758,7 +2758,13 @@ static void driver_location_stop(void);
 static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
-static int16_t input_joypad_analog(const input_device_driver_t *drv,
+static int16_t input_joypad_analog_button(
+      const input_device_driver_t *drv,
+      rarch_joypad_info_t *joypad_info,
+      unsigned port, unsigned idx, unsigned ident,
+      const struct retro_keybind *binds);
+static int16_t input_joypad_analog_axis(
+      const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
@@ -22604,7 +22610,7 @@ static void input_driver_poll(void)
                   {
                      if (ret & (1 << k))
                      {
-                        int16_t      val = input_joypad_analog(
+                        int16_t      val = input_joypad_analog_button(
                               joypad_driver, &joypad_info[i], (unsigned)i,
                               RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
                               p_rarch->libretro_input_binds[i]);
@@ -22616,12 +22622,15 @@ static void input_driver_poll(void)
                      }
                   }
 
+                  /* This is the analog joypad index -
+                   * handles only the two analog axes */
                   for (k = 0; k < 2; k++)
                   {
+                     /* This is the analog joypad ident */
                      for (j = 0; j < 2; j++)
                      {
                         unsigned offset = 0 + (k * 4) + (j * 2);
-                        int16_t     val = input_joypad_analog(
+                        int16_t     val = input_joypad_analog_axis(
                               joypad_driver,
                               &joypad_info[i], (unsigned)i, k, j,
                               p_rarch->libretro_input_binds[i]);
@@ -23262,12 +23271,27 @@ static int16_t input_state(unsigned port, unsigned device,
          input_driver_get_sec_joypad_driver();
       if (p_rarch->libretro_input_binds[port])
       {
-         if (sec_joypad)
-            ret = input_joypad_analog(sec_joypad, &joypad_info,
-                  port, idx, id, p_rarch->libretro_input_binds[port]);
-         if (joypad && (ret == 0))
-            ret = input_joypad_analog(joypad, &joypad_info,
-                  port, idx, id, p_rarch->libretro_input_binds[port]);
+         if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+         {
+            if (id < RARCH_FIRST_CUSTOM_BIND)
+            {
+               if (sec_joypad)
+                  ret = input_joypad_analog_button(sec_joypad, &joypad_info,
+                        port, idx, id, p_rarch->libretro_input_binds[port]);
+               if (joypad && (ret == 0))
+                  ret = input_joypad_analog_button(joypad, &joypad_info,
+                        port, idx, id, p_rarch->libretro_input_binds[port]);
+            }
+         }
+         else
+         {
+            if (sec_joypad)
+               ret = input_joypad_analog_axis(sec_joypad, &joypad_info,
+                     port, idx, id, p_rarch->libretro_input_binds[port]);
+            if (joypad && (ret == 0))
+               ret = input_joypad_analog_axis(joypad, &joypad_info,
+                     port, idx, id, p_rarch->libretro_input_binds[port]);
+         }
       }
    }
 
@@ -25336,7 +25360,51 @@ int16_t button_is_pressed(
  *
  * Returns: analog value on success, otherwise 0.
  **/
-static int16_t input_joypad_analog(const input_device_driver_t *drv,
+static int16_t input_joypad_analog_button(
+      const input_device_driver_t *drv,
+      rarch_joypad_info_t *joypad_info,
+      unsigned port, unsigned idx, unsigned ident,
+      const struct retro_keybind *binds)
+{
+   int16_t res                      = 0;
+   uint32_t axis                    = 0;
+   float normal_mag                 = 0.0f;
+   struct rarch_state *p_rarch      = &rarch_st;
+   settings_t *settings             = p_rarch->configuration_settings;
+   float input_analog_deadzone      = settings->floats.input_analog_deadzone;
+   const struct retro_keybind *bind = &binds[ ident ];
+
+   if (!bind->valid)
+      return 0;
+
+   axis                             = (bind->joyaxis == AXIS_NONE)
+      ? joypad_info->auto_binds[ident].joyaxis
+      : bind->joyaxis;
+
+   /* Analog button. */
+   if (input_analog_deadzone)
+      normal_mag = fabs((1.0f / 0x7fff) * drv->axis(
+               joypad_info->joy_idx, axis));
+   res = abs(input_joypad_axis(p_rarch, drv,
+            joypad_info->joy_idx, axis, normal_mag));
+
+   /* If the result is zero, it's got a digital button
+    * attached to it instead */
+   if (res == 0)
+   {
+      uint16_t key = (bind->joykey == NO_BTN)
+         ? joypad_info->auto_binds[ident].joykey
+         : bind->joykey;
+
+      if (drv->button(joypad_info->joy_idx, key))
+         res = 0x7fff;
+   }
+
+   return res;
+}
+
+static int16_t input_joypad_analog_axis(
+      const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)
@@ -25346,150 +25414,108 @@ static int16_t input_joypad_analog(const input_device_driver_t *drv,
    settings_t *settings        = p_rarch->configuration_settings;
    float input_analog_deadzone = settings->floats.input_analog_deadzone;
 
-   if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+   /* Analog sticks. Either RETRO_DEVICE_INDEX_ANALOG_LEFT
+    * or RETRO_DEVICE_INDEX_ANALOG_RIGHT */
+
+   unsigned ident_minus                     = 0;
+   unsigned ident_plus                      = 0;
+   unsigned ident_x_minus                   = 0;
+   unsigned ident_x_plus                    = 0;
+   unsigned ident_y_minus                   = 0;
+   unsigned ident_y_plus                    = 0;
+   const struct retro_keybind *bind_minus   = NULL;
+   const struct retro_keybind *bind_plus    = NULL;
+   const struct retro_keybind *bind_x_minus = NULL;
+   const struct retro_keybind *bind_x_plus  = NULL;
+   const struct retro_keybind *bind_y_minus = NULL;
+   const struct retro_keybind *bind_y_plus  = NULL;
+
+   input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus);
+
+   bind_minus                             = &binds[ident_minus];
+   bind_plus                              = &binds[ident_plus];
+
+   if (!bind_minus->valid || !bind_plus->valid)
+      return 0;
+
+   input_conv_analog_id_to_bind_id(idx, RETRO_DEVICE_ID_ANALOG_X, ident_x_minus, ident_x_plus);
+
+   bind_x_minus = &binds[ident_x_minus];
+   bind_x_plus  = &binds[ident_x_plus];
+
+   if (!bind_x_minus->valid || !bind_x_plus->valid)
+      return 0;
+
+   input_conv_analog_id_to_bind_id(idx, RETRO_DEVICE_ID_ANALOG_Y, ident_y_minus, ident_y_plus);
+
+   bind_y_minus = &binds[ident_y_minus];
+   bind_y_plus  = &binds[ident_y_plus];
+
+   if (!bind_y_minus->valid || !bind_y_plus->valid)
+      return 0;
+
    {
-      /* A RETRO_DEVICE_JOYPAD button?
-       * Otherwise, not a suitable button */
-      if (ident < RARCH_FIRST_CUSTOM_BIND)
+      uint32_t axis_minus      = (bind_minus->joyaxis   == AXIS_NONE)
+         ? joypad_info->auto_binds[ident_minus].joyaxis
+         : bind_minus->joyaxis;
+      uint32_t axis_plus       = (bind_plus->joyaxis    == AXIS_NONE)
+         ? joypad_info->auto_binds[ident_plus].joyaxis
+         : bind_plus->joyaxis;
+      int16_t pressed_minus    = 0;
+      int16_t pressed_plus     = 0;
+      float normal_mag         = 0.0f;
+
+      /* normalized magnitude of stick actuation, needed for scaled
+       * radial deadzone */
+      if (input_analog_deadzone)
       {
-         uint32_t axis = 0;
-         const struct retro_keybind *bind = &binds[ ident ];
-
-         if (!bind->valid)
-            return 0;
-
-         axis = (bind->joyaxis == AXIS_NONE)
-            ? joypad_info->auto_binds[ident].joyaxis
-            : bind->joyaxis;
-
-         /* Analog button. */
-         {
-            float normal_mag = 0.0f;
-            if (input_analog_deadzone)
-               normal_mag = fabs((1.0f / 0x7fff) * drv->axis(
-                        joypad_info->joy_idx, axis));
-            res = abs(input_joypad_axis(p_rarch, drv,
-                     joypad_info->joy_idx, axis, normal_mag));
-         }
-
-         /* If the result is zero, it's got a digital button
-          * attached to it instead */
-         if (res == 0)
-         {
-            uint16_t key = (bind->joykey == NO_BTN)
-               ? joypad_info->auto_binds[ident].joykey
-               : bind->joykey;
-
-            if (drv->button(joypad_info->joy_idx, key))
-               res = 0x7fff;
-         }
+         uint32_t x_axis_minus    = (bind_x_minus->joyaxis == AXIS_NONE)
+            ? joypad_info->auto_binds[ident_x_minus].joyaxis
+            : bind_x_minus->joyaxis;
+         uint32_t x_axis_plus     = (bind_x_plus->joyaxis  == AXIS_NONE)
+            ? joypad_info->auto_binds[ident_x_plus].joyaxis
+            : bind_x_plus->joyaxis;
+         uint32_t y_axis_minus    = (bind_y_minus->joyaxis == AXIS_NONE)
+            ? joypad_info->auto_binds[ident_y_minus].joyaxis
+            : bind_y_minus->joyaxis;
+         uint32_t y_axis_plus     = (bind_y_plus->joyaxis  == AXIS_NONE)
+            ? joypad_info->auto_binds[ident_y_plus].joyaxis
+            : bind_y_plus->joyaxis;
+         /* normalized magnitude for radial scaled analog deadzone */
+         float x                  = drv->axis(
+               joypad_info->joy_idx, x_axis_plus)
+            + drv->axis(joypad_info->joy_idx, x_axis_minus);
+         float y                  = drv->axis(
+               joypad_info->joy_idx, y_axis_plus)
+            + drv->axis(joypad_info->joy_idx, y_axis_minus);
+         normal_mag = (1.0f / 0x7fff) * sqrt(x * x + y * y);
       }
+
+      pressed_minus = abs(
+            input_joypad_axis(p_rarch,
+               drv, joypad_info->joy_idx,
+               axis_minus, normal_mag));
+      pressed_plus  = abs(
+            input_joypad_axis(p_rarch,
+               drv, joypad_info->joy_idx,
+               axis_plus, normal_mag));
+      res           = pressed_plus - pressed_minus;
    }
-   else
+
+   if (res == 0)
    {
-      /* Analog sticks. Either RETRO_DEVICE_INDEX_ANALOG_LEFT
-       * or RETRO_DEVICE_INDEX_ANALOG_RIGHT */
+      uint16_t key_minus    = (bind_minus->joykey == NO_BTN)
+         ? joypad_info->auto_binds[ident_minus].joykey
+         : bind_minus->joykey;
+      uint16_t key_plus     = (bind_plus->joykey  == NO_BTN)
+         ? joypad_info->auto_binds[ident_plus].joykey
+         : bind_plus->joykey;
+      int16_t digital_left  = drv->button(joypad_info->joy_idx, key_minus)
+         ? -0x7fff : 0;
+      int16_t digital_right = drv->button(joypad_info->joy_idx, key_plus)
+         ? 0x7fff  : 0;
 
-      unsigned ident_minus                     = 0;
-      unsigned ident_plus                      = 0;
-      unsigned ident_x_minus                   = 0;
-      unsigned ident_x_plus                    = 0;
-      unsigned ident_y_minus                   = 0;
-      unsigned ident_y_plus                    = 0;
-      const struct retro_keybind *bind_minus   = NULL;
-      const struct retro_keybind *bind_plus    = NULL;
-      const struct retro_keybind *bind_x_minus = NULL;
-      const struct retro_keybind *bind_x_plus  = NULL;
-      const struct retro_keybind *bind_y_minus = NULL;
-      const struct retro_keybind *bind_y_plus  = NULL;
-
-      input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus);
-
-      bind_minus                             = &binds[ident_minus];
-      bind_plus                              = &binds[ident_plus];
-
-      if (!bind_minus->valid || !bind_plus->valid)
-         return 0;
-
-      input_conv_analog_id_to_bind_id(idx, RETRO_DEVICE_ID_ANALOG_X, ident_x_minus, ident_x_plus);
-
-      bind_x_minus = &binds[ident_x_minus];
-      bind_x_plus  = &binds[ident_x_plus];
-
-      if (!bind_x_minus->valid || !bind_x_plus->valid)
-         return 0;
-
-      input_conv_analog_id_to_bind_id(idx, RETRO_DEVICE_ID_ANALOG_Y, ident_y_minus, ident_y_plus);
-
-      bind_y_minus = &binds[ident_y_minus];
-      bind_y_plus  = &binds[ident_y_plus];
-
-      if (!bind_y_minus->valid || !bind_y_plus->valid)
-         return 0;
-
-      {
-         uint32_t axis_minus      = (bind_minus->joyaxis   == AXIS_NONE)
-            ? joypad_info->auto_binds[ident_minus].joyaxis
-            : bind_minus->joyaxis;
-         uint32_t axis_plus       = (bind_plus->joyaxis    == AXIS_NONE)
-            ? joypad_info->auto_binds[ident_plus].joyaxis
-            : bind_plus->joyaxis;
-         int16_t pressed_minus    = 0;
-         int16_t pressed_plus     = 0;
-         float normal_mag         = 0.0f;
-
-         /* normalized magnitude of stick actuation, needed for scaled
-          * radial deadzone */
-         if (input_analog_deadzone)
-         {
-            uint32_t x_axis_minus    = (bind_x_minus->joyaxis == AXIS_NONE)
-               ? joypad_info->auto_binds[ident_x_minus].joyaxis
-               : bind_x_minus->joyaxis;
-            uint32_t x_axis_plus     = (bind_x_plus->joyaxis  == AXIS_NONE)
-               ? joypad_info->auto_binds[ident_x_plus].joyaxis
-               : bind_x_plus->joyaxis;
-            uint32_t y_axis_minus    = (bind_y_minus->joyaxis == AXIS_NONE)
-               ? joypad_info->auto_binds[ident_y_minus].joyaxis
-               : bind_y_minus->joyaxis;
-            uint32_t y_axis_plus     = (bind_y_plus->joyaxis  == AXIS_NONE)
-               ? joypad_info->auto_binds[ident_y_plus].joyaxis
-               : bind_y_plus->joyaxis;
-            /* normalized magnitude for radial scaled analog deadzone */
-            float x                  = drv->axis(
-                  joypad_info->joy_idx, x_axis_plus)
-               + drv->axis(joypad_info->joy_idx, x_axis_minus);
-            float y                  = drv->axis(
-                  joypad_info->joy_idx, y_axis_plus)
-               + drv->axis(joypad_info->joy_idx, y_axis_minus);
-            normal_mag = (1.0f / 0x7fff) * sqrt(x * x + y * y);
-         }
-
-         pressed_minus = abs(
-               input_joypad_axis(p_rarch,
-                  drv, joypad_info->joy_idx,
-                  axis_minus, normal_mag));
-         pressed_plus  = abs(
-               input_joypad_axis(p_rarch,
-                  drv, joypad_info->joy_idx,
-                  axis_plus, normal_mag));
-         res           = pressed_plus - pressed_minus;
-      }
-
-      if (res == 0)
-      {
-         uint16_t key_minus    = (bind_minus->joykey == NO_BTN)
-            ? joypad_info->auto_binds[ident_minus].joykey
-            : bind_minus->joykey;
-         uint16_t key_plus     = (bind_plus->joykey  == NO_BTN)
-            ? joypad_info->auto_binds[ident_plus].joykey
-            : bind_plus->joykey;
-         int16_t digital_left  = drv->button(joypad_info->joy_idx, key_minus)
-            ? -0x7fff : 0;
-         int16_t digital_right = drv->button(joypad_info->joy_idx, key_plus)
-            ? 0x7fff  : 0;
-
-         return digital_right + digital_left;
-      }
+      return digital_right + digital_left;
    }
 
    return res;
