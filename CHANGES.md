@@ -1,4 +1,5 @@
 # Future
+- CHEEVOS: Restore display of unlocked achievements across hardcore modes
 - CHEEVOS: Hash buffered data when available
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 
