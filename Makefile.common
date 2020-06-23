@@ -571,6 +571,12 @@ ifeq ($(HAVE_BLUETOOTH), 1)
    OBJ += bluetooth/drivers/bluetoothctl.o
 endif
 
+ifeq ($(HAVE_BLUETOOTH), 1)
+   ifeq ($(HAVE_DBUS), 1)
+      OBJ += bluetooth/drivers/bluez.o
+   endif
+endif
+
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += wifi/drivers/connmanctl.o
 endif

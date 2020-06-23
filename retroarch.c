@@ -873,6 +873,9 @@ static bluetooth_driver_t bluetooth_null = {
 static const bluetooth_driver_t *bluetooth_drivers[] = {
 #ifdef HAVE_BLUETOOTH
    &bluetooth_bluetoothctl,
+#ifdef HAVE_DBUS
+   &bluetooth_bluez,
+#endif
 #endif
    &bluetooth_null,
    NULL,

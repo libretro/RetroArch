@@ -1157,6 +1157,9 @@ BLUETOOTH
 ============================================================ */
 #ifdef HAVE_BLUETOOTH
 #include "../bluetooth/drivers/bluetoothctl.c"
+#ifdef HAVE_DBUS
+#include "../bluetooth/drivers/bluez.c"
+#endif
 #endif
 
 /*============================================================
