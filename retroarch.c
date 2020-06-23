@@ -2682,6 +2682,10 @@ static void retro_frame_null(const void *data, unsigned width,
 static void retro_run_null(void);
 static void retro_input_poll_null(void);
 
+static const input_device_driver_t *input_driver_get_joypad_driver(void);
+static const input_device_driver_t *input_driver_get_sec_joypad_driver(void);
+static uint64_t input_driver_get_capabilities(void);
+
 static void uninit_libretro_symbols(
       struct rarch_state *p_rarch,
       struct retro_core_t *current_core);
@@ -22443,7 +22447,7 @@ bool input_driver_set_rumble_state(unsigned port,
          port, effect, strength);
 }
 
-const input_device_driver_t *input_driver_get_joypad_driver(void)
+static const input_device_driver_t *input_driver_get_joypad_driver(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->current_input || !p_rarch->current_input->get_joypad_driver)
@@ -22451,7 +22455,7 @@ const input_device_driver_t *input_driver_get_joypad_driver(void)
    return p_rarch->current_input->get_joypad_driver(p_rarch->current_input_data);
 }
 
-const input_device_driver_t *input_driver_get_sec_joypad_driver(void)
+static const input_device_driver_t *input_driver_get_sec_joypad_driver(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->current_input || !p_rarch->current_input->get_sec_joypad_driver)
@@ -22459,7 +22463,7 @@ const input_device_driver_t *input_driver_get_sec_joypad_driver(void)
    return p_rarch->current_input->get_sec_joypad_driver(p_rarch->current_input_data);
 }
 
-uint64_t input_driver_get_capabilities(void)
+static uint64_t input_driver_get_capabilities(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->current_input || !p_rarch->current_input->get_capabilities)

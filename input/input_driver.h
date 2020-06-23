@@ -224,12 +224,6 @@ const char* config_get_input_driver_options(void);
 bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
-uint64_t input_driver_get_capabilities(void);
-
-const input_device_driver_t * input_driver_get_joypad_driver(void);
-
-const input_device_driver_t * input_driver_get_sec_joypad_driver(void);
-
 /**
  * input_sensor_set_state:
  * @port               : User number.
