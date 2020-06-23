@@ -23347,7 +23347,7 @@ static void menu_input_driver_toggle(
       menu_input_set_pointer_inhibit(false);
 }
 
-int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
+static int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
 {
    rarch_joypad_info_t joypad_info;
    unsigned type                   = 0;
