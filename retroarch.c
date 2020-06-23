@@ -2806,6 +2806,7 @@ static void menu_input_post_iterate(
       struct rarch_state *p_rarch,
       int *ret, unsigned action,
       retro_time_t current_time);
+static void menu_input_set_pointer_inhibit(bool inhibit);
 static void menu_input_reset(struct rarch_state *p_rarch);
 
 /* TODO/FIXME - public global variables */
@@ -22585,49 +22586,46 @@ static void input_driver_poll(void)
             case RETRO_DEVICE_JOYPAD:
             case RETRO_DEVICE_ANALOG:
                BIT256_CLEAR_ALL_PTR(&current_inputs);
+               if (joypad_driver)
                {
                   unsigned k, j;
+                  int16_t ret = p_rarch->current_input->input_state(
+                        p_rarch->current_input_data,
+                        &joypad_info[i],
+                        p_rarch->libretro_input_binds,
+                        (unsigned)i, RETRO_DEVICE_JOYPAD,
+                        0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
-                  if (joypad_driver)
+                  for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
                   {
-                     int16_t ret = p_rarch->current_input->input_state(
-                              p_rarch->current_input_data,
-                              &joypad_info[i],
-                              p_rarch->libretro_input_binds,
-                              (unsigned)i, RETRO_DEVICE_JOYPAD,
-                              0, RETRO_DEVICE_ID_JOYPAD_MASK);
-
-                     for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
+                     if (ret & (1 << k))
                      {
-                        if (ret & (1 << k))
-                        {
-                           int16_t      val = input_joypad_analog(
-                                 joypad_driver, &joypad_info[i], (unsigned)i,
-                                 RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
-                                 p_rarch->libretro_input_binds[i]);
+                        int16_t      val = input_joypad_analog(
+                              joypad_driver, &joypad_info[i], (unsigned)i,
+                              RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
+                              p_rarch->libretro_input_binds[i]);
 
-                           BIT256_SET_PTR(p_new_state, k);
+                        BIT256_SET_PTR(p_new_state, k);
 
-                           if (val)
-                              p_new_state->analog_buttons[k] = val;
-                        }
+                        if (val)
+                           p_new_state->analog_buttons[k] = val;
                      }
+                  }
 
-                     for (k = 0; k < 2; k++)
+                  for (k = 0; k < 2; k++)
+                  {
+                     for (j = 0; j < 2; j++)
                      {
-                        for (j = 0; j < 2; j++)
-                        {
-                           unsigned offset = 0 + (k * 4) + (j * 2);
-                           int16_t     val = input_joypad_analog(
-                                 joypad_driver,
-                                 &joypad_info[i], (unsigned)i, k, j,
-                                 p_rarch->libretro_input_binds[i]);
+                        unsigned offset = 0 + (k * 4) + (j * 2);
+                        int16_t     val = input_joypad_analog(
+                              joypad_driver,
+                              &joypad_info[i], (unsigned)i, k, j,
+                              p_rarch->libretro_input_binds[i]);
 
-                           if (val >= 0)
-                              p_new_state->analogs[offset]   = val;
-                           else
-                              p_new_state->analogs[offset+1] = val;
-                        }
+                        if (val >= 0)
+                           p_new_state->analogs[offset]   = val;
+                        else
+                           p_new_state->analogs[offset+1] = val;
                      }
                   }
                }
@@ -24019,7 +24017,9 @@ void menu_input_set_pointer_y_accel(float y_accel)
    menu_input->pointer.y_accel    = y_accel;
 }
 
-void menu_input_set_pointer_inhibit(bool inhibit)
+/* Inhibits pointer 'select' and 'cancel' actions
+ * (until the next time 'select'/'cancel' are released) */
+static void menu_input_set_pointer_inhibit(bool inhibit)
 {
    struct rarch_state  *p_rarch   = &rarch_st;
    menu_input_t     *menu_input   = &p_rarch->menu_input_state;
