@@ -1,4 +1,5 @@
 # Future
+- CHEEVOS: Hash buffered data when available
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 
 # 1.8.9
