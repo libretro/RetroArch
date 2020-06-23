@@ -632,9 +632,6 @@ INPUT
 #include "../tasks/task_audio_mixer.c"
 #endif
 #include "../input/input_keymaps.c"
-#ifdef HAVE_CONFIGFILE
-#include "../input/input_remapping.c"
-#endif
 
 #ifdef HAVE_OVERLAY
 #include "../led/drivers/led_overlay.c"

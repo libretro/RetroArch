@@ -275,7 +275,6 @@ OBJ += \
 
 ifeq ($(HAVE_CONFIGFILE), 1)
    DEFINES += -DHAVE_CONFIGFILE
-	OBJ += input/input_remapping.o
 endif
 
 ifeq ($(HAVE_BLISSBOX), 1)
