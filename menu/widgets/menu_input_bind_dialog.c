@@ -518,9 +518,9 @@ bool menu_input_key_bind_set_mode(
    binds->port              = settings->uints.input_joypad_map[index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(
-         &menu_input_binds);
+         binds);
    menu_input_key_bind_poll_bind_state(
-         &menu_input_binds, false);
+         binds, false);
 
    rarch_timer_begin_new_time_us(
          &binds->timer_hold, input_bind_hold_us);
@@ -560,6 +560,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
    settings_t *        settings   = config_get_ptr();
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+   struct menu_bind_state *_binds = &menu_input_binds;
 
    if (!bind)
       return false;
@@ -567,15 +568,15 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
    snprintf(bind->s, bind->len,
          "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
          input_config_bind_map_get_desc(
-            menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN),
-         rarch_timer_get_timeout(&menu_input_binds.timer_timeout),
+            _binds->begin - MENU_SETTINGS_BIND_BEGIN),
+         rarch_timer_get_timeout(&_binds->timer_timeout),
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 
    /* Tick main timers */
-   rarch_timer_tick(&menu_input_binds.timer_timeout, current_time);
-   rarch_timer_tick(&menu_input_binds.timer_hold, current_time);
+   rarch_timer_tick(&_binds->timer_timeout, current_time);
+   rarch_timer_tick(&_binds->timer_hold, current_time);
 
-   if (rarch_timer_has_expired(&menu_input_binds.timer_timeout))
+   if (rarch_timer_has_expired(&_binds->timer_timeout))
    {
       input_driver_t *input_drv = input_get_ptr();
 
@@ -583,17 +584,17 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
          input_drv->keyboard_mapping_blocked = false;
 
       /*skip to next bind*/
-      menu_input_binds.begin++;
-      menu_input_binds.output++;
-      rarch_timer_begin_new_time_us(&menu_input_binds.timer_hold,
+      _binds->begin++;
+      _binds->output++;
+      rarch_timer_begin_new_time_us(&_binds->timer_hold,
             input_bind_hold_us);
-      rarch_timer_begin_new_time_us(&menu_input_binds.timer_timeout,
+      rarch_timer_begin_new_time_us(&_binds->timer_timeout,
             input_bind_timeout_us);
       timed_out = true;
    }
 
    /* binds.begin is updated in keyboard_press callback. */
-   if (menu_input_binds.begin > menu_input_binds.last)
+   if (_binds->begin > _binds->last)
    {
       /* Avoid new binds triggering things right away. */
       input_driver_set_flushing_input();
