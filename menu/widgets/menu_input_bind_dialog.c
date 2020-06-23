@@ -75,23 +75,24 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    settings_t     *settings       = config_get_ptr();
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+   struct menu_bind_state *binds  = &menu_input_binds;
 
    /* store key in bind */
-   menu_input_binds.buffer.key = (enum retro_key)code;
+   binds->buffer.key = (enum retro_key)code;
 
    /* write out the bind */
-   *(menu_input_binds.output)  = menu_input_binds.buffer;
+   *(binds->output)  = binds->buffer;
 
    /* next bind */
-   menu_input_binds.begin++;
-   menu_input_binds.output++;
-   menu_input_binds.buffer    =* (menu_input_binds.output);
+   binds->begin++;
+   binds->output++;
+   binds->buffer    =* (binds->output);
    rarch_timer_begin_new_time_us(
-         &menu_input_binds.timer_hold, input_bind_hold_us);
+         &binds->timer_hold, input_bind_hold_us);
    rarch_timer_begin_new_time_us(
-         &menu_input_binds.timer_timeout, input_bind_timeout_us);
+         &binds->timer_timeout, input_bind_timeout_us);
 
-   return (menu_input_binds.begin <= menu_input_binds.last);
+   return (binds->begin <= binds->last);
 }
 
 static int menu_input_key_bind_set_mode_common(
@@ -361,6 +362,7 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
    return false;
 }
 
+#ifdef ANDROID
 static bool menu_input_key_bind_poll_find_hold_pad(
       struct menu_bind_state *new_state,
      struct retro_keybind * output,
@@ -445,6 +447,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 
    return false;
 }
+#endif
 
 static bool menu_input_key_bind_poll_find_trigger(
       struct menu_bind_state *state,
@@ -504,6 +507,7 @@ bool menu_input_key_bind_set_mode(
       * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout 
       * 1000000;
+   struct menu_bind_state *binds  = &menu_input_binds;
 
    if (!setting || !menu)
       return false;
@@ -511,7 +515,7 @@ bool menu_input_key_bind_set_mode(
       return false;
 
    index_offset             = setting->index_offset;
-   menu_input_binds.port    = settings->uints.input_joypad_map[index_offset];
+   binds->port              = settings->uints.input_joypad_map[index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(
          &menu_input_binds);
@@ -519,9 +523,9 @@ bool menu_input_key_bind_set_mode(
          &menu_input_binds, false);
 
    rarch_timer_begin_new_time_us(
-         &menu_input_binds.timer_hold, input_bind_hold_us);
+         &binds->timer_hold, input_bind_hold_us);
    rarch_timer_begin_new_time_us(
-         &menu_input_binds.timer_timeout, input_bind_timeout_us);
+         &binds->timer_timeout, input_bind_timeout_us);
 
    keys.userdata = menu;
    keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
@@ -539,11 +543,12 @@ bool menu_input_key_bind_set_mode(
 
 bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
 {
+   struct menu_bind_state *binds  = &menu_input_binds;
    if (!lim)
       return false;
 
-   menu_input_binds.begin = lim->min;
-   menu_input_binds.last  = lim->max;
+   binds->begin = lim->min;
+   binds->last  = lim->max;
 
    return true;
 }
