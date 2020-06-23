@@ -105,6 +105,7 @@ static int menu_input_key_bind_set_mode_common(
    unsigned         index_offset = setting->index_offset;
    file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    size_t selection              = menu_navigation_get_selection();
+   struct menu_bind_state *binds = &menu_input_binds;
 
    menu_displaylist_info_init(&info);
 
@@ -118,11 +119,11 @@ static int menu_input_key_bind_set_mode_common(
 
          bind_type                = setting_get_bind_type(setting);
 
-         menu_input_binds.begin   = bind_type;
-         menu_input_binds.last    = bind_type;
-         menu_input_binds.output  = keybind;
-         menu_input_binds.buffer  = *(menu_input_binds.output);
-         menu_input_binds.user    = index_offset;
+         binds->begin             = bind_type;
+         binds->last              = bind_type;
+         binds->output            = keybind;
+         binds->buffer            = *(binds->output);
+         binds->user              = index_offset;
 
          info.list                = menu_stack;
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
@@ -135,10 +136,10 @@ static int menu_input_key_bind_set_mode_common(
          menu_displaylist_info_free(&info);
          break;
       case MENU_INPUT_BINDS_CTL_BIND_ALL:
-         menu_input_binds.output  = &input_config_binds[index_offset][0];
-         menu_input_binds.buffer  = *(menu_input_binds.output);
-         menu_input_binds.begin   = MENU_SETTINGS_BIND_BEGIN;
-         menu_input_binds.last    = MENU_SETTINGS_BIND_LAST;
+         binds->output            = &input_config_binds[index_offset][0];
+         binds->buffer            = *(binds->output);
+         binds->begin             = MENU_SETTINGS_BIND_BEGIN;
+         binds->last              = MENU_SETTINGS_BIND_LAST;
 
          info.list                = menu_stack;
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
@@ -607,47 +608,47 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
    }
 
    {
-      bool complete                = false;
-      struct menu_bind_state binds = menu_input_binds;
-      input_driver_t *input_drv    = input_get_ptr();
+      bool complete                    = false;
+      struct menu_bind_state new_binds = *_binds;
+      input_driver_t *input_drv        = input_get_ptr();
 
       if (input_drv)
          input_drv->keyboard_mapping_blocked = true;
 
-      menu_input_key_bind_poll_bind_state(&binds, timed_out);
+      menu_input_key_bind_poll_bind_state(&new_binds, timed_out);
 
 #ifdef ANDROID
       /* Keep resetting bind during the hold period, 
        * or we'll potentially bind joystick and mouse, etc.*/
-      binds.buffer = *(binds.output);
+      new_binds.buffer = *(new_binds.output);
 
-      if (menu_input_key_bind_poll_find_hold(&binds, &binds.buffer))
+      if (menu_input_key_bind_poll_find_hold(&new_binds, &new_binds.buffer))
       {
          /* Inhibit timeout*/
-         rarch_timer_begin_new_time_us(&binds.timer_timeout,
+         rarch_timer_begin_new_time_us(&new_binds.timer_timeout,
                input_bind_timeout_us);
 
          /* Run hold timer*/
-         rarch_timer_tick(&binds.timer_hold, current_time);
+         rarch_timer_tick(&new_binds.timer_hold, current_time);
 
          snprintf(bind->s, bind->len,
                "[%s]\npress keyboard, mouse or joypad\nand hold ...",
                input_config_bind_map_get_desc(
-                  menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN));
+                  _binds->begin - MENU_SETTINGS_BIND_BEGIN));
 
          /* Hold complete? */
-         if (rarch_timer_has_expired(&binds.timer_hold))
+         if (rarch_timer_has_expired(&new_binds.timer_hold))
             complete = true;
       }
       else
       {
          /* Reset hold countdown*/
-         rarch_timer_begin_new_time_us(&binds.timer_hold, input_bind_hold_us);
+         rarch_timer_begin_new_time_us(&new_binds.timer_hold, input_bind_hold_us);
       }
 #else
-      if ((binds.skip && !menu_input_binds.skip) ||
+      if ((new_binds.skip && !_binds->skip) ||
             menu_input_key_bind_poll_find_trigger(
-               &menu_input_binds, &binds, &(binds.buffer)))
+               _binds, &new_binds, &(new_binds.buffer)))
          complete = true;
 #endif
 
@@ -656,7 +657,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
          input_driver_t *input_drv    = input_get_ptr();
 
          /* Update bind */
-         *(binds.output) = binds.buffer;
+         *(new_binds.output)          = new_binds.buffer;
 
          if (input_drv)
             input_drv->keyboard_mapping_blocked = false;
@@ -664,22 +665,22 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
          /* Avoid new binds triggering things right away. */
          input_driver_set_flushing_input();
 
-         binds.begin++;
+         new_binds.begin++;
 
-         if (binds.begin > binds.last)
+         if (new_binds.begin > new_binds.last)
          {
             input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
             return true;
          }
 
          /*next bind*/
-         binds.output++;
-         binds.buffer = *(binds.output);
-         rarch_timer_begin_new_time_us(&binds.timer_hold, input_bind_hold_us);
-         rarch_timer_begin_new_time_us(&binds.timer_timeout, input_bind_timeout_us);
+         new_binds.output++;
+         new_binds.buffer = *(new_binds.output);
+         rarch_timer_begin_new_time_us(&new_binds.timer_hold, input_bind_hold_us);
+         rarch_timer_begin_new_time_us(&new_binds.timer_timeout, input_bind_timeout_us);
       }
 
-      menu_input_binds = binds;
+      *(_binds) = new_binds;
    }
 
    /* Pointer input must be inhibited on each
