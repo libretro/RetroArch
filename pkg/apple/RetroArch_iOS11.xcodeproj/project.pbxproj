@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		04E628F224A2C15300743DB1 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 04E628F124A2C15300743DB1 /* libz.tbd */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
-		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		9204BE131D319EF300BD49DB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
 		9204BE141D319EF300BD49DB /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		9204BE151D319EF300BD49DB /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
@@ -33,8 +33,6 @@
 		926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 926C77E221FD1E6700103EDE /* Assets.xcassets */; };
 		926C77EA21FD20C100103EDE /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		926C77EB21FD20C400103EDE /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
-		926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77EE21FD263800103EDE /* AudioToolbox.framework */; };
-		926C77F121FD26E800103EDE /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77F021FD26E800103EDE /* GameController.framework */; };
 		929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
 		92CC05A321FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
@@ -74,10 +72,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		04E628F124A2C15300743DB1 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
-		5040F04F1AE47ED4006F6972 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
 		50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
@@ -92,9 +90,6 @@
 		926C77D721FD1E6500103EDE /* RetroArchTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		926C77E221FD1E6700103EDE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		926C77E421FD1E6700103EDE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		926C77EC21FD261600103EDE /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = DEVELOPER_DIR; };
-		926C77EE21FD263800103EDE /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/AudioToolbox.framework; sourceTree = DEVELOPER_DIR; };
-		926C77F021FD26E800103EDE /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/GameController.framework; sourceTree = DEVELOPER_DIR; };
 		92CC058021FE3C1700FF79F0 /* GCDWebServerFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebServerFunctions.h; sourceTree = "<group>"; };
 		92CC058121FE3C1700FF79F0 /* GCDWebServerPrivate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebServerPrivate.h; sourceTree = "<group>"; };
 		92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebServerResponse.m; sourceTree = "<group>"; };
@@ -155,7 +150,7 @@
 			files = (
 				92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */,
 				92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */,
-				9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */,
+				04E628F224A2C15300743DB1 /* libz.tbd in Frameworks */,
 				9204BE131D319EF300BD49DB /* QuartzCore.framework in Frameworks */,
 				9204BE141D319EF300BD49DB /* GameController.framework in Frameworks */,
 				9204BE151D319EF300BD49DB /* CoreText.framework in Frameworks */,
@@ -177,8 +172,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				926C77F121FD26E800103EDE /* GameController.framework in Frameworks */,
-				926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -355,10 +348,7 @@
 			children = (
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
 				92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */,
-				926C77F021FD26E800103EDE /* GameController.framework */,
-				926C77EE21FD263800103EDE /* AudioToolbox.framework */,
-				926C77EC21FD261600103EDE /* CoreAudio.framework */,
-				5040F04F1AE47ED4006F6972 /* libz.dylib */,
+				04E628F124A2C15300743DB1 /* libz.tbd */,
 				50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */,
 				696012F119F3389A006A1088 /* CoreText.framework */,
 				963C3C33186E3DED00A6EB1E /* GameController.framework */,
