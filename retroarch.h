@@ -1538,12 +1538,6 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 
 void video_driver_cached_frame(void);
 
-void video_driver_default_settings(void);
-
-void video_driver_load_settings(config_file_t *conf);
-
-void video_driver_save_settings(config_file_t *conf);
-
 bool video_driver_is_hw_context(void);
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void);

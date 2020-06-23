@@ -1979,6 +1979,20 @@ static struct config_int_setting *populate_settings_int(
    return tmp;
 }
 
+static void video_driver_default_settings(void)
+{
+   global_t                             *global  = global_get_ptr();
+
+   if (!global)
+      return;
+
+   global->console.screen.gamma_correction       = DEFAULT_GAMMA;
+   global->console.flickerfilter_enable          = false;
+   global->console.softfilter_enable             = false;
+
+   global->console.screen.resolutions.current.id = 0;
+}
+
 /**
  * config_set_defaults:
  *
@@ -2758,6 +2772,39 @@ error:
    free(app_path);
    return NULL;
 }
+
+#ifdef RARCH_CONSOLE
+static void video_driver_load_settings(config_file_t *conf)
+{
+   bool               tmp_bool = false;
+   global_t            *global = global_get_ptr();
+
+   if (!conf)
+      return;
+
+   CONFIG_GET_INT_BASE(conf, global,
+         console.screen.gamma_correction, "gamma_correction");
+
+   if (config_get_bool(conf, "flicker_filter_enable",
+         &tmp_bool))
+      global->console.flickerfilter_enable = tmp_bool;
+
+   if (config_get_bool(conf, "soft_filter_enable",
+         &tmp_bool))
+      global->console.softfilter_enable = tmp_bool;
+
+   CONFIG_GET_INT_BASE(conf, global,
+         console.screen.soft_filter_index,
+         "soft_filter_index");
+   CONFIG_GET_INT_BASE(conf, global,
+         console.screen.resolutions.current.id,
+         "current_resolution_id");
+   CONFIG_GET_INT_BASE(conf, global,
+         console.screen.flicker_filter_index,
+         "flicker_filter_index");
+}
+#endif
+
 /**
  * config_load:
  * @path                : path to be read from.
@@ -3688,6 +3735,28 @@ static void config_parse_file(global_t *global)
       }
    }
 }
+
+static void video_driver_save_settings(config_file_t *conf)
+{
+   global_t            *global = global_get_ptr();
+   if (!conf)
+      return;
+
+   config_set_int(conf, "gamma_correction",
+         global->console.screen.gamma_correction);
+   config_set_bool(conf, "flicker_filter_enable",
+         global->console.flickerfilter_enable);
+   config_set_bool(conf, "soft_filter_enable",
+         global->console.softfilter_enable);
+
+   config_set_int(conf, "soft_filter_index",
+         global->console.screen.soft_filter_index);
+   config_set_int(conf, "current_resolution_id",
+         global->console.screen.resolutions.current.id);
+   config_set_int(conf, "flicker_filter_index",
+         global->console.screen.flicker_filter_index);
+}
+
 /**
  * config_save_autoconf_profile:
  * @path            : Path that shall be written to.
