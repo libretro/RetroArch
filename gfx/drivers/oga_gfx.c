@@ -41,7 +41,6 @@
 #include "../../retroarch.h"
 
 #include <go2/display.h>
-#include <drm/drm_fourcc.h>
 
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -133,6 +132,9 @@ static void *oga_gfx_init(const video_info_t *video,
    vid = (oga_video_t*)calloc(1, sizeof(*vid));
 
    vid->menu_frame = NULL;
+   vid->menu_width = 0;
+   vid->menu_height = 0;
+   vid->menu_pitch = 0;
    vid->display = go2_display_create();
    vid->presenter = go2_presenter_create(vid->display, DRM_FORMAT_RGB565, 0xff000000, false);
    vid->menu_surface = go2_surface_create(vid->display, NATIVE_WIDTH, NATIVE_HEIGHT, DRM_FORMAT_XRGB8888);
@@ -249,9 +251,20 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
          go2_surface_format_get(dst_surface)) / 8;
    bool                 menu_is_alive = video_info->menu_is_alive;
 
+   if (unlikely(!frame || width == 0 || height == 0))
+      return true;
+
+   if (unlikely(video_info->input_driver_nonblock_state) && !vid->threaded)
+   {
+      if (frame_count % 4 != 0)
+          return true;
+   }
+
 #ifdef HAVE_MENU
    if (unlikely(menu_is_alive))
    {
+      if (unlikely(vid->menu_width == 0))
+         return true;
       menu_driver_frame(menu_is_alive, video_info);
       dst_surface = vid->menu_surface;
       src         = (uint8_t*)vid->menu_frame;
@@ -261,15 +274,6 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
       bpp         = vid->menu_pitch / vid->menu_width;
    }
 #endif
-
-   if (unlikely(!frame || width == 0 || height == 0))
-      return true;
-
-   if (unlikely(video_info->input_driver_nonblock_state) && !vid->threaded)
-   {
-      if (frame_count % 4 != 0)
-          return true;
-   }
 
    /* copy buffer to surface */
    dst        = (uint8_t*)go2_surface_map(dst_surface);
