@@ -1290,7 +1290,6 @@ MENU
 
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
-#include "../menu/widgets/menu_input_bind_dialog.c"
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
 #include "../menu/cbs/menu_cbs_select.c"

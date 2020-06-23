@@ -1388,6 +1388,11 @@ static const camera_driver_t *camera_drivers[] = {
 
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
 #define DATETIME_CHECK_INTERVAL    1000000
+
+#define MENU_MAX_BUTTONS           219
+#define MENU_MAX_AXES              32
+#define MENU_MAX_HATS              4
+#define MENU_MAX_MBUTTONS          32 /* Enough to cover largest libretro constant*/
 #endif
 
 /* Descriptive names for options without short variant.
@@ -1737,6 +1742,42 @@ struct menu_state
    /* Storage container for current menu datetime
     * representation string */
    char datetime_cache[255];
+};
+
+struct menu_bind_state_port
+{
+   bool mouse_buttons[MENU_MAX_MBUTTONS];
+   bool buttons[MENU_MAX_BUTTONS];
+   int16_t axes[MENU_MAX_AXES];
+   uint16_t hats[MENU_MAX_HATS];
+};
+
+struct menu_bind_axis_state
+{
+   /* Default axis state. */
+   int16_t rested_axes[MENU_MAX_AXES];
+   /* Locked axis state. If we configured an axis,
+    * avoid having the same axis state trigger something again right away. */
+   int16_t locked_axes[MENU_MAX_AXES];
+};
+
+struct menu_bind_state
+{
+   bool skip;
+
+   unsigned begin;
+   unsigned last;
+   unsigned user;
+   unsigned port;
+
+   struct retro_keybind * output;
+   struct retro_keybind buffer;
+
+   rarch_timer_t timer_timeout;
+   rarch_timer_t timer_hold;
+
+   struct menu_bind_state_port state[MAX_USERS];
+   struct menu_bind_axis_state axis_state[MAX_USERS];
 };
 #endif
 
@@ -2175,6 +2216,7 @@ struct rarch_state
 #endif
 #ifdef HAVE_MENU
    menu_dialog_t dialog_st;
+   struct menu_bind_state menu_input_binds;
 #endif
    videocrt_switch_t crt_switch_st;
 
@@ -2909,6 +2951,633 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_UNDO,           "Undo"},
    {RETROK_OEM_102,        "OEM-102"}
 };
+
+static bool menu_input_key_bind_custom_bind_keyboard_cb(
+      void *data, unsigned code)
+{
+   struct rarch_state *p_rarch    = &rarch_st;
+   settings_t     *settings       = p_rarch->configuration_settings;
+   struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+
+   /* store key in bind */
+   binds->buffer.key = (enum retro_key)code;
+
+   /* write out the bind */
+   *(binds->output)  = binds->buffer;
+
+   /* next bind */
+   binds->begin++;
+   binds->output++;
+   binds->buffer    =* (binds->output);
+   rarch_timer_begin_new_time_us(
+         &binds->timer_hold, input_bind_hold_us);
+   rarch_timer_begin_new_time_us(
+         &binds->timer_timeout, input_bind_timeout_us);
+
+   return (binds->begin <= binds->last);
+}
+
+static int menu_input_key_bind_set_mode_common(
+      enum menu_input_binds_ctl_state state,
+      rarch_setting_t  *setting)
+{
+   menu_displaylist_info_t info;
+   unsigned bind_type             = 0;
+   struct retro_keybind *keybind  = NULL;
+   unsigned         index_offset  = setting->index_offset;
+   file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
+   size_t selection               = menu_navigation_get_selection();
+   struct rarch_state *p_rarch    = &rarch_st;
+   settings_t     *settings       = p_rarch->configuration_settings;
+   struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
+
+   menu_displaylist_info_init(&info);
+
+   switch (state)
+   {
+      case MENU_INPUT_BINDS_CTL_BIND_SINGLE:
+         keybind    = (struct retro_keybind*)setting->value.target.keybind;
+
+         if (!keybind)
+            return -1;
+
+         bind_type                = setting_get_bind_type(setting);
+
+         binds->begin             = bind_type;
+         binds->last              = bind_type;
+         binds->output            = keybind;
+         binds->buffer            = *(binds->output);
+         binds->user              = index_offset;
+
+         info.list                = menu_stack;
+         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+         info.directory_ptr       = selection;
+         info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
+         info.label               = strdup(
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND));
+         if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
+            menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
+         break;
+      case MENU_INPUT_BINDS_CTL_BIND_ALL:
+         binds->output            = &input_config_binds[index_offset][0];
+         binds->buffer            = *(binds->output);
+         binds->begin             = MENU_SETTINGS_BIND_BEGIN;
+         binds->last              = MENU_SETTINGS_BIND_LAST;
+
+         info.list                = menu_stack;
+         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+         info.directory_ptr       = selection;
+         info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
+         info.label               = strdup(
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL));
+
+         if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
+            menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
+         break;
+      default:
+      case MENU_INPUT_BINDS_CTL_BIND_NONE:
+         break;
+   }
+
+   return 0;
+}
+
+static void menu_input_key_bind_poll_bind_get_rested_axes(
+      struct menu_bind_state *state)
+{
+   unsigned a;
+   const input_device_driver_t     *joypad =
+      input_driver_get_joypad_driver();
+   const input_device_driver_t *sec_joypad =
+      input_driver_get_sec_joypad_driver();
+   unsigned port                           = state->port;
+
+   if (!joypad)
+      return;
+
+   /* poll only the relevant port */
+   for (a = 0; a < MENU_MAX_AXES; a++)
+      state->axis_state[port].rested_axes[a] =
+         joypad->axis(port, AXIS_POS(a)) +
+         joypad->axis(port, AXIS_NEG(a));
+
+   if (sec_joypad)
+   {
+      /* poll only the relevant port */
+      for (a = 0; a < MENU_MAX_AXES; a++)
+         state->axis_state[port].rested_axes[a] =
+            sec_joypad->axis(port, AXIS_POS(a)) +
+            sec_joypad->axis(port, AXIS_NEG(a));
+   }
+}
+
+static void menu_input_key_bind_poll_bind_state_internal(
+      const input_device_driver_t *joypad,
+      struct menu_bind_state *state,
+      unsigned port,
+      bool timed_out)
+{
+   unsigned b, a, h;
+   if (!joypad)
+      return;
+
+   if (joypad->poll)
+      joypad->poll();
+
+   /* poll only the relevant port */
+   for (b = 0; b < MENU_MAX_BUTTONS; b++)
+      state->state[port].buttons[b] = joypad->button(port, b);
+
+   for (a = 0; a < MENU_MAX_AXES; a++)
+      state->state[port].axes[a] =
+         joypad->axis(port, AXIS_POS(a)) +
+         joypad->axis(port, AXIS_NEG(a));
+
+   for (h = 0; h < MENU_MAX_HATS; h++)
+   {
+      if (joypad->button(port, HAT_MAP(h, HAT_UP_MASK)))
+         state->state[port].hats[h] |= HAT_UP_MASK;
+      if (joypad->button(port, HAT_MAP(h, HAT_DOWN_MASK)))
+         state->state[port].hats[h] |= HAT_DOWN_MASK;
+      if (joypad->button(port, HAT_MAP(h, HAT_LEFT_MASK)))
+         state->state[port].hats[h] |= HAT_LEFT_MASK;
+      if (joypad->button(port, HAT_MAP(h, HAT_RIGHT_MASK)))
+         state->state[port].hats[h] |= HAT_RIGHT_MASK;
+   }
+}
+
+static void menu_input_key_bind_poll_bind_state(
+      struct menu_bind_state *state,
+      bool timed_out)
+{
+   unsigned b;
+   rarch_joypad_info_t joypad_info;
+   struct rarch_state *p_rarch             = &rarch_st;
+   input_driver_t *input_ptr               = p_rarch->current_input;
+   void *input_data                        = p_rarch->current_input_data;
+   unsigned port                           = state->port;
+   const input_device_driver_t *joypad     =
+      input_driver_get_joypad_driver();
+   const input_device_driver_t *sec_joypad =
+      input_driver_get_sec_joypad_driver();
+
+   memset(state->state, 0, sizeof(state->state));
+
+   /* poll mouse (on the relevant port) */
+   for (b = 0; b < MENU_MAX_MBUTTONS; b++)
+      state->state[port].mouse_buttons[b] =
+         input_mouse_button_raw(port, b);
+
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = NULL;
+   joypad_info.axis_threshold = 0.0f;
+
+   state->skip = timed_out || input_ptr->input_state(input_data,
+         &joypad_info,
+         NULL,
+         0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
+
+   menu_input_key_bind_poll_bind_state_internal(
+         joypad, state, port, timed_out);
+
+   if (sec_joypad)
+      menu_input_key_bind_poll_bind_state_internal(
+            sec_joypad, state, port, timed_out);
+}
+
+static bool menu_input_key_bind_poll_find_trigger_pad(
+      struct menu_bind_state *state,
+      struct menu_bind_state *new_state,
+     struct retro_keybind * output,
+      unsigned p)
+{
+   unsigned a, b, h;
+   const struct menu_bind_state_port *n = (const struct menu_bind_state_port*)
+      &new_state->state[p];
+   const struct menu_bind_state_port *o = (const struct menu_bind_state_port*)
+      &state->state[p];
+
+   for (b = 0; b < MENU_MAX_MBUTTONS; b++)
+   {
+      bool iterate = n->mouse_buttons[b] && !o->mouse_buttons[b];
+
+      if (!iterate)
+         continue;
+
+      switch (b)
+      {
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            output->mbutton = b;
+            return true;
+      }
+   }
+
+   for (b = 0; b < MENU_MAX_BUTTONS; b++)
+   {
+      bool iterate = n->buttons[b] && !o->buttons[b];
+
+      if (!iterate)
+         continue;
+
+      output->joykey = b;
+      output->joyaxis = AXIS_NONE;
+      return true;
+   }
+
+   /* Axes are a bit tricky ... */
+   for (a = 0; a < MENU_MAX_AXES; a++)
+   {
+      int locked_distance = abs(n->axes[a] -
+            new_state->axis_state[p].locked_axes[a]);
+      int rested_distance = abs(n->axes[a] -
+            new_state->axis_state[p].rested_axes[a]);
+
+      if (abs(n->axes[a]) >= 20000 &&
+            locked_distance >= 20000 &&
+            rested_distance >= 20000)
+      {
+         /* Take care of case where axis rests on +/- 0x7fff
+          * (e.g. 360 controller on Linux) */
+         output->joyaxis = n->axes[a] > 0
+            ? AXIS_POS(a) : AXIS_NEG(a);
+         output->joykey = NO_BTN;
+
+         /* Lock the current axis */
+         new_state->axis_state[p].locked_axes[a] =
+            n->axes[a] > 0 ?
+            0x7fff : -0x7fff;
+         return true;
+      }
+
+      if (locked_distance >= 20000) /* Unlock the axis. */
+         new_state->axis_state[p].locked_axes[a] = 0;
+   }
+
+   for (h = 0; h < MENU_MAX_HATS; h++)
+   {
+      uint16_t      trigged = n->hats[h] & (~o->hats[h]);
+      uint16_t sane_trigger = 0;
+
+      if (trigged & HAT_UP_MASK)
+         sane_trigger = HAT_UP_MASK;
+      else if (trigged & HAT_DOWN_MASK)
+         sane_trigger = HAT_DOWN_MASK;
+      else if (trigged & HAT_LEFT_MASK)
+         sane_trigger = HAT_LEFT_MASK;
+      else if (trigged & HAT_RIGHT_MASK)
+         sane_trigger = HAT_RIGHT_MASK;
+
+      if (sane_trigger)
+      {
+         output->joykey = HAT_MAP(h, sane_trigger);
+         output->joyaxis = AXIS_NONE;
+         return true;
+      }
+   }
+
+   return false;
+}
+
+#ifdef ANDROID
+static bool menu_input_key_bind_poll_find_hold_pad(
+      struct menu_bind_state *new_state,
+     struct retro_keybind * output,
+      unsigned p)
+{
+   unsigned a, b, h;
+   const struct menu_bind_state_port *n = 
+      (const struct menu_bind_state_port*)
+      &new_state->state[p];
+
+   for (b = 0; b < MENU_MAX_MBUTTONS; b++)
+   {
+      bool iterate = n->mouse_buttons[b];
+
+      if (!iterate)
+         continue;
+
+      switch (b)
+      {
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            output->mbutton = b;
+            return true;
+      }
+   }
+
+   for (b = 0; b < MENU_MAX_BUTTONS; b++)
+   {
+      bool iterate = n->buttons[b];
+
+      if (!iterate)
+         continue;
+
+      output->joykey = b;
+      output->joyaxis = AXIS_NONE;
+      return true;
+   }
+
+   /* Axes are a bit tricky ... */
+   for (a = 0; a < MENU_MAX_AXES; a++)
+   {
+      if (abs(n->axes[a]) >= 20000)
+      {
+         /* Take care of case where axis rests on +/- 0x7fff
+          * (e.g. 360 controller on Linux) */
+         output->joyaxis = n->axes[a] > 0
+            ? AXIS_POS(a) : AXIS_NEG(a);
+         output->joykey = NO_BTN;
+
+         return true;
+      }
+   }
+
+   for (h = 0; h < MENU_MAX_HATS; h++)
+   {
+      uint16_t      trigged = n->hats[h];
+      uint16_t sane_trigger = 0;
+
+      if (trigged & HAT_UP_MASK)
+         sane_trigger = HAT_UP_MASK;
+      else if (trigged & HAT_DOWN_MASK)
+         sane_trigger = HAT_DOWN_MASK;
+      else if (trigged & HAT_LEFT_MASK)
+         sane_trigger = HAT_LEFT_MASK;
+      else if (trigged & HAT_RIGHT_MASK)
+         sane_trigger = HAT_RIGHT_MASK;
+
+      if (sane_trigger)
+      {
+         output->joykey  = HAT_MAP(h, sane_trigger);
+         output->joyaxis = AXIS_NONE;
+         return true;
+      }
+   }
+
+   return false;
+}
+#endif
+
+static bool menu_input_key_bind_poll_find_trigger(
+      struct menu_bind_state *state,
+      struct menu_bind_state *new_state,
+      struct retro_keybind * output)
+{
+   unsigned i;
+   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+   if (!state || !new_state)
+      return false;
+
+   for (i = 0; i < max_users; i++)
+   {
+      if (!menu_input_key_bind_poll_find_trigger_pad(
+               state, new_state, output, i))
+         continue;
+
+      return true;
+   }
+
+   return false;
+}
+
+#ifdef ANDROID
+static bool menu_input_key_bind_poll_find_hold(
+      struct menu_bind_state *new_state,
+      struct retro_keybind * output)
+{
+   unsigned i;
+   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+   if (!new_state)
+      return false;
+
+   for (i = 0; i < max_users; i++)
+   {
+      if (!menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
+         continue;
+
+      return true;
+   }
+
+   return false;
+}
+#endif
+
+bool menu_input_key_bind_set_mode(
+      enum menu_input_binds_ctl_state state, void *data)
+{
+   unsigned index_offset;
+   input_keyboard_ctx_wait_t keys;
+   rarch_setting_t  *setting      = (rarch_setting_t*)data;
+   menu_handle_t       *menu      = menu_driver_get_ptr();
+   struct rarch_state *p_rarch    = &rarch_st;
+   settings_t     *settings       = p_rarch->configuration_settings;
+   struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    
+      * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout 
+      * 1000000;
+
+   if (!setting || !menu)
+      return false;
+   if (menu_input_key_bind_set_mode_common(state, setting) == -1)
+      return false;
+
+   index_offset             = setting->index_offset;
+   binds->port              = settings->uints.input_joypad_map[index_offset];
+
+   menu_input_key_bind_poll_bind_get_rested_axes(
+         binds);
+   menu_input_key_bind_poll_bind_state(
+         binds, false);
+
+   rarch_timer_begin_new_time_us(
+         &binds->timer_hold, input_bind_hold_us);
+   rarch_timer_begin_new_time_us(
+         &binds->timer_timeout, input_bind_timeout_us);
+
+   keys.userdata = menu;
+   keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
+
+   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
+
+   /* Upon triggering an input bind operation,
+    * pointer input must be inhibited - otherwise
+    * attempting to bind mouse buttons will cause
+    * spurious menu actions */
+   menu_input_set_pointer_inhibit(true);
+
+   return true;
+}
+
+bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
+{
+   struct rarch_state *p_rarch    = &rarch_st;
+   settings_t     *settings       = p_rarch->configuration_settings;
+   struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
+   if (!lim)
+      return false;
+
+   binds->begin = lim->min;
+   binds->last  = lim->max;
+
+   return true;
+}
+
+bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
+      retro_time_t current_time)
+{
+   bool               timed_out   = false;
+   struct rarch_state *p_rarch    = &rarch_st;
+   settings_t     *settings       = p_rarch->configuration_settings;
+   struct menu_bind_state *_binds = &p_rarch->menu_input_binds;
+   input_driver_t *input_drv      = p_rarch->current_input;
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+
+   if (!bind)
+      return false;
+
+   snprintf(bind->s, bind->len,
+         "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
+         input_config_bind_map_get_desc(
+            _binds->begin - MENU_SETTINGS_BIND_BEGIN),
+         rarch_timer_get_timeout(&_binds->timer_timeout),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
+
+   /* Tick main timers */
+   rarch_timer_tick(&_binds->timer_timeout, current_time);
+   rarch_timer_tick(&_binds->timer_hold, current_time);
+
+   if (rarch_timer_has_expired(&_binds->timer_timeout))
+   {
+      if (input_drv)
+         input_drv->keyboard_mapping_blocked = false;
+
+      /*skip to next bind*/
+      _binds->begin++;
+      _binds->output++;
+      rarch_timer_begin_new_time_us(&_binds->timer_hold,
+            input_bind_hold_us);
+      rarch_timer_begin_new_time_us(&_binds->timer_timeout,
+            input_bind_timeout_us);
+      timed_out = true;
+   }
+
+   /* binds.begin is updated in keyboard_press callback. */
+   if (_binds->begin > _binds->last)
+   {
+      /* Avoid new binds triggering things right away. */
+      input_driver_set_flushing_input();
+
+      /* We won't be getting any key events, so just cancel early. */
+      if (timed_out)
+         input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
+
+      return true;
+   }
+
+   {
+      bool complete                    = false;
+      struct menu_bind_state new_binds = *_binds;
+
+      if (input_drv)
+         input_drv->keyboard_mapping_blocked = true;
+
+      menu_input_key_bind_poll_bind_state(&new_binds, timed_out);
+
+#ifdef ANDROID
+      /* Keep resetting bind during the hold period, 
+       * or we'll potentially bind joystick and mouse, etc.*/
+      new_binds.buffer = *(new_binds.output);
+
+      if (menu_input_key_bind_poll_find_hold(&new_binds, &new_binds.buffer))
+      {
+         /* Inhibit timeout*/
+         rarch_timer_begin_new_time_us(&new_binds.timer_timeout,
+               input_bind_timeout_us);
+
+         /* Run hold timer*/
+         rarch_timer_tick(&new_binds.timer_hold, current_time);
+
+         snprintf(bind->s, bind->len,
+               "[%s]\npress keyboard, mouse or joypad\nand hold ...",
+               input_config_bind_map_get_desc(
+                  _binds->begin - MENU_SETTINGS_BIND_BEGIN));
+
+         /* Hold complete? */
+         if (rarch_timer_has_expired(&new_binds.timer_hold))
+            complete = true;
+      }
+      else
+      {
+         /* Reset hold countdown*/
+         rarch_timer_begin_new_time_us(&new_binds.timer_hold, input_bind_hold_us);
+      }
+#else
+      if ((new_binds.skip && !_binds->skip) ||
+            menu_input_key_bind_poll_find_trigger(
+               _binds, &new_binds, &(new_binds.buffer)))
+         complete = true;
+#endif
+
+      if (complete)
+      {
+         /* Update bind */
+         *(new_binds.output)          = new_binds.buffer;
+
+         if (input_drv)
+            input_drv->keyboard_mapping_blocked = false;
+
+         /* Avoid new binds triggering things right away. */
+         input_driver_set_flushing_input();
+
+         new_binds.begin++;
+
+         if (new_binds.begin > new_binds.last)
+         {
+            input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
+            return true;
+         }
+
+         /*next bind*/
+         new_binds.output++;
+         new_binds.buffer = *(new_binds.output);
+         rarch_timer_begin_new_time_us(&new_binds.timer_hold, input_bind_hold_us);
+         rarch_timer_begin_new_time_us(&new_binds.timer_timeout, input_bind_timeout_us);
+      }
+
+      *(_binds) = new_binds;
+   }
+
+   /* Pointer input must be inhibited on each
+    * frame that the bind operation is active -
+    * otherwise attempting to bind mouse buttons
+    * will cause spurious menu actions */
+   menu_input_set_pointer_inhibit(true);
+
+   return false;
+}
 
 /* This sets up all the callback functions for a menu entry.
  *

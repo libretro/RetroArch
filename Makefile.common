@@ -822,7 +822,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/widgets/menu_filebrowser.o \
           menu/widgets/menu_dialog.o \
-          menu/widgets/menu_input_bind_dialog.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
