@@ -1548,7 +1548,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          CORO_STOP();
 
       /* iterate over the possible hashes for the file being loaded */
-      rc_hash_initialize_iterator(&coro->iterator, coro->path, NULL, 0);
+      rc_hash_initialize_iterator(&coro->iterator, coro->path, coro->data, coro->len);
 #ifdef CHEEVOS_TIME_HASH
       start = cpu_features_get_time_usec();
 #endif
