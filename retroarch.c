@@ -2759,11 +2759,15 @@ static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 static int16_t input_joypad_analog_button(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 static int16_t input_joypad_analog_axis(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
@@ -22611,6 +22615,7 @@ static void input_driver_poll(void)
                      if (ret & (1 << k))
                      {
                         int16_t      val = input_joypad_analog_button(
+                              p_rarch, settings,
                               joypad_driver, &joypad_info[i], (unsigned)i,
                               RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
                               p_rarch->libretro_input_binds[i]);
@@ -22631,6 +22636,8 @@ static void input_driver_poll(void)
                      {
                         unsigned offset = 0 + (k * 4) + (j * 2);
                         int16_t     val = input_joypad_analog_axis(
+                              p_rarch,
+                              settings,
                               joypad_driver,
                               &joypad_info[i], (unsigned)i, k, j,
                               p_rarch->libretro_input_binds[i]);
@@ -23276,20 +23283,26 @@ static int16_t input_state(unsigned port, unsigned device,
             if (id < RARCH_FIRST_CUSTOM_BIND)
             {
                if (sec_joypad)
-                  ret = input_joypad_analog_button(sec_joypad, &joypad_info,
+                  ret = input_joypad_analog_button(
+                        p_rarch, settings,
+                        sec_joypad, &joypad_info,
                         port, idx, id, p_rarch->libretro_input_binds[port]);
                if (joypad && (ret == 0))
-                  ret = input_joypad_analog_button(joypad, &joypad_info,
+                  ret = input_joypad_analog_button(
+                        p_rarch, settings,
+                        joypad, &joypad_info,
                         port, idx, id, p_rarch->libretro_input_binds[port]);
             }
          }
          else
          {
             if (sec_joypad)
-               ret = input_joypad_analog_axis(sec_joypad, &joypad_info,
+               ret = input_joypad_analog_axis(p_rarch, settings,
+                     sec_joypad, &joypad_info,
                      port, idx, id, p_rarch->libretro_input_binds[port]);
             if (joypad && (ret == 0))
-               ret = input_joypad_analog_axis(joypad, &joypad_info,
+               ret = input_joypad_analog_axis(p_rarch, settings,
+                     joypad, &joypad_info,
                      port, idx, id, p_rarch->libretro_input_binds[port]);
          }
       }
@@ -25361,6 +25374,8 @@ int16_t button_is_pressed(
  * Returns: analog value on success, otherwise 0.
  **/
 static int16_t input_joypad_analog_button(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
@@ -25369,8 +25384,6 @@ static int16_t input_joypad_analog_button(
    int16_t res                      = 0;
    uint32_t axis                    = 0;
    float normal_mag                 = 0.0f;
-   struct rarch_state *p_rarch      = &rarch_st;
-   settings_t *settings             = p_rarch->configuration_settings;
    float input_analog_deadzone      = settings->floats.input_analog_deadzone;
    const struct retro_keybind *bind = &binds[ ident ];
 
@@ -25404,14 +25417,14 @@ static int16_t input_joypad_analog_button(
 }
 
 static int16_t input_joypad_analog_axis(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)
 {
    int16_t res = 0;
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
    float input_analog_deadzone = settings->floats.input_analog_deadzone;
 
    /* Analog sticks. Either RETRO_DEVICE_INDEX_ANALOG_LEFT
