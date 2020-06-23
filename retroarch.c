@@ -2581,7 +2581,9 @@ static void retroarch_core_options_intl_init(
       struct rarch_state *p_rarch,
       const struct
       retro_core_options_intl *core_options_intl);
-static void ui_companion_driver_toggle(struct rarch_state *p_rarch,
+static void ui_companion_driver_toggle(
+      settings_t *settings,
+      struct rarch_state *p_rarch,
       bool force);
 
 #ifdef HAVE_ACCESSIBILITY
@@ -2655,7 +2657,8 @@ static bool audio_driver_stop(struct rarch_state *p_rarch);
 static bool audio_driver_start(struct rarch_state *p_rarch,
       bool is_shutdown);
 
-static bool recording_init(struct rarch_state *p_rarch);
+static bool recording_init(settings_t *settings,
+      struct rarch_state *p_rarch);
 static bool recording_deinit(struct rarch_state *p_rarch);
 
 #ifdef HAVE_OVERLAY
@@ -12540,7 +12543,9 @@ static const char *ai_service_get_str(enum translation_lang id)
    the handle_translation_cb wipes the widgets, and pass that in here.
 */
 
-static bool run_translation_service(struct rarch_state *p_rarch,
+static bool run_translation_service(
+      settings_t *settings,
+      struct rarch_state *p_rarch,
       bool paused)
 {
    struct video_viewport vp;
@@ -12550,7 +12555,6 @@ static bool run_translation_service(struct rarch_state *p_rarch,
    const void *data                      = NULL;
    uint8_t *bit24_image                  = NULL;
    uint8_t *bit24_image_prev             = NULL;
-   settings_t *settings                  = p_rarch->configuration_settings;
    struct scaler_ctx *scaler             = (struct scaler_ctx*)
       calloc(1, sizeof(struct scaler_ctx));
    bool error                            = false;
@@ -13012,10 +13016,11 @@ static bool command_event_disk_control_append_image(
  * Adjusts the current audio volume level.
  *
  **/
-static void command_event_set_volume(struct rarch_state *p_rarch, float gain)
+static void command_event_set_volume(
+      settings_t *settings,
+      struct rarch_state *p_rarch, float gain)
 {
    char msg[128];
-   settings_t *settings        = p_rarch->configuration_settings;
    float new_volume            = settings->floats.audio_volume + gain;
 
    new_volume                  = MAX(new_volume, -80.0f);
@@ -13048,11 +13053,11 @@ static void command_event_set_volume(struct rarch_state *p_rarch, float gain)
  *
  **/
 static void command_event_set_mixer_volume(
+      settings_t *settings,
       struct rarch_state *p_rarch,
       float gain)
 {
    char msg[128];
-   settings_t *settings        = p_rarch->configuration_settings;
    float new_volume            = settings->floats.audio_mixer_volume + gain;
 
    new_volume                  = MAX(new_volume, -80.0f);
@@ -13163,10 +13168,6 @@ static void command_event_deinit_core(
       struct rarch_state *p_rarch,
       bool reinit)
 {
-#ifdef HAVE_CHEEVOS
-   rcheevos_unload();
-#endif
-
    core_unload_game(p_rarch);
 
    video_driver_set_cached_frame_ptr(NULL);
@@ -13201,9 +13202,10 @@ static void command_event_deinit_core(
 #endif
 }
 
-static void command_event_init_cheats(struct rarch_state *p_rarch)
+static void command_event_init_cheats(
+      settings_t *settings,
+      struct rarch_state *p_rarch)
 {
-   settings_t     *settings      = p_rarch->configuration_settings;
    bool        allow_cheats      = true;
    bool apply_cheats_after_load  = settings->bools.apply_cheats_after_load;
    const char *path_cheat_db     = settings->paths.path_cheat_database;
@@ -13223,13 +13225,14 @@ static void command_event_init_cheats(struct rarch_state *p_rarch)
       cheat_manager_apply_cheats();
 }
 
-static void command_event_load_auto_state(struct rarch_state *p_rarch)
+static void command_event_load_auto_state(
+      settings_t *settings,
+      global_t *global,
+      struct rarch_state *p_rarch)
 {
    bool ret                        = false;
    char *savestate_name_auto       = NULL;
    size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
-   settings_t *settings            = p_rarch->configuration_settings;
-   global_t   *global              = &p_rarch->g_extern;
    bool savestate_auto_load        = settings->bools.savestate_auto_load;
 
    if (!global || !savestate_auto_load)
@@ -13267,7 +13270,10 @@ static void command_event_load_auto_state(struct rarch_state *p_rarch)
    free(savestate_name_auto);
 }
 
-static void command_event_set_savestate_auto_index(struct rarch_state *p_rarch)
+static void command_event_set_savestate_auto_index(
+      settings_t *settings,
+      global_t *global,
+      struct rarch_state *p_rarch)
 {
    size_t i;
    char *state_dir                   = NULL;
@@ -13276,8 +13282,6 @@ static void command_event_set_savestate_auto_index(struct rarch_state *p_rarch)
    size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
-   settings_t *settings              = p_rarch->configuration_settings;
-   global_t   *global                = &p_rarch->g_extern;
    bool savestate_auto_index         = settings->bools.savestate_auto_index;
    bool show_hidden_files            = settings->bools.show_hidden_files;
 
@@ -13351,6 +13355,7 @@ static bool event_init_content(
    bool cheevos_hardcore_mode_enable            = 
       settings->bools.cheevos_hardcore_mode_enable;
 #endif
+   global_t   *global                           = &p_rarch->g_extern;
    const enum rarch_core_type current_core_type = p_rarch->current_core_type;
 
    content_get_status(&contentless, &is_inited);
@@ -13378,7 +13383,7 @@ static bool event_init_content(
       return false;
    }
 
-   command_event_set_savestate_auto_index(p_rarch);
+   command_event_set_savestate_auto_index(settings, global, p_rarch);
 
    if (event_load_save_files(p_rarch->rarch_is_sram_load_disabled))
       RARCH_LOG("[SRAM]: %s.\n",
@@ -13394,7 +13399,8 @@ static bool event_init_content(
 #ifdef HAVE_CHEEVOS
    if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
-      command_event_load_auto_state(p_rarch);
+      command_event_load_auto_state(settings, 
+            global, p_rarch);
 
    bsv_movie_deinit(p_rarch);
    bsv_movie_init(p_rarch);
@@ -13498,8 +13504,10 @@ static void command_event_runtime_log_init(struct rarch_state *p_rarch)
     *    can therefore lead to the runtime of the currently
     *    loaded content getting written to the *new*
     *    content's log file... */
-   memset(p_rarch->runtime_content_path, 0, sizeof(p_rarch->runtime_content_path));
-   memset(p_rarch->runtime_core_path,    0, sizeof(p_rarch->runtime_core_path));
+   memset(p_rarch->runtime_content_path,
+         0, sizeof(p_rarch->runtime_content_path));
+   memset(p_rarch->runtime_core_path,
+         0, sizeof(p_rarch->runtime_core_path));
 
    if (!string_is_empty(content_path))
       strlcpy(p_rarch->runtime_content_path,
@@ -13526,10 +13534,10 @@ static void retroarch_set_frame_limit(
 }
 
 static bool command_event_init_core(
+      settings_t *settings,
       struct rarch_state *p_rarch,
       enum rarch_core_type type)
 {
-   settings_t *settings            = p_rarch->configuration_settings;
 #ifdef HAVE_CONFIGFILE
    bool auto_overrides_enable      = settings->bools.auto_overrides_enable;
    bool auto_remaps_enable         = settings->bools.auto_remaps_enable;
@@ -14681,7 +14689,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_RECORD_INIT:
          p_rarch->recording_enable = true;
-         if (!recording_init(p_rarch))
+         if (!recording_init(settings, p_rarch))
          {
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
             return false;
@@ -14832,6 +14840,9 @@ bool command_event(enum event_command cmd, void *data)
             command_event_runtime_log_deinit(p_rarch);
             content_reset_savestate_backups();
             hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+#ifdef HAVE_CHEEVOS
+            rcheevos_unload();
+#endif
             command_event_deinit_core(p_rarch, true);
 
             if (hwr)
@@ -14850,7 +14861,7 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_set_ext_callback(&sys_info->disk_control, NULL);
 
-            if (!type || !command_event_init_core(p_rarch, *type))
+            if (!type || !command_event_init_core(settings, p_rarch, *type))
                return false;
          }
          break;
@@ -14918,7 +14929,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RESUME:
          retroarch_menu_running_finished(false);
          if (p_rarch->main_ui_companion_is_on_foreground)
-            ui_companion_driver_toggle(p_rarch, false);
+            ui_companion_driver_toggle(settings, p_rarch, false);
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
          {
@@ -15494,7 +15505,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
-         ui_companion_driver_toggle(p_rarch, true);
+         ui_companion_driver_toggle(settings, p_rarch, true);
          break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
@@ -15540,16 +15551,16 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_VOLUME_UP:
-         command_event_set_volume(p_rarch, 0.5f);
+         command_event_set_volume(settings, p_rarch, 0.5f);
          break;
       case CMD_EVENT_VOLUME_DOWN:
-         command_event_set_volume(p_rarch, -0.5f);
+         command_event_set_volume(settings, p_rarch, -0.5f);
          break;
       case CMD_EVENT_MIXER_VOLUME_UP:
-         command_event_set_mixer_volume(p_rarch, 0.5f);
+         command_event_set_mixer_volume(settings, p_rarch, 0.5f);
          break;
       case CMD_EVENT_MIXER_VOLUME_DOWN:
-         command_event_set_mixer_volume(p_rarch, -0.5f);
+         command_event_set_mixer_volume(settings, p_rarch, -0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
          retroarch_set_frame_limit(p_rarch,
@@ -15618,7 +15629,8 @@ bool command_event(enum event_command cmd, void *data)
                p_rarch->ai_service_auto = 1;
             if (p_rarch->ai_service_auto != 2)
                RARCH_LOG("AI Service Called...\n");
-            run_translation_service(p_rarch, paused);
+            run_translation_service(p_rarch->configuration_settings,
+                  p_rarch, paused);
          }
 #endif
          break;
@@ -19576,17 +19588,17 @@ static void ui_companion_driver_init_first(
          if (p_rarch->ui_companion->init)
             p_rarch->ui_companion_data = p_rarch->ui_companion->init();
 
-         ui_companion_driver_toggle(p_rarch, false);
+         ui_companion_driver_toggle(settings, p_rarch, false);
       }
    }
 }
 
 static void ui_companion_driver_toggle(
+      settings_t *settings,
       struct rarch_state *p_rarch,
       bool force)
 {
 #ifdef HAVE_QT
-   settings_t     *settings     = p_rarch->configuration_settings;
    bool     desktop_menu_enable = settings->bools.desktop_menu_enable;
    bool     ui_companion_toggle = settings->bools.ui_companion_toggle;
 #endif
@@ -19985,13 +19997,14 @@ static void video_driver_gpu_record_deinit(struct rarch_state *p_rarch)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool recording_init(struct rarch_state *p_rarch)
+static bool recording_init(
+      settings_t *settings,
+      struct rarch_state *p_rarch)
 {
    char output[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
    struct record_params params          = {0};
    struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
-   settings_t *settings                 = p_rarch->configuration_settings;
    global_t *global                     = &p_rarch->g_extern;
    bool video_gpu_record                = settings->bools.video_gpu_record;
    bool video_force_aspect              = settings->bools.video_force_aspect;
@@ -34755,7 +34768,7 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 
    cheat_manager_state_free();
-   command_event_init_cheats(p_rarch);
+   command_event_init_cheats(p_rarch->configuration_settings, p_rarch);
    drivers_init(p_rarch, DRIVERS_CMD_ALL);
    input_driver_deinit_command(p_rarch);
    input_driver_init_command(p_rarch);
