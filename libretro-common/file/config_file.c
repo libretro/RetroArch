@@ -326,56 +326,57 @@ static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
 static bool parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line, config_file_cb_t *cb)
 {
-   char *key       = NULL;
-   char *key_tmp   = NULL;
-   size_t cur_size = 8;
-   size_t idx      = 0;
-   char *comment   = NULL;
+   size_t cur_size       = 8;
+   size_t idx            = 0;
+   char *comment         = NULL;
+   char *key             = NULL;
+   char *key_tmp         = NULL;
 
    /* Ignore empty lines */
    if (string_is_empty(line))
       return false;
 
    /* Check whether line is a comment */
-   comment = strip_comment(line);
+   comment               = strip_comment(line);
 
    if (comment)
    {
+      char *path         = NULL;
+      char *include_line = NULL;
+
       /* Starting a line with '#include' appends a
        * sub-config file */
-      if (string_starts_with(comment, "include "))
-      {
-         char *include_line = comment + STRLEN_CONST("include ");
-         char *path         = NULL;
 
-         if (string_is_empty(include_line))
-            return false;
-
-         path = extract_value(include_line, false);
-
-         if (!path)
-            return false;
-
-         if (string_is_empty(path))
-         {
-            free(path);
-            return false;
-         }
-
-         if (conf->include_depth >= MAX_INCLUDE_DEPTH)
-         {
-            fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
-            free(path);
-            return false;
-         }
-
-         add_sub_conf(conf, path, cb);
-         free(path);
-         return true;
-      }
       /* All other comment lines are ignored */
-      else
+      if (!string_starts_with(comment, "include "))
          return false;
+
+      include_line = comment + STRLEN_CONST("include ");
+
+      if (string_is_empty(include_line))
+         return false;
+
+      path = extract_value(include_line, false);
+
+      if (!path)
+         return false;
+
+      if (string_is_empty(path))
+      {
+         free(path);
+         return false;
+      }
+
+      if (conf->include_depth >= MAX_INCLUDE_DEPTH)
+      {
+         fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
+         free(path);
+         return false;
+      }
+
+      add_sub_conf(conf, path, cb);
+      free(path);
+      return true;
    }
 
    /* Skips to first character. */
