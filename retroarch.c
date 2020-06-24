@@ -37018,6 +37018,7 @@ static void update_fastforwarding_state(
 
 static enum runloop_state runloop_check_state(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       retro_time_t current_time)
 {
    input_bits_t current_bits;
@@ -37026,7 +37027,6 @@ static enum runloop_state runloop_check_state(
 #endif
    static bool old_focus               = true;
    struct retro_callbacks *cbs         = &p_rarch->retro_ctx;
-   settings_t *settings                = p_rarch->configuration_settings;
    bool is_focused                     = false;
    bool is_alive                       = false;
    uint64_t frame_count                = 0;
@@ -38088,7 +38088,7 @@ int runloop_iterate(void)
    }
 
    switch ((enum runloop_state)runloop_check_state(p_rarch,
-            current_time))
+            settings, current_time))
    {
       case RUNLOOP_STATE_QUIT:
          p_rarch->frame_limit_last_time = 0.0;
