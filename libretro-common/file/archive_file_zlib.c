@@ -339,6 +339,7 @@ static int zip_parse_file_iterate_step_internal(
       return -1;
 
    memcpy(filename, state->directory + 46, namelength); /* file name */
+   filename[namelength] = '\0';
 
    offset         = read_le(state->directory + 42, 4); /* relative offset of local file header */
    offsetNL       = read_le(state->data + offset + 26, 2); /* file name length */
@@ -355,7 +356,6 @@ static int zip_parse_file_iterate_step(file_archive_transfer_t *state,
       const char *valid_exts, struct archive_extract_userdata *userdata,
       file_archive_file_cb file_cb)
 {
-   char filename[PATH_MAX_LENGTH] = {0};
    const uint8_t *cdata           = NULL;
    uint32_t checksum              = 0;
    uint32_t size                  = 0;
@@ -363,15 +363,15 @@ static int zip_parse_file_iterate_step(file_archive_transfer_t *state,
    unsigned cmode                 = 0;
    unsigned payload               = 0;
    int ret                        = zip_parse_file_iterate_step_internal(
-         state, filename, &cdata, &cmode, &size, &csize, &checksum, &payload);
+         state, userdata->current_file_path, &cdata, &cmode, &size, &csize, &checksum, &payload);
 
    if (ret != 1)
       return ret;
 
-   userdata->extracted_file_path = filename;
    userdata->crc = checksum;
 
-   if (file_cb && !file_cb(filename, valid_exts, cdata, cmode,
+   if (file_cb && !file_cb(userdata->current_file_path, valid_exts,
+            cdata, cmode,
             csize, size, checksum, userdata))
       return 0;
 

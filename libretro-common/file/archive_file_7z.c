@@ -464,7 +464,6 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
       const char *valid_exts,
       struct archive_extract_userdata *userdata, file_archive_file_cb file_cb)
 {
-   char filename[PATH_MAX_LENGTH];
    const uint8_t *cdata = NULL;
    uint32_t checksum    = 0;
    uint32_t size        = 0;
@@ -474,19 +473,20 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
    struct sevenzip_context_t *sevenzip_context = NULL;
    int ret;
 
-   filename[0]                   = '\0';
+   userdata->current_file_path[0] = '\0';
 
-   ret = sevenzip_parse_file_iterate_step_internal(state, filename,
+   ret = sevenzip_parse_file_iterate_step_internal(state,
+         userdata->current_file_path,
          &cdata, &cmode, &size, &csize,
          &checksum, &payload, userdata);
 
    if (ret != 1)
       return ret;
 
-   userdata->extracted_file_path = filename;
    userdata->crc                 = checksum;
 
-   if (file_cb && !file_cb(filename, valid_exts, cdata, cmode,
+   if (file_cb && !file_cb(userdata->current_file_path, valid_exts,
+            cdata, cmode,
             csize, size, checksum, userdata))
       return 0;
 

@@ -105,8 +105,8 @@ typedef struct
 struct archive_extract_userdata
 {
    char archive_path[PATH_MAX_LENGTH];
+   char current_file_path[PATH_MAX_LENGTH];
    char *first_extracted_file_path;
-   char *extracted_file_path;
    const char *extraction_directory;
    size_t archive_path_size;
    struct string_list *ext;
@@ -114,7 +114,6 @@ struct archive_extract_userdata
    bool found_file;
    bool list_only;
    void *context;
-   char archive_name[PATH_MAX_LENGTH];
    uint32_t crc;
    struct decomp_state_t decomp_state;
    decompress_state_t *dec;
