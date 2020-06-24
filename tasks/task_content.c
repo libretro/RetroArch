@@ -584,10 +584,21 @@ static bool content_load(content_ctx_info_t *info,
    struct rarch_main_wrap *wrap_args = NULL;
 
    if (!(wrap_args = (struct rarch_main_wrap*)
-      calloc(1, sizeof(*wrap_args))))
+      malloc(sizeof(*wrap_args))))
       return false;
 
    retro_assert(wrap_args);
+
+   wrap_args->argv           = NULL;
+   wrap_args->content_path   = NULL;
+   wrap_args->sram_path      = NULL;
+   wrap_args->state_path     = NULL;
+   wrap_args->config_path    = NULL;
+   wrap_args->libretro_path  = NULL;
+   wrap_args->verbose        = false;
+   wrap_args->no_content     = false;
+   wrap_args->touched        = false;
+   wrap_args->argc           = 0;
 
    if (info->environ_get)
       info->environ_get(rarch_argc_ptr,
