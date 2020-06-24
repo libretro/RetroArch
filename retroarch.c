@@ -28070,13 +28070,12 @@ error:
  **/
 static void audio_driver_flush(
       struct rarch_state *p_rarch,
+      float slowmotion_ratio,
+      bool audio_fastforward_mute,
       const int16_t *data, size_t samples,
       bool is_slowmotion, bool is_fastmotion)
 {
    struct resampler_data src_data;
-   settings_t       *settings        = p_rarch->configuration_settings;
-   float slowmotion_ratio            = settings->floats.slowmotion_ratio;
-   bool audio_fastforward_mute       = settings->bools.audio_fastforward_mute;
    float audio_volume_gain           = (p_rarch->audio_driver_mute_enable ||
          (audio_fastforward_mute && is_fastmotion)) ?
                0.0f : p_rarch->audio_driver_volume_gain;
@@ -28198,14 +28197,14 @@ static void audio_driver_flush(
       unsigned output_frames  = (unsigned)src_data.output_frames;
 
       if (p_rarch->audio_driver_use_float)
-         output_frames  *= sizeof(float);
+         output_frames       *= sizeof(float);
       else
       {
          convert_float_to_s16(p_rarch->audio_driver_output_samples_conv_buf,
                (const float*)output_data, output_frames * 2);
 
-         output_data     = p_rarch->audio_driver_output_samples_conv_buf;
-         output_frames  *= sizeof(int16_t);
+         output_data          = p_rarch->audio_driver_output_samples_conv_buf;
+         output_frames       *= sizeof(int16_t);
       }
 
       if (p_rarch->current_audio->write(
@@ -28252,6 +28251,8 @@ static void audio_driver_sample(int16_t left, int16_t right)
 		   !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
+            p_rarch->configuration_settings->floats.slowmotion_ratio,
+            p_rarch->configuration_settings->bools.audio_fastforward_mute,
             p_rarch->audio_driver_output_samples_conv_buf,
             p_rarch->audio_driver_data_ptr,
             p_rarch->runloop_slowmotion,
@@ -28292,6 +28293,8 @@ static void audio_driver_menu_sample(void)
       if (check_flush)
          audio_driver_flush(
                p_rarch,
+               p_rarch->configuration_settings->floats.slowmotion_ratio,
+               p_rarch->configuration_settings->bools.audio_fastforward_mute,
                samples_buf,
                1024,
                p_rarch->runloop_slowmotion,
@@ -28313,6 +28316,8 @@ static void audio_driver_menu_sample(void)
    if (check_flush)
       audio_driver_flush(
             p_rarch,
+            p_rarch->configuration_settings->floats.slowmotion_ratio,
+            p_rarch->configuration_settings->bools.audio_fastforward_mute,
             samples_buf,
             sample_count,
             p_rarch->runloop_slowmotion,
@@ -28359,6 +28364,8 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
          !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
+            p_rarch->configuration_settings->floats.slowmotion_ratio,
+            p_rarch->configuration_settings->bools.audio_fastforward_mute,
             data,
             frames << 1,
             p_rarch->runloop_slowmotion,
@@ -28425,14 +28432,15 @@ void audio_driver_dsp_filter_free(void)
 
 bool audio_driver_dsp_filter_init(const char *device)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
-   struct string_list *plugs         = NULL;
+   retro_dsp_filter_t *audio_driver_dsp = NULL;
+   struct rarch_state *p_rarch          = &rarch_st;
+   struct string_list *plugs            = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   char *basedir                     = (char*)
+   char *basedir                        = (char*)
       calloc(PATH_MAX_LENGTH, sizeof(*basedir));
-   char *ext_name                    = (char*)
+   char *ext_name                       = (char*)
       calloc(PATH_MAX_LENGTH, sizeof(*ext_name));
-   size_t str_size                   = PATH_MAX_LENGTH * sizeof(char);
+   size_t str_size                      = PATH_MAX_LENGTH * sizeof(char);
 
    fill_pathname_basedir(basedir, device, str_size);
 
@@ -28449,10 +28457,12 @@ bool audio_driver_dsp_filter_init(const char *device)
    if (!plugs)
       return false;
 #endif
-   p_rarch->audio_driver_dsp = retro_dsp_filter_new(
+   audio_driver_dsp = retro_dsp_filter_new(
          device, plugs, p_rarch->audio_driver_input);
-   if (!p_rarch->audio_driver_dsp)
+   if (!audio_driver_dsp)
       return false;
+
+   p_rarch->audio_driver_dsp = audio_driver_dsp;
 
    return true;
 }
@@ -29231,6 +29241,8 @@ void audio_driver_frame_is_reverse(void)
          !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
+            p_rarch->configuration_settings->floats.slowmotion_ratio,
+            p_rarch->configuration_settings->bools.audio_fastforward_mute,
             p_rarch->audio_driver_rewind_buf  +
             p_rarch->audio_driver_rewind_ptr,
             p_rarch->audio_driver_rewind_size -
