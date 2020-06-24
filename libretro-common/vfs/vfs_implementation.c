@@ -262,47 +262,44 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       const char *path, unsigned mode, unsigned hints)
 {
-   int                                flags = 0;
-   const char                     *mode_str = NULL;
-   libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)
-      calloc(1, sizeof(*stream));
 #if defined(VFS_FRONTEND) || defined(HAVE_CDROM)
    int                             path_len = (int)strlen(path);
 #endif
-
 #ifdef VFS_FRONTEND
    const char                 *dumb_prefix  = "vfsonly://";
-   size_t                   dumb_prefix_siz = strlen(dumb_prefix);
+   size_t                   dumb_prefix_siz = STRLEN_CONST(dumb_prefix);
    int                      dumb_prefix_len = (int)dumb_prefix_siz;
-
-   if (path_len >= dumb_prefix_len)
-   {
-      if (!memcmp(path, dumb_prefix, dumb_prefix_len))
-         path += dumb_prefix_siz;
-   }
 #endif
-
 #ifdef HAVE_CDROM
-   {
-      const char *cdrom_prefix = "cdrom://";
-      size_t cdrom_prefix_siz = strlen(cdrom_prefix);
-      int cdrom_prefix_len = (int)cdrom_prefix_siz;
-
-      if (path_len > cdrom_prefix_len)
-      {
-         if (!memcmp(path, cdrom_prefix, cdrom_prefix_len))
-         {
-            path += cdrom_prefix_siz;
-            stream->scheme = VFS_SCHEME_CDROM;
-         }
-      }
-   }
+   const char *cdrom_prefix                 = "cdrom://";
+   size_t cdrom_prefix_siz                  = STRLEN_CONST(cdrom_prefix);
+   int cdrom_prefix_len                     = (int)cdrom_prefix_siz;
 #endif
+   int                                flags = 0;
+   const char                     *mode_str = NULL;
+   libretro_vfs_implementation_file *stream = 
+      (libretro_vfs_implementation_file*)
+      calloc(1, sizeof(*stream));
 
    if (!stream)
       return NULL;
 
-   (void)flags;
+#ifdef VFS_FRONTEND
+   if (path_len >= dumb_prefix_len)
+      if (!memcmp(path, dumb_prefix, dumb_prefix_len))
+         path             += dumb_prefix_siz;
+#endif
+
+#ifdef HAVE_CDROM
+   if (path_len > cdrom_prefix_len)
+   {
+      if (!memcmp(path, cdrom_prefix, cdrom_prefix_len))
+      {
+         path             += cdrom_prefix_siz;
+         stream->scheme    = VFS_SCHEME_CDROM;
+      }
+   }
+#endif
 
    stream->hints           = hints;
    stream->orig_path       = strdup(path);
