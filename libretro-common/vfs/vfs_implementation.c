@@ -267,12 +267,12 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #endif
 #ifdef VFS_FRONTEND
    const char                 *dumb_prefix  = "vfsonly://";
-   size_t                   dumb_prefix_siz = STRLEN_CONST(dumb_prefix);
+   size_t                   dumb_prefix_siz = STRLEN_CONST("vfsonly://");
    int                      dumb_prefix_len = (int)dumb_prefix_siz;
 #endif
 #ifdef HAVE_CDROM
    const char *cdrom_prefix                 = "cdrom://";
-   size_t cdrom_prefix_siz                  = STRLEN_CONST(cdrom_prefix);
+   size_t cdrom_prefix_siz                  = STRLEN_CONST("cdrom://");
    int cdrom_prefix_len                     = (int)cdrom_prefix_siz;
 #endif
    int                                flags = 0;
