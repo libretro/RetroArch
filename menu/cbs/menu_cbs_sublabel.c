@@ -30,6 +30,7 @@
 #endif
 #include "../../core_info.h"
 #include "../../verbosity.h"
+#include "../../bluetooth/bluetooth_driver.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -872,6 +873,16 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       input_config_get_vid(controller), input_config_get_pid(controller));
    strlcpy(s, tmp, len);
 
+   return 0;
+}
+
+static int action_bind_sublabel_bluetooth_list(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   driver_bluetooth_device_get_sublabel(s, i, len);
    return 0;
 }
 
@@ -3041,6 +3052,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shared_context);
+            break;
+         case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_list);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE:

@@ -529,7 +529,7 @@ static void bluez_get_devices (struct string_list* devices_string_list)
    for (i = 0; i < devices->count; i++)
    {
       char device[64];
-      snprintf(device, 64, "%s %s", devices->data[i].address, devices->data[i].name);
+      strlcpy(device, devices->data[i].name, 64);
       string_list_append(devices_string_list, device, attr);
    }
 }
@@ -551,6 +551,11 @@ static bool bluez_device_is_connected (unsigned i)
       bluez_cache_counter[i]++;
       return bluez_cache[i];
    }
+}
+
+static void bluez_device_get_sublabel (char *s, unsigned i, size_t len)
+{
+   strlcpy(s, devices->data[i].address, len);
 }
 
 static bool bluez_connect_device (unsigned i)
@@ -582,6 +587,7 @@ bluetooth_driver_t bluetooth_bluez = {
    bluez_scan,
    bluez_get_devices,
    bluez_device_is_connected,
+   bluez_device_get_sublabel,
    bluez_connect_device,
    "bluez",
 };

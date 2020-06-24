@@ -866,6 +866,7 @@ static bluetooth_driver_t bluetooth_null = {
    NULL, /* scan */
    NULL, /* get_devices */
    NULL, /* device_is_connected */
+   NULL, /* device_get_sublabel */
    NULL, /* connect_device */
    "null",
 };
@@ -20138,6 +20139,12 @@ bool driver_bluetooth_device_is_connected(unsigned i)
 {
    struct rarch_state       *p_rarch = &rarch_st;
    return p_rarch->bluetooth_driver->device_is_connected(i);
+}
+
+void driver_bluetooth_device_get_sublabel(char *s, unsigned i, size_t len)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   p_rarch->bluetooth_driver->device_get_sublabel(s, i, len);
 }
 
 bool driver_bluetooth_connect_device(unsigned i)

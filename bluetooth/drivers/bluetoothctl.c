@@ -93,7 +93,7 @@ static void bluetoothctl_get_devices(struct string_list* devices)
        * $ bluetoothctl devices
        *     'Device (mac address) (device name)'
        */
-      strlcpy(device, line+7, sizeof(device));
+      strlcpy(device, line+24, sizeof(device));
       string_list_append(devices, device, attr);
    }
 }
@@ -190,6 +190,16 @@ static bool bluetoothctl_connect_device(unsigned idx)
    return true;
 }
 
+void bluetoothctl_device_get_sublabel (char *s, unsigned i, size_t len)
+{
+   /* bluetoothctl devices outputs lines of the format:
+    * $ bluetoothctl devices
+    *     'Device (mac address) (device name)'
+    */
+   const char *line = lines->elems[i].data;
+   strlcpy(s, line+7, 18);
+}
+
 bluetooth_driver_t bluetooth_bluetoothctl = {
    bluetoothctl_init,
    bluetoothctl_free,
@@ -198,6 +208,7 @@ bluetooth_driver_t bluetooth_bluetoothctl = {
    bluetoothctl_scan,
    bluetoothctl_get_devices,
    bluetoothctl_device_is_connected,
+   bluetoothctl_device_get_sublabel,
    bluetoothctl_connect_device,
    "bluetoothctl",
 };

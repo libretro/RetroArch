@@ -50,6 +50,7 @@ typedef struct bluetooth_driver
    void (*scan)(void);
    void (*get_devices)(struct string_list *list);
    bool (*device_is_connected)(unsigned i);
+   void (*device_get_sublabel)(char *s, unsigned i, size_t len);
    bool (*connect_device)(unsigned i);
 
    const char *ident;
@@ -78,6 +79,8 @@ void driver_bluetooth_scan(void);
 void driver_bluetooth_get_devices(struct string_list *list);
 
 bool driver_bluetooth_device_is_connected(unsigned i);
+
+void driver_bluetooth_device_get_sublabel(char *s, unsigned i, size_t len);
 
 bool driver_bluetooth_connect_device(unsigned i);
 
