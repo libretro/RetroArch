@@ -2827,7 +2827,6 @@ static void menu_input_post_iterate(
       struct rarch_state *p_rarch,
       int *ret, unsigned action,
       retro_time_t current_time);
-static void menu_input_set_pointer_inhibit(bool inhibit);
 static void menu_input_reset(struct rarch_state *p_rarch);
 
 /* TODO/FIXME - public global variables */
@@ -3419,6 +3418,7 @@ bool menu_input_key_bind_set_mode(
    rarch_setting_t  *setting      = (rarch_setting_t*)data;
    struct rarch_state *p_rarch    = &rarch_st;
    menu_handle_t       *menu      = p_rarch->menu_driver_data;
+   menu_input_t *menu_input       = &p_rarch->menu_input_state;
    settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    
@@ -3453,7 +3453,8 @@ bool menu_input_key_bind_set_mode(
     * pointer input must be inhibited - otherwise
     * attempting to bind mouse buttons will cause
     * spurious menu actions */
-   menu_input_set_pointer_inhibit(true);
+   menu_input->select_inhibit     = true;
+   menu_input->cancel_inhibit     = true;
 
    return true;
 }
@@ -3472,14 +3473,16 @@ bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
    return true;
 }
 
-bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
+static bool menu_input_key_bind_iterate(
+      struct rarch_state *p_rarch,
+      menu_input_ctx_bind_t *bind,
       retro_time_t current_time)
 {
    bool               timed_out   = false;
-   struct rarch_state *p_rarch    = &rarch_st;
    settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *_binds = &p_rarch->menu_input_binds;
    input_driver_t *input_drv      = p_rarch->current_input;
+   menu_input_t *menu_input       = &p_rarch->menu_input_state;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
@@ -3608,7 +3611,8 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
     * frame that the bind operation is active -
     * otherwise attempting to bind mouse buttons
     * will cause spurious menu actions */
-   menu_input_set_pointer_inhibit(true);
+   menu_input->select_inhibit     = true;
+   menu_input->cancel_inhibit     = true;
 
    return false;
 }
@@ -3919,7 +3923,8 @@ static int generic_menu_iterate(
             bind.s   = menu->menu_state_msg;
             bind.len = sizeof(menu->menu_state_msg);
 
-            if (menu_input_key_bind_iterate(&bind, current_time))
+            if (menu_input_key_bind_iterate(p_rarch,
+                     &bind, current_time))
             {
                size_t selection = menu_st->selection_ptr;
                menu_entries_pop_stack(&selection, 0, 0);
@@ -23394,6 +23399,7 @@ static void menu_input_driver_toggle(
       struct rarch_state *p_rarch,
       bool on)
 {
+   menu_input_t *menu_input     = &p_rarch->menu_input_state;
 #ifdef HAVE_OVERLAY
    if (on)
    {
@@ -23407,11 +23413,21 @@ static void menu_input_driver_toggle(
          if (  input_overlay_enable &&
                p_rarch->overlay_ptr &&
                p_rarch->overlay_ptr->alive)
-            menu_input_set_pointer_inhibit(true);
+         {
+            /* Inhibits pointer 'select' and 'cancel' actions
+             * (until the next time 'select'/'cancel' are released) */
+            menu_input->select_inhibit     = true;
+            menu_input->cancel_inhibit     = true;
+         }
    }
    else
 #endif
-      menu_input_set_pointer_inhibit(false);
+   {
+      /* Inhibits pointer 'select' and 'cancel' actions
+       * (until the next time 'select'/'cancel' are released) */
+      menu_input->select_inhibit           = false;
+      menu_input->cancel_inhibit           = false;
+   }
 }
 
 static int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
@@ -24082,17 +24098,6 @@ void menu_input_set_pointer_y_accel(float y_accel)
    menu_input_t    *menu_input    = &p_rarch->menu_input_state;
 
    menu_input->pointer.y_accel    = y_accel;
-}
-
-/* Inhibits pointer 'select' and 'cancel' actions
- * (until the next time 'select'/'cancel' are released) */
-static void menu_input_set_pointer_inhibit(bool inhibit)
-{
-   struct rarch_state  *p_rarch   = &rarch_st;
-   menu_input_t     *menu_input   = &p_rarch->menu_input_state;
-
-   menu_input->select_inhibit     = inhibit;
-   menu_input->cancel_inhibit     = inhibit;
 }
 
 static void menu_input_reset(struct rarch_state *p_rarch)
