@@ -25819,9 +25819,15 @@ static const char **input_keyboard_start_line(void *userdata,
 {
    struct rarch_state  *p_rarch = &rarch_st;
    input_keyboard_line_t *state = (input_keyboard_line_t*)
-      calloc(1, sizeof(*state));
+      malloc(sizeof(*state));
    if (!state)
       return NULL;
+
+   state->buffer                    = NULL;
+   state->ptr                       = 0;
+   state->size                      = 0;
+   state->cb                        = NULL;
+   state->userdata                  = NULL;
 
    p_rarch->keyboard_line           = state;
    p_rarch->keyboard_line->cb       = cb;
@@ -33623,9 +33629,6 @@ static void mylist_create(my_list **list_p, int initial_capacity,
    if (!list_p)
       return;
 
-   if (initial_capacity < 0)
-      initial_capacity = 0;
-
    list                = *list_p;
    if (list)
       mylist_destroy(list_p);
@@ -33635,17 +33638,8 @@ static void mylist_create(my_list **list_p, int initial_capacity,
    list->size         = 0;
    list->constructor  = constructor;
    list->destructor   = destructor;
-
-   if (initial_capacity > 0)
-   {
-      list->data      = (void**)calloc(initial_capacity, sizeof(void*));
-      list->capacity  = initial_capacity;
-   }
-   else
-   {
-      list->data      = NULL;
-      list->capacity  = 0;
-   }
+   list->data         = (void**)calloc(initial_capacity, sizeof(void*));
+   list->capacity     = initial_capacity;
 }
 
 static void *input_list_element_constructor(void)
