@@ -89,6 +89,7 @@ static void caca_render_msg(
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   size_t _msg_len                  = strlen(msg);
 
    if (!font || string_is_empty(msg))
       return;
@@ -119,10 +120,10 @@ static void caca_render_msg(
    switch (align)
    {
       case TEXT_ALIGN_RIGHT:
-         newX = (x * width * scale) - strlen(msg);
+         newX = (x * width * scale) - _msg_len;
          break;
       case TEXT_ALIGN_CENTER:
-         newX = (x * width * scale) - (strlen(msg) / 2);
+         newX = (x * width * scale) - (_msg_len / 2);
          break;
       case TEXT_ALIGN_LEFT:
       default:

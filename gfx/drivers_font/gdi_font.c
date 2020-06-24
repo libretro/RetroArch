@@ -90,12 +90,13 @@ static void gdi_render_msg(
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
-   int drop_x, drop_y, msg_strlen;
+   int drop_x, drop_y;
    unsigned i;
    unsigned newX, newY, newDropX, newDropY;
    unsigned align;
    unsigned red, green, blue;
    unsigned drop_red, drop_green, drop_blue;
+   size_t _msg_len                  = 0;
    gdi_t *gdi                       = (gdi_t*)userdata;
    gdi_raster_t *font               = (gdi_raster_t*)data;
    unsigned width                   = gdi->video_width;
@@ -142,9 +143,9 @@ static void gdi_render_msg(
       blue       = video_msg_color_b * 255.0f;
    }
 
-   msg_strlen = strlen(msg);
+   _msg_len      = strlen(msg);
 
-   GetTextExtentPoint32(font->gdi->memDC, msg, msg_strlen, &textSize);
+   GetTextExtentPoint32(font->gdi->memDC, msg, (int)_msg_len, &textSize);
 
    switch (align)
    {
@@ -166,21 +167,21 @@ static void gdi_render_msg(
          break;
    }
 
-   newY = height - (y * height * scale) - textSize.cy;
-   newDropY = height - (drop_y * height * scale) - textSize.cy;
+   newY               = height - (y * height * scale) - textSize.cy;
+   newDropY           = height - (drop_y * height * scale) - textSize.cy;
 
    font->gdi->bmp_old = (HBITMAP)SelectObject(font->gdi->memDC, font->gdi->bmp);
 
    SetBkMode(font->gdi->memDC, TRANSPARENT);
 
-   msg_list = string_split(msg, "\n");
+   msg_list           = string_split(msg, "\n");
 
    if (drop_x || drop_y)
    {
       float dark_alpha = drop_alpha;
-      drop_red   = red * drop_mod * dark_alpha;
-      drop_green = green * drop_mod * dark_alpha;
-      drop_blue  = blue * drop_mod * dark_alpha;
+      drop_red         = red   * drop_mod * dark_alpha;
+      drop_green       = green * drop_mod * dark_alpha;
+      drop_blue        = blue  * drop_mod * dark_alpha;
 
       SetTextColor(font->gdi->memDC, RGB(drop_red, drop_green, drop_blue));
 

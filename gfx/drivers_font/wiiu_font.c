@@ -109,7 +109,7 @@ static void wiiu_font_free_font(void* data, bool is_threaded)
 }
 
 static int wiiu_font_get_message_width(void* data, const char* msg,
-                                      unsigned msg_len, float scale)
+      unsigned msg_len, float scale)
 {
    wiiu_font_t* font = (wiiu_font_t*)data;
 
@@ -150,7 +150,9 @@ static void wiiu_font_render_line(
       float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
+   int count;
    unsigned i;
+   sprite_vertex_t *v = NULL;
    int x              = roundf(pos_x * width);
    int y              = roundf((1.0 - pos_y) * height);
 
@@ -169,7 +171,7 @@ static void wiiu_font_render_line(
          break;
    }
 
-   sprite_vertex_t* v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
+   v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
 
    for (i = 0; i < msg_len; i++)
    {
@@ -207,7 +209,7 @@ static void wiiu_font_render_line(
       y += glyph->advance_y * scale;
    }
 
-   int count = v - wiiu->vertex_cache.v - wiiu->vertex_cache.current;
+   count = v - wiiu->vertex_cache.v - wiiu->vertex_cache.current;
 
    if (!count)
       return;
@@ -241,18 +243,21 @@ static void wiiu_font_render_message(
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
+   size_t _msg_len                        = 0;
 
    if (!msg || !*msg)
       return;
+
+   _msg_len                               = strlen(msg);
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      wiiu_font_render_line(wiiu, font, msg, strlen(msg),
+      wiiu_font_render_line(wiiu, font, msg, (unsigned)_msg_len,
             scale, color, pos_x, pos_y,
             width, height, text_align);
       return;
@@ -276,7 +281,7 @@ static void wiiu_font_render_message(
       }
       else
       {
-         unsigned msg_len = strlen(msg);
+         unsigned msg_len = (unsigned)_msg_len;
          wiiu_font_render_line(wiiu, font, msg, msg_len,
                scale, color, pos_x, pos_y - (float)lines * line_height,
                width, height, text_align);

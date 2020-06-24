@@ -193,22 +193,24 @@ static void switch_font_render_message(
       const unsigned int color, float pos_x, float pos_y,
       unsigned text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
-
+   size_t _msg_len                        = 0;
+   
    if (!msg || !*msg)
       return;
+
+   _msg_len                               = strlen(msg);
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      int msgLen = strlen(msg);
-      if (msgLen <= AVG_GLPYH_LIMIT)
+      if (_msg_len <= AVG_GLPYH_LIMIT)
       {
          if (sw)
-            switch_font_render_line(sw, font, msg, strlen(msg),
+            switch_font_render_line(sw, font, msg, (unsigned)_msg_len,
                   scale, color, pos_x, pos_y, text_align);
       }
       return;
@@ -235,11 +237,10 @@ static void switch_font_render_message(
       }
       else
       {
-         unsigned msg_len = strlen(msg);
-         if (msg_len <= AVG_GLPYH_LIMIT)
+         if (_msg_len <= AVG_GLPYH_LIMIT)
          {
             if (sw)
-               switch_font_render_line(sw, font, msg, msg_len,
+               switch_font_render_line(sw, font, msg, (unsigned)_msg_len,
                      scale, color, pos_x, pos_y - (float)lines * line_height,
                      text_align);
          }

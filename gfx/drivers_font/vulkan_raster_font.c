@@ -233,19 +233,22 @@ static void vulkan_raster_font_render_message(
       const float color[4], float pos_x, float pos_y,
       unsigned text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
+   size_t _msg_len                        = 0;
 
    if (!msg || !*msg || !font->vk)
       return;
+
+   _msg_len                               = strlen(msg);
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       if (font->vk)
-         vulkan_raster_font_render_line(font, msg, strlen(msg),
+         vulkan_raster_font_render_line(font, msg, (unsigned)_msg_len,
                scale, color, pos_x, pos_y, text_align);
       return;
    }
@@ -269,7 +272,7 @@ static void vulkan_raster_font_render_message(
       }
       else
       {
-         unsigned msg_len = strlen(msg);
+         unsigned msg_len = _msg_len;
          if (font->vk)
             vulkan_raster_font_render_line(font, msg, msg_len,
                   scale, color, pos_x, pos_y - (float)lines * line_height,

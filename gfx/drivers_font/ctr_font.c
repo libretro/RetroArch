@@ -312,9 +312,10 @@ static void ctr_font_render_message(
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
+   size_t _msg_len                        = strlen(msg);
 
    if (!msg || !*msg)
       return;
@@ -323,7 +324,7 @@ static void ctr_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      ctr_font_render_line(ctr, font, msg, strlen(msg),
+      ctr_font_render_line(ctr, font, msg, (unsigned)_msg_len,
                            scale, color, pos_x, pos_y,
                            width, height, text_align);
       return;
@@ -347,7 +348,7 @@ static void ctr_font_render_message(
       }
       else
       {
-         unsigned msg_len = strlen(msg);
+         unsigned msg_len = (unsigned)_msg_len;
          ctr_font_render_line(ctr, font, msg, msg_len,
                scale, color, pos_x, pos_y - (float)lines * line_height,
                width, height, text_align);

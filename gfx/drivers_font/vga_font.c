@@ -89,9 +89,12 @@ static void vga_render_msg(
    settings_t *settings            = config_get_ptr();
    float video_msg_pos_x           = settings->floats.video_msg_pos_x;
    float video_msg_pos_y           = settings->floats.video_msg_pos_y;
+   size_t _msg_len                 = 0;
 
    if (!font || string_is_empty(msg))
       return;
+
+   _msg_len                        = strlen(msg);
 
    if (params)
    {
@@ -121,10 +124,10 @@ static void vga_render_msg(
          new_x = x * width * scale;
          break;
       case TEXT_ALIGN_RIGHT:
-         new_x = (x * width * scale) - strlen(msg);
+         new_x = (x * width * scale) - _msg_len;
          break;
       case TEXT_ALIGN_CENTER:
-         new_x = (x * width * scale) - (strlen(msg) / 2);
+         new_x = (x * width * scale) - (_msg_len / 2);
          break;
       default:
          break;

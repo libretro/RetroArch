@@ -350,18 +350,25 @@ static INLINE void write_quad6(SpriteVertex *pv,
                  posY:(float)posY
               aligned:(unsigned)aligned
 {
+   float line_height;
+   int lines                              = 0;
    struct font_line_metrics *line_metrics = NULL;
+   size_t _msg_len                        = 0;
+
+   if (!msg || !*msg)
+      return;
+
+   _msg_len                               = strlen(msg);
 
    /* If font line metrics are not supported just draw as usual */
    if (!_font_driver->get_line_metrics ||
        !_font_driver->get_line_metrics(_font_data, &line_metrics))
    {
-      [self _renderLine:msg length:strlen(msg) scale:scale color:color posX:posX posY:posY aligned:aligned];
+      [self _renderLine:msg length:(unsigned)_msg_len scale:scale color:color posX:posX posY:posY aligned:aligned];
       return;
    }
 
-   int lines = 0;
-   float line_height = line_metrics->height * scale / height;
+   line_height = line_metrics->height * scale / height;
 
    for (;;)
    {
@@ -383,7 +390,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       }
       else
       {
-         NSUInteger msg_len = strlen(msg);
+         NSUInteger msg_len = (NSUInteger)_msg_len;
          [self _renderLine:msg
                     length:msg_len
                      scale:scale

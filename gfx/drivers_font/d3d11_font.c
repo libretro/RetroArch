@@ -234,19 +234,22 @@ static void d3d11_font_render_message(
       unsigned            height,
       unsigned            text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
+   size_t _msg_len                        = 0;
 
    if (!msg || !*msg)
       return;
+
+   _msg_len                               = strlen(msg);
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       d3d11_font_render_line(d3d11,
-            font, msg, strlen(msg), scale, color, pos_x, pos_y,
+            font, msg, (unsigned)_msg_len, scale, color, pos_x, pos_y,
             width, height, text_align);
       return;
    }
@@ -270,7 +273,7 @@ static void d3d11_font_render_message(
       }
       else
       {
-         unsigned msg_len = strlen(msg);
+         unsigned msg_len = (unsigned)_msg_len;
          d3d11_font_render_line(d3d11,
                font, msg, msg_len, scale, color, pos_x,
                pos_y - (float)lines * line_height,
