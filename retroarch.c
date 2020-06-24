@@ -16772,11 +16772,12 @@ static bool core_option_manager_parse_variable(
    const char *val_start      = NULL;
    char *value                = NULL;
    char *desc_end             = NULL;
-   char *config_val           = NULL;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
-
+   struct config_entry_list 
+      *entry                  = NULL;
+   
    /* All options are visible by default */
-   option->visible = true;
+   option->visible            = true;
 
    if (!string_is_empty(var->key))
       option->key             = strdup(var->key);
@@ -16812,21 +16813,24 @@ static bool core_option_manager_parse_variable(
    option->default_index = 0;
    option->index         = 0;
 
+   if (config_src)
+      entry              = config_get_entry(config_src, option->key, NULL);
+   else
+      entry              = config_get_entry(opt->conf,  option->key, NULL);
+
    /* Set current config value */
-   if (config_get_string(config_src ? config_src : opt->conf, option->key, &config_val))
+   if (entry && !string_is_empty(entry->value))
    {
       size_t i;
 
       for (i = 0; i < option->vals->size; i++)
       {
-         if (string_is_equal(option->vals->elems[i].data, config_val))
+         if (string_is_equal(option->vals->elems[i].data, entry->value))
          {
             option->index = i;
             break;
          }
       }
-
-      free(config_val);
    }
 
    free(value);
@@ -16846,7 +16850,7 @@ static bool core_option_manager_parse_option(
    size_t i;
    union string_list_elem_attr attr;
    size_t num_vals                              = 0;
-   char *config_val                             = NULL;
+   struct config_entry_list *entry              = NULL;
    struct core_option *option                   = (struct core_option*)&opt->opts[idx];
    const struct retro_core_option_value *values = option_def->values;
 
@@ -16908,19 +16912,22 @@ static bool core_option_manager_parse_option(
       }
    }
 
+   if (config_src)
+      entry              = config_get_entry(config_src, option->key, NULL);
+   else
+      entry              = config_get_entry(opt->conf,  option->key, NULL);
+
    /* Set current config value */
-   if (config_get_string(config_src ? config_src : opt->conf, option->key, &config_val))
+   if (entry && !string_is_empty(entry->value))
    {
       for (i = 0; i < option->vals->size; i++)
       {
-         if (string_is_equal(option->vals->elems[i].data, config_val))
+         if (string_is_equal(option->vals->elems[i].data, entry->value))
          {
             option->index = i;
             break;
          }
       }
-
-      free(config_val);
    }
 
    return true;
@@ -17085,10 +17092,8 @@ static core_option_manager_t *core_option_manager_new(
    for (option_def = option_defs;
         option_def->key && option_def->desc && option_def->values[0].value;
         size++, option_def++)
-   {
       if (!core_option_manager_parse_option(opt, size, option_def, config_src))
          goto error;
-   }
 
    if (config_src)
       config_file_free(config_src);
