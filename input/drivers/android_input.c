@@ -1062,11 +1062,7 @@ static void handle_hotplug(android_input_t *android,
     */
    else if(
             (
-               strstr(device_model, "R800x") ||
-               strstr(device_model, "R800at") ||
-               strstr(device_model, "R800i") ||
-               strstr(device_model, "R800a") ||
-               strstr(device_model, "R800") ||
+               string_starts_with(device_model, "R800") ||
                strstr(device_model, "Xperia Play") ||
                strstr(device_model, "Play") ||
                strstr(device_model, "SO-01D")
@@ -1117,9 +1113,16 @@ static void handle_hotplug(android_input_t *android,
    }
 
    /* Amazon Fire TV & Fire stick */
-   else if (strstr(device_model, "AFTB") || strstr(device_model, "AFTT") ||
-           strstr(device_model, "AFTS") || strstr(device_model, "AFTM") ||
-           strstr(device_model, "AFTRS"))
+   else if (
+             string_starts_with(device_model, "AFT") &&
+             (
+              strstr(device_model, "AFTB") || 
+              strstr(device_model, "AFTT") ||
+              strstr(device_model, "AFTS") || 
+              strstr(device_model, "AFTM") ||
+              strstr(device_model, "AFTRS")
+             )
+         )
    {
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
