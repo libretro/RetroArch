@@ -225,21 +225,18 @@ static void vita2d_font_render_message(
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
-   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   size_t _msg_len                        = 0;
+   float line_height;
 
    if (!msg || !*msg)
       return;
-
-   _msg_len                               = strlen(msg);
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      vita2d_font_render_line(font, msg, (unsigned)_msg_len,
+      vita2d_font_render_line(font, msg, strlen(msg),
             scale, color, pos_x, pos_y, width, height, text_align);
       return;
    }
@@ -249,7 +246,7 @@ static void vita2d_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = (delim) ? (delim - msg) : (unsigned)_msg_len;
+      unsigned msg_len  = (delim) ? (delim - msg) : strlen(msg);
 
       vita2d_font_render_line(font, msg, msg_len,
             scale, color, pos_x, pos_y - (float)lines * line_height,

@@ -120,7 +120,7 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
       return 0;
 
    d3d9x_font_draw_text(d3dfonts->font, NULL, (void*)msg,
-         msg_len ? msg_len : -1, &box, DT_CALCRECT, 0);
+         msg_len? msg_len : -1, &box, DT_CALCRECT, 0);
 
    return box.right - box.left;
 }
