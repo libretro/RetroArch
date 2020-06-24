@@ -146,42 +146,35 @@ static struct config_entry_list* merge_sort_linked_list(
    return result;
 }
 
+/* Searches input string for a comment ('#') entry
+ * > If a comment is found, returns everything after
+ *   the '#' character and sets 'str' to an empty string
+ * > If a comment is not found, returns NULL and leaves
+ *   'str' untouched */
 static char *strip_comment(char *str)
 {
-   /* Remove everything after comment.
-    * Keep #s inside string literals. */
-   char *string_end  = str + strlen(str);
-   bool cut_comment  = true;
+   /* Search for a comment (#) character */
+   char *comment = strchr(str, '#');
 
-   while (!string_is_empty(str))
+   if (comment)
    {
-      char *comment  = NULL;
-      char *literal  = strchr(str, '\"');
-      if (!literal)
-         literal     = string_end;
-      comment        = (char*)strchr(str, '#');
+      /* Check whether comment character occurs
+       * within a string literal (i.e. after the
+       * first (") character) */
+      char *literal = strchr(str, '\"');
 
-      if (!comment)
-         comment     = string_end;
-
-      if (cut_comment && literal < comment)
+      if (!literal || (literal > comment))
       {
-         cut_comment = false;
-         str         = literal + 1;
-      }
-      else if (!cut_comment && literal)
-      {
-         cut_comment = true;
-         str         = (literal < string_end) ? literal + 1 : string_end;
-      }
-      else
-      {
-         *comment    = '\0';
-         str         = comment;
+         /* This line is a valid comment
+          * > Set input 'str' to NUL
+          * > Return everything after the
+          *   comment (#) character */
+         *str = '\0';
+         return ++comment;
       }
    }
 
-   return str;
+   return NULL;
 }
 
 static char *extract_value(char *line, bool is_value)
@@ -337,26 +330,52 @@ static bool parse_line(config_file_t *conf,
    char *key_tmp   = NULL;
    size_t cur_size = 8;
    size_t idx      = 0;
-   char *comment   = strip_comment(line);
+   char *comment   = NULL;
 
-   /* Starting line with #include includes config files. */
-   if (comment == line)
+   /* Ignore empty lines */
+   if (string_is_empty(line))
+      return false;
+
+   /* Check whether line is a comment */
+   comment = strip_comment(line);
+
+   if (comment)
    {
-      comment++;
-      if (strstr(comment, "include ") == comment)
+      /* Starting a line with '#include' appends a
+       * sub-config file */
+      if (string_starts_with(comment, "include "))
       {
          char *include_line = comment + STRLEN_CONST("include ");
-         char *path         = extract_value(include_line, false);
+         char *path         = NULL;
 
-         if (string_is_empty(path))
+         if (string_is_empty(include_line))
             return false;
 
+         path = extract_value(include_line, false);
+
+         if (!path)
+            return false;
+
+         if (string_is_empty(path))
+         {
+            free(path);
+            return false;
+         }
+
          if (conf->include_depth >= MAX_INCLUDE_DEPTH)
+         {
             fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
-         else
-            add_sub_conf(conf, path, cb);
+            free(path);
+            return false;
+         }
+
+         add_sub_conf(conf, path, cb);
          free(path);
+         return true;
       }
+      /* All other comment lines are ignored */
+      else
+         return false;
    }
 
    /* Skips to first character. */
