@@ -244,9 +244,8 @@ static void vulkan_raster_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      if (font->vk)
-         vulkan_raster_font_render_line(font, msg, strlen(msg),
-               scale, color, pos_x, pos_y, text_align);
+      vulkan_raster_font_render_line(font, msg, strlen(msg),
+            scale, color, pos_x, pos_y, text_align);
       return;
    }
 
@@ -255,27 +254,19 @@ static void vulkan_raster_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
+      unsigned msg_len  = delim
+         ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
 
       /* Draw the line */
-      if (delim)
-      {
-         unsigned msg_len = delim - msg;
-         if (font->vk)
-            vulkan_raster_font_render_line(font, msg, msg_len,
-                  scale, color, pos_x, pos_y - (float)lines * line_height,
-                  text_align);
-         msg += msg_len + 1;
-         lines++;
-      }
-      else
-      {
-         unsigned msg_len = strlen(msg);
-         if (font->vk)
-            vulkan_raster_font_render_line(font, msg, msg_len,
-                  scale, color, pos_x, pos_y - (float)lines * line_height,
-                  text_align);
+      vulkan_raster_font_render_line(font, msg, msg_len,
+            scale, color, pos_x, pos_y - (float)lines * line_height,
+            text_align);
+
+      if (!delim)
          break;
-      }
+
+      msg += msg_len + 1;
+      lines++;
    }
 }
 
