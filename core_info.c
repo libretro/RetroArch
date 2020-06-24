@@ -298,7 +298,7 @@ static core_info_list_t *core_info_list_new(const char *path,
    if (!contents)
       return NULL;
 
-   core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
+   core_info_list = (core_info_list_t*)malloc(sizeof(*core_info_list));
    if (!core_info_list)
    {
       string_list_free(contents);
@@ -313,8 +313,9 @@ static core_info_list_t *core_info_list_new(const char *path,
       return NULL;
    }
 
-   core_info_list->list  = core_info;
-   core_info_list->count = contents->size;
+   core_info_list->list    = core_info;
+   core_info_list->count   = contents->size;
+   core_info_list->all_ext = NULL;
 
    for (i = 0; i < contents->size; i++)
    {
@@ -1053,34 +1054,35 @@ core_updater_info_t *core_info_get_core_updater_info(const char *path)
       return NULL;
 
    /* Create info struct */
-   info = (core_updater_info_t*)calloc(1, sizeof(*info));
+   info = (core_updater_info_t*)malloc(sizeof(*info));
 
    if (!info)
       return NULL;
 
+   info->is_experimental     = false;
+   info->display_name        = NULL;
+   info->description         = NULL;
+   info->licenses            = NULL;
+
    /* Fetch required parameters */
 
    /* > is_experimental */
-   info->is_experimental = false;
    if (config_get_bool(conf, "is_experimental", &tmp_bool))
-      info->is_experimental = tmp_bool;
+      info->is_experimental  = tmp_bool;
 
    /* > display_name */
-   info->display_name        = NULL;
    entry                     = config_get_entry(conf, "display_name", NULL);
 
    if (entry && !string_is_empty(entry->value))
       info->display_name     = strdup(entry->value);
 
    /* > description */
-   info->description         = NULL;
    entry                     = config_get_entry(conf, "description", NULL);
 
    if (entry && !string_is_empty(entry->value))
       info->description      = strdup(entry->value);
 
    /* > licenses */
-   info->licenses            = NULL;
    entry                     = config_get_entry(conf, "license", NULL);
 
    if (entry && !string_is_empty(entry->value))
