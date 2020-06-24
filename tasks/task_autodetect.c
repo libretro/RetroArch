@@ -421,13 +421,14 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];
    retro_task_t         *task      = task_init();
-   autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
+   autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)malloc(sizeof(*state));
 
    if (!state || !task)
       goto error;
 
    msg[0]      = '\0';
 
+   state->msg  = NULL;
    state->idx  = i;
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).",
@@ -499,7 +500,7 @@ void input_autoconfigure_connect(
 {
    unsigned i;
    retro_task_t         *task = task_init();
-   autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
+   autoconfig_params_t *state = (autoconfig_params_t*)malloc(sizeof(*state));
    settings_t       *settings = config_get_ptr();
    const char *dir_autoconf   = settings ? settings->paths.directory_autoconfig : NULL;
    bool autodetect_enable     = settings ? settings->bools.input_autodetect_enable : false;
@@ -518,6 +519,14 @@ void input_autoconfigure_connect(
       return;
    }
 
+   state->vid                     = vid;
+   state->pid                     = pid;
+   state->idx                     = idx;
+   state->max_users               = *(
+         input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   state->name                    = NULL;
+   state->autoconfig_directory    = NULL;
+
    if (!string_is_empty(name))
       state->name                 = strdup(name);
 
@@ -525,11 +534,6 @@ void input_autoconfigure_connect(
       state->autoconfig_directory = strdup(dir_autoconf);
 
    state->show_hidden_files       = settings->bools.show_hidden_files;
-   state->idx                     = idx;
-   state->vid                     = vid;
-   state->pid                     = pid;
-   state->max_users               = *(
-         input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
 #ifdef HAVE_BLISSBOX
    if (state->vid == BLISSBOX_VID)

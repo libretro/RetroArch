@@ -197,7 +197,7 @@ task_finished:
       }
       else
       {
-         data = (http_transfer_data_t*)calloc(1, sizeof(*data));
+         data       = (http_transfer_data_t*)malloc(sizeof(*data));
          data->data = tmp;
          data->len  = len;
 

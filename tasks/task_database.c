@@ -1378,7 +1378,6 @@ bool task_push_dbscan(
 #endif
    db->show_hidden_files       = db_dir_show_hidden_files;
    db->is_directory            = directory;
-   db->playlist_directory      = NULL;
    db->fullpath                = strdup(fullpath);
    db->playlist_directory      = strdup(playlist_directory);
    db->content_database_path   = strdup(content_database);
