@@ -335,21 +335,7 @@ bool input_joypad_set_rumble(const input_device_driver_t *driver,
  **/
 void input_pad_connect(unsigned port, input_device_driver_t *driver);
 
-/**
- * input_mouse_button_raw:
- * @port                    : Mouse number.
- * @button                  : Identifier of key (libretro mouse constant).
- *
- * Checks if key (@button) was being pressed by user
- * with mouse number @port.
- *
- * Returns: true (1) if key was pressed, otherwise
- * false (0).
- **/
-bool input_mouse_button_raw(unsigned port, unsigned button);
-
 #ifdef HAVE_HID
-
 #include "include/hid_driver.h"
 
 /**
@@ -401,26 +387,6 @@ struct input_keyboard_ctx_wait
  **/
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
-
-bool input_keyboard_line_append(const char *word);
-
-/**
- * input_keyboard_start_line:
- * @userdata                 : Userdata.
- * @cb                       : Line complete callback function.
- *
- * Sets function pointer for keyboard line handle.
- *
- * The underlying buffer can be reallocated at any time
- * (or be NULL), but the pointer to it remains constant
- * throughout the objects lifetime.
- *
- * Returns: underlying buffer of the keyboard line.
- **/
-const char **input_keyboard_start_line(void *userdata,
-      input_keyboard_line_complete_t cb);
-
-bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 
 extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];

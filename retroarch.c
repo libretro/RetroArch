@@ -2780,6 +2780,13 @@ static bool accessibility_speak_priority(
       const char* speak_text, int priority);
 #endif
 
+static bool input_mouse_button_raw(unsigned port, unsigned id);
+static void input_keyboard_line_append(const char *word);
+static const char **input_keyboard_start_line(void *userdata,
+      input_keyboard_line_complete_t cb);
+static bool input_keyboard_ctl(
+      enum rarch_input_keyboard_ctl_state state, void *data);
+
 int input_event_get_osk_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -23790,6 +23797,7 @@ static void input_event_osk_iterate(
  * state.
  */
 static unsigned menu_event(
+      struct rarch_state *p_rarch,
       input_bits_t *p_input,
       input_bits_t *p_trigger_input,
       bool display_kb)
@@ -23803,7 +23811,6 @@ static unsigned menu_event(
    unsigned ret                                    = MENU_ACTION_NOOP;
    bool set_scroll                                 = false;
    size_t new_scroll_accel                         = 0;
-   struct rarch_state                   *p_rarch   = &rarch_st;
    struct menu_state                     *menu_st  = &p_rarch->menu_driver_state;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
@@ -25545,7 +25552,7 @@ static int16_t input_joypad_analog_axis(
  * Returns: true (1) if key was pressed, otherwise
  * false (0).
  **/
-bool input_mouse_button_raw(unsigned port, unsigned id)
+static bool input_mouse_button_raw(unsigned port, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
    struct rarch_state       *p_rarch = &rarch_st;
@@ -25748,7 +25755,7 @@ static bool input_keyboard_line_event(
    return ret;
 }
 
-bool input_keyboard_line_append(const char *word)
+static void input_keyboard_line_append(const char *word)
 {
    struct rarch_state *p_rarch = &rarch_st;
    unsigned i                  = 0;
@@ -25758,7 +25765,7 @@ bool input_keyboard_line_append(const char *word)
          p_rarch->keyboard_line->size + len*2);
 
    if (!newbuf)
-      return false;
+      return;
 
    memmove(newbuf + p_rarch->keyboard_line->ptr + len,
          newbuf + p_rarch->keyboard_line->ptr,
@@ -25782,8 +25789,6 @@ bool input_keyboard_line_append(const char *word)
    }
    else
       osk_update_last_codepoint(p_rarch, word);
-
-   return false;
 }
 
 /**
@@ -25799,7 +25804,7 @@ bool input_keyboard_line_append(const char *word)
  *
  * Returns: underlying buffer of the keyboard line.
  **/
-const char **input_keyboard_start_line(void *userdata,
+static const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb)
 {
    struct rarch_state  *p_rarch = &rarch_st;
@@ -25982,7 +25987,7 @@ void input_keyboard_event(bool down, unsigned code,
    }
 }
 
-bool input_keyboard_ctl(
+static bool input_keyboard_ctl(
       enum rarch_input_keyboard_ctl_state state, void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -37433,7 +37438,9 @@ static enum runloop_state runloop_check_state(
 
       bits_clear_bits(trigger_input.data, old_input.data,
             ARRAY_SIZE(trigger_input.data));
-      action                    = (enum menu_action)menu_event(&current_bits, &trigger_input, display_kb);
+      action                    = (enum menu_action)menu_event(
+            p_rarch,
+            &current_bits, &trigger_input, display_kb);
       focused                   = pause_nonactive ? is_focused : true;
       focused                   = focused &&
          !p_rarch->main_ui_companion_is_on_foreground;
