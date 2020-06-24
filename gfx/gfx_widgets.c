@@ -1023,7 +1023,7 @@ static void gfx_widgets_draw_task_msg(
       draw_msg_new = !string_is_equal(msg->msg_new, msg->msg);
 
    task_percentage_offset = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * (msg->task_error ? 12 : 5) 
-      + p_dispwidget->simple_widget_padding * 1.25f; /*11 = strlen("Task failed")+1 */
+      + p_dispwidget->simple_widget_padding * 1.25f; /*11 = STRLEN_CONST("Task failed") + 1 */
 
    if (msg->task_finished)
    {
