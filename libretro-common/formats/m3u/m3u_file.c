@@ -129,7 +129,7 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
          continue;
 
       /* Determine line 'type' */
-      m3u_size = strlen(M3U_FILE_NONSTD_LABEL);
+      m3u_size = STRLEN_CONST(M3U_FILE_NONSTD_LABEL);
 
       /* > '#LABEL:' */
       if (!strncmp(
@@ -151,12 +151,12 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
       /* > '#EXTINF:' */
       else if (!strncmp(
             line, M3U_FILE_EXTSTD_LABEL,
-            strlen(M3U_FILE_EXTSTD_LABEL)))
+            STRLEN_CONST(M3U_FILE_EXTSTD_LABEL)))
       {
          /* Label is the string to the right
           * of the first comma */
          const char* label_ptr = strchr(
-               line + strlen(M3U_FILE_EXTSTD_LABEL),
+               line + STRLEN_CONST(M3U_FILE_EXTSTD_LABEL),
                M3U_FILE_EXTSTD_LABEL_TOKEN);
 
          if (!string_is_empty(label_ptr))

@@ -1371,7 +1371,8 @@ struct string_list* cdrom_get_available_drives(void)
          if (!is_cdrom)
             continue;
 
-         sscanf(dir_list->elems[i].data + strlen("/dev/sg"), "%d", &dev_index);
+         sscanf(dir_list->elems[i].data + STRLEN_CONST("/dev/sg"),
+               "%d", &dev_index);
 
          dev_index = '0' + dev_index;
          attr.i    = dev_index;
