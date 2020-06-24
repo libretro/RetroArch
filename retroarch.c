@@ -36876,7 +36876,8 @@ static bool input_driver_toggle_button_combo(
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
-            /* start has been held down long enough, stop timer and enter menu */
+            /* start has been held down long enough, 
+             * stop timer and enter menu */
             rarch_timer_end(&timer);
             return true;
          }
@@ -36907,7 +36908,8 @@ static bool input_driver_toggle_button_combo(
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
-            /* select has been held down long enough, stop timer and enter menu */
+            /* select has been held down long enough,
+             * stop timer and enter menu */
             rarch_timer_end(&timer);
             return true;
          }
@@ -36966,11 +36968,9 @@ static bool menu_display_libretro(
 }
 #endif
 
-static void update_savestate_slot(struct rarch_state *p_rarch)
+static void update_savestate_slot(int state_slot)
 {
    char msg[128];
-   settings_t        *settings = p_rarch->configuration_settings;
-   int        state_slot       = settings->ints.state_slot;
 
    msg[0] = '\0';
 
@@ -36986,15 +36986,15 @@ static void update_savestate_slot(struct rarch_state *p_rarch)
 
 #if defined(HAVE_GFX_WIDGETS)
 /* Display the fast forward state to the user, if needed. */
-static void update_fastforwarding_state(struct rarch_state *p_rarch)
+static void update_fastforwarding_state(
+      struct rarch_state *p_rarch,
+      bool runloop_fastmotion,
+      bool frame_time_counter_reset_after_fastforwarding)
 {
-   bool runloop_fastmotion           = p_rarch->runloop_fastmotion;
-   settings_t            *settings   = p_rarch->configuration_settings;
-
    p_rarch->gfx_widgets_fast_forward = runloop_fastmotion;
 
    if (!runloop_fastmotion)
-      if (settings->bools.frame_time_counter_reset_after_fastforwarding)
+      if (frame_time_counter_reset_after_fastforwarding)
          p_rarch->video_driver_frame_time_count = 0;
 }
 #endif
@@ -37778,7 +37778,9 @@ static enum runloop_state runloop_check_state(
          driver_set_nonblock_state();
 #if defined(HAVE_GFX_WIDGETS)
          if (widgets_active)
-            update_fastforwarding_state(p_rarch);
+            update_fastforwarding_state(p_rarch,
+                  p_rarch->runloop_fastmotion,
+                  settings->bools.frame_time_counter_reset_after_fastforwarding);
 #endif
       }
 
@@ -37827,7 +37829,7 @@ static enum runloop_state runloop_check_state(
          if (check1)
             configuration_set_int(settings, settings->ints.state_slot,
                   cur_state_slot + addition);
-         update_savestate_slot(p_rarch);
+         update_savestate_slot(settings->ints.state_slot);
       }
 
       old_should_slot_increase = should_slot_increase;
