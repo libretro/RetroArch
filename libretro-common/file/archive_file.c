@@ -342,15 +342,13 @@ end:
          {
 #ifdef HAVE_7ZIP
             if (handle->backend != &sevenzip_backend)
+#endif
             {
                handle->backend->stream_free(handle->stream);
 
                if (handle->data)
                   free(handle->data);
             }
-#else
-            handle->backend->stream_free(handle->stream);
-#endif
          }
       }
    }
