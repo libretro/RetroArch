@@ -112,7 +112,18 @@ bool config_append_file(config_file_t *conf, const char *path);
 
 bool config_entry_exists(config_file_t *conf, const char *entry);
 
-struct config_entry_list;
+struct config_entry_list
+{
+   /* If we got this from an #include,
+    * do not allow overwrite. */
+   bool readonly;
+
+   char *key;
+   char *value;
+   struct config_entry_list *next;
+};
+
+
 struct config_file_entry
 {
    const char *key;
@@ -120,6 +131,10 @@ struct config_file_entry
    /* Used intentionally. Opaque here. */
    const struct config_entry_list *next;
 };
+
+struct config_entry_list *config_get_entry(
+      const config_file_t *conf,
+      const char *key, struct config_entry_list **prev);
 
 bool config_get_entry_list_head(config_file_t *conf, struct config_file_entry *entry);
 bool config_get_entry_list_next(struct config_file_entry *entry);

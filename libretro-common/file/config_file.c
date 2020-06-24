@@ -51,17 +51,6 @@
 
 #define MAX_INCLUDE_DEPTH 16
 
-struct config_entry_list
-{
-   /* If we got this from an #include,
-    * do not allow overwrite. */
-   bool readonly;
-
-   char *key;
-   char *value;
-   struct config_entry_list *next;
-};
-
 struct config_include_list
 {
    char *path;
@@ -664,7 +653,7 @@ config_file_t *config_file_new_alloc(void)
    return conf;
 }
 
-static struct config_entry_list *config_get_entry(
+struct config_entry_list *config_get_entry(
       const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
 {
