@@ -2226,10 +2226,10 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
       if (!string_is_empty(line))
          gfx_display_draw_text(
                mui->font_data.list.font, line,
-               x - longest_width/2.0,
+               x - longest_width / 2.0f,
                y + (i * mui->font_data.list.line_height) + mui->font_data.list.line_ascender,
                video_width, video_height, mui->colors.list_text,
-               TEXT_ALIGN_LEFT, 1.0f, false, 0, true);
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
    }
 
 end:
@@ -3571,7 +3571,8 @@ static void materialui_render_menu_entry_default(
             video_width, video_height,
             (entry_selected || touch_feedback_active) ?
                   mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
-            TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside || (sublabel_y < 0));
+            TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
+            draw_text_outside || (sublabel_y < 0));
    }
    else
    {
@@ -3652,7 +3653,7 @@ static void materialui_render_menu_entry_default(
                   video_width, video_height,
                   (entry_selected || touch_feedback_active) ?
                         mui->colors.list_text_highlighted : mui->colors.list_text,
-                  TEXT_ALIGN_RIGHT, 1.0f, false, 0, draw_text_outside);
+                  TEXT_ALIGN_RIGHT, 1.0f, false, 0.0f, draw_text_outside);
          }
          break;
       case MUI_ENTRY_VALUE_SWITCH_ON:
@@ -3737,7 +3738,7 @@ static void materialui_render_menu_entry_default(
                video_width, video_height,
                (entry_selected || touch_feedback_active) ?
                      mui->colors.list_text_highlighted : mui->colors.list_text,
-               TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside);
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, draw_text_outside);
       }
    }
 }
@@ -3890,7 +3891,8 @@ static void materialui_render_menu_entry_playlist_list(
             video_width, video_height,
             (entry_selected || touch_feedback_active) ?
                   mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
-            TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside || (sublabel_y < 0));
+            TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
+            draw_text_outside || (sublabel_y < 0));
    }
    /* If we don't have a sublabel, entry label is drawn
     * at the vertical centre of the current node */
@@ -3934,7 +3936,8 @@ static void materialui_render_menu_entry_playlist_list(
                video_width, video_height,
                (entry_selected || touch_feedback_active) ?
                      mui->colors.list_text_highlighted : mui->colors.list_text,
-               TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside);
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
+               draw_text_outside);
       }
    }
 
@@ -4095,7 +4098,8 @@ static void materialui_render_menu_entry_playlist_dual_icon(
                video_width, video_height,
                (entry_selected || touch_feedback_active) ?
                      mui->colors.list_text_highlighted : mui->colors.list_text,
-               TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside);
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
+               draw_text_outside);
       }
    }
 
@@ -4188,7 +4192,8 @@ static void materialui_render_menu_entry_playlist_desktop(
                video_width, video_height,
                (entry_selected || touch_feedback_active) ?
                      mui->colors.list_text_highlighted : mui->colors.list_text,
-               TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside);
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
+               draw_text_outside);
       }
    }
 
@@ -4453,7 +4458,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
                      (float)mui->font_data.hint.line_centre_offset,
                video_width, video_height,
                text_color,
-               TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside);
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
+               draw_text_outside);
       }
    }
 }
@@ -4976,7 +4982,8 @@ static void materialui_render_header(
                   mui->sys_bar_cache.battery_percent_str,
                   (int)video_width - ((int)mui->sys_bar_cache.battery_percent_width + (int)mui->sys_bar_margin + (int)mui->nav_bar_layout_width),
                   sys_bar_text_y,
-                  video_width, video_height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+                  video_width, video_height, mui->colors.sys_bar_text,
+                  TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 
             sys_bar_battery_width = mui->sys_bar_cache.battery_percent_width +
                   mui->sys_bar_margin + mui->sys_bar_icon_size;
@@ -5034,7 +5041,7 @@ static void materialui_render_header(
                   + (int)mui->nav_bar_layout_width),
                sys_bar_text_y,
                video_width, video_height, mui->colors.sys_bar_text,
-               TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 
          usable_sys_bar_width -= sys_bar_clock_width;
       }
@@ -5080,7 +5087,8 @@ static void materialui_render_header(
       gfx_display_draw_text(mui->font_data.hint.font, core_title_buf,
             (int)mui->ticker_x_offset + (int)mui->sys_bar_margin,
             sys_bar_text_y,
-            video_width, video_height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+            video_width, video_height, mui->colors.sys_bar_text,
+            TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
    /* Title bar items */
@@ -5224,7 +5232,8 @@ static void materialui_render_header(
    gfx_display_draw_text(mui->font_data.title.font, menu_title_buf,
          title_x,
          (int)(mui->sys_bar_height + (mui->title_bar_height / 2.0f) + mui->font_data.title.line_centre_offset),
-         video_width, video_height, mui->colors.header_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+         video_width, video_height, mui->colors.header_text,
+         TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 }
 
 /* Use separate functions for bottom/right navigation

@@ -120,7 +120,7 @@ void ozone_draw_text(
    gfx_display_draw_text(font_data->font, str, x, y,
          width, height, color, text_align, 1.0f,
          false,
-         1.0, draw_outside);
+         1.0f, draw_outside);
 }
 
 static void ozone_draw_cursor_slice(

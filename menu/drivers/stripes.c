@@ -739,8 +739,8 @@ static void stripes_render_keyboard(
                userdata,
                video_width,
                video_height,
-               video_width  / 2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
-               video_height / 2.0 + ptr_height*1.5 + line_y,
+               video_width  / 2.0f - (11 * ptr_width) / 2.0f + (i % 11) * ptr_width,
+               video_height / 2.0f + ptr_height * 1.5f + line_y,
                ptr_width, ptr_height,
                video_width,
                video_height,
@@ -751,14 +751,14 @@ static void stripes_render_keyboard(
       }
 
       gfx_display_draw_text(stripes->font, grid[i],
-            video_width / 2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
-            video_height / 2.0 + ptr_height + line_y + stripes->font->size / 3,
+            video_width / 2.0f - (11 * ptr_width) / 2.0f + (i % 11) * ptr_width + ptr_width / 2.0f,
+            video_height / 2.0f + ptr_height + line_y + stripes->font->size / 3,
             video_width,
             video_height,
             0xffffffff,
             TEXT_ALIGN_CENTER,
             1.0f,
-            false, 0, false);
+            false, 0.0f, false);
    }
 }
 
@@ -849,7 +849,7 @@ static void stripes_render_messagebox_internal(
          userdata,
          video_width,
          video_height,
-         x - longest_width/2 - stripes->margins_dialog,
+         x - longest_width / 2 - stripes->margins_dialog,
          y + stripes->margins_slice - stripes->margins_dialog,
          256, 256,
          longest_width + stripes->margins_dialog * 2,
@@ -857,7 +857,7 @@ static void stripes_render_messagebox_internal(
          video_width,
          video_height,
          NULL,
-         stripes->margins_slice, 1.0,
+         stripes->margins_slice, 1.0f,
          stripes->textures.list[STRIPES_TEXTURE_DIALOG_SLICE]);
 
    for (i = 0; i < list->size; i++)
@@ -866,13 +866,13 @@ static void stripes_render_messagebox_internal(
 
       if (msg)
          gfx_display_draw_text(stripes->font, msg,
-               x - longest_width/2.0,
-               y + (i+0.75) * line_height,
+               x - longest_width / 2.0f,
+               y + (i + 0.75f) * line_height,
                video_width,
                video_height,
                0x444444ff,
                TEXT_ALIGN_LEFT,
-               1.0f, false, 0, false);
+               1.0f, false, 0.0f, false);
    }
 
    if (menu_input_dialog_get_display_kb())

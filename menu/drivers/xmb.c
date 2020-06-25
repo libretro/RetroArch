@@ -979,7 +979,7 @@ static void xmb_render_messagebox_internal(
                x - longest_width/2.0,
                y + (i+0.75) * line_height,
                video_width, video_height, 0x444444ff,
-               TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
    if (menu_input_dialog_get_display_kb())
