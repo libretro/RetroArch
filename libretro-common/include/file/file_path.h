@@ -460,9 +460,9 @@ void path_basedir_wrapper(char *path);
  * Returns: true (1) if character is a slash, otherwise false (0).
  */
 #ifdef _WIN32
-#define path_char_is_slash(c) (((c) == '/') || ((c) == '\\'))
+#define PATH_CHAR_IS_SLASH(c) (((c) == '/') || ((c) == '\\'))
 #else
-#define path_char_is_slash(c) ((c) == '/')
+#define PATH_CHAR_IS_SLASH(c) ((c) == '/')
 #endif
 
 /**

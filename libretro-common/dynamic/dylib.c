@@ -87,7 +87,7 @@ dylib_t dylib_load(const char *path)
    fill_pathname_abbreviate_special(relative_path_abbrev, path, PATH_MAX_LENGTH * sizeof(char));
 
    char *relative_path = relative_path_abbrev;
-   if (relative_path[0] != ':' || !path_char_is_slash(relative_path[1]))
+   if (relative_path[0] != ':' || !PATH_CHAR_IS_SLASH(relative_path[1]))
    {
       /* Path to dylib_load is not inside app install directory.
        * Loading will probably fail. */

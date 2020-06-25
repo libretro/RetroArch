@@ -571,7 +571,7 @@ void path_parent_dir(char *path)
    
    len = strlen(path);
 
-   if (len && path_char_is_slash(path[len - 1]))
+   if (len && PATH_CHAR_IS_SLASH(path[len - 1]))
    {
       bool path_was_absolute = path_is_absolute(path);
 
@@ -1004,7 +1004,7 @@ void fill_pathname_expand_special(char *out_path,
          out_path  += src_size;
          size      -= src_size;
 
-         if (!path_char_is_slash(out_path[-1]))
+         if (!PATH_CHAR_IS_SLASH(out_path[-1]))
          {
             src_size = strlcpy(out_path, PATH_DEFAULT_SLASH(), size);
             retro_assert(src_size < size);
@@ -1035,7 +1035,7 @@ void fill_pathname_expand_special(char *out_path,
          out_path  += src_size;
          size      -= src_size;
 
-         if (!path_char_is_slash(out_path[-1]))
+         if (!PATH_CHAR_IS_SLASH(out_path[-1]))
          {
             src_size = strlcpy(out_path, PATH_DEFAULT_SLASH(), size);
             retro_assert(src_size < size);
@@ -1098,7 +1098,7 @@ void fill_pathname_abbreviate_special(char *out_path,
          size            -= src_size;
          in_path         += strlen(candidates[i]);
 
-         if (!path_char_is_slash(*in_path))
+         if (!PATH_CHAR_IS_SLASH(*in_path))
          {
             retro_assert(strlcpy(out_path,
                      PATH_DEFAULT_SLASH(), size) < size);
@@ -1286,7 +1286,9 @@ bool is_path_accessible_using_standard_io(const char *path)
    char *relative_path_abbrev = (char*)malloc(path_sizeof);
    fill_pathname_abbreviate_special(relative_path_abbrev, path, path_sizeof);
 
-   result = strlen(relative_path_abbrev) >= 2 && (relative_path_abbrev[0] == ':' || relative_path_abbrev[0] == '~') && path_char_is_slash(relative_path_abbrev[1]);
+   result = (strlen(relative_path_abbrev) >= 2 )
+      && (relative_path_abbrev[0] == ':' || relative_path_abbrev[0] == '~') 
+      && PATH_CHAR_IS_SLASH(relative_path_abbrev[1]);
 
    free(relative_path_abbrev);
 #endif
