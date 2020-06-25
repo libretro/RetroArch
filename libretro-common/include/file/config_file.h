@@ -94,8 +94,11 @@ config_file_t *config_file_new_alloc(void);
  * Includes cb callbacks to run custom code during config file processing.*/
 config_file_t *config_file_new_with_callback(const char *path, config_file_cb_t *cb);
 
-/* Load a config file from a string. */
-config_file_t *config_file_new_from_string(const char *from_string,
+/* Load a config file from a string.
+ * > WARNING: This will modify 'from_string'.
+ *   Pass a copy of source string if original
+ *   contents must be preserved */
+config_file_t *config_file_new_from_string(char *from_string,
       const char *path);
 
 config_file_t *config_file_new_from_path_to_string(const char *path);
