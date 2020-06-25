@@ -51,6 +51,13 @@ RETRO_BEGIN_DECLS
       base->var = tmp; \
 } while(0)
 
+enum config_file_entry_type
+{
+   CONFIG_FILE_ENTRY_TYPE_DONTCARE = 0,
+   CONFIG_FILE_ENTRY_TYPE_BOOL
+};
+
+
 struct config_file
 {
    char *path;
@@ -120,9 +127,10 @@ struct config_entry_list
 
    char *key;
    char *value;
+   enum config_file_entry_type type;
+   bool value_bool;
    struct config_entry_list *next;
 };
-
 
 struct config_file_entry
 {
