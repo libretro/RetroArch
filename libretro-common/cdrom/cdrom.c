@@ -1342,7 +1342,8 @@ struct string_list* cdrom_get_available_drives(void)
 
    for (i = 0; i < (int)dir_list->size; i++)
    {
-      if (string_starts_with(dir_list->elems[i].data, "/dev/sg"))
+      if (string_starts_with_size(dir_list->elems[i].data, "/dev/sg",
+               STRLEN_CONST("/dev/sg")))
       {
          libretro_vfs_implementation_file *stream;
          char drive_model[32]             = {0};

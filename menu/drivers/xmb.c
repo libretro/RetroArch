@@ -3091,7 +3091,7 @@ static int xmb_draw_item(
 
          if (string_is_equal(entry.value, "..."))
             found = true;
-         else if (string_starts_with(entry.value, "(") &&
+         else if (string_starts_with_size(entry.value, "(", STRLEN_CONST("(")) &&
              string_ends_with  (entry.value, ")")
             )
          {

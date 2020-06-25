@@ -959,7 +959,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (  string_starts_with(label, "input_player") && 
+   if (  string_starts_with_size(label, "input_player", STRLEN_CONST("input_player")) && 
          string_ends_with(label, "_joypad_index"))
    {
       unsigned i;
@@ -984,7 +984,8 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (strstr(label, "rdb_entry") || string_starts_with(label, "content_info"))
+   if (  strstr(label, "rdb_entry") || 
+         string_starts_with_size(label, "content_info", STRLEN_CONST("content_info")))
    {
       BIND_ACTION_RIGHT(cbs, action_right_scroll);
    }

@@ -436,7 +436,7 @@ static void cheat_manager_load_cb_second_pass(char *key, char *value)
       cheat_st->cheats[cheat_idx].handler = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "memory_search_size"))
       cheat_st->cheats[cheat_idx].memory_search_size = (unsigned)strtoul(value, NULL, 0);
-   else if (string_starts_with(key, "repeat_"))
+   else if (string_starts_with_size(key, "repeat_", STRLEN_CONST("repeat_")))
    {
       if (string_is_equal(key, "repeat_add_to_address"))
          cheat_st->cheats[cheat_idx].repeat_add_to_address = (unsigned)strtoul(value, NULL, 0);
@@ -445,7 +445,7 @@ static void cheat_manager_load_cb_second_pass(char *key, char *value)
       else if (string_is_equal(key, "repeat_count"))
          cheat_st->cheats[cheat_idx].repeat_count = (unsigned)strtoul(value, NULL, 0);
    }
-   else if (string_starts_with(key, "rumble"))
+   else if (string_starts_with_size(key, "rumble", STRLEN_CONST("rumble")))
    {
       if (string_is_equal(key, "rumble_port"))
          cheat_st->cheats[cheat_idx].rumble_port = (unsigned)strtoul(value, NULL, 0);

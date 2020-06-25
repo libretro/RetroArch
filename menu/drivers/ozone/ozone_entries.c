@@ -103,7 +103,7 @@ static void ozone_draw_entry_value(
       {
          if (string_is_equal(entry->value, "..."))
             return;
-         if (string_starts_with(entry->value, "(") &&
+         if (string_starts_with_size(entry->value, "(", STRLEN_CONST("(")) &&
              string_ends_with  (entry->value, ")")
             )
          {

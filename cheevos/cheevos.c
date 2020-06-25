@@ -521,7 +521,8 @@ static void rcheevos_async_task_callback(
 
             case CHEEVOS_ASYNC_AWARD_ACHIEVEMENT:
                /* ignore already unlocked */
-               if (string_starts_with(buffer, "User already has "))
+               if (string_starts_with_size(buffer, "User already has ",
+                        STRLEN_CONST("User already has ")))
                   break;
                /* fallthrough to default */
 

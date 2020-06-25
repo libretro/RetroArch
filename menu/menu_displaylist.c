@@ -10948,7 +10948,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (string_starts_with(info->path, "core_option_"))
+            if (string_starts_with_size(info->path, "core_option_",
+                     STRLEN_CONST("core_option_")))
             {
                struct string_list *tmp_str_list = string_split(info->path, "_");
 
@@ -11366,7 +11367,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPDOWN_LIST_SPECIAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         if (string_starts_with(info->path, "core_option_"))
+         if (string_starts_with_size(info->path, "core_option_",
+                  STRLEN_CONST("core_option_")))
          {
             struct string_list *tmp_str_list = string_split(info->path, "_");
 

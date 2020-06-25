@@ -2533,7 +2533,7 @@ static bool check_menu_driver_compatibility(settings_t *settings)
       return true;
 
    /* TODO/FIXME - maintenance hazard */
-   if (string_starts_with(video_driver, "d3d"))
+   if (string_starts_with_size(video_driver, "d3d", STRLEN_CONST("d3d")))
       if (
             string_is_equal(video_driver, "d3d9")   ||
             string_is_equal(video_driver, "d3d10")  ||
@@ -2541,7 +2541,7 @@ static bool check_menu_driver_compatibility(settings_t *settings)
             string_is_equal(video_driver, "d3d12")
          )
       return true;
-   if (string_starts_with(video_driver, "gl"))
+   if (string_starts_with_size(video_driver, "gl", STRLEN_CONST("gl")))
       if (
             string_is_equal(video_driver, "gl")     ||
             string_is_equal(video_driver, "gl1")    ||

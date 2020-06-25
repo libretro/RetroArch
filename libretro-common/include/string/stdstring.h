@@ -45,6 +45,12 @@ static INLINE bool string_is_equal(const char *a, const char *b)
    return (a && b) ? !strcmp(a, b) : false;
 }
 
+static INLINE bool string_starts_with_size(const char *str, const char *prefix,
+      size_t size)
+{
+   return (str && prefix) ? !strncmp(prefix, str, size) : false;
+}
+
 static INLINE bool string_starts_with(const char *str, const char *prefix)
 {
    return (str && prefix) ? !strncmp(prefix, str, strlen(prefix)) : false;

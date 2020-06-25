@@ -250,7 +250,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
          bool found = false;
          game_id[5] = '\0';
 
-         if (string_starts_with(game_id, "UL"))
+         if (string_starts_with_size(game_id, "UL", STRLEN_CONST("UL")))
          {
             if (
                    (string_is_equal(game_id, "ULES-"))
@@ -263,7 +263,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
                )
                found = true;
          }
-         if (!found && string_starts_with(game_id, "UC"))
+         if (!found && string_starts_with_size(game_id, "UC", STRLEN_CONST("UC")))
          {
             if (
                    (string_is_equal(game_id, "UCES-"))
@@ -276,7 +276,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
                found = true;
          }
 
-         if (!found && string_starts_with(game_id, "NP"))
+         if (!found && string_starts_with_size(game_id, "NP", STRLEN_CONST("NP")))
          {
             if (
                      (string_is_equal(game_id, "NPEH-"))

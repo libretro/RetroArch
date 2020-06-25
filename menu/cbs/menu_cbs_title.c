@@ -169,7 +169,7 @@ static int action_get_title_dropdown_item(
    if (string_is_empty(path))
       return 0;
 
-   if (string_starts_with(path, "core_option_"))
+   if (string_starts_with_size(path, "core_option_", STRLEN_CONST("core_option_")))
    {
       /* This is a core options item */
       struct string_list *tmp_str_list = string_split(path, "_");

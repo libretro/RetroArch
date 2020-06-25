@@ -381,7 +381,8 @@ static bool parse_line(config_file_t *conf,
       /* Starting a line with an 'include' directive
        * appends a sub-config file
        * > All other comments are ignored */
-      if (!string_starts_with(comment, "include "))
+      if (!string_starts_with_size(comment, "include ",
+               STRLEN_CONST("include ")))
          return false;
 
       include_line = comment + STRLEN_CONST("include ");

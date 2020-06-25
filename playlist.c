@@ -2034,7 +2034,7 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                   pCtx->current_entry_val = &pCtx->current_entry->crc32;
                else if (string_is_equal(pValue, "db_name"))
                   pCtx->current_entry_val = &pCtx->current_entry->db_name;
-               else if (string_starts_with(pValue, "subsystem_"))
+               else if (string_starts_with_size(pValue, "subsystem_", STRLEN_CONST("subsystem_")))
                {
                   if (string_is_equal(pValue, "subsystem_ident"))
                      pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
@@ -2043,7 +2043,7 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                   else if (string_is_equal(pValue, "subsystem_roms"))
                      pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
                }
-               else if (string_starts_with(pValue, "runtime_"))
+               else if (string_starts_with_size(pValue, "runtime_", STRLEN_CONST("runtime_")))
                {
                   if (string_is_equal(pValue, "runtime_hours"))
                      pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
@@ -2052,7 +2052,7 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                   else if (string_is_equal(pValue, "runtime_seconds"))
                      pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
                }
-               else if (string_starts_with(pValue, "last_played_"))
+               else if (string_starts_with_size(pValue, "last_played_", STRLEN_CONST("last_played_")))
                {
                   if (string_is_equal(pValue, "last_played_year"))
                      pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;

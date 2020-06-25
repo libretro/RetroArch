@@ -635,9 +635,9 @@ bool path_is_absolute(const char *path)
 #if defined(_WIN32)
    /* Many roads lead to Rome...
     * Note: Drive letter can only be 1 character long */
-   if (string_starts_with(path,     "\\\\") ||
-       string_starts_with(path + 1, ":/")   ||
-       string_starts_with(path + 1, ":\\"))
+   if (string_starts_with_size(path,     "\\\\", STRLEN_CONST("\\\\")) ||
+       string_starts_with_size(path + 1, ":/",   STRLEN_CONST(":/"))   ||
+       string_starts_with_size(path + 1, ":\\",  STRLEN_CONST(":\\")))
       return true;
 #elif defined(__wiiu__) || defined(VITA)
    {

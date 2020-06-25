@@ -3764,7 +3764,7 @@ static enum action_iterate_type action_iterate_type(const char *label)
 {
    if (string_is_equal(label, "info_screen"))
       return ITERATE_TYPE_INFO;
-   if (string_starts_with(label, "help"))
+   if (string_starts_with_size(label, "help", STRLEN_CONST("help")))
       if (
             string_is_equal(label, "help") ||
             string_is_equal(label, "help_controls") ||
@@ -3778,7 +3778,7 @@ static enum action_iterate_type action_iterate_type(const char *label)
          return ITERATE_TYPE_HELP;
    if (string_is_equal(label, "cheevos_description"))
          return ITERATE_TYPE_HELP;
-   if (string_starts_with(label, "custom_bind"))
+   if (string_starts_with_size(label, "custom_bind", STRLEN_CONST("custom_bind")))
       if (
             string_is_equal(label, "custom_bind") ||
             string_is_equal(label, "custom_bind_all") ||
@@ -11042,12 +11042,12 @@ enum rarch_content_type path_is_media_type(const char *path)
    string_to_lower(ext_lower);
 
    /* hack, to detect livestreams so the ffmpeg core can be started */
-   if (string_starts_with(path, "udp://") ||
-       string_starts_with(path, "http://") ||
-       string_starts_with(path, "https://") ||
-       string_starts_with(path, "tcp://") ||
-       string_starts_with(path, "rtmp://") ||
-       string_starts_with(path, "rtp://"))
+   if (string_starts_with_size(path, "udp://",   STRLEN_CONST("udp://"))   ||
+       string_starts_with_size(path, "http://",  STRLEN_CONST("http://"))  ||
+       string_starts_with_size(path, "https://", STRLEN_CONST("https://")) ||
+       string_starts_with_size(path, "tcp://",   STRLEN_CONST("tcp://"))   ||
+       string_starts_with_size(path, "rtmp://",  STRLEN_CONST("rtmp://"))  ||
+       string_starts_with_size(path, "rtp://",   STRLEN_CONST("rtp://")))
       return RARCH_CONTENT_MOVIE;
 
    switch (msg_hash_to_file_type(msg_hash_calculate(ext_lower)))
@@ -24249,7 +24249,7 @@ static void menu_input_pointer_close_messagebox(struct rarch_state *p_rarch)
       pop_stack = true;
 
    /* > Help box */
-   if (string_starts_with(label, "help"))
+   if (string_starts_with_size(label, "help", STRLEN_CONST("help")))
       if (
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONTROLS))
@@ -32355,7 +32355,7 @@ enum gfx_ctx_api video_context_driver_get_api(void)
       const char *video_ident  = (p_rarch->current_video)
          ? p_rarch->current_video->ident
          : NULL;
-      if (string_starts_with(video_ident, "d3d"))
+      if (string_starts_with_size(video_ident, "d3d", STRLEN_CONST("d3d")))
       {
          if (string_is_equal(video_ident, "d3d9"))
             return GFX_CTX_DIRECT3D9_API;
@@ -32366,7 +32366,7 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          else if (string_is_equal(video_ident, "d3d12"))
             return GFX_CTX_DIRECT3D12_API;
       }
-      if (string_starts_with(video_ident, "gl"))
+      if (string_starts_with_size(video_ident, "gl", STRLEN_CONST("gl")))
       {
          if (string_is_equal(video_ident, "gl"))
             return GFX_CTX_OPENGL_API;

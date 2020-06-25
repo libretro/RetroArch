@@ -1062,7 +1062,7 @@ static void handle_hotplug(android_input_t *android,
     */
    else if(
             (
-               string_starts_with(device_model, "R800") ||
+               string_starts_with_size(device_model, "R800", STRLEN_CONST("R800")) ||
                strstr(device_model, "Xperia Play") ||
                strstr(device_model, "Play") ||
                strstr(device_model, "SO-01D")
@@ -1114,7 +1114,7 @@ static void handle_hotplug(android_input_t *android,
 
    /* Amazon Fire TV & Fire stick */
    else if (
-             string_starts_with(device_model, "AFT") &&
+             string_starts_with_size(device_model, "AFT", STRLEN_CONST("AFT")) &&
              (
               strstr(device_model, "AFTB") || 
               strstr(device_model, "AFTT") ||
