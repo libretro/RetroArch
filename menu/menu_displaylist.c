@@ -11111,7 +11111,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
                            float step             = setting->step;
                            double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                           double max             = setting->enforce_maxrange ? setting->max : 99999.00;
                            bool checked_found     = false;
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
@@ -11187,7 +11187,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM;
                            float step             = setting->step;
                            double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                           double max             = setting->enforce_maxrange ? setting->max : 9999.00;
                            bool checked_found     = false;
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
@@ -11261,7 +11261,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
                            float step             = setting->step;
                            double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                           double max             = setting->enforce_maxrange ? setting->max : 9999.00;
                            bool checked_found     = false;
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
@@ -11527,7 +11527,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
                         float step             = setting->step;
                         double min             = setting->enforce_minrange ? setting->min : 0.00;
-                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 9999.00;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
@@ -11603,7 +11603,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
                         float step             = setting->step;
                         double min             = setting->enforce_minrange ? setting->min : 0.00;
-                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 9999.00;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
@@ -11677,7 +11677,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
                         float step             = setting->step;
                         double min             = setting->enforce_minrange ? setting->min : 0.00;
-                        double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                        double max             = setting->enforce_maxrange ? setting->max : 9999.00;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;

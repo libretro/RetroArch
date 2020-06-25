@@ -15728,7 +15728,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -1;
-         menu_settings_list_current_add_range(list, list_info, -1.0f, 999.0f, 1.0f, true, true);
+         menu_settings_list_current_add_range(list, list_info, -1.0f, 9999.0f, 1.0f, true, true);
 
          CONFIG_BOOL(
                list, list_info,
