@@ -1,6 +1,7 @@
 # Future
 - CHEEVOS: Restore display of unlocked achievements across hardcore modes
 - CHEEVOS: Hash buffered data when available
+- MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 
 # 1.8.9
