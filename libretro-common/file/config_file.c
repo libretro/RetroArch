@@ -45,7 +45,6 @@
 #include <compat/msvc.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
-#include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 
@@ -212,8 +211,8 @@ static char *strip_comment(char *str)
 
 static char *extract_value(char *line, bool is_value)
 {
-   char *save = NULL;
-   char *tok  = NULL;
+   size_t idx  = 0;
+   char *value = NULL;
 
    if (is_value)
    {
@@ -238,20 +237,40 @@ static char *extract_value(char *line, bool is_value)
     *   is ignored completely - which means we cannot
     *   track *changes* in entry value */
 
-   /* We have a full string. Read until next ". */
+   /* If first character is ("), we have a full string
+    * literal */
    if (*line == '"')
    {
+      /* Skip to next character */
       line++;
+
+      /* If this a ("), then value string is empty */
       if (*line == '"')
          return strdup("");
-      tok = strtok_r(line, "\"", &save);
-   }
-   /* We don't have that. Read until next space. */
-   else if (*line != '\0') /* Nothing */
-      tok = strtok_r(line, " \n\t\f\r\v", &save);
 
-   if (tok && *tok)
-      return strdup(tok);
+      /* Find the next (") character */
+      while (line[idx] && (line[idx] != '\"'))
+         idx++;
+
+      line[idx] = '\0';
+      value     = line;
+   }
+   /* This is not a string literal - just read
+    * until the next space is found
+    * > Note: Skip this if line is empty */
+   else if (*line != '\0')
+   {
+      /* Find next space character */
+      while (line[idx] && isgraph((int)line[idx]))
+         idx++;
+
+      line[idx] = '\0';
+      value     = line;
+   }
+
+   if (value && *value)
+      return strdup(value);
+
    return strdup("");
 }
 
@@ -359,7 +378,7 @@ static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
 static bool parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line, config_file_cb_t *cb)
 {
-   size_t cur_size       = 8;
+   size_t cur_size       = 32;
    size_t idx            = 0;
    char *comment         = NULL;
    char *key             = NULL;
@@ -413,14 +432,21 @@ static bool parse_line(config_file_t *conf,
       return true;
    }
 
-   /* Skips to first character. */
+   /* Skip to first non-space character */
    while (isspace((int)*line))
       line++;
 
-   key             = (char*)malloc(9);
+   /* Allocate storage for key */
+   key = (char*)malloc(cur_size + 1);
+   if (!key)
+      return false;
 
+   /* Copy line contents into key until we
+    * reach the next space character */
    while (isgraph((int)*line))
    {
+      /* If current key storage is too small,
+       * double its size */
       if (idx == cur_size)
       {
          cur_size *= 2;
@@ -438,10 +464,12 @@ static bool parse_line(config_file_t *conf,
       key[idx++] = *line++;
    }
    key[idx]      = '\0';
-   list->key     = key;
 
+   /* Add key and value entries to list */
+   list->key     = key;
    list->value   = extract_value(line, true);
 
+   /* An entry without a value is invalid */
    if (!list->value)
    {
       list->key = NULL;
@@ -590,17 +618,16 @@ bool config_append_file(config_file_t *conf, const char *path)
    return true;
 }
 
-config_file_t *config_file_new_from_string(const char *from_string,
+config_file_t *config_file_new_from_string(char *from_string,
       const char *path)
 {
-   size_t i;
-   struct string_list *lines = NULL;
-   struct config_file *conf  = (struct config_file*)malloc(sizeof(*conf));
+   char *lines              = from_string;
+   char *save_ptr           = NULL;
+   char *line               = NULL;
+   struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
+
    if (!conf)
       return NULL;
-
-   if (!from_string)
-      return conf;
 
    conf->path                     = NULL;
    conf->entries                  = NULL;
@@ -614,19 +641,19 @@ config_file_t *config_file_new_from_string(const char *from_string,
    if (!string_is_empty(path))
       conf->path                  = strdup(path);
 
-   lines                          = string_split(from_string, "\n");
-   if (!lines)
+   if (string_is_empty(lines))
       return conf;
 
-   for (i = 0; i < lines->size; i++)
+   /* Get first line of config file */
+   line = strtok_r(lines, "\n", &save_ptr);
+
+   while (line)
    {
       struct config_entry_list *list = (struct config_entry_list*)
-         malloc(sizeof(*list));
-      char                    *line  = lines->elems[i].data;
+            malloc(sizeof(*list));
 
       if (!list)
       {
-         string_list_free(lines);
          config_file_free(conf);
          return NULL;
       }
@@ -636,24 +663,23 @@ config_file_t *config_file_new_from_string(const char *from_string,
       list->value     = NULL;
       list->next      = NULL;
 
-      if (line && conf)
+      /* Parse current line */
+      if (*line && parse_line(conf, list, line, NULL))
       {
-         if (*line && parse_line(conf, list, line, NULL))
-         {
-            if (conf->entries)
-               conf->tail->next = list;
-            else
-               conf->entries    = list;
+         if (conf->entries)
+            conf->tail->next = list;
+         else
+            conf->entries    = list;
 
-            conf->tail          = list;
-         }
+         conf->tail          = list;
       }
 
       if (list != conf->tail)
          free(list);
-   }
 
-   string_list_free(lines);
+      /* Get next line of config file */
+      line = strtok_r(NULL, "\n", &save_ptr);
+   }
 
    return conf;
 }
@@ -668,13 +694,15 @@ config_file_t *config_file_new_from_path_to_string(const char *path)
    {
       if (filestream_read_file(path, (void**)&ret_buf, &length))
       {
+         /* Note: 'ret_buf' is not used outside this
+          * function - we do not care that it will be
+          * modified by config_file_new_from_string() */
          if (length >= 0)
-            conf = config_file_new_from_string((const char*)ret_buf, path);
+            conf = config_file_new_from_string((char*)ret_buf, path);
          if ((void*)ret_buf)
             free((void*)ret_buf);
       }
    }
-
    return conf;
 }
 

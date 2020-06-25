@@ -335,8 +335,16 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    /* Load internal autoconfig files  */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
-      config_file_t *conf = config_file_new_from_string(
-            input_builtin_autoconfs[i], NULL);
+      char *autoconf      = NULL;
+      config_file_t *conf = NULL;
+
+      if (string_is_empty(input_builtin_autoconfs[i]))
+         continue;
+
+      autoconf = strdup(input_builtin_autoconfs[i]);
+      conf     = config_file_new_from_string(autoconf, NULL);
+      free(autoconf);
+
       if (conf && input_autoconfigure_joypad_from_conf(conf, params, task))
         return true;
    }

@@ -29,12 +29,15 @@
 #include <file/config_file.h>
 
 static void test_config_file_parse_contains(
-      const char * cfgtext,
+      const char *cfgtext,
       const char *key, const char *val)
 {
-   config_file_t *cfg = config_file_new_from_string(cfgtext, NULL);
+   char *cfgtext_copy = strdup(cfgtext);
+   config_file_t *cfg = config_file_new_from_string(cfgtext_copy, NULL);
    char          *out = NULL;
    bool            ok = false;
+
+   free(cfgtext_copy);
 
    if (!cfg)
       abort();
@@ -63,14 +66,10 @@ int main(void)
    test_config_file_parse_contains("foo = \"bar\"\r\n", "foo", "bar");
    test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
 
-#if 0
-   /* turns out it treats empty as nonexistent -
-    * should probably be fixed */
    test_config_file_parse_contains("foo = \"\"\n",   "foo", "");
    test_config_file_parse_contains("foo = \"\"",     "foo", "");
    test_config_file_parse_contains("foo = \"\"\r\n", "foo", "");
    test_config_file_parse_contains("foo = \"\"",     "foo", "");
-#endif
 
    test_config_file_parse_contains("foo = \"\"\n",   "bar", NULL);
    test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
