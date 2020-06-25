@@ -9611,7 +9611,8 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
                node->has_icon           = true;
             }
-            else if (string_ends_with(label, "_input_binds_list"))
+            else if (string_ends_with_size(label, "_input_binds_list",
+                     strlen(label), STRLEN_CONST("_input_binds_list")))
             {
                unsigned i;
 

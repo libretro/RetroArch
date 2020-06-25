@@ -2755,7 +2755,8 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
           * (i.e. ignore history/favourites) */
          if (
                   !string_is_empty(conf_path_basename)
-               && !string_ends_with(playlist->conf_path, "_history.lpl")
+               && !string_ends_with_size(playlist->conf_path, "_history.lpl",
+                  strlen(playlist->conf_path), STRLEN_CONST("_history.lpl"))
                && !string_is_equal(conf_path_basename,
                   file_path_str(FILE_PATH_CONTENT_FAVORITES))
             )

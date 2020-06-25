@@ -492,7 +492,10 @@ bool task_push_pl_thumbnail_download(
    
    /* Only parse supported playlist types */
    if (
-            string_ends_with(playlist_path, "_history.lpl") 
+            string_ends_with_size(playlist_path, "_history.lpl",
+               strlen(playlist_path),
+               STRLEN_CONST("_history.lpl")
+               ) 
          || string_is_equal(playlist_file,
             file_path_str(FILE_PATH_CONTENT_FAVORITES))
          || string_is_equal(system, "history")
@@ -796,7 +799,10 @@ bool task_push_pl_entry_thumbnail_download(
       goto error;
    
    /* Only parse supported playlist types */
-   if (string_ends_with(system, "_history"))
+   if (string_ends_with_size(system, "_history",
+            strlen(system),
+            STRLEN_CONST("_history")
+            ))
       goto error;
    
    /* Copy playlist path

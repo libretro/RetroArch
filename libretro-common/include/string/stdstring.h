@@ -56,20 +56,21 @@ static INLINE bool string_starts_with(const char *str, const char *prefix)
    return (str && prefix) ? !strncmp(prefix, str, strlen(prefix)) : false;
 }
 
-static INLINE bool string_ends_with(const char *str, const char *suffix)
+static INLINE bool string_ends_with_size(const char *str, const char *suffix,
+      size_t str_len, size_t suffix_len)
 {
-   size_t str_len;
-   size_t suffix_len;
-
-   if (!str || !suffix)
-      return false;
-
-   str_len    = strlen(str);
-   suffix_len = strlen(suffix);
-
    return (str_len < suffix_len) ? false :
          !memcmp(suffix, str + (str_len - suffix_len), suffix_len);
 }
+
+static INLINE bool string_ends_with(const char *str, const char *suffix)
+{
+   if (!str || !suffix)
+      return false;
+   return string_ends_with_size(str, suffix, strlen(str), strlen(suffix));
+}
+
+
 
 #define STRLEN_CONST(x)                   ((sizeof((x))-1))
 

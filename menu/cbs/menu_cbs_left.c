@@ -843,7 +843,8 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
    }
 
    if (  string_starts_with_size(label, "input_player", STRLEN_CONST("input_player")) && 
-         string_ends_with(label, "_joypad_index"))
+         string_ends_with_size(label, "_joypad_index", strlen(label),
+            STRLEN_CONST("_joypad_index")))
    {
       unsigned i;
       for (i = 0; i < MAX_USERS; i++)
@@ -916,7 +917,10 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
                if (
-                        string_ends_with(menu_label, "_tab")
+                        string_ends_with_size(menu_label, "_tab",
+                           strlen(menu_label),
+                           STRLEN_CONST("_tab")
+                           )
                      || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
                      || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
                   )
@@ -931,7 +935,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
             case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
                if (
-                        string_ends_with(menu_label, "_tab")
+                        string_ends_with_size(menu_label, "_tab",
+                           strlen(menu_label),
+                           STRLEN_CONST("_tab"))
                      || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
                   )
                {
@@ -1062,7 +1068,8 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
             if (  
-                  string_ends_with(menu_label, "_tab")
+                  string_ends_with_size(menu_label, "_tab",
+                     strlen(menu_label), STRLEN_CONST("_tab"))
                   || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
                )
             {
@@ -1098,7 +1105,8 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
    if (type == MENU_SETTING_NO_ITEM)
    {
       if (  
-               string_ends_with(menu_label, "_tab")
+               string_ends_with_size(menu_label, "_tab",
+                  strlen(menu_label), STRLEN_CONST("_tab"))
             || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
             || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
          )

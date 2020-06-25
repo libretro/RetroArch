@@ -2138,7 +2138,9 @@ static int action_ok_playlist_entry_collection(const char *path,
        *   then copy the path without modification
        * > If this is a standard core, ensure
        *   it has a corresponding core info entry */
-      if (string_ends_with(entry->core_path, "builtin"))
+      if (string_ends_with_size(entry->core_path, "builtin",
+               strlen(entry->core_path),
+               STRLEN_CONST("builtin")))
       {
          strlcpy(core_path, entry->core_path, sizeof(core_path));
          core_is_builtin = true;
@@ -5136,7 +5138,9 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
    data->data            = new_data;
    data->data[data->len] = '\0';
 
-   if (!string_ends_with(data->data, "registry.lpl"))
+   if (!string_ends_with_size(data->data, "registry.lpl",
+            strlen(data->data),
+            STRLEN_CONST("registry.lpl")))
    {
       if (string_is_empty(data->data))
          netplay_room_count = 0;
@@ -6662,7 +6666,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             return 0;
          }
 
-         if (string_ends_with(str, "input_binds_list"))
+         if (string_ends_with_size(str, "input_binds_list",
+                  strlen(str),
+                  STRLEN_CONST("input_binds_list")))
          {
             unsigned i;
 

@@ -19332,7 +19332,8 @@ static bool libretro_get_system_info(
    dylib_t lib;
 #endif
 
-   if (string_ends_with(path, "builtin"))
+   if (string_ends_with_size(path,
+            "builtin", strlen(path), STRLEN_CONST("builtin")))
       return false;
 
    dummy_info.library_name      = NULL;
@@ -34856,7 +34857,8 @@ static void retroarch_parse_input_and_config(
                {
                   int path_stats;
 
-                  if (string_ends_with(optarg, "builtin"))
+                  if (string_ends_with_size(optarg, "builtin",
+                           strlen(optarg), STRLEN_CONST("builtin")))
                   {
                      RARCH_LOG("--libretro argument \"%s\" is a built-in core. Ignoring.\n",
                            optarg);

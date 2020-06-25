@@ -217,7 +217,8 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          if (!string_is_empty(val_string))
             db_info->franchise = strdup(val_string);
       }
-      else if (string_ends_with(str, "_rating"))
+      else if (string_ends_with_size(str, "_rating",
+               strlen(str), STRLEN_CONST("_rating")))
       {
          if (string_is_equal(str, "bbfc_rating"))
          {

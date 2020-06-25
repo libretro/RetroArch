@@ -850,7 +850,8 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       if (!path)
          continue;
 
-      if (!string_ends_with(path, ".lpl"))
+      if (!string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
          continue;
 
       {
@@ -968,7 +969,8 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
       file_list_get_at_offset(ozone->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !string_ends_with(path, ".lpl"))
+      if (!path || !string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
          continue;
 
       video_driver_texture_unload(&node->icon);

@@ -1837,7 +1837,8 @@ static void stripes_context_destroy_horizontal_list(stripes_handle_t *stripes)
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !string_ends_with(path, ".lpl"))
+      if (!path || !string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
          continue;
 
       video_driver_texture_unload(&node->icon);
@@ -1935,7 +1936,8 @@ static void stripes_context_reset_horizontal_list(
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !string_ends_with(path, ".lpl"))
+      if (!path || !string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
          continue;
 
       {

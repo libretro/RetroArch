@@ -1134,7 +1134,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    if (
          string_is_equal(path_playlist, "history")   ||
          string_is_equal(path_playlist, "favorites") ||
-         string_ends_with(path_playlist, "_history"))
+         string_ends_with_size(path_playlist, "_history",
+            strlen(path_playlist), STRLEN_CONST("_history")))
    {
       char system_name[15];
       system_name[0] = '\0';
@@ -1989,7 +1990,8 @@ static void menu_displaylist_set_new_playlist(
    /* Get proper playlist capacity */
    if (!string_is_empty(playlist_file_name))
    {
-      if (string_ends_with(path, "_history.lpl"))
+      if (string_ends_with_size(path, "_history.lpl",
+               strlen(path), STRLEN_CONST("_history.lpl")))
          playlist_size = content_history_size;
       else if (string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
          if (content_favorites_size >= 0)
@@ -2464,7 +2466,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
                      remove_entry_enabled = 
                         string_is_equal(system,  "history")   ||
                         string_is_equal(system,  "favorites") ||
-                        string_ends_with(system, "_history");
+                        string_ends_with_size(system, "_history",
+                              strlen(system), STRLEN_CONST("_history") );
 
                   /* An annoyance: if the user navigates to the information menu,
                    * then to the database entry, the thumbnail system will be changed.
@@ -2565,7 +2568,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
          menu_driver_get_thumbnail_system(system, sizeof(system));
 
          if (!string_is_empty(system))
-            download_enabled = !string_ends_with(system, "_history");
+            download_enabled = !string_ends_with_size(
+                  system, "_history", strlen(system), STRLEN_CONST("_history"));
       }
 
       if (settings->bools.network_on_demand_thumbnails)
@@ -2815,7 +2819,8 @@ static unsigned menu_displaylist_parse_playlists(
 
       /* Ignore history/favourites */
       if (
-               string_ends_with(path, "_history.lpl")
+               string_ends_with_size(path, "_history.lpl",
+                  strlen(path), STRLEN_CONST("_history.lpl"))
             || string_is_equal(playlist_file,
                file_path_str(FILE_PATH_CONTENT_FAVORITES)))
          continue;
@@ -3084,7 +3089,8 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
           * > content_history + favorites are handled separately
           * > music/video/image_history are ignored */
          if (
-                  string_ends_with(path, "_history.lpl")
+                  string_ends_with_size(path, "_history.lpl",
+                     strlen(path), STRLEN_CONST("_history.lpl"))
                || string_is_equal(playlist_file,
                   file_path_str(FILE_PATH_CONTENT_FAVORITES)))
             continue;
@@ -3162,7 +3168,9 @@ static bool menu_displaylist_parse_playlist_manager_settings(
       return false;
 
    /* Check whether this is a content history playlist */
-   is_content_history = string_ends_with(playlist_path, "_history.lpl");
+   is_content_history = string_ends_with_size(
+         playlist_path, "_history.lpl", strlen(playlist_path),
+         STRLEN_CONST("_history.lpl"));
 
    /* Default core association
     * > This is only shown for collection playlists
