@@ -96,18 +96,18 @@ static struct config_entry_list* merge_sort_linked_list(
     * one at twice the speed of the other). */
    while (temp && temp->next)
    {
-      last  = right;
-      right = right->next;
-      temp  = temp->next->next;
+      last     = right;
+      right    = right->next;
+      temp     = temp->next->next;
    }
 
    /* Break the list in two. (prev pointers are broken here,
     * but we fix later) */
-   last->next = 0;
+   last->next  = 0;
 
    /* Recurse on the two smaller lists: */
-   list = merge_sort_linked_list(list, compare);
-   right = merge_sort_linked_list(right, compare);
+   list        = merge_sort_linked_list(list, compare);
+   right       = merge_sort_linked_list(right, compare);
 
    /* Merge: */
    while (list || right)
@@ -115,31 +115,31 @@ static struct config_entry_list* merge_sort_linked_list(
       /* Take from empty lists, or compare: */
       if (!right)
       {
-         next = list;
-         list = list->next;
+         next  = list;
+         list  = list->next;
       }
       else if (!list)
       {
-         next = right;
+         next  = right;
          right = right->next;
       }
       else if (compare(list, right) < 0)
       {
-         next = list;
-         list = list->next;
+         next  = list;
+         list  = list->next;
       }
       else
       {
-         next = right;
+         next  = right;
          right = right->next;
       }
 
       if (!result)
-         result = next;
+         result     = next;
       else
          tail->next = next;
 
-      tail = next;
+      tail          = next;
    }
 
    return result;
@@ -329,22 +329,22 @@ static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
 
    if (node)
    {
-      node->next = NULL;
+      node->next        = NULL;
       /* Add include list */
-      node->path = strdup(path);
+      node->path        = strdup(path);
 
       if (head)
       {
          while (head->next)
-            head = head->next;
+            head        = head->next;
 
-         head->next = node;
+         head->next     = node;
       }
       else
          conf->includes = node;
    }
 
-   real_path[0] = '\0';
+   real_path[0]         = '\0';
 
 #ifdef _WIN32
    if (!string_is_empty(conf->path))
@@ -380,16 +380,10 @@ static bool parse_line(config_file_t *conf,
 {
    size_t cur_size       = 32;
    size_t idx            = 0;
-   char *comment         = NULL;
    char *key             = NULL;
    char *key_tmp         = NULL;
-
-   /* Ignore empty lines */
-   if (string_is_empty(line))
-      return false;
-
    /* Remove any comment text */
-   comment               = strip_comment(line);
+   char *comment         = strip_comment(line);
 
    /* Check whether entire line is a comment */
    if (comment)
@@ -529,7 +523,9 @@ static config_file_t *config_file_new_internal(
          continue;
       }
 
-      if (*line && parse_line(conf, list, line, cb))
+      if (*line 
+            && !string_is_empty(line) 
+            && parse_line(conf, list, line, cb))
       {
          if (conf->entries)
             conf->tail->next = list;
@@ -664,7 +660,9 @@ config_file_t *config_file_new_from_string(char *from_string,
       list->next      = NULL;
 
       /* Parse current line */
-      if (*line && parse_line(conf, list, line, NULL))
+      if (*line 
+            && !string_is_empty(line)
+            && parse_line(conf, list, line, NULL))
       {
          if (conf->entries)
             conf->tail->next = list;
