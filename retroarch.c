@@ -19865,9 +19865,9 @@ static char *copy_core_to_temp_file(struct rarch_state *p_rarch)
       return NULL;
 
    strcat_alloc(&retroarch_temp_path, temp_directory);
-   strcat_alloc(&retroarch_temp_path, path_default_slash());
+   strcat_alloc(&retroarch_temp_path, PATH_DEFAULT_SLASH());
    strcat_alloc(&retroarch_temp_path, "retroarch_temp");
-   strcat_alloc(&retroarch_temp_path, path_default_slash());
+   strcat_alloc(&retroarch_temp_path, PATH_DEFAULT_SLASH());
 
    if (!path_mkdir(retroarch_temp_path))
    {

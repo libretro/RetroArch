@@ -811,12 +811,14 @@ bool ozone_reset_theme_textures(ozone_handle_t *ozone)
       for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
       {
          char filename[PATH_MAX_LENGTH];
-         strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i], sizeof(filename));
+         strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i],
+               sizeof(filename));
          strlcat(filename, ".png", sizeof(filename));
 
          if (!gfx_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
          {
-            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", theme_path, path_default_slash(), filename);
+            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", theme_path,
+                  PATH_DEFAULT_SLASH(), filename);
             result = false;
          }
       }

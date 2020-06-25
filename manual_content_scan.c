@@ -265,8 +265,8 @@ enum manual_content_scan_dat_file_path_status
  * Returns true if content directory is valid. */
 bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 {
-   const char *dir_name = NULL;
    size_t len;
+   const char *dir_name = NULL;
 
    /* Sanity check */
    if (string_is_empty(content_dir))
@@ -283,13 +283,11 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 
    /* Remove trailing slash, if required */
    len = strlen(scan_settings.content_dir);
-   if (len > 0)
-   {
-      if (scan_settings.content_dir[len - 1] == path_default_slash_c())
-         scan_settings.content_dir[len - 1] = '\0';
-   }
-   else
+   if (len <= 0)
       goto error;
+
+   if (scan_settings.content_dir[len - 1] == PATH_DEFAULT_SLASH_C())
+      scan_settings.content_dir[len - 1] = '\0';
 
    /* Handle case where path was a single slash... */
    if (string_is_empty(scan_settings.content_dir))

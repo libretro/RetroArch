@@ -1935,7 +1935,8 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
             materialui_texture_path(i), icon_path, &mui->textures.list[i],
             TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
-         RARCH_WARN("[GLUI] Asset missing: %s%s%s\n", icon_path, path_default_slash(), materialui_texture_path(i));
+         RARCH_WARN("[GLUI] Asset missing: %s%s%s\n", icon_path, 
+               PATH_DEFAULT_SLASH(), materialui_texture_path(i));
          has_all_assets = false;
       }
    }

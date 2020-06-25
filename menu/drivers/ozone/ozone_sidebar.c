@@ -902,16 +902,17 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          fill_pathname_join_delim(sysname, sysname,
                "content.png", '-',
                PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, icons_path, PATH_MAX_LENGTH * sizeof(char));
-
-         strlcat(content_texturepath, path_default_slash(), PATH_MAX_LENGTH * sizeof(char));
+         strlcat(content_texturepath, icons_path,
+               PATH_MAX_LENGTH * sizeof(char));
+         strlcat(content_texturepath, PATH_DEFAULT_SLASH(),
+               PATH_MAX_LENGTH * sizeof(char));
          strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
 
          /* If the content icon doesn't exist return default-content */
          if (!path_is_valid(content_texturepath))
          {
-            strlcat(icons_path, path_default_slash(), PATH_MAX_LENGTH * sizeof(char));
-            strlcat(icons_path, "default", PATH_MAX_LENGTH * sizeof(char));
+            strlcat(icons_path,
+                  PATH_DEFAULT_SLASH() "default", PATH_MAX_LENGTH * sizeof(char));
             fill_pathname_join_delim(content_texturepath, icons_path,
                   "content.png", '-',
                   PATH_MAX_LENGTH * sizeof(char));

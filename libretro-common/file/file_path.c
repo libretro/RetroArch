@@ -314,7 +314,7 @@ void fill_pathname_slash(char *path, size_t size)
 
    if (!last_slash)
    {
-      strlcat(path, path_default_slash(), size);
+      strlcat(path, PATH_DEFAULT_SLASH(), size);
       return;
    }
 
@@ -551,7 +551,7 @@ void path_basedir(char *path)
    if (last)
       last[1] = '\0';
    else
-      snprintf(path, 3, ".%s", path_default_slash());
+      snprintf(path, 3, "." PATH_DEFAULT_SLASH());
 }
 
 /**
@@ -809,7 +809,7 @@ size_t path_relative_to(char *out,
 
    /* Trim common beginning */
    for (i = 0, j = 0; path[i] && base[i] && path[i] == base[i]; i++)
-      if (path[i] == path_default_slash_c())
+      if (path[i] == PATH_DEFAULT_SLASH_C())
          j = i + 1;
 
    trimmed_path = path+j;
@@ -818,8 +818,8 @@ size_t path_relative_to(char *out,
    /* Each segment of base turns into ".." */
    out[0] = '\0';
    for (i = 0; trimmed_base[i]; i++)
-      if (trimmed_base[i] == path_default_slash_c())
-         strlcat(out, ".." path_default_slash(), size);
+      if (trimmed_base[i] == PATH_DEFAULT_SLASH_C())
+         strlcat(out, ".." PATH_DEFAULT_SLASH(), size);
 
    return strlcat(out, trimmed_path, size);
 }
@@ -1006,7 +1006,7 @@ void fill_pathname_expand_special(char *out_path,
 
          if (!path_char_is_slash(out_path[-1]))
          {
-            src_size = strlcpy(out_path, path_default_slash(), size);
+            src_size = strlcpy(out_path, PATH_DEFAULT_SLASH(), size);
             retro_assert(src_size < size);
 
             out_path += src_size;
@@ -1037,7 +1037,7 @@ void fill_pathname_expand_special(char *out_path,
 
          if (!path_char_is_slash(out_path[-1]))
          {
-            src_size = strlcpy(out_path, path_default_slash(), size);
+            src_size = strlcpy(out_path, PATH_DEFAULT_SLASH(), size);
             retro_assert(src_size < size);
 
             out_path += src_size;
@@ -1101,7 +1101,7 @@ void fill_pathname_abbreviate_special(char *out_path,
          if (!path_char_is_slash(*in_path))
          {
             retro_assert(strlcpy(out_path,
-                     path_default_slash(), size) < size);
+                     PATH_DEFAULT_SLASH(), size) < size);
             out_path++;
             size--;
          }
@@ -1140,7 +1140,7 @@ void path_basedir_wrapper(char *path)
    if (last)
       last[1] = '\0';
    else
-      snprintf(path, 3, ".%s", path_default_slash());
+      snprintf(path, 3, "." PATH_DEFAULT_SLASH());
 }
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)

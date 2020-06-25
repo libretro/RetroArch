@@ -766,7 +766,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
                sizeof(buf),
                APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
             if (!gfx_display_reset_textures_list(filename, buf, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-               RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path, path_default_slash(), filename);
+               RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path,
+                     PATH_DEFAULT_SLASH(), filename);
          }
          else
          {
@@ -774,7 +775,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
             if (!gfx_display_reset_textures_list(filename, ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
             {
                ozone->has_all_assets = false;
-               RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path, path_default_slash(), filename);
+               RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path,
+                     PATH_DEFAULT_SLASH(), filename);
             }
 #if 0
          }
@@ -794,7 +796,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          if (!gfx_display_reset_textures_list(filename, ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
          {
             ozone->has_all_assets = false;
-            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->tab_path, path_default_slash(), filename);
+            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->tab_path,
+                  PATH_DEFAULT_SLASH(), filename);
          }
       }
 
@@ -808,7 +811,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          if (!gfx_display_reset_textures_list(ozone_entries_icon_texture_path(i), ozone->icons_path, &ozone->icons_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
          {
             ozone->has_all_assets = false;
-            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->icons_path, path_default_slash(), ozone_entries_icon_texture_path(i));
+            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->icons_path,
+                  PATH_DEFAULT_SLASH(), ozone_entries_icon_texture_path(i));
          }
       }
 
