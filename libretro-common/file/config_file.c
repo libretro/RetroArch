@@ -147,10 +147,20 @@ static struct config_entry_list* merge_sort_linked_list(
 }
 
 /* Searches input string for a comment ('#') entry
- * > If a comment is found, returns everything after
- *   the '#' character and sets 'str' to an empty string
- * > If a comment is not found, returns NULL and leaves
- *   'str' untouched */
+ * > If first character is '#', then entire line is
+ *   a comment and may correspond to a directive
+ *   (command action - e.g. include sub-config file).
+ *   In this case, 'str' is set to NUL and the comment
+ *   itself (everything after the '#' character) is
+ *   returned
+ * > If a '#' character is found inside a string literal
+ *   value, then it does not correspond to a comment and
+ *   is ignored. In this case, 'str' is left untouched
+ *   and NULL is returned
+ * > If a '#' character is found anywhere else, then the
+ *   comment text is a suffix of the input string and
+ *   has no programmatic value. In this case, the comment
+ *   is removed from the end of 'str' and NULL is returned */
 static char *strip_comment(char *str)
 {
    /* Search for a comment (#) character */
@@ -158,20 +168,43 @@ static char *strip_comment(char *str)
 
    if (comment)
    {
-      /* Check whether comment character occurs
-       * within a string literal (i.e. after the
-       * first (") character) */
-      char *literal = strchr(str, '\"');
+      char *literal_start = NULL;
 
-      if (!literal || (literal > comment))
+      /* Check whether entire line is a comment
+       * > First character == '#' */
+      if (str == comment)
       {
-         /* This line is a valid comment
-          * > Set input 'str' to NUL
-          * > Return everything after the
-          *   comment (#) character */
+         /* Set 'str' to NUL and return comment
+          * for processing at a higher level */
          *str = '\0';
          return ++comment;
       }
+
+      /* Comment character occurs at an offset:
+       * Search for the start of a string literal value */
+      literal_start = strchr(str, '\"');
+
+      /* Check whether string literal start occurs
+       * *before* the comment character */
+      if (literal_start && (literal_start < comment))
+      {
+         /* Search for the end of the string literal
+          * value */
+         char *literal_end = strchr(literal_start + 1, '\"');
+
+         /* Check whether string literal end occurs
+          * *after* the comment character
+          * > If this is the case, ignore the comment
+          * > Leave 'str' untouched and return NULL */
+         if (literal_end && (literal_end > comment))
+            return NULL;
+      }
+
+      /* If we reach this point, then a comment
+       * exists outside of a string literal
+       * > Trim the entire comment from the end
+       *   of 'str' */
+      *comment = '\0';
    }
 
    return NULL;
@@ -336,18 +369,18 @@ static bool parse_line(config_file_t *conf,
    if (string_is_empty(line))
       return false;
 
-   /* Check whether line is a comment */
+   /* Remove any comment text */
    comment               = strip_comment(line);
 
+   /* Check whether entire line is a comment */
    if (comment)
    {
       char *path         = NULL;
       char *include_line = NULL;
 
-      /* Starting a line with '#include' appends a
-       * sub-config file */
-
-      /* All other comment lines are ignored */
+      /* Starting a line with an 'include' directive
+       * appends a sub-config file
+       * > All other comments are ignored */
       if (!string_starts_with(comment, "include "))
          return false;
 
