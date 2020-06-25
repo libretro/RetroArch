@@ -448,23 +448,6 @@ static bool parse_line(config_file_t *conf,
       return false;
    }
 
-   if (
-            string_is_equal(list->value, "true")
-         || string_is_equal(list->value, "1")
-      )
-   {
-      list->type       = CONFIG_FILE_ENTRY_TYPE_BOOL;
-      list->value_bool = true;
-   }
-   else if (
-            string_is_equal(list->value, "false")
-         || string_is_equal(list->value, "0")
-         )
-   {
-      list->type       = CONFIG_FILE_ENTRY_TYPE_BOOL;
-      list->value_bool = false;
-   }
-
    return true;
 }
 
@@ -928,13 +911,21 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
-   if (entry && entry->type == CONFIG_FILE_ENTRY_TYPE_BOOL)
+   if (entry)
    {
-      *in = entry->value_bool;
-      return true;
+      if (string_is_equal(entry->value, "true"))
+         *in = true;
+      else if (string_is_equal(entry->value, "1"))
+         *in = true;
+      else if (string_is_equal(entry->value, "false"))
+         *in = false;
+      else if (string_is_equal(entry->value, "0"))
+         *in = false;
+      else
+         return false;
    }
 
-   return false;
+   return entry != NULL;
 }
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
