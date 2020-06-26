@@ -32,6 +32,7 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 #include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1034,16 +1035,14 @@ static bool accessibility_speak_windows(int speed,
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long           res;
-      const size_t cSize = strlen(speak_text)+1;
-      wchar_t        *wc;
-      res = nvdaController_testIfRunning_func();
-      wc = malloc(sizeof(wchar_t) * cSize);
-      mbstowcs(wc, speak_text, cSize);
+      wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
+      long res           = nvdaController_testIfRunning_func();
 
-      if (res != 0) 
+      if (!wc || res != 0) 
       {
          RARCH_LOG("Error communicating with NVDA\n");
+         if (wc)
+            free(wc);
          return false;
       }
 
@@ -1053,6 +1052,7 @@ static bool accessibility_speak_windows(int speed,
          nvdaController_brailleMessage_func(wc);
       else
          nvdaController_speakText_func(wc);
+      free(wc);
    }
 #endif
 #ifdef HAVE_SAPI
@@ -1076,12 +1076,16 @@ static bool accessibility_speak_windows(int speed,
 
       if (SUCCEEDED(hr))
       {
-         wchar_t wtext[1200];
+         wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
+
          snprintf(cmd, sizeof(cmd),
                "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
-         mbstowcs(wtext, speak_text, sizeof(wtext));
 
-         hr = ISpVoice_Speak(pVoice, wtext, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
+         if (!wc)
+            return false;
+
+         hr = ISpVoice_Speak(pVoice, wc, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
+         free(wc);
       }
    }
 #endif
