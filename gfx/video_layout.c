@@ -32,16 +32,12 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 
-bool video_layout_load_internal(view_array_t *view_array,
-      rxml_document_t *doc);
-
 typedef struct io
 {
    char *name;
    int   base_value;
    int   value;
-}
-io_t;
+} io_t;
 
 typedef struct video_layout_state
 {
@@ -63,11 +59,78 @@ typedef struct video_layout_state
 
    bool      is_archive;
    bool      view_changed;
-}
-video_layout_state_t;
+} video_layout_state_t;
 
 /* TODO/FIXME - global state - perhaps move outside this file */
 static video_layout_state_t *video_layout_state = NULL;
+
+/* Forward declarations */
+bool video_layout_load_internal(view_array_t *view_array,
+      rxml_document_t *doc);
+
+static int video_layout_load_image(const char *path)
+{
+   struct texture_image image;
+   void *handle;
+   int index;
+
+   image.supports_rgba = video_driver_supports_rgba();
+
+   if (video_layout_state->is_archive)
+   {
+      void *buf;
+      int64_t len;
+      char respath[PATH_MAX_LENGTH];
+
+      strlcpy(respath, video_layout_state->base_path, sizeof(respath));
+      strlcat(respath, path, sizeof(respath));
+
+      if (!file_archive_compressed_read(respath, &buf, NULL, &len))
+      {
+         RARCH_LOG("video_layout: failed to decompress image: %s\n", respath);
+         return 0;
+      }
+
+      if (!image_texture_load_buffer(&image,
+               image_texture_get_type(path), buf, (size_t)len))
+      {
+         free(buf);
+
+         RARCH_LOG("video_layout: failed to load image: %s\n", respath);
+         return 0;
+      }
+
+      free(buf);
+   }
+   else
+   {
+      char respath[PATH_MAX_LENGTH];
+
+      strlcpy(respath, video_layout_state->base_path, sizeof(respath));
+      strlcat(respath, path, sizeof(respath));
+
+      if (!image_texture_load(&image, respath))
+      {
+         RARCH_LOG("video_layout: failed to load image: %s\n", respath);
+         return 0;
+      }
+   }
+
+   handle = video_layout_state->render->take_image(
+      video_layout_state->render_info.video_driver_data, image);
+
+   if (!handle)
+      return 0;
+
+   index = video_layout_state->images_count;
+
+   vec_size((void**)&video_layout_state->images,
+         sizeof(void*), ++video_layout_state->images_count);
+
+   video_layout_state->images[index] = handle;
+
+   return index;
+}
 
 void video_layout_init(void *video_driver_data,
       const video_layout_render_interface_t *render)
@@ -211,70 +274,6 @@ bool video_layout_load(const char *path)
 bool video_layout_valid(void)
 {
    return video_layout_state && video_layout_state->view;
-}
-
-static int video_layout_load_image(const char *path)
-{
-   struct texture_image image;
-   void *handle;
-   int index;
-
-   image.supports_rgba = video_driver_supports_rgba();
-
-   if (video_layout_state->is_archive)
-   {
-      void *buf;
-      int64_t len;
-      char respath[PATH_MAX_LENGTH];
-
-      strlcpy(respath, video_layout_state->base_path, sizeof(respath));
-      strlcat(respath, path, sizeof(respath));
-
-      if (!file_archive_compressed_read(respath, &buf, NULL, &len))
-      {
-         RARCH_LOG("video_layout: failed to decompress image: %s\n", respath);
-         return 0;
-      }
-
-      if (!image_texture_load_buffer(&image,
-               image_texture_get_type(path), buf, (size_t)len))
-      {
-         free(buf);
-
-         RARCH_LOG("video_layout: failed to load image: %s\n", respath);
-         return 0;
-      }
-
-      free(buf);
-   }
-   else
-   {
-      char respath[PATH_MAX_LENGTH];
-
-      strlcpy(respath, video_layout_state->base_path, sizeof(respath));
-      strlcat(respath, path, sizeof(respath));
-
-      if (!image_texture_load(&image, respath))
-      {
-         RARCH_LOG("video_layout: failed to load image: %s\n", respath);
-         return 0;
-      }
-   }
-
-   handle = video_layout_state->render->take_image(
-      video_layout_state->render_info.video_driver_data, image);
-
-   if (!handle)
-      return 0;
-
-   index = video_layout_state->images_count;
-
-   vec_size((void**)&video_layout_state->images,
-         sizeof(void*), ++video_layout_state->images_count);
-
-   video_layout_state->images[index] = handle;
-
-   return index;
 }
 
 int video_layout_view_count(void)

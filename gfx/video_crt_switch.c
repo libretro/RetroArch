@@ -30,7 +30,130 @@
 
 #if defined(HAVE_VIDEOCORE)
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
-static void crt_rpi_switch(int width, int height, float hz, int xoffset);
+
+static void crt_rpi_switch(int width, int height, float hz, int xoffset)
+{
+   char buffer[1024];
+   VCHI_INSTANCE_T vchi_instance;
+   VCHI_CONNECTION_T *vchi_connection  = NULL;
+   static char output[250]             = {0};
+   static char output1[250]            = {0};
+   static char output2[250]            = {0};
+   static char set_hdmi[250]           = {0};
+   static char set_hdmi_timing[250]    = {0};
+   int i                               = 0;
+   int hfp                             = 0;
+   int hsp                             = 0;
+   int hbp                             = 0;
+   int vfp                             = 0;
+   int vsp                             = 0;
+   int vbp                             = 0;
+   int hmax                            = 0;
+   int vmax                            = 0;
+   int pdefault                        = 8;
+   int pwidth                          = 0;
+   int ip_flag                         = 0;
+   float roundw                        = 0.0f;
+   float roundh                        = 0.0f;
+   float pixel_clock                   = 0.0f;
+
+   /* set core refresh from hz */
+   video_monitor_set_refresh_rate(hz);
+
+   /* following code is the mode line generator */
+   hsp    = (width * 0.117) - (xoffset*4);
+   if (width < 700)
+   {
+      hfp    = (width * 0.065);
+      hbp  = width * 0.35-hsp-hfp;
+   }
+   else
+   {
+      hfp  = (width * 0.033) + (width / 112);
+      hbp  = (width * 0.225) + (width /58);
+      xoffset = xoffset*2;
+   }
+   
+   hmax = hbp;
+
+   if (height < 241)
+      vmax = 261;
+   if (height < 241 && hz > 56 && hz < 58)
+      vmax = 280;
+   if (height < 241 && hz < 55)
+      vmax = 313;
+   if (height > 250 && height < 260 && hz > 54)
+      vmax = 296;
+   if (height > 250 && height < 260 && hz > 52 && hz < 54)
+      vmax = 285;
+   if (height > 250 && height < 260 && hz < 52)
+      vmax = 313;
+   if (height > 260 && height < 300)
+      vmax = 318;
+
+   if (height > 400 && hz > 56)
+      vmax = 533;
+   if (height > 520 && hz < 57)
+      vmax = 580;
+
+   if (height > 300 && hz < 56)
+      vmax = 615;
+   if (height > 500 && hz < 56)
+      vmax = 624;
+   if (height > 300)
+      pdefault = pdefault * 2;
+
+   vfp = (height + ((vmax - height) / 2) - pdefault) - height;
+
+   if (height < 300)
+      vsp = vfp + 3; /* needs to be 3 for progressive */
+   if (height > 300)
+      vsp = vfp + 6; /* needs to be 6 for interlaced */
+
+   vsp  = 3;
+   vbp  = (vmax-height)-vsp-vfp;
+   hmax = width+hfp+hsp+hbp;
+
+   if (height < 300)
+   {
+      pixel_clock = (hmax * vmax * hz) ;
+      ip_flag     = 0;
+   }
+
+   if (height > 300)
+   {
+      pixel_clock = (hmax * vmax * (hz/2)) /2 ;
+      ip_flag     = 1;
+   }
+   /* above code is the modeline generator */
+
+   snprintf(set_hdmi_timing, sizeof(set_hdmi_timing),
+         "hdmi_timings %d 1 %d %d %d %d 1 %d %d %d 0 0 0 %f %d %f 1 ",
+         width, hfp, hsp, hbp, height, vfp,vsp, vbp,
+         hz, ip_flag, pixel_clock);
+
+   vcos_init();
+
+   vchi_initialise(&vchi_instance);
+
+   vchi_connect(NULL, 0, vchi_instance);
+
+   vc_vchi_gencmd_init(vchi_instance, &vchi_connection, 1);
+
+   vc_gencmd(buffer, sizeof(buffer), set_hdmi_timing);
+
+   vc_gencmd_stop();
+
+   vchi_disconnect(vchi_instance);
+
+   snprintf(output1,  sizeof(output1),
+         "tvservice -e \"DMT 87\" > /dev/null");
+   system(output1);
+   snprintf(output2,  sizeof(output1),
+         "fbset -g %d %d %d %d 24 > /dev/null",
+         width, height, width, height);
+   system(output2);
+}
 #endif
 
 static void switch_crt_hz(videocrt_switch_t *p_switch)
@@ -247,129 +370,3 @@ void crt_switch_res_core(
       video_driver_apply_state_changes();
    }
 }
-
-#if defined(HAVE_VIDEOCORE)
-static void crt_rpi_switch(int width, int height, float hz, int xoffset)
-{
-   char buffer[1024];
-   VCHI_INSTANCE_T vchi_instance;
-   VCHI_CONNECTION_T *vchi_connection  = NULL;
-   static char output[250]             = {0};
-   static char output1[250]            = {0};
-   static char output2[250]            = {0};
-   static char set_hdmi[250]           = {0};
-   static char set_hdmi_timing[250]    = {0};
-   int i                               = 0;
-   int hfp                             = 0;
-   int hsp                             = 0;
-   int hbp                             = 0;
-   int vfp                             = 0;
-   int vsp                             = 0;
-   int vbp                             = 0;
-   int hmax                            = 0;
-   int vmax                            = 0;
-   int pdefault                        = 8;
-   int pwidth                          = 0;
-   int ip_flag                         = 0;
-   float roundw                        = 0.0f;
-   float roundh                        = 0.0f;
-   float pixel_clock                   = 0.0f;
-
-   /* set core refresh from hz */
-   video_monitor_set_refresh_rate(hz);
-
-   /* following code is the mode line generator */
-   hsp    = (width * 0.117) - (xoffset*4);
-   if (width < 700)
-   {
-      hfp    = (width * 0.065);
-      hbp  = width * 0.35-hsp-hfp;
-   }
-   else
-   {
-      hfp  = (width * 0.033) + (width / 112);
-      hbp  = (width * 0.225) + (width /58);
-      xoffset = xoffset*2;
-   }
-   
-   hmax = hbp;
-
-   if (height < 241)
-      vmax = 261;
-   if (height < 241 && hz > 56 && hz < 58)
-      vmax = 280;
-   if (height < 241 && hz < 55)
-      vmax = 313;
-   if (height > 250 && height < 260 && hz > 54)
-      vmax = 296;
-   if (height > 250 && height < 260 && hz > 52 && hz < 54)
-      vmax = 285;
-   if (height > 250 && height < 260 && hz < 52)
-      vmax = 313;
-   if (height > 260 && height < 300)
-      vmax = 318;
-
-   if (height > 400 && hz > 56)
-      vmax = 533;
-   if (height > 520 && hz < 57)
-      vmax = 580;
-
-   if (height > 300 && hz < 56)
-      vmax = 615;
-   if (height > 500 && hz < 56)
-      vmax = 624;
-   if (height > 300)
-      pdefault = pdefault * 2;
-
-   vfp = (height + ((vmax - height) / 2) - pdefault) - height;
-
-   if (height < 300)
-      vsp = vfp + 3; /* needs to be 3 for progressive */
-   if (height > 300)
-      vsp = vfp + 6; /* needs to be 6 for interlaced */
-
-   vsp  = 3;
-   vbp  = (vmax-height)-vsp-vfp;
-   hmax = width+hfp+hsp+hbp;
-
-   if (height < 300)
-   {
-      pixel_clock = (hmax * vmax * hz) ;
-      ip_flag     = 0;
-   }
-
-   if (height > 300)
-   {
-      pixel_clock = (hmax * vmax * (hz/2)) /2 ;
-      ip_flag     = 1;
-   }
-   /* above code is the modeline generator */
-
-   snprintf(set_hdmi_timing, sizeof(set_hdmi_timing),
-         "hdmi_timings %d 1 %d %d %d %d 1 %d %d %d 0 0 0 %f %d %f 1 ",
-         width, hfp, hsp, hbp, height, vfp,vsp, vbp,
-         hz, ip_flag, pixel_clock);
-
-   vcos_init();
-
-   vchi_initialise(&vchi_instance);
-
-   vchi_connect(NULL, 0, vchi_instance);
-
-   vc_vchi_gencmd_init(vchi_instance, &vchi_connection, 1);
-
-   vc_gencmd(buffer, sizeof(buffer), set_hdmi_timing);
-
-   vc_gencmd_stop();
-
-   vchi_disconnect(vchi_instance);
-
-   snprintf(output1,  sizeof(output1),
-         "tvservice -e \"DMT 87\" > /dev/null");
-   system(output1);
-   snprintf(output2,  sizeof(output1),
-         "fbset -g %d %d %d %d 24 > /dev/null",
-         width, height, width, height);
-   system(output2);
-}
-#endif

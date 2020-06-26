@@ -408,6 +408,76 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
    return NULL;
 }
 
+/* CGP store */
+static const char *scale_type_to_str(enum gfx_scale_type type)
+{
+   switch (type)
+   {
+      case RARCH_SCALE_INPUT:
+         return "source";
+      case RARCH_SCALE_VIEWPORT:
+         return "viewport";
+      case RARCH_SCALE_ABSOLUTE:
+         return "absolute";
+      default:
+         break;
+   }
+
+   return "?";
+}
+
+static void shader_write_scale_dim(config_file_t *conf,
+      const char *dim,
+      enum gfx_scale_type type, float scale,
+      unsigned absolute, unsigned i)
+{
+   char key[64];
+
+   key[0] = '\0';
+
+   snprintf(key, sizeof(key), "scale_type_%s%u", dim, i);
+   config_set_string(conf, key, scale_type_to_str(type));
+
+   snprintf(key, sizeof(key), "scale_%s%u", dim, i);
+   if (type == RARCH_SCALE_ABSOLUTE)
+      config_set_int(conf, key, absolute);
+   else
+      config_set_float(conf, key, scale);
+}
+
+static void shader_write_fbo(config_file_t *conf,
+      const struct gfx_fbo_scale *fbo, unsigned i)
+{
+   char key[64];
+
+   key[0] = '\0';
+
+   snprintf(key, sizeof(key), "float_framebuffer%u", i);
+   config_set_bool(conf, key, fbo->fp_fbo);
+   snprintf(key, sizeof(key), "srgb_framebuffer%u", i);
+   config_set_bool(conf, key, fbo->srgb_fbo);
+
+   if (!fbo->valid)
+      return;
+
+   shader_write_scale_dim(conf, "x", fbo->type_x,
+         fbo->scale_x, fbo->abs_x, i);
+   shader_write_scale_dim(conf, "y", fbo->type_y,
+         fbo->scale_y, fbo->abs_y, i);
+}
+
+#ifdef _WIN32
+static void make_relative_path_portable(char *path)
+{
+   /* use '/' instead of '\' for maximum portability */
+   char *p;
+   for (p = path; *p; p++)
+      if (*p == '\\')
+         *p = '/';
+}
+#endif
+
+
 /**
  * video_shader_set_current_parameters:
  * @conf              : Preset file to read from.
@@ -886,75 +956,6 @@ bool video_shader_read_conf_preset(config_file_t *conf,
 
    return video_shader_parse_textures(conf, shader);
 }
-
-/* CGP store */
-static const char *scale_type_to_str(enum gfx_scale_type type)
-{
-   switch (type)
-   {
-      case RARCH_SCALE_INPUT:
-         return "source";
-      case RARCH_SCALE_VIEWPORT:
-         return "viewport";
-      case RARCH_SCALE_ABSOLUTE:
-         return "absolute";
-      default:
-         break;
-   }
-
-   return "?";
-}
-
-static void shader_write_scale_dim(config_file_t *conf,
-      const char *dim,
-      enum gfx_scale_type type, float scale,
-      unsigned absolute, unsigned i)
-{
-   char key[64];
-
-   key[0] = '\0';
-
-   snprintf(key, sizeof(key), "scale_type_%s%u", dim, i);
-   config_set_string(conf, key, scale_type_to_str(type));
-
-   snprintf(key, sizeof(key), "scale_%s%u", dim, i);
-   if (type == RARCH_SCALE_ABSOLUTE)
-      config_set_int(conf, key, absolute);
-   else
-      config_set_float(conf, key, scale);
-}
-
-static void shader_write_fbo(config_file_t *conf,
-      const struct gfx_fbo_scale *fbo, unsigned i)
-{
-   char key[64];
-
-   key[0] = '\0';
-
-   snprintf(key, sizeof(key), "float_framebuffer%u", i);
-   config_set_bool(conf, key, fbo->fp_fbo);
-   snprintf(key, sizeof(key), "srgb_framebuffer%u", i);
-   config_set_bool(conf, key, fbo->srgb_fbo);
-
-   if (!fbo->valid)
-      return;
-
-   shader_write_scale_dim(conf, "x", fbo->type_x,
-         fbo->scale_x, fbo->abs_x, i);
-   shader_write_scale_dim(conf, "y", fbo->type_y,
-         fbo->scale_y, fbo->abs_y, i);
-}
-
-#ifdef _WIN32
-static void make_relative_path_portable(char *path)
-{
-   /* use '/' instead of '\' for maximum portability */
-   char *p;
-   for (p = path; *p; p++)
-      if (*p == '\\')
-         *p = '/';
-}
-#endif
 
 /**
  * video_shader_write_conf_preset:
