@@ -721,6 +721,7 @@ ui_companion_driver_t ui_companion_cocoa = {
    NULL, /* render_messagebox */
    ui_companion_cocoa_get_main_window,
    NULL, /* log_msg */
+   NULL, /* is_active */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

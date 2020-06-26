@@ -124,7 +124,8 @@ ui_companion_driver_t ui_companion_win32 = {
    NULL,
    NULL,
    NULL,
-   NULL,
+   NULL, /* log_msg */
+   NULL, /* is_active */
    &ui_browser_window_win32,
    &ui_msg_window_win32,
    &ui_window_win32,

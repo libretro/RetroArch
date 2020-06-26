@@ -897,22 +897,23 @@ static const location_driver_t *location_drivers[] = {
 };
 
 static ui_companion_driver_t ui_companion_null = {
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   "null",
+   NULL, /* init */
+   NULL, /* deinit */
+   NULL, /* toggle */
+   NULL, /* event_command */
+   NULL, /* notify_content_loaded */
+   NULL, /* notify_list_loaded */
+   NULL, /* notify_refresh */
+   NULL, /* msg_queue_push */
+   NULL, /* render_messagebox */
+   NULL, /* get_main_window */
+   NULL, /* log_msg */
+   NULL, /* is_active */
+   NULL, /* browser_window */
+   NULL, /* msg_window */
+   NULL, /* window */
+   NULL, /* application */
+   "null", /* ident */
 };
 
 
@@ -20436,9 +20437,11 @@ void ui_companion_driver_log_msg(const char *msg)
    settings_t *settings        = p_rarch->configuration_settings;
    bool qt_is_inited           = p_rarch->qt_is_inited;
    bool desktop_menu_enable    = settings->bools.desktop_menu_enable;
+   bool window_is_active       = p_rarch->ui_companion_qt_data && qt_is_inited
+      && ui_companion_qt.is_active(p_rarch->ui_companion_qt_data);
 
    if (desktop_menu_enable)
-      if (p_rarch->ui_companion_qt_data && qt_is_inited)
+      if (window_is_active)
          ui_companion_qt.log_msg(p_rarch->ui_companion_qt_data, msg);
 #endif
 }

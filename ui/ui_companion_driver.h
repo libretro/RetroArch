@@ -136,6 +136,7 @@ typedef struct ui_companion_driver
    void (*render_messagebox)(const char *msg);
    void *(*get_main_window)(void *data);
    void (*log_msg)(void *data, const char *msg);
+   bool (*is_active)(void *data);
    ui_browser_window_t *browser_window;
    ui_msg_window_t     *msg_window;
    ui_window_t         *window;
