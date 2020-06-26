@@ -523,8 +523,8 @@ static config_file_t *config_file_new_internal(
          continue;
       }
 
-      if (*line 
-            && !string_is_empty(line) 
+      if ( 
+              !string_is_empty(line) 
             && parse_line(conf, list, line, cb))
       {
          if (conf->entries)
@@ -660,8 +660,8 @@ config_file_t *config_file_new_from_string(char *from_string,
       list->next      = NULL;
 
       /* Parse current line */
-      if (*line 
-            && !string_is_empty(line)
+      if (
+              !string_is_empty(line)
             && parse_line(conf, list, line, NULL))
       {
          if (conf->entries)
