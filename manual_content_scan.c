@@ -1104,8 +1104,7 @@ static bool manual_content_scan_get_playlist_content_label(
 void manual_content_scan_add_content_to_playlist(
       manual_content_scan_task_config_t *task_config,
       playlist_t *playlist, const char *content_path,
-      int content_type, logiqx_dat_t *dat_file,
-      bool fuzzy_archive_match)
+      int content_type, logiqx_dat_t *dat_file)
 {
    char playlist_content_path[PATH_MAX_LENGTH];
 
@@ -1123,7 +1122,7 @@ void manual_content_scan_add_content_to_playlist(
 
    /* Check whether content is already included
     * in playlist */
-   if (!playlist_entry_exists(playlist, playlist_content_path, fuzzy_archive_match))
+   if (!playlist_entry_exists(playlist, playlist_content_path))
    {
       struct playlist_entry entry = {0};
       char label[PATH_MAX_LENGTH];
@@ -1148,6 +1147,6 @@ void manual_content_scan_add_content_to_playlist(
       entry.db_name   = task_config->database_name;
 
       /* Add entry to playlist */
-      playlist_push(playlist, &entry, fuzzy_archive_match);
+      playlist_push(playlist, &entry);
    }
 }
