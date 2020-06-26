@@ -248,34 +248,47 @@ void gfx_widgets_msg_queue_push(
       {
          const char *title                      = msg;
 
-         msg_widget                             = (disp_widget_msg_t*)calloc(1, sizeof(*msg_widget));
+         msg_widget                             = (disp_widget_msg_t*)malloc(sizeof(*msg_widget));
 
          if (task)
             title                               = task->title;
 
+         msg_widget->msg                        = NULL;
+         msg_widget->msg_new                    = NULL;
+         msg_widget->msg_transition_animation   = 0.0f;
+         msg_widget->msg_len                    = 0;
          msg_widget->duration                   = duration;
+
+         msg_widget->text_height                = 0;
+
          msg_widget->offset_y                   = 0;
          msg_widget->alpha                      = 1.0f;
 
          msg_widget->dying                      = false;
          msg_widget->expired                    = false;
+         msg_widget->width                      = 0;
 
          msg_widget->expiration_timer           = 0;
-         msg_widget->task_ptr                   = task;
          msg_widget->expiration_timer_started   = false;
 
-         msg_widget->msg_new                    = NULL;
-         msg_widget->msg_transition_animation   = 0.0f;
+         msg_widget->task_ptr                   = task;
+         msg_widget->task_title_ptr             = NULL;
+         msg_widget->task_count                 = 0;
 
-         msg_widget->text_height                = 0;
+         msg_widget->task_progress              = 0;
+         msg_widget->task_finished              = false;
+         msg_widget->task_error                 = false;
+         msg_widget->task_cancelled             = false;
+         msg_widget->task_ident                 = 0;
 
-         if (p_dispwidget->msg_queue_has_icons)
-         {
-            msg_widget->unfolded                = false;
-            msg_widget->unfolding               = false;
-            msg_widget->unfold                  = 0.0f;
-         }
-         else
+         msg_widget->unfolded                   = false;
+         msg_widget->unfolding                  = false;
+         msg_widget->unfold                     = 0.0f;
+
+         msg_widget->hourglass_rotation         = 0.0f;
+         msg_widget->hourglass_timer            = 0.0f;
+
+         if (!p_dispwidget->msg_queue_has_icons)
          {
             msg_widget->unfolded                = true;
             msg_widget->unfolding               = false;
@@ -284,46 +297,46 @@ void gfx_widgets_msg_queue_push(
 
          if (task)
          {
-            msg_widget->msg                  = strdup(title);
-            msg_widget->msg_new              = strdup(title);
-            msg_widget->msg_len              = (unsigned)strlen(title);
+            msg_widget->msg                     = strdup(title);
+            msg_widget->msg_new                 = strdup(title);
+            msg_widget->msg_len                 = (unsigned)strlen(title);
 
-            msg_widget->task_error           = !string_is_empty(task->error);
-            msg_widget->task_cancelled       = task->cancelled;
-            msg_widget->task_finished        = task->finished;
-            msg_widget->task_progress        = task->progress;
-            msg_widget->task_ident           = task->ident;
-            msg_widget->task_title_ptr       = task->title;
-            msg_widget->task_count           = 1;
+            msg_widget->task_error              = !string_is_empty(task->error);
+            msg_widget->task_cancelled          = task->cancelled;
+            msg_widget->task_finished           = task->finished;
+            msg_widget->task_progress           = task->progress;
+            msg_widget->task_ident              = task->ident;
+            msg_widget->task_title_ptr          = task->title;
+            msg_widget->task_count              = 1;
 
-            msg_widget->unfolded             = true;
+            msg_widget->unfolded                = true;
 
-            msg_widget->width                = font_driver_get_message_width(
+            msg_widget->width                   = font_driver_get_message_width(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
                   msg_widget->msg_len, 1) +
                   p_dispwidget->simple_widget_padding / 2;
 
-            task->frontend_userdata          = msg_widget;
+            task->frontend_userdata             = msg_widget;
 
-            msg_widget->hourglass_rotation   = 0;
+            msg_widget->hourglass_rotation      = 0;
          }
          else
          {
             /* Compute rect width, wrap if necessary */
             /* Single line text > two lines text > two lines 
              * text with expanded width */
-            unsigned title_length   = (unsigned)strlen(title);
-            char *msg               = strdup(title);
-            unsigned width          = menu_is_alive 
+            unsigned title_length               = (unsigned)strlen(title);
+            char *msg                           = strdup(title);
+            unsigned width                      = menu_is_alive 
                ? p_dispwidget->msg_queue_default_rect_width_menu_alive 
                : p_dispwidget->msg_queue_default_rect_width;
-            unsigned text_width     = font_driver_get_message_width(
+            unsigned text_width                 = font_driver_get_message_width(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
                   title_length,
                   1);
-            msg_widget->text_height = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
+            msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
 
             /* Text is too wide, split it into two lines */
             if (text_width > width)
@@ -340,11 +353,11 @@ void gfx_widgets_msg_queue_push(
                msg_widget->text_height *= 2;
             }
             else
-               width = text_width;
+               width                            = text_width;
 
-            msg_widget->msg         = msg;
-            msg_widget->msg_len     = (unsigned)strlen(msg);
-            msg_widget->width       = width + 
+            msg_widget->msg                     = msg;
+            msg_widget->msg_len                 = (unsigned)strlen(msg);
+            msg_widget->width                   = width + 
                p_dispwidget->simple_widget_padding / 2;
          }
 
