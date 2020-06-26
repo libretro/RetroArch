@@ -32,10 +32,7 @@
 #include "../core_updater_list.h"
 #endif
 
-#if defined(HAVE_NETWORKING)
-/* Required for task_push_pl_entry_thumbnail_download() */
 #include "../playlist.h"
-#endif
 
 /* Required for task_push_core_backup() */
 #include "../core_backup.h"
