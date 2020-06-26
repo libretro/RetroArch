@@ -179,7 +179,9 @@
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
-int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, int64_t offset, int whence)
+int64_t retro_vfs_file_seek_internal(
+      libretro_vfs_implementation_file *stream,
+      int64_t offset, int whence)
 {
    if (!stream)
       return -1;
@@ -508,9 +510,7 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
       if (stream->fp)
-      {
          fclose(stream->fp);
-      }
    }
    else
    {

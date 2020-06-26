@@ -81,36 +81,6 @@ static int find_resampler_driver_index(const char *ident)
 }
 
 /**
- * audio_resampler_driver_find_handle:
- * @idx                : index of driver to get handle to.
- *
- * Returns: handle to audio resampler driver at index. Can be NULL
- * if nothing found.
- **/
-const void *audio_resampler_driver_find_handle(int idx)
-{
-   const void *drv = resampler_drivers[idx];
-   if (!drv)
-      return NULL;
-   return drv;
-}
-
-/**
- * audio_resampler_driver_find_ident:
- * @idx                : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of audio resampler driver at index.
- * Can be NULL if nothing found.
- **/
-const char *audio_resampler_driver_find_ident(int idx)
-{
-   const retro_resampler_t *drv = resampler_drivers[idx];
-   if (!drv)
-      return NULL;
-   return drv->ident;
-}
-
-/**
  * find_resampler_driver:
  * @ident                      : Identifier of resampler driver to find.
  *
@@ -152,6 +122,37 @@ static bool resampler_append_plugs(void **re,
    if (!*re)
       return false;
    return true;
+}
+
+
+/**
+ * audio_resampler_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to audio resampler driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *audio_resampler_driver_find_handle(int idx)
+{
+   const void *drv = resampler_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * audio_resampler_driver_find_ident:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of audio resampler driver at index.
+ * Can be NULL if nothing found.
+ **/
+const char *audio_resampler_driver_find_ident(int idx)
+{
+   const retro_resampler_t *drv = resampler_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv->ident;
 }
 
 /**
