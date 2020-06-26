@@ -19,10 +19,11 @@
 
 typedef struct ozone_handle ozone_handle_t;
 
+#include <retro_miscellaneous.h>
+#include <retro_inline.h>
+
 #include "ozone_theme.h"
 #include "ozone_sidebar.h"
-
-#include <retro_miscellaneous.h>
 
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
@@ -321,6 +322,16 @@ typedef struct ozone_node
    uintptr_t content_icon;
 } ozone_node_t;
 
+static INLINE unsigned ozone_count_lines(const char *str)
+{
+   unsigned c     = 0;
+   unsigned lines = 1;
+
+   for (c = 0; str[c]; c++)
+      lines += (str[c] == '\n');
+   return lines;
+}
+
 void ozone_draw_entries(
       ozone_handle_t *ozone,
       void *userdata,
@@ -391,9 +402,10 @@ void ozone_draw_thumbnail_bar(
       float menu_framebuffer_opacity);
 
 void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate);
+
 void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone);
 
-unsigned ozone_count_lines(const char *str);
+void ozone_toggle_metadata_override(ozone_handle_t *ozone);
 
 void ozone_update_content_metadata(ozone_handle_t *ozone);
 
