@@ -3551,7 +3551,15 @@ static void xmb_render(void *data,
             false);
    }
 
+   /* This must be set every frame when using a pointer,
+    * otherwise touchscreen input breaks when changing
+    * orientation */
+   gfx_display_set_width(width);
+   gfx_display_set_height(height);
+
+   /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
+
 
    if (xmb->pointer.type != MENU_POINTER_DISABLED)
    {
@@ -3561,12 +3569,6 @@ static void xmb_render(void *data,
       int16_t margin_right = (int16_t)((float)width - xmb->margins_screen_left);
       int16_t pointer_x    = xmb->pointer.x;
       int16_t pointer_y    = xmb->pointer.y;
-
-      /* This must be set every frame when using a pointer,
-       * otherwise touchscreen input breaks when changing
-       * orientation */
-      gfx_display_set_width(width);
-      gfx_display_set_height(height);
 
       /* When determining current pointer selection, we
        * only track pointer movements between the left
@@ -5027,9 +5029,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          video_height);
 
    font_driver_flush(video_width, video_height, xmb->font);
-   font_driver_bind_block(xmb->font, NULL);
-
    font_driver_flush(video_width, video_height, xmb->font2);
+   font_driver_bind_block(xmb->font, NULL);
    font_driver_bind_block(xmb->font2, NULL);
 
    /* Draw fullscreen thumbnails, if required */
