@@ -54,17 +54,6 @@ static const char *semantic_uniform_names[] = {
    "FrameDirection",
 };
 
-slang_reflection::slang_reflection()
-{
-   unsigned i;
-
-   for (i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
-      semantic_textures[i].resize(
-            slang_texture_semantic_is_array(
-               static_cast<slang_texture_semantic>(i))
-            ? 0 : 1);
-}
-
 static slang_texture_semantic slang_name_to_texture_semantic(
       const unordered_map<string, slang_texture_semantic_map> &semantic_map,
       const string &name, unsigned *index)
@@ -352,6 +341,18 @@ static bool add_active_buffer_ranges(
       }
    }
    return true;
+}
+
+
+slang_reflection::slang_reflection()
+{
+   unsigned i;
+
+   for (i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
+      semantic_textures[i].resize(
+            slang_texture_semantic_is_array(
+               static_cast<slang_texture_semantic>(i))
+            ? 0 : 1);
 }
 
 bool slang_reflect(
