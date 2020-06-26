@@ -7990,7 +7990,7 @@ static void handle_discord_join_cb(retro_task_t *task,
          room->gamename, join_hostname, room->corename, room->subsystem_name);
       discord_st->connecting = true;
       if (discord_st->ready)
-         discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT, false);
+         discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT);
    }
 
 finish:
@@ -8088,7 +8088,7 @@ static void handle_discord_join_request(const DiscordUser* request)
 #endif
 }
 
-void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
+void discord_update(enum discord_presence presence)
 {
    struct rarch_state *p_rarch = &rarch_st;
    discord_state_t *discord_st = &p_rarch->discord_st;
@@ -8147,8 +8147,7 @@ void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
                   playlist_get_index_by_path(
                         current_playlist,
                         path_get(RARCH_PATH_CONTENT),
-                        &entry,
-                        fuzzy_archive_match);
+                        &entry);
 
                   if (entry && !string_is_empty(entry->label))
                      label = entry->label;
@@ -13271,7 +13270,6 @@ static bool run_translation_service(
    struct scaler_ctx *scaler             = (struct scaler_ctx*)
       calloc(1, sizeof(struct scaler_ctx));
    bool error                            = false;
-   bool playlist_fuzzy_archive_match     = settings->bools.playlist_fuzzy_archive_match;
 
    uint8_t *bmp_buffer                   = NULL;
    uint64_t buffer_bytes                 = 0;
@@ -13327,8 +13325,7 @@ static bool run_translation_service(
       if (current_playlist)
       {
          playlist_get_index_by_path(
-            current_playlist, path_get(RARCH_PATH_CONTENT), &entry,
-            playlist_fuzzy_archive_match);
+            current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
 
          if (entry && !string_is_empty(entry->label))
             label = entry->label;
@@ -15411,20 +15408,14 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.content_history)
          {
-            bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-            bool playlist_compression    = settings->bools.playlist_compression;
-            playlist_write_file(g_defaults.content_history,
-                  playlist_use_old_format, playlist_compression);
+            playlist_write_file(g_defaults.content_history);
             playlist_free(g_defaults.content_history);
          }
          g_defaults.content_history = NULL;
 
          if (g_defaults.music_history)
          {
-            bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-            bool playlist_compression    = settings->bools.playlist_compression;
-            playlist_write_file(g_defaults.music_history,
-                  playlist_use_old_format, playlist_compression);
+            playlist_write_file(g_defaults.music_history);
             playlist_free(g_defaults.music_history);
          }
          g_defaults.music_history = NULL;
@@ -15432,10 +15423,7 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (g_defaults.video_history)
          {
-            bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-            bool playlist_compression    = settings->bools.playlist_compression;
-            playlist_write_file(g_defaults.video_history,
-                  playlist_use_old_format, playlist_compression);
+            playlist_write_file(g_defaults.video_history);
             playlist_free(g_defaults.video_history);
          }
          g_defaults.video_history = NULL;
@@ -15444,10 +15432,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_IMAGEVIEWER
          if (g_defaults.image_history)
          {
-            bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-            bool playlist_compression    = settings->bools.playlist_compression;
-            playlist_write_file(g_defaults.image_history,
-                  playlist_use_old_format, playlist_compression);
+            playlist_write_file(g_defaults.image_history);
             playlist_free(g_defaults.image_history);
          }
          g_defaults.image_history = NULL;
@@ -15455,9 +15440,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_HISTORY_INIT:
          {
-            unsigned content_history_size    = settings->uints.content_history_size;
-            bool history_list_enable         = settings->bools.history_list_enable;
-            const char *path_content_history = settings->paths.path_content_history;
+            playlist_config_t playlist_config;
+            bool history_list_enable               = settings->bools.history_list_enable;
+            const char *path_content_history       = settings->paths.path_content_history;
             const char *path_content_music_history = settings->paths.path_content_music_history;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             const char *path_content_video_history = settings->paths.path_content_video_history;
@@ -15465,6 +15450,10 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_IMAGEVIEWER
             const char *path_content_image_history = settings->paths.path_content_image_history;
 #endif
+            playlist_config.capacity               = settings->uints.content_history_size;
+            playlist_config.old_format             = settings->bools.playlist_use_old_format;
+            playlist_config.compress               = settings->bools.playlist_compression;
+            playlist_config.fuzzy_archive_match    = settings->bools.playlist_fuzzy_archive_match;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
@@ -15473,22 +15462,19 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Note: Sorting is disabled by default for
              * all content history playlists */
-
             RARCH_LOG("[Playlist]: %s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_history);
-            g_defaults.content_history = playlist_init(
-                  path_content_history,
-                  content_history_size);
+            playlist_config_set_path(&playlist_config, path_content_history);
+            g_defaults.content_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
                   g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
 
             RARCH_LOG("[Playlist]: %s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_music_history);
-            g_defaults.music_history = playlist_init(
-                  path_content_music_history,
-                  content_history_size);
+            playlist_config_set_path(&playlist_config, path_content_music_history);
+            g_defaults.music_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
                   g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
 
@@ -15496,9 +15482,8 @@ bool command_event(enum event_command cmd, void *data)
             RARCH_LOG("[Playlist]: %s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_video_history);
-            g_defaults.video_history = playlist_init(
-                  path_content_video_history,
-                  content_history_size);
+            playlist_config_set_path(&playlist_config, path_content_video_history);
+            g_defaults.video_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
                   g_defaults.video_history, PLAYLIST_SORT_MODE_OFF);
 #endif
@@ -15507,9 +15492,8 @@ bool command_event(enum event_command cmd, void *data)
             RARCH_LOG("[Playlist]: %s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_image_history);
-            g_defaults.image_history = playlist_init(
-                  path_content_image_history,
-                  content_history_size);
+            playlist_config_set_path(&playlist_config, path_content_image_history);
+            g_defaults.image_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
                   g_defaults.image_history, PLAYLIST_SORT_MODE_OFF);
 #endif
@@ -15662,11 +15646,8 @@ bool command_event(enum event_command cmd, void *data)
             {
                if (str_list->size >= 6)
                {
-                  struct playlist_entry entry       = {0};
-                  bool playlist_use_old_format      = settings->bools.playlist_use_old_format;
-                  bool playlist_compression         = settings->bools.playlist_compression;
-                  bool playlist_sort_alphabetical   = settings->bools.playlist_sort_alphabetical;
-                  bool playlist_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+                  struct playlist_entry entry     = {0};
+                  bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
 
                   entry.path      = str_list->elems[0].data; /* content_path */
                   entry.label     = str_list->elems[1].data; /* content_label */
@@ -15676,8 +15657,7 @@ bool command_event(enum event_command cmd, void *data)
                   entry.db_name   = str_list->elems[5].data; /* db_name */
 
                   /* Write playlist entry */
-                  if (playlist_push(g_defaults.content_favorites, &entry,
-                           playlist_fuzzy_archive_match))
+                  if (playlist_push(g_defaults.content_favorites, &entry))
                   {
                      enum playlist_sort_mode current_sort_mode =
                            playlist_get_sort_mode(g_defaults.content_favorites);
@@ -15687,8 +15667,7 @@ bool command_event(enum event_command cmd, void *data)
                          (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
                         playlist_qsort(g_defaults.content_favorites);
 
-                     playlist_write_file(g_defaults.content_favorites,
-                           playlist_use_old_format, playlist_compression);
+                     playlist_write_file(g_defaults.content_favorites);
                      runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   }
                }
@@ -15702,8 +15681,6 @@ bool command_event(enum event_command cmd, void *data)
             const char *core_path          = "DETECT";
             size_t *playlist_index         = (size_t*)data;
             struct playlist_entry entry    = {0};
-            bool playlist_use_old_format   = settings->bools.playlist_use_old_format;
-            bool playlist_compression      = settings->bools.playlist_compression;
 
             /* the update function reads our entry as const,
              * so these casts are safe */
@@ -15711,11 +15688,7 @@ bool command_event(enum event_command cmd, void *data)
             entry.core_name                = (char*)core_name;
 
             command_playlist_update_write(
-                  NULL,
-                  *playlist_index,
-                  &entry,
-                  playlist_use_old_format,
-                  playlist_compression);
+                  NULL, *playlist_index, &entry);
 
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
@@ -16301,15 +16274,14 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_DISCORD_UPDATE:
          {
 #ifdef HAVE_DISCORD
-            discord_state_t *discord_st = &p_rarch->discord_st;
+            discord_state_t *discord_st  = &p_rarch->discord_st;
             if (!data || !discord_st->ready)
                return false;
 
-            bool playlist_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-            discord_userdata_t *userdata      = (discord_userdata_t*)data;
+            discord_userdata_t *userdata = (discord_userdata_t*)data;
 
             if (discord_st->ready)
-               discord_update(userdata->status, playlist_fuzzy_archive_match);
+               discord_update(userdata->status);
 #endif
          }
          break;
@@ -38223,8 +38195,7 @@ int runloop_iterate(void)
 
 #ifdef HAVE_DISCORD
    if (discord_is_inited && discord_st->ready)
-      discord_update(DISCORD_PRESENCE_GAME,
-            settings->bools.playlist_fuzzy_archive_match);
+      discord_update(DISCORD_PRESENCE_GAME);
 #endif
 
    for (i = 0; i < max_users; i++)
@@ -38447,27 +38418,32 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
 
 void rarch_favorites_init(void)
 {
-   struct rarch_state *p_rarch        = &rarch_st;
-   settings_t *settings               = p_rarch->configuration_settings;
-   int content_favorites_size         = settings ? settings->ints.content_favorites_size : 0;
-   const char *path_content_favorites = settings ? settings->paths.path_content_favorites : NULL;
-   bool playlist_sort_alphabetical    = settings ? settings->bools.playlist_sort_alphabetical : false;
+   struct rarch_state *p_rarch         = &rarch_st;
+   settings_t *settings                = p_rarch->configuration_settings;
+   int content_favorites_size          = settings ? settings->ints.content_favorites_size : 0;
+   const char *path_content_favorites  = settings ? settings->paths.path_content_favorites : NULL;
+   bool playlist_sort_alphabetical     = settings ? settings->bools.playlist_sort_alphabetical : false;
+   playlist_config_t playlist_config;
    enum playlist_sort_mode current_sort_mode;
+
+   playlist_config.capacity            = COLLECTION_SIZE;
+   playlist_config.old_format          = settings ? settings->bools.playlist_use_old_format : false;
+   playlist_config.compress            = settings ? settings->bools.playlist_compression : false;
+   playlist_config.fuzzy_archive_match = settings ? settings->bools.playlist_fuzzy_archive_match : false;
 
    if (!settings)
       return;
 
-   if (content_favorites_size < 0)
-      content_favorites_size = COLLECTION_SIZE;
+   if (content_favorites_size >= 0)
+      playlist_config.capacity = (size_t)content_favorites_size;
 
    rarch_favorites_deinit();
 
    RARCH_LOG("[Playlist]: %s: [%s].\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
          path_content_favorites);
-   g_defaults.content_favorites = playlist_init(
-         path_content_favorites,
-         (unsigned)content_favorites_size);
+   playlist_config_set_path(&playlist_config, path_content_favorites);
+   g_defaults.content_favorites = playlist_init(&playlist_config);
 
    /* Get current per-playlist sort mode */
    current_sort_mode = playlist_get_sort_mode(g_defaults.content_favorites);
@@ -38483,13 +38459,7 @@ void rarch_favorites_deinit(void)
 {
    if (g_defaults.content_favorites)
    {
-      struct rarch_state *p_rarch  = &rarch_st;
-      settings_t         *settings = p_rarch->configuration_settings;
-      bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-      bool playlist_compression    = settings->bools.playlist_compression;
-
-      playlist_write_file(g_defaults.content_favorites,
-            playlist_use_old_format, playlist_compression);
+      playlist_write_file(g_defaults.content_favorites);
       playlist_free(g_defaults.content_favorites);
       g_defaults.content_favorites = NULL;
    }

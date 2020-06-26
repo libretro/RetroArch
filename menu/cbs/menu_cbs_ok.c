@@ -2013,6 +2013,7 @@ error:
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   playlist_config_t playlist_config;
    char content_path[PATH_MAX_LENGTH];
    char content_label[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
@@ -2025,13 +2026,16 @@ static int action_ok_playlist_entry_collection(const char *path,
    bool core_is_builtin                   = false;
    menu_handle_t *menu                    = menu_driver_get_ptr();
    settings_t *settings                   = config_get_ptr();
-   bool playlist_use_old_format           = settings->bools.playlist_use_old_format;
-   bool playlist_compression              = settings->bools.playlist_compression;
    bool playlist_sort_alphabetical        = settings->bools.playlist_sort_alphabetical;
    const char *path_content_history       = settings->paths.path_content_history;
    const char *path_content_music_history = settings->paths.path_content_music_history;
    const char *path_content_video_history = settings->paths.path_content_video_history;
    const char *path_content_image_history = settings->paths.path_content_image_history;
+
+   playlist_config.capacity               = COLLECTION_SIZE;
+   playlist_config.old_format             = settings->bools.playlist_use_old_format;
+   playlist_config.compress               = settings->bools.playlist_compression;
+   playlist_config.fuzzy_archive_match    = settings->bools.playlist_fuzzy_archive_match;
 
    content_path[0]  = '\0';
    content_label[0] = '\0';
@@ -2057,7 +2061,8 @@ static int action_ok_playlist_entry_collection(const char *path,
                                 string_is_equal(menu->db_playlist_file, path_content_image_history);
       enum playlist_sort_mode current_sort_mode;
 
-      tmp_playlist = playlist_init(menu->db_playlist_file, COLLECTION_SIZE);
+      playlist_config_set_path(&playlist_config, menu->db_playlist_file);
+      tmp_playlist = playlist_init(&playlist_config);
 
       if (!tmp_playlist)
          goto error;
@@ -2127,9 +2132,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       command_playlist_update_write(
             playlist,
             selection_ptr,
-            &update_entry,
-            playlist_use_old_format,
-            playlist_compression);
+            &update_entry);
    }
    else
    {
@@ -2472,12 +2475,8 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char combined_path[PATH_MAX_LENGTH];
-   struct playlist_entry entry         = {0};
-   settings_t *settings                = config_get_ptr();
-   menu_handle_t *menu                 = menu_driver_get_ptr();
-   bool playlist_fuzzy_archive_match   = settings->bools.playlist_fuzzy_archive_match;
-   bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
-   bool playlist_compression           = settings->bools.playlist_compression;
+   struct playlist_entry entry = {0};
+   menu_handle_t *menu         = menu_driver_get_ptr();
 
    combined_path[0] = '\0';
 
@@ -2492,10 +2491,7 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
    entry.core_path = (char*)"builtin";
    entry.core_name = (char*)"musicplayer";
 
-   command_playlist_push_write(g_defaults.music_history, &entry,
-         playlist_fuzzy_archive_match,
-         playlist_use_old_format,
-         playlist_compression);
+   command_playlist_push_write(g_defaults.music_history, &entry);
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
@@ -2510,12 +2506,8 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char combined_path[PATH_MAX_LENGTH];
-   struct playlist_entry entry         = {0};
-   menu_handle_t *menu                 = menu_driver_get_ptr();
-   settings_t *settings                = config_get_ptr();
-   bool playlist_fuzzy_archive_match   = settings->bools.playlist_fuzzy_archive_match;
-   bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
-   bool playlist_compression           = settings->bools.playlist_compression;
+   struct playlist_entry entry = {0};
+   menu_handle_t *menu         = menu_driver_get_ptr();
 
    combined_path[0] = '\0';
 
@@ -2530,10 +2522,7 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
    entry.core_path = (char*)"builtin";
    entry.core_name = (char*)"musicplayer";
 
-   command_playlist_push_write(g_defaults.music_history, &entry,
-         playlist_fuzzy_archive_match,
-         playlist_use_old_format,
-         playlist_compression);
+   command_playlist_push_write(g_defaults.music_history, &entry);
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load_and_play(combined_path,
@@ -2593,9 +2582,6 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 static void menu_input_st_string_cb_rename_entry(void *userdata,
       const char *str)
 {
-   settings_t *settings           = config_get_ptr();
-   bool playlist_use_old_format   = settings->bools.playlist_use_old_format;
-   bool playlist_compression      = settings->bools.playlist_compression;
    if (str && *str)
    {
       const char        *label    = menu_input_dialog_get_buffer();
@@ -2610,9 +2596,7 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
 
          command_playlist_update_write(NULL,
                menu_input_dialog_get_kb_idx(),
-               &entry,
-               playlist_use_old_format,
-               playlist_compression);
+               &entry);
       }
    }
 
@@ -3188,8 +3172,6 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    const char *path_libretro_info          = settings->paths.path_libretro_info;
    const char *path_dir_libretro           = settings->paths.directory_libretro;
    bool show_hidden_files                  = settings->bools.show_hidden_files;
-   bool playlist_use_old_format            = settings->bools.playlist_use_old_format;
-   bool playlist_compression               = settings->bools.playlist_compression;
 
    ext_name[0]                             = '\0';
    core_display_name[0]                    = '\0';
@@ -3221,9 +3203,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    command_playlist_update_write(
          NULL,
          menu->scratchpad.unsigned_var,
-         &entry,
-         playlist_use_old_format,
-         playlist_compression);
+         &entry);
 
    /* Provide visual feedback */
    strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
@@ -4743,9 +4723,6 @@ static int action_ok_delete_entry(const char *path,
    char *def_conf_img_path      = NULL;
 #endif
    char *def_conf_fav_path      = NULL;
-   settings_t *settings         = config_get_ptr();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
    playlist_t *playlist         = playlist_get_cached();
    menu_handle_t *menu          = menu_driver_get_ptr();
 
@@ -4781,8 +4758,7 @@ static int action_ok_delete_entry(const char *path,
    if (playlist)
    {
       playlist_delete_index(playlist, menu->rpl_entry_selection_ptr);
-      playlist_write_file(
-            playlist, playlist_use_old_format, playlist_compression);
+      playlist_write_file(playlist);
    }
 
    new_selection_ptr = menu_navigation_get_selection();
@@ -5639,9 +5615,6 @@ static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
    core_info_list_t *core_info_list = NULL;
    playlist_t *playlist             = playlist_get_cached();
    const char* core_name            = path;
-   settings_t *settings             = config_get_ptr();
-   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
-   bool playlist_compression        = settings->bools.playlist_compression;
 
    /* Get core list */
    core_info_get_list(&core_info_list);
@@ -5691,8 +5664,7 @@ static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
    }
 
    /* In all cases, update file on disk */
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -5702,34 +5674,26 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings         = config_get_ptr();
-   playlist_t *playlist         = playlist_get_cached();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
+   playlist_t *playlist = playlist_get_cached();
 
    playlist_set_label_display_mode(playlist, (enum playlist_label_display_mode)idx);
 
    /* In all cases, update file on disk */
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
 static int generic_set_thumbnail_mode(enum playlist_thumbnail_id thumbnail_id, size_t idx)
 {
-   settings_t         *settings = config_get_ptr();
-   playlist_t         *playlist = playlist_get_cached();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
+   playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id,
          (enum playlist_thumbnail_mode)idx);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -5750,14 +5714,10 @@ static int action_ok_push_dropdown_item_playlist_sort_mode(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings         = config_get_ptr();
-   playlist_t *playlist         = playlist_get_cached();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
+   playlist_t *playlist = playlist_get_cached();
 
    playlist_set_sort_mode(playlist, (enum playlist_sort_mode)idx);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -6201,7 +6161,18 @@ static int action_ok_disk_image_append(const char *path,
 static int action_ok_manual_content_scan_start(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   task_push_manual_content_scan();
+   playlist_config_t playlist_config;
+   settings_t *settings                = config_get_ptr();
+   const char *directory_playlist      = settings->paths.directory_playlist;
+
+   /* Note: playlist_config.path will set by the
+    * task itself */
+   playlist_config.capacity            = COLLECTION_SIZE;
+   playlist_config.old_format          = settings->bools.playlist_use_old_format;
+   playlist_config.compress            = settings->bools.playlist_compression;
+   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+
+   task_push_manual_content_scan(&playlist_config, directory_playlist);
    return 0;
 }
 
@@ -6534,24 +6505,31 @@ static int action_ok_pl_content_thumbnails(const char *path,
 {
 #ifdef HAVE_NETWORKING
    settings_t *settings = config_get_ptr();
-   char playlist_path[PATH_MAX_LENGTH];
-
-   playlist_path[0] = '\0';
 
    if (settings)
    {
-      const char *path_dir_playlist   = settings->paths.directory_playlist;
-      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
+      playlist_config_t playlist_config;
+      const char *path_dir_playlist       = settings->paths.directory_playlist;
+      const char *path_dir_thumbnails     = settings->paths.directory_thumbnails;
+
+      playlist_config.capacity            = COLLECTION_SIZE;
+      playlist_config.old_format          = settings->bools.playlist_use_old_format;
+      playlist_config.compress            = settings->bools.playlist_compression;
+      playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
 
       if (!string_is_empty(path_dir_playlist))
       {
-         fill_pathname_join(
-               playlist_path,
-               path_dir_playlist, label,
-               sizeof(playlist_path));
+         char playlist_path[PATH_MAX_LENGTH];
+         playlist_path[0] = '\0';
 
-         task_push_pl_thumbnail_download(path, playlist_path,
+         fill_pathname_join(
+               playlist_path, path_dir_playlist, label,
+               sizeof(playlist_path));
+         playlist_config_set_path(&playlist_config, playlist_path);
+
+         task_push_pl_thumbnail_download(path, &playlist_config,
                path_dir_thumbnails);
+
          return 0;
       }
    }
@@ -6588,18 +6566,18 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
 static int action_ok_playlist_reset_cores(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   playlist_t *playlist      = playlist_get_cached();
-   const char *playlist_path = NULL;
+   playlist_t *playlist               = playlist_get_cached();
+   playlist_config_t *playlist_config = NULL;
 
    if (!playlist)
       return -1;
 
-   playlist_path = playlist_get_conf_path(playlist);
+   playlist_config = playlist_get_config(playlist);
 
-   if (string_is_empty(playlist_path))
+   if (!playlist_config || string_is_empty(playlist_config->path))
       return -1;
 
-   task_push_pl_manager_reset_cores(playlist_path);
+   task_push_pl_manager_reset_cores(playlist_config);
 
    return 0;
 }
@@ -6607,18 +6585,18 @@ static int action_ok_playlist_reset_cores(const char *path,
 static int action_ok_playlist_clean(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   playlist_t *playlist      = playlist_get_cached();
-   const char *playlist_path = NULL;
+   playlist_t *playlist               = playlist_get_cached();
+   playlist_config_t *playlist_config = NULL;
 
    if (!playlist)
       return -1;
 
-   playlist_path = playlist_get_conf_path(playlist);
+   playlist_config = playlist_get_config(playlist);
 
-   if (string_is_empty(playlist_path))
+   if (!playlist_config || string_is_empty(playlist_config->path))
       return -1;
 
-   task_push_pl_manager_clean_playlist(playlist_path);
+   task_push_pl_manager_clean_playlist(playlist_config);
 
    return 0;
 }

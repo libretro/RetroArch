@@ -1361,12 +1361,18 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    char path_playlist[PATH_MAX_LENGTH];
    char path_base[PATH_MAX_LENGTH];
    char query[PATH_MAX_LENGTH];
+   playlist_config_t playlist_config;
    playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
    settings_t *settings                = config_get_ptr();
    bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
    const char *dir_playlist            = settings->paths.directory_playlist;
    const char *menu_driver             = menu_driver_ident();
+
+   playlist_config.capacity            = COLLECTION_SIZE;
+   playlist_config.old_format          = settings->bools.playlist_use_old_format;
+   playlist_config.compress            = settings->bools.playlist_compression;
+   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
 
    path_playlist[0] = path_base[0] = query[0] = '\0';
 
@@ -1387,7 +1393,8 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    fill_pathname_join(path_playlist, dir_playlist, path_base,
          sizeof(path_playlist));
 
-   playlist = playlist_init(path_playlist, COLLECTION_SIZE);
+   playlist_config_set_path(&playlist_config, path_playlist);
+   playlist = playlist_init(&playlist_config);
 
    if (playlist)
       strlcpy(menu->db_playlist_file, path_playlist,
@@ -1973,14 +1980,18 @@ end:
 static void menu_displaylist_set_new_playlist(
       menu_handle_t *menu, const char *path, bool sort_enabled)
 {
-   unsigned playlist_size          = COLLECTION_SIZE;
-   const char *playlist_file_name  = path_basename(path);
-   settings_t *settings            = config_get_ptr();
-   int content_favorites_size      = settings->ints.content_favorites_size;
-   unsigned content_history_size   = settings->uints.content_history_size;
-   bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
-   bool playlist_use_old_format    = settings->bools.playlist_use_old_format;
-   bool playlist_compression       = settings->bools.playlist_compression;
+   playlist_config_t playlist_config;
+   const char *playlist_file_name      = path_basename(path);
+   settings_t *settings                = config_get_ptr();
+   int content_favorites_size          = settings->ints.content_favorites_size;
+   unsigned content_history_size       = settings->uints.content_history_size;
+   bool playlist_sort_alphabetical     = settings->bools.playlist_sort_alphabetical;
+
+   playlist_config_set_path(&playlist_config, path);
+   playlist_config.capacity            = COLLECTION_SIZE;
+   playlist_config.old_format          = settings->bools.playlist_use_old_format;
+   playlist_config.compress            = settings->bools.playlist_compression;
+   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
 
    menu->db_playlist_file[0]       = '\0';
 
@@ -1990,17 +2001,16 @@ static void menu_displaylist_set_new_playlist(
    /* Get proper playlist capacity */
    if (!string_is_empty(playlist_file_name))
    {
-      if (string_ends_with_size(path, "_history.lpl",
-               strlen(path), STRLEN_CONST("_history.lpl")))
-         playlist_size = content_history_size;
-      else if (string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
-         if (content_favorites_size >= 0)
-            playlist_size = (unsigned)content_favorites_size;
+      if (string_ends_with_size(playlist_file_name, "_history.lpl",
+               strlen(playlist_file_name), STRLEN_CONST("_history.lpl")))
+         playlist_config.capacity = content_history_size;
+      else if (string_is_equal(playlist_file_name,
+                     file_path_str(FILE_PATH_CONTENT_FAVORITES)) &&
+               (content_favorites_size >= 0))
+         playlist_config.capacity = (unsigned)content_favorites_size;
    }
 
-   if (playlist_init_cached(
-         path, playlist_size,
-         playlist_use_old_format, playlist_compression))
+   if (playlist_init_cached(&playlist_config))
    {
       playlist_t *playlist                      = playlist_get_cached();
       enum playlist_sort_mode current_sort_mode = playlist_get_sort_mode(playlist);

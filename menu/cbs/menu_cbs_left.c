@@ -378,9 +378,6 @@ static int playlist_association_left(unsigned type, const char *label,
 {
    char core_filename[PATH_MAX_LENGTH];
    size_t i, next, current          = 0;
-   settings_t *settings             = config_get_ptr();
-   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
-   bool playlist_compression        = settings->bools.playlist_compression;
    playlist_t *playlist             = playlist_get_cached();
    const char *default_core_path    = playlist_get_default_core_path(playlist);
    bool default_core_set            = false;
@@ -452,7 +449,7 @@ static int playlist_association_left(unsigned type, const char *label,
    /* Update playlist */
    playlist_set_default_core_path(playlist, core_info ? core_info->path         : "DETECT");
    playlist_set_default_core_name(playlist, core_info ? core_info->display_name : "DETECT");
-   playlist_write_file(playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return 0;
 }
@@ -461,10 +458,7 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
       bool wraparound)
 {
    enum playlist_label_display_mode label_display_mode;
-   settings_t *settings             = config_get_ptr();
-   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
-   bool playlist_compression        = settings->bools.playlist_compression;
-   playlist_t *playlist             = playlist_get_cached();
+   playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
@@ -477,8 +471,7 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
       label_display_mode = LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX;
 
    playlist_set_label_display_mode(playlist, label_display_mode);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return 0;
 }
@@ -486,9 +479,6 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
 static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id,
       bool wraparound)
 {
-   settings_t *settings                        = config_get_ptr();
-   bool playlist_use_old_format                = settings->bools.playlist_use_old_format;
-   bool playlist_compression                   = settings->bools.playlist_compression;
    enum playlist_thumbnail_mode thumbnail_mode =
          playlist_get_thumbnail_mode(playlist, thumbnail_id);
 
@@ -498,8 +488,7 @@ static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thu
       thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_BOXARTS;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id, thumbnail_mode);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 }
 
 static int playlist_right_thumbnail_mode_left(unsigned type, const char *label,
@@ -532,10 +521,7 @@ static int playlist_sort_mode_left(unsigned type, const char *label,
       bool wraparound)
 {
    enum playlist_sort_mode sort_mode;
-   settings_t *settings             = config_get_ptr();
-   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
-   bool playlist_compression        = settings->bools.playlist_compression;
-   playlist_t *playlist             = playlist_get_cached();
+   playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
@@ -548,8 +534,7 @@ static int playlist_sort_mode_left(unsigned type, const char *label,
       sort_mode = PLAYLIST_SORT_MODE_OFF;
 
    playlist_set_sort_mode(playlist, sort_mode);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return 0;
 }
