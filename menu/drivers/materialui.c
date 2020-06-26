@@ -9086,7 +9086,33 @@ static void materialui_list_insert(
    node = (materialui_node_t*)file_list_get_userdata_at_offset(list, i);
 
    if (!node)
-      node = (materialui_node_t*)calloc(1, sizeof(materialui_node_t));
+   {
+      node = (materialui_node_t*)malloc(sizeof(materialui_node_t));
+
+      node->has_icon                         = false;
+      node->icon_texture_index               = 0;
+      node->entry_width                      = 0.0f;
+      node->entry_height                     = 0.0f;
+      node->text_height                      = 0.0f;
+      node->x                                = 0.0f;
+      node->y                                = 0.0f;
+
+      node->thumbnails.primary.status        = GFX_THUMBNAIL_STATUS_UNKNOWN;
+      node->thumbnails.primary.texture       = 0;
+      node->thumbnails.primary.width         = 0;
+      node->thumbnails.primary.height        = 0;
+      node->thumbnails.primary.alpha         = 0.0f;
+      node->thumbnails.primary.delay_timer   = 0.0f;
+      node->thumbnails.primary.fade_active   = false;
+
+      node->thumbnails.secondary.status      = GFX_THUMBNAIL_STATUS_UNKNOWN;
+      node->thumbnails.secondary.texture     = 0;
+      node->thumbnails.secondary.width       = 0;
+      node->thumbnails.secondary.height      = 0;
+      node->thumbnails.secondary.alpha       = 0.0f;
+      node->thumbnails.secondary.delay_timer = 0.0f;
+      node->thumbnails.secondary.fade_active = false;
+   }
    else
    {
       /* If node already exists, must free any
