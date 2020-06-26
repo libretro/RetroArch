@@ -832,9 +832,13 @@ const char *config_get_default_joypad(void);
 const char *config_get_default_menu(void);
 
 const char *config_get_default_midi(void);
-const char *config_get_midi_driver_options(void);
 
 const char *config_get_default_record(void);
+
+const char *config_get_default_led(void);
+
+const char *config_get_midi_driver_options(void);
+
 
 #ifdef HAVE_CONFIGFILE
 /**
