@@ -840,7 +840,8 @@ int rzipstream_putc(rzipstream_t *stream, int c)
 int rzipstream_vprintf(rzipstream_t *stream, const char* format, va_list args)
 {
    static char buffer[8 * 1024] = {0};
-   int64_t num_chars            = vsprintf(buffer, format, args);
+   int64_t num_chars            = vsnprintf(buffer,
+         sizeof(buffer), format, args);
 
    if (num_chars < 0)
       return -1;
