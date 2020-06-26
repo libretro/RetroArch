@@ -43,27 +43,6 @@ struct rarch_soft_plug
    const struct softfilter_implementation *impl;
 };
 
-struct rarch_softfilter
-{
-   config_file_t *conf;
-
-   const struct softfilter_implementation *impl;
-   void *impl_data;
-
-   struct rarch_soft_plug *plugs;
-   unsigned num_plugs;
-
-   unsigned max_width, max_height;
-   enum retro_pixel_format pix_fmt, out_pix_fmt;
-
-   struct softfilter_work_packet *packets;
-   unsigned threads;
-
-#ifdef HAVE_THREADS
-   struct filter_thread_data *thread_data;
-#endif
-};
-
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 
@@ -104,6 +83,27 @@ static void filter_thread_loop(void *data)
    }
 }
 #endif
+
+struct rarch_softfilter
+{
+   config_file_t *conf;
+
+   const struct softfilter_implementation *impl;
+   void *impl_data;
+
+   struct rarch_soft_plug *plugs;
+   unsigned num_plugs;
+
+   unsigned max_width, max_height;
+   enum retro_pixel_format pix_fmt, out_pix_fmt;
+
+   struct softfilter_work_packet *packets;
+   unsigned threads;
+
+#ifdef HAVE_THREADS
+   struct filter_thread_data *thread_data;
+#endif
+};
 
 static const struct softfilter_implementation *
 softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
@@ -537,8 +537,7 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
             output, output_stride, input, width, height, input_stride);
 
 #ifdef HAVE_THREADS
-   if (filt->threads > 1)
-   {
+   if(filt->threads>1){
       /* Fire off workers */
       for (i = 0; i < filt->threads; i++)
       {
@@ -563,10 +562,12 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
             scond_wait(filt->thread_data[i].cond, filt->thread_data[i].lock);
          slock_unlock(filt->thread_data[i].lock);
       }
-      return;
+   } else {
+      for (i = 0; i < filt->threads; i++)
+         filt->packets[i].work(filt->impl_data, filt->packets[i].thread_data);
    }
-#endif
-
+#else
    for (i = 0; i < filt->threads; i++)
       filt->packets[i].work(filt->impl_data, filt->packets[i].thread_data);
+#endif
 }
