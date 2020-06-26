@@ -265,6 +265,7 @@ static bool gfx_display_check_compatibility(
    return false;
 }
 
+
 void gfx_display_set_driver_id(enum menu_driver_id_type type)
 {
    gfx_display_t *p_disp  = disp_get_ptr();

@@ -223,6 +223,40 @@ static bool playlist_core_path_equal(const char *real_core_path, const char *ent
    return false;
 }
 
+uint32_t playlist_get_size(playlist_t *playlist)
+{
+   if (!playlist)
+      return 0;
+   return (uint32_t)playlist->size;
+}
+
+char *playlist_get_conf_path(playlist_t *playlist)
+{
+   if (!playlist)
+      return NULL;
+   return playlist->conf_path;
+}
+
+/**
+ * playlist_get_index:
+ * @playlist            : Playlist handle.
+ * @idx                 : Index of playlist entry.
+ * @path                : Path of playlist entry.
+ * @core_path           : Core path of playlist entry.
+ * @core_name           : Core name of playlist entry.
+ *
+ * Gets values of playlist index:
+ **/
+void playlist_get_index(playlist_t *playlist,
+      size_t idx,
+      const struct playlist_entry **entry)
+{
+   if (!playlist || !entry)
+      return;
+
+   *entry = &playlist->entries[idx];
+}
+
 /**
  * playlist_free_entry:
  * @entry               : Playlist entry handle.
@@ -278,1982 +312,6 @@ static void playlist_free_entry(struct playlist_entry *entry)
    entry->last_played_hour = 0;
    entry->last_played_minute = 0;
    entry->last_played_second = 0;
-}
-
-static JSON_Writer_HandlerResult JSONOutputHandler(JSON_Writer writer, const char *pBytes, size_t length)
-{
-   JSONContext *context = (JSONContext*)JSON_Writer_GetUserData(writer);
-
-   (void)writer; /* unused */
-   return intfstream_write(context->file, pBytes, length) == length ? JSON_Writer_Continue : JSON_Writer_Abort;
-}
-
-static void JSONLogError(JSONContext *pCtx)
-{
-   if (pCtx->parser && JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
-   {
-      JSON_Error error            = JSON_Parser_GetError(pCtx->parser);
-      JSON_Location errorLocation = { 0, 0, 0 };
-
-      (void)JSON_Parser_GetErrorLocation(pCtx->parser, &errorLocation);
-      RARCH_WARN("Error: Invalid JSON at line %d, column %d (input byte %d) - %s.\n",
-            (int)errorLocation.line + 1,
-            (int)errorLocation.column + 1,
-            (int)errorLocation.byte,
-            JSON_ErrorString(error));
-   }
-   else if (pCtx->writer && JSON_Writer_GetError(pCtx->writer) != JSON_Error_AbortedByHandler)
-   {
-      RARCH_WARN("Error: could not write output - %s.\n", JSON_ErrorString(JSON_Writer_GetError(pCtx->writer)));
-   }
-}
-
-/* No-op versions of JSON whitespace writers,
- * used when generating compressed output */
-static JSON_Status JSON_CALL JSON_Writer_WriteNewLine_NULL(JSON_Writer writer)
-{
-   return JSON_Success;
-}
-
-static JSON_Status JSON_CALL JSON_Writer_WriteSpace_NULL(JSON_Writer writer, size_t numberOfSpaces)
-{
-   return JSON_Success;
-}
-
-static JSON_Status (JSON_CALL *json_write_new_line)(JSON_Writer writer) = JSON_Writer_WriteNewLine;
-static JSON_Status (JSON_CALL *json_write_space)(JSON_Writer writer, size_t numberOfSpaces) = JSON_Writer_WriteSpace;
-
-static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-
-   pCtx->array_depth++;
-
-   if (pCtx->object_depth == 1)
-   {
-      if (string_is_equal(pCtx->current_meta_string, "items") && pCtx->array_depth == 1)
-         pCtx->in_items = true;
-   }
-   else if (pCtx->object_depth == 2)
-   {
-      if (pCtx->array_depth == 2)
-         if (string_is_equal(pCtx->current_items_string, "subsystem_roms"))
-            pCtx->in_subsystem_roms = true;
-   }
-
-   return JSON_Parser_Continue;
-}
-
-static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-
-   retro_assert(pCtx->array_depth > 0);
-
-   pCtx->array_depth--;
-
-   if (pCtx->object_depth == 1)
-   {
-      if (pCtx->in_items && string_is_equal(pCtx->current_meta_string, "items") && pCtx->array_depth == 0)
-      {
-         free(pCtx->current_meta_string);
-         pCtx->current_meta_string = NULL;
-         pCtx->in_items = false;
-
-         if (pCtx->current_items_string)
-         {
-            free(pCtx->current_items_string);
-            pCtx->current_items_string = NULL;
-         }
-      }
-   }
-   else if (pCtx->object_depth == 2)
-   {
-      if (pCtx->in_subsystem_roms && string_is_equal(pCtx->current_items_string, "subsystem_roms") && pCtx->array_depth == 1)
-         pCtx->in_subsystem_roms = false;
-   }
-
-   return JSON_Parser_Continue;
-}
-
-static JSON_Parser_HandlerResult JSONStartObjectHandler(JSON_Parser parser)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-
-   pCtx->object_depth++;
-
-   if (pCtx->in_items && pCtx->object_depth == 2)
-   {
-      if ((pCtx->array_depth == 1) && !pCtx->capacity_exceeded)
-      {
-         if (pCtx->playlist->size < pCtx->playlist->cap)
-            pCtx->current_entry = &pCtx->playlist->entries[pCtx->playlist->size];
-         else
-         {
-            /* Hit max item limit.
-             * Note: We can't just abort here, since there may
-             * be more metadata to read at the end of the file... */
-            RARCH_WARN("JSON file contains more entries than current playlist capacity. Excess entries will be discarded.\n");
-            pCtx->capacity_exceeded  = true;
-            pCtx->current_entry      = NULL;
-            /* In addition, since we are discarding excess entries,
-             * the playlist must be flagged as being modified
-             * (i.e. the playlist is not the same as when it was
-             * last saved to disk...) */
-            pCtx->playlist->modified = true;
-         }
-      }
-   }
-
-   return JSON_Parser_Continue;
-}
-
-static JSON_Parser_HandlerResult JSONEndObjectHandler(JSON_Parser parser)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-
-   if (pCtx->in_items && pCtx->object_depth == 2)
-   {
-      if ((pCtx->array_depth == 1) && !pCtx->capacity_exceeded)
-         pCtx->playlist->size++;
-   }
-
-   retro_assert(pCtx->object_depth > 0);
-
-   pCtx->object_depth--;
-
-   return JSON_Parser_Continue;
-}
-
-static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-   (void)attributes; /* unused */
-
-   if (pCtx->in_items && pCtx->in_subsystem_roms && pCtx->object_depth == 2 && pCtx->array_depth == 2)
-   {
-      if (pCtx->current_entry_string_list_val && length && !string_is_empty(pValue))
-      {
-         union string_list_elem_attr attr = {0};
-
-         if (!*pCtx->current_entry_string_list_val)
-            *pCtx->current_entry_string_list_val = string_list_new();
-
-         string_list_append(*pCtx->current_entry_string_list_val, pValue, attr);
-      }
-   }
-   else if (pCtx->in_items && pCtx->object_depth == 2)
-   {
-      if (pCtx->array_depth == 1)
-      {
-         if (pCtx->current_entry_val && length && !string_is_empty(pValue))
-         {
-            if (*pCtx->current_entry_val)
-               free(*pCtx->current_entry_val);
-            *pCtx->current_entry_val = strdup(pValue);
-         }
-      }
-   }
-   else if (pCtx->object_depth == 1)
-   {
-      if (pCtx->array_depth == 0)
-      {
-         if (pCtx->current_meta_val && length && !string_is_empty(pValue))
-         {
-            /* handle any top-level playlist metadata here */
-#if 0
-            RARCH_LOG("[Playlist]: Found meta: %s = %s\n", pCtx->current_meta_string, pValue);
-#endif
-
-            free(pCtx->current_meta_string);
-            pCtx->current_meta_string = NULL;
-
-            if (*pCtx->current_meta_val)
-               free(*pCtx->current_meta_val);
-
-            *pCtx->current_meta_val = strdup(pValue);
-         }
-      }
-   }
-
-   pCtx->current_entry_val = NULL;
-   pCtx->current_meta_val  = NULL;
-
-   return JSON_Parser_Continue;
-}
-
-static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-   (void)attributes; /* unused */
-
-   if (pCtx->in_items && pCtx->object_depth == 2)
-   {
-      if (pCtx->array_depth == 1)
-      {
-         if (pCtx->current_entry_int_val && length && !string_is_empty(pValue))
-            *pCtx->current_entry_int_val = (int)strtoul(pValue, NULL, 10);
-         else if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
-            *pCtx->current_entry_uint_val = (unsigned)strtoul(pValue, NULL, 10);
-      }
-   }
-   else if (pCtx->object_depth == 1)
-   {
-      if (pCtx->array_depth == 0)
-      {
-         if (pCtx->current_meta_string && length && !string_is_empty(pValue))
-         {
-            /* handle any top-level playlist metadata here */
-#if 0
-            RARCH_LOG("[Playlist]: Found meta: %s = %s\n", pCtx->current_meta_string, pValue);
-#endif
-
-            free(pCtx->current_meta_string);
-            pCtx->current_meta_string = NULL;
-
-            if (pCtx->current_meta_label_display_mode_val)
-               *pCtx->current_meta_label_display_mode_val = (enum playlist_label_display_mode)strtoul(pValue, NULL, 10);
-            else if (pCtx->current_meta_thumbnail_mode_val)
-               *pCtx->current_meta_thumbnail_mode_val = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
-            else if (pCtx->current_meta_sort_mode_val)
-               *pCtx->current_meta_sort_mode_val = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
-         }
-      }
-   }
-
-   pCtx->current_entry_int_val               = NULL;
-   pCtx->current_entry_uint_val              = NULL;
-   pCtx->current_meta_label_display_mode_val = NULL;
-   pCtx->current_meta_thumbnail_mode_val     = NULL;
-   pCtx->current_meta_sort_mode_val          = NULL;
-
-   return JSON_Parser_Continue;
-}
-
-static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
-{
-   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
-   (void)attributes; /* unused */
-
-   if (pCtx->in_items && pCtx->object_depth == 2)
-   {
-      if (pCtx->array_depth == 1)
-      {
-         if (pCtx->current_entry_val)
-         {
-            /* something went wrong */
-            RARCH_WARN("JSON parsing failed at line %d.\n", __LINE__);
-            return JSON_Parser_Abort;
-         }
-
-         if (length)
-         {
-            if (!string_is_empty(pValue))
-            {
-               if (!string_is_empty(pCtx->current_items_string))
-                  free(pCtx->current_items_string);
-               pCtx->current_items_string = strdup(pValue);
-            }
-
-            if (!pCtx->capacity_exceeded)
-            {
-               if (string_is_equal(pValue, "path"))
-                  pCtx->current_entry_val = &pCtx->current_entry->path;
-               else if (string_is_equal(pValue, "label"))
-                  pCtx->current_entry_val = &pCtx->current_entry->label;
-               else if (string_is_equal(pValue, "core_path"))
-                  pCtx->current_entry_val = &pCtx->current_entry->core_path;
-               else if (string_is_equal(pValue, "core_name"))
-                  pCtx->current_entry_val = &pCtx->current_entry->core_name;
-               else if (string_is_equal(pValue, "crc32"))
-                  pCtx->current_entry_val = &pCtx->current_entry->crc32;
-               else if (string_is_equal(pValue, "db_name"))
-                  pCtx->current_entry_val = &pCtx->current_entry->db_name;
-               else if (string_starts_with_size(pValue, "subsystem_", STRLEN_CONST("subsystem_")))
-               {
-                  if (string_is_equal(pValue, "subsystem_ident"))
-                     pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
-                  else if (string_is_equal(pValue, "subsystem_name"))
-                     pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
-                  else if (string_is_equal(pValue, "subsystem_roms"))
-                     pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
-               }
-               else if (string_starts_with_size(pValue, "runtime_", STRLEN_CONST("runtime_")))
-               {
-                  if (string_is_equal(pValue, "runtime_hours"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
-                  else if (string_is_equal(pValue, "runtime_minutes"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
-                  else if (string_is_equal(pValue, "runtime_seconds"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
-               }
-               else if (string_starts_with_size(pValue, "last_played_", STRLEN_CONST("last_played_")))
-               {
-                  if (string_is_equal(pValue, "last_played_year"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
-                  else if (string_is_equal(pValue, "last_played_month"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
-                  else if (string_is_equal(pValue, "last_played_day"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
-                  else if (string_is_equal(pValue, "last_played_hour"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
-                  else if (string_is_equal(pValue, "last_played_minute"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
-                  else if (string_is_equal(pValue, "last_played_second"))
-                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
-               }
-            }
-            else
-            {
-               pCtx->current_entry_val             = NULL;
-               pCtx->current_entry_uint_val        = NULL;
-               pCtx->current_entry_string_list_val = NULL;
-            }
-         }
-      }
-   }
-   else if (pCtx->object_depth == 1)
-   {
-      if (pCtx->array_depth == 0)
-      {
-         if (pCtx->current_meta_val)
-         {
-            /* something went wrong */
-            RARCH_WARN("JSON parsing failed at line %d.\n", __LINE__);
-            return JSON_Parser_Abort;
-         }
-
-         if (length)
-         {
-            if (pCtx->current_meta_string)
-               free(pCtx->current_meta_string);
-            pCtx->current_meta_string = strdup(pValue);
-
-            if (string_is_equal(pValue, "default_core_path"))
-               pCtx->current_meta_val = &pCtx->playlist->default_core_path;
-            else if (string_is_equal(pValue, "default_core_name"))
-               pCtx->current_meta_val = &pCtx->playlist->default_core_name;
-            else if (string_is_equal(pValue, "label_display_mode"))
-               pCtx->current_meta_label_display_mode_val = &pCtx->playlist->label_display_mode;
-            else if (string_is_equal(pValue, "right_thumbnail_mode"))
-               pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->right_thumbnail_mode;
-            else if (string_is_equal(pValue, "left_thumbnail_mode"))
-               pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->left_thumbnail_mode;
-            else if (string_is_equal(pValue, "sort_mode"))
-               pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
-         }
-      }
-   }
-
-   return JSON_Parser_Continue;
-}
-
-static void get_old_format_metadata_value(
-      char *metadata_line, char *value, size_t len)
-{
-   char *end   = NULL;
-   char *start = strchr(metadata_line, '\"');
-
-   if (!start)
-      return;
-
-   start++;
-   end         = strchr(start, '\"');
-
-   if (!end)
-      return;
-
-   *end        = '\0';
-   strlcpy(value, start, len);
-}
-
-static bool playlist_read_file(
-      playlist_t *playlist, const char *path)
-{
-   unsigned i;
-   int test_char;
-#if defined(HAVE_ZLIB)
-      /* Always use RZIP interface when reading playlists
-       * > this will automatically handle uncompressed
-       *   data */
-   intfstream_t *file   = intfstream_open_rzip_file(path,
-            RETRO_VFS_FILE_ACCESS_READ);
-#else
-   intfstream_t *file   = intfstream_open_file(path,
-            RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
-#endif
-
-   playlist->compressed = intfstream_is_compressed(file);
-
-   /* If playlist file does not exist,
-    * create an empty playlist instead */
-   if (!file)
-      return true;
-
-   /* Detect format of playlist
-    * > Read file until we find the first printable
-    *   non-whitespace ASCII character */
-   do
-   {
-      test_char = intfstream_getc(file);
-
-      if (test_char == EOF) /* read error or end of file */
-         goto end;
-   }while (!isgraph(test_char) || test_char > 0x7F);
-
-   if (test_char == '{')
-   {
-      /* New playlist format detected */
-#if 0
-      RARCH_LOG("[Playlist]: New playlist format detected.\n");
-#endif
-      playlist->old_format = false;
-   }
-   else
-   {
-      /* old playlist format detected */
-#if 0
-      RARCH_LOG("[Playlist]: Old playlist format detected.\n");
-#endif
-      playlist->old_format = true;
-   }
-
-   /* Reset file to start */
-   intfstream_rewind(file);
-
-   if (!playlist->old_format)
-   {
-      JSONContext context = {0};
-      context.parser      = JSON_Parser_Create(NULL);
-      context.file        = file;
-      context.playlist    = playlist;
-
-      if (!context.parser)
-      {
-         RARCH_ERR("Failed to create JSON parser\n");
-         goto end;
-      }
-
-#if 0
-      JSON_Parser_SetTrackObjectMembers(context.parser, JSON_True);
-#endif
-      JSON_Parser_SetAllowBOM(context.parser, JSON_True);
-      JSON_Parser_SetAllowComments(context.parser, JSON_True);
-      JSON_Parser_SetAllowSpecialNumbers(context.parser, JSON_True);
-      JSON_Parser_SetAllowHexNumbers(context.parser, JSON_True);
-      JSON_Parser_SetAllowUnescapedControlCharacters(context.parser, JSON_True);
-      JSON_Parser_SetReplaceInvalidEncodingSequences(context.parser, JSON_True);
-
-#if 0
-      JSON_Parser_SetNullHandler(context.parser,          &JSONNullHandler);
-      JSON_Parser_SetBooleanHandler(context.parser,       &JSONBooleanHandler);
-      JSON_Parser_SetSpecialNumberHandler(context.parser, &JSONSpecialNumberHandler);
-      JSON_Parser_SetArrayItemHandler(context.parser,     &JSONArrayItemHandler);
-#endif
-
-      JSON_Parser_SetNumberHandler(context.parser,        &JSONNumberHandler);
-      JSON_Parser_SetStringHandler(context.parser,        &JSONStringHandler);
-      JSON_Parser_SetStartObjectHandler(context.parser,   &JSONStartObjectHandler);
-      JSON_Parser_SetEndObjectHandler(context.parser,     &JSONEndObjectHandler);
-      JSON_Parser_SetObjectMemberHandler(context.parser,  &JSONObjectMemberHandler);
-      JSON_Parser_SetStartArrayHandler(context.parser,    &JSONStartArrayHandler);
-      JSON_Parser_SetEndArrayHandler(context.parser,      &JSONEndArrayHandler);
-      JSON_Parser_SetUserData(context.parser, &context);
-
-      while (!intfstream_eof(file))
-      {
-         char chunk[4096] = {0};
-         int64_t length = intfstream_read(file, chunk, sizeof(chunk));
-
-         if (!length && !intfstream_eof(file))
-         {
-            RARCH_WARN("Could not read JSON input.\n");
-            goto json_cleanup;
-         }
-
-         if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
-         {
-            /* Note: Chunk may not be null-terminated.
-             * It is therefore dangerous to print its contents.
-             * Setting a size limit here mitigates the issue, but
-             * in general this is not good practice...
-             * Addendum: RARCH_WARN() actually limits the printed
-             * buffer size anyway, so this warning message is most
-             * likely worthless... */
-            RARCH_WARN("Error parsing chunk:\n---snip---\n%.*s\n---snip---\n", 4096, chunk);
-            JSONLogError(&context);
-            goto json_cleanup;
-         }
-      }
-
-      if (!JSON_Parser_Parse(context.parser, NULL, 0, JSON_True))
-      {
-         RARCH_WARN("Error parsing JSON.\n");
-         JSONLogError(&context);
-         goto json_cleanup;
-      }
-
-json_cleanup:
-
-      JSON_Parser_Free(context.parser);
-
-      if (context.current_meta_string)
-         free(context.current_meta_string);
-
-      if (context.current_items_string)
-         free(context.current_items_string);
-   }
-   else
-   {
-      char line_buf[PLAYLIST_ENTRIES][PATH_MAX_LENGTH] = {{0}};
-
-      /* Unnecessary, but harmless */
-      for (i = 0; i < PLAYLIST_ENTRIES; i++)
-         line_buf[i][0] = '\0';
-
-      /* Read playlist entries */
-      playlist->size = 0;
-      while (playlist->size < playlist->cap)
-      {
-         size_t i;
-         size_t lines_read = 0;
-
-         /* Attempt to read the next 'PLAYLIST_ENTRIES'
-          * lines from the file */
-         for (i = 0; i < PLAYLIST_ENTRIES; i++)
-         {
-            *line_buf[i] = '\0';
-
-            if (intfstream_gets(file, line_buf[i], sizeof(line_buf[i])))
-            {
-               /* Ensure line is NUL terminated, regardless of
-                * Windows or Unix line endings */
-               string_replace_all_chars(line_buf[i], '\r', '\0');
-               string_replace_all_chars(line_buf[i], '\n', '\0');
-
-               lines_read++;
-            }
-            else
-               break;
-         }
-
-         /* If a 'full set' of lines were read, then this
-          * is a valid playlist entry */
-         if (lines_read >= PLAYLIST_ENTRIES)
-         {
-            struct playlist_entry *entry =
-                  &playlist->entries[playlist->size];
-
-            if (!entry)
-               continue;
-
-            /* path */
-            if (!string_is_empty(line_buf[0]))
-               entry->path      = strdup(line_buf[0]);
-
-            /* label */
-            if (!string_is_empty(line_buf[1]))
-               entry->label     = strdup(line_buf[1]);
-
-            /* core_path */
-            if (!string_is_empty(line_buf[2]))
-               entry->core_path = strdup(line_buf[2]);
-
-            /* core_name */
-            if (!string_is_empty(line_buf[3]))
-               entry->core_name = strdup(line_buf[3]);
-
-            /* crc32 */
-            if (!string_is_empty(line_buf[4]))
-               entry->crc32     = strdup(line_buf[4]);
-
-            /* db_name */
-            if (!string_is_empty(line_buf[5]))
-               entry->db_name   = strdup(line_buf[5]);
-
-            playlist->size++;
-         }
-         /* If fewer than 'PLAYLIST_ENTRIES' lines were
-          * read, then this is metadata */
-         else
-         {
-            char default_core_path[PATH_MAX_LENGTH];
-            char default_core_name[PATH_MAX_LENGTH];
-
-            default_core_path[0] = '\0';
-            default_core_name[0] = '\0';
-
-            /* Get default_core_path */
-            if (lines_read < 1)
-               break;
-
-            if (strncmp("default_core_path",
-                     line_buf[0],
-                     STRLEN_CONST("default_core_path")) == 0)
-               get_old_format_metadata_value(
-                     line_buf[0], default_core_path, sizeof(default_core_path));
-
-            /* Get default_core_name */
-            if (lines_read < 2)
-               break;
-
-            if (strncmp("default_core_name",
-                     line_buf[1],
-                     STRLEN_CONST("default_core_name")) == 0)
-               get_old_format_metadata_value(
-                     line_buf[1], default_core_name, sizeof(default_core_name));
-
-            /* > Populate default core path/name, if required
-             *   (if one is empty, the other should be ignored) */
-            if (!string_is_empty(default_core_path) &&
-                !string_is_empty(default_core_name))
-            {
-               playlist->default_core_path = strdup(default_core_path);
-               playlist->default_core_name = strdup(default_core_name);
-            }
-
-            /* Get label_display_mode */
-            if (lines_read < 3)
-               break;
-
-            if (strncmp("label_display_mode",
-                     line_buf[2],
-                     STRLEN_CONST("label_display_mode")) == 0)
-            {
-               unsigned display_mode;
-               char display_mode_str[4] = {0};
-
-               get_old_format_metadata_value(
-                     line_buf[2], display_mode_str, sizeof(display_mode_str));
-
-               display_mode = string_to_unsigned(display_mode_str);
-
-               if (display_mode <= LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX)
-                  playlist->label_display_mode = (enum playlist_label_display_mode)display_mode;
-            }
-
-            /* Get thumbnail modes */
-            if (lines_read < 4)
-               break;
-
-            if (strncmp("thumbnail_mode",
-                     line_buf[3],
-                     STRLEN_CONST("thumbnail_mode")) == 0)
-            {
-               char thumbnail_mode_str[8]          = {0};
-               struct string_list *thumbnail_modes = NULL;
-
-               get_old_format_metadata_value(
-                     line_buf[3], thumbnail_mode_str, sizeof(thumbnail_mode_str));
-
-               thumbnail_modes = string_split(thumbnail_mode_str, "|");
-
-               if (thumbnail_modes)
-               {
-                  if (thumbnail_modes->size == 2)
-                  {
-                     unsigned thumbnail_mode;
-
-                     /* Right thumbnail mode */
-                     thumbnail_mode = string_to_unsigned(thumbnail_modes->elems[0].data);
-                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
-                        playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
-
-                     /* Left thumbnail mode */
-                     thumbnail_mode = string_to_unsigned(thumbnail_modes->elems[1].data);
-                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
-                        playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
-                  }
-
-                  string_list_free(thumbnail_modes);
-               }
-            }
-
-            /* Get sort_mode */
-            if (lines_read < 5)
-               break;
-
-            if (strncmp("sort_mode",
-                     line_buf[4],
-                     STRLEN_CONST("sort_mode")) == 0)
-            {
-               unsigned sort_mode;
-               char sort_mode_str[4] = {0};
-
-               get_old_format_metadata_value(
-                     line_buf[4], sort_mode_str, sizeof(sort_mode_str));
-
-               sort_mode = string_to_unsigned(sort_mode_str);
-
-               if (sort_mode <= PLAYLIST_SORT_MODE_OFF)
-                  playlist->sort_mode = (enum playlist_sort_mode)sort_mode;
-            }
-
-            /* All metadata parsed -> end of file */
-            break;
-         }
-      }
-   }
-
-end:
-   intfstream_close(file);
-   free(file);
-   return true;
-}
-
-static int playlist_qsort_func(const struct playlist_entry *a,
-      const struct playlist_entry *b)
-{
-   char *a_str            = NULL;
-   char *b_str            = NULL;
-   char *a_fallback_label = NULL;
-   char *b_fallback_label = NULL;
-   int ret                = 0;
-
-   if (!a || !b)
-      goto end;
-
-   a_str                  = a->label;
-   b_str                  = b->label;
-
-   /* It is quite possible for playlist labels
-    * to be blank. If that is the case, have to use
-    * filename as a fallback (this is slow, but we
-    * have no other option...) */
-   if (string_is_empty(a_str))
-   {
-      a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
-
-      if (!a_fallback_label)
-         goto end;
-
-      if (!string_is_empty(a->path))
-         fill_short_pathname_representation(a_fallback_label, a->path, PATH_MAX_LENGTH * sizeof(char));
-      /* If filename is also empty, use core name
-       * instead -> this matches the behaviour of
-       * menu_displaylist_parse_playlist() */
-      else if (!string_is_empty(a->core_name))
-         strlcpy(a_fallback_label, a->core_name, PATH_MAX_LENGTH * sizeof(char));
-
-      /* If both filename and core name are empty,
-       * then have to compare an empty string
-       * -> again, this is to match the behaviour of
-       * menu_displaylist_parse_playlist() */
-
-      a_str = a_fallback_label;
-   }
-
-   if (string_is_empty(b_str))
-   {
-      b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
-
-      if (!b_fallback_label)
-         goto end;
-
-      if (!string_is_empty(b->path))
-         fill_short_pathname_representation(b_fallback_label, b->path, PATH_MAX_LENGTH * sizeof(char));
-      else if (!string_is_empty(b->core_name))
-         strlcpy(b_fallback_label, b->core_name, PATH_MAX_LENGTH * sizeof(char));
-
-      b_str = b_fallback_label;
-   }
-
-   ret = strcasecmp(a_str, b_str);
-
-end:
-
-   a_str = NULL;
-   b_str = NULL;
-
-   if (a_fallback_label)
-   {
-      free(a_fallback_label);
-      a_fallback_label = NULL;
-   }
-
-   if (b_fallback_label)
-   {
-      free(b_fallback_label);
-      b_fallback_label = NULL;
-   }
-
-   return ret;
-}
-
-void playlist_free_cached(void)
-{
-   playlist_free(playlist_cached);
-   playlist_cached = NULL;
-}
-
-playlist_t *playlist_get_cached(void)
-{
-   if (playlist_cached)
-      return playlist_cached;
-   return NULL;
-}
-
-bool playlist_init_cached(
-      const char *path, size_t size,
-      bool use_old_format, bool compress)
-{
-   playlist_t *playlist = playlist_init(path, size);
-   if (!playlist)
-      return false;
-
-   /* If playlist format/compression state
-    * does not match requested settings, update
-    * file on disk immediately */
-   if (
-#if defined(HAVE_ZLIB)
-       (playlist->compressed != compress) ||
-#endif
-       (playlist->old_format != use_old_format))
-      playlist_write_file(playlist, use_old_format, compress);
-
-   playlist_cached      = playlist;
-   return true;
-}
-
-/**
- * playlist_init:
- * @path            	   : Path to playlist contents file.
- * @size                : Maximum capacity of playlist size.
- *
- * Creates and initializes a playlist.
- *
- * Returns: handle to new playlist if successful, otherwise NULL
- **/
-playlist_t *playlist_init(const char *path, size_t size)
-{
-   struct playlist_entry *entries = NULL;
-   playlist_t           *playlist = (playlist_t*)malloc(sizeof(*playlist));
-   if (!playlist)
-      return NULL;
-
-   entries = (struct playlist_entry*)calloc(size, sizeof(*entries));
-   if (!entries)
-   {
-      free(playlist);
-      return NULL;
-   }
-
-   playlist->modified             = false;
-   playlist->old_format           = false;
-   playlist->compressed           = false;
-   playlist->size                 = 0;
-   playlist->cap                  = size;
-   playlist->conf_path            = strdup(path);
-   playlist->default_core_name    = NULL;
-   playlist->default_core_path    = NULL;
-   playlist->entries              = entries;
-   playlist->label_display_mode   = LABEL_DISPLAY_MODE_DEFAULT;
-   playlist->right_thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   playlist->left_thumbnail_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   playlist->sort_mode            = PLAYLIST_SORT_MODE_DEFAULT;
-
-   playlist_read_file(playlist, path);
-
-   return playlist;
-}
-
-void playlist_qsort(playlist_t *playlist)
-{
-   /* Avoid inadvertent sorting if 'sort mode'
-    * has been set explicitly to PLAYLIST_SORT_MODE_OFF */
-   if (!playlist ||
-       (playlist->sort_mode == PLAYLIST_SORT_MODE_OFF))
-      return;
-
-   qsort(playlist->entries, playlist->size,
-         sizeof(struct playlist_entry),
-         (int (*)(const void *, const void *))playlist_qsort_func);
-}
-
-void command_playlist_push_write(
-      playlist_t *playlist,
-      const struct playlist_entry *entry,
-      bool fuzzy_archive_match,
-      bool use_old_format,
-      bool compress)
-{
-   if (!playlist)
-      return;
-
-   if (playlist_push(playlist, entry, fuzzy_archive_match))
-      playlist_write_file(playlist, use_old_format, compress);
-}
-
-void command_playlist_update_write(
-      playlist_t *plist,
-      size_t idx,
-      const struct playlist_entry *entry,
-      bool use_old_format,
-      bool compress)
-{
-   playlist_t *playlist = plist ? plist : playlist_get_cached();
-
-   if (!playlist)
-      return;
-
-   playlist_update(
-         playlist,
-         idx,
-         entry);
-
-   playlist_write_file(playlist, use_old_format, compress);
-}
-
-bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
-      const char *path, const char *core_path)
-{
-   if (!playlist)
-      return false;
-
-   if (idx >= playlist->size)
-      return false;
-
-   return string_is_equal(playlist->entries[idx].path, path) &&
-          string_is_equal(path_basename(playlist->entries[idx].core_path), path_basename(core_path));
-}
-
-bool playlist_entries_are_equal(
-      const struct playlist_entry *entry_a,
-      const struct playlist_entry *entry_b,
-      bool fuzzy_archive_match)
-{
-   char real_path_a[PATH_MAX_LENGTH];
-   char real_core_path_a[PATH_MAX_LENGTH];
-
-   real_path_a[0]      = '\0';
-   real_core_path_a[0] = '\0';
-
-   /* Sanity check */
-   if (!entry_a || !entry_b)
-      return false;
-
-   if (string_is_empty(entry_a->path) &&
-       string_is_empty(entry_a->core_path) &&
-       string_is_empty(entry_b->path) &&
-       string_is_empty(entry_b->core_path))
-      return true;
-
-   /* Check content paths */
-   if (!string_is_empty(entry_a->path))
-   {
-      strlcpy(real_path_a, entry_a->path, sizeof(real_path_a));
-      path_resolve_realpath(real_path_a, sizeof(real_path_a), true);
-   }
-
-   if (!playlist_path_equal(
-         real_path_a, entry_b->path, fuzzy_archive_match))
-      return false;
-
-   /* Check core paths */
-   if (!string_is_empty(entry_a->core_path))
-   {
-      strlcpy(real_core_path_a, entry_a->core_path, sizeof(real_core_path_a));
-      if (!string_is_equal(real_core_path_a, "DETECT") &&
-          !string_is_equal(real_core_path_a, "builtin"))
-         path_resolve_realpath(real_core_path_a, sizeof(real_core_path_a), true);
-   }
-
-   return playlist_core_path_equal(real_core_path_a, entry_b->core_path);
-}
-
-void playlist_get_crc32(playlist_t *playlist, size_t idx,
-      const char **crc32)
-{
-   if (!playlist)
-      return;
-
-   if (crc32)
-      *crc32 = playlist->entries[idx].crc32;
-}
-
-void playlist_get_db_name(playlist_t *playlist, size_t idx,
-      const char **db_name)
-{
-   if (!playlist)
-      return;
-
-   if (db_name)
-   {
-      if (!string_is_empty(playlist->entries[idx].db_name))
-         *db_name = playlist->entries[idx].db_name;
-      else
-      {
-         const char *conf_path_basename = path_basename(playlist->conf_path);
-
-         /* Only use file basename if this is a 'collection' playlist
-          * (i.e. ignore history/favourites) */
-         if (
-                  !string_is_empty(conf_path_basename)
-               && !string_ends_with_size(playlist->conf_path, "_history.lpl",
-                  strlen(playlist->conf_path), STRLEN_CONST("_history.lpl"))
-               && !string_is_equal(conf_path_basename,
-                  file_path_str(FILE_PATH_CONTENT_FAVORITES))
-            )
-            *db_name = conf_path_basename;
-      }
-   }
-}
-
-char *playlist_get_default_core_path(playlist_t *playlist)
-{
-   if (!playlist)
-      return NULL;
-   return playlist->default_core_path;
-}
-
-char *playlist_get_default_core_name(playlist_t *playlist)
-{
-   if (!playlist)
-      return NULL;
-   return playlist->default_core_name;
-}
-
-enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)
-{
-   if (!playlist)
-      return LABEL_DISPLAY_MODE_DEFAULT;
-   return playlist->label_display_mode;
-}
-
-enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
-      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id)
-{
-   if (!playlist)
-      return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-
-   if (thumbnail_id == PLAYLIST_THUMBNAIL_RIGHT)
-      return playlist->right_thumbnail_mode;
-   else if (thumbnail_id == PLAYLIST_THUMBNAIL_LEFT)
-      return playlist->left_thumbnail_mode;
-
-   /* Fallback */
-   return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-}
-
-enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist)
-{
-   if (!playlist)
-      return PLAYLIST_SORT_MODE_DEFAULT;
-   return playlist->sort_mode;
-}
-
-void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
-{
-   char real_core_path[PATH_MAX_LENGTH];
-
-   real_core_path[0] = '\0';
-
-   if (!playlist || string_is_empty(core_path))
-      return;
-
-   /* Get 'real' core path */
-   strlcpy(real_core_path, core_path, sizeof(real_core_path));
-   if (!string_is_equal(real_core_path, "DETECT") &&
-       !string_is_equal(real_core_path, "builtin"))
-       playlist_resolve_path(PLAYLIST_SAVE,
-             real_core_path, sizeof(real_core_path));
-
-   if (string_is_empty(real_core_path))
-      return;
-
-   if (!string_is_equal(playlist->default_core_path, real_core_path))
-   {
-      if (playlist->default_core_path)
-         free(playlist->default_core_path);
-      playlist->default_core_path = strdup(real_core_path);
-      playlist->modified = true;
-   }
-}
-
-void playlist_set_default_core_name(playlist_t *playlist, const char *core_name)
-{
-   if (!playlist || string_is_empty(core_name))
-      return;
-
-   if (!string_is_equal(playlist->default_core_name, core_name))
-   {
-      if (playlist->default_core_name)
-         free(playlist->default_core_name);
-      playlist->default_core_name = strdup(core_name);
-      playlist->modified = true;
-   }
-}
-
-void playlist_set_label_display_mode(playlist_t *playlist,
-      enum playlist_label_display_mode label_display_mode)
-{
-   if (!playlist)
-      return;
-
-   if (playlist->label_display_mode != label_display_mode)
-   {
-      playlist->label_display_mode = label_display_mode;
-      playlist->modified = true;
-   }
-}
-
-void playlist_set_thumbnail_mode(
-      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id,
-      enum playlist_thumbnail_mode thumbnail_mode)
-{
-   if (!playlist)
-      return;
-
-   switch (thumbnail_id)
-   {
-      case PLAYLIST_THUMBNAIL_RIGHT:
-         playlist->right_thumbnail_mode = thumbnail_mode;
-         playlist->modified             = true;
-         break;
-      case PLAYLIST_THUMBNAIL_LEFT:
-         playlist->left_thumbnail_mode = thumbnail_mode;
-         playlist->modified            = true;
-         break;
-   }
-}
-
-void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_mode)
-{
-   if (!playlist)
-      return;
-
-   if (playlist->sort_mode != sort_mode)
-   {
-      playlist->sort_mode = sort_mode;
-      playlist->modified  = true;
-   }
-}
-
-/* Returns true if specified entry has a valid
- * core association (i.e. a non-empty string
- * other than DETECT) */
-bool playlist_entry_has_core(const struct playlist_entry *entry)
-{
-   if (!entry ||
-       string_is_empty(entry->core_path) ||
-       string_is_empty(entry->core_name) ||
-       string_is_equal(entry->core_path, "DETECT") ||
-       string_is_equal(entry->core_name, "DETECT"))
-      return false;
-
-   return true;
-}
-
-/* Fetches core info object corresponding to the
- * currently associated core of the specified
- * playlist entry.
- * Returns NULL if entry does not have a valid
- * core association */
-core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry)
-{
-   core_info_ctx_find_t core_info;
-
-   if (!playlist_entry_has_core(entry))
-      return NULL;
-
-   /* Search for associated core */
-   core_info.inf  = NULL;
-   core_info.path = entry->core_path;
-
-   if (core_info_find(&core_info))
-      return core_info.inf;
-
-   return NULL;
-}
-
-/* Fetches core info object corresponding to the
- * currently associated default core of the
- * specified playlist.
- * Returns NULL if playlist does not have a valid
- * default core association */
-core_info_t *playlist_get_default_core_info(playlist_t* playlist)
-{
-   core_info_ctx_find_t core_info;
-
-   if (!playlist ||
-       string_is_empty(playlist->default_core_path) ||
-       string_is_empty(playlist->default_core_name) ||
-       string_is_equal(playlist->default_core_path, "DETECT") ||
-       string_is_equal(playlist->default_core_name, "DETECT"))
-      return NULL;
-
-   /* Search for associated core */
-   core_info.inf  = NULL;
-   core_info.path = playlist->default_core_path;
-
-   if (core_info_find(&core_info))
-      return core_info.inf;
-
-   return NULL;
-}
-
-void playlist_write_file(
-      playlist_t *playlist,
-      bool use_old_format, bool compress)
-{
-   size_t i;
-   intfstream_t *file = NULL;
-   bool compressed    = false;
-
-   /* Playlist will be written if any of the
-    * following are true:
-    * > 'modified' flag is set
-    * > Current playlist format (old/new) does not
-    *   match requested
-    * > Current playlist compression status does
-    *   not match requested */
-   if (!playlist ||
-       !(playlist->modified ||
-#if defined(HAVE_ZLIB)
-        (playlist->compressed != compress) ||
-#endif
-        (playlist->old_format != use_old_format)))
-      return;
-
-#if defined(HAVE_ZLIB)
-   if (compress)
-      file = intfstream_open_rzip_file(playlist->conf_path,
-            RETRO_VFS_FILE_ACCESS_WRITE);
-   else
-#endif
-      file = intfstream_open_file(playlist->conf_path,
-            RETRO_VFS_FILE_ACCESS_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
-   {
-      RARCH_ERR("Failed to write to playlist file: %s\n", playlist->conf_path);
-      return;
-   }
-
-   /* Get current file compression state */
-   compressed = intfstream_is_compressed(file);
-
-#ifdef RARCH_INTERNAL
-   if (use_old_format)
-   {
-      for (i = 0; i < playlist->size; i++)
-         intfstream_printf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
-               playlist->entries[i].path      ? playlist->entries[i].path      : "",
-               playlist->entries[i].label     ? playlist->entries[i].label     : "",
-               playlist->entries[i].core_path ? playlist->entries[i].core_path : "",
-               playlist->entries[i].core_name ? playlist->entries[i].core_name : "",
-               playlist->entries[i].crc32     ? playlist->entries[i].crc32     : "",
-               playlist->entries[i].db_name   ? playlist->entries[i].db_name   : ""
-               );
-
-      /* Add metadata lines
-       * > We add these at the end of the file to prevent
-       *   breakage if the playlist is loaded with an older
-       *   version of RetroArch */
-      intfstream_printf(
-            file,
-            "default_core_path = \"%s\"\n"
-            "default_core_name = \"%s\"\n"
-            "label_display_mode = \"%d\"\n"
-            "thumbnail_mode = \"%d|%d\"\n"
-            "sort_mode = \"%d\"\n",
-            playlist->default_core_path ? playlist->default_core_path : "",
-            playlist->default_core_name ? playlist->default_core_name : "",
-            playlist->label_display_mode,
-            playlist->right_thumbnail_mode, playlist->left_thumbnail_mode,
-            playlist->sort_mode);
-
-      playlist->old_format = true;
-   }
-   else
-#endif
-   {
-      char uint_str[4];
-      JSONContext context = {0};
-      context.writer      = JSON_Writer_Create(NULL);
-      context.file        = file;
-
-      if (!context.writer)
-      {
-         RARCH_ERR("Failed to create JSON writer\n");
-         goto end;
-      }
-
-      /* Assign JSON whitespace functions
-      * > When compressing playlists, human readability
-      *   is not a factor - can skip all indentation
-      *   and new line characters */
-      json_write_new_line = compressed ?
-            JSON_Writer_WriteNewLine_NULL :
-            JSON_Writer_WriteNewLine;
-      json_write_space    = compressed ?
-            JSON_Writer_WriteSpace_NULL :
-            JSON_Writer_WriteSpace;
-
-      JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
-      JSON_Writer_SetOutputHandler(context.writer, &JSONOutputHandler);
-      JSON_Writer_SetUserData(context.writer, &context);
-
-      JSON_Writer_WriteStartObject(context.writer);
-      json_write_new_line(context.writer);
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "version",
-            STRLEN_CONST("version"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      json_write_space(context.writer, 1);
-      JSON_Writer_WriteString(context.writer, "1.4",
-            STRLEN_CONST("1.4"), JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-      json_write_new_line(context.writer);
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "default_core_path",
-            STRLEN_CONST("default_core_path"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      json_write_space(context.writer, 1);
-      JSON_Writer_WriteString(context.writer,
-            playlist->default_core_path
-            ? playlist->default_core_path
-            : "",
-            playlist->default_core_path
-            ? strlen(playlist->default_core_path)
-            : 0,
-            JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-      json_write_new_line(context.writer);
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "default_core_name",
-            STRLEN_CONST("default_core_name"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      json_write_space(context.writer, 1);
-      JSON_Writer_WriteString(context.writer,
-            playlist->default_core_name
-            ? playlist->default_core_name
-            : "",
-            playlist->default_core_name
-            ? strlen(playlist->default_core_name)
-            : 0,
-            JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-      json_write_new_line(context.writer);
-
-      uint_str[0] = '\0';
-      snprintf(uint_str, sizeof(uint_str), "%u", playlist->label_display_mode);
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "label_display_mode",
-            STRLEN_CONST("label_display_mode"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      json_write_space(context.writer, 1);
-      JSON_Writer_WriteNumber(context.writer, uint_str,
-            strlen(uint_str), JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-      json_write_new_line(context.writer);
-
-      uint_str[0] = '\0';
-      snprintf(uint_str, sizeof(uint_str), "%u", playlist->right_thumbnail_mode);
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "right_thumbnail_mode",
-            STRLEN_CONST("right_thumbnail_mode"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      json_write_space(context.writer, 1);
-      JSON_Writer_WriteNumber(context.writer, uint_str,
-            strlen(uint_str), JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-      json_write_new_line(context.writer);
-
-      uint_str[0] = '\0';
-      snprintf(uint_str, sizeof(uint_str), "%u", playlist->left_thumbnail_mode);
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "left_thumbnail_mode",
-            STRLEN_CONST("left_thumbnail_mode"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      json_write_space(context.writer, 1);
-      JSON_Writer_WriteNumber(context.writer, uint_str,
-            strlen(uint_str), JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-      json_write_new_line(context.writer);
-
-      uint_str[0] = '\0';
-      snprintf(uint_str, sizeof(uint_str), "%u", playlist->sort_mode);
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "sort_mode",
-            STRLEN_CONST("sort_mode"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      json_write_space(context.writer, 1);
-      JSON_Writer_WriteNumber(context.writer, uint_str,
-            strlen(uint_str), JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-      json_write_new_line(context.writer);
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "items",
-            STRLEN_CONST("items"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      json_write_space(context.writer, 1);
-      JSON_Writer_WriteStartArray(context.writer);
-      json_write_new_line(context.writer);
-
-      for (i = 0; i < playlist->size; i++)
-      {
-         json_write_space(context.writer, 4);
-         JSON_Writer_WriteStartObject(context.writer);
-
-         json_write_new_line(context.writer);
-         json_write_space(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "path",
-               STRLEN_CONST("path"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         json_write_space(context.writer, 1);
-         JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].path
-               ? playlist->entries[i].path
-               : "",
-               playlist->entries[i].path
-               ? strlen(playlist->entries[i].path)
-               : 0,
-               JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-
-         json_write_new_line(context.writer);
-         json_write_space(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "label",
-               STRLEN_CONST("label"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         json_write_space(context.writer, 1);
-         JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].label
-               ? playlist->entries[i].label
-               : "",
-               playlist->entries[i].label
-               ? strlen(playlist->entries[i].label)
-               : 0,
-               JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-
-         json_write_new_line(context.writer);
-         json_write_space(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "core_path",
-               STRLEN_CONST("core_path"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         json_write_space(context.writer, 1);
-         JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].core_path
-               ? playlist->entries[i].core_path
-               : "",
-               playlist->entries[i].core_path
-               ? strlen(playlist->entries[i].core_path)
-               : 0,
-               JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-
-         json_write_new_line(context.writer);
-         json_write_space(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "core_name",
-               STRLEN_CONST("core_name"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         json_write_space(context.writer, 1);
-         JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].core_name
-               ? playlist->entries[i].core_name
-               : "",
-               playlist->entries[i].core_name
-               ? strlen(playlist->entries[i].core_name)
-               : 0,
-               JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-
-         json_write_new_line(context.writer);
-         json_write_space(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "crc32",
-               STRLEN_CONST("crc32"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         json_write_space(context.writer, 1);
-         JSON_Writer_WriteString(context.writer, playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "",
-               playlist->entries[i].crc32
-               ? strlen(playlist->entries[i].crc32)
-               : 0,
-               JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-
-         json_write_new_line(context.writer);
-         json_write_space(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "db_name",
-               STRLEN_CONST("db_name"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         json_write_space(context.writer, 1);
-         JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "",
-               playlist->entries[i].db_name
-               ? strlen(playlist->entries[i].db_name)
-               : 0,
-               JSON_UTF8);
-
-         if (!string_is_empty(playlist->entries[i].subsystem_ident))
-         {
-            JSON_Writer_WriteComma(context.writer);
-            json_write_new_line(context.writer);
-            json_write_space(context.writer, 6);
-            JSON_Writer_WriteString(context.writer, "subsystem_ident",
-                  STRLEN_CONST("subsystem_ident"), JSON_UTF8);
-            JSON_Writer_WriteColon(context.writer);
-            json_write_space(context.writer, 1);
-            JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_ident ? playlist->entries[i].subsystem_ident : "",
-                  playlist->entries[i].subsystem_ident
-                  ? strlen(playlist->entries[i].subsystem_ident)
-                  : 0,
-                  JSON_UTF8);
-         }
-
-         if (!string_is_empty(playlist->entries[i].subsystem_name))
-         {
-            JSON_Writer_WriteComma(context.writer);
-            json_write_new_line(context.writer);
-            json_write_space(context.writer, 6);
-            JSON_Writer_WriteString(context.writer, "subsystem_name",
-                  STRLEN_CONST("subsystem_name"), JSON_UTF8);
-            JSON_Writer_WriteColon(context.writer);
-            json_write_space(context.writer, 1);
-            JSON_Writer_WriteString(context.writer,
-                  playlist->entries[i].subsystem_name
-                  ? playlist->entries[i].subsystem_name
-                  : "",
-                  playlist->entries[i].subsystem_name
-                  ? strlen(playlist->entries[i].subsystem_name)
-                  : 0, JSON_UTF8);
-         }
-
-         if (  playlist->entries[i].subsystem_roms &&
-               playlist->entries[i].subsystem_roms->size > 0)
-         {
-            unsigned j;
-
-            JSON_Writer_WriteComma(context.writer);
-            json_write_new_line(context.writer);
-            json_write_space(context.writer, 6);
-            JSON_Writer_WriteString(context.writer, "subsystem_roms",
-                  STRLEN_CONST("subsystem_roms"), JSON_UTF8);
-            JSON_Writer_WriteColon(context.writer);
-            json_write_space(context.writer, 1);
-            JSON_Writer_WriteStartArray(context.writer);
-            json_write_new_line(context.writer);
-
-            for (j = 0; j < playlist->entries[i].subsystem_roms->size; j++)
-            {
-               const struct string_list *roms = playlist->entries[i].subsystem_roms;
-               json_write_space(context.writer, 8);
-               JSON_Writer_WriteString(context.writer,
-                     !string_is_empty(roms->elems[j].data)
-                     ? roms->elems[j].data
-                     : "",
-                     !string_is_empty(roms->elems[j].data)
-                     ? strlen(roms->elems[j].data)
-                     : 0,
-                     JSON_UTF8);
-
-               if (j < playlist->entries[i].subsystem_roms->size - 1)
-               {
-                  JSON_Writer_WriteComma(context.writer);
-                  json_write_new_line(context.writer);
-               }
-            }
-
-            json_write_new_line(context.writer);
-            json_write_space(context.writer, 6);
-            JSON_Writer_WriteEndArray(context.writer);
-         }
-
-         json_write_new_line(context.writer);
-
-         json_write_space(context.writer, 4);
-         JSON_Writer_WriteEndObject(context.writer);
-
-         if (i < playlist->size - 1)
-            JSON_Writer_WriteComma(context.writer);
-
-         json_write_new_line(context.writer);
-      }
-
-      json_write_space(context.writer, 2);
-      JSON_Writer_WriteEndArray(context.writer);
-      json_write_new_line(context.writer);
-      JSON_Writer_WriteEndObject(context.writer);
-      json_write_new_line(context.writer);
-      JSON_Writer_Free(context.writer);
-
-      playlist->old_format = false;
-   }
-
-   playlist->modified   = false;
-   playlist->compressed = compressed;
-
-   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->conf_path);
-end:
-   intfstream_close(file);
-   free(file);
-}
-
-/**
- * playlist_free:
- * @playlist            : Playlist handle.
- *
- * Frees playlist handle.
- */
-void playlist_free(playlist_t *playlist)
-{
-   size_t i;
-
-   if (!playlist)
-      return;
-
-   if (playlist->conf_path != NULL)
-      free(playlist->conf_path);
-   playlist->conf_path = NULL;
-
-   if (playlist->default_core_path != NULL)
-      free(playlist->default_core_path);
-   playlist->default_core_path = NULL;
-
-   if (playlist->default_core_name != NULL)
-      free(playlist->default_core_name);
-   playlist->default_core_name = NULL;
-
-   for (i = 0; i < playlist->size; i++)
-   {
-      struct playlist_entry *entry = &playlist->entries[i];
-
-      if (entry)
-         playlist_free_entry(entry);
-   }
-
-   free(playlist->entries);
-   playlist->entries = NULL;
-
-   free(playlist);
-}
-
-/**
- * playlist_clear:
- * @playlist        	   : Playlist handle.
- *
- * Clears all playlist entries in playlist.
- **/
-void playlist_clear(playlist_t *playlist)
-{
-   size_t i;
-   if (!playlist)
-      return;
-
-   for (i = 0; i < playlist->size; i++)
-   {
-      struct playlist_entry *entry = &playlist->entries[i];
-
-      if (entry)
-         playlist_free_entry(entry);
-   }
-   playlist->size = 0;
-}
-
-/**
- * playlist_size:
- * @playlist        	   : Playlist handle.
- *
- * Gets size of playlist.
- * Returns: size of playlist.
- **/
-size_t playlist_size(playlist_t *playlist)
-{
-   if (!playlist)
-      return 0;
-   return playlist->size;
-}
-
-/**
- * playlist_capacity:
- * @playlist        	   : Playlist handle.
- *
- * Gets maximum capacity of playlist.
- * Returns: maximum capacity of playlist.
- **/
-size_t playlist_capacity(playlist_t *playlist)
-{
-   if (!playlist)
-      return 0;
-   return playlist->cap;
-}
-
-void playlist_write_runtime_file(playlist_t *playlist)
-{
-   size_t i;
-   intfstream_t *file  = NULL;
-   JSONContext context = {0};
-
-   if (!playlist || !playlist->modified)
-      return;
-
-   file = intfstream_open_file(playlist->conf_path,
-         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
-   {
-      RARCH_ERR("Failed to write to playlist file: %s\n", playlist->conf_path);
-      return;
-   }
-
-   context.writer = JSON_Writer_Create(NULL);
-   context.file   = file;
-
-   if (!context.writer)
-   {
-      RARCH_ERR("Failed to create JSON writer\n");
-      goto end;
-   }
-
-   JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
-   JSON_Writer_SetOutputHandler(context.writer, &JSONOutputHandler);
-   JSON_Writer_SetUserData(context.writer, &context);
-
-   JSON_Writer_WriteStartObject(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "version",
-         STRLEN_CONST("version"), JSON_UTF8);
-   JSON_Writer_WriteColon(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, "1.0",
-         STRLEN_CONST("1.0"), JSON_UTF8);
-   JSON_Writer_WriteComma(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "items",
-         STRLEN_CONST("items"), JSON_UTF8);
-   JSON_Writer_WriteColon(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteStartArray(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
-
-   for (i = 0; i < playlist->size; i++)
-   {
-      JSON_Writer_WriteSpace(context.writer, 4);
-      JSON_Writer_WriteStartObject(context.writer);
-
-      JSON_Writer_WriteNewLine(context.writer);
-      JSON_Writer_WriteSpace(context.writer, 6);
-      JSON_Writer_WriteString(context.writer, "path",
-            STRLEN_CONST("path"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer,
-            playlist->entries[i].path
-            ? playlist->entries[i].path
-            : "",
-            playlist->entries[i].path
-            ? strlen(playlist->entries[i].path)
-            : 0,
-            JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-
-      JSON_Writer_WriteNewLine(context.writer);
-      JSON_Writer_WriteSpace(context.writer, 6);
-      JSON_Writer_WriteString(context.writer, "core_path",
-            STRLEN_CONST("core_path"), JSON_UTF8);
-      JSON_Writer_WriteColon(context.writer);
-      JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer,
-            playlist->entries[i].core_path
-            ? playlist->entries[i].core_path
-            : "",
-            playlist->entries[i].core_path
-            ? strlen(playlist->entries[i].core_path)
-            : 0,
-            JSON_UTF8);
-      JSON_Writer_WriteComma(context.writer);
-      JSON_Writer_WriteNewLine(context.writer);
-
-      {
-         char tmp[32] = {0};
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_hours);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "runtime_hours",
-               STRLEN_CONST("runtime_hours"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-         JSON_Writer_WriteNewLine(context.writer);
-
-         memset(tmp, 0, sizeof(tmp));
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_minutes);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "runtime_minutes",
-               STRLEN_CONST("runtime_minutes"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-         JSON_Writer_WriteNewLine(context.writer);
-
-         memset(tmp, 0, sizeof(tmp));
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_seconds);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "runtime_seconds",
-               STRLEN_CONST("runtime_seconds"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-         JSON_Writer_WriteNewLine(context.writer);
-
-         memset(tmp, 0, sizeof(tmp));
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_year);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_year",
-               STRLEN_CONST("last_played_year"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-         JSON_Writer_WriteNewLine(context.writer);
-
-         memset(tmp, 0, sizeof(tmp));
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_month);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_month",
-               STRLEN_CONST("last_played_month"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-         JSON_Writer_WriteNewLine(context.writer);
-
-         memset(tmp, 0, sizeof(tmp));
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_day);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_day",
-               STRLEN_CONST("last_played_day"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp,
-               strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-         JSON_Writer_WriteNewLine(context.writer);
-
-         memset(tmp, 0, sizeof(tmp));
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_hour);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_hour",
-               STRLEN_CONST("last_played_hour"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-         JSON_Writer_WriteNewLine(context.writer);
-
-         memset(tmp, 0, sizeof(tmp));
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_minute);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_minute",
-               STRLEN_CONST("last_played_minute"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-         JSON_Writer_WriteNewLine(context.writer);
-
-         memset(tmp, 0, sizeof(tmp));
-
-         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_second);
-
-         JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_second",
-               STRLEN_CONST("last_played_second"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp,
-               strlen(tmp), JSON_UTF8);
-         JSON_Writer_WriteNewLine(context.writer);
-      }
-
-      JSON_Writer_WriteSpace(context.writer, 4);
-      JSON_Writer_WriteEndObject(context.writer);
-
-      if (i < playlist->size - 1)
-         JSON_Writer_WriteComma(context.writer);
-
-      JSON_Writer_WriteNewLine(context.writer);
-   }
-
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteEndArray(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
-   JSON_Writer_WriteEndObject(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
-   JSON_Writer_Free(context.writer);
-
-   playlist->modified   = false;
-   playlist->old_format = false;
-   playlist->compressed = false;
-
-   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->conf_path);
-end:
-   intfstream_close(file);
-   free(file);
-}
-
-uint32_t playlist_get_size(playlist_t *playlist)
-{
-   if (!playlist)
-      return 0;
-   return (uint32_t)playlist->size;
-}
-
-char *playlist_get_conf_path(playlist_t *playlist)
-{
-   if (!playlist)
-      return NULL;
-   return playlist->conf_path;
-}
-
-/**
- * playlist_get_index:
- * @playlist            : Playlist handle.
- * @idx                 : Index of playlist entry.
- * @path                : Path of playlist entry.
- * @core_path           : Core path of playlist entry.
- * @core_name           : Core name of playlist entry.
- *
- * Gets values of playlist index:
- **/
-void playlist_get_index(playlist_t *playlist,
-      size_t idx,
-      const struct playlist_entry **entry)
-{
-   if (!playlist || !entry)
-      return;
-
-   *entry = &playlist->entries[idx];
 }
 
 /**
@@ -2958,3 +1016,1944 @@ success:
    return true;
 }
 
+static JSON_Writer_HandlerResult JSONOutputHandler(JSON_Writer writer, const char *pBytes, size_t length)
+{
+   JSONContext *context = (JSONContext*)JSON_Writer_GetUserData(writer);
+
+   (void)writer; /* unused */
+   return intfstream_write(context->file, pBytes, length) == length ? JSON_Writer_Continue : JSON_Writer_Abort;
+}
+
+static void JSONLogError(JSONContext *pCtx)
+{
+   if (pCtx->parser && JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
+   {
+      JSON_Error error            = JSON_Parser_GetError(pCtx->parser);
+      JSON_Location errorLocation = { 0, 0, 0 };
+
+      (void)JSON_Parser_GetErrorLocation(pCtx->parser, &errorLocation);
+      RARCH_WARN("Error: Invalid JSON at line %d, column %d (input byte %d) - %s.\n",
+            (int)errorLocation.line + 1,
+            (int)errorLocation.column + 1,
+            (int)errorLocation.byte,
+            JSON_ErrorString(error));
+   }
+   else if (pCtx->writer && JSON_Writer_GetError(pCtx->writer) != JSON_Error_AbortedByHandler)
+   {
+      RARCH_WARN("Error: could not write output - %s.\n", JSON_ErrorString(JSON_Writer_GetError(pCtx->writer)));
+   }
+}
+
+void playlist_write_runtime_file(playlist_t *playlist)
+{
+   size_t i;
+   intfstream_t *file  = NULL;
+   JSONContext context = {0};
+
+   if (!playlist || !playlist->modified)
+      return;
+
+   file = intfstream_open_file(playlist->conf_path,
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+   {
+      RARCH_ERR("Failed to write to playlist file: %s\n", playlist->conf_path);
+      return;
+   }
+
+   context.writer = JSON_Writer_Create(NULL);
+   context.file   = file;
+
+   if (!context.writer)
+   {
+      RARCH_ERR("Failed to create JSON writer\n");
+      goto end;
+   }
+
+   JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
+   JSON_Writer_SetOutputHandler(context.writer, &JSONOutputHandler);
+   JSON_Writer_SetUserData(context.writer, &context);
+
+   JSON_Writer_WriteStartObject(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+   JSON_Writer_WriteSpace(context.writer, 2);
+   JSON_Writer_WriteString(context.writer, "version",
+         STRLEN_CONST("version"), JSON_UTF8);
+   JSON_Writer_WriteColon(context.writer);
+   JSON_Writer_WriteSpace(context.writer, 1);
+   JSON_Writer_WriteString(context.writer, "1.0",
+         STRLEN_CONST("1.0"), JSON_UTF8);
+   JSON_Writer_WriteComma(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+   JSON_Writer_WriteSpace(context.writer, 2);
+   JSON_Writer_WriteString(context.writer, "items",
+         STRLEN_CONST("items"), JSON_UTF8);
+   JSON_Writer_WriteColon(context.writer);
+   JSON_Writer_WriteSpace(context.writer, 1);
+   JSON_Writer_WriteStartArray(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+
+   for (i = 0; i < playlist->size; i++)
+   {
+      JSON_Writer_WriteSpace(context.writer, 4);
+      JSON_Writer_WriteStartObject(context.writer);
+
+      JSON_Writer_WriteNewLine(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 6);
+      JSON_Writer_WriteString(context.writer, "path",
+            STRLEN_CONST("path"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
+      JSON_Writer_WriteString(context.writer,
+            playlist->entries[i].path
+            ? playlist->entries[i].path
+            : "",
+            playlist->entries[i].path
+            ? strlen(playlist->entries[i].path)
+            : 0,
+            JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+
+      JSON_Writer_WriteNewLine(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 6);
+      JSON_Writer_WriteString(context.writer, "core_path",
+            STRLEN_CONST("core_path"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
+      JSON_Writer_WriteString(context.writer,
+            playlist->entries[i].core_path
+            ? playlist->entries[i].core_path
+            : "",
+            playlist->entries[i].core_path
+            ? strlen(playlist->entries[i].core_path)
+            : 0,
+            JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+
+      {
+         char tmp[32] = {0};
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_hours);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "runtime_hours",
+               STRLEN_CONST("runtime_hours"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_minutes);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "runtime_minutes",
+               STRLEN_CONST("runtime_minutes"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_seconds);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "runtime_seconds",
+               STRLEN_CONST("runtime_seconds"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_year);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_year",
+               STRLEN_CONST("last_played_year"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_month);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_month",
+               STRLEN_CONST("last_played_month"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_day);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_day",
+               STRLEN_CONST("last_played_day"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp,
+               strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_hour);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_hour",
+               STRLEN_CONST("last_played_hour"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_minute);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_minute",
+               STRLEN_CONST("last_played_minute"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+         JSON_Writer_WriteNewLine(context.writer);
+
+         memset(tmp, 0, sizeof(tmp));
+
+         snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_second);
+
+         JSON_Writer_WriteSpace(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "last_played_second",
+               STRLEN_CONST("last_played_second"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         JSON_Writer_WriteSpace(context.writer, 1);
+         JSON_Writer_WriteNumber(context.writer, tmp,
+               strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteNewLine(context.writer);
+      }
+
+      JSON_Writer_WriteSpace(context.writer, 4);
+      JSON_Writer_WriteEndObject(context.writer);
+
+      if (i < playlist->size - 1)
+         JSON_Writer_WriteComma(context.writer);
+
+      JSON_Writer_WriteNewLine(context.writer);
+   }
+
+   JSON_Writer_WriteSpace(context.writer, 2);
+   JSON_Writer_WriteEndArray(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+   JSON_Writer_WriteEndObject(context.writer);
+   JSON_Writer_WriteNewLine(context.writer);
+   JSON_Writer_Free(context.writer);
+
+   playlist->modified   = false;
+   playlist->old_format = false;
+   playlist->compressed = false;
+
+   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->conf_path);
+end:
+   intfstream_close(file);
+   free(file);
+}
+
+/* No-op versions of JSON whitespace writers,
+ * used when generating compressed output */
+static JSON_Status JSON_CALL JSON_Writer_WriteNewLine_NULL(JSON_Writer writer)
+{
+   return JSON_Success;
+}
+
+static JSON_Status JSON_CALL JSON_Writer_WriteSpace_NULL(JSON_Writer writer, size_t numberOfSpaces)
+{
+   return JSON_Success;
+}
+
+static JSON_Status (JSON_CALL *json_write_new_line)(JSON_Writer writer) = JSON_Writer_WriteNewLine;
+static JSON_Status (JSON_CALL *json_write_space)(JSON_Writer writer, size_t numberOfSpaces) = JSON_Writer_WriteSpace;
+
+void playlist_write_file(
+      playlist_t *playlist,
+      bool use_old_format, bool compress)
+{
+   size_t i;
+   intfstream_t *file = NULL;
+   bool compressed    = false;
+
+   /* Playlist will be written if any of the
+    * following are true:
+    * > 'modified' flag is set
+    * > Current playlist format (old/new) does not
+    *   match requested
+    * > Current playlist compression status does
+    *   not match requested */
+   if (!playlist ||
+       !(playlist->modified ||
+#if defined(HAVE_ZLIB)
+        (playlist->compressed != compress) ||
+#endif
+        (playlist->old_format != use_old_format)))
+      return;
+
+#if defined(HAVE_ZLIB)
+   if (compress)
+      file = intfstream_open_rzip_file(playlist->conf_path,
+            RETRO_VFS_FILE_ACCESS_WRITE);
+   else
+#endif
+      file = intfstream_open_file(playlist->conf_path,
+            RETRO_VFS_FILE_ACCESS_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+   {
+      RARCH_ERR("Failed to write to playlist file: %s\n", playlist->conf_path);
+      return;
+   }
+
+   /* Get current file compression state */
+   compressed = intfstream_is_compressed(file);
+
+#ifdef RARCH_INTERNAL
+   if (use_old_format)
+   {
+      for (i = 0; i < playlist->size; i++)
+         intfstream_printf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
+               playlist->entries[i].path      ? playlist->entries[i].path      : "",
+               playlist->entries[i].label     ? playlist->entries[i].label     : "",
+               playlist->entries[i].core_path ? playlist->entries[i].core_path : "",
+               playlist->entries[i].core_name ? playlist->entries[i].core_name : "",
+               playlist->entries[i].crc32     ? playlist->entries[i].crc32     : "",
+               playlist->entries[i].db_name   ? playlist->entries[i].db_name   : ""
+               );
+
+      /* Add metadata lines
+       * > We add these at the end of the file to prevent
+       *   breakage if the playlist is loaded with an older
+       *   version of RetroArch */
+      intfstream_printf(
+            file,
+            "default_core_path = \"%s\"\n"
+            "default_core_name = \"%s\"\n"
+            "label_display_mode = \"%d\"\n"
+            "thumbnail_mode = \"%d|%d\"\n"
+            "sort_mode = \"%d\"\n",
+            playlist->default_core_path ? playlist->default_core_path : "",
+            playlist->default_core_name ? playlist->default_core_name : "",
+            playlist->label_display_mode,
+            playlist->right_thumbnail_mode, playlist->left_thumbnail_mode,
+            playlist->sort_mode);
+
+      playlist->old_format = true;
+   }
+   else
+#endif
+   {
+      char uint_str[4];
+      JSONContext context = {0};
+      context.writer      = JSON_Writer_Create(NULL);
+      context.file        = file;
+
+      if (!context.writer)
+      {
+         RARCH_ERR("Failed to create JSON writer\n");
+         goto end;
+      }
+
+      /* Assign JSON whitespace functions
+      * > When compressing playlists, human readability
+      *   is not a factor - can skip all indentation
+      *   and new line characters */
+      json_write_new_line = compressed ?
+            JSON_Writer_WriteNewLine_NULL :
+            JSON_Writer_WriteNewLine;
+      json_write_space    = compressed ?
+            JSON_Writer_WriteSpace_NULL :
+            JSON_Writer_WriteSpace;
+
+      JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
+      JSON_Writer_SetOutputHandler(context.writer, &JSONOutputHandler);
+      JSON_Writer_SetUserData(context.writer, &context);
+
+      JSON_Writer_WriteStartObject(context.writer);
+      json_write_new_line(context.writer);
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "version",
+            STRLEN_CONST("version"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      json_write_space(context.writer, 1);
+      JSON_Writer_WriteString(context.writer, "1.4",
+            STRLEN_CONST("1.4"), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      json_write_new_line(context.writer);
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "default_core_path",
+            STRLEN_CONST("default_core_path"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      json_write_space(context.writer, 1);
+      JSON_Writer_WriteString(context.writer,
+            playlist->default_core_path
+            ? playlist->default_core_path
+            : "",
+            playlist->default_core_path
+            ? strlen(playlist->default_core_path)
+            : 0,
+            JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      json_write_new_line(context.writer);
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "default_core_name",
+            STRLEN_CONST("default_core_name"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      json_write_space(context.writer, 1);
+      JSON_Writer_WriteString(context.writer,
+            playlist->default_core_name
+            ? playlist->default_core_name
+            : "",
+            playlist->default_core_name
+            ? strlen(playlist->default_core_name)
+            : 0,
+            JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      json_write_new_line(context.writer);
+
+      uint_str[0] = '\0';
+      snprintf(uint_str, sizeof(uint_str), "%u", playlist->label_display_mode);
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "label_display_mode",
+            STRLEN_CONST("label_display_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      json_write_space(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, uint_str,
+            strlen(uint_str), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      json_write_new_line(context.writer);
+
+      uint_str[0] = '\0';
+      snprintf(uint_str, sizeof(uint_str), "%u", playlist->right_thumbnail_mode);
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "right_thumbnail_mode",
+            STRLEN_CONST("right_thumbnail_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      json_write_space(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, uint_str,
+            strlen(uint_str), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      json_write_new_line(context.writer);
+
+      uint_str[0] = '\0';
+      snprintf(uint_str, sizeof(uint_str), "%u", playlist->left_thumbnail_mode);
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "left_thumbnail_mode",
+            STRLEN_CONST("left_thumbnail_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      json_write_space(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, uint_str,
+            strlen(uint_str), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      json_write_new_line(context.writer);
+
+      uint_str[0] = '\0';
+      snprintf(uint_str, sizeof(uint_str), "%u", playlist->sort_mode);
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "sort_mode",
+            STRLEN_CONST("sort_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      json_write_space(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, uint_str,
+            strlen(uint_str), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      json_write_new_line(context.writer);
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "items",
+            STRLEN_CONST("items"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      json_write_space(context.writer, 1);
+      JSON_Writer_WriteStartArray(context.writer);
+      json_write_new_line(context.writer);
+
+      for (i = 0; i < playlist->size; i++)
+      {
+         json_write_space(context.writer, 4);
+         JSON_Writer_WriteStartObject(context.writer);
+
+         json_write_new_line(context.writer);
+         json_write_space(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "path",
+               STRLEN_CONST("path"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         json_write_space(context.writer, 1);
+         JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].path
+               ? playlist->entries[i].path
+               : "",
+               playlist->entries[i].path
+               ? strlen(playlist->entries[i].path)
+               : 0,
+               JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         json_write_new_line(context.writer);
+         json_write_space(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "label",
+               STRLEN_CONST("label"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         json_write_space(context.writer, 1);
+         JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].label
+               ? playlist->entries[i].label
+               : "",
+               playlist->entries[i].label
+               ? strlen(playlist->entries[i].label)
+               : 0,
+               JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         json_write_new_line(context.writer);
+         json_write_space(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "core_path",
+               STRLEN_CONST("core_path"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         json_write_space(context.writer, 1);
+         JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].core_path
+               ? playlist->entries[i].core_path
+               : "",
+               playlist->entries[i].core_path
+               ? strlen(playlist->entries[i].core_path)
+               : 0,
+               JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         json_write_new_line(context.writer);
+         json_write_space(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "core_name",
+               STRLEN_CONST("core_name"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         json_write_space(context.writer, 1);
+         JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].core_name
+               ? playlist->entries[i].core_name
+               : "",
+               playlist->entries[i].core_name
+               ? strlen(playlist->entries[i].core_name)
+               : 0,
+               JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         json_write_new_line(context.writer);
+         json_write_space(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "crc32",
+               STRLEN_CONST("crc32"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         json_write_space(context.writer, 1);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "",
+               playlist->entries[i].crc32
+               ? strlen(playlist->entries[i].crc32)
+               : 0,
+               JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         json_write_new_line(context.writer);
+         json_write_space(context.writer, 6);
+         JSON_Writer_WriteString(context.writer, "db_name",
+               STRLEN_CONST("db_name"), JSON_UTF8);
+         JSON_Writer_WriteColon(context.writer);
+         json_write_space(context.writer, 1);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "",
+               playlist->entries[i].db_name
+               ? strlen(playlist->entries[i].db_name)
+               : 0,
+               JSON_UTF8);
+
+         if (!string_is_empty(playlist->entries[i].subsystem_ident))
+         {
+            JSON_Writer_WriteComma(context.writer);
+            json_write_new_line(context.writer);
+            json_write_space(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "subsystem_ident",
+                  STRLEN_CONST("subsystem_ident"), JSON_UTF8);
+            JSON_Writer_WriteColon(context.writer);
+            json_write_space(context.writer, 1);
+            JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_ident ? playlist->entries[i].subsystem_ident : "",
+                  playlist->entries[i].subsystem_ident
+                  ? strlen(playlist->entries[i].subsystem_ident)
+                  : 0,
+                  JSON_UTF8);
+         }
+
+         if (!string_is_empty(playlist->entries[i].subsystem_name))
+         {
+            JSON_Writer_WriteComma(context.writer);
+            json_write_new_line(context.writer);
+            json_write_space(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "subsystem_name",
+                  STRLEN_CONST("subsystem_name"), JSON_UTF8);
+            JSON_Writer_WriteColon(context.writer);
+            json_write_space(context.writer, 1);
+            JSON_Writer_WriteString(context.writer,
+                  playlist->entries[i].subsystem_name
+                  ? playlist->entries[i].subsystem_name
+                  : "",
+                  playlist->entries[i].subsystem_name
+                  ? strlen(playlist->entries[i].subsystem_name)
+                  : 0, JSON_UTF8);
+         }
+
+         if (  playlist->entries[i].subsystem_roms &&
+               playlist->entries[i].subsystem_roms->size > 0)
+         {
+            unsigned j;
+
+            JSON_Writer_WriteComma(context.writer);
+            json_write_new_line(context.writer);
+            json_write_space(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "subsystem_roms",
+                  STRLEN_CONST("subsystem_roms"), JSON_UTF8);
+            JSON_Writer_WriteColon(context.writer);
+            json_write_space(context.writer, 1);
+            JSON_Writer_WriteStartArray(context.writer);
+            json_write_new_line(context.writer);
+
+            for (j = 0; j < playlist->entries[i].subsystem_roms->size; j++)
+            {
+               const struct string_list *roms = playlist->entries[i].subsystem_roms;
+               json_write_space(context.writer, 8);
+               JSON_Writer_WriteString(context.writer,
+                     !string_is_empty(roms->elems[j].data)
+                     ? roms->elems[j].data
+                     : "",
+                     !string_is_empty(roms->elems[j].data)
+                     ? strlen(roms->elems[j].data)
+                     : 0,
+                     JSON_UTF8);
+
+               if (j < playlist->entries[i].subsystem_roms->size - 1)
+               {
+                  JSON_Writer_WriteComma(context.writer);
+                  json_write_new_line(context.writer);
+               }
+            }
+
+            json_write_new_line(context.writer);
+            json_write_space(context.writer, 6);
+            JSON_Writer_WriteEndArray(context.writer);
+         }
+
+         json_write_new_line(context.writer);
+
+         json_write_space(context.writer, 4);
+         JSON_Writer_WriteEndObject(context.writer);
+
+         if (i < playlist->size - 1)
+            JSON_Writer_WriteComma(context.writer);
+
+         json_write_new_line(context.writer);
+      }
+
+      json_write_space(context.writer, 2);
+      JSON_Writer_WriteEndArray(context.writer);
+      json_write_new_line(context.writer);
+      JSON_Writer_WriteEndObject(context.writer);
+      json_write_new_line(context.writer);
+      JSON_Writer_Free(context.writer);
+
+      playlist->old_format = false;
+   }
+
+   playlist->modified   = false;
+   playlist->compressed = compressed;
+
+   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->conf_path);
+end:
+   intfstream_close(file);
+   free(file);
+}
+
+/**
+ * playlist_free:
+ * @playlist            : Playlist handle.
+ *
+ * Frees playlist handle.
+ */
+void playlist_free(playlist_t *playlist)
+{
+   size_t i;
+
+   if (!playlist)
+      return;
+
+   if (playlist->conf_path != NULL)
+      free(playlist->conf_path);
+   playlist->conf_path = NULL;
+
+   if (playlist->default_core_path != NULL)
+      free(playlist->default_core_path);
+   playlist->default_core_path = NULL;
+
+   if (playlist->default_core_name != NULL)
+      free(playlist->default_core_name);
+   playlist->default_core_name = NULL;
+
+   for (i = 0; i < playlist->size; i++)
+   {
+      struct playlist_entry *entry = &playlist->entries[i];
+
+      if (entry)
+         playlist_free_entry(entry);
+   }
+
+   free(playlist->entries);
+   playlist->entries = NULL;
+
+   free(playlist);
+}
+
+/**
+ * playlist_clear:
+ * @playlist        	   : Playlist handle.
+ *
+ * Clears all playlist entries in playlist.
+ **/
+void playlist_clear(playlist_t *playlist)
+{
+   size_t i;
+   if (!playlist)
+      return;
+
+   for (i = 0; i < playlist->size; i++)
+   {
+      struct playlist_entry *entry = &playlist->entries[i];
+
+      if (entry)
+         playlist_free_entry(entry);
+   }
+   playlist->size = 0;
+}
+
+/**
+ * playlist_size:
+ * @playlist        	   : Playlist handle.
+ *
+ * Gets size of playlist.
+ * Returns: size of playlist.
+ **/
+size_t playlist_size(playlist_t *playlist)
+{
+   if (!playlist)
+      return 0;
+   return playlist->size;
+}
+
+/**
+ * playlist_capacity:
+ * @playlist        	   : Playlist handle.
+ *
+ * Gets maximum capacity of playlist.
+ * Returns: maximum capacity of playlist.
+ **/
+size_t playlist_capacity(playlist_t *playlist)
+{
+   if (!playlist)
+      return 0;
+   return playlist->cap;
+}
+
+static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+
+   pCtx->array_depth++;
+
+   if (pCtx->object_depth == 1)
+   {
+      if (string_is_equal(pCtx->current_meta_string, "items") && pCtx->array_depth == 1)
+         pCtx->in_items = true;
+   }
+   else if (pCtx->object_depth == 2)
+   {
+      if (pCtx->array_depth == 2)
+         if (string_is_equal(pCtx->current_items_string, "subsystem_roms"))
+            pCtx->in_subsystem_roms = true;
+   }
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+
+   retro_assert(pCtx->array_depth > 0);
+
+   pCtx->array_depth--;
+
+   if (pCtx->object_depth == 1)
+   {
+      if (pCtx->in_items && string_is_equal(pCtx->current_meta_string, "items") && pCtx->array_depth == 0)
+      {
+         free(pCtx->current_meta_string);
+         pCtx->current_meta_string = NULL;
+         pCtx->in_items = false;
+
+         if (pCtx->current_items_string)
+         {
+            free(pCtx->current_items_string);
+            pCtx->current_items_string = NULL;
+         }
+      }
+   }
+   else if (pCtx->object_depth == 2)
+   {
+      if (pCtx->in_subsystem_roms && string_is_equal(pCtx->current_items_string, "subsystem_roms") && pCtx->array_depth == 1)
+         pCtx->in_subsystem_roms = false;
+   }
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONStartObjectHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+
+   pCtx->object_depth++;
+
+   if (pCtx->in_items && pCtx->object_depth == 2)
+   {
+      if ((pCtx->array_depth == 1) && !pCtx->capacity_exceeded)
+      {
+         if (pCtx->playlist->size < pCtx->playlist->cap)
+            pCtx->current_entry = &pCtx->playlist->entries[pCtx->playlist->size];
+         else
+         {
+            /* Hit max item limit.
+             * Note: We can't just abort here, since there may
+             * be more metadata to read at the end of the file... */
+            RARCH_WARN("JSON file contains more entries than current playlist capacity. Excess entries will be discarded.\n");
+            pCtx->capacity_exceeded  = true;
+            pCtx->current_entry      = NULL;
+            /* In addition, since we are discarding excess entries,
+             * the playlist must be flagged as being modified
+             * (i.e. the playlist is not the same as when it was
+             * last saved to disk...) */
+            pCtx->playlist->modified = true;
+         }
+      }
+   }
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONEndObjectHandler(JSON_Parser parser)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+
+   if (pCtx->in_items && pCtx->object_depth == 2)
+   {
+      if ((pCtx->array_depth == 1) && !pCtx->capacity_exceeded)
+         pCtx->playlist->size++;
+   }
+
+   retro_assert(pCtx->object_depth > 0);
+
+   pCtx->object_depth--;
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   (void)attributes; /* unused */
+
+   if (pCtx->in_items && pCtx->in_subsystem_roms && pCtx->object_depth == 2 && pCtx->array_depth == 2)
+   {
+      if (pCtx->current_entry_string_list_val && length && !string_is_empty(pValue))
+      {
+         union string_list_elem_attr attr = {0};
+
+         if (!*pCtx->current_entry_string_list_val)
+            *pCtx->current_entry_string_list_val = string_list_new();
+
+         string_list_append(*pCtx->current_entry_string_list_val, pValue, attr);
+      }
+   }
+   else if (pCtx->in_items && pCtx->object_depth == 2)
+   {
+      if (pCtx->array_depth == 1)
+      {
+         if (pCtx->current_entry_val && length && !string_is_empty(pValue))
+         {
+            if (*pCtx->current_entry_val)
+               free(*pCtx->current_entry_val);
+            *pCtx->current_entry_val = strdup(pValue);
+         }
+      }
+   }
+   else if (pCtx->object_depth == 1)
+   {
+      if (pCtx->array_depth == 0)
+      {
+         if (pCtx->current_meta_val && length && !string_is_empty(pValue))
+         {
+            /* handle any top-level playlist metadata here */
+#if 0
+            RARCH_LOG("[Playlist]: Found meta: %s = %s\n", pCtx->current_meta_string, pValue);
+#endif
+
+            free(pCtx->current_meta_string);
+            pCtx->current_meta_string = NULL;
+
+            if (*pCtx->current_meta_val)
+               free(*pCtx->current_meta_val);
+
+            *pCtx->current_meta_val = strdup(pValue);
+         }
+      }
+   }
+
+   pCtx->current_entry_val = NULL;
+   pCtx->current_meta_val  = NULL;
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   (void)attributes; /* unused */
+
+   if (pCtx->in_items && pCtx->object_depth == 2)
+   {
+      if (pCtx->array_depth == 1)
+      {
+         if (pCtx->current_entry_int_val && length && !string_is_empty(pValue))
+            *pCtx->current_entry_int_val = (int)strtoul(pValue, NULL, 10);
+         else if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
+            *pCtx->current_entry_uint_val = (unsigned)strtoul(pValue, NULL, 10);
+      }
+   }
+   else if (pCtx->object_depth == 1)
+   {
+      if (pCtx->array_depth == 0)
+      {
+         if (pCtx->current_meta_string && length && !string_is_empty(pValue))
+         {
+            /* handle any top-level playlist metadata here */
+#if 0
+            RARCH_LOG("[Playlist]: Found meta: %s = %s\n", pCtx->current_meta_string, pValue);
+#endif
+
+            free(pCtx->current_meta_string);
+            pCtx->current_meta_string = NULL;
+
+            if (pCtx->current_meta_label_display_mode_val)
+               *pCtx->current_meta_label_display_mode_val = (enum playlist_label_display_mode)strtoul(pValue, NULL, 10);
+            else if (pCtx->current_meta_thumbnail_mode_val)
+               *pCtx->current_meta_thumbnail_mode_val = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
+            else if (pCtx->current_meta_sort_mode_val)
+               *pCtx->current_meta_sort_mode_val = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
+         }
+      }
+   }
+
+   pCtx->current_entry_int_val               = NULL;
+   pCtx->current_entry_uint_val              = NULL;
+   pCtx->current_meta_label_display_mode_val = NULL;
+   pCtx->current_meta_thumbnail_mode_val     = NULL;
+   pCtx->current_meta_sort_mode_val          = NULL;
+
+   return JSON_Parser_Continue;
+}
+
+static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+{
+   JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
+   (void)attributes; /* unused */
+
+   if (pCtx->in_items && pCtx->object_depth == 2)
+   {
+      if (pCtx->array_depth == 1)
+      {
+         if (pCtx->current_entry_val)
+         {
+            /* something went wrong */
+            RARCH_WARN("JSON parsing failed at line %d.\n", __LINE__);
+            return JSON_Parser_Abort;
+         }
+
+         if (length)
+         {
+            if (!string_is_empty(pValue))
+            {
+               if (!string_is_empty(pCtx->current_items_string))
+                  free(pCtx->current_items_string);
+               pCtx->current_items_string = strdup(pValue);
+            }
+
+            if (!pCtx->capacity_exceeded)
+            {
+               if (string_is_equal(pValue, "path"))
+                  pCtx->current_entry_val = &pCtx->current_entry->path;
+               else if (string_is_equal(pValue, "label"))
+                  pCtx->current_entry_val = &pCtx->current_entry->label;
+               else if (string_is_equal(pValue, "core_path"))
+                  pCtx->current_entry_val = &pCtx->current_entry->core_path;
+               else if (string_is_equal(pValue, "core_name"))
+                  pCtx->current_entry_val = &pCtx->current_entry->core_name;
+               else if (string_is_equal(pValue, "crc32"))
+                  pCtx->current_entry_val = &pCtx->current_entry->crc32;
+               else if (string_is_equal(pValue, "db_name"))
+                  pCtx->current_entry_val = &pCtx->current_entry->db_name;
+               else if (string_starts_with_size(pValue, "subsystem_", STRLEN_CONST("subsystem_")))
+               {
+                  if (string_is_equal(pValue, "subsystem_ident"))
+                     pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
+                  else if (string_is_equal(pValue, "subsystem_name"))
+                     pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
+                  else if (string_is_equal(pValue, "subsystem_roms"))
+                     pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
+               }
+               else if (string_starts_with_size(pValue, "runtime_", STRLEN_CONST("runtime_")))
+               {
+                  if (string_is_equal(pValue, "runtime_hours"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
+                  else if (string_is_equal(pValue, "runtime_minutes"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
+                  else if (string_is_equal(pValue, "runtime_seconds"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
+               }
+               else if (string_starts_with_size(pValue, "last_played_", STRLEN_CONST("last_played_")))
+               {
+                  if (string_is_equal(pValue, "last_played_year"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
+                  else if (string_is_equal(pValue, "last_played_month"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
+                  else if (string_is_equal(pValue, "last_played_day"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
+                  else if (string_is_equal(pValue, "last_played_hour"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
+                  else if (string_is_equal(pValue, "last_played_minute"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
+                  else if (string_is_equal(pValue, "last_played_second"))
+                     pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
+               }
+            }
+            else
+            {
+               pCtx->current_entry_val             = NULL;
+               pCtx->current_entry_uint_val        = NULL;
+               pCtx->current_entry_string_list_val = NULL;
+            }
+         }
+      }
+   }
+   else if (pCtx->object_depth == 1)
+   {
+      if (pCtx->array_depth == 0)
+      {
+         if (pCtx->current_meta_val)
+         {
+            /* something went wrong */
+            RARCH_WARN("JSON parsing failed at line %d.\n", __LINE__);
+            return JSON_Parser_Abort;
+         }
+
+         if (length)
+         {
+            if (pCtx->current_meta_string)
+               free(pCtx->current_meta_string);
+            pCtx->current_meta_string = strdup(pValue);
+
+            if (string_is_equal(pValue, "default_core_path"))
+               pCtx->current_meta_val = &pCtx->playlist->default_core_path;
+            else if (string_is_equal(pValue, "default_core_name"))
+               pCtx->current_meta_val = &pCtx->playlist->default_core_name;
+            else if (string_is_equal(pValue, "label_display_mode"))
+               pCtx->current_meta_label_display_mode_val = &pCtx->playlist->label_display_mode;
+            else if (string_is_equal(pValue, "right_thumbnail_mode"))
+               pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->right_thumbnail_mode;
+            else if (string_is_equal(pValue, "left_thumbnail_mode"))
+               pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->left_thumbnail_mode;
+            else if (string_is_equal(pValue, "sort_mode"))
+               pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
+         }
+      }
+   }
+
+   return JSON_Parser_Continue;
+}
+
+static void get_old_format_metadata_value(
+      char *metadata_line, char *value, size_t len)
+{
+   char *end   = NULL;
+   char *start = strchr(metadata_line, '\"');
+
+   if (!start)
+      return;
+
+   start++;
+   end         = strchr(start, '\"');
+
+   if (!end)
+      return;
+
+   *end        = '\0';
+   strlcpy(value, start, len);
+}
+
+static bool playlist_read_file(
+      playlist_t *playlist, const char *path)
+{
+   unsigned i;
+   int test_char;
+#if defined(HAVE_ZLIB)
+      /* Always use RZIP interface when reading playlists
+       * > this will automatically handle uncompressed
+       *   data */
+   intfstream_t *file   = intfstream_open_rzip_file(path,
+            RETRO_VFS_FILE_ACCESS_READ);
+#else
+   intfstream_t *file   = intfstream_open_file(path,
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+#endif
+
+   playlist->compressed = intfstream_is_compressed(file);
+
+   /* If playlist file does not exist,
+    * create an empty playlist instead */
+   if (!file)
+      return true;
+
+   /* Detect format of playlist
+    * > Read file until we find the first printable
+    *   non-whitespace ASCII character */
+   do
+   {
+      test_char = intfstream_getc(file);
+
+      if (test_char == EOF) /* read error or end of file */
+         goto end;
+   }while (!isgraph(test_char) || test_char > 0x7F);
+
+   if (test_char == '{')
+   {
+      /* New playlist format detected */
+#if 0
+      RARCH_LOG("[Playlist]: New playlist format detected.\n");
+#endif
+      playlist->old_format = false;
+   }
+   else
+   {
+      /* old playlist format detected */
+#if 0
+      RARCH_LOG("[Playlist]: Old playlist format detected.\n");
+#endif
+      playlist->old_format = true;
+   }
+
+   /* Reset file to start */
+   intfstream_rewind(file);
+
+   if (!playlist->old_format)
+   {
+      JSONContext context = {0};
+      context.parser      = JSON_Parser_Create(NULL);
+      context.file        = file;
+      context.playlist    = playlist;
+
+      if (!context.parser)
+      {
+         RARCH_ERR("Failed to create JSON parser\n");
+         goto end;
+      }
+
+#if 0
+      JSON_Parser_SetTrackObjectMembers(context.parser, JSON_True);
+#endif
+      JSON_Parser_SetAllowBOM(context.parser, JSON_True);
+      JSON_Parser_SetAllowComments(context.parser, JSON_True);
+      JSON_Parser_SetAllowSpecialNumbers(context.parser, JSON_True);
+      JSON_Parser_SetAllowHexNumbers(context.parser, JSON_True);
+      JSON_Parser_SetAllowUnescapedControlCharacters(context.parser, JSON_True);
+      JSON_Parser_SetReplaceInvalidEncodingSequences(context.parser, JSON_True);
+
+#if 0
+      JSON_Parser_SetNullHandler(context.parser,          &JSONNullHandler);
+      JSON_Parser_SetBooleanHandler(context.parser,       &JSONBooleanHandler);
+      JSON_Parser_SetSpecialNumberHandler(context.parser, &JSONSpecialNumberHandler);
+      JSON_Parser_SetArrayItemHandler(context.parser,     &JSONArrayItemHandler);
+#endif
+
+      JSON_Parser_SetNumberHandler(context.parser,        &JSONNumberHandler);
+      JSON_Parser_SetStringHandler(context.parser,        &JSONStringHandler);
+      JSON_Parser_SetStartObjectHandler(context.parser,   &JSONStartObjectHandler);
+      JSON_Parser_SetEndObjectHandler(context.parser,     &JSONEndObjectHandler);
+      JSON_Parser_SetObjectMemberHandler(context.parser,  &JSONObjectMemberHandler);
+      JSON_Parser_SetStartArrayHandler(context.parser,    &JSONStartArrayHandler);
+      JSON_Parser_SetEndArrayHandler(context.parser,      &JSONEndArrayHandler);
+      JSON_Parser_SetUserData(context.parser, &context);
+
+      while (!intfstream_eof(file))
+      {
+         char chunk[4096] = {0};
+         int64_t length = intfstream_read(file, chunk, sizeof(chunk));
+
+         if (!length && !intfstream_eof(file))
+         {
+            RARCH_WARN("Could not read JSON input.\n");
+            goto json_cleanup;
+         }
+
+         if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
+         {
+            /* Note: Chunk may not be null-terminated.
+             * It is therefore dangerous to print its contents.
+             * Setting a size limit here mitigates the issue, but
+             * in general this is not good practice...
+             * Addendum: RARCH_WARN() actually limits the printed
+             * buffer size anyway, so this warning message is most
+             * likely worthless... */
+            RARCH_WARN("Error parsing chunk:\n---snip---\n%.*s\n---snip---\n", 4096, chunk);
+            JSONLogError(&context);
+            goto json_cleanup;
+         }
+      }
+
+      if (!JSON_Parser_Parse(context.parser, NULL, 0, JSON_True))
+      {
+         RARCH_WARN("Error parsing JSON.\n");
+         JSONLogError(&context);
+         goto json_cleanup;
+      }
+
+json_cleanup:
+
+      JSON_Parser_Free(context.parser);
+
+      if (context.current_meta_string)
+         free(context.current_meta_string);
+
+      if (context.current_items_string)
+         free(context.current_items_string);
+   }
+   else
+   {
+      char line_buf[PLAYLIST_ENTRIES][PATH_MAX_LENGTH] = {{0}};
+
+      /* Unnecessary, but harmless */
+      for (i = 0; i < PLAYLIST_ENTRIES; i++)
+         line_buf[i][0] = '\0';
+
+      /* Read playlist entries */
+      playlist->size = 0;
+      while (playlist->size < playlist->cap)
+      {
+         size_t i;
+         size_t lines_read = 0;
+
+         /* Attempt to read the next 'PLAYLIST_ENTRIES'
+          * lines from the file */
+         for (i = 0; i < PLAYLIST_ENTRIES; i++)
+         {
+            *line_buf[i] = '\0';
+
+            if (intfstream_gets(file, line_buf[i], sizeof(line_buf[i])))
+            {
+               /* Ensure line is NUL terminated, regardless of
+                * Windows or Unix line endings */
+               string_replace_all_chars(line_buf[i], '\r', '\0');
+               string_replace_all_chars(line_buf[i], '\n', '\0');
+
+               lines_read++;
+            }
+            else
+               break;
+         }
+
+         /* If a 'full set' of lines were read, then this
+          * is a valid playlist entry */
+         if (lines_read >= PLAYLIST_ENTRIES)
+         {
+            struct playlist_entry *entry =
+                  &playlist->entries[playlist->size];
+
+            if (!entry)
+               continue;
+
+            /* path */
+            if (!string_is_empty(line_buf[0]))
+               entry->path      = strdup(line_buf[0]);
+
+            /* label */
+            if (!string_is_empty(line_buf[1]))
+               entry->label     = strdup(line_buf[1]);
+
+            /* core_path */
+            if (!string_is_empty(line_buf[2]))
+               entry->core_path = strdup(line_buf[2]);
+
+            /* core_name */
+            if (!string_is_empty(line_buf[3]))
+               entry->core_name = strdup(line_buf[3]);
+
+            /* crc32 */
+            if (!string_is_empty(line_buf[4]))
+               entry->crc32     = strdup(line_buf[4]);
+
+            /* db_name */
+            if (!string_is_empty(line_buf[5]))
+               entry->db_name   = strdup(line_buf[5]);
+
+            playlist->size++;
+         }
+         /* If fewer than 'PLAYLIST_ENTRIES' lines were
+          * read, then this is metadata */
+         else
+         {
+            char default_core_path[PATH_MAX_LENGTH];
+            char default_core_name[PATH_MAX_LENGTH];
+
+            default_core_path[0] = '\0';
+            default_core_name[0] = '\0';
+
+            /* Get default_core_path */
+            if (lines_read < 1)
+               break;
+
+            if (strncmp("default_core_path",
+                     line_buf[0],
+                     STRLEN_CONST("default_core_path")) == 0)
+               get_old_format_metadata_value(
+                     line_buf[0], default_core_path, sizeof(default_core_path));
+
+            /* Get default_core_name */
+            if (lines_read < 2)
+               break;
+
+            if (strncmp("default_core_name",
+                     line_buf[1],
+                     STRLEN_CONST("default_core_name")) == 0)
+               get_old_format_metadata_value(
+                     line_buf[1], default_core_name, sizeof(default_core_name));
+
+            /* > Populate default core path/name, if required
+             *   (if one is empty, the other should be ignored) */
+            if (!string_is_empty(default_core_path) &&
+                !string_is_empty(default_core_name))
+            {
+               playlist->default_core_path = strdup(default_core_path);
+               playlist->default_core_name = strdup(default_core_name);
+            }
+
+            /* Get label_display_mode */
+            if (lines_read < 3)
+               break;
+
+            if (strncmp("label_display_mode",
+                     line_buf[2],
+                     STRLEN_CONST("label_display_mode")) == 0)
+            {
+               unsigned display_mode;
+               char display_mode_str[4] = {0};
+
+               get_old_format_metadata_value(
+                     line_buf[2], display_mode_str, sizeof(display_mode_str));
+
+               display_mode = string_to_unsigned(display_mode_str);
+
+               if (display_mode <= LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX)
+                  playlist->label_display_mode = (enum playlist_label_display_mode)display_mode;
+            }
+
+            /* Get thumbnail modes */
+            if (lines_read < 4)
+               break;
+
+            if (strncmp("thumbnail_mode",
+                     line_buf[3],
+                     STRLEN_CONST("thumbnail_mode")) == 0)
+            {
+               char thumbnail_mode_str[8]          = {0};
+               struct string_list *thumbnail_modes = NULL;
+
+               get_old_format_metadata_value(
+                     line_buf[3], thumbnail_mode_str, sizeof(thumbnail_mode_str));
+
+               thumbnail_modes = string_split(thumbnail_mode_str, "|");
+
+               if (thumbnail_modes)
+               {
+                  if (thumbnail_modes->size == 2)
+                  {
+                     unsigned thumbnail_mode;
+
+                     /* Right thumbnail mode */
+                     thumbnail_mode = string_to_unsigned(thumbnail_modes->elems[0].data);
+                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
+                        playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+
+                     /* Left thumbnail mode */
+                     thumbnail_mode = string_to_unsigned(thumbnail_modes->elems[1].data);
+                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
+                        playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+                  }
+
+                  string_list_free(thumbnail_modes);
+               }
+            }
+
+            /* Get sort_mode */
+            if (lines_read < 5)
+               break;
+
+            if (strncmp("sort_mode",
+                     line_buf[4],
+                     STRLEN_CONST("sort_mode")) == 0)
+            {
+               unsigned sort_mode;
+               char sort_mode_str[4] = {0};
+
+               get_old_format_metadata_value(
+                     line_buf[4], sort_mode_str, sizeof(sort_mode_str));
+
+               sort_mode = string_to_unsigned(sort_mode_str);
+
+               if (sort_mode <= PLAYLIST_SORT_MODE_OFF)
+                  playlist->sort_mode = (enum playlist_sort_mode)sort_mode;
+            }
+
+            /* All metadata parsed -> end of file */
+            break;
+         }
+      }
+   }
+
+end:
+   intfstream_close(file);
+   free(file);
+   return true;
+}
+
+void playlist_free_cached(void)
+{
+   playlist_free(playlist_cached);
+   playlist_cached = NULL;
+}
+
+playlist_t *playlist_get_cached(void)
+{
+   if (playlist_cached)
+      return playlist_cached;
+   return NULL;
+}
+
+bool playlist_init_cached(
+      const char *path, size_t size,
+      bool use_old_format, bool compress)
+{
+   playlist_t *playlist = playlist_init(path, size);
+   if (!playlist)
+      return false;
+
+   /* If playlist format/compression state
+    * does not match requested settings, update
+    * file on disk immediately */
+   if (
+#if defined(HAVE_ZLIB)
+       (playlist->compressed != compress) ||
+#endif
+       (playlist->old_format != use_old_format))
+      playlist_write_file(playlist, use_old_format, compress);
+
+   playlist_cached      = playlist;
+   return true;
+}
+
+/**
+ * playlist_init:
+ * @path            	   : Path to playlist contents file.
+ * @size                : Maximum capacity of playlist size.
+ *
+ * Creates and initializes a playlist.
+ *
+ * Returns: handle to new playlist if successful, otherwise NULL
+ **/
+playlist_t *playlist_init(const char *path, size_t size)
+{
+   struct playlist_entry *entries = NULL;
+   playlist_t           *playlist = (playlist_t*)malloc(sizeof(*playlist));
+   if (!playlist)
+      return NULL;
+
+   entries = (struct playlist_entry*)calloc(size, sizeof(*entries));
+   if (!entries)
+   {
+      free(playlist);
+      return NULL;
+   }
+
+   playlist->modified             = false;
+   playlist->old_format           = false;
+   playlist->compressed           = false;
+   playlist->size                 = 0;
+   playlist->cap                  = size;
+   playlist->conf_path            = strdup(path);
+   playlist->default_core_name    = NULL;
+   playlist->default_core_path    = NULL;
+   playlist->entries              = entries;
+   playlist->label_display_mode   = LABEL_DISPLAY_MODE_DEFAULT;
+   playlist->right_thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->left_thumbnail_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->sort_mode            = PLAYLIST_SORT_MODE_DEFAULT;
+
+   playlist_read_file(playlist, path);
+
+   return playlist;
+}
+
+static int playlist_qsort_func(const struct playlist_entry *a,
+      const struct playlist_entry *b)
+{
+   char *a_str            = NULL;
+   char *b_str            = NULL;
+   char *a_fallback_label = NULL;
+   char *b_fallback_label = NULL;
+   int ret                = 0;
+
+   if (!a || !b)
+      goto end;
+
+   a_str                  = a->label;
+   b_str                  = b->label;
+
+   /* It is quite possible for playlist labels
+    * to be blank. If that is the case, have to use
+    * filename as a fallback (this is slow, but we
+    * have no other option...) */
+   if (string_is_empty(a_str))
+   {
+      a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
+
+      if (!a_fallback_label)
+         goto end;
+
+      if (!string_is_empty(a->path))
+         fill_short_pathname_representation(a_fallback_label, a->path, PATH_MAX_LENGTH * sizeof(char));
+      /* If filename is also empty, use core name
+       * instead -> this matches the behaviour of
+       * menu_displaylist_parse_playlist() */
+      else if (!string_is_empty(a->core_name))
+         strlcpy(a_fallback_label, a->core_name, PATH_MAX_LENGTH * sizeof(char));
+
+      /* If both filename and core name are empty,
+       * then have to compare an empty string
+       * -> again, this is to match the behaviour of
+       * menu_displaylist_parse_playlist() */
+
+      a_str = a_fallback_label;
+   }
+
+   if (string_is_empty(b_str))
+   {
+      b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
+
+      if (!b_fallback_label)
+         goto end;
+
+      if (!string_is_empty(b->path))
+         fill_short_pathname_representation(b_fallback_label, b->path, PATH_MAX_LENGTH * sizeof(char));
+      else if (!string_is_empty(b->core_name))
+         strlcpy(b_fallback_label, b->core_name, PATH_MAX_LENGTH * sizeof(char));
+
+      b_str = b_fallback_label;
+   }
+
+   ret = strcasecmp(a_str, b_str);
+
+end:
+
+   a_str = NULL;
+   b_str = NULL;
+
+   if (a_fallback_label)
+   {
+      free(a_fallback_label);
+      a_fallback_label = NULL;
+   }
+
+   if (b_fallback_label)
+   {
+      free(b_fallback_label);
+      b_fallback_label = NULL;
+   }
+
+   return ret;
+}
+
+void playlist_qsort(playlist_t *playlist)
+{
+   /* Avoid inadvertent sorting if 'sort mode'
+    * has been set explicitly to PLAYLIST_SORT_MODE_OFF */
+   if (!playlist ||
+       (playlist->sort_mode == PLAYLIST_SORT_MODE_OFF))
+      return;
+
+   qsort(playlist->entries, playlist->size,
+         sizeof(struct playlist_entry),
+         (int (*)(const void *, const void *))playlist_qsort_func);
+}
+
+void command_playlist_push_write(
+      playlist_t *playlist,
+      const struct playlist_entry *entry,
+      bool fuzzy_archive_match,
+      bool use_old_format,
+      bool compress)
+{
+   if (!playlist)
+      return;
+
+   if (playlist_push(playlist, entry, fuzzy_archive_match))
+      playlist_write_file(playlist, use_old_format, compress);
+}
+
+void command_playlist_update_write(
+      playlist_t *plist,
+      size_t idx,
+      const struct playlist_entry *entry,
+      bool use_old_format,
+      bool compress)
+{
+   playlist_t *playlist = plist ? plist : playlist_get_cached();
+
+   if (!playlist)
+      return;
+
+   playlist_update(
+         playlist,
+         idx,
+         entry);
+
+   playlist_write_file(playlist, use_old_format, compress);
+}
+
+bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
+      const char *path, const char *core_path)
+{
+   if (!playlist)
+      return false;
+
+   if (idx >= playlist->size)
+      return false;
+
+   return string_is_equal(playlist->entries[idx].path, path) &&
+          string_is_equal(path_basename(playlist->entries[idx].core_path), path_basename(core_path));
+}
+
+bool playlist_entries_are_equal(
+      const struct playlist_entry *entry_a,
+      const struct playlist_entry *entry_b,
+      bool fuzzy_archive_match)
+{
+   char real_path_a[PATH_MAX_LENGTH];
+   char real_core_path_a[PATH_MAX_LENGTH];
+
+   real_path_a[0]      = '\0';
+   real_core_path_a[0] = '\0';
+
+   /* Sanity check */
+   if (!entry_a || !entry_b)
+      return false;
+
+   if (string_is_empty(entry_a->path) &&
+       string_is_empty(entry_a->core_path) &&
+       string_is_empty(entry_b->path) &&
+       string_is_empty(entry_b->core_path))
+      return true;
+
+   /* Check content paths */
+   if (!string_is_empty(entry_a->path))
+   {
+      strlcpy(real_path_a, entry_a->path, sizeof(real_path_a));
+      path_resolve_realpath(real_path_a, sizeof(real_path_a), true);
+   }
+
+   if (!playlist_path_equal(
+         real_path_a, entry_b->path, fuzzy_archive_match))
+      return false;
+
+   /* Check core paths */
+   if (!string_is_empty(entry_a->core_path))
+   {
+      strlcpy(real_core_path_a, entry_a->core_path, sizeof(real_core_path_a));
+      if (!string_is_equal(real_core_path_a, "DETECT") &&
+          !string_is_equal(real_core_path_a, "builtin"))
+         path_resolve_realpath(real_core_path_a, sizeof(real_core_path_a), true);
+   }
+
+   return playlist_core_path_equal(real_core_path_a, entry_b->core_path);
+}
+
+void playlist_get_crc32(playlist_t *playlist, size_t idx,
+      const char **crc32)
+{
+   if (!playlist)
+      return;
+
+   if (crc32)
+      *crc32 = playlist->entries[idx].crc32;
+}
+
+void playlist_get_db_name(playlist_t *playlist, size_t idx,
+      const char **db_name)
+{
+   if (!playlist)
+      return;
+
+   if (db_name)
+   {
+      if (!string_is_empty(playlist->entries[idx].db_name))
+         *db_name = playlist->entries[idx].db_name;
+      else
+      {
+         const char *conf_path_basename = path_basename(playlist->conf_path);
+
+         /* Only use file basename if this is a 'collection' playlist
+          * (i.e. ignore history/favourites) */
+         if (
+                  !string_is_empty(conf_path_basename)
+               && !string_ends_with_size(playlist->conf_path, "_history.lpl",
+                  strlen(playlist->conf_path), STRLEN_CONST("_history.lpl"))
+               && !string_is_equal(conf_path_basename,
+                  file_path_str(FILE_PATH_CONTENT_FAVORITES))
+            )
+            *db_name = conf_path_basename;
+      }
+   }
+}
+
+char *playlist_get_default_core_path(playlist_t *playlist)
+{
+   if (!playlist)
+      return NULL;
+   return playlist->default_core_path;
+}
+
+char *playlist_get_default_core_name(playlist_t *playlist)
+{
+   if (!playlist)
+      return NULL;
+   return playlist->default_core_name;
+}
+
+enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)
+{
+   if (!playlist)
+      return LABEL_DISPLAY_MODE_DEFAULT;
+   return playlist->label_display_mode;
+}
+
+enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id)
+{
+   if (!playlist)
+      return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+
+   if (thumbnail_id == PLAYLIST_THUMBNAIL_RIGHT)
+      return playlist->right_thumbnail_mode;
+   else if (thumbnail_id == PLAYLIST_THUMBNAIL_LEFT)
+      return playlist->left_thumbnail_mode;
+
+   /* Fallback */
+   return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+}
+
+enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist)
+{
+   if (!playlist)
+      return PLAYLIST_SORT_MODE_DEFAULT;
+   return playlist->sort_mode;
+}
+
+void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
+{
+   char real_core_path[PATH_MAX_LENGTH];
+
+   real_core_path[0] = '\0';
+
+   if (!playlist || string_is_empty(core_path))
+      return;
+
+   /* Get 'real' core path */
+   strlcpy(real_core_path, core_path, sizeof(real_core_path));
+   if (!string_is_equal(real_core_path, "DETECT") &&
+       !string_is_equal(real_core_path, "builtin"))
+       playlist_resolve_path(PLAYLIST_SAVE,
+             real_core_path, sizeof(real_core_path));
+
+   if (string_is_empty(real_core_path))
+      return;
+
+   if (!string_is_equal(playlist->default_core_path, real_core_path))
+   {
+      if (playlist->default_core_path)
+         free(playlist->default_core_path);
+      playlist->default_core_path = strdup(real_core_path);
+      playlist->modified = true;
+   }
+}
+
+void playlist_set_default_core_name(playlist_t *playlist, const char *core_name)
+{
+   if (!playlist || string_is_empty(core_name))
+      return;
+
+   if (!string_is_equal(playlist->default_core_name, core_name))
+   {
+      if (playlist->default_core_name)
+         free(playlist->default_core_name);
+      playlist->default_core_name = strdup(core_name);
+      playlist->modified = true;
+   }
+}
+
+void playlist_set_label_display_mode(playlist_t *playlist,
+      enum playlist_label_display_mode label_display_mode)
+{
+   if (!playlist)
+      return;
+
+   if (playlist->label_display_mode != label_display_mode)
+   {
+      playlist->label_display_mode = label_display_mode;
+      playlist->modified = true;
+   }
+}
+
+void playlist_set_thumbnail_mode(
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id,
+      enum playlist_thumbnail_mode thumbnail_mode)
+{
+   if (!playlist)
+      return;
+
+   switch (thumbnail_id)
+   {
+      case PLAYLIST_THUMBNAIL_RIGHT:
+         playlist->right_thumbnail_mode = thumbnail_mode;
+         playlist->modified             = true;
+         break;
+      case PLAYLIST_THUMBNAIL_LEFT:
+         playlist->left_thumbnail_mode = thumbnail_mode;
+         playlist->modified            = true;
+         break;
+   }
+}
+
+void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_mode)
+{
+   if (!playlist)
+      return;
+
+   if (playlist->sort_mode != sort_mode)
+   {
+      playlist->sort_mode = sort_mode;
+      playlist->modified  = true;
+   }
+}
+
+/* Returns true if specified entry has a valid
+ * core association (i.e. a non-empty string
+ * other than DETECT) */
+bool playlist_entry_has_core(const struct playlist_entry *entry)
+{
+   if (!entry ||
+       string_is_empty(entry->core_path) ||
+       string_is_empty(entry->core_name) ||
+       string_is_equal(entry->core_path, "DETECT") ||
+       string_is_equal(entry->core_name, "DETECT"))
+      return false;
+
+   return true;
+}
+
+/* Fetches core info object corresponding to the
+ * currently associated core of the specified
+ * playlist entry.
+ * Returns NULL if entry does not have a valid
+ * core association */
+core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry)
+{
+   core_info_ctx_find_t core_info;
+
+   if (!playlist_entry_has_core(entry))
+      return NULL;
+
+   /* Search for associated core */
+   core_info.inf  = NULL;
+   core_info.path = entry->core_path;
+
+   if (core_info_find(&core_info))
+      return core_info.inf;
+
+   return NULL;
+}
+
+/* Fetches core info object corresponding to the
+ * currently associated default core of the
+ * specified playlist.
+ * Returns NULL if playlist does not have a valid
+ * default core association */
+core_info_t *playlist_get_default_core_info(playlist_t* playlist)
+{
+   core_info_ctx_find_t core_info;
+
+   if (!playlist ||
+       string_is_empty(playlist->default_core_path) ||
+       string_is_empty(playlist->default_core_name) ||
+       string_is_equal(playlist->default_core_path, "DETECT") ||
+       string_is_equal(playlist->default_core_name, "DETECT"))
+      return NULL;
+
+   /* Search for associated core */
+   core_info.inf  = NULL;
+   core_info.path = playlist->default_core_path;
+
+   if (core_info_find(&core_info))
+      return core_info.inf;
+
+   return NULL;
+}

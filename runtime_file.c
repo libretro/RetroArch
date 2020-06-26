@@ -265,39 +265,6 @@ end:
    filestream_close(file);
 }
 
-static void last_played_strftime(runtime_log_t *runtime_log, char *str, size_t len, const char *format)
-{
-   struct tm time_info;
-   char *local = NULL;
-
-   if (!runtime_log)
-      return;
-
-   /* Get time */
-   runtime_log_get_last_played_time(runtime_log, &time_info);
-
-   /* Ensure correct locale is set */
-   setlocale(LC_TIME, "");
-
-   /* Generate string */
-#if defined(__linux__) && !defined(ANDROID)
-   strftime(str, len, format, &time_info);
-#else
-   strftime(str, len, format, &time_info);
-   local = local_to_utf8_string_alloc(str);
-
-   if (!string_is_empty(local))
-      strlcpy(str, local, len);
-
-   if (local)
-   {
-      free(local);
-      local = NULL;
-   }
-#endif
-}
-
-
 /* Initialise runtime log, loading current parameters
  * if log file exists. Returned object must be free()'d.
  * Returns NULL if content_path and/or core_path are invalid */
@@ -665,6 +632,38 @@ void runtime_log_get_last_played_time(runtime_log_t *runtime_log, struct tm *tim
    /* Perform any required range adjustment + populate
     * missing entries */
    mktime(time_info);
+}
+
+static void last_played_strftime(runtime_log_t *runtime_log, char *str, size_t len, const char *format)
+{
+   struct tm time_info;
+   char *local = NULL;
+
+   if (!runtime_log)
+      return;
+
+   /* Get time */
+   runtime_log_get_last_played_time(runtime_log, &time_info);
+
+   /* Ensure correct locale is set */
+   setlocale(LC_TIME, "");
+
+   /* Generate string */
+#if defined(__linux__) && !defined(ANDROID)
+   strftime(str, len, format, &time_info);
+#else
+   strftime(str, len, format, &time_info);
+   local = local_to_utf8_string_alloc(str);
+
+   if (!string_is_empty(local))
+      strlcpy(str, local, len);
+
+   if (local)
+   {
+      free(local);
+      local = NULL;
+   }
+#endif
 }
 
 /* Gets last played entry value as a pre-formatted string */

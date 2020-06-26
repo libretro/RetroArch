@@ -506,6 +506,42 @@ static core_info_list_t *core_info_list_new(const char *path,
    return core_info_list;
 }
 
+/* Shallow-copies internal state.
+ *
+ * Data in *info is invalidated when the
+ * core_info_list is freed. */
+bool core_info_list_get_info(core_info_list_t *core_info_list,
+      core_info_t *out_info, const char *path)
+{
+   size_t i;
+   const char *core_filename = NULL;
+
+   if (!core_info_list || !out_info || string_is_empty(path))
+      return false;
+
+   core_filename = path_basename(path);
+   if (string_is_empty(core_filename))
+      return false;
+
+   memset(out_info, 0, sizeof(*out_info));
+
+   for (i = 0; i < core_info_list->count; i++)
+   {
+      const core_info_t *info = &core_info_list->list[i];
+
+      if (!info || (info->core_file_id.len == 0))
+         continue;
+
+      if (!strncmp(info->core_file_id.str, core_filename, info->core_file_id.len))
+      {
+         *out_info = *info;
+         return true;
+      }
+   }
+
+   return false;
+}
+
 #ifdef HAVE_COMPRESSION
 static bool core_info_does_support_any_file(const core_info_t *core,
       const struct string_list *list)
@@ -625,125 +661,6 @@ static bool core_info_list_update_missing_firmware_internal(
 
    free(path);
    return true;
-}
-
-static int core_info_qsort_func_path(const core_info_t *a,
-      const core_info_t *b)
-{
-   if (!a || !b)
-      return 0;
-
-   if (string_is_empty(a->path) || string_is_empty(b->path))
-      return 0;
-
-   return strcasecmp(a->path, b->path);
-}
-
-static int core_info_qsort_func_display_name(const core_info_t *a,
-      const core_info_t *b)
-{
-   if (!a || !b)
-      return 0;
-
-   if (string_is_empty(a->display_name) || string_is_empty(b->display_name))
-      return 0;
-
-   return strcasecmp(a->display_name, b->display_name);
-}
-
-static int core_info_qsort_func_core_name(const core_info_t *a,
-      const core_info_t *b)
-{
-   if (!a || !b)
-      return 0;
-
-   if (string_is_empty(a->core_name) || string_is_empty(b->core_name))
-      return 0;
-
-   return strcasecmp(a->core_name, b->core_name);
-}
-
-static int core_info_qsort_func_system_name(const core_info_t *a,
-      const core_info_t *b)
-{
-   if (!a || !b)
-      return 0;
-
-   if (string_is_empty(a->systemname) || string_is_empty(b->systemname))
-      return 0;
-
-   return strcasecmp(a->systemname, b->systemname);
-}
-
-static bool core_info_compare_api_version(int sys_major, int sys_minor, int major, int minor, enum compare_op op)
-{
-   switch (op)
-   {
-      case COMPARE_OP_EQUAL:
-         if (sys_major == major && sys_minor == minor)
-            return true;
-         break;
-      case COMPARE_OP_NOT_EQUAL:
-         if (!(sys_major == major && sys_minor == minor))
-            return true;
-         break;
-      case COMPARE_OP_LESS:
-         if (sys_major < major || (sys_major == major && sys_minor < minor))
-            return true;
-         break;
-      case COMPARE_OP_LESS_EQUAL:
-         if (sys_major < major || (sys_major == major && sys_minor <= minor))
-            return true;
-         break;
-      case COMPARE_OP_GREATER:
-         if (sys_major > major || (sys_major == major && sys_minor > minor))
-            return true;
-         break;
-      case COMPARE_OP_GREATER_EQUAL:
-         if (sys_major > major || (sys_major == major && sys_minor >= minor))
-            return true;
-         break;
-      default:
-         break;
-   }
-
-   return false;
-}
-
-/* Shallow-copies internal state.
- *
- * Data in *info is invalidated when the
- * core_info_list is freed. */
-bool core_info_list_get_info(core_info_list_t *core_info_list,
-      core_info_t *out_info, const char *path)
-{
-   size_t i;
-   const char *core_filename = NULL;
-
-   if (!core_info_list || !out_info || string_is_empty(path))
-      return false;
-
-   core_filename = path_basename(path);
-   if (string_is_empty(core_filename))
-      return false;
-
-   memset(out_info, 0, sizeof(*out_info));
-
-   for (i = 0; i < core_info_list->count; i++)
-   {
-      const core_info_t *info = &core_info_list->list[i];
-
-      if (!info || (info->core_file_id.len == 0))
-         continue;
-
-      if (!strncmp(info->core_file_id.str, core_filename, info->core_file_id.len))
-      {
-         *out_info = *info;
-         return true;
-      }
-   }
-
-   return false;
 }
 
 void core_info_free_current_core(core_info_state_t *p_coreinfo)
@@ -1195,6 +1112,54 @@ void core_info_free_core_updater_info(core_updater_info_t *info)
    info = NULL;
 }
 
+static int core_info_qsort_func_path(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->path) || string_is_empty(b->path))
+      return 0;
+
+   return strcasecmp(a->path, b->path);
+}
+
+static int core_info_qsort_func_display_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->display_name) || string_is_empty(b->display_name))
+      return 0;
+
+   return strcasecmp(a->display_name, b->display_name);
+}
+
+static int core_info_qsort_func_core_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->core_name) || string_is_empty(b->core_name))
+      return 0;
+
+   return strcasecmp(a->core_name, b->core_name);
+}
+
+static int core_info_qsort_func_system_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->systemname) || string_is_empty(b->systemname))
+      return 0;
+
+   return strcasecmp(a->systemname, b->systemname);
+}
+
 void core_info_qsort(core_info_list_t *core_info_list,
       enum core_info_list_qsort_type qsort_type)
 {
@@ -1237,6 +1202,41 @@ void core_info_qsort(core_info_list_t *core_info_list,
       default:
          return;
    }
+}
+
+static bool core_info_compare_api_version(int sys_major, int sys_minor, int major, int minor, enum compare_op op)
+{
+   switch (op)
+   {
+      case COMPARE_OP_EQUAL:
+         if (sys_major == major && sys_minor == minor)
+            return true;
+         break;
+      case COMPARE_OP_NOT_EQUAL:
+         if (!(sys_major == major && sys_minor == minor))
+            return true;
+         break;
+      case COMPARE_OP_LESS:
+         if (sys_major < major || (sys_major == major && sys_minor < minor))
+            return true;
+         break;
+      case COMPARE_OP_LESS_EQUAL:
+         if (sys_major < major || (sys_major == major && sys_minor <= minor))
+            return true;
+         break;
+      case COMPARE_OP_GREATER:
+         if (sys_major > major || (sys_major == major && sys_minor > minor))
+            return true;
+         break;
+      case COMPARE_OP_GREATER_EQUAL:
+         if (sys_major > major || (sys_major == major && sys_minor >= minor))
+            return true;
+         break;
+      default:
+         break;
+   }
+
+   return false;
 }
 
 bool core_info_hw_api_supported(core_info_t *info)

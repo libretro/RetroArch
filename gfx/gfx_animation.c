@@ -1042,187 +1042,6 @@ static void gfx_delayed_animation_cb(void *userdata)
    free(delayed_animation);
 }
 
-static void gfx_animation_update_time_default(
-      float *ticker_pixel_increment,
-      unsigned video_width, unsigned video_height)
-{
-   /* By default, this should be a NOOP */
-}
-
-static void gfx_animation_update_time(
-      gfx_animation_t *p_anim,
-      retro_time_t current_time,
-      bool timedate_enable,
-      unsigned video_width, unsigned video_height,
-      float _ticker_speed)
-{
-   const bool ticker_is_active                 = p_anim->ticker_is_active;
-
-   static retro_time_t last_clock_update       = 0;
-   static retro_time_t last_ticker_update      = 0;
-   static retro_time_t last_ticker_slow_update = 0;
-
-   /* Horizontal smooth ticker parameters */
-   static float ticker_pixel_accumulator       = 0.0f;
-   unsigned ticker_pixel_accumulator_uint      = 0;
-   float ticker_pixel_increment                = 0.0f;
-
-   /* Vertical (line) smooth ticker parameters */
-   static float ticker_pixel_line_accumulator  = 0.0f;
-   unsigned ticker_pixel_line_accumulator_uint = 0;
-   float ticker_pixel_line_increment           = 0.0f;
-
-   /* Adjust ticker speed */
-   float speed_factor                          =
-         (_ticker_speed > 0.0001f) ? _ticker_speed : 1.0f;
-   unsigned ticker_speed                       =
-      (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
-   unsigned ticker_slow_speed                  =
-      (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
-
-   /* Note: cur_time & old_time are in us (microseconds),
-    * delta_time is in ms */
-   p_anim->cur_time   = current_time;
-   p_anim->delta_time = (p_anim->old_time == 0) 
-      ? 0.0f 
-      : (float)(p_anim->cur_time - p_anim->old_time) / 1000.0f;
-   p_anim->old_time   = p_anim->cur_time;
-
-   if (((p_anim->cur_time - last_clock_update) > 1000000) /* 1000000 us == 1 second */
-         && timedate_enable)
-   {
-      p_anim->animation_is_active   = true;
-      last_clock_update             = p_anim->cur_time;
-   }
-
-   if (ticker_is_active)
-   {
-      /* Update non-smooth ticker indices */
-      if (p_anim->cur_time - last_ticker_update >= ticker_speed)
-      {
-         p_anim->ticker_idx++;
-         last_ticker_update = p_anim->cur_time;
-      }
-
-      if (p_anim->cur_time - last_ticker_slow_update >= ticker_slow_speed)
-      {
-         p_anim->ticker_slow_idx++;
-         last_ticker_slow_update = p_anim->cur_time;
-      }
-
-      /* Pixel tickers (horizontal + vertical/line) update
-       * every frame (regardless of time delta), so require
-       * special handling */
-
-      /* > Get base increment size (+1 every ticker_pixel_period ms) */
-      ticker_pixel_increment = p_anim->delta_time / ticker_pixel_period;
-
-      /* > Apply ticker speed adjustment */
-      ticker_pixel_increment *= speed_factor;
-
-      /* At this point we diverge:
-       * > Vertical (line) ticker is based upon text
-       *   characteristics (number of characters per
-       *   line) - it is therefore independent of display
-       *   size/scaling, so speed-adjusted pixel increment
-       *   is used directly */
-      ticker_pixel_line_increment = ticker_pixel_increment;
-
-      /* > Horizontal ticker is based upon physical line
-       *   width - it is therefore very much dependent upon
-       *   display size/scaling. Each menu driver is free
-       *   to handle video scaling as it pleases - a callback
-       *   function set by the menu driver is thus used to
-       *   perform menu-specific scaling adjustments */
-      update_time_callback(&ticker_pixel_increment,
-            video_width, video_height);
-
-      /* > Update accumulators */
-      ticker_pixel_accumulator += ticker_pixel_increment;
-      ticker_pixel_accumulator_uint = (unsigned)ticker_pixel_accumulator;
-
-      ticker_pixel_line_accumulator += ticker_pixel_line_increment;
-      ticker_pixel_line_accumulator_uint = (unsigned)ticker_pixel_line_accumulator;
-
-      /* > Check whether we've accumulated enough
-       *   for an idx update */
-      if (ticker_pixel_accumulator_uint > 0)
-      {
-         p_anim->ticker_pixel_idx += ticker_pixel_accumulator_uint;
-         ticker_pixel_accumulator -= (float)ticker_pixel_accumulator_uint;
-      }
-
-      if (ticker_pixel_accumulator_uint > 0)
-      {
-         p_anim->ticker_pixel_line_idx += ticker_pixel_line_accumulator_uint;
-         ticker_pixel_line_accumulator -= (float)ticker_pixel_line_accumulator_uint;
-      }
-   }
-}
-
-static void build_ticker_loop_string(
-      const char* src_str, const char *spacer,
-      unsigned char_offset1, unsigned num_chars1,
-      unsigned char_offset2, unsigned num_chars2,
-      unsigned char_offset3, unsigned num_chars3,
-      char *dest_str, size_t dest_str_len)
-{
-   char tmp[PATH_MAX_LENGTH];
-
-   tmp[0] = '\0';
-   dest_str[0] = '\0';
-
-   /* Copy 'trailing' chunk of source string, if required */
-   if (num_chars1 > 0)
-      utf8cpy(
-            dest_str, dest_str_len,
-            utf8skip(src_str, char_offset1), num_chars1);
-
-   /* Copy chunk of spacer string, if required */
-   if (num_chars2 > 0)
-   {
-      utf8cpy(
-            tmp, sizeof(tmp),
-            utf8skip(spacer, char_offset2), num_chars2);
-
-      strlcat(dest_str, tmp, dest_str_len);
-   }
-
-   /* Copy 'leading' chunk of source string, if required */
-   if (num_chars3 > 0)
-   {
-      utf8cpy(
-            tmp, sizeof(tmp),
-            utf8skip(src_str, char_offset3), num_chars3);
-
-      strlcat(dest_str, tmp, dest_str_len);
-   }
-}
-
-static void build_line_ticker_string(
-      size_t num_display_lines, size_t line_offset,
-      struct string_list *lines,
-      char *dest_str, size_t dest_str_len)
-{
-   size_t i;
-
-   for (i = 0; i < num_display_lines; i++)
-   {
-      size_t offset     = i + line_offset;
-      size_t line_index = offset % (lines->size + 1);
-      bool line_valid   = true;
-
-      if (line_index >= lines->size)
-         line_valid = false;
-
-      if (line_valid)
-         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
-
-      if (i < num_display_lines - 1)
-         strlcat(dest_str, "\n", dest_str_len);
-   }
-}
-
 void gfx_animation_push_delayed(
       unsigned delay, gfx_animation_ctx_entry_t *entry)
 {
@@ -1387,6 +1206,13 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    return true;
 }
 
+static void gfx_animation_update_time_default(
+      float *ticker_pixel_increment,
+      unsigned video_width, unsigned video_height)
+{
+   /* By default, this should be a NOOP */
+}
+
 void gfx_animation_set_update_time_cb(update_time_cb cb)
 {
    update_time_callback = cb;
@@ -1395,6 +1221,117 @@ void gfx_animation_set_update_time_cb(update_time_cb cb)
 void gfx_animation_unset_update_time_cb(void)
 {
    update_time_callback = gfx_animation_update_time_default;
+}
+
+static void gfx_animation_update_time(
+      gfx_animation_t *p_anim,
+      retro_time_t current_time,
+      bool timedate_enable,
+      unsigned video_width, unsigned video_height,
+      float _ticker_speed)
+{
+   const bool ticker_is_active                 = p_anim->ticker_is_active;
+
+   static retro_time_t last_clock_update       = 0;
+   static retro_time_t last_ticker_update      = 0;
+   static retro_time_t last_ticker_slow_update = 0;
+
+   /* Horizontal smooth ticker parameters */
+   static float ticker_pixel_accumulator       = 0.0f;
+   unsigned ticker_pixel_accumulator_uint      = 0;
+   float ticker_pixel_increment                = 0.0f;
+
+   /* Vertical (line) smooth ticker parameters */
+   static float ticker_pixel_line_accumulator  = 0.0f;
+   unsigned ticker_pixel_line_accumulator_uint = 0;
+   float ticker_pixel_line_increment           = 0.0f;
+
+   /* Adjust ticker speed */
+   float speed_factor                          =
+         (_ticker_speed > 0.0001f) ? _ticker_speed : 1.0f;
+   unsigned ticker_speed                       =
+      (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
+   unsigned ticker_slow_speed                  =
+      (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
+
+   /* Note: cur_time & old_time are in us (microseconds),
+    * delta_time is in ms */
+   p_anim->cur_time   = current_time;
+   p_anim->delta_time = (p_anim->old_time == 0) 
+      ? 0.0f 
+      : (float)(p_anim->cur_time - p_anim->old_time) / 1000.0f;
+   p_anim->old_time   = p_anim->cur_time;
+
+   if (((p_anim->cur_time - last_clock_update) > 1000000) /* 1000000 us == 1 second */
+         && timedate_enable)
+   {
+      p_anim->animation_is_active   = true;
+      last_clock_update             = p_anim->cur_time;
+   }
+
+   if (ticker_is_active)
+   {
+      /* Update non-smooth ticker indices */
+      if (p_anim->cur_time - last_ticker_update >= ticker_speed)
+      {
+         p_anim->ticker_idx++;
+         last_ticker_update = p_anim->cur_time;
+      }
+
+      if (p_anim->cur_time - last_ticker_slow_update >= ticker_slow_speed)
+      {
+         p_anim->ticker_slow_idx++;
+         last_ticker_slow_update = p_anim->cur_time;
+      }
+
+      /* Pixel tickers (horizontal + vertical/line) update
+       * every frame (regardless of time delta), so require
+       * special handling */
+
+      /* > Get base increment size (+1 every ticker_pixel_period ms) */
+      ticker_pixel_increment = p_anim->delta_time / ticker_pixel_period;
+
+      /* > Apply ticker speed adjustment */
+      ticker_pixel_increment *= speed_factor;
+
+      /* At this point we diverge:
+       * > Vertical (line) ticker is based upon text
+       *   characteristics (number of characters per
+       *   line) - it is therefore independent of display
+       *   size/scaling, so speed-adjusted pixel increment
+       *   is used directly */
+      ticker_pixel_line_increment = ticker_pixel_increment;
+
+      /* > Horizontal ticker is based upon physical line
+       *   width - it is therefore very much dependent upon
+       *   display size/scaling. Each menu driver is free
+       *   to handle video scaling as it pleases - a callback
+       *   function set by the menu driver is thus used to
+       *   perform menu-specific scaling adjustments */
+      update_time_callback(&ticker_pixel_increment,
+            video_width, video_height);
+
+      /* > Update accumulators */
+      ticker_pixel_accumulator += ticker_pixel_increment;
+      ticker_pixel_accumulator_uint = (unsigned)ticker_pixel_accumulator;
+
+      ticker_pixel_line_accumulator += ticker_pixel_line_increment;
+      ticker_pixel_line_accumulator_uint = (unsigned)ticker_pixel_line_accumulator;
+
+      /* > Check whether we've accumulated enough
+       *   for an idx update */
+      if (ticker_pixel_accumulator_uint > 0)
+      {
+         p_anim->ticker_pixel_idx += ticker_pixel_accumulator_uint;
+         ticker_pixel_accumulator -= (float)ticker_pixel_accumulator_uint;
+      }
+
+      if (ticker_pixel_accumulator_uint > 0)
+      {
+         p_anim->ticker_pixel_line_idx += ticker_pixel_line_accumulator_uint;
+         ticker_pixel_line_accumulator -= (float)ticker_pixel_line_accumulator_uint;
+      }
+   }
 }
 
 bool gfx_animation_update(
@@ -1470,6 +1407,45 @@ bool gfx_animation_update(
    p_anim->animation_is_active = da_count(p_anim->list) > 0;
 
    return p_anim->animation_is_active;
+}
+
+static void build_ticker_loop_string(
+      const char* src_str, const char *spacer,
+      unsigned char_offset1, unsigned num_chars1,
+      unsigned char_offset2, unsigned num_chars2,
+      unsigned char_offset3, unsigned num_chars3,
+      char *dest_str, size_t dest_str_len)
+{
+   char tmp[PATH_MAX_LENGTH];
+
+   tmp[0] = '\0';
+   dest_str[0] = '\0';
+
+   /* Copy 'trailing' chunk of source string, if required */
+   if (num_chars1 > 0)
+      utf8cpy(
+            dest_str, dest_str_len,
+            utf8skip(src_str, char_offset1), num_chars1);
+
+   /* Copy chunk of spacer string, if required */
+   if (num_chars2 > 0)
+   {
+      utf8cpy(
+            tmp, sizeof(tmp),
+            utf8skip(spacer, char_offset2), num_chars2);
+
+      strlcat(dest_str, tmp, dest_str_len);
+   }
+
+   /* Copy 'leading' chunk of source string, if required */
+   if (num_chars3 > 0)
+   {
+      utf8cpy(
+            tmp, sizeof(tmp),
+            utf8skip(src_str, char_offset3), num_chars3);
+
+      strlcat(dest_str, tmp, dest_str_len);
+   }
 }
 
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
@@ -1935,6 +1911,30 @@ end:
    }
 
    return is_active;
+}
+
+static void build_line_ticker_string(
+      size_t num_display_lines, size_t line_offset,
+      struct string_list *lines,
+      char *dest_str, size_t dest_str_len)
+{
+   size_t i;
+
+   for (i = 0; i < num_display_lines; i++)
+   {
+      size_t offset     = i + line_offset;
+      size_t line_index = offset % (lines->size + 1);
+      bool line_valid   = true;
+
+      if (line_index >= lines->size)
+         line_valid = false;
+
+      if (line_valid)
+         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
+
+      if (i < num_display_lines - 1)
+         strlcat(dest_str, "\n", dest_str_len);
+   }
 }
 
 bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
