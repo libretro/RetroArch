@@ -23,6 +23,7 @@ typedef struct ozone_handle ozone_handle_t;
 #include "ozone_sidebar.h"
 
 #include <retro_miscellaneous.h>
+#include <retro_inline.h>
 
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
@@ -393,12 +394,23 @@ void ozone_draw_thumbnail_bar(
 void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate);
 void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone);
 
-unsigned ozone_count_lines(const char *str);
+static INLINE unsigned ozone_count_lines(const char *str)
+{
+   unsigned c     = 0;
+   unsigned lines = 1;
+
+   for (c = 0; str[c]; c++)
+      lines += (str[c] == '\n');
+   return lines;
+}
+
 
 void ozone_update_content_metadata(ozone_handle_t *ozone);
 
 void ozone_font_flush(
       unsigned video_width, unsigned video_height,
       ozone_font_data_t *font_data);
+
+void ozone_toggle_metadata_override(ozone_handle_t *ozone);
 
 #endif
