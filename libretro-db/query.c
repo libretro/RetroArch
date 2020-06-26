@@ -923,18 +923,22 @@ void *libretrodb_query_compile(libretrodb_t *db,
       const char *query, size_t buff_len, const char **error_string)
 {
    struct buffer buff;
-   struct query *q = (struct query*)calloc(1, sizeof(*q));
+   struct query *q = (struct query*)malloc(sizeof(*q));
 
    if (!q)
-      goto error;
+      return NULL;
 
    q->ref_count  = 1;
+   q->root.argc  = 0;
+   q->root.func  = NULL;
+   q->root.argv  = NULL;
+
    buff.data     = query;
    buff.len      = buff_len;
    buff.offset   = 0;
    *error_string = NULL;
 
-   buff         = query_chomp(buff);
+   buff          = query_chomp(buff);
 
    if (query_peek(buff, "{"))
    {
