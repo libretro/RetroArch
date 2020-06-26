@@ -96,7 +96,7 @@ typedef struct cheevo_popup
    uintptr_t badge;
 } cheevo_popup;
 
-typedef struct menu_widget_msg
+typedef struct disp_widget_msg
 {
    char *msg;
    char *msg_new;
@@ -137,7 +137,7 @@ typedef struct menu_widget_msg
 
    float hourglass_rotation;
    gfx_timer_t hourglass_timer;
-} menu_widget_msg_t;
+} disp_widget_msg_t;
 
 typedef struct dispgfx_widget
 {
@@ -224,7 +224,7 @@ typedef struct dispgfx_widget
    uintptr_t gfx_widgets_generic_tag;
    gfx_widget_fonts_t gfx_widget_fonts;
    fifo_buffer_t *msg_queue;
-   menu_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
+   disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    size_t current_msgs_size;
 #ifdef HAVE_THREADS
    slock_t* current_msgs_lock;

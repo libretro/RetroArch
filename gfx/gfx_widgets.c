@@ -207,7 +207,7 @@ const static gfx_widget_t* const widgets[] = {
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
-   menu_widget_msg_t *msg = (menu_widget_msg_t*)userdata;
+   disp_widget_msg_t *msg = (disp_widget_msg_t*)userdata;
 
    if (msg->msg)
       free(msg->msg);
@@ -230,7 +230,7 @@ void gfx_widgets_msg_queue_push(
       unsigned prio, bool flush,
       bool menu_is_alive)
 {
-   menu_widget_msg_t    *msg_widget = NULL;
+   disp_widget_msg_t    *msg_widget = NULL;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
 
    if (fifo_write_avail(p_dispwidget->msg_queue) > 0)
@@ -238,7 +238,7 @@ void gfx_widgets_msg_queue_push(
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
       {
-         msg_widget           = (menu_widget_msg_t*)task->frontend_userdata;
+         msg_widget           = (disp_widget_msg_t*)task->frontend_userdata;
          /* msg_widgets can be passed between tasks */
          msg_widget->task_ptr = task;
       }
@@ -248,7 +248,7 @@ void gfx_widgets_msg_queue_push(
       {
          const char *title                      = msg;
 
-         msg_widget                             = (menu_widget_msg_t*)calloc(1, sizeof(*msg_widget));
+         msg_widget                             = (disp_widget_msg_t*)calloc(1, sizeof(*msg_widget));
 
          if (task)
             title                               = task->title;
@@ -411,7 +411,7 @@ void gfx_widgets_msg_queue_push(
 
 static void gfx_widgets_unfold_end(void *userdata)
 {
-   menu_widget_msg_t *unfold        = (menu_widget_msg_t*)userdata;
+   disp_widget_msg_t *unfold        = (disp_widget_msg_t*)userdata;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
 
    unfold->unfolding                = false;
@@ -425,7 +425,7 @@ static void gfx_widgets_move_end(void *userdata)
    if (userdata)
    {
       gfx_animation_ctx_entry_t entry;
-      menu_widget_msg_t *unfold = (menu_widget_msg_t*)userdata;
+      disp_widget_msg_t *unfold = (disp_widget_msg_t*)userdata;
 
       entry.cb             = gfx_widgets_unfold_end;
       entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
@@ -446,7 +446,7 @@ static void gfx_widgets_move_end(void *userdata)
 
 static void gfx_widgets_msg_queue_expired(void *userdata)
 {
-   menu_widget_msg_t *msg = (menu_widget_msg_t *)userdata;
+   disp_widget_msg_t *msg = (disp_widget_msg_t *)userdata;
 
    if (msg && !msg->expired)
       msg->expired = true;
@@ -457,13 +457,13 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
    int i;
    float y = 0;
    /* there should always be one and only one unfolded message */
-   menu_widget_msg_t *unfold        = NULL; 
+   disp_widget_msg_t *unfold        = NULL; 
 
    SLOCK_LOCK(p_dispwidget->current_msgs_lock);
 
    for (i = (int)(p_dispwidget->current_msgs_size - 1); i >= 0; i--)
    {
-      menu_widget_msg_t* msg = p_dispwidget->current_msgs[i];
+      disp_widget_msg_t* msg = p_dispwidget->current_msgs[i];
 
       if (!msg || msg->dying)
          continue;
@@ -497,7 +497,7 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
 
 static void gfx_widgets_msg_queue_free(
       dispgfx_widget_t *p_dispwidget,
-      menu_widget_msg_t *msg)
+      disp_widget_msg_t *msg)
 {
    uintptr_t tag = (uintptr_t)msg;
 
@@ -534,7 +534,7 @@ static void gfx_widgets_msg_queue_free(
 static void gfx_widgets_msg_queue_kill_end(void *userdata)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-   menu_widget_msg_t* msg;
+   disp_widget_msg_t* msg;
    unsigned i;
 
    SLOCK_LOCK(p_dispwidget->current_msgs_lock);
@@ -564,7 +564,7 @@ static void gfx_widgets_msg_queue_kill(
       unsigned idx)
 {
    gfx_animation_ctx_entry_t entry;
-   menu_widget_msg_t *msg = p_dispwidget->current_msgs[idx];
+   disp_widget_msg_t *msg = p_dispwidget->current_msgs[idx];
 
    if (!msg)
       return;
@@ -756,7 +756,7 @@ float gfx_widgets_get_thumbnail_scale_factor(
 }
 
 static void gfx_widgets_start_msg_expiration_timer(
-      menu_widget_msg_t *msg_widget, unsigned duration)
+      disp_widget_msg_t *msg_widget, unsigned duration)
 {
    gfx_timer_ctx_entry_t timer;
 
@@ -774,7 +774,7 @@ static void gfx_widgets_hourglass_tick(void *userdata);
 static void gfx_widgets_hourglass_end(void *userdata)
 {
    gfx_timer_ctx_entry_t timer;
-   menu_widget_msg_t *msg  = (menu_widget_msg_t*)userdata;
+   disp_widget_msg_t *msg  = (disp_widget_msg_t*)userdata;
 
    msg->hourglass_rotation = 0.0f;
 
@@ -788,7 +788,7 @@ static void gfx_widgets_hourglass_end(void *userdata)
 static void gfx_widgets_hourglass_tick(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   menu_widget_msg_t *msg = (menu_widget_msg_t*)userdata;
+   disp_widget_msg_t *msg = (disp_widget_msg_t*)userdata;
    uintptr_t          tag = (uintptr_t)msg;
 
    entry.easing_enum      = EASING_OUT_QUAD;
@@ -849,7 +849,7 @@ void gfx_widgets_iterate(
          && !p_dispwidget->widgets_moving 
          && (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs)))
    {
-      menu_widget_msg_t *msg_widget = NULL;
+      disp_widget_msg_t *msg_widget = NULL;
 
       SLOCK_LOCK(p_dispwidget->current_msgs_lock);
 
@@ -907,7 +907,7 @@ void gfx_widgets_iterate(
    /* Start expiration timer of dead tasks */
    for (i = 0; i < p_dispwidget->current_msgs_size; i++)
    {
-      menu_widget_msg_t *msg_widget = p_dispwidget->current_msgs[i];
+      disp_widget_msg_t *msg_widget = p_dispwidget->current_msgs[i];
 
       if (!msg_widget)
          continue;
@@ -998,7 +998,7 @@ static int gfx_widgets_draw_indicator(
 
 static void gfx_widgets_draw_task_msg(
       dispgfx_widget_t *p_dispwidget,
-      menu_widget_msg_t *msg,
+      disp_widget_msg_t *msg,
       void *userdata,
       unsigned video_width,
       unsigned video_height)
@@ -1165,7 +1165,7 @@ static void gfx_widgets_draw_task_msg(
 
 static void gfx_widgets_draw_regular_msg(
       dispgfx_widget_t *p_dispwidget,
-      menu_widget_msg_t *msg,
+      disp_widget_msg_t *msg,
       void *userdata,
       unsigned video_width,
       unsigned video_height)
@@ -1612,7 +1612,7 @@ void gfx_widgets_frame(void *data)
 
       for (i = 0; i < p_dispwidget->current_msgs_size; i++)
       {
-         menu_widget_msg_t* msg = p_dispwidget->current_msgs[i];
+         disp_widget_msg_t* msg = p_dispwidget->current_msgs[i];
 
          if (!msg)
             continue;
@@ -1687,7 +1687,7 @@ bool gfx_widgets_init(uintptr_t widgets_active_ptr,
       }
 
       p_dispwidget->msg_queue = 
-         fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
+         fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(disp_widget_msg_t*));
 
       if (!p_dispwidget->msg_queue)
          goto error;
@@ -2064,7 +2064,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    {
       while (fifo_read_avail(p_dispwidget->msg_queue) > 0)
       {
-         menu_widget_msg_t *msg_widget;
+         disp_widget_msg_t *msg_widget;
 
          fifo_read(p_dispwidget->msg_queue,
                &msg_widget, sizeof(msg_widget));
@@ -2093,7 +2093,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    p_dispwidget->current_msgs_size = 0;
    for (i = 0; i < ARRAY_SIZE(p_dispwidget->current_msgs); i++)
    {
-      menu_widget_msg_t *msg = p_dispwidget->current_msgs[i];
+      disp_widget_msg_t *msg = p_dispwidget->current_msgs[i];
       if (!msg)
          continue;
 
