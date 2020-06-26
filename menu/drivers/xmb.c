@@ -339,6 +339,7 @@ typedef struct xmb_handle
    xmb_node_t favorites_tab_node;
    xmb_node_t add_tab_node;
    xmb_node_t netplay_tab_node;
+   menu_input_pointer_t pointer;
 
    font_data_t *font;
    font_data_t *font2;
@@ -3530,7 +3531,6 @@ static void xmb_render(void *data,
 {
    size_t i;
    float scale_factor;
-   menu_input_pointer_t pointer;
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
    unsigned      end        = (unsigned)menu_entries_get_size();
@@ -3551,16 +3551,16 @@ static void xmb_render(void *data,
             false);
    }
 
-   menu_input_get_pointer_state(&pointer);
+   menu_input_get_pointer_state(&xmb->pointer);
 
-   if (pointer.type != MENU_POINTER_DISABLED)
+   if (xmb->pointer.type != MENU_POINTER_DISABLED)
    {
       size_t selection     = menu_navigation_get_selection();
       int16_t margin_top   = (int16_t)xmb->margins_screen_top;
       int16_t margin_left  = (int16_t)xmb->margins_screen_left;
       int16_t margin_right = (int16_t)((float)width - xmb->margins_screen_left);
-      int16_t pointer_x    = pointer.x;
-      int16_t pointer_y    = pointer.y;
+      int16_t pointer_x    = xmb->pointer.x;
+      int16_t pointer_y    = xmb->pointer.y;
 
       /* This must be set every frame when using a pointer,
        * otherwise touchscreen input breaks when changing
@@ -3611,7 +3611,7 @@ static void xmb_render(void *data,
          menu_entry_t entry;
          bool get_entry = false;
 
-         switch (pointer.press_direction)
+         switch (xmb->pointer.press_direction)
          {
             case MENU_INPUT_PRESS_DIRECTION_UP:
                if (pointer_x > margin_right)
@@ -3655,7 +3655,7 @@ static void xmb_render(void *data,
             menu_entry_get(&entry, 0, selection, NULL, true);
          }
 
-         switch (pointer.press_direction)
+         switch (xmb->pointer.press_direction)
          {
             case MENU_INPUT_PRESS_DIRECTION_UP:
                /* Note: Direction is inverted, since 'up' should
@@ -5070,11 +5070,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Cursor image */
    if (xmb->mouse_show)
    {
-      menu_input_pointer_t pointer;
       bool cursor_visible   = video_fullscreen 
          && menu_mouse_enable;
-
-      menu_input_get_pointer_state(&pointer);
 
       gfx_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
       gfx_display_draw_cursor(
@@ -5085,8 +5082,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             &coord_white[0],
             xmb->cursor_size,
             xmb->textures.list[XMB_TEXTURE_POINTER],
-            pointer.x,
-            pointer.y,
+            xmb->pointer.x,
+            xmb->pointer.y,
             video_width,
             video_height);
    }
