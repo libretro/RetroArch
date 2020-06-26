@@ -203,9 +203,7 @@ char* filestream_gets(RFILE *stream, char *s, size_t len)
 int filestream_getc(RFILE *stream)
 {
    char c = 0;
-   if (!stream)
-      return EOF;
-   if (filestream_read(stream, &c, 1) == 1)
+   if (stream && filestream_read(stream, &c, 1) == 1)
       return (int)(unsigned char)c;
    return EOF;
 }
@@ -215,7 +213,6 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
    char buf[4096];
    char subfmt[64];
    va_list args;
-
    const char * bufiter = buf;
    int64_t startpos     = filestream_tell(stream);
    int        ret       = 0;
@@ -233,7 +230,6 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
       if (*format == '%')
       {
          int sublen;
-
          char* subfmtiter = subfmt;
          bool asterisk    = false;
 
@@ -243,19 +239,25 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
 
          if (*format == '*')
          {
-            asterisk = true;
+            asterisk      = true;
             *subfmtiter++ = *format++;
          }
 
-         while (isdigit(*format)) *subfmtiter++ = *format++; /* width */
+         while (isdigit(*format))
+            *subfmtiter++ = *format++; /* width */
 
          /* length */
          if (*format == 'h' || *format == 'l')
          {
-            if (format[1] == format[0]) *subfmtiter++ = *format++;
-            *subfmtiter++ = *format++;
+            if (format[1] == format[0])
+               *subfmtiter++ = *format++;
+            *subfmtiter++    = *format++;
          }
-         else if (*format == 'j' || *format == 'z' || *format == 't' || *format == 'L')
+         else if (
+               *format == 'j' || 
+               *format == 'z' || 
+               *format == 't' || 
+               *format == 'L')
          {
             *subfmtiter++ = *format++;
          }
@@ -263,14 +265,16 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
          /* specifier - always a single character (except ]) */
          if (*format == '[')
          {
-            while (*format != ']') *subfmtiter++ = *format++;
-            *subfmtiter++ = *format++;
+            while (*format != ']')
+               *subfmtiter++ = *format++;
+            *subfmtiter++    = *format++;
          }
-         else *subfmtiter++ = *format++;
+         else
+            *subfmtiter++    = *format++;
 
-         *subfmtiter++ = '%';
-         *subfmtiter++ = 'n';
-         *subfmtiter++ = '\0';
+         *subfmtiter++       = '%';
+         *subfmtiter++       = 'n';
+         *subfmtiter++       = '\0';
 
          if (sizeof(void*) != sizeof(long*)) abort(); /* all pointers must have the same size */
          if (asterisk)
