@@ -622,11 +622,519 @@ static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #define SETTING_OVERRIDE(override_setting) \
    tmp[count-1].override = override_setting
 
+/* Forward declarations */
+#ifdef HAVE_CONFIGFILE
+static void config_parse_file(global_t *global);
+#endif
+
 struct defaults g_defaults;
 
 /* TODO/FIXME - static public global variables */
 static unsigned old_analog_dpad_mode[MAX_USERS];
 static unsigned old_libretro_device[MAX_USERS];
+
+/**
+ * config_get_default_audio:
+ *
+ * Gets default audio driver.
+ *
+ * Returns: Default audio driver.
+ **/
+const char *config_get_default_audio(void)
+{
+   enum audio_driver_enum default_driver = AUDIO_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case AUDIO_RSOUND:
+         return "rsound";
+      case AUDIO_AUDIOIO:
+         return "audioio";
+      case AUDIO_OSS:
+         return "oss";
+      case AUDIO_ALSA:
+         return "alsa";
+      case AUDIO_ALSATHREAD:
+         return "alsathread";
+      case AUDIO_TINYALSA:
+         return "tinyalsa";
+      case AUDIO_ROAR:
+         return "roar";
+      case AUDIO_COREAUDIO:
+         return "coreaudio";
+      case AUDIO_COREAUDIO3:
+         return "coreaudio3";
+      case AUDIO_AL:
+         return "openal";
+      case AUDIO_SL:
+         return "opensl";
+      case AUDIO_SDL:
+         return "sdl";
+      case AUDIO_SDL2:
+         return "sdl2";
+      case AUDIO_DSOUND:
+         return "dsound";
+      case AUDIO_WASAPI:
+         return "wasapi";
+      case AUDIO_XAUDIO:
+         return "xaudio";
+      case AUDIO_PULSE:
+         return "pulse";
+      case AUDIO_EXT:
+         return "ext";
+      case AUDIO_XENON360:
+         return "xenon360";
+      case AUDIO_PS3:
+         return "ps3";
+      case AUDIO_WII:
+         return "gx";
+      case AUDIO_WIIU:
+         return "AX";
+      case AUDIO_PSP:
+#if defined(VITA)
+         return "vita";
+#elif defined(ORBIS)
+         return "orbis";
+#else
+         return "psp";
+#endif
+      case AUDIO_PS2:
+         return "ps2";
+      case AUDIO_CTR:
+         return "dsp";
+      case AUDIO_SWITCH:
+#if defined(HAVE_LIBNX)
+         return "switch_audren_thread";
+#else
+         return "switch";
+#endif
+      case AUDIO_RWEBAUDIO:
+         return "rwebaudio";
+      case AUDIO_JACK:
+         return "jack";
+      case AUDIO_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+const char *config_get_default_record(void)
+{
+   enum record_driver_enum default_driver = RECORD_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case RECORD_FFMPEG:
+         return "ffmpeg";
+      case RECORD_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+/**
+ * config_get_default_audio_resampler:
+ *
+ * Gets default audio resampler driver.
+ *
+ * Returns: Default audio resampler driver.
+ **/
+const char *config_get_default_audio_resampler(void)
+{
+   enum audio_resampler_driver_enum default_driver = AUDIO_DEFAULT_RESAMPLER_DRIVER;
+
+   switch (default_driver)
+   {
+      case AUDIO_RESAMPLER_CC:
+         return "cc";
+      case AUDIO_RESAMPLER_SINC:
+         return "sinc";
+      case AUDIO_RESAMPLER_NEAREST:
+         return "nearest";
+      case AUDIO_RESAMPLER_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+/**
+ * config_get_default_video:
+ *
+ * Gets default video driver.
+ *
+ * Returns: Default video driver.
+ **/
+const char *config_get_default_video(void)
+{
+   enum video_driver_enum default_driver = VIDEO_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case VIDEO_GL:
+         return "gl";
+      case VIDEO_GL1:
+         return "gl1";
+      case VIDEO_GL_CORE:
+         return "glcore";
+      case VIDEO_VULKAN:
+         return "vulkan";
+      case VIDEO_METAL:
+         return "metal";
+      case VIDEO_DRM:
+         return "drm";
+      case VIDEO_WII:
+         return "gx";
+      case VIDEO_WIIU:
+         return "gx2";
+      case VIDEO_XENON360:
+         return "xenon360";
+      case VIDEO_D3D8:
+         return "d3d8";
+      case VIDEO_D3D9:
+         return "d3d9";
+      case VIDEO_D3D10:
+         return "d3d10";
+      case VIDEO_D3D11:
+         return "d3d11";
+      case VIDEO_D3D12:
+         return "d3d12";
+      case VIDEO_PSP1:
+         return "psp1";
+      case VIDEO_PS2:
+         return "ps2";
+      case VIDEO_VITA2D:
+         return "vita2d";
+      case VIDEO_CTR:
+         return "ctr";
+      case VIDEO_SWITCH:
+         return "switch";
+      case VIDEO_XVIDEO:
+         return "xvideo";
+      case VIDEO_SDL_DINGUX:
+         return "sdl_dingux";
+      case VIDEO_SDL:
+         return "sdl";
+      case VIDEO_SDL2:
+         return "sdl2";
+      case VIDEO_EXT:
+         return "ext";
+      case VIDEO_VG:
+         return "vg";
+      case VIDEO_OMAP:
+         return "omap";
+      case VIDEO_EXYNOS:
+         return "exynos";
+      case VIDEO_DISPMANX:
+         return "dispmanx";
+      case VIDEO_SUNXI:
+         return "sunxi";
+      case VIDEO_CACA:
+         return "caca";
+      case VIDEO_GDI:
+         return "gdi";
+      case VIDEO_VGA:
+         return "vga";
+      case VIDEO_FPGA:
+         return "fpga";
+      case VIDEO_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+/**
+ * config_get_default_input:
+ *
+ * Gets default input driver.
+ *
+ * Returns: Default input driver.
+ **/
+const char *config_get_default_input(void)
+{
+   enum input_driver_enum default_driver = INPUT_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case INPUT_ANDROID:
+         return "android";
+      case INPUT_PS4:
+         return "ps4";
+      case INPUT_PS3:
+         return "ps3";
+      case INPUT_PSP:
+#ifdef VITA
+         return "vita";
+#else
+         return "psp";
+#endif
+      case INPUT_PS2:
+         return "ps2";
+      case INPUT_CTR:
+         return "ctr";
+      case INPUT_SWITCH:
+         return "switch";
+      case INPUT_SDL:
+         return "sdl";
+      case INPUT_SDL2:
+         return "sdl2";
+      case INPUT_DINPUT:
+         return "dinput";
+      case INPUT_WINRAW:
+         return "raw";
+      case INPUT_X:
+         return "x";
+      case INPUT_WAYLAND:
+         return "wayland";
+      case INPUT_XENON360:
+         return "xenon360";
+      case INPUT_XINPUT:
+         return "xinput";
+      case INPUT_UWP:
+         return "uwp";
+      case INPUT_WII:
+         return "gx";
+      case INPUT_WIIU:
+         return "wiiu";
+      case INPUT_LINUXRAW:
+         return "linuxraw";
+      case INPUT_UDEV:
+         return "udev";
+      case INPUT_COCOA:
+         return "cocoa";
+      case INPUT_QNX:
+          return "qnx_input";
+      case INPUT_RWEBINPUT:
+          return "rwebinput";
+      case INPUT_DOS:
+         return "dos";
+      case INPUT_NULL:
+          break;
+   }
+
+   return "null";
+}
+
+/**
+ * config_get_default_joypad:
+ *
+ * Gets default input joypad driver.
+ *
+ * Returns: Default input joypad driver.
+ **/
+const char *config_get_default_joypad(void)
+{
+   enum joypad_driver_enum default_driver = JOYPAD_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case JOYPAD_PS4:
+         return "ps4";
+      case JOYPAD_PS3:
+         return "ps3";
+      case JOYPAD_XINPUT:
+         return "xinput";
+      case JOYPAD_GX:
+         return "gx";
+      case JOYPAD_WIIU:
+         return "wiiu";
+      case JOYPAD_XDK:
+         return "xdk";
+      case JOYPAD_PSP:
+#ifdef VITA
+         return "vita";
+#else
+         return "psp";
+#endif
+      case JOYPAD_PS2:
+         return "ps2";
+      case JOYPAD_CTR:
+         return "ctr";
+      case JOYPAD_SWITCH:
+         return "switch";
+      case JOYPAD_DINPUT:
+         return "dinput";
+      case JOYPAD_UDEV:
+         return "udev";
+      case JOYPAD_LINUXRAW:
+         return "linuxraw";
+      case JOYPAD_ANDROID:
+         return "android";
+      case JOYPAD_SDL:
+#ifdef HAVE_SDL2
+         return "sdl2";
+#else
+         return "sdl";
+#endif
+      case JOYPAD_HID:
+         return "hid";
+      case JOYPAD_QNX:
+         return "qnx";
+      case JOYPAD_RWEBPAD:
+         return "rwebpad";
+      case JOYPAD_DOS:
+         return "dos";
+      case JOYPAD_MFI:
+         return "mfi";
+      case JOYPAD_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+/**
+ * config_get_default_camera:
+ *
+ * Gets default camera driver.
+ *
+ * Returns: Default camera driver.
+ **/
+const char *config_get_default_camera(void)
+{
+   enum camera_driver_enum default_driver = CAMERA_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case CAMERA_V4L2:
+         return "video4linux2";
+      case CAMERA_RWEBCAM:
+         return "rwebcam";
+      case CAMERA_ANDROID:
+         return "android";
+      case CAMERA_AVFOUNDATION:
+         return "avfoundation";
+      case CAMERA_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+/**
+ * config_get_default_wifi:
+ *
+ * Gets default wifi driver.
+ *
+ * Returns: Default wifi driver.
+ **/
+const char *config_get_default_wifi(void)
+{
+   enum wifi_driver_enum default_driver = WIFI_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case WIFI_CONNMANCTL:
+         return "connmanctl";
+      case WIFI_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+/**
+ * config_get_default_led:
+ *
+ * Gets default led driver.
+ *
+ * Returns: Default led driver.
+ **/
+const char *config_get_default_led(void)
+{
+   return "null";
+}
+
+/**
+ * config_get_default_location:
+ *
+ * Gets default location driver.
+ *
+ * Returns: Default location driver.
+ **/
+const char *config_get_default_location(void)
+{
+   enum location_driver_enum default_driver = LOCATION_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case LOCATION_ANDROID:
+         return "android";
+      case LOCATION_CORELOCATION:
+         return "corelocation";
+      case LOCATION_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+/**
+ * config_get_default_menu:
+ *
+ * Gets default menu driver.
+ *
+ * Returns: Default menu driver.
+ **/
+const char *config_get_default_menu(void)
+{
+#ifdef HAVE_MENU
+   enum menu_driver_enum default_driver = MENU_DEFAULT_DRIVER;
+
+   if (!string_is_empty(g_defaults.settings.menu))
+      return g_defaults.settings.menu;
+
+   switch (default_driver)
+   {
+      case MENU_RGUI:
+         return "rgui";
+      case MENU_OZONE:
+         return "ozone";
+      case MENU_MATERIALUI:
+         return "glui";
+      case MENU_XMB:
+         return "xmb";
+      case MENU_STRIPES:
+         return "stripes";
+      case MENU_NULL:
+         break;
+   }
+#endif
+
+   return "null";
+}
+
+const char *config_get_default_midi(void)
+{
+   enum midi_driver_enum default_driver = MIDI_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case MIDI_WINMM:
+         return "winmm";
+      case MIDI_ALSA:
+         return "alsa";
+      case MIDI_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+const char *config_get_midi_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_MIDI_DRIVERS, NULL);
+}
+
+bool config_overlay_enable_default(void)
+{
+   if (g_defaults.overlay.set)
+      return g_defaults.overlay.enable;
+   return true;
+}
 
 static struct config_array_setting *populate_settings_array(settings_t *settings, int *size)
 {
@@ -1485,6 +1993,533 @@ static void video_driver_default_settings(void)
    global->console.screen.resolutions.current.id = 0;
 }
 
+/**
+ * config_set_defaults:
+ *
+ * Set 'default' configuration values.
+ **/
+void config_set_defaults(void *data)
+{
+   unsigned i, j;
+#ifdef HAVE_MENU
+   static bool first_initialized   = true;
+#endif
+   global_t *global                = (global_t*)data;
+   settings_t *settings            = config_get_ptr();
+   int bool_settings_size          = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
+   int float_settings_size         = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
+   int int_settings_size           = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
+   int uint_settings_size          = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
+   int size_settings_size          = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
+   const char *def_video           = config_get_default_video();
+   const char *def_audio           = config_get_default_audio();
+   const char *def_audio_resampler = config_get_default_audio_resampler();
+   const char *def_input           = config_get_default_input();
+   const char *def_joypad          = config_get_default_joypad();
+#ifdef HAVE_MENU
+   const char *def_menu            = config_get_default_menu();
+#endif
+   const char *def_camera          = config_get_default_camera();
+   const char *def_wifi            = config_get_default_wifi();
+   const char *def_led             = config_get_default_led();
+   const char *def_location        = config_get_default_location();
+   const char *def_record          = config_get_default_record();
+   const char *def_midi            = config_get_default_midi();
+   const char *def_mitm            = DEFAULT_NETPLAY_MITM_SERVER;
+   struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
+   struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
+   struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);
+   struct config_uint_setting       *uint_settings  = populate_settings_uint   (settings, &uint_settings_size);
+   struct config_size_setting       *size_settings  = populate_settings_size   (settings, &size_settings_size);
+
+   if (bool_settings && (bool_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)bool_settings_size; i++)
+      {
+         if (bool_settings[i].def_enable)
+            *bool_settings[i].ptr = bool_settings[i].def;
+      }
+
+      free(bool_settings);
+   }
+
+   if (int_settings && (int_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)int_settings_size; i++)
+      {
+         if (int_settings[i].def_enable)
+            *int_settings[i].ptr = int_settings[i].def;
+      }
+
+      free(int_settings);
+   }
+
+   if (uint_settings && (uint_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)uint_settings_size; i++)
+      {
+         if (uint_settings[i].def_enable)
+            *uint_settings[i].ptr = uint_settings[i].def;
+      }
+
+      free(uint_settings);
+   }
+
+   if (size_settings && (size_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)size_settings_size; i++)
+      {
+         if (size_settings[i].def_enable)
+            *size_settings[i].ptr = size_settings[i].def;
+      }
+
+      free(size_settings);
+   }
+
+   if (float_settings && (float_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)float_settings_size; i++)
+      {
+         if (float_settings[i].def_enable)
+            *float_settings[i].ptr = float_settings[i].def;
+      }
+
+      free(float_settings);
+   }
+
+   if (def_camera)
+      configuration_set_string(settings,
+            settings->arrays.camera_driver,
+            def_camera);
+   if (def_wifi)
+      configuration_set_string(settings,
+            settings->arrays.wifi_driver,
+            def_wifi);
+   if (def_led)
+      configuration_set_string(settings,
+            settings->arrays.led_driver,
+            def_led);
+   if (def_location)
+      configuration_set_string(settings,
+            settings->arrays.location_driver,
+            def_location);
+   if (def_video)
+      configuration_set_string(settings,
+            settings->arrays.video_driver,
+            def_video);
+   if (def_audio)
+      configuration_set_string(settings,
+            settings->arrays.audio_driver,
+            def_audio);
+   if (def_audio_resampler)
+      configuration_set_string(settings,
+            settings->arrays.audio_resampler,
+            def_audio_resampler);
+   if (def_input)
+      configuration_set_string(settings,
+            settings->arrays.input_driver,
+            def_input);
+   if (def_joypad)
+      configuration_set_string(settings,
+            settings->arrays.input_joypad_driver,
+            def_joypad);
+   if (def_record)
+      configuration_set_string(settings,
+            settings->arrays.record_driver,
+            def_record);
+   if (def_midi)
+      configuration_set_string(settings,
+            settings->arrays.midi_driver,
+            def_midi);
+   if (def_mitm)
+      configuration_set_string(settings,
+            settings->arrays.netplay_mitm_server,
+            def_mitm);
+#ifdef HAVE_MENU
+   if (def_menu)
+      configuration_set_string(settings,
+            settings->arrays.menu_driver,
+            def_menu);
+#ifdef HAVE_XMB
+   *settings->paths.path_menu_xmb_font            = '\0';
+#endif
+
+   configuration_set_string(settings,
+         settings->arrays.discord_app_id,
+         DEFAULT_DISCORD_APP_ID);
+
+   configuration_set_string(settings,
+         settings->arrays.ai_service_url,
+         DEFAULT_AI_SERVICE_URL);
+
+
+#ifdef HAVE_MATERIALUI
+   if (g_defaults.menu.materialui.menu_color_theme_enable)
+      settings->uints.menu_materialui_color_theme = g_defaults.menu.materialui.menu_color_theme;
+#endif
+#endif
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, true);
+#else
+   configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, false);
+#endif
+   settings->floats.video_scale                = DEFAULT_SCALE;
+
+   video_driver_set_threaded(DEFAULT_VIDEO_THREADED);
+
+   settings->floats.video_msg_color_r          = ((message_color >> 16) & 0xff) / 255.0f;
+   settings->floats.video_msg_color_g          = ((message_color >>  8) & 0xff) / 255.0f;
+   settings->floats.video_msg_color_b          = ((message_color >>  0) & 0xff) / 255.0f;
+
+   if (g_defaults.settings.video_refresh_rate > 0.0 &&
+         g_defaults.settings.video_refresh_rate != DEFAULT_REFRESH_RATE)
+      settings->floats.video_refresh_rate      = g_defaults.settings.video_refresh_rate;
+
+   if (DEFAULT_AUDIO_DEVICE)
+      configuration_set_string(settings,
+            settings->arrays.audio_device,
+            DEFAULT_AUDIO_DEVICE);
+
+   if (!g_defaults.settings.out_latency)
+      g_defaults.settings.out_latency          = DEFAULT_OUT_LATENCY;
+
+   settings->uints.audio_latency               = g_defaults.settings.out_latency;
+
+   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
+#ifdef HAVE_AUDIOMIXER
+   audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
+#endif
+
+#ifdef HAVE_LAKKA
+   configuration_set_bool(settings,
+         settings->bools.ssh_enable, filestream_exists(LAKKA_SSH_PATH));
+   configuration_set_bool(settings,
+         settings->bools.samba_enable, filestream_exists(LAKKA_SAMBA_PATH));
+   configuration_set_bool(settings,
+         settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
+   configuration_set_bool(settings, settings->bools.localap_enable, false);
+#endif
+
+#ifdef HAVE_MENU
+   if (first_initialized)
+      configuration_set_bool(settings,
+            settings->bools.menu_show_start_screen,
+            DEFAULT_MENU_SHOW_START_SCREEN);
+#endif
+
+#ifdef HAVE_CHEEVOS
+   *settings->arrays.cheevos_username                 = '\0';
+   *settings->arrays.cheevos_password                 = '\0';
+   *settings->arrays.cheevos_token                    = '\0';
+#endif
+
+   input_config_reset();
+#ifdef HAVE_CONFIGFILE
+   input_remapping_set_defaults(true);
+#endif
+   input_autoconfigure_reset();
+
+   /* Verify that binds are in proper order. */
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
+         const struct retro_keybind *keyval = &input_config_binds[i][j];
+         if (keyval->valid)
+            retro_assert(j == keyval->id);
+      }
+   }
+
+   configuration_set_string(settings,
+         settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
+   configuration_set_string(settings,
+         settings->paths.network_buildbot_assets_url,
+         DEFAULT_BUILDBOT_ASSETS_SERVER_URL);
+
+   *settings->arrays.input_keyboard_layout                = '\0';
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      settings->uints.input_joypad_map[i] = i;
+#ifdef SWITCH /* Switch prefered default dpad mode */
+      settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
+#else
+      settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
+#endif
+      input_config_set_device(i, RETRO_DEVICE_JOYPAD);
+      settings->uints.input_mouse_index[i] = 0;
+   }
+
+   video_driver_reset_custom_viewport();
+
+   /* Make sure settings from other configs carry over into defaults
+    * for another config. */
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+      dir_clear(RARCH_DIR_SAVEFILE);
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
+      dir_clear(RARCH_DIR_SAVESTATE);
+
+   *settings->paths.path_libretro_info = '\0';
+   *settings->paths.directory_libretro = '\0';
+   *settings->paths.directory_cursor = '\0';
+   *settings->paths.directory_resampler = '\0';
+   *settings->paths.directory_screenshot = '\0';
+   *settings->paths.directory_system = '\0';
+   *settings->paths.directory_cache = '\0';
+   *settings->paths.directory_input_remapping = '\0';
+   *settings->paths.directory_core_assets = '\0';
+   *settings->paths.directory_assets = '\0';
+   *settings->paths.directory_dynamic_wallpapers = '\0';
+   *settings->paths.directory_thumbnails = '\0';
+   *settings->paths.directory_playlist = '\0';
+   *settings->paths.directory_runtime_log = '\0';
+   *settings->paths.directory_autoconfig = '\0';
+#ifdef HAVE_MENU
+   *settings->paths.directory_menu_content = '\0';
+   *settings->paths.directory_menu_config = '\0';
+#endif
+   *settings->paths.directory_video_shader = '\0';
+   *settings->paths.directory_video_filter = '\0';
+   *settings->paths.directory_audio_filter = '\0';
+
+   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+
+   if (global)
+   {
+      *global->record.output_dir = '\0';
+      *global->record.config_dir = '\0';
+   }
+
+   *settings->paths.path_core_options      = '\0';
+   *settings->paths.path_content_history   = '\0';
+   *settings->paths.path_content_favorites = '\0';
+   *settings->paths.path_content_music_history   = '\0';
+   *settings->paths.path_content_image_history   = '\0';
+   *settings->paths.path_content_video_history   = '\0';
+   *settings->paths.path_cheat_settings    = '\0';
+#ifndef IOS
+   *settings->arrays.bundle_assets_src = '\0';
+   *settings->arrays.bundle_assets_dst = '\0';
+   *settings->arrays.bundle_assets_dst_subdir = '\0';
+#endif
+   *settings->paths.path_cheat_database    = '\0';
+   *settings->paths.path_menu_wallpaper    = '\0';
+   *settings->paths.path_rgui_theme_preset = '\0';
+   *settings->paths.path_content_database  = '\0';
+   *settings->paths.path_overlay           = '\0';
+#ifdef HAVE_VIDEO_LAYOUT
+   *settings->paths.path_video_layout      = '\0';
+#endif
+   *settings->paths.path_record_config     = '\0';
+   *settings->paths.path_stream_config     = '\0';
+   *settings->paths.path_stream_url     = '\0';
+   *settings->paths.path_softfilter_plugin = '\0';
+
+   *settings->paths.directory_content_history = '\0';
+   *settings->paths.path_audio_dsp_plugin = '\0';
+
+   *settings->paths.log_dir = '\0';
+
+   video_driver_default_settings();
+
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]))
+      configuration_set_string(settings,
+            settings->paths.directory_dynamic_wallpapers,
+            g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]))
+      configuration_set_string(settings,
+            settings->paths.directory_thumbnails,
+            g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_REMAP]))
+      configuration_set_string(settings,
+            settings->paths.directory_input_remapping,
+            g_defaults.dirs[DEFAULT_DIR_REMAP]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CACHE]))
+      configuration_set_string(settings,
+            settings->paths.directory_cache,
+            g_defaults.dirs[DEFAULT_DIR_CACHE]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_ASSETS]))
+      configuration_set_string(settings,
+            settings->paths.directory_assets,
+            g_defaults.dirs[DEFAULT_DIR_ASSETS]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]))
+      configuration_set_string(settings,
+            settings->paths.directory_core_assets,
+            g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]))
+      configuration_set_string(settings,
+            settings->paths.directory_playlist,
+            g_defaults.dirs[DEFAULT_DIR_PLAYLIST]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE]))
+      fill_pathname_expand_special(settings->paths.directory_libretro,
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            sizeof(settings->paths.directory_libretro));
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]))
+      configuration_set_string(settings,
+            settings->paths.directory_audio_filter,
+            g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]))
+      configuration_set_string(settings,
+            settings->paths.directory_video_filter,
+            g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SHADER]))
+      fill_pathname_expand_special(settings->paths.directory_video_shader,
+            g_defaults.dirs[DEFAULT_DIR_SHADER],
+            sizeof(settings->paths.directory_video_shader));
+
+   if (!string_is_empty(g_defaults.path.buildbot_server_url))
+      configuration_set_string(settings,
+            settings->paths.network_buildbot_url,
+            g_defaults.path.buildbot_server_url);
+   if (!string_is_empty(g_defaults.path.core))
+      path_set(RARCH_PATH_CORE, g_defaults.path.core);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_DATABASE]))
+      configuration_set_string(settings,
+            settings->paths.path_content_database,
+            g_defaults.dirs[DEFAULT_DIR_DATABASE]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CURSOR]))
+      configuration_set_string(settings,
+            settings->paths.directory_cursor,
+            g_defaults.dirs[DEFAULT_DIR_CURSOR]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CHEATS]))
+      configuration_set_string(settings,
+            settings->paths.path_cheat_database,
+            g_defaults.dirs[DEFAULT_DIR_CHEATS]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]))
+      fill_pathname_expand_special(settings->paths.path_libretro_info,
+            g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+            sizeof(settings->paths.path_libretro_info));
+#ifdef HAVE_OVERLAY
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_OVERLAY]))
+   {
+      fill_pathname_expand_special(settings->paths.directory_overlay,
+            g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+            sizeof(settings->paths.directory_overlay));
+#ifdef RARCH_MOBILE
+      if (string_is_empty(settings->paths.path_overlay))
+            fill_pathname_join(settings->paths.path_overlay,
+                  settings->paths.directory_overlay,
+                  "gamepads/flat/retropad.cfg",
+                  sizeof(settings->paths.path_overlay));
+#endif
+   }
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]))
+   {
+      fill_pathname_expand_special(settings->paths.directory_video_layout,
+            g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+            sizeof(settings->paths.directory_video_layout));
+   }
+#endif
+
+#ifdef HAVE_MENU
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]))
+   {
+      configuration_set_string(settings,
+            settings->paths.directory_menu_config,
+            g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]);
+#if TARGET_OS_IPHONE
+      {
+         char *config_file_path        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         size_t config_file_path_size  = PATH_MAX_LENGTH * sizeof(char);
+
+         fill_pathname_join(config_file_path, settings->paths.directory_menu_config, file_path_str(FILE_PATH_MAIN_CONFIG), config_file_path_size);
+         path_set(RARCH_PATH_CONFIG,
+               config_file_path);
+         free(config_file_path);
+      }
+#endif
+   }
+
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]))
+      configuration_set_string(settings,
+            settings->paths.directory_menu_content,
+            g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]);
+#endif
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]))
+      configuration_set_string(settings,
+            settings->paths.directory_autoconfig,
+            g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]);
+
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]))
+      dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
+
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SRAM]))
+      dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
+
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SYSTEM]))
+      configuration_set_string(settings,
+            settings->paths.directory_system,
+            g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]))
+      configuration_set_string(settings,
+            settings->paths.directory_screenshot,
+            g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RESAMPLER]))
+      configuration_set_string(settings,
+            settings->paths.directory_resampler,
+            g_defaults.dirs[DEFAULT_DIR_RESAMPLER]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]))
+      configuration_set_string(settings,
+            settings->paths.directory_content_history,
+            g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
+      configuration_set_string(settings,
+            settings->paths.log_dir,
+            g_defaults.dirs[DEFAULT_DIR_LOGS]);
+
+   if (!string_is_empty(g_defaults.path.config))
+   {
+      char *temp_str = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+      temp_str[0] = '\0';
+
+      fill_pathname_expand_special(temp_str,
+            g_defaults.path.config,
+            PATH_MAX_LENGTH * sizeof(char));
+      path_set(RARCH_PATH_CONFIG, temp_str);
+      free(temp_str);
+   }
+
+   configuration_set_string(settings,
+         settings->arrays.midi_input,
+         DEFAULT_MIDI_INPUT);
+   configuration_set_string(settings,
+         settings->arrays.midi_output,
+         DEFAULT_MIDI_OUTPUT);
+
+#ifdef HAVE_CONFIGFILE
+   /* Avoid reloading config on every content load */
+   if (DEFAULT_BLOCK_CONFIG_READ)
+      rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
+   else
+      rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+#endif
+
+#ifdef HAVE_MENU
+   first_initialized = false;
+#endif
+}
+
+/**
+ * config_load:
+ *
+ * Loads a config file and reads all the values into memory.
+ *
+ */
+void config_load(void *data)
+{
+   global_t *global = (global_t*)data;
+   config_set_defaults(global);
+#ifdef HAVE_CONFIGFILE
+   config_parse_file(global);
+#endif
+}
+
 #ifdef HAVE_CONFIGFILE
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
 static bool check_menu_driver_compatibility(settings_t *settings)
@@ -2310,581 +3345,6 @@ end:
 }
 
 /**
- * config_parse_file:
- *
- * Loads a config file and reads all the values into memory.
- *
- */
-static void config_parse_file(global_t *global)
-{
-   if (path_is_empty(RARCH_PATH_CONFIG))
-   {
-      RARCH_LOG("[config] Loading default config.\n");
-   }
-
-   {
-      const char *config_path = path_get(RARCH_PATH_CONFIG);
-      RARCH_LOG("[config] loading config from: %s.\n", config_path);
-
-      if (!config_load_file(global, config_path, config_get_ptr()))
-      {
-         RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
-               config_path);
-      }
-   }
-}
-
-static void video_driver_save_settings(config_file_t *conf)
-{
-   global_t            *global = global_get_ptr();
-   if (!conf)
-      return;
-
-   config_set_int(conf, "gamma_correction",
-         global->console.screen.gamma_correction);
-   config_set_bool(conf, "flicker_filter_enable",
-         global->console.flickerfilter_enable);
-   config_set_bool(conf, "soft_filter_enable",
-         global->console.softfilter_enable);
-
-   config_set_int(conf, "soft_filter_index",
-         global->console.screen.soft_filter_index);
-   config_set_int(conf, "current_resolution_id",
-         global->console.screen.resolutions.current.id);
-   config_set_int(conf, "flicker_filter_index",
-         global->console.screen.flicker_filter_index);
-}
-#endif
-
-/**
- * config_set_defaults:
- *
- * Set 'default' configuration values.
- **/
-void config_set_defaults(void *data)
-{
-   unsigned i, j;
-#ifdef HAVE_MENU
-   static bool first_initialized   = true;
-#endif
-   global_t *global                = (global_t*)data;
-   settings_t *settings            = config_get_ptr();
-   int bool_settings_size          = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
-   int float_settings_size         = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
-   int int_settings_size           = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
-   int uint_settings_size          = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
-   int size_settings_size          = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
-   const char *def_video           = config_get_default_video();
-   const char *def_audio           = config_get_default_audio();
-   const char *def_audio_resampler = config_get_default_audio_resampler();
-   const char *def_input           = config_get_default_input();
-   const char *def_joypad          = config_get_default_joypad();
-#ifdef HAVE_MENU
-   const char *def_menu            = config_get_default_menu();
-#endif
-   const char *def_camera          = config_get_default_camera();
-   const char *def_wifi            = config_get_default_wifi();
-   const char *def_led             = config_get_default_led();
-   const char *def_location        = config_get_default_location();
-   const char *def_record          = config_get_default_record();
-   const char *def_midi            = config_get_default_midi();
-   const char *def_mitm            = DEFAULT_NETPLAY_MITM_SERVER;
-   struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
-   struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
-   struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);
-   struct config_uint_setting       *uint_settings  = populate_settings_uint   (settings, &uint_settings_size);
-   struct config_size_setting       *size_settings  = populate_settings_size   (settings, &size_settings_size);
-
-   if (bool_settings && (bool_settings_size > 0))
-   {
-      for (i = 0; i < (unsigned)bool_settings_size; i++)
-      {
-         if (bool_settings[i].def_enable)
-            *bool_settings[i].ptr = bool_settings[i].def;
-      }
-
-      free(bool_settings);
-   }
-
-   if (int_settings && (int_settings_size > 0))
-   {
-      for (i = 0; i < (unsigned)int_settings_size; i++)
-      {
-         if (int_settings[i].def_enable)
-            *int_settings[i].ptr = int_settings[i].def;
-      }
-
-      free(int_settings);
-   }
-
-   if (uint_settings && (uint_settings_size > 0))
-   {
-      for (i = 0; i < (unsigned)uint_settings_size; i++)
-      {
-         if (uint_settings[i].def_enable)
-            *uint_settings[i].ptr = uint_settings[i].def;
-      }
-
-      free(uint_settings);
-   }
-
-   if (size_settings && (size_settings_size > 0))
-   {
-      for (i = 0; i < (unsigned)size_settings_size; i++)
-      {
-         if (size_settings[i].def_enable)
-            *size_settings[i].ptr = size_settings[i].def;
-      }
-
-      free(size_settings);
-   }
-
-   if (float_settings && (float_settings_size > 0))
-   {
-      for (i = 0; i < (unsigned)float_settings_size; i++)
-      {
-         if (float_settings[i].def_enable)
-            *float_settings[i].ptr = float_settings[i].def;
-      }
-
-      free(float_settings);
-   }
-
-   if (def_camera)
-      configuration_set_string(settings,
-            settings->arrays.camera_driver,
-            def_camera);
-   if (def_wifi)
-      configuration_set_string(settings,
-            settings->arrays.wifi_driver,
-            def_wifi);
-   if (def_led)
-      configuration_set_string(settings,
-            settings->arrays.led_driver,
-            def_led);
-   if (def_location)
-      configuration_set_string(settings,
-            settings->arrays.location_driver,
-            def_location);
-   if (def_video)
-      configuration_set_string(settings,
-            settings->arrays.video_driver,
-            def_video);
-   if (def_audio)
-      configuration_set_string(settings,
-            settings->arrays.audio_driver,
-            def_audio);
-   if (def_audio_resampler)
-      configuration_set_string(settings,
-            settings->arrays.audio_resampler,
-            def_audio_resampler);
-   if (def_input)
-      configuration_set_string(settings,
-            settings->arrays.input_driver,
-            def_input);
-   if (def_joypad)
-      configuration_set_string(settings,
-            settings->arrays.input_joypad_driver,
-            def_joypad);
-   if (def_record)
-      configuration_set_string(settings,
-            settings->arrays.record_driver,
-            def_record);
-   if (def_midi)
-      configuration_set_string(settings,
-            settings->arrays.midi_driver,
-            def_midi);
-   if (def_mitm)
-      configuration_set_string(settings,
-            settings->arrays.netplay_mitm_server,
-            def_mitm);
-#ifdef HAVE_MENU
-   if (def_menu)
-      configuration_set_string(settings,
-            settings->arrays.menu_driver,
-            def_menu);
-#ifdef HAVE_XMB
-   *settings->paths.path_menu_xmb_font            = '\0';
-#endif
-
-   configuration_set_string(settings,
-         settings->arrays.discord_app_id,
-         DEFAULT_DISCORD_APP_ID);
-
-   configuration_set_string(settings,
-         settings->arrays.ai_service_url,
-         DEFAULT_AI_SERVICE_URL);
-
-
-#ifdef HAVE_MATERIALUI
-   if (g_defaults.menu.materialui.menu_color_theme_enable)
-      settings->uints.menu_materialui_color_theme = g_defaults.menu.materialui.menu_color_theme;
-#endif
-#endif
-
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, true);
-#else
-   configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, false);
-#endif
-   settings->floats.video_scale                = DEFAULT_SCALE;
-
-   video_driver_set_threaded(DEFAULT_VIDEO_THREADED);
-
-   settings->floats.video_msg_color_r          = ((message_color >> 16) & 0xff) / 255.0f;
-   settings->floats.video_msg_color_g          = ((message_color >>  8) & 0xff) / 255.0f;
-   settings->floats.video_msg_color_b          = ((message_color >>  0) & 0xff) / 255.0f;
-
-   if (g_defaults.settings.video_refresh_rate > 0.0 &&
-         g_defaults.settings.video_refresh_rate != DEFAULT_REFRESH_RATE)
-      settings->floats.video_refresh_rate      = g_defaults.settings.video_refresh_rate;
-
-   if (DEFAULT_AUDIO_DEVICE)
-      configuration_set_string(settings,
-            settings->arrays.audio_device,
-            DEFAULT_AUDIO_DEVICE);
-
-   if (!g_defaults.settings.out_latency)
-      g_defaults.settings.out_latency          = DEFAULT_OUT_LATENCY;
-
-   settings->uints.audio_latency               = g_defaults.settings.out_latency;
-
-   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
-#ifdef HAVE_AUDIOMIXER
-   audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
-#endif
-
-#ifdef HAVE_LAKKA
-   configuration_set_bool(settings,
-         settings->bools.ssh_enable, filestream_exists(LAKKA_SSH_PATH));
-   configuration_set_bool(settings,
-         settings->bools.samba_enable, filestream_exists(LAKKA_SAMBA_PATH));
-   configuration_set_bool(settings,
-         settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
-   configuration_set_bool(settings, settings->bools.localap_enable, false);
-#endif
-
-#ifdef HAVE_MENU
-   if (first_initialized)
-      configuration_set_bool(settings,
-            settings->bools.menu_show_start_screen,
-            DEFAULT_MENU_SHOW_START_SCREEN);
-#endif
-
-#ifdef HAVE_CHEEVOS
-   *settings->arrays.cheevos_username                 = '\0';
-   *settings->arrays.cheevos_password                 = '\0';
-   *settings->arrays.cheevos_token                    = '\0';
-#endif
-
-   input_config_reset();
-#ifdef HAVE_CONFIGFILE
-   input_remapping_set_defaults(true);
-#endif
-   input_autoconfigure_reset();
-
-   /* Verify that binds are in proper order. */
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-      {
-         const struct retro_keybind *keyval = &input_config_binds[i][j];
-         if (keyval->valid)
-            retro_assert(j == keyval->id);
-      }
-   }
-
-   configuration_set_string(settings,
-         settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
-   configuration_set_string(settings,
-         settings->paths.network_buildbot_assets_url,
-         DEFAULT_BUILDBOT_ASSETS_SERVER_URL);
-
-   *settings->arrays.input_keyboard_layout                = '\0';
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      settings->uints.input_joypad_map[i] = i;
-#ifdef SWITCH /* Switch prefered default dpad mode */
-      settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
-#else
-      settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
-#endif
-      input_config_set_device(i, RETRO_DEVICE_JOYPAD);
-      settings->uints.input_mouse_index[i] = 0;
-   }
-
-   video_driver_reset_custom_viewport();
-
-   /* Make sure settings from other configs carry over into defaults
-    * for another config. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-      dir_clear(RARCH_DIR_SAVEFILE);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-      dir_clear(RARCH_DIR_SAVESTATE);
-
-   *settings->paths.path_libretro_info = '\0';
-   *settings->paths.directory_libretro = '\0';
-   *settings->paths.directory_cursor = '\0';
-   *settings->paths.directory_resampler = '\0';
-   *settings->paths.directory_screenshot = '\0';
-   *settings->paths.directory_system = '\0';
-   *settings->paths.directory_cache = '\0';
-   *settings->paths.directory_input_remapping = '\0';
-   *settings->paths.directory_core_assets = '\0';
-   *settings->paths.directory_assets = '\0';
-   *settings->paths.directory_dynamic_wallpapers = '\0';
-   *settings->paths.directory_thumbnails = '\0';
-   *settings->paths.directory_playlist = '\0';
-   *settings->paths.directory_runtime_log = '\0';
-   *settings->paths.directory_autoconfig = '\0';
-#ifdef HAVE_MENU
-   *settings->paths.directory_menu_content = '\0';
-   *settings->paths.directory_menu_config = '\0';
-#endif
-   *settings->paths.directory_video_shader = '\0';
-   *settings->paths.directory_video_filter = '\0';
-   *settings->paths.directory_audio_filter = '\0';
-
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
-
-   if (global)
-   {
-      *global->record.output_dir = '\0';
-      *global->record.config_dir = '\0';
-   }
-
-   *settings->paths.path_core_options      = '\0';
-   *settings->paths.path_content_history   = '\0';
-   *settings->paths.path_content_favorites = '\0';
-   *settings->paths.path_content_music_history   = '\0';
-   *settings->paths.path_content_image_history   = '\0';
-   *settings->paths.path_content_video_history   = '\0';
-   *settings->paths.path_cheat_settings    = '\0';
-#ifndef IOS
-   *settings->arrays.bundle_assets_src = '\0';
-   *settings->arrays.bundle_assets_dst = '\0';
-   *settings->arrays.bundle_assets_dst_subdir = '\0';
-#endif
-   *settings->paths.path_cheat_database    = '\0';
-   *settings->paths.path_menu_wallpaper    = '\0';
-   *settings->paths.path_rgui_theme_preset = '\0';
-   *settings->paths.path_content_database  = '\0';
-   *settings->paths.path_overlay           = '\0';
-#ifdef HAVE_VIDEO_LAYOUT
-   *settings->paths.path_video_layout      = '\0';
-#endif
-   *settings->paths.path_record_config     = '\0';
-   *settings->paths.path_stream_config     = '\0';
-   *settings->paths.path_stream_url     = '\0';
-   *settings->paths.path_softfilter_plugin = '\0';
-
-   *settings->paths.directory_content_history = '\0';
-   *settings->paths.path_audio_dsp_plugin = '\0';
-
-   *settings->paths.log_dir = '\0';
-
-   video_driver_default_settings();
-
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]))
-      configuration_set_string(settings,
-            settings->paths.directory_dynamic_wallpapers,
-            g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]))
-      configuration_set_string(settings,
-            settings->paths.directory_thumbnails,
-            g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_REMAP]))
-      configuration_set_string(settings,
-            settings->paths.directory_input_remapping,
-            g_defaults.dirs[DEFAULT_DIR_REMAP]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CACHE]))
-      configuration_set_string(settings,
-            settings->paths.directory_cache,
-            g_defaults.dirs[DEFAULT_DIR_CACHE]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_ASSETS]))
-      configuration_set_string(settings,
-            settings->paths.directory_assets,
-            g_defaults.dirs[DEFAULT_DIR_ASSETS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]))
-      configuration_set_string(settings,
-            settings->paths.directory_core_assets,
-            g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]))
-      configuration_set_string(settings,
-            settings->paths.directory_playlist,
-            g_defaults.dirs[DEFAULT_DIR_PLAYLIST]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE]))
-      fill_pathname_expand_special(settings->paths.directory_libretro,
-            g_defaults.dirs[DEFAULT_DIR_CORE],
-            sizeof(settings->paths.directory_libretro));
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]))
-      configuration_set_string(settings,
-            settings->paths.directory_audio_filter,
-            g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]))
-      configuration_set_string(settings,
-            settings->paths.directory_video_filter,
-            g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SHADER]))
-      fill_pathname_expand_special(settings->paths.directory_video_shader,
-            g_defaults.dirs[DEFAULT_DIR_SHADER],
-            sizeof(settings->paths.directory_video_shader));
-
-   if (!string_is_empty(g_defaults.path.buildbot_server_url))
-      configuration_set_string(settings,
-            settings->paths.network_buildbot_url,
-            g_defaults.path.buildbot_server_url);
-   if (!string_is_empty(g_defaults.path.core))
-      path_set(RARCH_PATH_CORE, g_defaults.path.core);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_DATABASE]))
-      configuration_set_string(settings,
-            settings->paths.path_content_database,
-            g_defaults.dirs[DEFAULT_DIR_DATABASE]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CURSOR]))
-      configuration_set_string(settings,
-            settings->paths.directory_cursor,
-            g_defaults.dirs[DEFAULT_DIR_CURSOR]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CHEATS]))
-      configuration_set_string(settings,
-            settings->paths.path_cheat_database,
-            g_defaults.dirs[DEFAULT_DIR_CHEATS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]))
-      fill_pathname_expand_special(settings->paths.path_libretro_info,
-            g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-            sizeof(settings->paths.path_libretro_info));
-#ifdef HAVE_OVERLAY
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_OVERLAY]))
-   {
-      fill_pathname_expand_special(settings->paths.directory_overlay,
-            g_defaults.dirs[DEFAULT_DIR_OVERLAY],
-            sizeof(settings->paths.directory_overlay));
-#ifdef RARCH_MOBILE
-      if (string_is_empty(settings->paths.path_overlay))
-            fill_pathname_join(settings->paths.path_overlay,
-                  settings->paths.directory_overlay,
-                  "gamepads/flat/retropad.cfg",
-                  sizeof(settings->paths.path_overlay));
-#endif
-   }
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]))
-   {
-      fill_pathname_expand_special(settings->paths.directory_video_layout,
-            g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-            sizeof(settings->paths.directory_video_layout));
-   }
-#endif
-
-#ifdef HAVE_MENU
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]))
-   {
-      configuration_set_string(settings,
-            settings->paths.directory_menu_config,
-            g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]);
-#if TARGET_OS_IPHONE
-      {
-         char *config_file_path        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-         size_t config_file_path_size  = PATH_MAX_LENGTH * sizeof(char);
-
-         fill_pathname_join(config_file_path, settings->paths.directory_menu_config, file_path_str(FILE_PATH_MAIN_CONFIG), config_file_path_size);
-         path_set(RARCH_PATH_CONFIG,
-               config_file_path);
-         free(config_file_path);
-      }
-#endif
-   }
-
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]))
-      configuration_set_string(settings,
-            settings->paths.directory_menu_content,
-            g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]);
-#endif
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]))
-      configuration_set_string(settings,
-            settings->paths.directory_autoconfig,
-            g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]);
-
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]))
-      dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
-
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SRAM]))
-      dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
-
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SYSTEM]))
-      configuration_set_string(settings,
-            settings->paths.directory_system,
-            g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]))
-      configuration_set_string(settings,
-            settings->paths.directory_screenshot,
-            g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RESAMPLER]))
-      configuration_set_string(settings,
-            settings->paths.directory_resampler,
-            g_defaults.dirs[DEFAULT_DIR_RESAMPLER]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]))
-      configuration_set_string(settings,
-            settings->paths.directory_content_history,
-            g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
-      configuration_set_string(settings,
-            settings->paths.log_dir,
-            g_defaults.dirs[DEFAULT_DIR_LOGS]);
-
-   if (!string_is_empty(g_defaults.path.config))
-   {
-      char *temp_str = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-      temp_str[0] = '\0';
-
-      fill_pathname_expand_special(temp_str,
-            g_defaults.path.config,
-            PATH_MAX_LENGTH * sizeof(char));
-      path_set(RARCH_PATH_CONFIG, temp_str);
-      free(temp_str);
-   }
-
-   configuration_set_string(settings,
-         settings->arrays.midi_input,
-         DEFAULT_MIDI_INPUT);
-   configuration_set_string(settings,
-         settings->arrays.midi_output,
-         DEFAULT_MIDI_OUTPUT);
-
-#ifdef HAVE_CONFIGFILE
-   /* Avoid reloading config on every content load */
-   if (DEFAULT_BLOCK_CONFIG_READ)
-      rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
-   else
-      rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-#endif
-
-#ifdef HAVE_MENU
-   first_initialized = false;
-#endif
-}
-
-/**
- * config_load:
- *
- * Loads a config file and reads all the values into memory.
- *
- */
-void config_load(void *data)
-{
-   global_t *global = (global_t*)data;
-   config_set_defaults(global);
-#ifdef HAVE_CONFIGFILE
-   config_parse_file(global);
-#endif
-}
-
-#ifdef HAVE_CONFIGFILE
-/**
  * config_load_override:
  *
  * Tries to append game-specific and core-specific configuration.
@@ -3084,6 +3544,7 @@ error:
    free(game_path);
    return false;
 }
+
 /**
  * config_unload_override:
  *
@@ -3112,6 +3573,7 @@ bool config_unload_override(void)
 
    return true;
 }
+
 /**
  * config_load_remap:
  *
@@ -3248,6 +3710,53 @@ success:
    free(game_path);
    return true;
 }
+
+/**
+ * config_parse_file:
+ *
+ * Loads a config file and reads all the values into memory.
+ *
+ */
+static void config_parse_file(global_t *global)
+{
+   if (path_is_empty(RARCH_PATH_CONFIG))
+   {
+      RARCH_LOG("[config] Loading default config.\n");
+   }
+
+   {
+      const char *config_path = path_get(RARCH_PATH_CONFIG);
+      RARCH_LOG("[config] loading config from: %s.\n", config_path);
+
+      if (!config_load_file(global, config_path, config_get_ptr()))
+      {
+         RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
+               config_path);
+      }
+   }
+}
+
+static void video_driver_save_settings(config_file_t *conf)
+{
+   global_t            *global = global_get_ptr();
+   if (!conf)
+      return;
+
+   config_set_int(conf, "gamma_correction",
+         global->console.screen.gamma_correction);
+   config_set_bool(conf, "flicker_filter_enable",
+         global->console.flickerfilter_enable);
+   config_set_bool(conf, "soft_filter_enable",
+         global->console.softfilter_enable);
+
+   config_set_int(conf, "soft_filter_index",
+         global->console.screen.soft_filter_index);
+   config_set_int(conf, "current_resolution_id",
+         global->console.screen.resolutions.current.id);
+   config_set_int(conf, "flicker_filter_index",
+         global->console.screen.flicker_filter_index);
+}
+
 /**
  * config_save_autoconf_profile:
  * @path            : Path that shall be written to.
@@ -3363,6 +3872,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    free(autoconf_file);
    return ret;
 }
+
 /**
  * config_save_file:
  * @path            : Path that shall be written to.
@@ -3583,6 +4093,7 @@ bool config_save_file(const char *path)
 
    return ret;
 }
+
 /**
  * config_save_overrides:
  * @path            : Path that shall be written to.
@@ -3840,6 +4351,7 @@ bool config_save_overrides(enum override_type type, void *data)
 
    return ret;
 }
+
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
  * properly. */
@@ -3865,6 +4377,7 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 
    return task_push_start_dummy_core(&content_info);
 }
+
 /**
  * input_remapping_load_file:
  * @data                     : Path to config file.
@@ -3974,6 +4487,7 @@ bool input_remapping_load_file(void *data, const char *path)
 
    return true;
 }
+
 /**
  * input_remapping_save_file:
  * @path                     : Path to remapping file (relative path).
@@ -4148,507 +4662,3 @@ void input_remapping_set_defaults(bool deinit)
    }
 }
 #endif
-
-/**
- * config_get_default_audio:
- *
- * Gets default audio driver.
- *
- * Returns: Default audio driver.
- **/
-const char *config_get_default_audio(void)
-{
-   enum audio_driver_enum default_driver = AUDIO_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case AUDIO_RSOUND:
-         return "rsound";
-      case AUDIO_AUDIOIO:
-         return "audioio";
-      case AUDIO_OSS:
-         return "oss";
-      case AUDIO_ALSA:
-         return "alsa";
-      case AUDIO_ALSATHREAD:
-         return "alsathread";
-      case AUDIO_TINYALSA:
-         return "tinyalsa";
-      case AUDIO_ROAR:
-         return "roar";
-      case AUDIO_COREAUDIO:
-         return "coreaudio";
-      case AUDIO_COREAUDIO3:
-         return "coreaudio3";
-      case AUDIO_AL:
-         return "openal";
-      case AUDIO_SL:
-         return "opensl";
-      case AUDIO_SDL:
-         return "sdl";
-      case AUDIO_SDL2:
-         return "sdl2";
-      case AUDIO_DSOUND:
-         return "dsound";
-      case AUDIO_WASAPI:
-         return "wasapi";
-      case AUDIO_XAUDIO:
-         return "xaudio";
-      case AUDIO_PULSE:
-         return "pulse";
-      case AUDIO_EXT:
-         return "ext";
-      case AUDIO_XENON360:
-         return "xenon360";
-      case AUDIO_PS3:
-         return "ps3";
-      case AUDIO_WII:
-         return "gx";
-      case AUDIO_WIIU:
-         return "AX";
-      case AUDIO_PSP:
-#if defined(VITA)
-         return "vita";
-#elif defined(ORBIS)
-         return "orbis";
-#else
-         return "psp";
-#endif
-      case AUDIO_PS2:
-         return "ps2";
-      case AUDIO_CTR:
-         return "dsp";
-      case AUDIO_SWITCH:
-#if defined(HAVE_LIBNX)
-         return "switch_audren_thread";
-#else
-         return "switch";
-#endif
-      case AUDIO_RWEBAUDIO:
-         return "rwebaudio";
-      case AUDIO_JACK:
-         return "jack";
-      case AUDIO_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-const char *config_get_default_record(void)
-{
-   enum record_driver_enum default_driver = RECORD_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case RECORD_FFMPEG:
-         return "ffmpeg";
-      case RECORD_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-/**
- * config_get_default_audio_resampler:
- *
- * Gets default audio resampler driver.
- *
- * Returns: Default audio resampler driver.
- **/
-const char *config_get_default_audio_resampler(void)
-{
-   enum audio_resampler_driver_enum default_driver = AUDIO_DEFAULT_RESAMPLER_DRIVER;
-
-   switch (default_driver)
-   {
-      case AUDIO_RESAMPLER_CC:
-         return "cc";
-      case AUDIO_RESAMPLER_SINC:
-         return "sinc";
-      case AUDIO_RESAMPLER_NEAREST:
-         return "nearest";
-      case AUDIO_RESAMPLER_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-/**
- * config_get_default_video:
- *
- * Gets default video driver.
- *
- * Returns: Default video driver.
- **/
-const char *config_get_default_video(void)
-{
-   enum video_driver_enum default_driver = VIDEO_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case VIDEO_GL:
-         return "gl";
-      case VIDEO_GL1:
-         return "gl1";
-      case VIDEO_GL_CORE:
-         return "glcore";
-      case VIDEO_VULKAN:
-         return "vulkan";
-      case VIDEO_METAL:
-         return "metal";
-      case VIDEO_DRM:
-         return "drm";
-      case VIDEO_WII:
-         return "gx";
-      case VIDEO_WIIU:
-         return "gx2";
-      case VIDEO_XENON360:
-         return "xenon360";
-      case VIDEO_D3D8:
-         return "d3d8";
-      case VIDEO_D3D9:
-         return "d3d9";
-      case VIDEO_D3D10:
-         return "d3d10";
-      case VIDEO_D3D11:
-         return "d3d11";
-      case VIDEO_D3D12:
-         return "d3d12";
-      case VIDEO_PSP1:
-         return "psp1";
-      case VIDEO_PS2:
-         return "ps2";
-      case VIDEO_VITA2D:
-         return "vita2d";
-      case VIDEO_CTR:
-         return "ctr";
-      case VIDEO_SWITCH:
-         return "switch";
-      case VIDEO_XVIDEO:
-         return "xvideo";
-      case VIDEO_SDL_DINGUX:
-         return "sdl_dingux";
-      case VIDEO_SDL:
-         return "sdl";
-      case VIDEO_SDL2:
-         return "sdl2";
-      case VIDEO_EXT:
-         return "ext";
-      case VIDEO_VG:
-         return "vg";
-      case VIDEO_OMAP:
-         return "omap";
-      case VIDEO_EXYNOS:
-         return "exynos";
-      case VIDEO_DISPMANX:
-         return "dispmanx";
-      case VIDEO_SUNXI:
-         return "sunxi";
-      case VIDEO_CACA:
-         return "caca";
-      case VIDEO_GDI:
-         return "gdi";
-      case VIDEO_VGA:
-         return "vga";
-      case VIDEO_FPGA:
-         return "fpga";
-      case VIDEO_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-/**
- * config_get_default_input:
- *
- * Gets default input driver.
- *
- * Returns: Default input driver.
- **/
-const char *config_get_default_input(void)
-{
-   enum input_driver_enum default_driver = INPUT_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case INPUT_ANDROID:
-         return "android";
-      case INPUT_PS4:
-         return "ps4";
-      case INPUT_PS3:
-         return "ps3";
-      case INPUT_PSP:
-#ifdef VITA
-         return "vita";
-#else
-         return "psp";
-#endif
-      case INPUT_PS2:
-         return "ps2";
-      case INPUT_CTR:
-         return "ctr";
-      case INPUT_SWITCH:
-         return "switch";
-      case INPUT_SDL:
-         return "sdl";
-      case INPUT_SDL2:
-         return "sdl2";
-      case INPUT_DINPUT:
-         return "dinput";
-      case INPUT_WINRAW:
-         return "raw";
-      case INPUT_X:
-         return "x";
-      case INPUT_WAYLAND:
-         return "wayland";
-      case INPUT_XENON360:
-         return "xenon360";
-      case INPUT_XINPUT:
-         return "xinput";
-      case INPUT_UWP:
-         return "uwp";
-      case INPUT_WII:
-         return "gx";
-      case INPUT_WIIU:
-         return "wiiu";
-      case INPUT_LINUXRAW:
-         return "linuxraw";
-      case INPUT_UDEV:
-         return "udev";
-      case INPUT_COCOA:
-         return "cocoa";
-      case INPUT_QNX:
-          return "qnx_input";
-      case INPUT_RWEBINPUT:
-          return "rwebinput";
-      case INPUT_DOS:
-         return "dos";
-      case INPUT_NULL:
-          break;
-   }
-
-   return "null";
-}
-
-/**
- * config_get_default_joypad:
- *
- * Gets default input joypad driver.
- *
- * Returns: Default input joypad driver.
- **/
-const char *config_get_default_joypad(void)
-{
-   enum joypad_driver_enum default_driver = JOYPAD_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case JOYPAD_PS4:
-         return "ps4";
-      case JOYPAD_PS3:
-         return "ps3";
-      case JOYPAD_XINPUT:
-         return "xinput";
-      case JOYPAD_GX:
-         return "gx";
-      case JOYPAD_WIIU:
-         return "wiiu";
-      case JOYPAD_XDK:
-         return "xdk";
-      case JOYPAD_PSP:
-#ifdef VITA
-         return "vita";
-#else
-         return "psp";
-#endif
-      case JOYPAD_PS2:
-         return "ps2";
-      case JOYPAD_CTR:
-         return "ctr";
-      case JOYPAD_SWITCH:
-         return "switch";
-      case JOYPAD_DINPUT:
-         return "dinput";
-      case JOYPAD_UDEV:
-         return "udev";
-      case JOYPAD_LINUXRAW:
-         return "linuxraw";
-      case JOYPAD_ANDROID:
-         return "android";
-      case JOYPAD_SDL:
-#ifdef HAVE_SDL2
-         return "sdl2";
-#else
-         return "sdl";
-#endif
-      case JOYPAD_HID:
-         return "hid";
-      case JOYPAD_QNX:
-         return "qnx";
-      case JOYPAD_RWEBPAD:
-         return "rwebpad";
-      case JOYPAD_DOS:
-         return "dos";
-      case JOYPAD_MFI:
-         return "mfi";
-      case JOYPAD_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-/**
- * config_get_default_camera:
- *
- * Gets default camera driver.
- *
- * Returns: Default camera driver.
- **/
-const char *config_get_default_camera(void)
-{
-   enum camera_driver_enum default_driver = CAMERA_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case CAMERA_V4L2:
-         return "video4linux2";
-      case CAMERA_RWEBCAM:
-         return "rwebcam";
-      case CAMERA_ANDROID:
-         return "android";
-      case CAMERA_AVFOUNDATION:
-         return "avfoundation";
-      case CAMERA_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-/**
- * config_get_default_wifi:
- *
- * Gets default wifi driver.
- *
- * Returns: Default wifi driver.
- **/
-const char *config_get_default_wifi(void)
-{
-   enum wifi_driver_enum default_driver = WIFI_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case WIFI_CONNMANCTL:
-         return "connmanctl";
-      case WIFI_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-/**
- * config_get_default_led:
- *
- * Gets default led driver.
- *
- * Returns: Default led driver.
- **/
-const char *config_get_default_led(void)
-{
-   return "null";
-}
-
-/**
- * config_get_default_location:
- *
- * Gets default location driver.
- *
- * Returns: Default location driver.
- **/
-const char *config_get_default_location(void)
-{
-   enum location_driver_enum default_driver = LOCATION_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case LOCATION_ANDROID:
-         return "android";
-      case LOCATION_CORELOCATION:
-         return "corelocation";
-      case LOCATION_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-/**
- * config_get_default_menu:
- *
- * Gets default menu driver.
- *
- * Returns: Default menu driver.
- **/
-const char *config_get_default_menu(void)
-{
-#ifdef HAVE_MENU
-   enum menu_driver_enum default_driver = MENU_DEFAULT_DRIVER;
-
-   if (!string_is_empty(g_defaults.settings.menu))
-      return g_defaults.settings.menu;
-
-   switch (default_driver)
-   {
-      case MENU_RGUI:
-         return "rgui";
-      case MENU_OZONE:
-         return "ozone";
-      case MENU_MATERIALUI:
-         return "glui";
-      case MENU_XMB:
-         return "xmb";
-      case MENU_STRIPES:
-         return "stripes";
-      case MENU_NULL:
-         break;
-   }
-#endif
-
-   return "null";
-}
-
-const char *config_get_default_midi(void)
-{
-   enum midi_driver_enum default_driver = MIDI_DEFAULT_DRIVER;
-
-   switch (default_driver)
-   {
-      case MIDI_WINMM:
-         return "winmm";
-      case MIDI_ALSA:
-         return "alsa";
-      case MIDI_NULL:
-         break;
-   }
-
-   return "null";
-}
-
-const char *config_get_midi_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_MIDI_DRIVERS, NULL);
-}
-
-bool config_overlay_enable_default(void)
-{
-   if (g_defaults.overlay.set)
-      return g_defaults.overlay.enable;
-   return true;
-}
-
