@@ -142,7 +142,7 @@ static bool zip_file_decompressed_handle(
    {
       ret = handle->backend->stream_decompress_data_to_file_iterate(
             handle->stream);
-   }while(ret == 0);
+   }while (ret == 0);
 
 #if 0
    handle->real_checksum = handle->backend->stream_crc_calculate(0,
@@ -272,7 +272,7 @@ static int zip_file_read(
             "", zip_file_decompressed, &userdata);
       if (!returnerr)
          break;
-   }while(ret == 0 && !userdata.decomp_state.found);
+   } while (ret == 0 && !userdata.decomp_state.found);
 
    file_archive_parse_file_iterate_stop(&zlib);
 

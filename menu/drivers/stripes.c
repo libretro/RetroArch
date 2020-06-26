@@ -998,7 +998,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
 
       tmp_new[0]                     = '\0';
 
-      while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
+      while ((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
          *scrub_char_pointer = '_';
 
       /* Look for thumbnail file with this scrubbed filename */

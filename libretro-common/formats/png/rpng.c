@@ -705,10 +705,11 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    if (png_reverse_filter_init(&pngp->ihdr, pngp) == -1)
       return IMAGE_PROCESS_ERROR;
 
-   do{
+   do
+   {
       ret = png_reverse_filter_regular_iterate(&pngp->data,
             &pngp->ihdr, pngp);
-   }while(ret == IMAGE_PROCESS_NEXT);
+   } while (ret == IMAGE_PROCESS_NEXT);
 
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
       return IMAGE_PROCESS_ERROR;

@@ -512,7 +512,7 @@ static void libusb_hid_free(const void *data)
 {
    libusb_hid_t *hid = (libusb_hid_t*)data;
 
-   while(adapters.next)
+   while (adapters.next)
       if (remove_adapter(hid, adapters.next->device) == -1)
          RARCH_ERR("could not remove device %p\n",
                adapters.next->device);

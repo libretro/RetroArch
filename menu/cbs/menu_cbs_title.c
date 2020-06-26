@@ -41,7 +41,7 @@
    { \
       char *pos = NULL; \
       strlcpy(s, label, len); \
-      while((pos = strchr(s, '_'))) \
+      while ((pos = strchr(s, '_'))) \
          *pos = ' '; \
    }
 

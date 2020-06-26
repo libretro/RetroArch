@@ -40,11 +40,11 @@ static void resampler_nearest_process(
    audio_frame_float_t  *outp    = (audio_frame_float_t*)data->data_out;
    float                   ratio = 1.0 / data->ratio;
 
-   while(inp != inp_max)
+   while (inp != inp_max)
    {
-      while(re->fraction > 1)
+      while (re->fraction > 1)
       {
-         *outp++ = *inp;
+         *outp++       = *inp;
          re->fraction -= ratio;
       }
       re->fraction++;

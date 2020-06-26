@@ -448,13 +448,13 @@ static void SHA1PadMessage(struct sha1_context *context)
 
    if (context->Message_Block_Index > 55)
    {
-      while(context->Message_Block_Index < 64)
+      while (context->Message_Block_Index < 64)
          context->Message_Block[context->Message_Block_Index++] = 0;
 
       SHA1ProcessMessageBlock(context);
    }
 
-   while(context->Message_Block_Index < 56)
+   while (context->Message_Block_Index < 56)
       context->Message_Block[context->Message_Block_Index++] = 0;
 
    /*  Store the message length as the last 8 octets */
@@ -497,7 +497,7 @@ static void SHA1Input(struct sha1_context *context,
       return;
    }
 
-   while(length-- && !context->Corrupted)
+   while (length-- && !context->Corrupted)
    {
       context->Message_Block[context->Message_Block_Index++] =
          (*message_array & 0xFF);
@@ -544,7 +544,7 @@ int sha1_calculate(const char *path, char *result)
          goto error;
 
       SHA1Input(&sha, buff, rv);
-   }while(rv);
+   } while (rv);
 
    if (!SHA1Result(&sha))
       goto error;

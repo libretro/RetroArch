@@ -648,7 +648,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
             {
                ret = handle.backend->stream_decompress_data_to_file_iterate(
                      handle.stream);
-            }while(ret == 0);
+            }while (ret == 0);
 
             if (!file_archive_decompress_data_to_file(&handle,
                      ret, path, valid_exts,

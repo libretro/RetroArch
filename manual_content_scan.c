@@ -191,7 +191,8 @@ void manual_content_scan_scrub_system_name_custom(void)
     * and/or violate the No-Intro filename standard:
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters with underscores */
-   while((scrub_char_pointer = strpbrk(scan_settings.system_name_custom, "&*/:`\"<>?\\|")))
+   while ((scrub_char_pointer = 
+            strpbrk(scan_settings.system_name_custom, "&*/:`\"<>?\\|")))
       *scrub_char_pointer = '_';
 }
 

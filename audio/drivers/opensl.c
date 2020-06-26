@@ -67,7 +67,7 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 #define GOTO_IF_FAIL(x) do { \
    if ((res = (x)) != SL_RESULT_SUCCESS) \
       goto error; \
-} while(0)
+} while (0)
 
 static void sl_free(void *data)
 {

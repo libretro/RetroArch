@@ -191,14 +191,14 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    buffer[256] = '\0';
 
    tmp = buffer;
-   while(*tmp && strncasecmp((const char*)tmp, "boot", 4))
+   while (*tmp && strncasecmp((const char*)tmp, "boot", 4))
       tmp++;
 
    if (!*tmp)
       return 0;
 
    boot_file = tmp;
-   while(*tmp && *tmp != '\n')
+   while (*tmp && *tmp != '\n')
    {
       if ((*tmp == '\\') || (*tmp == ':'))
          boot_file = tmp + 1;
@@ -216,7 +216,7 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    if (!isalnum(*tmp))
       tmp++;
 
-   while(isalnum(*tmp))
+   while (isalnum(*tmp))
    {
       *game_id++ = *tmp++;
       if (*tmp == '.')

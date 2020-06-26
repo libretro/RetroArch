@@ -97,7 +97,7 @@ static freetype_atlas_slot_t* font_renderer_get_slot(ft_font_renderer_t *handle)
    else if (handle->uc_map[map_id])
    {
       freetype_atlas_slot_t* ptr = handle->uc_map[map_id];
-      while(ptr->next && ptr->next != &handle->atlas_slots[oldest])
+      while (ptr->next && ptr->next != &handle->atlas_slots[oldest])
          ptr = ptr->next;
       ptr->next = handle->atlas_slots[oldest].next;
    }
@@ -120,7 +120,7 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    map_id     = charcode & 0xFF;
    atlas_slot = handle->uc_map[map_id];
 
-   while(atlas_slot)
+   while (atlas_slot)
    {
       if (atlas_slot->charcode == charcode)
       {

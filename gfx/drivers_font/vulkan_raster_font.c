@@ -39,7 +39,42 @@ typedef struct
    unsigned vertices;
 } vulkan_raster_t;
 
-static void vulkan_raster_font_free_font(void *data, bool is_threaded);
+static INLINE void vulkan_raster_font_update_glyph(
+      vulkan_raster_t *font, const struct font_glyph *glyph)
+{
+   if(font->atlas->dirty)
+   {
+      unsigned row;
+      for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
+      {
+         uint8_t *src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
+         uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
+         memcpy(dst, src, glyph->width);
+      }
+
+      font->atlas->dirty = false;
+      font->needs_update = true;
+   }
+}
+
+
+static void vulkan_raster_font_free_font(void *data, bool is_threaded)
+{
+   vulkan_raster_t *font = (vulkan_raster_t*)data;
+   if (!font)
+      return;
+
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
+
+   vkQueueWaitIdle(font->vk->context->queue);
+   vulkan_destroy_texture(
+         font->vk->context->device, &font->texture);
+   vulkan_destroy_texture(
+         font->vk->context->device, &font->texture_optimal);
+
+   free(font);
+}
 
 static void *vulkan_raster_font_init_font(void *data,
       const char *font_path, float font_size,
@@ -88,41 +123,6 @@ static void *vulkan_raster_font_init_font(void *data,
    font->needs_update = true;
 
    return font;
-}
-
-static void vulkan_raster_font_free_font(void *data, bool is_threaded)
-{
-   vulkan_raster_t *font = (vulkan_raster_t*)data;
-   if (!font)
-      return;
-
-   if (font->font_driver && font->font_data)
-      font->font_driver->free(font->font_data);
-
-   vkQueueWaitIdle(font->vk->context->queue);
-   vulkan_destroy_texture(
-         font->vk->context->device, &font->texture);
-   vulkan_destroy_texture(
-         font->vk->context->device, &font->texture_optimal);
-
-   free(font);
-}
-
-static INLINE void vulkan_raster_font_update_glyph(vulkan_raster_t *font, const struct font_glyph *glyph)
-{
-   if(font->atlas->dirty)
-   {
-      unsigned row;
-      for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
-      {
-         uint8_t *src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
-         uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
-         memcpy(dst, src, glyph->width);
-      }
-
-      font->atlas->dirty = false;
-      font->needs_update = true;
-   }
 }
 
 static int vulkan_get_message_width(void *data, const char *msg,
@@ -444,7 +444,8 @@ static const struct font_glyph *vulkan_raster_font_get_glyph(
    return glyph;
 }
 
-static bool vulkan_get_line_metrics(void* data, struct font_line_metrics **metrics)
+static bool vulkan_get_line_metrics(void* data,
+      struct font_line_metrics **metrics)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
 

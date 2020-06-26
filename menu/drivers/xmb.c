@@ -4536,7 +4536,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       for(i = 0; i < 25 && *end; i++)
       {
          end++;
-         while((*end & 0xC0) == 0x80)
+         while ((*end & 0xC0) == 0x80)
             end++;
       }
 

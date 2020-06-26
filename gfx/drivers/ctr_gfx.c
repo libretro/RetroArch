@@ -582,7 +582,7 @@ static bool ctr_frame(void* data, const void* frame,
 #if 0
       ctr->vsync_event_pending = true;
 #endif
-      while(ctr->vsync_event_pending)
+      while (ctr->vsync_event_pending)
       {
          task_queue_check();
          svcSleepThread(0);

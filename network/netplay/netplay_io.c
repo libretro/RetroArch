@@ -1217,14 +1217,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
 #define START(which) \
          do { \
-            ptr = which; \
+            ptr    = which; \
             dframe = &netplay->buffer[ptr]; \
-         } while(0)
+         } while (0)
 #define NEXT() \
          do { \
-            ptr = NEXT_PTR(ptr); \
+            ptr    = NEXT_PTR(ptr); \
             dframe = &netplay->buffer[ptr]; \
-         } while(0)
+         } while (0)
 
          if (netplay->is_server)
          {

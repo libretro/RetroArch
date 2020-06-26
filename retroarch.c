@@ -1046,7 +1046,7 @@ static const camera_driver_t *camera_drivers[] = {
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
    retroarch_fail(1, "validate_cpu_features()"); \
-}while(0)
+} while (0)
 
 #ifdef HAVE_ZLIB
 #define DEFAULT_EXT "zip"
@@ -12838,7 +12838,7 @@ static void handle_translation_cb(
             do
             {
                retval = rpng_process_image(rpng, &raw_image_data_alpha, new_image_size, &image_width, &image_height);
-            }while(retval == IMAGE_PROCESS_NEXT);
+            } while (retval == IMAGE_PROCESS_NEXT);
 
             /* Returned output from the png processor is an upside down RGBA
              * image, so we have to change that to RGB first.  This should

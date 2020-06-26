@@ -145,10 +145,10 @@ static void frontend_ps2_init(void *data)
    SifInitRpc(0);
 #if !defined(DEBUG) || defined(BUILD_FOR_PCSX2)
    /* Comment this line if you don't wanna debug the output */
-   while(!SifIopReset(NULL, 0)){};
+   while (!SifIopReset(NULL, 0)) { };
 #endif
 
-   while(!SifIopSync()){};
+   while (!SifIopSync()) { };
    SifInitRpc(0);
    sbv_patch_enable_lmb();
 

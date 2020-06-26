@@ -119,18 +119,18 @@ char *string_replace_substring(const char *in,
 /* Remove leading whitespaces */
 char *string_trim_whitespace_left(char *const s)
 {
-   if(s && *s)
+   if (s && *s)
    {
       size_t len     = strlen(s);
       char *current  = s;
 
-      while(*current && isspace((unsigned char)*current))
+      while (*current && isspace((unsigned char)*current))
       {
          ++current;
          --len;
       }
 
-      if(s != current)
+      if (s != current)
          memmove(s, current, len + 1);
    }
 
@@ -140,12 +140,12 @@ char *string_trim_whitespace_left(char *const s)
 /* Remove trailing whitespaces */
 char *string_trim_whitespace_right(char *const s)
 {
-   if(s && *s)
+   if (s && *s)
    {
       size_t len     = strlen(s);
       char  *current = s + len - 1;
 
-      while(current != s && isspace((unsigned char)*current))
+      while (current != s && isspace((unsigned char)*current))
       {
          --current;
          --len;
@@ -202,7 +202,7 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
             buffer[i] = string[i];
             char_len--;
             i++;
-         } while(char_len);
+         } while (char_len);
 
          /* check for newlines embedded in the original input
           * and reset the index */
@@ -260,7 +260,7 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
  *    char *str      = "1,2,3,4,5,6,7,,,10,";
  *    char **str_ptr = &str;
  *    char *token    = NULL;
- *    while((token = string_tokenize(str_ptr, ",")))
+ *    while ((token = string_tokenize(str_ptr, ",")))
  *    {
  *        printf("%s\n", token);
  *        free(token);

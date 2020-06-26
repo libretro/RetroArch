@@ -144,7 +144,7 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
       if (retval != IMAGE_PROCESS_NEXT)
          break;
-   }while(cpu_features_get_time_usec() - start_time 
+   }while (cpu_features_get_time_usec() - start_time 
          < image->frame_duration);
 
    if (retval == IMAGE_PROCESS_NEXT)

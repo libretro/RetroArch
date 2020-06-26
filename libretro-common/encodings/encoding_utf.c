@@ -37,6 +37,8 @@
 #include <xtl.h>
 #endif
 
+#define UTF8_WALKBYTE(string) (*((*(string))++))
+
 static unsigned leading_ones(uint8_t c)
 {
    unsigned ones = 0;
@@ -89,13 +91,14 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
 bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
      const uint16_t *in, size_t in_size)
 {
-   static uint8_t kUtf8Limits[5] = { 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
-   size_t out_pos = 0;
-   size_t in_pos  = 0;
+   size_t out_pos            = 0;
+   size_t in_pos             = 0;
+   static const 
+      uint8_t utf8_limits[5] = { 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
 
    for (;;)
    {
-      unsigned numAdds;
+      unsigned num_adds;
       uint32_t value;
 
       if (in_pos == in_size)
@@ -124,21 +127,21 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
          value = (((value - 0xD800) << 10) | (c2 - 0xDC00)) + 0x10000;
       }
 
-      for (numAdds = 1; numAdds < 5; numAdds++)
-         if (value < (((uint32_t)1) << (numAdds * 5 + 6)))
+      for (num_adds = 1; num_adds < 5; num_adds++)
+         if (value < (((uint32_t)1) << (num_adds * 5 + 6)))
             break;
       if (out)
-         out[out_pos] = (char)(kUtf8Limits[numAdds - 1]
-               + (value >> (6 * numAdds)));
+         out[out_pos] = (char)(utf8_limits[num_adds - 1]
+               + (value >> (6 * num_adds)));
       out_pos++;
       do
       {
-         numAdds--;
+         num_adds--;
          if (out)
             out[out_pos] = (char)(0x80
-                  + ((value >> (6 * numAdds)) & 0x3F));
+                  + ((value >> (6 * num_adds)) & 0x3F));
          out_pos++;
-      }while (numAdds != 0);
+      }while (num_adds != 0);
    }
 
    *out_chars = out_pos;
@@ -166,13 +169,15 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
    while (*sb && chars-- > 0)
    {
       sb++;
-      while ((*sb & 0xC0) == 0x80) sb++;
+      while ((*sb & 0xC0) == 0x80)
+         sb++;
    }
 
    if ((size_t)(sb - sb_org) > d_len-1 /* NUL */)
    {
       sb = sb_org + d_len-1;
-      while ((*sb & 0xC0) == 0x80) sb--;
+      while ((*sb & 0xC0) == 0x80)
+         sb--;
    }
 
    memcpy(d, sb_org, sb-sb_org);
@@ -184,14 +189,18 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 const char *utf8skip(const char *str, size_t chars)
 {
    const uint8_t *strb = (const uint8_t*)str;
+
    if (!chars)
       return str;
+
    do
    {
       strb++;
-      while ((*strb & 0xC0)==0x80) strb++;
+      while ((*strb & 0xC0)==0x80)
+         strb++;
       chars--;
-   } while(chars);
+   }while (chars);
+
    return (const char*)strb;
 }
 
@@ -211,24 +220,22 @@ size_t utf8len(const char *string)
    return ret;
 }
 
-#define utf8_walkbyte(string) (*((*(string))++))
-
 /* Does not validate the input, returns garbage if it's not UTF-8. */
 uint32_t utf8_walk(const char **string)
 {
-   uint8_t first = utf8_walkbyte(string);
+   uint8_t first = UTF8_WALKBYTE(string);
    uint32_t ret  = 0;
 
    if (first < 128)
       return first;
 
-   ret    = (ret << 6) | (utf8_walkbyte(string) & 0x3F);
+   ret    = (ret << 6) | (UTF8_WALKBYTE(string) & 0x3F);
    if (first >= 0xE0)
    {
-      ret = (ret << 6) | (utf8_walkbyte(string) & 0x3F);
+      ret = (ret << 6) | (UTF8_WALKBYTE(string) & 0x3F);
       if (first >= 0xF0)
       {
-         ret = (ret << 6) | (utf8_walkbyte(string) & 0x3F);
+         ret = (ret << 6) | (UTF8_WALKBYTE(string) & 0x3F);
          return ret | (first & 7) << 18;
       }
       return ret | (first & 15) << 12;
@@ -379,13 +386,13 @@ char* local_to_utf8_string_alloc(const char *str)
 wchar_t* utf8_to_utf16_string_alloc(const char *str)
 {
 #ifdef _WIN32
-   int len = 0;
-   int out_len = 0;
+   int len        = 0;
+   int out_len    = 0;
 #else
-   size_t len = 0;
+   size_t len     = 0;
    size_t out_len = 0;
 #endif
-   wchar_t *buf = NULL;
+   wchar_t *buf   = NULL;
 
    if (!str || !*str)
       return NULL;

@@ -219,7 +219,7 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    else if (count_avail < count)
    {
       /* Sync, wait for free memory */
-      while(AXIsMultiVoiceRunning(ax->mvoice) && (count_avail < count))
+      while (AXIsMultiVoiceRunning(ax->mvoice) && (count_avail < count))
       {
          OSYieldThread(); /* Gives threads with same priority time to run */
          count_avail = (ax->written > AX_AUDIO_MAX_FREE ? 0 : (AX_AUDIO_MAX_FREE - ax->written));

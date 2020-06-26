@@ -32,7 +32,7 @@
    fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
    ret = false; \
    goto end; \
-} while(0)
+} while (0)
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))

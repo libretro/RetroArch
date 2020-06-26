@@ -29,7 +29,7 @@
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
-#define gl_core_raster_font_emit(c, vx, vy) do { \
+#define GL_CORE_RASTER_FONT_EMIT(c, vx, vy) \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
@@ -37,8 +37,7 @@
    font_color[      4 * (6 * i + c) + 0] = color[0]; \
    font_color[      4 * (6 * i + c) + 1] = color[1]; \
    font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]; \
-} while(0)
+   font_color[      4 * (6 * i + c) + 3] = color[3]
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -261,13 +260,13 @@ static void gl_core_raster_font_render_line(
          width  = glyph->width;
          height = glyph->height;
 
-         gl_core_raster_font_emit(0, 0, 1); /* Bottom-left */
-         gl_core_raster_font_emit(1, 1, 1); /* Bottom-right */
-         gl_core_raster_font_emit(2, 0, 0); /* Top-left */
+         GL_CORE_RASTER_FONT_EMIT(0, 0, 1); /* Bottom-left */
+         GL_CORE_RASTER_FONT_EMIT(1, 1, 1); /* Bottom-right */
+         GL_CORE_RASTER_FONT_EMIT(2, 0, 0); /* Top-left */
 
-         gl_core_raster_font_emit(3, 1, 0); /* Top-right */
-         gl_core_raster_font_emit(4, 0, 0); /* Top-left */
-         gl_core_raster_font_emit(5, 1, 1); /* Bottom-right */
+         GL_CORE_RASTER_FONT_EMIT(3, 1, 0); /* Top-right */
+         GL_CORE_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
+         GL_CORE_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
 
          i++;
 

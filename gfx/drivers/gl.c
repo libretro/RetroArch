@@ -2666,7 +2666,9 @@ static void gl2_video_layout_layer_begin(const video_layout_render_info_t *info)
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-static void gl2_video_layout_image(const video_layout_render_info_t *info, void *image_handle, void *alpha_handle)
+static void gl2_video_layout_image(
+      const video_layout_render_info_t *info,
+      void *image_handle, void *alpha_handle)
 {
    /* TODO alpha_handle */
    int i;
@@ -2690,7 +2692,7 @@ static void gl2_video_layout_image(const video_layout_render_info_t *info, void 
    coord[7] = 1.f - (b.y + b.h);
 
    i = 0;
-   while(i < 16)
+   while (i < 16)
    {
       color[i++] = info->color.r;
       color[i++] = info->color.g;
@@ -2698,10 +2700,10 @@ static void gl2_video_layout_image(const video_layout_render_info_t *info, void 
       color[i++] = info->color.a;
    }
 
-   gl->coords.vertex = coord;
+   gl->coords.vertex    = coord;
    gl->coords.tex_coord = tex_coords;
-   gl->coords.color = color;
-   gl->coords.vertices = 4;
+   gl->coords.color     = color;
+   gl->coords.vertices  = 4;
 
    gl->shader->set_coords(gl->shader_data, &gl->coords);
    gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);

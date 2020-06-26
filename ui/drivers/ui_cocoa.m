@@ -396,7 +396,8 @@ static char **waiting_argv;
 
        task_queue_check();
 
-       while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
+       while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) 
+             == kCFRunLoopRunHandledSource);
        if (ret == -1)
        {
 #ifdef HAVE_QT

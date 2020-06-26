@@ -136,7 +136,7 @@ static void wiiu_hid_free(const void *data)
    if (events.list)
    {
       wiiu_attach_event *event = NULL;
-      while( (event = events.list) != NULL)
+      while ((event = events.list) != NULL)
       {
          events.list = event->next;
          delete_attach_event(event);
@@ -593,7 +593,7 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
       if (incomplete == 0)
       {
          RARCH_LOG("All in-flight reads complete.\n");
-         while(adapters.list != NULL)
+         while (adapters.list)
          {
             RARCH_LOG("[hid]: shutting down adapter..\n");
             adapter = adapters.list;
@@ -610,7 +610,7 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
          RARCH_WARN("[hid]: timed out waiting for in-flight read to finish.\n");
          incomplete = 0;
       }
-   } while(incomplete);
+   } while (incomplete);
 }
 
 static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list)
@@ -667,7 +667,7 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
 
    RARCH_LOG("[hid]: polling thread is starting\n");
 
-   while(!hid->polling_thread_quit)
+   while (!hid->polling_thread_quit)
    {
       wiiu_handle_attach_events(hid, synchronized_get_events_list());
       wiiu_poll_adapters(hid);

@@ -217,7 +217,8 @@ static void fill_content_img(gfx_thumbnail_path_data_t *path_data)
     * No-Intro filename standard:
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters in the entry name with underscores */
-   while((scrub_char_pointer = strpbrk(path_data->content_img, "&*/:`\"<>?\\|")))
+   while ((scrub_char_pointer = 
+            strpbrk(path_data->content_img, "&*/:`\"<>?\\|")))
       *scrub_char_pointer = '_';
    
    /* Add PNG extension */

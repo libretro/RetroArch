@@ -1647,7 +1647,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
          did_work = true;
       }
-   }while(did_work);
+   }while (did_work);
 
    /* Flush out last audio. */
    if (handle->config.audio_enable)
