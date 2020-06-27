@@ -198,8 +198,8 @@ int64_t retro_vfs_file_seek_internal(
       if (stream->scheme == VFS_SCHEME_CDROM)
          return retro_vfs_file_seek_cdrom(stream, offset, whence);
 #endif
-/* VC2005 and up have a special 64-bit fseek */
 #ifdef ATLEAST_VC2005
+      /* VC2005 and up have a special 64-bit fseek */
       return _fseeki64(stream->fp, offset, whence);
 #elif defined(ORBIS)
       {
@@ -607,8 +607,8 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
          return ret;
       }
 #else
-      /* VC2005 and up have a special 64-bit ftell */
 #ifdef ATLEAST_VC2005
+      /* VC2005 and up have a special 64-bit ftell */
       return _ftelli64(stream->fp);
 #elif defined(HAVE_64BIT_OFFSETS)
       return ftello(stream->fp);
