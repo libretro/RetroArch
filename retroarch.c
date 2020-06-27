@@ -3332,6 +3332,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
 }
 
 static int menu_input_key_bind_set_mode_common(
+      struct rarch_state *p_rarch,
       enum menu_input_binds_ctl_state state,
       rarch_setting_t  *setting)
 {
@@ -3341,7 +3342,6 @@ static int menu_input_key_bind_set_mode_common(
    unsigned         index_offset  = setting->index_offset;
    file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
    size_t selection               = menu_navigation_get_selection();
-   struct rarch_state *p_rarch    = &rarch_st;
    struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
 
    menu_displaylist_info_init(&info);
@@ -3398,10 +3398,10 @@ static int menu_input_key_bind_set_mode_common(
 }
 
 static void menu_input_key_bind_poll_bind_get_rested_axes(
+      struct rarch_state *p_rarch,
       struct menu_bind_state *state)
 {
    unsigned a;
-   struct rarch_state *p_rarch             = &rarch_st;
    const input_device_driver_t *joypad     = 
       p_rarch->current_input->get_joypad_driver(p_rarch->current_input_data);
    const input_device_driver_t *sec_joypad =
@@ -3755,13 +3755,15 @@ bool menu_input_key_bind_set_mode(
 
    if (!setting || !menu)
       return false;
-   if (menu_input_key_bind_set_mode_common(state, setting) == -1)
+   if (menu_input_key_bind_set_mode_common(p_rarch,
+            state, setting) == -1)
       return false;
 
    index_offset             = setting->index_offset;
    binds->port              = settings->uints.input_joypad_map[index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(
+         p_rarch,
          binds);
    menu_input_key_bind_poll_bind_state(
          binds, false);
@@ -6854,10 +6856,9 @@ static bool generic_menu_init_list(void *data)
 
 static bool menu_driver_init_internal(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       bool video_is_threaded)
 {
-   settings_t        *settings = p_rarch->configuration_settings;
-
    /* ID must be set first, since it is required for
     * the proper determination of pixel/dpi scaling
     * parameters (and some menu drivers fetch the
@@ -6899,7 +6900,9 @@ bool menu_driver_init(bool video_is_threaded)
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 
    if (  p_rarch->menu_driver_data ||
-         menu_driver_init_internal(p_rarch, video_is_threaded))
+         menu_driver_init_internal(p_rarch,
+            p_rarch->configuration_settings,
+            video_is_threaded))
    {
       if (p_rarch->menu_driver_ctx && p_rarch->menu_driver_ctx->context_reset)
       {
@@ -6972,10 +6975,10 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
 }
 
 /* Teardown function for the menu driver. */
-static void menu_driver_destroy(struct rarch_state *p_rarch)
+static void menu_driver_destroy(
+      struct rarch_state *p_rarch,
+      struct menu_state *menu_st)
 {
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
-
    menu_st->pending_quick_menu    = false;
    menu_st->prevent_populate      = false;
    menu_st->data_own              = false;
@@ -6986,7 +6989,8 @@ static void menu_driver_destroy(struct rarch_state *p_rarch)
 bool menu_driver_list_get_entry(menu_ctx_list_t *list)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   if (!p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->list_get_entry)
+   if (  !p_rarch->menu_driver_ctx || 
+         !p_rarch->menu_driver_ctx->list_get_entry)
    {
       list->entry = NULL;
       return false;
@@ -7015,7 +7019,8 @@ bool menu_driver_list_get_selection(menu_ctx_list_t *list)
 bool menu_driver_list_get_size(menu_ctx_list_t *list)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   if (!p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->list_get_size)
+   if (  !p_rarch->menu_driver_ctx || 
+         !p_rarch->menu_driver_ctx->list_get_size)
    {
       list->size = 0;
       return false;
@@ -8181,9 +8186,8 @@ bool discord_is_ready(void)
    return discord_st->ready;
 }
 
-static char *discord_get_own_username(void)
+static char *discord_get_own_username(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    discord_state_t *discord_st = &p_rarch->discord_st;
 
    if (discord_st->ready)
@@ -8675,12 +8679,13 @@ static bool netplay_should_skip(netplay_t *netplay)
  *
  * Returns: true (1) if successful, otherwise false (0).
  */
-static bool get_self_input_state(netplay_t *netplay)
+static bool get_self_input_state(
+      struct rarch_state *p_rarch,
+      netplay_t *netplay)
 {
    unsigned i;
    struct delta_frame *ptr        = &netplay->buffer[netplay->self_ptr];
    netplay_input_state_t istate   = NULL;
-   struct rarch_state *p_rarch    = &rarch_st;
    uint32_t devices, used_devices = 0, devi, dev_type, local_device;
 
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
@@ -8852,7 +8857,7 @@ static bool netplay_poll(
    uint32_t client;
    size_t i;
 
-   if (!get_self_input_state(netplay))
+   if (!get_self_input_state(p_rarch, netplay))
       goto catastrophe;
 
    /* If we're not connected, we're done */
@@ -9421,7 +9426,7 @@ static void netplay_announce(struct rarch_state *p_rarch)
 
 #ifdef HAVE_DISCORD
    if (discord_is_ready())
-      net_http_urlencode(&username, discord_get_own_username());
+      net_http_urlencode(&username, discord_get_own_username(p_rarch));
    else
 #endif
    net_http_urlencode(&username, settings->paths.username);
@@ -10019,8 +10024,8 @@ static bool init_netplay(
          &cbs,
          settings->bools.netplay_nat_traversal && !settings->bools.netplay_use_mitm_server,
 #ifdef HAVE_DISCORD
-         discord_get_own_username() 
-         ? discord_get_own_username() 
+         discord_get_own_username(p_rarch) 
+         ? discord_get_own_username(p_rarch) 
          :
 #endif
          settings->paths.username,
@@ -33904,7 +33909,8 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
    p_rarch->current_input                           = NULL;
 
 #ifdef HAVE_MENU
-   menu_driver_destroy(p_rarch);
+   menu_driver_destroy(p_rarch,
+         &p_rarch->menu_driver_state);
    p_rarch->menu_driver_alive                       = false;
 #endif
    p_rarch->location_driver_active                  = false;
