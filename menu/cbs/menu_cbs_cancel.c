@@ -22,8 +22,6 @@
 #include "../../msg_hash.h"
 #include "../../managers/cheat_manager.h"
 
-#include "../widgets/menu_filebrowser.h"
-
 #ifndef BIND_ACTION_CANCEL
 #define BIND_ACTION_CANCEL(cbs, name) (cbs)->action_cancel = (name)
 #endif

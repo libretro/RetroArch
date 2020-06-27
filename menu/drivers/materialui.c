@@ -45,7 +45,6 @@
 #include "../../gfx/gfx_thumbnail.h"
 
 #include "../../input/input_osk.h"
-#include "../widgets/menu_filebrowser.h"
 
 #include "../../core_info.h"
 #include "../../configuration.h"

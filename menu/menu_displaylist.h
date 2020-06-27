@@ -242,6 +242,20 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_PENDING_CLEAR
 };
 
+enum filebrowser_enums
+{
+   FILEBROWSER_NONE              = 0,
+   FILEBROWSER_SELECT_DIR,
+   FILEBROWSER_SCAN_DIR,
+   FILEBROWSER_SCAN_FILE,
+   FILEBROWSER_MANUAL_SCAN_DIR,
+   FILEBROWSER_SELECT_FILE,
+   FILEBROWSER_SELECT_FILE_SUBSYSTEM,
+   FILEBROWSER_SELECT_IMAGE,
+   FILEBROWSER_SELECT_FONT,
+   FILEBROWSER_SELECT_COLLECTION
+};
+
 typedef struct menu_displaylist_info
 {
    enum msg_hash_enums enum_idx;
@@ -313,6 +327,12 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
 #endif
 
 bool menu_displaylist_has_subsystems(void);
+
+enum filebrowser_enums filebrowser_get_type(void);
+
+void filebrowser_clear_type(void);
+
+void filebrowser_set_type(enum filebrowser_enums type);
 
 RETRO_END_DECLS
 
