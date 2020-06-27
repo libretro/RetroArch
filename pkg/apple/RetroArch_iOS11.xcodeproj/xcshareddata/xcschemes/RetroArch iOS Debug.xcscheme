@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "9204BE091D319EF300BD49DB"
-               BuildableName = "RetroArchiOS11.app"
+               BuildableName = "RetroArch.app"
                BlueprintName = "RetroArchiOS11"
                ReferencedContainer = "container:RetroArch_iOS11.xcodeproj">
             </BuildableReference>
@@ -27,19 +27,17 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
-      <Testables>
-      </Testables>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9204BE091D319EF300BD49DB"
-            BuildableName = "RetroArchiOS11.app"
+            BuildableName = "RetroArch.app"
             BlueprintName = "RetroArchiOS11"
             ReferencedContainer = "container:RetroArch_iOS11.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <Testables>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -56,13 +54,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9204BE091D319EF300BD49DB"
-            BuildableName = "RetroArchiOS11.app"
+            BuildableName = "RetroArch.app"
             BlueprintName = "RetroArchiOS11"
             ReferencedContainer = "container:RetroArch_iOS11.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <AdditionalOptions>
-      </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -75,7 +71,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9204BE091D319EF300BD49DB"
-            BuildableName = "RetroArchiOS11.app"
+            BuildableName = "RetroArch.app"
             BlueprintName = "RetroArchiOS11"
             ReferencedContainer = "container:RetroArch_iOS11.xcodeproj">
          </BuildableReference>
