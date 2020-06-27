@@ -177,6 +177,12 @@
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
 
+#if (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0) >= 200112) || (defined(__POSIX_VISIBLE) && __POSIX_VISIBLE >= 200112) || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112) || __USE_LARGEFILE
+#ifndef HAVE_64BIT_OFFSETS
+#define HAVE_64BIT_OFFSETS
+#endif
+#endif
+
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
 int64_t retro_vfs_file_seek_internal(
@@ -195,8 +201,6 @@ int64_t retro_vfs_file_seek_internal(
 /* VC2005 and up have a special 64-bit fseek */
 #ifdef ATLEAST_VC2005
       return _fseeki64(stream->fp, offset, whence);
-#elif defined(__CELLOS_LV2__) || defined(_MSC_VER) && _MSC_VER <= 1310
-      return fseek(stream->fp, (long)offset, whence);
 #elif defined(ORBIS)
       {
          int ret = orbisLseek(stream->fd, offset, whence);
@@ -204,8 +208,10 @@ int64_t retro_vfs_file_seek_internal(
             return -1;
          return 0;
       }
-#else
+#elif defined(HAVE_64BIT_OFFSETS)
       return fseeko(stream->fp, (off_t)offset, whence);
+#else
+      return fseek(stream->fp, (long)offset, whence);
 #endif
    }
 #ifdef HAVE_MMAP
@@ -604,6 +610,8 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       /* VC2005 and up have a special 64-bit ftell */
 #ifdef ATLEAST_VC2005
       return _ftelli64(stream->fp);
+#elif defined(HAVE_64BIT_OFFSETS)
+      return ftello(stream->fp);
 #else
       return ftell(stream->fp);
 #endif
