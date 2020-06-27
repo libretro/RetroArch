@@ -11160,7 +11160,14 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Read-Only"
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_NULL_DRIVERS,
+   "Ignore null drivers"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_NULL_DRIVERS,
+   "Don't allow the user to set a driver to nothing. Can prevent the user from locking him/herself out of the program."
+   )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,

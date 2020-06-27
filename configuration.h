@@ -328,6 +328,7 @@ typedef struct settings
       bool driver_switch_enable;
 
       /* Misc. */
+      bool add_null_drivers;
       bool discord_enable;
       bool threaded_data_runloop_enable;
       bool set_supports_no_game_enable;
