@@ -116,10 +116,21 @@ static int dir_list_read(const char *dir,
       char file_path[PATH_MAX_LENGTH];
       const char *name                = retro_dirent_get_name(entry);
 
-      if (!include_hidden && *name == '.')
-         continue;
-      if (!strcmp(name, ".") || !strcmp(name, ".."))
-         continue;
+      if (name[0] == '.')
+      {
+         /* Do not include hidden files and directories */
+         if (!include_hidden)
+            continue;
+
+         /* char-wise comparisons to avoid string comparison */
+
+         /* Do not include current dir */
+         if (name[1] == '\0')
+            continue;
+         /* Do not include parent dir */
+         if (name[1] == '.' && name[2] == '\0')
+            continue;
+      }
 
       file_path[0] = '\0';
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
