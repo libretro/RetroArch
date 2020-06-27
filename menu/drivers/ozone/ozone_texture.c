@@ -412,8 +412,10 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 #endif
       case MENU_INFO_MESSAGE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
+#if 0
       case MENU_BLUETOOTH:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_BLUETOOTH];
+#endif
       case MENU_WIFI:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_WIFI];
 #ifdef HAVE_NETWORKING
@@ -596,8 +598,10 @@ switch (id)
          return "undo.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO:
          return "core-infos.png";
+#if 0
       case OZONE_ENTRIES_ICONS_TEXTURE_BLUETOOTH:
          return "bluetooth.png";
+#endif
       case OZONE_ENTRIES_ICONS_TEXTURE_WIFI:
          return "wifi.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS:
