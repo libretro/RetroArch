@@ -844,12 +844,12 @@ const char *retro_vfs_file_get_path_impl(
 
 int retro_vfs_stat_impl(const char *path, int32_t *size)
 {
+   bool is_dir               = false;
+   bool is_character_special = false;
 #if defined(VITA) || defined(PSP)
    /* Vita / PSP */
    SceIoStat buf;
-   int stat_ret;
-   bool is_dir               = false;
-   bool is_character_special = false;
+   int dir_ret;
    char *tmp                 = NULL;
    size_t len                = 0;
 
@@ -861,41 +861,32 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    if (tmp[len-1] == '/')
       tmp[len-1] = '\0';
 
-   stat_ret = sceIoGetstat(tmp, &buf);
+   dir_ret                   = sceIoGetstat(tmp, &buf);
    free(tmp);
-   if (stat_ret < 0)
+   if (dir_ret < 0)
       return 0;
 
    if (size)
-      *size = (int32_t)buf.st_size;
+      *size                  = (int32_t)buf.st_size;
 
-   is_dir = FIO_S_ISDIR(buf.st_mode);
-
-   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
-
+   is_dir                    = FIO_S_ISDIR(buf.st_mode);
 #elif defined(ORBIS)
    /* Orbis */
-   bool is_dir, is_character_special;
-   int dir_ret;
+   int dir_ret               = 0;
 
    if (!path || !*path)
       return 0;
 
    if (size)
-      *size = (int32_t)buf.st_size;
+      *size                  = (int32_t)buf.st_size;
 
-   dir_ret = orbisDopen(path);
-   is_dir  = dir_ret > 0;
+   dir_ret                   = orbisDopen(path);
+   is_dir                    = dir_ret > 0;
    orbisDclose(dir_ret);
 
-   is_character_special = S_ISCHR(buf.st_mode);
-
-   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
-
+   is_character_special      = S_ISCHR(buf.st_mode);
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    /* CellOS Lv2 */
-   bool is_dir;
-   bool is_character_special = false;
    CellFsStat buf;
 
    if (!path || !*path)
@@ -904,18 +895,14 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       return 0;
 
    if (size)
-      *size = (int32_t)buf.st_size;
+      *size                  = (int32_t)buf.st_size;
 
-   is_dir = ((buf.st_mode & S_IFMT) == S_IFDIR);
-
-   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
+   is_dir                    = ((buf.st_mode & S_IFMT) == S_IFDIR);
 
 #elif defined(_WIN32)
    /* Windows */
-   bool is_dir;
    DWORD file_info;
    struct _stat buf;
-   bool is_character_special = false;
 #if defined(LEGACY_WIN32)
    char *path_local          = NULL;
 #else
@@ -926,8 +913,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       return 0;
 
 #if defined(LEGACY_WIN32)
-   path_local = utf8_to_local_string_alloc(path);
-   file_info  = GetFileAttributes(path_local);
+   path_local                = utf8_to_local_string_alloc(path);
+   file_info                 = GetFileAttributes(path_local);
 
    if (!string_is_empty(path_local))
       _stat(path_local, &buf);
@@ -935,8 +922,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    if (path_local)
       free(path_local);
 #else
-   path_wide = utf8_to_utf16_string_alloc(path);
-   file_info = GetFileAttributesW(path_wide);
+   path_wide                 = utf8_to_utf16_string_alloc(path);
+   file_info                 = GetFileAttributesW(path_wide);
 
    _wstat(path_wide, &buf);
 
@@ -951,12 +938,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       *size = (int32_t)buf.st_size;
 
    is_dir = (file_info & FILE_ATTRIBUTE_DIRECTORY);
-
-   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
-
 #else
    /* Every other platform */
-   bool is_dir, is_character_special;
    struct stat buf;
 
    if (!path || !*path)
@@ -969,9 +952,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
    is_dir               = S_ISDIR(buf.st_mode);
    is_character_special = S_ISCHR(buf.st_mode);
-
-   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
 #endif
+   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
 }
 
 #if defined(VITA)
@@ -986,15 +968,15 @@ int retro_vfs_mkdir_impl(const char *dir)
 {
 #if defined(_WIN32)
 #ifdef LEGACY_WIN32
-   int ret       = _mkdir(dir);
+   int ret        = _mkdir(dir);
 #else
-   wchar_t *dirW = utf8_to_utf16_string_alloc(dir);
-   int       ret = -1;
+   wchar_t *dir_w = utf8_to_utf16_string_alloc(dir);
+   int       ret  = -1;
 
-   if (dirW)
+   if (dir_w)
    {
-      ret = _wmkdir(dirW);
-      free(dirW);
+      ret = _wmkdir(dir_w);
+      free(dir_w);
    }
 #endif
 #elif defined(IOS)
@@ -1170,12 +1152,12 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
 #if defined(_WIN32)
 #if defined(LEGACY_WIN32)
    {
-      char *name_local = local_to_utf8_string_alloc(rdir->entry.cFileName);
+      char *name = local_to_utf8_string_alloc(rdir->entry.cFileName);
       memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
-      strlcpy(rdir->entry.cFileName, name_local, sizeof(rdir->entry.cFileName));
+      strlcpy(rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
 
-      if (name_local)
-         free(name_local);
+      if (name)
+         free(name);
    }
 #else
    {
@@ -1203,17 +1185,17 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
    const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)&rdir->entry;
    return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(PSP) || defined(VITA)
-   const SceIoDirent *entry = (const SceIoDirent*)&rdir->entry;
+   const SceIoDirent *entry     = (const SceIoDirent*)&rdir->entry;
 #if defined(PSP)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(VITA)
    return SCE_S_ISDIR(entry->d_stat.st_mode);
 #endif
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   CellFsDirent *entry = (CellFsDirent*)&rdir->entry;
+   CellFsDirent *entry          = (CellFsDirent*)&rdir->entry;
    return (entry->d_type == CELL_FS_TYPE_DIRECTORY);
 #elif defined(ORBIS)
-   const struct dirent *entry = &rdir->entry;
+   const struct dirent *entry   = &rdir->entry;
    if (entry->d_type == DT_DIR)
       return true;
    if (!(entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK))
