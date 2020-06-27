@@ -275,13 +275,19 @@ static void* task_push_http_transfer_generic(
    if (!conn)
       return NULL;
 
-   http                    = (http_handle_t*)calloc(1, sizeof(*http));
+   http                    = (http_handle_t*)malloc(sizeof(*http));
 
    if (!http)
       goto error;
 
-   http->connection.handle = conn;
-   http->connection.cb     = &cb_http_conn_default;
+   http->connection.handle   = conn;
+   http->connection.cb       = &cb_http_conn_default;
+   http->connection.elem1[0] = '\0';
+   http->connection.url[0]   = '\0';
+   http->handle              = NULL;
+   http->cb                  = NULL;
+   http->status              = 0;
+   http->error               = false;
 
    if (type)
       strlcpy(http->connection.elem1, type, sizeof(http->connection.elem1));

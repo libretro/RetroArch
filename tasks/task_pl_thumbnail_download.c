@@ -257,15 +257,17 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
       /* Only download missing thumbnails */
       if (!path_is_valid(path) || pl_thumb->overwrite)
       {
-         file_transfer_t *transf = (file_transfer_t*)calloc(1, sizeof(file_transfer_t));
+         file_transfer_t *transf = (file_transfer_t*)malloc(sizeof(file_transfer_t));
          if (!transf)
             return; /* If this happens then everything is broken anyway... */
 
          /* Initialise http task status */
          pl_thumb->http_task_complete = false;
 
+         transf->enum_idx             = MSG_UNKNOWN;
+         transf->path[0]              = '\0';
          /* Initialise file transfer */
-         transf->user_data = (void*)pl_thumb;
+         transf->user_data            = (void*)pl_thumb;
          strlcpy(transf->path, path, sizeof(transf->path));
 
          /* Note: We don't actually care if this fails since that
@@ -478,9 +480,9 @@ bool task_push_pl_thumbnail_download(
       const char *dir_thumbnails)
 {
    task_finder_data_t find_data;
+   const char *playlist_file     = NULL;
    retro_task_t *task            = task_init();
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
-   const char *playlist_file     = NULL;
    
    /* Sanity check */
    if (!playlist_config || !task || !pl_thumb)
@@ -787,7 +789,7 @@ bool task_push_pl_entry_thumbnail_download(
    settings_t *settings          = config_get_ptr();
    retro_task_t *task            = task_init();
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
-   pl_entry_id_t *entry_id       = (pl_entry_id_t*)calloc(1, sizeof(pl_entry_id_t));
+   pl_entry_id_t *entry_id       = (pl_entry_id_t*)malloc(sizeof(pl_entry_id_t));
    char *playlist_path           = NULL;
    gfx_thumbnail_path_data_t *
          thumbnail_path_data     = NULL;
