@@ -207,11 +207,16 @@ VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 static void vulkan_emulated_mailbox_loop(void *userdata)
 {
    VkFence fence;
-   VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-   struct vulkan_emulated_mailbox *mailbox = (struct vulkan_emulated_mailbox*)userdata;
+   VkFenceCreateInfo info;
+   struct vulkan_emulated_mailbox *mailbox = 
+      (struct vulkan_emulated_mailbox*)userdata;
 
    if (!mailbox)
       return;
+
+   info.sType             = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   info.pNext             = NULL;
+   info.flags             = 0;
 
    vkCreateFence(mailbox->device, &info, NULL, &fence);
 
@@ -230,16 +235,20 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
       mailbox->request_acquire = false;
       slock_unlock(mailbox->lock);
 
-      mailbox->result = vkAcquireNextImageKHR(mailbox->device, mailbox->swapchain, UINT64_MAX,
+      mailbox->result          = vkAcquireNextImageKHR(
+            mailbox->device, mailbox->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &mailbox->index);
 
-      /* VK_SUBOPTIMAL_KHR can be returned on Android 10 when prerotate is not dealt with.
-       * This is not an error we need to care about, and we'll treat it as SUCCESS. */
+      /* VK_SUBOPTIMAL_KHR can be returned on Android 10 
+       * when prerotate is not dealt with.
+       * This is not an error we need to care about, 
+       * and we'll treat it as SUCCESS. */
       if (mailbox->result == VK_SUBOPTIMAL_KHR)
          mailbox->result = VK_SUCCESS;
 
       if (mailbox->result == VK_SUCCESS)
-         vkWaitForFences(mailbox->device, 1, &fence, true, UINT64_MAX);
+         vkWaitForFences(mailbox->device, 1,
+               &fence, true, UINT64_MAX);
       vkResetFences(mailbox->device, 1, &fence);
 
       if (mailbox->result == VK_SUCCESS)
@@ -911,18 +920,23 @@ static void vulkan_write_quad_descriptors(
       const struct vk_texture *texture,
       VkSampler sampler)
 {
+   VkWriteDescriptorSet write;
    VkDescriptorBufferInfo buffer_info;
-   VkWriteDescriptorSet write      = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 
    buffer_info.buffer              = buffer;
    buffer_info.offset              = offset;
    buffer_info.range               = range;
 
+   write.sType                     = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+   write.pNext                     = NULL;
    write.dstSet                    = set;
    write.dstBinding                = 0;
+   write.dstArrayElement           = 0;
    write.descriptorCount           = 1;
    write.descriptorType            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   write.pImageInfo                = NULL;
    write.pBufferInfo               = &buffer_info;
+   write.pTexelBufferView          = NULL;
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 
    if (texture)
@@ -1178,18 +1192,21 @@ void vulkan_image_layout_transition_levels(
       VkAccessFlags src_access, VkAccessFlags dst_access,
       VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages)
 {
-   VkImageMemoryBarrier barrier        = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+   VkImageMemoryBarrier barrier;
 
-   barrier.srcAccessMask               = src_access;
-   barrier.dstAccessMask               = dst_access;
-   barrier.oldLayout                   = old_layout;
-   barrier.newLayout                   = new_layout;
-   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   barrier.image                       = image;
-   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.levelCount = levels;
-   barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+   barrier.sType                         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barrier.pNext                         = NULL;
+   barrier.srcAccessMask                 = src_access;
+   barrier.dstAccessMask                 = dst_access;
+   barrier.oldLayout                     = old_layout;
+   barrier.newLayout                     = new_layout;
+   barrier.srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
+   barrier.dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
+   barrier.image                         = image;
+   barrier.subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.baseMipLevel = 0;
+   barrier.subresourceRange.levelCount   = levels;
+   barrier.subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
 
    vkCmdPipelineBarrier(cmd,
          src_stages,
@@ -1206,16 +1223,23 @@ struct vk_buffer vulkan_create_buffer(
 {
    struct vk_buffer buffer;
    VkMemoryRequirements mem_reqs;
-   VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-   VkBufferCreateInfo info    = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+   VkBufferCreateInfo info;
+   VkMemoryAllocateInfo alloc;
 
+   info.sType                 = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   info.pNext                 = NULL;
+   info.flags                 = 0;
    info.size                  = size;
    info.usage                 = usage;
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+   info.queueFamilyIndexCount = 0;
+   info.pQueueFamilyIndices   = NULL;
    vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
 
    vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
 
+   alloc.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext                = NULL;
    alloc.allocationSize       = mem_reqs.size;
    alloc.memoryTypeIndex      = vulkan_find_memory_type(
          &context->memory_properties,
@@ -1225,7 +1249,7 @@ struct vk_buffer vulkan_create_buffer(
    vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
    vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
-   buffer.size = size;
+   buffer.size                = size;
 
    vkMapMemory(context->device,
          buffer.memory, 0, buffer.size, 0, &buffer.mapped);
@@ -1249,24 +1273,25 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
       const struct vk_descriptor_manager *manager)
 {
    unsigned i;
-   VkDescriptorPoolCreateInfo pool_info   = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-   VkDescriptorSetAllocateInfo alloc_info = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
-
+   VkDescriptorPoolCreateInfo pool_info;
+   VkDescriptorSetAllocateInfo alloc_info;
    struct vk_descriptor_pool *pool        =
       (struct vk_descriptor_pool*)calloc(1, sizeof(*pool));
    if (!pool)
       return NULL;
 
+   pool_info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+   pool_info.pNext         = NULL;
+   pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
    pool_info.maxSets       = VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS;
    pool_info.poolSizeCount = manager->num_sizes;
    pool_info.pPoolSizes    = manager->sizes;
-   pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
    vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool);
 
    /* Just allocate all descriptor sets up front. */
+   alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+   alloc_info.pNext              = NULL;
    alloc_info.descriptorPool     = pool->pool;
    alloc_info.descriptorSetCount = 1;
    alloc_info.pSetLayouts        = &manager->set_layout;
@@ -2597,7 +2622,7 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
-   VkPresentInfoKHR present           = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+   VkPresentInfoKHR present;
    VkResult result                    = VK_SUCCESS;
    VkResult err                       = VK_SUCCESS;
 
@@ -2612,12 +2637,14 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       return;
    }
 
+   present.sType                   = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+   present.pNext                   = NULL;
+   present.waitSemaphoreCount      = 1;
+   present.pWaitSemaphores         = &vk->context.swapchain_semaphores[index];
    present.swapchainCount          = 1;
    present.pSwapchains             = &vk->swapchain;
    present.pImageIndices           = &index;
    present.pResults                = &result;
-   present.waitSemaphoreCount      = 1;
-   present.pWaitSemaphores         = &vk->context.swapchain_semaphores[index];
 
    /* Better hope QueuePresent doesn't block D: */
 #ifdef HAVE_THREADS
@@ -2738,7 +2765,11 @@ static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
 {
    if (ctx->num_recycled_acquire_semaphores == 0)
    {
-      VkSemaphoreCreateInfo sem_info = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+      VkSemaphoreCreateInfo sem_info;
+      
+      sem_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+      sem_info.pNext = NULL;
+      sem_info.flags = 0;
       vkCreateSemaphore(ctx->device, &sem_info, NULL,
             &ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++]);
    }
@@ -3304,17 +3335,22 @@ void vulkan_set_uniform_buffer(
       VkDeviceSize range)
 {
    VkDescriptorBufferInfo buffer_info;
-   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+   VkWriteDescriptorSet write;
 
    buffer_info.buffer         = buffer;
    buffer_info.offset         = offset;
    buffer_info.range          = range;
 
+   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+   write.pNext                = NULL;
    write.dstSet               = set;
    write.dstBinding           = binding;
+   write.dstArrayElement      = 0;
    write.descriptorCount      = 1;
    write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   write.pImageInfo           = NULL;
    write.pBufferInfo          = &buffer_info;
+   write.pTexelBufferView     = NULL;
 
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 }
@@ -3330,10 +3366,7 @@ void vulkan_framebuffer_generate_mips(
    unsigned i;
    /* This is run every frame, so make sure
     * we aren't opting into the "lazy" way of doing this. :) */
-   VkImageMemoryBarrier barriers[2] = {
-      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
-      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
-   };
+   VkImageMemoryBarrier barriers[2];
 
    /* First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
     * This should allow the surface to stay compressed.
@@ -3342,6 +3375,8 @@ void vulkan_framebuffer_generate_mips(
     */
 
    /* Input */
+   barriers[0].sType                         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barriers[0].pNext                         = NULL;
    barriers[0].srcAccessMask                 = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
    barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
    barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -3355,6 +3390,8 @@ void vulkan_framebuffer_generate_mips(
    barriers[0].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
 
    /* The rest of the mip chain */
+   barriers[1].sType                         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barriers[1].pNext                         = NULL;
    barriers[1].srcAccessMask                 = 0;
    barriers[1].dstAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
    barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -3556,17 +3593,22 @@ void vulkan_pass_set_texture(
       VkImageView imageView, VkImageLayout imageLayout)
 {
    VkDescriptorImageInfo image_info;
-   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+   VkWriteDescriptorSet write;
 
    image_info.sampler         = sampler;
    image_info.imageView       = imageView;
    image_info.imageLayout     = imageLayout;
 
+   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+   write.pNext                = NULL;
    write.dstSet               = set;
    write.dstBinding           = binding;
+   write.dstArrayElement      = 0;
    write.descriptorCount      = 1;
    write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
    write.pImageInfo           = &image_info;
+   write.pBufferInfo          = NULL;
+   write.pTexelBufferView     = NULL;
 
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 }
