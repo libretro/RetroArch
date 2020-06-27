@@ -3046,7 +3046,6 @@ static int menu_input_key_bind_set_mode_common(
    file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
    size_t selection               = menu_navigation_get_selection();
    struct rarch_state *p_rarch    = &rarch_st;
-   settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
 
    menu_displaylist_info_init(&info);
@@ -3494,7 +3493,6 @@ bool menu_input_key_bind_set_mode(
 bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
 {
    struct rarch_state *p_rarch    = &rarch_st;
-   settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
    if (!lim)
       return false;
