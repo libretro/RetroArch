@@ -298,7 +298,7 @@ void gfx_thumbnail_request(
       if (path_is_valid(thumbnail_path))
       {
          gfx_thumbnail_tag_t *thumbnail_tag =
-               (gfx_thumbnail_tag_t*)calloc(1, sizeof(gfx_thumbnail_tag_t));
+               (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t));
 
          if (!thumbnail_tag)
             goto end;
@@ -398,7 +398,7 @@ void gfx_thumbnail_request_file(
       return;
 
    /* Load thumbnail */
-   thumbnail_tag = (gfx_thumbnail_tag_t*)calloc(1, sizeof(gfx_thumbnail_tag_t));
+   thumbnail_tag = (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t));
 
    if (!thumbnail_tag)
       return;
