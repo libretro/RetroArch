@@ -16,11 +16,13 @@
 #include <compat/strl.h>
 #include <configuration.h>
 #include <retro_timers.h>
+#include <string/stdstring.h>
 
 #include "../bluetooth_driver.h"
 #include "../../retroarch.h"
 
-typedef struct {
+typedef struct
+{
    /* object path. usually looks like /org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF
     * technically unlimited, but should be enough */
    char path[128];
@@ -47,11 +49,13 @@ typedef struct {
 #undef VECTOR_LIST_TYPE
 #undef VECTOR_LIST_NAME
 
+/* TODO/FIXME - static globals - should go into userdata
+ * struct for driver */
 static struct device_info_vector_list *devices = NULL;
-static char adapter[256] = {0};
-static DBusConnection* dbus_connection = NULL;
-static bool bluez_cache[256] = {0};
-static int bluez_cache_counter[256] = {0};
+static char adapter[256]                       = {0};
+static DBusConnection* dbus_connection         = NULL;
+static bool bluez_cache[256]                   = {0};
+static int bluez_cache_counter[256]            = {0};
 
 static void *bluez_init (void)
 {
@@ -97,18 +101,21 @@ set_bool_property (
 
    DBusMessageIter req_iter, req_subiter;
    dbus_message_iter_init_append(message, &req_iter);
-   if (!dbus_message_iter_append_basic(&req_iter, DBUS_TYPE_STRING, &arg_adapter))
+   if (!dbus_message_iter_append_basic(
+            &req_iter, DBUS_TYPE_STRING, &arg_adapter))
       goto fault;
-   if (!dbus_message_iter_append_basic(&req_iter, DBUS_TYPE_STRING, &arg_property))
+   if (!dbus_message_iter_append_basic(
+            &req_iter, DBUS_TYPE_STRING, &arg_property))
       goto fault;
-   if (!dbus_message_iter_open_container(&req_iter, DBUS_TYPE_VARIANT,
-      DBUS_TYPE_BOOLEAN_AS_STRING, &req_subiter))
-   {
+   if (!dbus_message_iter_open_container(
+            &req_iter, DBUS_TYPE_VARIANT,
+            DBUS_TYPE_BOOLEAN_AS_STRING, &req_subiter))
       goto fault;
-   }
-   if (!dbus_message_iter_append_basic(&req_subiter, DBUS_TYPE_BOOLEAN, &value))
+   if (!dbus_message_iter_append_basic(
+            &req_subiter, DBUS_TYPE_BOOLEAN, &value))
       goto fault;
-   if (!dbus_message_iter_close_container(&req_iter, &req_subiter))
+   if (!dbus_message_iter_close_container(
+            &req_iter, &req_subiter))
       goto fault;
 
    reply = dbus_connection_send_with_reply_and_block(dbus_connection,
@@ -125,8 +132,7 @@ fault:
    return 1;
 }
 
-static int
-get_bool_property (
+static int get_bool_property(
    const char *path,
    const char *arg_adapter,
    const char *arg_property,
@@ -147,9 +153,7 @@ get_bool_property (
       DBUS_TYPE_STRING, &arg_adapter,
       DBUS_TYPE_STRING, &arg_property,
       DBUS_TYPE_INVALID))
-   {
       return 1;
-   }
 
    reply = dbus_connection_send_with_reply_and_block(dbus_connection,
       message, 1000, &err);
@@ -161,8 +165,10 @@ get_bool_property (
 
    if (!dbus_message_iter_init(reply, &root_iter))
       return 1;
+
    if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(&root_iter))
       return 1;
+
    dbus_message_iter_recurse(&root_iter, &variant_iter);
    dbus_message_iter_get_basic(&variant_iter, value);
 
@@ -170,13 +176,11 @@ get_bool_property (
    return 0;
 }
 
-static int
-adapter_discovery (const char *method)
+static int adapter_discovery (const char *method)
 {
-   DBusMessage *message;
-
-   message = dbus_message_new_method_call( "org.bluez", adapter,
-      "org.bluez.Adapter1", method);
+   DBusMessage *message = dbus_message_new_method_call(
+         "org.bluez", adapter,
+         "org.bluez.Adapter1", method);
    if (!message)
       return 1;
 
@@ -189,29 +193,27 @@ adapter_discovery (const char *method)
    return 0;
 }
 
-static int
-get_managed_objects (DBusMessage **reply)
+static int get_managed_objects (DBusMessage **reply)
 {
    DBusMessage *message;
    DBusError err;
 
    dbus_error_init(&err);
 
-   message = dbus_message_new_method_call( "org.bluez", "/",
-      "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
+   message = dbus_message_new_method_call("org.bluez", "/",
+         "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
    if (!message)
       return 1;
 
    *reply = dbus_connection_send_with_reply_and_block(dbus_connection,
-      message, -1, &err);
+         message, -1, &err);
    /* if (!reply) is done by the caller in this one */
 
    dbus_message_unref(message);
    return 0;
 }
 
-static int
-device_method (const char *path, const char *method)
+static int device_method (const char *path, const char *method)
 {
    DBusMessage *message, *reply;
    DBusError err;
@@ -219,12 +221,12 @@ device_method (const char *path, const char *method)
    dbus_error_init(&err);
 
    message = dbus_message_new_method_call( "org.bluez", path,
-      "org.bluez.Device1", method);
+         "org.bluez.Device1", method);
    if (!message)
       return 1;
 
    reply = dbus_connection_send_with_reply_and_block(dbus_connection,
-      message, 10000, &err);
+         message, 10000, &err);
    if (!reply)
       return 1;
 
@@ -234,8 +236,7 @@ device_method (const char *path, const char *method)
    return 0;
 }
 
-static int
-device_remove (const char *path)
+static int device_remove (const char *path)
 {
    DBusMessage *message, *reply;
    DBusError err;
@@ -243,19 +244,17 @@ device_remove (const char *path)
    dbus_error_init(&err);
 
    message = dbus_message_new_method_call( "org.bluez", adapter,
-      "org.bluez.Adapter11", "RemoveDevice");
+         "org.bluez.Adapter11", "RemoveDevice");
    if (!message)
       return 1;
 
    if (!dbus_message_append_args(message,
-      DBUS_TYPE_OBJECT_PATH, &path,
-      DBUS_TYPE_INVALID))
-   {
+            DBUS_TYPE_OBJECT_PATH, &path,
+            DBUS_TYPE_INVALID))
       return 1;
-   }
 
    reply = dbus_connection_send_with_reply_and_block(dbus_connection,
-      message, 10000, &err);
+         message, 10000, &err);
    if (!reply)
       return 1;
 
@@ -265,8 +264,7 @@ device_remove (const char *path)
    return 0;
 }
 
-static int
-get_default_adapter (DBusMessage *reply)
+static int get_default_adapter(DBusMessage *reply)
 {
    /* "...an application would discover the available adapters by
     * performing a ObjectManager.GetManagedObjects call and look for any
@@ -292,7 +290,8 @@ get_default_adapter (DBusMessage *reply)
    if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&root_iter))
       return 1;
    dbus_message_iter_recurse(&root_iter, &array_1_iter);
-   do {
+   do
+   {
       /* a{...} */
       if (DBUS_TYPE_DICT_ENTRY != dbus_message_iter_get_arg_type(&array_1_iter))
          return 1;
@@ -309,21 +308,27 @@ get_default_adapter (DBusMessage *reply)
       if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&dict_1_iter))
          return 1;
       dbus_message_iter_recurse(&dict_1_iter, &array_2_iter);
-      do {
+      do
+      {
          /* empty array? */
-         if (DBUS_TYPE_INVALID == dbus_message_iter_get_arg_type(&array_2_iter))
+         if (DBUS_TYPE_INVALID == 
+               dbus_message_iter_get_arg_type(&array_2_iter))
             continue;
 
          /* a{oa{...}} */
-         if (DBUS_TYPE_DICT_ENTRY != dbus_message_iter_get_arg_type(&array_2_iter))
+         if (DBUS_TYPE_DICT_ENTRY != 
+               dbus_message_iter_get_arg_type(&array_2_iter))
             return 1;
          dbus_message_iter_recurse(&array_2_iter, &dict_2_iter);
 
          /* a{oa{s...}} */
-         if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&dict_2_iter))
+         if (DBUS_TYPE_STRING != 
+               dbus_message_iter_get_arg_type(&dict_2_iter))
             return 1;
          dbus_message_iter_get_basic(&dict_2_iter, &interface_name);
-         if (strcmp(interface_name, "org.bluez.Adapter1") == 0) {
+
+         if (string_is_equal(interface_name, "org.bluez.Adapter1"))
+         {
             strlcpy(adapter, obj_path, 256);
             return 0;
          }
@@ -334,16 +339,13 @@ get_default_adapter (DBusMessage *reply)
    return 1;
 }
 
-static int
-read_scanned_devices (DBusMessage *reply)
+static int read_scanned_devices (DBusMessage *reply)
 {
+   device_info_t device;
    DBusMessageIter root_iter;
    DBusMessageIter dict_1_iter, dict_2_iter, dict_3_iter;
    DBusMessageIter array_1_iter, array_2_iter, array_3_iter;
    DBusMessageIter variant_iter;
-
-   device_info_t device;
-
    char *obj_path, *interface_name, *interface_property_name;
    char *found_device_address, *found_device_name, *found_device_icon;
 
@@ -354,69 +356,93 @@ read_scanned_devices (DBusMessage *reply)
    /* a */
    if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&root_iter))
       return 1;
+
    dbus_message_iter_recurse(&root_iter, &array_1_iter);
-   do {
+
+   do
+   {
       /* a{...} */
-      if (DBUS_TYPE_DICT_ENTRY != dbus_message_iter_get_arg_type(&array_1_iter))
+      if (DBUS_TYPE_DICT_ENTRY != 
+            dbus_message_iter_get_arg_type(&array_1_iter))
          return 1;
+
       dbus_message_iter_recurse(&array_1_iter, &dict_1_iter);
 
       /* a{o...} */
-      if (DBUS_TYPE_OBJECT_PATH != dbus_message_iter_get_arg_type(&dict_1_iter))
+      if (DBUS_TYPE_OBJECT_PATH != 
+            dbus_message_iter_get_arg_type(&dict_1_iter))
          return 1;
+
       dbus_message_iter_get_basic(&dict_1_iter, &obj_path);
 
       if (!dbus_message_iter_next(&dict_1_iter))
          return 1;
+
       /* a{oa} */
-      if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&dict_1_iter))
+      if (DBUS_TYPE_ARRAY != 
+            dbus_message_iter_get_arg_type(&dict_1_iter))
          return 1;
+
       dbus_message_iter_recurse(&dict_1_iter, &array_2_iter);
-      do {
+      do
+      {
          /* empty array? */
-         if (DBUS_TYPE_INVALID == dbus_message_iter_get_arg_type(&array_2_iter))
+         if (DBUS_TYPE_INVALID == 
+               dbus_message_iter_get_arg_type(&array_2_iter))
             continue;
 
          /* a{oa{...}} */
-         if (DBUS_TYPE_DICT_ENTRY != dbus_message_iter_get_arg_type(&array_2_iter))
+         if (DBUS_TYPE_DICT_ENTRY != 
+               dbus_message_iter_get_arg_type(&array_2_iter))
             return 1;
          dbus_message_iter_recurse(&array_2_iter, &dict_2_iter);
 
          /* a{oa{s...}} */
-         if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&dict_2_iter))
+         if (DBUS_TYPE_STRING != 
+               dbus_message_iter_get_arg_type(&dict_2_iter))
             return 1;
          dbus_message_iter_get_basic(&dict_2_iter, &interface_name);
-         if (strcmp(interface_name, "org.bluez.Device1") != 0)
+
+         if (!string_is_equal(interface_name, "org.bluez.Device1"))
             continue;
+
          memset(&device, 0, sizeof(device));
          strlcpy(device.path, obj_path, 128);
 
          if (!dbus_message_iter_next(&dict_2_iter))
             return 1;
+
          /* a{oa{sa}} */
          if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&dict_2_iter))
             return 1;
+
          dbus_message_iter_recurse(&dict_2_iter, &array_3_iter);
 
          do {
             /* empty array? */
-            if (DBUS_TYPE_INVALID == dbus_message_iter_get_arg_type(&array_3_iter))
+            if (DBUS_TYPE_INVALID ==
+                  dbus_message_iter_get_arg_type(&array_3_iter))
                continue;
 
             /* a{oa{sa{...}}} */
-            if (DBUS_TYPE_DICT_ENTRY != dbus_message_iter_get_arg_type(&array_3_iter))
+            if (DBUS_TYPE_DICT_ENTRY != 
+                  dbus_message_iter_get_arg_type(&array_3_iter))
                return 1;
             dbus_message_iter_recurse(&array_3_iter, &dict_3_iter);
 
             /* a{oa{sa{s...}}} */
-            if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&dict_3_iter))
+            if (DBUS_TYPE_STRING != 
+                  dbus_message_iter_get_arg_type(&dict_3_iter))
                return 1;
-            dbus_message_iter_get_basic(&dict_3_iter, &interface_property_name);
+
+            dbus_message_iter_get_basic(&dict_3_iter,
+                  &interface_property_name);
 
             if (!dbus_message_iter_next(&dict_3_iter))
                return 1;
             /* a{oa{sa{sv}}} */
-            if (DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type(&dict_3_iter))
+            if (DBUS_TYPE_VARIANT != 
+                  dbus_message_iter_get_arg_type(&dict_3_iter))
                return 1;
 
             /* Below, "Alias" property is used instead of "Name".
@@ -429,25 +455,44 @@ read_scanned_devices (DBusMessage *reply)
 
             /* DBUS_TYPE_VARIANT is a container type */
             dbus_message_iter_recurse(&dict_3_iter, &variant_iter);
-            if (strcmp(interface_property_name, "Address") == 0) {
-               dbus_message_iter_get_basic(&variant_iter, &found_device_address);
+            if (string_is_equal(interface_property_name, "Address"))
+            {
+               dbus_message_iter_get_basic(&variant_iter,
+                     &found_device_address);
                strlcpy(device.address, found_device_address, 18);
-            } else if (strcmp(interface_property_name, "Alias") == 0) {
-               dbus_message_iter_get_basic(&variant_iter, &found_device_name);
+            }
+            else if (string_is_equal(interface_property_name, "Alias"))
+            {
+               dbus_message_iter_get_basic(&variant_iter,
+                     &found_device_name);
                strlcpy(device.name, found_device_name, 64);
-            } else if (strcmp(interface_property_name, "Icon") == 0) {
-               dbus_message_iter_get_basic(&variant_iter, &found_device_icon);
+            }
+            else if (string_is_equal(interface_property_name, "Icon"))
+            {
+               dbus_message_iter_get_basic(&variant_iter,
+                     &found_device_icon);
                strlcpy(device.icon, found_device_icon, 64);
-            } else if (strcmp(interface_property_name, "Connected") == 0) {
-               dbus_message_iter_get_basic(&variant_iter, &device.connected);
-            } else if (strcmp(interface_property_name, "Paired") == 0) {
-               dbus_message_iter_get_basic(&variant_iter, &device.paired);
-            } else if (strcmp(interface_property_name, "Trusted") == 0) {
-               dbus_message_iter_get_basic(&variant_iter, &device.trusted);
+            }
+            else if (string_is_equal(interface_property_name, "Connected"))
+            {
+               dbus_message_iter_get_basic(&variant_iter,
+                     &device.connected);
+            }
+            else if (string_is_equal(interface_property_name, "Paired"))
+            {
+               dbus_message_iter_get_basic(&variant_iter,
+                     &device.paired);
+            }
+            else if (string_is_equal(interface_property_name, "Trusted"))
+            {
+               dbus_message_iter_get_basic(&variant_iter,
+                     &device.trusted);
             }
          } while (dbus_message_iter_next(&array_3_iter));
+
          if (!device_info_vector_list_append(devices, device))
             return 1;
+
       } while (dbus_message_iter_next(&array_2_iter));
    } while (dbus_message_iter_next(&array_1_iter));
 
@@ -529,7 +574,7 @@ static void bluez_get_devices (struct string_list* devices_string_list)
    for (i = 0; i < devices->count; i++)
    {
       char device[64];
-      strlcpy(device, devices->data[i].name, 64);
+      strlcpy(device, devices->data[i].name, sizeof(device));
       string_list_append(devices_string_list, device, attr);
    }
 }
@@ -538,34 +583,36 @@ static bool bluez_device_is_connected (unsigned i)
 {
    int value;
 
-   if (bluez_cache_counter[i] == 60) {
+   if (bluez_cache_counter[i] == 60)
+   {
       bluez_cache_counter[i] = 0;
       bluez_dbus_connect();
       get_bool_property(devices->data[i].path, "org.bluez.Device1",
-         "Connected", &value);
+            "Connected", &value);
       bluez_dbus_disconnect();
 
       bluez_cache[i] = value;
       return value;
-   } else {
-      bluez_cache_counter[i]++;
-      return bluez_cache[i];
    }
+
+   bluez_cache_counter[i]++;
+   return bluez_cache[i];
 }
 
-static void bluez_device_get_sublabel (char *s, unsigned i, size_t len)
+static void bluez_device_get_sublabel(char *s, unsigned i, size_t len)
 {
    strlcpy(s, devices->data[i].address, len);
 }
 
-static bool bluez_connect_device (unsigned i)
+static bool bluez_connect_device(unsigned i)
 {
    bluez_dbus_connect();
 
    /* Remove the device */
    device_remove(devices->data[i].path);
    /* Trust the device */
-   if (set_bool_property(devices->data[i].path, "org.bluez.Device1", "Trusted", 1))
+   if (set_bool_property(devices->data[i].path,
+            "org.bluez.Device1", "Trusted", 1))
       return false;
    /* Pair the device */
    if (device_method(devices->data[i].path, "Pair"))

@@ -18,6 +18,8 @@
 #include "../bluetooth_driver.h"
 #include "../../retroarch.h"
 
+/* TODO/FIXME - static globals - should go into userdata
+ * struct for driver */
 static bool bluetoothctl_cache[256]       = {0};
 static unsigned bluetoothctl_counter[256] = {0};
 static struct string_list* lines          = NULL;
@@ -64,6 +66,7 @@ static void bluetoothctl_scan(void)
          MESSAGE_QUEUE_CATEGORY_INFO);
 
    dev_file = popen("bluetoothctl -- devices", "r");
+
    while (fgets(line, 512, dev_file))
    {
       size_t len = strlen(line);
@@ -72,6 +75,7 @@ static void bluetoothctl_scan(void)
 
       string_list_append(lines, line, attr);
    }
+
    pclose(dev_file);
 }
 
@@ -79,6 +83,7 @@ static void bluetoothctl_get_devices(struct string_list* devices)
 {
    unsigned i;
    union string_list_elem_attr attr;
+
    attr.i = 0;
 
    if (!lines)
@@ -151,6 +156,7 @@ static bool bluetoothctl_connect_device(unsigned idx)
    char device[18]                     = {0};
    const char *line                    = lines->elems[idx].data;
    static struct string_list* list     = NULL;
+
    /* bluetoothctl devices outputs lines of the format:
     * $ bluetoothctl devices
     *     'Device (mac address) (device name)'
