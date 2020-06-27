@@ -2819,6 +2819,17 @@ static const char **input_keyboard_start_line(void *userdata,
 static bool input_keyboard_ctl(
       enum rarch_input_keyboard_ctl_state state, void *data);
 
+#ifdef HAVE_MENU
+static void menu_driver_list_free(
+      struct rarch_state *p_rarch,
+      menu_ctx_list_t *list);
+static void menu_input_post_iterate(
+      struct rarch_state *p_rarch,
+      int *ret, unsigned action,
+      retro_time_t current_time);
+static void menu_input_reset(struct rarch_state *p_rarch);
+#endif
+
 int input_event_get_osk_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -2837,14 +2848,6 @@ core_info_state_t *coreinfo_get_ptr(void)
    return &p_rarch->core_info_st;
 }
 
-#ifdef HAVE_MENU
-menu_dialog_t *dialog_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->dialog_st;
-}
-#endif
-
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -2852,15 +2855,6 @@ gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 }
 
 #ifdef HAVE_MENU
-static void menu_driver_list_free(
-      struct rarch_state *p_rarch,
-      menu_ctx_list_t *list);
-static void menu_input_post_iterate(
-      struct rarch_state *p_rarch,
-      int *ret, unsigned action,
-      retro_time_t current_time);
-static void menu_input_reset(struct rarch_state *p_rarch);
-
 /* TODO/FIXME - public global variables */
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
@@ -3007,6 +3001,278 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_UNDO,           "Undo"},
    {RETROK_OEM_102,        "OEM-102"}
 };
+
+static int menu_dialog_iterate(
+      menu_dialog_t *p_dialog,
+      char *s, size_t len,
+      retro_time_t current_time)
+{
+   switch (p_dialog->current_type)
+   {
+      case MENU_DIALOG_WELCOME:
+         {
+            static rarch_timer_t timer;
+
+            if (!rarch_timer_is_running(&timer))
+            {
+               rarch_timer_begin_new_time_us(&timer,
+                     3 * 1000000);
+               timer.timer_begin = true;
+               timer.timer_end   = false;
+            }
+
+            rarch_timer_tick(&timer, current_time);
+
+            msg_hash_get_help_enum(
+                  MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
+                  s, len);
+
+            if (!timer.timer_end && rarch_timer_has_expired(&timer))
+            {
+               rarch_timer_end(&timer);
+               p_dialog->current_type = MENU_DIALOG_NONE;
+               return 1;
+            }
+         }
+         break;
+      case MENU_DIALOG_HELP_CONTROLS:
+         {
+            unsigned i;
+            char s2[PATH_MAX_LENGTH];
+            const unsigned binds[] = {
+               RETRO_DEVICE_ID_JOYPAD_UP,
+               RETRO_DEVICE_ID_JOYPAD_DOWN,
+               RETRO_DEVICE_ID_JOYPAD_A,
+               RETRO_DEVICE_ID_JOYPAD_B,
+               RETRO_DEVICE_ID_JOYPAD_SELECT,
+               RETRO_DEVICE_ID_JOYPAD_START,
+               RARCH_MENU_TOGGLE,
+               RARCH_QUIT_KEY,
+               RETRO_DEVICE_ID_JOYPAD_X,
+               RETRO_DEVICE_ID_JOYPAD_Y,
+            };
+            char desc[ARRAY_SIZE(binds)][64];
+
+            for (i = 0; i < ARRAY_SIZE(binds); i++)
+               desc[i][0] = '\0';
+
+            for (i = 0; i < ARRAY_SIZE(binds); i++)
+            {
+               const struct retro_keybind *keybind = &input_config_binds[0][binds[i]];
+               const struct retro_keybind *auto_bind =
+                  (const struct retro_keybind*)
+                  input_config_get_bind_auto(0, binds[i]);
+
+               input_config_get_bind_string(desc[i],
+                     keybind, auto_bind, sizeof(desc[i]));
+            }
+
+            s2[0] = '\0';
+
+            msg_hash_get_help_enum(
+                  MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG,
+                  s2, sizeof(s2));
+
+            snprintf(s, len,
+                  "%s"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n"
+                  "[%s]: "
+                  "%-20s\n",
+
+                  s2,
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),
+                  desc[0],
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),
+                  desc[1],
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),
+                  desc[2],
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
+                  desc[3],
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),
+                  desc[4],
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START),
+                  desc[5],
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),
+                  desc[6],
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),
+                  desc[7],
+
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD),
+                  desc[8]
+
+                  );
+         }
+         break;
+
+#ifdef HAVE_CHEEVOS
+      case MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION:
+         {
+            rcheevos_ctx_desc_t desc_info;
+            desc_info.idx = p_dialog->current_id;
+            desc_info.s   = s;
+            desc_info.len = len;
+            rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
+         }
+         break;
+#endif
+
+      case MENU_DIALOG_HELP_WHAT_IS_A_CORE:
+         msg_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
+               s, len);
+         break;
+      case MENU_DIALOG_HELP_LOADING_CONTENT:
+         msg_hash_get_help_enum(MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
+               s, len);
+         break;
+      case MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD:
+         msg_hash_get_help_enum(
+               MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC,
+               s, len);
+         break;
+      case MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+         msg_hash_get_help_enum(
+               MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
+               s, len);
+         break;
+      case MENU_DIALOG_HELP_SEND_DEBUG_INFO:
+         msg_hash_get_help_enum(
+               MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO_DESC,
+               s, len);
+         break;
+      case MENU_DIALOG_HELP_SCANNING_CONTENT:
+         msg_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC,
+               s, len);
+         break;
+      case MENU_DIALOG_HELP_EXTRACT:
+         {
+            settings_t *settings      = config_get_ptr();
+            bool bundle_finished      = settings->bools.bundle_finished;
+
+            msg_hash_get_help_enum(
+                  MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
+                  s, len);
+
+            if (bundle_finished)
+            {
+               configuration_set_bool(settings,
+                     settings->bools.bundle_finished, false);
+               p_dialog->current_type = MENU_DIALOG_NONE;
+               return 1;
+            }
+         }
+         break;
+      case MENU_DIALOG_QUIT_CONFIRM:
+      case MENU_DIALOG_INFORMATION:
+      case MENU_DIALOG_QUESTION:
+      case MENU_DIALOG_WARNING:
+      case MENU_DIALOG_ERROR:
+         msg_hash_get_help_enum(MSG_UNKNOWN,
+               s, len);
+         break;
+      case MENU_DIALOG_NONE:
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+void menu_dialog_unset_pending_push(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   menu_dialog_t        *p_dialog = &p_rarch->dialog_st;
+
+   p_dialog->pending_push  = false;
+}
+
+bool menu_dialog_push_pending(bool push, enum menu_dialog_type type)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   menu_dialog_t        *p_dialog = &p_rarch->dialog_st;
+#ifdef IOS
+   /* TODO/FIXME - see comment in menu_init -
+    * we should make this more generic so that
+    * this platform-specific ifdef is no longer needed */
+   if (type == MENU_DIALOG_HELP_EXTRACT)
+      if (!p_dialog->pending_push)
+         return false;
+#endif
+   p_dialog->pending_push = push;
+   p_dialog->current_type = type;
+
+   return true;
+}
+
+static void menu_dialog_push(menu_dialog_t *p_dialog)
+{
+   const char *label;
+   menu_displaylist_info_t info;
+
+   if (!p_dialog->pending_push)
+      return;
+
+   menu_displaylist_info_init(&info);
+
+   info.list                 = menu_entries_get_menu_stack_ptr(0);
+   info.enum_idx             = MENU_ENUM_LABEL_HELP;
+
+   /* Set the label string, if it exists. */
+   label                     = msg_hash_to_str(MENU_ENUM_LABEL_HELP);
+   if (label)
+      info.label             = strdup(label);
+
+   menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
+}
+
+void menu_dialog_set_current_id(unsigned id)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   menu_dialog_t        *p_dialog = &p_rarch->dialog_st;
+
+   p_dialog->current_id    = id;
+}
+
+static void menu_dialog_reset(menu_dialog_t *p_dialog)
+{
+   if (!p_dialog)
+      return;
+
+   p_dialog->pending_push  = false;
+   p_dialog->current_id    = 0;
+   p_dialog->current_type  = MENU_DIALOG_NONE;
+}
 
 static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
@@ -3921,6 +4187,7 @@ static int generic_menu_iterate(
    {
       case ITERATE_TYPE_HELP:
          ret = menu_dialog_iterate(
+               &p_rarch->dialog_st,
                menu->menu_state_msg, sizeof(menu->menu_state_msg),
                current_time);
 
@@ -4168,7 +4435,7 @@ static int generic_menu_iterate(
             BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
             /* Have to defer it so we let settings refresh. */
-            menu_dialog_push();
+            menu_dialog_push(&p_rarch->dialog_st);
          }
          break;
    }
@@ -6876,7 +7143,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
             rarch_favorites_deinit();
 
-            menu_dialog_reset();
+            menu_dialog_reset(&p_rarch->dialog_st);
 
             free(p_rarch->menu_driver_data);
          }
