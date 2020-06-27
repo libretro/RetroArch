@@ -411,12 +411,15 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
        *
        * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
        *
-       * If the size argument is not zero but buf is NULL, a buffer of the given size will be allocated immediately, and
+       * If the size argument is not zero but buf is NULL, 
+       * a buffer of the given size will be allocated immediately, and
        * released on close. This is an extension to ANSI C.
        *
-       * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
+       * Since C89 does not support specifying a NULL buffer 
+       * with a non-zero size, we create and track our own buffer for it.
        */
-      /* TODO: this is only useful for a few platforms, find which and add ifdef */
+      /* TODO: this is only useful for a few platforms, 
+       * find which and add ifdef */
 #if !defined(PSP)
       if (stream->scheme != VFS_SCHEME_CDROM)
       {
@@ -620,7 +623,8 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function
     * is called in filestream_open() */
-   if (stream->mapped && stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+   if (stream->mapped && stream->hints & 
+         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       return stream->mappos;
 #endif
    if (lseek(stream->fd, 0, SEEK_CUR) < 0)
@@ -1151,24 +1155,14 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
 {
 #if defined(_WIN32)
 #if defined(LEGACY_WIN32)
-   {
-      char *name = local_to_utf8_string_alloc(rdir->entry.cFileName);
-      memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
-      strlcpy(rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
-
-      if (name)
-         free(name);
-   }
+   char *name       = local_to_utf8_string_alloc(rdir->entry.cFileName);
 #else
-   {
-      char *name       = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
-      memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
-      strlcpy((char*)rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
-
-      if (name)
-         free(name);
-   }
+   char *name       = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
 #endif
+   memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
+   strlcpy((char*)rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
+   if (name)
+      free(name);
    return (char*)rdir->entry.cFileName;
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__) && !defined(__PSL1GHT__) || defined(ORBIS)
    return rdir->entry.d_name;
