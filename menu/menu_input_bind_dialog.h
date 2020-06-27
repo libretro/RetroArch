@@ -24,7 +24,7 @@
 
 #include <retro_common_api.h>
 
-#include "../menu_input.h"
+#include "menu_input.h"
 
 RETRO_BEGIN_DECLS
 

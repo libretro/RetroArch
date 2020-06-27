@@ -62,7 +62,7 @@
 
 #include "../frontend/frontend_driver.h"
 
-#include "widgets/menu_input_bind_dialog.h"
+#include "menu_input_bind_dialog.h"
 
 #include "menu_setting.h"
 #include "menu_cbs.h"
@@ -72,7 +72,6 @@
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
 #endif
-#include "widgets/menu_input_bind_dialog.h"
 
 #include "../core.h"
 #include "../configuration.h"

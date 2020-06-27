@@ -25,7 +25,7 @@
 
 #include <retro_common_api.h>
 
-#include "../../msg_hash.h"
+#include "../msg_hash.h"
 
 enum menu_dialog_type
 {

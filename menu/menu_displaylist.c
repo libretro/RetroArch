@@ -74,7 +74,7 @@
 #include "menu_shader.h"
 #endif
 #include "menu_networking.h"
-#include "widgets/menu_dialog.h"
+#include "menu_dialog.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"
