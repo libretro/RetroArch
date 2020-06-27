@@ -330,19 +330,22 @@ void vulkan_transfer_image_ownership(VkCommandBuffer cmd,
       uint32_t src_queue_family,
       uint32_t dst_queue_family)
 {
-   VkImageMemoryBarrier barrier =
-   { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+   VkImageMemoryBarrier barrier;
 
-   barrier.srcAccessMask               = 0;
-   barrier.dstAccessMask               = 0;
-   barrier.oldLayout                   = layout;
-   barrier.newLayout                   = layout;
-   barrier.srcQueueFamilyIndex         = src_queue_family;
-   barrier.dstQueueFamilyIndex         = dst_queue_family;
-   barrier.image                       = image;
-   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-   barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+   barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barrier.pNext                           = NULL;
+   barrier.srcAccessMask                   = 0;
+   barrier.dstAccessMask                   = 0;
+   barrier.oldLayout                       = layout;
+   barrier.newLayout                       = layout;
+   barrier.srcQueueFamilyIndex             = src_queue_family;
+   barrier.dstQueueFamilyIndex             = dst_queue_family;
+   barrier.image                           = image;
+   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.baseMipLevel   = 0;
+   barrier.subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
+   barrier.subresourceRange.baseArrayLayer = 0;
+   barrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
 
    vkCmdPipelineBarrier(cmd, src_stages, dst_stages,
          false, 0, NULL, 0, NULL, 1, &barrier);
@@ -441,22 +444,26 @@ static void vulkan_track_dealloc(VkImage image)
 
 void vulkan_sync_texture_to_gpu(vk_t *vk, const struct vk_texture *tex)
 {
-   VkMappedMemoryRange range = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+   VkMappedMemoryRange range;
    if (!tex || !tex->need_manual_cache_management || tex->memory == VK_NULL_HANDLE)
       return;
 
+   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+   range.pNext  = NULL;
    range.memory = tex->memory;
    range.offset = 0;
-   range.size = VK_WHOLE_SIZE;
+   range.size   = VK_WHOLE_SIZE;
    vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
 }
 
 void vulkan_sync_texture_to_cpu(vk_t *vk, const struct vk_texture *tex)
 {
-   VkMappedMemoryRange range = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+   VkMappedMemoryRange range;
    if (!tex || !tex->need_manual_cache_management || tex->memory == VK_NULL_HANDLE)
       return;
 
+   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+   range.pNext  = NULL;
    range.memory = tex->memory;
    range.offset = 0;
    range.size   = VK_WHOLE_SIZE;
