@@ -2854,6 +2854,36 @@ gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
    return &p_rarch->gfx_thumb_state;
 }
 
+static void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time)
+{
+   if (!timer)
+      return;
+   timer->current    = current_time;
+   timer->timeout_us = (timer->timeout_end - timer->current);
+}
+
+#define RARCH_TIMER_GET_TIMEOUT(timer) ((int)(timer.timeout_us / 1000000))
+
+#define RARCH_TIMER_HAS_EXPIRED(timer) ((timer.timeout_us <= 0) ? true : false)
+
+static void rarch_timer_end(rarch_timer_t *timer)
+{
+   if (!timer)
+      return;
+   timer->timer_end   = true;
+   timer->timer_begin = false;
+   timer->timeout_end = 0;
+}
+
+static void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
+{
+   if (!timer)
+      return;
+   timer->timeout_us  = usec;
+   timer->current     = cpu_features_get_time_usec();
+   timer->timeout_end = timer->current + timer->timeout_us;
+}
+
 #ifdef HAVE_MENU
 /* TODO/FIXME - public global variables */
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
@@ -3013,7 +3043,7 @@ static int menu_dialog_iterate(
          {
             static rarch_timer_t timer;
 
-            if (!rarch_timer_is_running(&timer))
+            if (!timer.timer_begin)
             {
                rarch_timer_begin_new_time_us(&timer,
                      3 * 1000000);
@@ -3027,7 +3057,7 @@ static int menu_dialog_iterate(
                   MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
                   s, len);
 
-            if (!timer.timer_end && rarch_timer_has_expired(&timer))
+            if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
             {
                rarch_timer_end(&timer);
                p_dialog->current_type = MENU_DIALOG_NONE;
@@ -3789,14 +3819,14 @@ static bool menu_input_key_bind_iterate(
          "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
          input_config_bind_map_get_desc(
             _binds->begin - MENU_SETTINGS_BIND_BEGIN),
-         rarch_timer_get_timeout(&_binds->timer_timeout),
+         RARCH_TIMER_GET_TIMEOUT(_binds->timer_timeout),
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 
    /* Tick main timers */
    rarch_timer_tick(&_binds->timer_timeout, current_time);
    rarch_timer_tick(&_binds->timer_hold, current_time);
 
-   if (rarch_timer_has_expired(&_binds->timer_timeout))
+   if (RARCH_TIMER_HAS_EXPIRED(_binds->timer_timeout))
    {
       if (input_drv)
          input_drv->keyboard_mapping_blocked = false;
@@ -3856,7 +3886,7 @@ static bool menu_input_key_bind_iterate(
                   _binds->begin - MENU_SETTINGS_BIND_BEGIN));
 
          /* Hold complete? */
-         if (rarch_timer_has_expired(&new_binds.timer_hold))
+         if (RARCH_TIMER_HAS_EXPIRED(new_binds.timer_hold))
             complete = true;
       }
       else
@@ -10238,53 +10268,6 @@ void performance_counters_clear(void)
    p_rarch->perf_ptr_libretro  = 0;
    memset(p_rarch->perf_counters_libretro, 0,
          sizeof(p_rarch->perf_counters_libretro));
-}
-
-void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time)
-{
-   if (!timer)
-      return;
-   timer->current    = current_time;
-   timer->timeout_us = (timer->timeout_end - timer->current);
-}
-
-int rarch_timer_get_timeout(rarch_timer_t *timer)
-{
-   if (!timer)
-      return 0;
-   return (int)(timer->timeout_us / 1000000);
-}
-
-bool rarch_timer_is_running(rarch_timer_t *timer)
-{
-   if (!timer)
-      return false;
-   return timer->timer_begin;
-}
-
-bool rarch_timer_has_expired(rarch_timer_t *timer)
-{
-   if (!timer || timer->timeout_us <= 0)
-      return true;
-   return false;
-}
-
-void rarch_timer_end(rarch_timer_t *timer)
-{
-   if (!timer)
-      return;
-   timer->timer_end   = true;
-   timer->timer_begin = false;
-   timer->timeout_end = 0;
-}
-
-void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
-{
-   if (!timer)
-      return;
-   timer->timeout_us  = usec;
-   timer->current     = cpu_features_get_time_usec();
-   timer->timeout_end = timer->current + timer->timeout_us;
 }
 
 struct string_list *dir_list_new_special(const char *input_dir,
@@ -37357,8 +37340,8 @@ static bool input_driver_toggle_button_combo(
             return false;
          }
 
-         /* user started holding down the start button, start the timer */
-         if (!rarch_timer_is_running(&timer))
+         /* User started holding down the start button, start the timer */
+         if (!timer.timer_begin)
          {
             rarch_timer_begin_new_time_us(&timer,
                   HOLD_BTN_DELAY_SEC * 1000000);
@@ -37368,7 +37351,7 @@ static bool input_driver_toggle_button_combo(
 
          rarch_timer_tick(&timer, current_time);
 
-         if (!timer.timer_end && rarch_timer_has_expired(&timer))
+         if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
          {
             /* start has been held down long enough, 
              * stop timer and enter menu */
@@ -37390,7 +37373,7 @@ static bool input_driver_toggle_button_combo(
          }
 
          /* user started holding down the select button, start the timer */
-         if (!rarch_timer_is_running(&timer))
+         if (!timer.timer_begin)
          {
             rarch_timer_begin_new_time_us(&timer,
                   HOLD_BTN_DELAY_SEC * 1000000);
@@ -37400,7 +37383,7 @@ static bool input_driver_toggle_button_combo(
 
          rarch_timer_tick(&timer, current_time);
 
-         if (!timer.timer_end && rarch_timer_has_expired(&timer))
+         if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
          {
             /* select has been held down long enough,
              * stop timer and enter menu */
@@ -38447,7 +38430,7 @@ static enum runloop_state runloop_check_state(
       {
          need_to_apply = true;
 
-         if (!rarch_timer_is_running(&timer))
+         if (!timer.timer_begin)
          {
             rarch_timer_begin_new_time_us(&timer,
                   SHADER_FILE_WATCH_DELAY_MSEC * 1000);
@@ -38468,7 +38451,7 @@ static enum runloop_state runloop_check_state(
       {
          rarch_timer_tick(&timer, current_time);
 
-         if (!timer.timer_end && rarch_timer_has_expired(&timer))
+         if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
          {
             rarch_timer_end(&timer);
             need_to_apply = false;
@@ -38480,7 +38463,7 @@ static enum runloop_state runloop_check_state(
    if (   settings->uints.video_shader_delay &&
          !p_rarch->shader_delay_timer.timer_end)
    {
-      if (!rarch_timer_is_running(&p_rarch->shader_delay_timer))
+      if (!p_rarch->shader_delay_timer.timer_begin)
       {
          rarch_timer_begin_new_time_us(&p_rarch->shader_delay_timer,
                settings->uints.video_shader_delay * 1000);
@@ -38491,7 +38474,7 @@ static enum runloop_state runloop_check_state(
       {
          rarch_timer_tick(&p_rarch->shader_delay_timer, current_time);
 
-         if (rarch_timer_has_expired(&p_rarch->shader_delay_timer))
+         if (RARCH_TIMER_HAS_EXPIRED(p_rarch->shader_delay_timer))
          {
             rarch_timer_end(&p_rarch->shader_delay_timer);
 
