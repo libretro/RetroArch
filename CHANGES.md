@@ -3,6 +3,7 @@
 - CHEEVOS: Restore display of unlocked achievements across hardcore modes
 - CHEEVOS: Hash buffered data when available
 - CONFIG FILE: Optimise parsing of configuration files
+- FILE I/O: VFS and NBIO interfaces will now use 64-bit fseek/ftell where possible, should allow for reading/writing to files bigger than 2GB
 - MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 
