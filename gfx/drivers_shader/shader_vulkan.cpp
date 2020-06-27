@@ -2242,8 +2242,7 @@ void Pass::build_commands(
     * the passes that end up on-screen. */
    if (!final_pass)
    {
-      VkRenderPassBeginInfo rp_info    = {
-         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+      VkRenderPassBeginInfo rp_info;
 
       /* Render. */
       vulkan_image_layout_transition_levels(cmd,
@@ -2256,8 +2255,12 @@ void Pass::build_commands(
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
+      rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+      rp_info.pNext                    = NULL;
       rp_info.renderPass               = framebuffer->get_render_pass();
       rp_info.framebuffer              = framebuffer->get_framebuffer();
+      rp_info.renderArea.offset.x      = 0;
+      rp_info.renderArea.offset.y      = 0;
       rp_info.renderArea.extent.width  = current_framebuffer_size.width;
       rp_info.renderArea.extent.height = current_framebuffer_size.height;
       rp_info.clearValueCount          = 0;
