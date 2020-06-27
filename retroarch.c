@@ -215,6 +215,7 @@
 #endif
 #include "gfx/video_display_server.h"
 #include "gfx/video_crt_switch.h"
+#include "bluetooth/bluetooth_driver.h"
 #include "wifi/wifi_driver.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
@@ -857,6 +858,30 @@ static hid_driver_t *hid_drivers[] = {
 };
 #endif
 
+static bluetooth_driver_t bluetooth_null = {
+   NULL, /* init */
+   NULL, /* free */
+   NULL, /* start */
+   NULL, /* stop */
+   NULL, /* scan */
+   NULL, /* get_devices */
+   NULL, /* device_is_connected */
+   NULL, /* device_get_sublabel */
+   NULL, /* connect_device */
+   "null",
+};
+
+static const bluetooth_driver_t *bluetooth_drivers[] = {
+#ifdef HAVE_BLUETOOTH
+   &bluetooth_bluetoothctl,
+#ifdef HAVE_DBUS
+   &bluetooth_bluez,
+#endif
+#endif
+   &bluetooth_null,
+   NULL,
+};
+
 static wifi_driver_t wifi_null = {
    NULL, /* init */
    NULL, /* free */
@@ -1026,6 +1051,7 @@ static const camera_driver_t *camera_drivers[] = {
       | DRIVER_LOCATION_MASK \
       | DRIVER_MENU_MASK \
       | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_BLUETOOTH_MASK \
       | DRIVER_WIFI_MASK \
       | DRIVER_LED_MASK \
       | DRIVER_MIDI_MASK )
@@ -1037,6 +1063,7 @@ static const camera_driver_t *camera_drivers[] = {
       | DRIVER_CAMERA_MASK \
       | DRIVER_LOCATION_MASK \
       | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_BLUETOOTH_MASK \
       | DRIVER_WIFI_MASK \
       | DRIVER_LED_MASK \
       | DRIVER_MIDI_MASK )
@@ -1950,6 +1977,7 @@ struct rarch_state
 #endif
 
    bool location_driver_active;
+   bool bluetooth_driver_active;
    bool wifi_driver_active;
    bool video_driver_active;
    bool audio_driver_active;
@@ -2355,6 +2383,9 @@ struct rarch_state
 
    const location_driver_t *location_driver;
    void *location_data;
+
+   const bluetooth_driver_t *bluetooth_driver;
+   void *bluetooth_data;
 
    const wifi_driver_t *wifi_driver;
    void *wifi_data;
@@ -10140,6 +10171,21 @@ struct string_list *string_list_new_special(enum string_list_type type,
                string_list_append(s, opt, attr);
          }
          break;
+      case STRING_LIST_BLUETOOTH_DRIVERS:
+#ifdef HAVE_BLUETOOTH
+         for (i = 0; bluetooth_drivers[i]; i++)
+         {
+            const char *opt  = bluetooth_drivers[i]->ident;
+            *len            += strlen(opt) + 1;
+
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
+
+            if (add_null_entries)
+               string_list_append(s, opt, attr);
+         }
+         break;
+#endif
       case STRING_LIST_WIFI_DRIVERS:
 #ifdef HAVE_WIFI
          for (i = 0; wifi_drivers[i]; i++)
@@ -20053,6 +20099,164 @@ static void clear_controller_port_map(struct rarch_state *p_rarch) { }
 #endif
 
 #endif
+
+/* BLUETOOTH DRIVER  */
+
+/**
+ * config_get_bluetooth_driver_options:
+ *
+ * Get an enumerated list of all bluetooth driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all bluetooth driver names,
+ * separated by '|'.
+ **/
+const char* config_get_bluetooth_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_BLUETOOTH_DRIVERS, NULL);
+}
+
+void driver_bluetooth_scan(void)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   p_rarch->bluetooth_driver->scan();
+}
+
+void driver_bluetooth_get_devices(struct string_list* devices)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   p_rarch->bluetooth_driver->get_devices(devices);
+}
+
+bool driver_bluetooth_device_is_connected(unsigned i)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   return p_rarch->bluetooth_driver->device_is_connected(i);
+}
+
+void driver_bluetooth_device_get_sublabel(char *s, unsigned i, size_t len)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   p_rarch->bluetooth_driver->device_get_sublabel(s, i, len);
+}
+
+bool driver_bluetooth_connect_device(unsigned i)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   return p_rarch->bluetooth_driver->connect_device(i);
+}
+
+bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
+{
+   struct rarch_state     *p_rarch  = &rarch_st;
+   settings_t             *settings = p_rarch->configuration_settings;
+
+   switch (state)
+   {
+      case RARCH_BLUETOOTH_CTL_DESTROY:
+         p_rarch->bluetooth_driver_active   = false;
+         p_rarch->bluetooth_driver          = NULL;
+         p_rarch->bluetooth_data            = NULL;
+         break;
+      case RARCH_BLUETOOTH_CTL_SET_ACTIVE:
+         p_rarch->bluetooth_driver_active   = true;
+         break;
+      case RARCH_BLUETOOTH_CTL_FIND_DRIVER:
+         {
+            int i;
+            driver_ctx_info_t drv;
+
+            drv.label = "bluetooth_driver";
+            drv.s     = settings->arrays.bluetooth_driver;
+
+            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+            i = (int)drv.len;
+
+            if (i >= 0)
+               p_rarch->bluetooth_driver = (const bluetooth_driver_t*)bluetooth_drivers[i];
+            else
+            {
+               if (verbosity_is_enabled())
+               {
+                  unsigned d;
+                  RARCH_ERR("Couldn't find any bluetooth driver named \"%s\"\n",
+                        settings->arrays.bluetooth_driver);
+                  RARCH_LOG_OUTPUT("Available bluetooth drivers are:\n");
+                  for (d = 0; bluetooth_drivers[d]; d++)
+                     RARCH_LOG_OUTPUT("\t%s\n", bluetooth_drivers[d]->ident);
+
+                  RARCH_WARN("Going to default to first bluetooth driver...\n");
+               }
+
+               p_rarch->bluetooth_driver = (const bluetooth_driver_t*)bluetooth_drivers[0];
+
+               if (!p_rarch->bluetooth_driver)
+                  retroarch_fail(1, "find_bluetooth_driver()");
+            }
+         }
+         break;
+      case RARCH_BLUETOOTH_CTL_UNSET_ACTIVE:
+         p_rarch->bluetooth_driver_active = false;
+         break;
+      case RARCH_BLUETOOTH_CTL_IS_ACTIVE:
+        return p_rarch->bluetooth_driver_active;
+      case RARCH_BLUETOOTH_CTL_DEINIT:
+        if (p_rarch->bluetooth_data && p_rarch->bluetooth_driver)
+        {
+           if (p_rarch->bluetooth_driver->free)
+              p_rarch->bluetooth_driver->free(p_rarch->bluetooth_data);
+        }
+
+        p_rarch->bluetooth_data = NULL;
+        break;
+      case RARCH_BLUETOOTH_CTL_STOP:
+        if (     p_rarch->bluetooth_driver
+              && p_rarch->bluetooth_driver->stop
+              && p_rarch->bluetooth_data)
+           p_rarch->bluetooth_driver->stop(p_rarch->bluetooth_data);
+        break;
+      case RARCH_BLUETOOTH_CTL_START:
+        if (     p_rarch->bluetooth_driver
+              && p_rarch->bluetooth_data
+              && p_rarch->bluetooth_driver->start)
+        {
+           bool bluetooth_allow      = settings->bools.bluetooth_allow;
+           if (bluetooth_allow)
+              return p_rarch->bluetooth_driver->start(p_rarch->bluetooth_data);
+        }
+        return false;
+      case RARCH_BLUETOOTH_CTL_SET_CB:
+        {
+           /*struct retro_bluetooth_callback *cb =
+              (struct retro_bluetooth_callback*)data;
+           bluetooth_cb          = *cb;*/
+        }
+        break;
+      case RARCH_BLUETOOTH_CTL_INIT:
+        /* Resource leaks will follow if bluetooth is initialized twice. */
+        if (p_rarch->bluetooth_data)
+           return false;
+
+        bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
+
+        p_rarch->bluetooth_data = p_rarch->bluetooth_driver->init();
+
+        if (!p_rarch->bluetooth_data)
+        {
+           RARCH_ERR("Failed to initialize bluetooth driver. Will continue without bluetooth.\n");
+           bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_UNSET_ACTIVE, NULL);
+        }
+
+        /*if (bluetooth_cb.initialized)
+           bluetooth_cb.initialized();*/
+        break;
+      default:
+         break;
+   }
+
+   return false;
+}
 
 /* WIFI DRIVER  */
 
@@ -32937,6 +33141,21 @@ static const void *find_driver_nonempty(
          }
       }
    }
+   else if (string_is_equal(label, "bluetooth_driver"))
+   {
+      if (bluetooth_drivers[i])
+      {
+         const char *ident = bluetooth_drivers[i]->ident;
+         if (!add_entry)
+            add_entry      = i == 0 || !string_is_equal(ident, "null");
+
+         if (add_entry)
+         {
+            strlcpy(s, ident, len);
+            return bluetooth_drivers[i];
+         }
+      }
+   }
    else if (string_is_equal(label, "wifi_driver"))
    {
       if (wifi_drivers[i])
@@ -33366,6 +33585,9 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
       p_rarch->camera_data = NULL;
    }
 
+   if ((flags & DRIVER_BLUETOOTH_MASK))
+      bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DEINIT, NULL);
+
    if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
@@ -33445,6 +33667,7 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
    p_rarch->camera_driver                           = NULL;
    p_rarch->camera_data                             = NULL;
 
+   bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DESTROY, NULL);
    wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
 
    cbs->frame_cb                                    = retro_frame_null;
@@ -35402,6 +35625,7 @@ bool retroarch_main_init(int argc, char *argv[])
    video_driver_find_driver(p_rarch);
    input_driver_find_driver(p_rarch);
    camera_driver_find_driver(p_rarch);
+   bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
    find_location_driver(p_rarch);
 #ifdef HAVE_MENU

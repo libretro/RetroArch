@@ -40,6 +40,7 @@
 #include "../../performance_counters.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
+#include "../../bluetooth/bluetooth_driver.h"
 #include "../../wifi/wifi_driver.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
@@ -836,6 +837,21 @@ static void menu_action_setting_disp_set_label_entry(
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_bluetooth_is_connected(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   strlcpy(s2, path, len2);
+   *w = 19;
+
+   if (driver_bluetooth_device_is_connected(i))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BT_CONNECTED), len);
+}
+
 static void menu_action_setting_disp_set_label_wifi_is_online(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1568,9 +1584,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_MIDI_DRIVER:
          case MENU_ENUM_LABEL_LOCATION_DRIVER:
          case MENU_ENUM_LABEL_CAMERA_DRIVER:
+         case MENU_ENUM_LABEL_BLUETOOTH_DRIVER:
          case MENU_ENUM_LABEL_WIFI_DRIVER:
          case MENU_ENUM_LABEL_MENU_DRIVER:
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
+            break;
+         case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_bluetooth_is_connected);
             break;
          case MENU_ENUM_LABEL_CONNECT_WIFI:
             BIND_ACTION_GET_VALUE(cbs,

@@ -94,6 +94,7 @@
 #include "../list_special.h"
 #include "../performance_counters.h"
 #include "../core_info.h"
+#include "../bluetooth/bluetooth_driver.h"
 #include "../wifi/wifi_driver.h"
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
@@ -3902,6 +3903,47 @@ static void menu_displaylist_parse_playlist_generic(
          playlist, playlist_name, is_collection);
 }
 
+#ifdef HAVE_BLUETOOTH
+static void bluetooth_scan_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   unsigned i;
+   file_list_t *file_list        = NULL;
+   struct string_list *device_list = NULL;
+
+   const char *path              = NULL;
+   const char *label             = NULL;
+   unsigned menu_type            = 0;
+
+   menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
+
+   /* Don't push the results if we left the bluetooth menu */
+   if (!string_is_equal(label,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST)))
+      return;
+
+   file_list = menu_entries_get_selection_buf_ptr(0);
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+
+   device_list = string_list_new();
+
+   driver_bluetooth_get_devices(device_list);
+
+   for (i = 0; i < device_list->size; i++)
+   {
+      const char *device = device_list->elems[i].data;
+      menu_entries_append_enum(file_list,
+            device,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_BLUETOOTH),
+            MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
+            MENU_BLUETOOTH, 0, 0);
+   }
+
+   string_list_free(device_list);
+}
+#endif
+
 #ifdef HAVE_NETWORKING
 static void wifi_scan_callback(retro_task_t *task,
       void *task_data,
@@ -4783,6 +4825,35 @@ unsigned menu_displaylist_build_list(
             }
 #endif
          }
+         break;
+      case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:
+#ifdef HAVE_BLUETOOTH
+         {
+            settings_t      *settings     = config_get_ptr();
+            if (!string_is_equal(settings->arrays.bluetooth_driver, "null"))
+            {
+               struct string_list *device_list = string_list_new();
+               driver_bluetooth_get_devices(device_list);
+
+               if (device_list->size == 0)
+                  task_push_bluetooth_scan(bluetooth_scan_callback);
+               else
+               {
+                  unsigned i;
+                  for (i = 0; i < device_list->size; i++)
+                  {
+                     const char *device = device_list->elems[i].data;
+                     if (menu_entries_append_enum(list,
+                              device,
+                              msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_BLUETOOTH),
+                              MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
+                              MENU_BLUETOOTH, 0, 0))
+                        count++;
+                  }
+               }
+            }
+         }
+#endif
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
 #ifdef HAVE_NETWORKING
@@ -7213,6 +7284,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,  PARSE_ACTION, true},
                {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_WIFI_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_NETWORK_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,PARSE_ACTION, true},
@@ -7292,6 +7364,7 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = settings->bools.settings_show_directory;
                      break;
                      /* MISSING:
+                      * MENU_ENUM_LABEL_BLUETOOTH_SETTINGS
                       * MENU_ENUM_LABEL_WIFI_SETTINGS
                       * MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS
                       * MENU_ENUM_LABEL_LAKKA_SERVICES
@@ -7602,6 +7675,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_DRIVER,           PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_RECORD_DRIVER,         PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_MIDI_DRIVER,           PARSE_ONLY_STRING_OPTIONS},
+#ifdef HAVE_BLUETOOTH
+               {MENU_ENUM_LABEL_BLUETOOTH_DRIVER,      PARSE_ONLY_STRING_OPTIONS},
+#endif
 #ifdef HAVE_LAKKA
                {MENU_ENUM_LABEL_WIFI_DRIVER,           PARSE_ONLY_STRING_OPTIONS},
 #endif
@@ -10002,6 +10078,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_INFORMATION_LIST:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
       case DISPLAYLIST_SYSTEM_INFO:
+      case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST:
       case DISPLAYLIST_BROWSE_URL_START:
@@ -10054,6 +10131,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS),
                         MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
+                        0, 0, 0);
+                  break;
+               case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:
+                  menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND),
+                        MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
                         0, 0, 0);
                   break;
                case DISPLAYLIST_WIFI_SETTINGS_LIST:

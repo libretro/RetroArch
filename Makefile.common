@@ -567,6 +567,16 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
           camera/drivers/rwebcam.o
 endif
 
+ifeq ($(HAVE_BLUETOOTH), 1)
+   OBJ += bluetooth/drivers/bluetoothctl.o
+endif
+
+ifeq ($(HAVE_BLUETOOTH), 1)
+   ifeq ($(HAVE_DBUS), 1)
+      OBJ += bluetooth/drivers/bluez.o
+   endif
+endif
+
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += wifi/drivers/connmanctl.o
 endif
@@ -807,6 +817,10 @@ ifeq ($(HAVE_MENU), 1)
       OBJ += menu/drivers/stripes.o
       DEFINES += -DHAVE_STRIPES
    endif
+endif
+
+ifeq ($(HAVE_BLUETOOTH), 1)
+   DEFINES += -DHAVE_BLUETOOTH
 endif
 
 ifeq ($(HAVE_LAKKA), 1)
@@ -1793,6 +1807,7 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
+          tasks/task_bluetooth.o \
           tasks/task_wifi.o \
 			 tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o

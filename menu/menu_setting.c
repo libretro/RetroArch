@@ -82,6 +82,7 @@
 #include "../paths.h"
 #include "../dynamic.h"
 #include "../list_special.h"
+#include "../bluetooth/bluetooth_driver.h"
 #include "../wifi/wifi_driver.h"
 #include "../midi/midi_driver.h"
 #include "../tasks/tasks_internal.h"
@@ -8372,6 +8373,19 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 #endif
 
+#ifdef HAVE_BLUETOOTH
+         if (string_is_not_equal(settings->arrays.bluetooth_driver, "null"))
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+         }
+#endif
+
 #ifdef HAVE_LAKKA
          if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
          {
@@ -8482,7 +8496,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_DRIVERS:
          {
             unsigned i;
-            struct string_options_entry string_options_entries[11];
+            struct string_options_entry string_options_entries[12];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
@@ -8534,40 +8548,47 @@ static bool setting_append_list(
             string_options_entries[5].default_value  = config_get_default_camera();
             string_options_entries[5].values         = config_get_camera_driver_options();
 
-            string_options_entries[6].target         = settings->arrays.wifi_driver;
-            string_options_entries[6].len            = sizeof(settings->arrays.wifi_driver);
-            string_options_entries[6].name_enum_idx  = MENU_ENUM_LABEL_WIFI_DRIVER;
-            string_options_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_WIFI_DRIVER;
-            string_options_entries[6].default_value  = config_get_default_wifi();
-            string_options_entries[6].values         = config_get_wifi_driver_options();
+            string_options_entries[6].target         = settings->arrays.bluetooth_driver;
+            string_options_entries[6].len            = sizeof(settings->arrays.bluetooth_driver);
+            string_options_entries[6].name_enum_idx  = MENU_ENUM_LABEL_BLUETOOTH_DRIVER;
+            string_options_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER;
+            string_options_entries[6].default_value  = config_get_default_bluetooth();
+            string_options_entries[6].values         = config_get_bluetooth_driver_options();
 
-            string_options_entries[7].target         = settings->arrays.location_driver;
-            string_options_entries[7].len            = sizeof(settings->arrays.location_driver);
-            string_options_entries[7].name_enum_idx  = MENU_ENUM_LABEL_LOCATION_DRIVER;
-            string_options_entries[7].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER;
-            string_options_entries[7].default_value  = config_get_default_location();
-            string_options_entries[7].values         = config_get_location_driver_options();
+            string_options_entries[7].target         = settings->arrays.wifi_driver;
+            string_options_entries[7].len            = sizeof(settings->arrays.wifi_driver);
+            string_options_entries[7].name_enum_idx  = MENU_ENUM_LABEL_WIFI_DRIVER;
+            string_options_entries[7].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_WIFI_DRIVER;
+            string_options_entries[7].default_value  = config_get_default_wifi();
+            string_options_entries[7].values         = config_get_wifi_driver_options();
 
-            string_options_entries[8].target         = settings->arrays.menu_driver;
-            string_options_entries[8].len            = sizeof(settings->arrays.menu_driver);
-            string_options_entries[8].name_enum_idx  = MENU_ENUM_LABEL_MENU_DRIVER;
-            string_options_entries[8].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_MENU_DRIVER;
-            string_options_entries[8].default_value  = config_get_default_menu();
-            string_options_entries[8].values         = config_get_menu_driver_options();
+            string_options_entries[8].target         = settings->arrays.location_driver;
+            string_options_entries[8].len            = sizeof(settings->arrays.location_driver);
+            string_options_entries[8].name_enum_idx  = MENU_ENUM_LABEL_LOCATION_DRIVER;
+            string_options_entries[8].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER;
+            string_options_entries[8].default_value  = config_get_default_location();
+            string_options_entries[8].values         = config_get_location_driver_options();
 
-            string_options_entries[9].target         = settings->arrays.record_driver;
-            string_options_entries[9].len            = sizeof(settings->arrays.record_driver);
-            string_options_entries[9].name_enum_idx  = MENU_ENUM_LABEL_RECORD_DRIVER;
-            string_options_entries[9].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_RECORD_DRIVER;
-            string_options_entries[9].default_value  = config_get_default_record();
-            string_options_entries[9].values         = config_get_record_driver_options();
+            string_options_entries[9].target         = settings->arrays.menu_driver;
+            string_options_entries[9].len            = sizeof(settings->arrays.menu_driver);
+            string_options_entries[9].name_enum_idx  = MENU_ENUM_LABEL_MENU_DRIVER;
+            string_options_entries[9].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_MENU_DRIVER;
+            string_options_entries[9].default_value  = config_get_default_menu();
+            string_options_entries[9].values         = config_get_menu_driver_options();
 
-            string_options_entries[10].target         = settings->arrays.midi_driver;
-            string_options_entries[10].len            = sizeof(settings->arrays.midi_driver);
-            string_options_entries[10].name_enum_idx  = MENU_ENUM_LABEL_MIDI_DRIVER;
-            string_options_entries[10].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_MIDI_DRIVER;
-            string_options_entries[10].default_value  = config_get_default_midi();
-            string_options_entries[10].values         = config_get_midi_driver_options();
+            string_options_entries[10].target         = settings->arrays.record_driver;
+            string_options_entries[10].len            = sizeof(settings->arrays.record_driver);
+            string_options_entries[10].name_enum_idx  = MENU_ENUM_LABEL_RECORD_DRIVER;
+            string_options_entries[10].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_RECORD_DRIVER;
+            string_options_entries[10].default_value  = config_get_default_record();
+            string_options_entries[10].values         = config_get_record_driver_options();
+
+            string_options_entries[11].target         = settings->arrays.midi_driver;
+            string_options_entries[11].len            = sizeof(settings->arrays.midi_driver);
+            string_options_entries[11].name_enum_idx  = MENU_ENUM_LABEL_MIDI_DRIVER;
+            string_options_entries[11].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_MIDI_DRIVER;
+            string_options_entries[11].default_value  = config_get_default_midi();
+            string_options_entries[11].values         = config_get_midi_driver_options();
 
             for (i = 0; i < ARRAY_SIZE(string_options_entries); i++)
             {

@@ -123,6 +123,7 @@ enum
    STRIPES_TEXTURE_LOADSTATE,
    STRIPES_TEXTURE_UNDO,
    STRIPES_TEXTURE_CORE_INFO,
+   STRIPES_TEXTURE_BLUETOOTH,
    STRIPES_TEXTURE_WIFI,
    STRIPES_TEXTURE_CORE_OPTIONS,
    STRIPES_TEXTURE_INPUT_REMAPPING_OPTIONS,
@@ -2280,6 +2281,8 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
          return stripes->textures.list[STRIPES_TEXTURE_SETTING];
       case MENU_INFO_MESSAGE:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_INFO];
+      case MENU_BLUETOOTH:
+         return stripes->textures.list[STRIPES_TEXTURE_BLUETOOTH];
       case MENU_WIFI:
          return stripes->textures.list[STRIPES_TEXTURE_WIFI];
 #ifdef HAVE_NETWORKING
@@ -3620,6 +3623,8 @@ static const char *stripes_texture_path(unsigned id)
          return "undo.png";
       case STRIPES_TEXTURE_CORE_INFO:
          return "core-infos.png";
+      case STRIPES_TEXTURE_BLUETOOTH:
+         return "bluetooth.png";
       case STRIPES_TEXTURE_WIFI:
          return "wifi.png";
       case STRIPES_TEXTURE_CORE_OPTIONS:

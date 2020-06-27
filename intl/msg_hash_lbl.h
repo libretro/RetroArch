@@ -205,6 +205,10 @@ MSG_HASH(
    "camera_driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_DRIVER,
+   "bluetooth_driver"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST,
    "cb_core_content_dirs_list"
    )
@@ -987,6 +991,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST,
    "deferred_crt_switchres_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST,
+   "deferred_bluetooth_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,
@@ -1853,6 +1861,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
    "no_netplay_hosts_found"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
+   "no_bt_devices_found"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
@@ -3217,6 +3229,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_WIFI_SETTINGS,
    "wifi_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,
+   "bluetooth_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,

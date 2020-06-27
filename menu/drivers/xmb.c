@@ -131,6 +131,7 @@ enum
    XMB_TEXTURE_LOADSTATE,
    XMB_TEXTURE_UNDO,
    XMB_TEXTURE_CORE_INFO,
+   XMB_TEXTURE_BLUETOOTH,
    XMB_TEXTURE_WIFI,
    XMB_TEXTURE_CORE_OPTIONS,
    XMB_TEXTURE_INPUT_REMAPPING_OPTIONS,
@@ -2690,6 +2691,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+      case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
       case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
@@ -2810,6 +2812,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_INFO_MESSAGE:
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
+      case MENU_BLUETOOTH:
+         return xmb->textures.list[XMB_TEXTURE_BLUETOOTH];
       case MENU_WIFI:
          return xmb->textures.list[XMB_TEXTURE_WIFI];
 #ifdef HAVE_NETWORKING
@@ -5628,6 +5632,8 @@ static const char *xmb_texture_path(unsigned id)
          return "undo.png";
       case XMB_TEXTURE_CORE_INFO:
          return "core-infos.png";
+      case XMB_TEXTURE_BLUETOOTH:
+         return "bluetooth.png";
       case XMB_TEXTURE_WIFI:
          return "wifi.png";
       case XMB_TEXTURE_CORE_OPTIONS:
