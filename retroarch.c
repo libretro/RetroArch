@@ -33620,12 +33620,14 @@ static void mylist_create(my_list **list_p, int initial_capacity,
 
 static void *input_list_element_constructor(void)
 {
-   void *ptr                   = calloc(1, sizeof(input_list_element));
+   void *ptr                   = malloc(sizeof(input_list_element));
    input_list_element *element = (input_list_element*)ptr;
 
+   element->port               = 0;
+   element->device             = 0;
+   element->index              = 0;
+   element->state              = (int16_t*)calloc(256, sizeof(int16_t));
    element->state_size         = 256;
-   element->state              = (int16_t*)calloc(
-         element->state_size, sizeof(int16_t));
 
    return ptr;
 }
