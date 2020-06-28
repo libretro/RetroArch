@@ -26,6 +26,7 @@
 
 #include <streams/memory_stream.h>
 
+/* TODO/FIXME - static globals */
 static uint8_t* g_buffer      = NULL;
 static uint64_t g_size         = 0;
 static uint64_t last_file_size = 0;
@@ -48,7 +49,7 @@ static void memstream_update_pos(memstream_t *stream)
 void memstream_set_buffer(uint8_t *buffer, uint64_t size)
 {
    g_buffer = buffer;
-   g_size = size;
+   g_size   = size;
 }
 
 uint64_t memstream_get_last_size(void)
@@ -75,11 +76,22 @@ memstream_t *memstream_open(unsigned writing)
    if (!g_buffer || !g_size)
       return NULL;
 
-   stream = (memstream_t*)calloc(1, sizeof(*stream));
+   stream = (memstream_t*)malloc(sizeof(*stream));
+
+   if (!stream)
+      return NULL;
+
+   stream->buf       = NULL;
+   stream->size      = 0;
+   stream->ptr       = 0;
+   stream->max_ptr   = 0;
+   stream->writing   = 0;
+
    memstream_init(stream, g_buffer, g_size, writing);
 
-   g_buffer = NULL;
-   g_size = 0;
+   g_buffer          = NULL;
+   g_size            = 0;
+
    return stream;
 }
 

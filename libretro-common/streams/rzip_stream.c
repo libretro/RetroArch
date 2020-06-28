@@ -407,9 +407,27 @@ rzipstream_t* rzipstream_open(const char *path, unsigned mode)
       return NULL;
 
    /* Allocate stream object */
-   stream = (rzipstream_t*)calloc(1, sizeof(*stream));
+   stream = (rzipstream_t*)malloc(sizeof(*stream));
    if (!stream)
       return NULL;
+
+   stream->is_compressed   = false;
+   stream->is_writing      = false;
+   stream->size            = 0;
+   stream->chunk_size      = 0;
+   stream->virtual_ptr     = 0;
+   stream->file            = NULL;
+   stream->deflate_backend = NULL;
+   stream->deflate_stream  = NULL;
+   stream->inflate_backend = NULL;
+   stream->inflate_stream  = NULL;
+   stream->in_buf          = NULL;
+   stream->in_buf_size     = 0;
+   stream->in_buf_ptr      = 0;
+   stream->out_buf         = NULL;
+   stream->out_buf_size    = 0;
+   stream->out_buf_ptr     = 0;
+   stream->out_buf_occupancy = 0;
 
    /* Initialise stream */
    if (!rzipstream_init_stream(

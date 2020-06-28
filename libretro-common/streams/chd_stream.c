@@ -207,12 +207,12 @@ chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
 chdstream_t *chdstream_open(const char *path, int32_t track)
 {
    metadata_t meta;
-   uint32_t pregap      = 0;
-   uint8_t *hunkmem     = NULL;
-   const chd_header *hd = NULL;
-   chdstream_t *stream  = NULL;
-   chd_file *chd        = NULL;
-   chd_error err        = chd_open(path, CHD_OPEN_READ, NULL, &chd);
+   uint32_t pregap         = 0;
+   uint8_t *hunkmem        = NULL;
+   const chd_header *hd    = NULL;
+   chdstream_t *stream     = NULL;
+   chd_file *chd           = NULL;
+   chd_error err           = chd_open(path, CHD_OPEN_READ, NULL, &chd);
 
    if (err != CHDERR_NONE)
       return NULL;
@@ -220,38 +220,39 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    if (!chdstream_find_track(chd, track, &meta))
       goto error;
 
-   stream = (chdstream_t*)calloc(1, sizeof(*stream));
+   stream                  = (chdstream_t*)malloc(sizeof(*stream));
    if (!stream)
       goto error;
 
-   hd              = chd_get_header(chd);
-   hunkmem         = (uint8_t*)malloc(hd->hunkbytes);
+   stream->chd             = NULL;
+   stream->swab            = false;
+   stream->frame_size      = 0;
+   stream->frame_offset    = 0;
+   stream->frames_per_hunk = 0;
+   stream->track_frame     = 0;
+   stream->track_start     = 0;
+   stream->track_end       = 0;
+   stream->offset          = 0;
+   stream->hunknum         = -1;
+
+   hd                      = chd_get_header(chd);
+   hunkmem                 = (uint8_t*)malloc(hd->hunkbytes);
    if (!hunkmem)
       goto error;
 
-   stream->hunkmem = hunkmem;
+   stream->hunkmem         = hunkmem;
 
    if (string_is_equal(meta.type, "MODE1_RAW"))
-   {
       stream->frame_size   = SECTOR_SIZE;
-      stream->frame_offset = 0;
-   }
    else if (string_is_equal(meta.type, "MODE2_RAW"))
-   {
       stream->frame_size   = SECTOR_SIZE;
-      stream->frame_offset = 0;
-   }
    else if (string_is_equal(meta.type, "AUDIO"))
    {
       stream->frame_size   = SECTOR_SIZE;
-      stream->frame_offset = 0;
       stream->swab         = true;
    }
    else
-   {
       stream->frame_size   = hd->unitbytes;
-      stream->frame_offset = 0;
-   }
 
    /* Only include pregap data if it was in the track file */
    if (meta.pgtype[0] != 'V')
@@ -263,8 +264,6 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->track_start     = (size_t)pregap * stream->frame_size;
    stream->track_end       = stream->track_start + 
                              (size_t)meta.frames * stream->frame_size;
-   stream->offset          = 0;
-   stream->hunknum         = -1;
 
    return stream;
 
@@ -280,14 +279,14 @@ error:
 
 void chdstream_close(chdstream_t *stream)
 {
-   if (stream)
-   {
-      if (stream->hunkmem)
-         free(stream->hunkmem);
-      if (stream->chd)
-         chd_close(stream->chd);
-      free(stream);
-   }
+   if (!stream)
+      return;
+
+   if (stream->hunkmem)
+      free(stream->hunkmem);
+   if (stream->chd)
+      chd_close(stream->chd);
+   free(stream);
 }
 
 static bool

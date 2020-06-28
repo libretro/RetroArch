@@ -36,20 +36,24 @@ struct zlib_trans_stream
 
 static void *zlib_deflate_stream_new(void)
 {
-   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
+   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)
+      malloc(sizeof(*ret));
    if (!ret)
       return NULL;
-   ret->ex = 9;
-   return (void *) ret;
+   ret->inited = false;
+   ret->ex     = 9;
+   return (void *)ret;
 }
 
 static void *zlib_inflate_stream_new(void)
 {
-   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
+   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)
+      malloc(sizeof(*ret));
    if (!ret)
       return NULL;
-   ret->ex = MAX_WBITS;
-   return (void *) ret;
+   ret->inited = false;
+   ret->ex     = MAX_WBITS;
+   return (void *)ret;
 }
 
 static void zlib_deflate_stream_free(void *data)
@@ -222,9 +226,9 @@ static bool zlib_inflate_trans(
       zt->inited = true;
    }
 
-   pre_avail_in = z->avail_in;
+   pre_avail_in  = z->avail_in;
    pre_avail_out = z->avail_out;
-   zret = inflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
+   zret          = inflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
 
    if (zret == Z_OK)
    {

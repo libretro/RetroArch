@@ -221,12 +221,24 @@ void *intfstream_init(intfstream_info_t *info)
    if (!info)
       goto error;
 
-   intf = (intfstream_internal_t*)calloc(1, sizeof(*intf));
+   intf = (intfstream_internal_t*)malloc(sizeof(*intf));
 
    if (!intf)
       goto error;
 
-   intf->type = info->type;
+   intf->type            = info->type;
+   intf->file.fp         = NULL;
+   intf->memory.buf.data = NULL;
+   intf->memory.buf.size = 0;
+   intf->memory.fp       = NULL;
+   intf->memory.writable = false;
+#ifdef HAVE_CHD
+   intf->chd.track       = 0;
+   intf->chd.fp          = NULL;
+#endif
+#ifdef HAVE_ZLIB
+   intf->rzip.fp         = NULL;
+#endif
 
    switch (intf->type)
    {
@@ -256,7 +268,8 @@ error:
    return NULL;
 }
 
-int64_t intfstream_seek(intfstream_internal_t *intf, int64_t offset, int whence)
+int64_t intfstream_seek(
+      intfstream_internal_t *intf, int64_t offset, int whence)
 {
    if (!intf)
       return -1;
