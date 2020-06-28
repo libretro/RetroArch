@@ -8325,9 +8325,11 @@ static bool discord_download_avatar(
    net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
    snprintf(buf, sizeof(buf), "%s.png", avatar_id);
 
-   transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
-   transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
+   transf           = (file_transfer_t*)malloc(sizeof(*transf));
+
+   transf->enum_idx  = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
    strlcpy(transf->path, buf, sizeof(transf->path));
+   transf->user_data = NULL;
 
    RARCH_LOG("[DISCORD]: Downloading avatar from: %s\n", url_encoded);
    task_push_http_transfer_file(url_encoded, true, NULL, cb_generic_download, transf);
@@ -17351,12 +17353,18 @@ static core_option_manager_t *core_option_manager_new_vars(
 {
    const struct retro_variable *var;
    size_t size                       = 0;
-   core_option_manager_t *opt        = (core_option_manager_t*)
-      calloc(1, sizeof(*opt));
    config_file_t *config_src         = NULL;
+   core_option_manager_t *opt        = (core_option_manager_t*)
+      malloc(sizeof(*opt));
 
    if (!opt)
       return NULL;
+
+   opt->conf                         = NULL;
+   opt->conf_path[0]                 = '\0';
+   opt->opts                         = NULL;
+   opt->size                         = 0;
+   opt->updated                      = false;
 
    if (!string_is_empty(conf_path))
       if (!(opt->conf = config_file_new_from_path_to_string(conf_path)))
@@ -17416,12 +17424,18 @@ static core_option_manager_t *core_option_manager_new(
 {
    const struct retro_core_option_definition *option_def;
    size_t size                       = 0;
-   core_option_manager_t *opt        = (core_option_manager_t*)
-      calloc(1, sizeof(*opt));
    config_file_t *config_src         = NULL;
+   core_option_manager_t *opt        = (core_option_manager_t*)
+      malloc(sizeof(*opt));
 
    if (!opt)
       return NULL;
+
+   opt->conf                         = NULL;
+   opt->conf_path[0]                 = '\0';
+   opt->opts                         = NULL;
+   opt->size                         = 0;
+   opt->updated                      = false;
 
    if (!string_is_empty(conf_path))
       if (!(opt->conf = config_file_new_from_path_to_string(conf_path)))
@@ -19968,11 +19982,16 @@ static void free_retro_ctx_load_content_info(struct
 static struct retro_game_info* clone_retro_game_info(const
       struct retro_game_info *src)
 {
-   struct retro_game_info *dest = (struct retro_game_info*)calloc(1,
+   struct retro_game_info *dest = (struct retro_game_info*)malloc(
          sizeof(struct retro_game_info));
 
    if (!dest)
       return NULL;
+
+   dest->path                   = NULL;
+   dest->data                   = NULL;
+   dest->size                   = 0;
+   dest->meta                   = NULL;
 
    if (src->size && src->data)
    {
