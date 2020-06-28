@@ -89,6 +89,7 @@ struct http_connection_t
    struct http_socket_state_t sock_state;
 };
 
+/* TODO/FIXME - static globals */
 static char urlencode_lut[256];
 static bool urlencode_lut_inited = false;
 
@@ -116,9 +117,8 @@ void net_http_urlencode(char **dest, const char *source)
    if (!urlencode_lut_inited)
       urlencode_lut_init();
 
-   enc   = (char*)calloc(1, len);
-
-   *dest = enc;
+   enc          = (char*)calloc(1, len);
+   *dest        = enc;
 
    for (; *source; source++)
    {
@@ -252,7 +252,7 @@ static void net_http_send_str(
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
-   struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
+   struct http_connection_t *conn = (struct http_connection_t*)malloc(
          sizeof(*conn));
 
    if (!conn)
@@ -263,6 +263,19 @@ struct http_connection_t *net_http_connection_new(const char *url,
       free(conn);
       return NULL;
    }
+
+   conn->domain            = NULL;
+   conn->location          = NULL;
+   conn->urlcopy           = NULL;
+   conn->scan              = NULL;
+   conn->methodcopy        = NULL;
+   conn->contenttypecopy   = NULL;
+   conn->postdatacopy      = NULL;
+   conn->useragentcopy     = NULL;
+   conn->port              = 0;
+   conn->sock_state.fd     = 0;
+   conn->sock_state.ssl    = false;
+   conn->sock_state.ssl_ctx= NULL;
 
    if (method)
       conn->methodcopy     = strdup(method);

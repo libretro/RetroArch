@@ -84,25 +84,29 @@ static void file_archive_free(file_archive_file_data_t *data)
 
 static file_archive_file_data_t* file_archive_open(const char *path)
 {
-   file_archive_file_data_t *data = (file_archive_file_data_t*)calloc(1, sizeof(*data));
+   file_archive_file_data_t *data = (file_archive_file_data_t*)
+      malloc(sizeof(*data));
 
    if (!data)
       return NULL;
 
-   data->fd = open(path, O_RDONLY);
+   data->fd                       = open(path, O_RDONLY);
+   data->data                     = NULL;
+   data->size                     = 0;
 
    /* Failed to open archive. */
    if (data->fd < 0)
       goto error;
 
-   data->size = path_get_size(path);
+   data->size                     = path_get_size(path);
    if (!data->size)
       return data;
 
-   data->data = mmap(NULL, data->size, PROT_READ, MAP_SHARED, data->fd, 0);
+   data->data                     = mmap(NULL,
+         data->size, PROT_READ, MAP_SHARED, data->fd, 0);
    if (data->data == MAP_FAILED)
    {
-      data->data = NULL;
+      data->data                  = NULL;
 
       /* Failed to mmap() file */
       goto error;
@@ -128,21 +132,24 @@ static void file_archive_free(file_archive_file_data_t *data)
 
 static file_archive_file_data_t* file_archive_open(const char *path)
 {
-   int64_t ret            = -1;
-   bool read_from_file    = false;
+   int64_t ret                    = -1;
+   bool read_from_file            = false;
    file_archive_file_data_t *data = (file_archive_file_data_t*)
-      calloc(1, sizeof(*data));
+      malloc(sizeof(*data));
 
    if (!data)
       return NULL;
 
-   read_from_file = filestream_read_file(path, &data->data, &ret);
+   data->data                     = NULL;
+   data->size                     = 0;
+   read_from_file                 = filestream_read_file(
+         path, &data->data, &ret);
 
    /* Failed to open archive? */
    if (!read_from_file || ret < 0)
       goto error;
 
-   data->size = ret;
+   data->size                     = ret;
    return data;
 
 error:
