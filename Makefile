@@ -217,7 +217,7 @@ $(OBJDIR)/%.o: %.m
 
 .FORCE:
 
-$(OBJDIR)/git_version.o: git_version.c .FORCE
+$(OBJDIR)/version_git.o: version_git.c .FORCE
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
@@ -233,7 +233,7 @@ $(OBJDIR)/%.o: %.rc $(HEADERS)
 	$(Q)$(WINDRES) -o $@ $<
 
 install: $(TARGET)
-	rm -f $(OBJDIR)/git_version.o
+	rm -f $(OBJDIR)/version_git.o
 	mkdir -p $(DESTDIR)$(BIN_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(DATA_DIR)/applications 2>/dev/null || /bin/true
