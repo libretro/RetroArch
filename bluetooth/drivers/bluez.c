@@ -49,29 +49,37 @@ typedef struct
 #undef VECTOR_LIST_TYPE
 #undef VECTOR_LIST_NAME
 
-typedef struct
-{
-    struct device_info_vector_list *devices;
-    char adapter[256];
-    DBusConnection* dbus_connection;
-    bool bluez_cache[256];
-    int bluez_cache_counter[256];
-} bluez_t;
+/* TODO/FIXME - static globals - should go into userdata
+ * struct for driver */
+static struct device_info_vector_list *devices = NULL;
+static char adapter[256]                       = {0};
+static DBusConnection* dbus_connection         = NULL;
+static bool bluez_cache[256]                   = {0};
+static int bluez_cache_counter[256]            = {0};
 
 static void *bluez_init (void)
 {
-   return calloc(1, sizeof(bluez_t));
+   return (void*)-1;
 }
 
 static void bluez_free (void *data)
 {
-   if (data)
-      free(data);
+   (void)data;
+}
+
+static bool bluez_start (void *data)
+{
+   (void)data;
+   return true;
+}
+
+static void bluez_stop (void *data)
+{
+   (void)data;
 }
 
 static int
 set_bool_property (
-   bluez_t *bluez,
    const char *path,
    const char *arg_adapter,
    const char *arg_property,
@@ -110,7 +118,7 @@ set_bool_property (
             &req_iter, &req_subiter))
       goto fault;
 
-   reply = dbus_connection_send_with_reply_and_block(bluez->dbus_connection,
+   reply = dbus_connection_send_with_reply_and_block(dbus_connection,
       message, 1000, &err);
    if (!reply)
       goto fault;
@@ -125,7 +133,6 @@ fault:
 }
 
 static int get_bool_property(
-   bluez_t *bluez,
    const char *path,
    const char *arg_adapter,
    const char *arg_property,
@@ -148,7 +155,7 @@ static int get_bool_property(
       DBUS_TYPE_INVALID))
       return 1;
 
-   reply = dbus_connection_send_with_reply_and_block(bluez->dbus_connection,
+   reply = dbus_connection_send_with_reply_and_block(dbus_connection,
       message, 1000, &err);
 
    dbus_message_unref(message);
@@ -169,24 +176,24 @@ static int get_bool_property(
    return 0;
 }
 
-static int adapter_discovery (bluez_t *bluez, const char *method)
+static int adapter_discovery (const char *method)
 {
    DBusMessage *message = dbus_message_new_method_call(
-         "org.bluez", bluez->adapter,
+         "org.bluez", adapter,
          "org.bluez.Adapter1", method);
    if (!message)
       return 1;
 
-   if (!dbus_connection_send(bluez->dbus_connection, message, NULL))
+   if (!dbus_connection_send(dbus_connection, message, NULL))
       return 1;
 
-   dbus_connection_flush(bluez->dbus_connection);
+   dbus_connection_flush(dbus_connection);
    dbus_message_unref(message);
 
    return 0;
 }
 
-static int get_managed_objects (bluez_t *bluez, DBusMessage **reply)
+static int get_managed_objects (DBusMessage **reply)
 {
    DBusMessage *message;
    DBusError err;
@@ -198,7 +205,7 @@ static int get_managed_objects (bluez_t *bluez, DBusMessage **reply)
    if (!message)
       return 1;
 
-   *reply = dbus_connection_send_with_reply_and_block(bluez->dbus_connection,
+   *reply = dbus_connection_send_with_reply_and_block(dbus_connection,
          message, -1, &err);
    /* if (!reply) is done by the caller in this one */
 
@@ -206,7 +213,7 @@ static int get_managed_objects (bluez_t *bluez, DBusMessage **reply)
    return 0;
 }
 
-static int device_method (bluez_t *bluez, const char *path, const char *method)
+static int device_method (const char *path, const char *method)
 {
    DBusMessage *message, *reply;
    DBusError err;
@@ -218,18 +225,46 @@ static int device_method (bluez_t *bluez, const char *path, const char *method)
    if (!message)
       return 1;
 
-   reply = dbus_connection_send_with_reply_and_block(bluez->dbus_connection,
+   reply = dbus_connection_send_with_reply_and_block(dbus_connection,
          message, 10000, &err);
    if (!reply)
       return 1;
 
-   dbus_connection_flush(bluez->dbus_connection);
+   dbus_connection_flush(dbus_connection);
    dbus_message_unref(message);
 
    return 0;
 }
 
-static int get_default_adapter(bluez_t *bluez, DBusMessage *reply)
+static int device_remove (const char *path)
+{
+   DBusMessage *message, *reply;
+   DBusError err;
+
+   dbus_error_init(&err);
+
+   message = dbus_message_new_method_call( "org.bluez", adapter,
+         "org.bluez.Adapter11", "RemoveDevice");
+   if (!message)
+      return 1;
+
+   if (!dbus_message_append_args(message,
+            DBUS_TYPE_OBJECT_PATH, &path,
+            DBUS_TYPE_INVALID))
+      return 1;
+
+   reply = dbus_connection_send_with_reply_and_block(dbus_connection,
+         message, 10000, &err);
+   if (!reply)
+      return 1;
+
+   dbus_connection_flush(dbus_connection);
+   dbus_message_unref(message);
+
+   return 0;
+}
+
+static int get_default_adapter(DBusMessage *reply)
 {
    /* "...an application would discover the available adapters by
     * performing a ObjectManager.GetManagedObjects call and look for any
@@ -294,7 +329,7 @@ static int get_default_adapter(bluez_t *bluez, DBusMessage *reply)
 
          if (string_is_equal(interface_name, "org.bluez.Adapter1"))
          {
-            strlcpy(bluez->adapter, obj_path, 256);
+            strlcpy(adapter, obj_path, 256);
             return 0;
          }
       } while (dbus_message_iter_next(&array_2_iter));
@@ -304,7 +339,7 @@ static int get_default_adapter(bluez_t *bluez, DBusMessage *reply)
    return 1;
 }
 
-static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
+static int read_scanned_devices (DBusMessage *reply)
 {
    device_info_t device;
    DBusMessageIter root_iter;
@@ -455,7 +490,7 @@ static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
             }
          } while (dbus_message_iter_next(&array_3_iter));
 
-         if (!device_info_vector_list_append(bluez->devices, device))
+         if (!device_info_vector_list_append(devices, device))
             return 1;
 
       } while (dbus_message_iter_next(&array_2_iter));
@@ -464,143 +499,138 @@ static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
    return 0;
 }
 
-static void bluez_dbus_connect (bluez_t *bluez)
+static void bluez_dbus_connect (void)
 {
    DBusError err;
    dbus_error_init(&err);
-   bluez->dbus_connection = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
+   dbus_connection = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
 }
 
-static void bluez_dbus_disconnect (bluez_t *bluez)
+static void bluez_dbus_disconnect (void)
 {
-   if (!bluez->dbus_connection)
+   if (!dbus_connection)
       return;
 
-   dbus_connection_close(bluez->dbus_connection);
-   dbus_connection_unref(bluez->dbus_connection);
-   bluez->dbus_connection = NULL;
+   dbus_connection_close(dbus_connection);
+   dbus_connection_unref(dbus_connection);
+   dbus_connection = NULL;
 }
 
-static void bluez_scan (void *data)
+static void bluez_scan (void)
 {
-   bluez_t *bluez = (bluez_t*)data;
    DBusError err;
    DBusMessage *reply;
 
-   bluez_dbus_connect(bluez);
+   bluez_dbus_connect();
 
-   if (get_managed_objects(bluez, &reply))
+   if (get_managed_objects(&reply))
       return;
    if (!reply)
       return;
 
    /* Get default adapter */
-   if (get_default_adapter(bluez, reply))
+   if (get_default_adapter(reply))
       return;
    dbus_message_unref(reply);
 
    /* Power device on */
-   if (set_bool_property(bluez, bluez->adapter, "org.bluez.Adapter1", "Powered", 1))
+   if (set_bool_property(adapter, "org.bluez.Adapter1", "Powered", 1))
       return;
 
    /* Start discovery */
-   if (adapter_discovery(bluez, "StartDiscovery"))
+   if (adapter_discovery("StartDiscovery"))
       return;
 
    retro_sleep(10000);
 
    /* Stop discovery */
-   if (adapter_discovery(bluez, "StopDiscovery"))
+   if (adapter_discovery("StopDiscovery"))
       return;
 
    /* Get scanned devices */
-   if (get_managed_objects(bluez, &reply))
+   if (get_managed_objects(&reply))
       return;
    if (!reply)
       return;
 
-   if (bluez->devices)
-      device_info_vector_list_free(bluez->devices);
-   bluez->devices = device_info_vector_list_new();
+   if (devices)
+      device_info_vector_list_free(devices);
+   devices = device_info_vector_list_new();
 
-   read_scanned_devices(bluez, reply);
+   read_scanned_devices(reply);
    dbus_message_unref(reply);
-   bluez_dbus_disconnect(bluez);
+   bluez_dbus_disconnect();
 }
 
-static void bluez_get_devices (void *data, struct string_list* devices_string_list)
+static void bluez_get_devices (struct string_list* devices_string_list)
 {
-   bluez_t *bluez = (bluez_t*)data;
    unsigned i;
    union string_list_elem_attr attr;
    attr.i = 0;
 
-   if (!bluez->devices)
+   if (!devices)
       return;
 
-   for (i = 0; i < bluez->devices->count; i++)
+   for (i = 0; i < devices->count; i++)
    {
       char device[64];
-      strlcpy(device, bluez->devices->data[i].name, sizeof(device));
+      strlcpy(device, devices->data[i].name, sizeof(device));
       string_list_append(devices_string_list, device, attr);
    }
 }
 
-static bool bluez_device_is_connected (void *data, unsigned i)
+static bool bluez_device_is_connected (unsigned i)
 {
-   bluez_t *bluez = (bluez_t*)data;
    int value;
 
-   if (bluez->bluez_cache_counter[i] == 60)
+   if (bluez_cache_counter[i] == 60)
    {
-      bluez->bluez_cache_counter[i] = 0;
-      bluez_dbus_connect(bluez);
-      if (get_bool_property(bluez, bluez->devices->data[i].path,
-            "org.bluez.Device1", "Connected", &value))
-      {
-          /* Device disappeared */
-          value = false;
-      }
-      bluez_dbus_disconnect(bluez);
+      bluez_cache_counter[i] = 0;
+      bluez_dbus_connect();
+      get_bool_property(devices->data[i].path, "org.bluez.Device1",
+            "Connected", &value);
+      bluez_dbus_disconnect();
 
-      bluez->bluez_cache[i] = value;
+      bluez_cache[i] = value;
       return value;
    }
 
-   bluez->bluez_cache_counter[i]++;
-   return bluez->bluez_cache[i];
+   bluez_cache_counter[i]++;
+   return bluez_cache[i];
 }
 
-static void bluez_device_get_sublabel(void *data, char *s, unsigned i, size_t len)
+static void bluez_device_get_sublabel(char *s, unsigned i, size_t len)
 {
-   bluez_t *bluez = (bluez_t*)data;
-   strlcpy(s, bluez->devices->data[i].address, len);
+   strlcpy(s, devices->data[i].address, len);
 }
 
-static bool bluez_connect_device(void *data, unsigned i)
+static bool bluez_connect_device(unsigned i)
 {
-   bluez_t *bluez = (bluez_t*)data;
-   bluez_dbus_connect(bluez);
+   bluez_dbus_connect();
 
+   /* Remove the device */
+   device_remove(devices->data[i].path);
    /* Trust the device */
-   if (set_bool_property(bluez, bluez->devices->data[i].path,
+   if (set_bool_property(devices->data[i].path,
             "org.bluez.Device1", "Trusted", 1))
       return false;
    /* Pair the device */
-   device_method(bluez, bluez->devices->data[i].path, "Pair");
-   /* Can be "Already Exists" */
+   if (device_method(devices->data[i].path, "Pair"))
+      return false;
    /* Connect the device */
-   if (device_method(bluez, bluez->devices->data[i].path, "Connect"))
+   if (device_method(devices->data[i].path, "Connect"))
       return false;
 
-   bluez_dbus_disconnect(bluez);
-   bluez->bluez_cache_counter[i] = 0;
+   bluez_dbus_disconnect();
+   bluez_cache_counter[i] = 0;
    return true;
 }
 
 bluetooth_driver_t bluetooth_bluez = {
    bluez_init,
    bluez_free,
+   bluez_start,
+   bluez_stop,
    bluez_scan,
    bluez_get_devices,
    bluez_device_is_connected,
