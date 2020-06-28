@@ -759,8 +759,6 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 {
    struct vulkan_filter_chain_create_info info;
 
-   memset(&info, 0, sizeof(info));
-
    if (!vk->context)
       return false;
 
@@ -770,13 +768,14 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.pipeline_cache        = vk->pipelines.cache;
    info.queue                 = vk->context->queue;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
+   info.num_passes            = 0;
+   info.original_format       = vk->tex_fmt;
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
    info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
-   info.original_format       = vk->tex_fmt;
 
    vk->filter_chain           = vulkan_filter_chain_create_default(
          &info,
@@ -796,21 +795,20 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 {
    struct vulkan_filter_chain_create_info info;
 
-   memset(&info, 0, sizeof(info));
-
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
    info.queue                 = vk->context->queue;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
+   info.num_passes            = 0;
+   info.original_format       = vk->tex_fmt;
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
    info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
-   info.original_format       = vk->tex_fmt;
 
    vk->filter_chain           = vulkan_filter_chain_create_from_preset(
          &info, shader_path,
@@ -2768,6 +2766,7 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
    {
       struct vk_draw_triangles call;
       struct vk_buffer_range range;
+
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
                4 * sizeof(struct vk_vertex), &range))
          break;
@@ -2775,15 +2774,14 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
       memcpy(range.data, &vk->overlay.vertex[i * 4],
             4 * sizeof(struct vk_vertex));
 
-      memset(&call, 0, sizeof(call));
-      call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
+      call.vertices     = 4;
+      call.uniform_size = sizeof(vk->mvp);
+      call.uniform      = &vk->mvp;
+      call.vbo          = &range;
       call.texture      = &vk->overlay.images[i];
+      call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
       call.sampler      = call.texture->mipmap ?
          vk->samplers.mipmap_linear : vk->samplers.linear;
-      call.uniform      = &vk->mvp;
-      call.uniform_size = sizeof(vk->mvp);
-      call.vbo          = &range;
-      call.vertices     = 4;
       vulkan_draw_triangles(vk, &call);
    }
 
