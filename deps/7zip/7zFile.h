@@ -5,7 +5,6 @@
 #define __7Z_FILE_H
 
 #include <stdio.h>
-#include <streams/file_stream.h>
 
 #include "7zTypes.h"
 
@@ -17,7 +16,7 @@ extern "C" {
 
 typedef struct
 {
-  RFILE *file;
+  void *file;
 } CSzFile;
 
 void File_Construct(CSzFile *p);
