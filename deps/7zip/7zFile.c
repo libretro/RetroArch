@@ -2,6 +2,7 @@
    2009-11-24 : Igor Pavlov : Public domain */
 
 #include <stdint.h>
+#define SKIP_STDIO_REDEFINES
 #include <streams/file_stream_transforms.h>
 #include "7zFile.h"
 
@@ -153,3 +154,5 @@ void FileOutStream_CreateVTable(CFileOutStream *p)
 {
    p->s.Write = FileOutStream_Write;
 }
+
+#undef SKIP_STDIO_REDEFINES
