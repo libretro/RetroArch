@@ -877,8 +877,6 @@ static hid_driver_t *hid_drivers[] = {
 static bluetooth_driver_t bluetooth_null = {
    NULL, /* init */
    NULL, /* free */
-   NULL, /* start */
-   NULL, /* stop */
    NULL, /* scan */
    NULL, /* get_devices */
    NULL, /* device_is_connected */
@@ -20388,31 +20386,46 @@ const char* config_get_bluetooth_driver_options(void)
 void driver_bluetooth_scan(void)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->bluetooth_driver->scan();
+   if ( (p_rarch->bluetooth_driver_active) &&
+        (p_rarch->bluetooth_driver->scan) )
+      p_rarch->bluetooth_driver->scan(p_rarch->bluetooth_data);
 }
 
 void driver_bluetooth_get_devices(struct string_list* devices)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->bluetooth_driver->get_devices(devices);
+   if ( (p_rarch->bluetooth_driver_active) &&
+        (p_rarch->bluetooth_driver->get_devices) )
+      p_rarch->bluetooth_driver->get_devices(p_rarch->bluetooth_data, devices);
 }
 
 bool driver_bluetooth_device_is_connected(unsigned i)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->bluetooth_driver->device_is_connected(i);
+   if ( (p_rarch->bluetooth_driver_active) &&
+        (p_rarch->bluetooth_driver->device_is_connected) )
+   {
+      return p_rarch->bluetooth_driver->device_is_connected(p_rarch->bluetooth_data, i);
+   } else {
+      return false;
+   }
 }
 
 void driver_bluetooth_device_get_sublabel(char *s, unsigned i, size_t len)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->bluetooth_driver->device_get_sublabel(s, i, len);
+   if ( (p_rarch->bluetooth_driver_active) &&
+        (p_rarch->bluetooth_driver->device_get_sublabel) )
+      p_rarch->bluetooth_driver->device_get_sublabel(p_rarch->bluetooth_data, s, i, len);
 }
 
 bool driver_bluetooth_connect_device(unsigned i)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->bluetooth_driver->connect_device(i);
+   if (p_rarch->bluetooth_driver_active)
+      return p_rarch->bluetooth_driver->connect_device(p_rarch->bluetooth_data, i);
+   else
+      return false;
 }
 
 bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
@@ -20423,12 +20436,9 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
    switch (state)
    {
       case RARCH_BLUETOOTH_CTL_DESTROY:
-         p_rarch->bluetooth_driver_active   = false;
          p_rarch->bluetooth_driver          = NULL;
          p_rarch->bluetooth_data            = NULL;
-         break;
-      case RARCH_BLUETOOTH_CTL_SET_ACTIVE:
-         p_rarch->bluetooth_driver_active   = true;
+         p_rarch->bluetooth_driver_active   = false;
          break;
       case RARCH_BLUETOOTH_CTL_FIND_DRIVER:
          {
@@ -20465,11 +20475,6 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
             }
          }
          break;
-      case RARCH_BLUETOOTH_CTL_UNSET_ACTIVE:
-         p_rarch->bluetooth_driver_active = false;
-         break;
-      case RARCH_BLUETOOTH_CTL_IS_ACTIVE:
-        return p_rarch->bluetooth_driver_active;
       case RARCH_BLUETOOTH_CTL_DEINIT:
         if (p_rarch->bluetooth_data && p_rarch->bluetooth_driver)
         {
@@ -20478,29 +20483,7 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
         }
 
         p_rarch->bluetooth_data = NULL;
-        break;
-      case RARCH_BLUETOOTH_CTL_STOP:
-        if (     p_rarch->bluetooth_driver
-              && p_rarch->bluetooth_driver->stop
-              && p_rarch->bluetooth_data)
-           p_rarch->bluetooth_driver->stop(p_rarch->bluetooth_data);
-        break;
-      case RARCH_BLUETOOTH_CTL_START:
-        if (     p_rarch->bluetooth_driver
-              && p_rarch->bluetooth_data
-              && p_rarch->bluetooth_driver->start)
-        {
-           bool bluetooth_allow      = settings->bools.bluetooth_allow;
-           if (bluetooth_allow)
-              return p_rarch->bluetooth_driver->start(p_rarch->bluetooth_data);
-        }
-        return false;
-      case RARCH_BLUETOOTH_CTL_SET_CB:
-        {
-           /*struct retro_bluetooth_callback *cb =
-              (struct retro_bluetooth_callback*)data;
-           bluetooth_cb          = *cb;*/
-        }
+        p_rarch->bluetooth_driver_active = false;
         break;
       case RARCH_BLUETOOTH_CTL_INIT:
         /* Resource leaks will follow if bluetooth is initialized twice. */
@@ -20514,11 +20497,11 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
         if (!p_rarch->bluetooth_data)
         {
            RARCH_ERR("Failed to initialize bluetooth driver. Will continue without bluetooth.\n");
-           bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_UNSET_ACTIVE, NULL);
+           p_rarch->bluetooth_driver_active = false;
+        } else {
+           p_rarch->bluetooth_driver_active = true;
         }
 
-        /*if (bluetooth_cb.initialized)
-           bluetooth_cb.initialized();*/
         break;
       default:
          break;
@@ -33729,6 +33712,9 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
          }
       }
    }
+
+   if (flags & DRIVER_BLUETOOTH_MASK)
+      bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_INIT, NULL);
 
    if (flags & DRIVER_LOCATION_MASK)
    {
