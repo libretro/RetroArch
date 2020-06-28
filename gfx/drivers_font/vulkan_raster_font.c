@@ -106,7 +106,7 @@ static void *vulkan_raster_font_init_font(void *data,
       return NULL;
    }
 
-   font->atlas = font->font_driver->get_atlas(font->font_data);
+   font->atlas   = font->font_driver->get_atlas(font->font_data);
    font->texture = vulkan_create_texture(font->vk, NULL,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, font->atlas->buffer,
          NULL /*&swizzle*/, VULKAN_TEXTURE_STAGING);
@@ -285,16 +285,21 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
    if(font->needs_update)
    {
       VkCommandBuffer staging;
-      VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-      VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-      VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+      VkSubmitInfo submit_info;
+      VkCommandBufferAllocateInfo cmd_info;
+      VkCommandBufferBeginInfo begin_info;
 
+      cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+      cmd_info.pNext              = NULL;
       cmd_info.commandPool        = font->vk->staging_pool;
       cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       cmd_info.commandBufferCount = 1;
       vkAllocateCommandBuffers(font->vk->context->device, &cmd_info, &staging);
 
+      begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+      begin_info.pNext            = NULL;
       begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      begin_info.pInheritanceInfo = NULL;
       vkBeginCommandBuffer(staging, &begin_info);
 
       vulkan_copy_staging_to_dynamic(font->vk, staging,
@@ -306,8 +311,15 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
       slock_lock(font->vk->context->queue_lock);
 #endif
 
-      submit_info.commandBufferCount = 1;
-      submit_info.pCommandBuffers    = &staging;
+      submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+      submit_info.pNext                = NULL;
+      submit_info.waitSemaphoreCount   = 0;
+      submit_info.pWaitSemaphores      = NULL;
+      submit_info.pWaitDstStageMask    = NULL;
+      submit_info.commandBufferCount   = 1;
+      submit_info.pCommandBuffers      = &staging;
+      submit_info.signalSemaphoreCount = 0;
+      submit_info.pSignalSemaphores    = NULL;
       vkQueueSubmit(font->vk->context->queue,
             1, &submit_info, VK_NULL_HANDLE);
 
