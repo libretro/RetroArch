@@ -365,7 +365,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    core_info_list_t *core_info_list = NULL;
    struct string_list       *list   = NULL;
    database_info_handle_t     *db   = (database_info_handle_t*)
-      calloc(1, sizeof(*db));
+      malloc(sizeof(*db));
 
    if (!db)
       return NULL;
@@ -384,10 +384,20 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    dir_list_prioritize(list);
 
-   db->list           = list;
-   db->list_ptr       = 0;
-   db->status         = DATABASE_STATUS_ITERATE;
-   db->type           = type;
+   db->status             = DATABASE_STATUS_ITERATE;
+   db->type               = type;
+   db->list_ptr           = 0;
+   db->list               = list;
+
+   db->state.type         = ARCHIVE_TRANSFER_NONE;
+   db->state.archive_size = 0;
+   db->state.start_delta  = 0;
+   db->state.handle       = NULL;
+   db->state.stream       = NULL;
+   db->state.footer       = NULL;
+   db->state.directory    = NULL;
+   db->state.data         = NULL;
+   db->state.backend      = NULL;
 
    return db;
 }
@@ -398,7 +408,7 @@ database_info_handle_t *database_info_file_init(const char *path,
    union string_list_elem_attr attr;
    struct string_list        *list  = NULL;
    database_info_handle_t      *db  = (database_info_handle_t*)
-      calloc(1, sizeof(*db));
+      malloc(sizeof(*db));
 
    if (!db)
       return NULL;
@@ -415,10 +425,20 @@ database_info_handle_t *database_info_file_init(const char *path,
 
    string_list_append(list, path, attr);
 
-   db->list_ptr       = 0;
-   db->list           = list;
-   db->status         = DATABASE_STATUS_ITERATE;
-   db->type           = type;
+   db->status             = DATABASE_STATUS_ITERATE;
+   db->type               = type;
+   db->list_ptr           = 0;
+   db->list               = list;
+
+   db->state.type         = ARCHIVE_TRANSFER_NONE;
+   db->state.archive_size = 0;
+   db->state.start_delta  = 0;
+   db->state.handle       = NULL;
+   db->state.stream       = NULL;
+   db->state.footer       = NULL;
+   db->state.directory    = NULL;
+   db->state.data         = NULL;
+   db->state.backend      = NULL;
 
    return db;
 }
