@@ -18,48 +18,40 @@
 #include "../bluetooth_driver.h"
 #include "../../retroarch.h"
 
-/* TODO/FIXME - static globals - should go into userdata
- * struct for driver */
-static bool bluetoothctl_cache[256]       = {0};
-static unsigned bluetoothctl_counter[256] = {0};
-static struct string_list* lines          = NULL;
-static char command[256]                  = {0};
+typedef struct
+{
+   bool bluetoothctl_cache[256];
+   unsigned bluetoothctl_counter[256];
+   struct string_list* lines;
+   char command[256];
+} bluetoothctl_t;
 
 static void *bluetoothctl_init(void)
 {
-   return (void*)-1;
+   return calloc(1, sizeof(bluetoothctl_t));
 }
 
 static void bluetoothctl_free(void *data)
 {
-   (void)data;
+   if (data)
+      free(data);
 }
 
-static bool bluetoothctl_start(void *data)
+static void bluetoothctl_scan(void *data)
 {
-   (void)data;
-   return true;
-}
-
-static void bluetoothctl_stop(void *data)
-{
-   (void)data;
-}
-
-static void bluetoothctl_scan(void)
-{
+   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    char line[512];
    union string_list_elem_attr attr;
    FILE *dev_file                   = NULL;
 
    attr.i = 0;
-   if (lines)
-      free(lines);
-   lines = string_list_new();
+   if (btctl->lines)
+      free(btctl->lines);
+   btctl->lines = string_list_new();
 
    pclose(popen("bluetoothctl -- power on", "r"));
 
-   pclose(popen("bluetoothctl --timeout 15 scan on", "r"));
+   pclose(popen("bluetoothctl --timeout 10 scan on", "r"));
 
    runloop_msg_queue_push(msg_hash_to_str(MSG_BLUETOOTH_SCAN_COMPLETE),
          1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -73,26 +65,27 @@ static void bluetoothctl_scan(void)
       if (len > 0 && line[len-1] == '\n')
          line[--len] = '\0';
 
-      string_list_append(lines, line, attr);
+      string_list_append(btctl->lines, line, attr);
    }
 
    pclose(dev_file);
 }
 
-static void bluetoothctl_get_devices(struct string_list* devices)
+static void bluetoothctl_get_devices(void *data, struct string_list* devices)
 {
+   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    unsigned i;
    union string_list_elem_attr attr;
 
    attr.i = 0;
 
-   if (!lines)
+   if (!btctl->lines)
       return;
 
-   for (i = 0; i < lines->size; i++)
+   for (i = 0; i < btctl->lines->size; i++)
    {
       char device[64];
-      const char *line = lines->elems[i].data;
+      const char *line = btctl->lines->elems[i].data;
 
       /* bluetoothctl devices outputs lines of the format:
        * $ bluetoothctl devices
@@ -103,17 +96,18 @@ static void bluetoothctl_get_devices(struct string_list* devices)
    }
 }
 
-static bool bluetoothctl_device_is_connected(unsigned i)
+static bool bluetoothctl_device_is_connected(void *data, unsigned i)
 {
+   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    char ln[512]       = {0};
    char device[18]    = {0};
-   const char *line   = lines->elems[i].data;
+   const char *line   = btctl->lines->elems[i].data;
    FILE *command_file = NULL;
 
-   if (bluetoothctl_counter[i] == 60)
+   if (btctl->bluetoothctl_counter[i] == 60)
    {
       static struct string_list* list = NULL;
-      bluetoothctl_counter[i] = 0;
+      btctl->bluetoothctl_counter[i] = 0;
       list            = string_split(line, " ");
       if (!list)
          return false;
@@ -127,34 +121,35 @@ static bool bluetoothctl_device_is_connected(unsigned i)
       strlcpy(device, list->elems[1].data, sizeof(device));
       string_list_free(list);
 
-      snprintf(command, sizeof(command), "\
+      snprintf(btctl->command, sizeof(btctl->command), "\
             bluetoothctl -- info %s | grep 'Connected: yes'",
             device);
 
-      command_file = popen(command, "r");
+      command_file = popen(btctl->command, "r");
 
       while (fgets(ln, 512, command_file))
       {
-         bluetoothctl_cache[i] = true;
+         btctl->bluetoothctl_cache[i] = true;
          return true;
       }
       pclose(command_file);
-      bluetoothctl_cache[i] = false;
+      btctl->bluetoothctl_cache[i] = false;
    }
    else
    {
-      bluetoothctl_counter[i]++;
-      return bluetoothctl_cache[i];
+      btctl->bluetoothctl_counter[i]++;
+      return btctl->bluetoothctl_cache[i];
    }
 
    return false;
 }
 
-static bool bluetoothctl_connect_device(unsigned idx)
+static bool bluetoothctl_connect_device(void *data, unsigned idx)
 {
+   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    unsigned i;
    char device[18]                     = {0};
-   const char *line                    = lines->elems[idx].data;
+   const char *line                    = btctl->lines->elems[idx].data;
    static struct string_list* list     = NULL;
 
    /* bluetoothctl devices outputs lines of the format:
@@ -174,43 +169,42 @@ static bool bluetoothctl_connect_device(unsigned idx)
    strlcpy(device, list->elems[1].data, sizeof(device));
    string_list_free(list);
 
-   snprintf(command, sizeof(command), "\
+   snprintf(btctl->command, sizeof(btctl->command), "\
          bluetoothctl -- trust %s",
          device);
 
-   pclose(popen(command, "r"));
+   pclose(popen(btctl->command, "r"));
 
-   snprintf(command, sizeof(command), "\
+   snprintf(btctl->command, sizeof(btctl->command), "\
          bluetoothctl -- pair %s",
          device);
 
-   pclose(popen(command, "r"));
+   pclose(popen(btctl->command, "r"));
 
-   snprintf(command, sizeof(command), "\
+   snprintf(btctl->command, sizeof(btctl->command), "\
          bluetoothctl -- connect %s",
          device);
 
-   pclose(popen(command, "r"));
+   pclose(popen(btctl->command, "r"));
 
-   bluetoothctl_counter[idx] = 0;
+   btctl->bluetoothctl_counter[idx] = 0;
    return true;
 }
 
-void bluetoothctl_device_get_sublabel (char *s, unsigned i, size_t len)
+void bluetoothctl_device_get_sublabel (void *data, char *s, unsigned i, size_t len)
 {
+   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    /* bluetoothctl devices outputs lines of the format:
     * $ bluetoothctl devices
     *     'Device (mac address) (device name)'
     */
-   const char *line = lines->elems[i].data;
+   const char *line = btctl->lines->elems[i].data;
    strlcpy(s, line+7, 18);
 }
 
 bluetooth_driver_t bluetooth_bluetoothctl = {
    bluetoothctl_init,
    bluetoothctl_free,
-   bluetoothctl_start,
-   bluetoothctl_stop,
    bluetoothctl_scan,
    bluetoothctl_get_devices,
    bluetoothctl_device_is_connected,
