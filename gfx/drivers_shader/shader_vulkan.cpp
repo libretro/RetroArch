@@ -650,7 +650,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
 
    for (i = 1; i < image_info.mipLevels; i++)
    {
-      VkImageBlit blit_region                   = {};
+      VkImageBlit blit_region;
       unsigned src_width                        = MAX(image.width >> (i - 1), 1u);
       unsigned src_height                       = MAX(image.height >> (i - 1), 1u);
       unsigned target_width                     = MAX(image.width >> i, 1u);
@@ -660,11 +660,17 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
       blit_region.srcSubresource.mipLevel       = i - 1;
       blit_region.srcSubresource.baseArrayLayer = 0;
       blit_region.srcSubresource.layerCount     = 1;
-      blit_region.dstSubresource                = blit_region.srcSubresource;
-      blit_region.dstSubresource.mipLevel       = i;
+      blit_region.srcOffsets[0].x               = 0;
+      blit_region.srcOffsets[0].y               = 0;
+      blit_region.srcOffsets[0].z               = 0;
       blit_region.srcOffsets[1].x               = src_width;
       blit_region.srcOffsets[1].y               = src_height;
       blit_region.srcOffsets[1].z               = 1;
+      blit_region.dstSubresource                = blit_region.srcSubresource;
+      blit_region.dstSubresource.mipLevel       = i;
+      blit_region.dstOffsets[0].x               = 0;
+      blit_region.dstOffsets[0].y               = 0;
+      blit_region.dstOffsets[0].z               = 0;
       blit_region.dstOffsets[1].x               = target_width;
       blit_region.dstOffsets[1].y               = target_height;
       blit_region.dstOffsets[1].z               = 1;

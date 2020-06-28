@@ -3476,8 +3476,8 @@ void vulkan_set_uniform_buffer(
       VkDeviceSize offset,
       VkDeviceSize range)
 {
-   VkDescriptorBufferInfo buffer_info;
    VkWriteDescriptorSet write;
+   VkDescriptorBufferInfo buffer_info;
 
    buffer_info.buffer         = buffer;
    buffer_info.offset         = offset;
@@ -3559,8 +3559,8 @@ void vulkan_framebuffer_generate_mips(
 
    for (i = 1; i < levels; i++)
    {
+      VkImageBlit blit_region;
       unsigned src_width, src_height, target_width, target_height;
-      VkImageBlit blit_region = {{0}};
 
       /* For subsequent passes, we have to transition
        * from DST_OPTIMAL to SRC_OPTIMAL,
@@ -3595,11 +3595,17 @@ void vulkan_framebuffer_generate_mips(
       blit_region.srcSubresource.mipLevel       = i - 1;
       blit_region.srcSubresource.baseArrayLayer = 0;
       blit_region.srcSubresource.layerCount     = 1;
-      blit_region.dstSubresource                = blit_region.srcSubresource;
-      blit_region.dstSubresource.mipLevel       = i;
+      blit_region.srcOffsets[0].x               = 0;
+      blit_region.srcOffsets[0].y               = 0;
+      blit_region.srcOffsets[0].z               = 0;
       blit_region.srcOffsets[1].x               = src_width;
       blit_region.srcOffsets[1].y               = src_height;
       blit_region.srcOffsets[1].z               = 1;
+      blit_region.dstSubresource                = blit_region.srcSubresource;
+      blit_region.dstSubresource.mipLevel       = i;
+      blit_region.dstOffsets[0].x               = 0;
+      blit_region.dstOffsets[0].y               = 0;
+      blit_region.dstOffsets[0].z               = 0;
       blit_region.dstOffsets[1].x               = target_width;
       blit_region.dstOffsets[1].y               = target_height;
       blit_region.dstOffsets[1].z               = 1;
@@ -3709,10 +3715,10 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-   color.int32[0]       = 0;
-   color.int32[1]       = 0;
-   color.int32[2]       = 0;
-   color.int32[3]       = 0;
+   color.float32[0]     = 0.0f;
+   color.float32[1]     = 0.0f;
+   color.float32[2]     = 0.0f;
+   color.float32[3]     = 0.0f;
    range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    range.baseMipLevel   = 0;
    range.levelCount     = 1;
