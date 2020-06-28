@@ -13255,7 +13255,7 @@ static void handle_translation_cb(
    if (raw_sound_data)
    {
       audio_mixer_stream_params_t params;
-      nbio_buf_t *task_data       = (nbio_buf_t*)calloc(1, sizeof(nbio_buf_t));
+      nbio_buf_t *task_data       = (nbio_buf_t*)malloc(sizeof(nbio_buf_t));
       nbio_buf_t *img             = (nbio_buf_t*)task_data;
 
       task_data->buf              = raw_sound_data;
@@ -13701,7 +13701,7 @@ static bool run_translation_service(
          goto finish;
 
       bit24_image_prev = (uint8_t*)malloc(vp.width * vp.height * 3);
-      bit24_image = (uint8_t*)malloc(width * height * 3);
+      bit24_image      = (uint8_t*)malloc(width * height * 3);
 
       if (!bit24_image_prev || !bit24_image)
          goto finish;
@@ -13725,7 +13725,6 @@ static bool run_translation_service(
       scaler->in_stride   = vp.width*3;
       scaler->out_stride  = width*3;
       scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev);
-      scaler_ctx_gen_reset(scaler);
    }
    else
    {
@@ -13744,9 +13743,8 @@ static bool run_translation_service(
          (const uint8_t*)data + ((int)height - 1)*pitch,
          width, height,
          -pitch);
-
-      scaler_ctx_gen_reset(scaler);
    }
+   scaler_ctx_gen_reset(scaler);
 
    if (!bit24_image)
    {
