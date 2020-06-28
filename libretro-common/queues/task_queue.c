@@ -875,9 +875,30 @@ char* task_get_title(retro_task_t *task)
 
 retro_task_t *task_init(void)
 {
-   retro_task_t *task      = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task      = (retro_task_t*)malloc(sizeof(*task));
 
+   if (!task)
+      return NULL;
+
+   task->handler           = NULL;
+   task->callback          = NULL;
+   task->cleanup           = NULL;
+   task->finished          = false;
+   task->cancelled         = false;
+   task->mute              = false;
+   task->task_data         = NULL;
+   task->user_data         = NULL;
+   task->state             = NULL;
+   task->error             = NULL;
+   task->progress          = 0;
+   task->progress_cb       = NULL;
+   task->title             = NULL;
+   task->type              = TASK_TYPE_NONE;
    task->ident             = task_count++;
+   task->frontend_userdata = NULL;
+   task->alternative_look  = false;
+   task->next              = NULL;
+   task->when              = 0;
 
    return task;
 }
