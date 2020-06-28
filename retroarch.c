@@ -20616,31 +20616,31 @@ const char* config_get_wifi_driver_options(void)
 void driver_wifi_scan(void)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->wifi_driver->scan();
+   p_rarch->wifi_driver->scan(p_rarch->wifi_data);
 }
 
 void driver_wifi_get_ssids(struct string_list* ssids)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->wifi_driver->get_ssids(ssids);
+   p_rarch->wifi_driver->get_ssids(p_rarch->wifi_data, ssids);
 }
 
 bool driver_wifi_ssid_is_online(unsigned i)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->ssid_is_online(i);
+   return p_rarch->wifi_driver->ssid_is_online(p_rarch->wifi_data, i);
 }
 
 bool driver_wifi_connect_ssid(unsigned i, const char* passphrase)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->connect_ssid(i, passphrase);
+   return p_rarch->wifi_driver->connect_ssid(p_rarch->wifi_data, i, passphrase);
 }
 
 void driver_wifi_tether_start_stop(bool start, char* configfile)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->wifi_driver->tether_start_stop(start, configfile);
+   p_rarch->wifi_driver->tether_start_stop(p_rarch->wifi_data, start, configfile);
 }
 
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
@@ -20737,12 +20737,15 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 
         wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
 
-        p_rarch->wifi_data = p_rarch->wifi_driver->init();
-
-        if (!p_rarch->wifi_data)
+        if (p_rarch->wifi_driver && p_rarch->wifi_driver->init)
         {
-           RARCH_ERR("Failed to initialize wifi driver. Will continue without wifi.\n");
-           wifi_driver_ctl(RARCH_WIFI_CTL_UNSET_ACTIVE, NULL);
+           p_rarch->wifi_data = p_rarch->wifi_driver->init();
+
+           if (!p_rarch->wifi_data)
+           {
+              RARCH_ERR("Failed to initialize wifi driver. Will continue without wifi.\n");
+              wifi_driver_ctl(RARCH_WIFI_CTL_UNSET_ACTIVE, NULL);
+           }
         }
 
         /*if (wifi_cb.initialized)
@@ -33802,6 +33805,9 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
 
    if (flags & DRIVER_BLUETOOTH_MASK)
       bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_INIT, NULL);
+
+   if ((flags & DRIVER_WIFI_MASK))
+      wifi_driver_ctl(RARCH_WIFI_CTL_INIT, NULL);
 
    if (flags & DRIVER_LOCATION_MASK)
    {
