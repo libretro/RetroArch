@@ -191,12 +191,12 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 #endif
    bool thread_created      = false;
    struct thread_data *data = NULL;
-   sthread_t *thread        = (sthread_t*)calloc(1, sizeof(*thread));
+   sthread_t *thread        = (sthread_t*)malloc(sizeof(*thread));
 
    if (!thread)
       return NULL;
 
-   data                     = (struct thread_data*)calloc(1, sizeof(*data));
+   data                     = (struct thread_data*)malloc(sizeof(*data));
    if (!data)
       goto error;
 
@@ -204,14 +204,17 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    data->userdata           = userdata;
 
 #ifdef USE_WIN32_THREADS
-   thread->thread           = CreateThread(NULL, 0, thread_wrap, data, 0, &thread->id);
+   thread->id               = 0;
+   thread->thread           = CreateThread(NULL, 0, thread_wrap,
+         data, 0, &thread->id);
    thread_created           = !!thread->thread;
 #else
+   thread->id               = 0;
 
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
 
-   if ( (thread_priority >= 1) && (thread_priority <= 100) )
+   if ((thread_priority >= 1) && (thread_priority <= 100))
    {
       struct sched_param sp;
       memset(&sp, 0, sizeof(struct sched_param));
@@ -328,15 +331,21 @@ bool sthread_isself(sthread_t *thread)
 slock_t *slock_new(void)
 {
    bool mutex_created = false;
-   slock_t      *lock = (slock_t*)calloc(1, sizeof(*lock));
+   slock_t      *lock = (slock_t*)malloc(sizeof(*lock));
    if (!lock)
       return NULL;
 
+
 #ifdef USE_WIN32_THREADS
+   lock->lock.LockCount      = 0;
+   lock->lock.RecursionCount = 0;
+   lock->lock.LockSemaphore  = NULL;
+   lock->lock.SpinCount      = 0;
    InitializeCriticalSection(&lock->lock);
-   mutex_created = true;
+   mutex_created             = true;
 #else
-   mutex_created = (pthread_mutex_init(&lock->lock, NULL) == 0);
+   lock->lock                = 0;
+   mutex_created             = (pthread_mutex_init(&lock->lock, NULL) == 0);
 #endif
 
    if (!mutex_created)
@@ -433,13 +442,12 @@ void slock_unlock(slock_t *lock)
  **/
 scond_t *scond_new(void)
 {
-   scond_t      *cond = (scond_t*)calloc(1, sizeof(*cond));
+   scond_t      *cond = (scond_t*)malloc(sizeof(*cond));
 
    if (!cond)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
-
    /* This is very complex because recreating condition variable semantics
     * with Win32 parts is not easy.
     *
@@ -465,10 +473,17 @@ scond_t *scond_new(void)
     *
     * Note: We might could simplify this using vista+ condition variables,
     * but we wanted an XP compatible solution. */
-   cond->event = CreateEvent(NULL, FALSE, FALSE, NULL);
+   cond->waiters           = 0;
+   cond->wakens            = 0;
+   cond->head              = NULL;
+   cond->cs.LockCount      = 0;
+   cond->cs.RecursionCount = 0;
+   cond->cs.LockSemaphore  = NULL;
+   cond->cs.SpinCount      = 0;
+   cond->event             = CreateEvent(NULL, FALSE, FALSE, NULL);
    if (!cond->event)
       goto error;
-   cond->hot_potato = CreateEvent(NULL, FALSE, FALSE, NULL);
+   cond->hot_potato        = CreateEvent(NULL, FALSE, FALSE, NULL);
    if (!cond->hot_potato)
    {
       CloseHandle(cond->event);
@@ -476,10 +491,8 @@ scond_t *scond_new(void)
    }
 
    InitializeCriticalSection(&cond->cs);
-   cond->waiters = cond->wakens = 0;
-   cond->head = NULL;
-
 #else
+   cond->cond       = 0;
    if (pthread_cond_init(&cond->cond, NULL) != 0)
       goto error;
 #endif
