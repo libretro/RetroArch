@@ -287,10 +287,24 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    const char                     *mode_str = NULL;
    libretro_vfs_implementation_file *stream = 
       (libretro_vfs_implementation_file*)
-      calloc(1, sizeof(*stream));
+      malloc(sizeof(*stream));
 
    if (!stream)
       return NULL;
+
+   stream->fd                     = 0;
+   stream->hints                  = hints;
+   stream->size                   = 0;
+   stream->buf                    = NULL;
+   stream->fp                     = NULL;
+#ifdef _WIN32
+   stream->fh                     = 0;
+#endif
+   stream->orig_path              = NULL;
+   stream->mappos                 = 0;
+   stream->mapsize                = 0;
+   stream->mapped                 = NULL;
+   stream->scheme                 = VFS_SCHEME_NONE;
 
 #ifdef VFS_FRONTEND
    if (path_len >= dumb_prefix_len)
@@ -299,6 +313,19 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #endif
 
 #ifdef HAVE_CDROM
+   stream->cdrom.cue_buf          = NULL;
+   stream->cdrom.cue_len          = 0;
+   stream->cdrom.byte_pos         = 0;
+   stream->cdrom.drive            = 0;
+   stream->cdrom.cur_min          = 0;
+   stream->cdrom.cur_sec          = 0;
+   stream->cdrom.cur_frame        = 0;
+   stream->cdrom.cur_track        = 0;
+   stream->cdrom.cur_lba          = 0;
+   stream->cdrom.last_frame_lba   = 0;
+   stream->cdrom.last_frame[0]    = '\0';
+   stream->cdrom.last_frame_valid = false;
+
    if (path_len > cdrom_prefix_len)
    {
       if (!memcmp(path, cdrom_prefix, cdrom_prefix_len))
@@ -309,7 +336,6 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    }
 #endif
 
-   stream->hints           = hints;
    stream->orig_path       = strdup(path);
 
 #ifdef HAVE_MMAP
@@ -382,7 +408,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          stream->fd = -1;
          goto error;
       }
-      stream->fd = fd;
+      stream->fd    = fd;
 #else
       FILE *fp;
 #ifdef HAVE_CDROM
