@@ -5779,15 +5779,36 @@ void menu_entries_append(
 
    file_list_free_actiondata(list, idx);
    cbs = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
+      malloc(sizeof(menu_file_list_cbs_t));
 
    if (!cbs)
       return;
 
-   file_list_set_actiondata(list, idx, cbs);
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = MSG_UNKNOWN;
+   cbs->checked                    = false;
+   cbs->setting                    = menu_setting_find(label);
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_content_list_switch = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_refresh             = NULL;
+   cbs->action_up                  = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_down                = NULL;
+   cbs->action_get_value           = NULL;
 
-   cbs->enum_idx = MSG_UNKNOWN;
-   cbs->setting  = menu_setting_find(label);
+   file_list_set_actiondata(list, idx, cbs);
 
    menu_cbs_init(p_rarch,
          list, cbs, path, label, type, idx);
@@ -5843,17 +5864,38 @@ bool menu_entries_append_enum(
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
+   cbs = (menu_file_list_cbs_t*)malloc(sizeof(menu_file_list_cbs_t));
+
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = enum_idx;
+   cbs->checked                    = false;
+   cbs->setting                    = NULL;
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_content_list_switch = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_refresh             = NULL;
+   cbs->action_up                  = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_down                = NULL;
+   cbs->action_get_value           = NULL;
 
    file_list_set_actiondata(list, idx, cbs);
-
-   cbs->enum_idx = enum_idx;
 
    if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
        && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
-      cbs->setting  = menu_setting_find_enum(enum_idx);
+      cbs->setting                 = menu_setting_find_enum(enum_idx);
 
    if (!string_is_equal(menu_ident, "null"))
       menu_cbs_init(p_rarch,
@@ -5906,16 +5948,36 @@ void menu_entries_prepend(file_list_t *list,
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
+   cbs = (menu_file_list_cbs_t*)malloc(sizeof(menu_file_list_cbs_t));
 
    if (!cbs)
       return;
 
-   file_list_set_actiondata(list, idx, cbs);
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = enum_idx;
+   cbs->checked                    = false;
+   cbs->setting                    = menu_setting_find_enum(cbs->enum_idx);
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_content_list_switch = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_refresh             = NULL;
+   cbs->action_up                  = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_down                = NULL;
+   cbs->action_get_value           = NULL;
 
-   cbs->enum_idx = enum_idx;
-   cbs->setting  = menu_setting_find_enum(cbs->enum_idx);
+   file_list_set_actiondata(list, idx, cbs);
 
    menu_cbs_init(p_rarch,
          list, cbs, path, label, type, idx);
