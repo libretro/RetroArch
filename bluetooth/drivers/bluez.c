@@ -77,8 +77,9 @@ set_bool_property (
    const char *arg_property,
    int value)
 {
-   DBusMessage *message, *reply;
    DBusError err;
+   DBusMessage *message, *reply;
+   DBusMessageIter req_iter, req_subiter;
 
    dbus_error_init(&err);
 
@@ -91,7 +92,6 @@ set_bool_property (
    if (!message)
       return 1;
 
-   DBusMessageIter req_iter, req_subiter;
    dbus_message_iter_init_append(message, &req_iter);
    if (!dbus_message_iter_append_basic(
             &req_iter, DBUS_TYPE_STRING, &arg_adapter))
@@ -464,14 +464,14 @@ static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
    return 0;
 }
 
-static void bluez_dbus_connect (bluez_t *bluez)
+static void bluez_dbus_connect(bluez_t *bluez)
 {
    DBusError err;
    dbus_error_init(&err);
    bluez->dbus_connection = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
 }
 
-static void bluez_dbus_disconnect (bluez_t *bluez)
+static void bluez_dbus_disconnect(bluez_t *bluez)
 {
    if (!bluez->dbus_connection)
       return;
@@ -481,11 +481,11 @@ static void bluez_dbus_disconnect (bluez_t *bluez)
    bluez->dbus_connection = NULL;
 }
 
-static void bluez_scan (void *data)
+static void bluez_scan(void *data)
 {
-   bluez_t *bluez = (bluez_t*)data;
    DBusError err;
    DBusMessage *reply;
+   bluez_t *bluez = (bluez_t*)data;
 
    bluez_dbus_connect(bluez);
 
@@ -500,7 +500,8 @@ static void bluez_scan (void *data)
    dbus_message_unref(reply);
 
    /* Power device on */
-   if (set_bool_property(bluez, bluez->adapter, "org.bluez.Adapter1", "Powered", 1))
+   if (set_bool_property(bluez, bluez->adapter,
+            "org.bluez.Adapter1", "Powered", 1))
       return;
 
    /* Start discovery */
@@ -528,11 +529,13 @@ static void bluez_scan (void *data)
    bluez_dbus_disconnect(bluez);
 }
 
-static void bluez_get_devices (void *data, struct string_list* devices_string_list)
+static void bluez_get_devices(void *data,
+      struct string_list* devices_string_list)
 {
-   bluez_t *bluez = (bluez_t*)data;
    unsigned i;
    union string_list_elem_attr attr;
+   bluez_t *bluez = (bluez_t*)data;
+
    attr.i = 0;
 
    if (!bluez->devices)
@@ -546,21 +549,21 @@ static void bluez_get_devices (void *data, struct string_list* devices_string_li
    }
 }
 
-static bool bluez_device_is_connected (void *data, unsigned i)
+static bool bluez_device_is_connected(void *data, unsigned i)
 {
-   bluez_t *bluez = (bluez_t*)data;
    int value;
+   bluez_t *bluez = (bluez_t*)data;
 
    if (bluez->bluez_cache_counter[i] == 60)
    {
       bluez->bluez_cache_counter[i] = 0;
       bluez_dbus_connect(bluez);
+
+      /* Device disappeared */
       if (get_bool_property(bluez, bluez->devices->data[i].path,
             "org.bluez.Device1", "Connected", &value))
-      {
-          /* Device disappeared */
           value = false;
-      }
+
       bluez_dbus_disconnect(bluez);
 
       bluez->bluez_cache[i] = value;
@@ -571,7 +574,8 @@ static bool bluez_device_is_connected (void *data, unsigned i)
    return bluez->bluez_cache[i];
 }
 
-static void bluez_device_get_sublabel(void *data, char *s, unsigned i, size_t len)
+static void bluez_device_get_sublabel(
+      void *data, char *s, unsigned i, size_t len)
 {
    bluez_t *bluez = (bluez_t*)data;
    strlcpy(s, bluez->devices->data[i].address, len);
@@ -586,8 +590,10 @@ static bool bluez_connect_device(void *data, unsigned i)
    if (set_bool_property(bluez, bluez->devices->data[i].path,
             "org.bluez.Device1", "Trusted", 1))
       return false;
+
    /* Pair the device */
    device_method(bluez, bluez->devices->data[i].path, "Pair");
+
    /* Can be "Already Exists" */
    /* Connect the device */
    if (device_method(bluez, bluez->devices->data[i].path, "Connect"))

@@ -39,10 +39,10 @@ static void bluetoothctl_free(void *data)
 
 static void bluetoothctl_scan(void *data)
 {
-   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    char line[512];
    union string_list_elem_attr attr;
    FILE *dev_file                   = NULL;
+   bluetoothctl_t *btctl            = (bluetoothctl_t*) data;
 
    attr.i = 0;
    if (btctl->lines)
@@ -73,9 +73,9 @@ static void bluetoothctl_scan(void *data)
 
 static void bluetoothctl_get_devices(void *data, struct string_list* devices)
 {
-   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    unsigned i;
    union string_list_elem_attr attr;
+   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
 
    attr.i = 0;
 
@@ -99,16 +99,16 @@ static void bluetoothctl_get_devices(void *data, struct string_list* devices)
 static bool bluetoothctl_device_is_connected(void *data, unsigned i)
 {
    bluetoothctl_t *btctl = (bluetoothctl_t*) data;
-   char ln[512]       = {0};
-   char device[18]    = {0};
-   const char *line   = btctl->lines->elems[i].data;
-   FILE *command_file = NULL;
+   char ln[512]          = {0};
+   char device[18]       = {0};
+   const char *line      = btctl->lines->elems[i].data;
+   FILE *command_file    = NULL;
 
    if (btctl->bluetoothctl_counter[i] == 60)
    {
       static struct string_list* list = NULL;
-      btctl->bluetoothctl_counter[i] = 0;
-      list            = string_split(line, " ");
+      btctl->bluetoothctl_counter[i]  = 0;
+      list                            = string_split(line, " ");
       if (!list)
          return false;
 
@@ -146,8 +146,8 @@ static bool bluetoothctl_device_is_connected(void *data, unsigned i)
 
 static bool bluetoothctl_connect_device(void *data, unsigned idx)
 {
-   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    unsigned i;
+   bluetoothctl_t *btctl               = (bluetoothctl_t*) data;
    char device[18]                     = {0};
    const char *line                    = btctl->lines->elems[idx].data;
    static struct string_list* list     = NULL;
@@ -156,7 +156,7 @@ static bool bluetoothctl_connect_device(void *data, unsigned idx)
     * $ bluetoothctl devices
     *     'Device (mac address) (device name)'
     */
-   list = string_split(line, " ");
+   list                                = string_split(line, " ");
    if (!list)
       return false;
 
@@ -191,14 +191,15 @@ static bool bluetoothctl_connect_device(void *data, unsigned idx)
    return true;
 }
 
-void bluetoothctl_device_get_sublabel (void *data, char *s, unsigned i, size_t len)
+static void bluetoothctl_device_get_sublabel(
+      void *data, char *s, unsigned i, size_t len)
 {
    bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    /* bluetoothctl devices outputs lines of the format:
     * $ bluetoothctl devices
     *     'Device (mac address) (device name)'
     */
-   const char *line = btctl->lines->elems[i].data;
+   const char      *line = btctl->lines->elems[i].data;
    strlcpy(s, line+7, 18);
 }
 
