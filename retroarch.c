@@ -20024,10 +20024,14 @@ static struct retro_ctx_load_content_info
       return NULL;   /* refuse to deal with the Special field */
 
    dest          = (struct retro_ctx_load_content_info*)
-      calloc(1, sizeof(*dest));
+      malloc(sizeof(*dest));
 
    if (!dest)
       return NULL;
+
+   dest->info       = NULL;
+   dest->content    = NULL;
+   dest->special    = NULL;
 
    if (src->info)
       dest->info    = clone_retro_game_info(src->info);
@@ -25758,10 +25762,7 @@ static bool input_driver_init_mapper(struct rarch_state *p_rarch)
    handle = (input_mapper_t*)calloc(1, sizeof(*p_rarch->input_driver_mapper));
 
    if (!handle)
-   {
-      RARCH_ERR("Failed to initialize input mapper.\n");
       return false;
-   }
 
    p_rarch->input_driver_mapper = handle;
 
@@ -30472,10 +30473,13 @@ static bool video_driver_pixel_converter_init(
          " and will be slower. For 15/16-bit, RGB565"
          " format is preferred.\n");
 
-   scalr = (video_pixel_scaler_t*)calloc(1, sizeof(*scalr));
+   scalr = (video_pixel_scaler_t*)malloc(sizeof(*scalr));
 
    if (!scalr)
       goto error;
+
+   scalr->scaler                            = NULL;
+   scalr->scaler_out                        = NULL;
 
    p_rarch->video_driver_scaler_ptr         = scalr;
 
