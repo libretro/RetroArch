@@ -827,16 +827,32 @@ static input_device_driver_t *joypad_drivers[] = {
 };
 
 #ifdef HAVE_HID
+static bool null_hid_joypad_query(void *data, unsigned pad) { 
+   return pad < MAX_USERS; }
+static const char *null_hid_joypad_name(
+      void *data, unsigned pad) { return NULL; }
+static void null_hid_joypad_get_buttons(void *data,
+      unsigned port, input_bits_t *state) { BIT256_CLEAR_ALL_PTR(state); }
+static bool null_hid_joypad_button(
+      void *data, unsigned port, uint16_t joykey) { return false; }
+static bool null_hid_joypad_rumble(void *data, unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength) { return false; }
+static int16_t null_hid_joypad_axis(
+      void *data, unsigned port, uint32_t joyaxis) { return 0; }
+static void *null_hid_init(void) { return (void*)-1; }
+static void null_hid_free(const void *data) { }
+static void null_hid_poll(void *data) { }
+
 static hid_driver_t null_hid = {
-   NULL, /* init */
-   NULL, /* joypad_query */
-   NULL, /* free */
-   NULL, /* button */
-   NULL, /* get_buttons */
-   NULL, /* axis */
-   NULL, /* poll */
-   NULL, /* rumble */
-   NULL, /* joypad_name */
+   null_hid_init,               /* init */
+   null_hid_joypad_query,       /* joypad_query */
+   null_hid_free,               /* free */
+   null_hid_joypad_button,      /* button */
+   null_hid_joypad_get_buttons, /* get_buttons */
+   null_hid_joypad_axis,        /* axis */
+   null_hid_poll,               /* poll */
+   null_hid_joypad_rumble,      /* rumble */
+   null_hid_joypad_name,        /* joypad_name */
    "null",
 };
 
