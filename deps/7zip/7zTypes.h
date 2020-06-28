@@ -41,7 +41,7 @@ EXTERN_C_BEGIN
 #define SZ_ERROR_ARCHIVE 16
 #define SZ_ERROR_NO_ARCHIVE 17
 
-typedef int SRes;
+typedef int64_t SRes;
 
 typedef int64_t WRes;
 
