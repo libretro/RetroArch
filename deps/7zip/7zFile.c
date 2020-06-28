@@ -2,6 +2,7 @@
    2009-11-24 : Igor Pavlov : Public domain */
 
 #include <stdint.h>
+#include <streams/file_stream_transforms.h>
 #include "7zFile.h"
 
 #ifndef UNDER_CE
