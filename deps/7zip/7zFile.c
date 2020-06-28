@@ -16,16 +16,25 @@ void File_Construct(CSzFile *p)
 static WRes File_Open(CSzFile *p, const char *name, int writeMode)
 {
    p->file = rfopen(name, writeMode ? "wb+" : "rb");
-   return (p->file != 0) ? 0 :
 #ifdef UNDER_CE
-      2; /* ENOENT */
+   if (!p->file)
+      return 2; /* ENOENT */
 #else
-   errno;
+   if (!p->file)
+      return errno;
 #endif
+   return 0;
 }
 
-WRes InFile_Open(CSzFile *p, const char *name) { return File_Open(p, name, 0); }
-WRes OutFile_Open(CSzFile *p, const char *name) { return File_Open(p, name, 1); }
+WRes InFile_Open(CSzFile *p, const char *name)
+{
+   return File_Open(p, name, 0);
+}
+
+WRes OutFile_Open(CSzFile *p, const char *name)
+{
+   return File_Open(p, name, 1);
+}
 
 WRes File_Close(CSzFile *p)
 {
@@ -53,7 +62,7 @@ WRes File_Read(CSzFile *p, void *data, size_t *size)
 
 WRes File_Write(CSzFile *p, const void *data, size_t *size)
 {
-   size_t originalSize = *size;
+   int64_t originalSize = *size;
    if (originalSize == 0)
       return 0;
 
@@ -65,7 +74,8 @@ WRes File_Write(CSzFile *p, const void *data, size_t *size)
 
 WRes File_Seek(CSzFile *p, int64_t *pos, ESzSeek origin)
 {
-   int whence, res;
+   int whence;
+   int64_t res;
    switch (origin)
    {
       case SZ_SEEK_SET:

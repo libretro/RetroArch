@@ -43,11 +43,7 @@ EXTERN_C_BEGIN
 
 typedef int SRes;
 
-#ifdef _WIN32
-typedef unsigned WRes;
-#else
-typedef int WRes;
-#endif
+typedef int64_t WRes;
 
 #ifndef RINOK
 #define RINOK(x) { int __result__ = (x); if (__result__ != 0) return __result__; }
