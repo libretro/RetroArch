@@ -377,12 +377,19 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-   memset(&region, 0, sizeof(region));
-   region.imageExtent.width           = dynamic->width;
-   region.imageExtent.height          = dynamic->height;
-   region.imageExtent.depth           = 1;
-   region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.imageSubresource.layerCount = 1;
+   region.bufferOffset                    = 0;
+   region.bufferRowLength                 = 0;
+   region.bufferImageHeight               = 0;
+   region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.imageSubresource.mipLevel       = 0;
+   region.imageSubresource.baseArrayLayer = 0;
+   region.imageSubresource.layerCount     = 1;
+   region.imageOffset.x                   = 0;
+   region.imageOffset.y                   = 0;
+   region.imageOffset.z                   = 0;
+   region.imageExtent.width               = dynamic->width;
+   region.imageExtent.height              = dynamic->height;
+   region.imageExtent.depth               = 1;
 
    vkCmdCopyBufferToImage(cmd,
          staging->buffer,
