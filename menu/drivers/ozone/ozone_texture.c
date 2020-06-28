@@ -263,11 +263,12 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS];
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
-      case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
       case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_NETWORK];
+      case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_BLUETOOTH];
       case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST];
       case MENU_ENUM_LABEL_USER_SETTINGS:
@@ -412,10 +413,8 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 #endif
       case MENU_INFO_MESSAGE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
-#if 0
       case MENU_BLUETOOTH:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_BLUETOOTH];
-#endif
       case MENU_WIFI:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_WIFI];
 #ifdef HAVE_NETWORKING
@@ -598,10 +597,8 @@ switch (id)
          return "undo.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO:
          return "core-infos.png";
-#if 0
       case OZONE_ENTRIES_ICONS_TEXTURE_BLUETOOTH:
          return "bluetooth.png";
-#endif
       case OZONE_ENTRIES_ICONS_TEXTURE_WIFI:
          return "wifi.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS:
