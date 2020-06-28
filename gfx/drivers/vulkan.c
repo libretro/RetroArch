@@ -1700,6 +1700,7 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned i;
    VkSubmitInfo submit_info;
    VkClearValue clear_color;
    VkRenderPassBeginInfo rp_info;
@@ -1760,9 +1761,19 @@ static bool vulkan_frame(void *data, const void *frame,
 
    vkBeginCommandBuffer(vk->cmd, &begin_info);
 
-   memset(&vk->tracker, 0, sizeof(vk->tracker));
+   vk->tracker.dirty                 = 0;
+   vk->tracker.scissor.offset.x      = 0;
+   vk->tracker.scissor.offset.y      = 0;
+   vk->tracker.scissor.extent.width  = 0;
+   vk->tracker.scissor.extent.height = 0;
+   vk->tracker.use_scissor           = false;
+   vk->tracker.pipeline              = VK_NULL_HANDLE;
+   vk->tracker.view                  = VK_NULL_HANDLE;
+   vk->tracker.sampler               = VK_NULL_HANDLE;
+   for (i = 0; i < 16; i++)
+      vk->tracker.mvp.data[i]        = 0.0f;
 
-   waits_for_semaphores = vk->hw.enable && frame &&
+   waits_for_semaphores              = vk->hw.enable && frame &&
                           !vk->hw.num_cmd && vk->hw.valid_semaphore;
 
    if (waits_for_semaphores &&
@@ -1804,19 +1815,19 @@ static bool vulkan_frame(void *data, const void *frame,
          }
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
-         {
             chain->texture_optimal = vulkan_create_texture(
                   vk,
                   &chain->texture_optimal,
-                  frame_width, frame_height, chain->texture_optimal.format,
+                  frame_width, frame_height,
+                  chain->texture_optimal.format,
                   NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
-         }
       }
 
       if (frame != chain->texture.mapped)
       {
          dst = (uint8_t*)chain->texture.mapped;
-         if (chain->texture.stride == pitch && pitch == frame_width * bpp)
+         if (     (chain->texture.stride == pitch )
+               && pitch == frame_width * bpp)
             memcpy(dst, src, frame_width * frame_height * bpp);
          else
             for (y = 0; y < frame_height; y++,
@@ -1837,9 +1848,13 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 
    /* Notify filter chain about the new sync index. */
-   vulkan_filter_chain_notify_sync_index((vulkan_filter_chain_t*)vk->filter_chain, frame_index);
-   vulkan_filter_chain_set_frame_count((vulkan_filter_chain_t*)vk->filter_chain, frame_count);
-   vulkan_filter_chain_set_frame_direction((vulkan_filter_chain_t*)vk->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
+   vulkan_filter_chain_notify_sync_index(
+         (vulkan_filter_chain_t*)vk->filter_chain, frame_index);
+   vulkan_filter_chain_set_frame_count(
+         (vulkan_filter_chain_t*)vk->filter_chain, frame_count);
+   vulkan_filter_chain_set_frame_direction(
+         (vulkan_filter_chain_t*)vk->filter_chain,
+         state_manager_frame_is_reversed() ? -1 : 1);
 
    /* Render offscreen filter chain passes. */
    {
@@ -2117,8 +2132,8 @@ static bool vulkan_frame(void *data, const void *frame,
    submit_info.waitSemaphoreCount    = 0;
    submit_info.pWaitSemaphores       = NULL;
    submit_info.pWaitDstStageMask     = NULL;
-   submit_info.commandBufferCount    = 0;
-   submit_info.pCommandBuffers       = NULL;
+   submit_info.commandBufferCount    = 1;
+   submit_info.pCommandBuffers       = &vk->cmd;
    submit_info.signalSemaphoreCount  = 0;
    submit_info.pSignalSemaphores     = NULL;
 
@@ -2131,11 +2146,6 @@ static bool vulkan_frame(void *data, const void *frame,
       submit_info.pCommandBuffers    = vk->hw.cmd;
 
       vk->hw.num_cmd                 = 0;
-   }
-   else
-   {
-      submit_info.commandBufferCount = 1;
-      submit_info.pCommandBuffers    = &vk->cmd;
    }
 
    if (waits_for_semaphores)
@@ -2177,7 +2187,8 @@ static bool vulkan_frame(void *data, const void *frame,
       submit_info.pWaitDstStageMask = &wait_stage;
    }
 
-   if (vk->context->swapchain_semaphores[swapchain_index] != VK_NULL_HANDLE &&
+   if (vk->context->swapchain_semaphores[swapchain_index] 
+         != VK_NULL_HANDLE &&
          vk->context->has_acquired_swapchain)
    {
       signal_semaphores[submit_info.signalSemaphoreCount++] = vk->context->swapchain_semaphores[swapchain_index];
@@ -2220,6 +2231,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vk->should_resize = false;
    }
+
    vulkan_check_swapchain(vk);
 
    /* Disable BFI during fast forward, slow-motion,
@@ -2233,7 +2245,8 @@ static bool vulkan_frame(void *data, const void *frame,
          && !runloop_is_paused)
       vulkan_inject_black_frame(vk, video_info, context_data);
 
-   /* Vulkan doesn't directly support swap_interval > 1, so we fake it by duping out more frames. */
+   /* Vulkan doesn't directly support swap_interval > 1, 
+    * so we fake it by duping out more frames. */
    if (      vk->context->swap_interval > 1
          && !vk->context->swap_interval_emulation_lock)
    {

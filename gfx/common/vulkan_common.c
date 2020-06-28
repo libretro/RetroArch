@@ -1168,10 +1168,11 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
    /* Upload descriptors */
    {
+      unsigned i;
       VkDescriptorSet set;
-
       /* Upload UBO */
       struct vk_buffer_range range;
+
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                call->uniform_size, &range))
          return;
@@ -1191,13 +1192,15 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
             call->texture,
             call->sampler);
 
-      vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      vkCmdBindDescriptorSets(vk->cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
             vk->pipelines.layout, 0,
             1, &set, 0, NULL);
 
-      vk->tracker.view = VK_NULL_HANDLE;
+      vk->tracker.view    = VK_NULL_HANDLE;
       vk->tracker.sampler = VK_NULL_HANDLE;
-      memset(&vk->tracker.mvp, 0, sizeof(vk->tracker.mvp));
+      for (i = 0; i < 16; i++)
+         vk->tracker.mvp.data[i] = 0.0f;
    }
 
    /* VBO is already uploaded. */
@@ -2723,7 +2726,7 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
       vkDeviceWaitIdle(vk->context.device);
       vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
-      vk->swapchain = VK_NULL_HANDLE;
+      vk->swapchain                      = VK_NULL_HANDLE;
       vk->context.has_acquired_swapchain = false;
    }
 
