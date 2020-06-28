@@ -40,8 +40,26 @@ static void *zlib_deflate_stream_new(void)
       malloc(sizeof(*ret));
    if (!ret)
       return NULL;
-   ret->inited = false;
-   ret->ex     = 9;
+   ret->inited      = false;
+   ret->ex          = 9;
+
+   ret->z.next_in   = NULL;
+   ret->z.avail_in  = 0;
+   ret->z.total_in  = 0;
+   ret->z.next_out  = NULL;
+   ret->z.avail_out = 0;
+   ret->z.total_out = 0;
+
+   ret->z.msg       = NULL;
+   ret->z.state     = NULL;
+
+   ret->z.zalloc    = NULL;
+   ret->z.zfree     = NULL;
+   ret->z.opaque    = NULL;
+
+   ret->z.data_type = 0;
+   ret->z.adler     = 0;
+   ret->z.reserved  = 0;
    return (void *)ret;
 }
 
@@ -51,8 +69,26 @@ static void *zlib_inflate_stream_new(void)
       malloc(sizeof(*ret));
    if (!ret)
       return NULL;
-   ret->inited = false;
-   ret->ex     = MAX_WBITS;
+   ret->inited      = false;
+   ret->ex          = MAX_WBITS;
+
+   ret->z.next_in   = NULL;
+   ret->z.avail_in  = 0;
+   ret->z.total_in  = 0;
+   ret->z.next_out  = NULL;
+   ret->z.avail_out = 0;
+   ret->z.total_out = 0;
+
+   ret->z.msg       = NULL;
+   ret->z.state     = NULL;
+
+   ret->z.zalloc    = NULL;
+   ret->z.zfree     = NULL;
+   ret->z.opaque    = NULL;
+
+   ret->z.data_type = 0;
+   ret->z.adler     = 0;
+   ret->z.reserved  = 0;
    return (void *)ret;
 }
 
