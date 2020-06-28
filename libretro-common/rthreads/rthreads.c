@@ -344,7 +344,6 @@ slock_t *slock_new(void)
    InitializeCriticalSection(&lock->lock);
    mutex_created             = true;
 #else
-   lock->lock                = 0;
    mutex_created             = (pthread_mutex_init(&lock->lock, NULL) == 0);
 #endif
 
@@ -492,7 +491,6 @@ scond_t *scond_new(void)
 
    InitializeCriticalSection(&cond->cs);
 #else
-   cond->cond       = 0;
    if (pthread_cond_init(&cond->cond, NULL) != 0)
       goto error;
 #endif
