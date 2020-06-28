@@ -899,12 +899,20 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-               memset(&region, 0, sizeof(region));
-               region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-               region.imageSubresource.layerCount = 1;
-               region.imageExtent.width           = width;
-               region.imageExtent.height          = height;
-               region.imageExtent.depth           = 1;
+               region.bufferOffset                    = 0;
+               region.bufferRowLength                 = 0;
+               region.bufferImageHeight               = 0;
+               region.imageSubresource.aspectMask     = 
+                  VK_IMAGE_ASPECT_COLOR_BIT;
+               region.imageSubresource.mipLevel       = 0;
+               region.imageSubresource.baseArrayLayer = 0;
+               region.imageSubresource.layerCount     = 1;
+               region.imageOffset.x                   = 0;
+               region.imageOffset.y                   = 0;
+               region.imageOffset.z                   = 0;
+               region.imageExtent.width               = width;
+               region.imageExtent.height              = height;
+               region.imageExtent.depth               = 1;
 
                vkCmdCopyBufferToImage(staging,
                      tmp.buffer,
@@ -923,17 +931,21 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                      unsigned src_height                       = MAX(height >> (i - 1), 1);
                      unsigned target_width                     = MAX(width >> i, 1);
                      unsigned target_height                    = MAX(height >> i, 1);
-                     memset(&blit_region, 0, sizeof(blit_region));
-
                      blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
                      blit_region.srcSubresource.mipLevel       = i - 1;
                      blit_region.srcSubresource.baseArrayLayer = 0;
                      blit_region.srcSubresource.layerCount     = 1;
-                     blit_region.dstSubresource                = blit_region.srcSubresource;
-                     blit_region.dstSubresource.mipLevel       = i;
+                     blit_region.srcOffsets[0].x               = 0;
+                     blit_region.srcOffsets[0].y               = 0;
+                     blit_region.srcOffsets[0].z               = 0;
                      blit_region.srcOffsets[1].x               = src_width;
                      blit_region.srcOffsets[1].y               = src_height;
                      blit_region.srcOffsets[1].z               = 1;
+                     blit_region.dstSubresource                = blit_region.srcSubresource;
+                     blit_region.dstSubresource.mipLevel       = i;
+                     blit_region.dstOffsets[0].x               = 0;
+                     blit_region.dstOffsets[0].y               = 0;
+                     blit_region.dstOffsets[0].z               = 0;
                      blit_region.dstOffsets[1].x               = target_width;
                      blit_region.dstOffsets[1].y               = target_height;
                      blit_region.dstOffsets[1].z               = 1;
@@ -3648,14 +3660,20 @@ void vulkan_framebuffer_copy(VkImage image,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-   memset(&region, 0, sizeof(region));
-
-   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.srcSubresource.layerCount = 1;
-   region.dstSubresource            = region.srcSubresource;
-   region.extent.width              = size.width;
-   region.extent.height             = size.height;
-   region.extent.depth              = 1;
+   region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.srcSubresource.mipLevel       = 0;
+   region.srcSubresource.baseArrayLayer = 0;
+   region.srcSubresource.layerCount     = 1;
+   region.srcOffset.x                   = 0;
+   region.srcOffset.y                   = 0;
+   region.srcOffset.z                   = 0;
+   region.dstSubresource                = region.srcSubresource;
+   region.dstOffset.x                   = 0;
+   region.dstOffset.y                   = 0;
+   region.dstOffset.z                   = 0;
+   region.extent.width                  = size.width;
+   region.extent.height                 = size.height;
+   region.extent.depth                  = 1;
 
    vkCmdCopyImage(cmd,
          src_image, src_layout,
@@ -3688,12 +3706,15 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-   memset(&color, 0, sizeof(color));
-   memset(&range, 0, sizeof(range));
-
-   range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   range.levelCount = 1;
-   range.layerCount = 1;
+   color.int32[0]       = 0;
+   color.int32[1]       = 0;
+   color.int32[2]       = 0;
+   color.int32[3]       = 0;
+   range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   range.baseMipLevel   = 0;
+   range.levelCount     = 1;
+   range.baseArrayLayer = 0;
+   range.layerCount     = 1;
 
    vkCmdClearColorImage(cmd,
          image,
