@@ -61,7 +61,7 @@ static std::string build_stage_source(
    {
       const char *line = lines->elems[i].data;
 
-      if (string_starts_with(line, "#pragma"))
+      if (string_starts_with_size(line, "#pragma", STRLEN_CONST("#pragma")))
       {
          /* Identify 'stage' (fragment/vertex) */
          if (!strncmp("#pragma stage ", line, STRLEN_CONST("#pragma stage ")))
@@ -111,7 +111,7 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
    {
       const char *line = lines->elems[i].data;
 
-      if (string_starts_with(line, "#pragma"))
+      if (string_starts_with_size(line, "#pragma", STRLEN_CONST("#pragma")))
       {
          /* Check for shader identifier */
          if (!strncmp("#pragma name ", line,
