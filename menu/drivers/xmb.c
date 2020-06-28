@@ -2691,13 +2691,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+      case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
       case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_NETWORK];
 #endif
-      case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
-         return xmb->textures.list[XMB_TEXTURE_BLUETOOTH];
       case MENU_ENUM_LABEL_SHUTDOWN:
          return xmb->textures.list[XMB_TEXTURE_SHUTDOWN];
       case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:

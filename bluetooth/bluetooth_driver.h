@@ -28,7 +28,13 @@ enum rarch_bluetooth_ctl_state
    RARCH_BLUETOOTH_CTL_NONE = 0,
    RARCH_BLUETOOTH_CTL_DESTROY,
    RARCH_BLUETOOTH_CTL_DEINIT,
+   RARCH_BLUETOOTH_CTL_SET_ACTIVE,
+   RARCH_BLUETOOTH_CTL_UNSET_ACTIVE,
+   RARCH_BLUETOOTH_CTL_IS_ACTIVE,
    RARCH_BLUETOOTH_CTL_FIND_DRIVER,
+   RARCH_BLUETOOTH_CTL_SET_CB,
+   RARCH_BLUETOOTH_CTL_STOP,
+   RARCH_BLUETOOTH_CTL_START,
    RARCH_BLUETOOTH_CTL_INIT
 };
 
@@ -38,11 +44,14 @@ typedef struct bluetooth_driver
 
    void (*free)(void *data);
 
-   void (*scan)(void *data);
-   void (*get_devices)(void *data, struct string_list *list);
-   bool (*device_is_connected)(void *data, unsigned i);
-   void (*device_get_sublabel)(void *data, char *s, unsigned i, size_t len);
-   bool (*connect_device)(void *data, unsigned i);
+   bool (*start)(void *data);
+   void (*stop)(void *data);
+
+   void (*scan)(void);
+   void (*get_devices)(struct string_list *list);
+   bool (*device_is_connected)(unsigned i);
+   void (*device_get_sublabel)(char *s, unsigned i, size_t len);
+   bool (*connect_device)(unsigned i);
 
    const char *ident;
 } bluetooth_driver_t;
@@ -60,6 +69,10 @@ extern bluetooth_driver_t bluetooth_bluez;
  * separated by '|'.
  **/
 const char* config_get_bluetooth_driver_options(void);
+
+void driver_bluetooth_stop(void);
+
+bool driver_bluetooth_start(void);
 
 void driver_bluetooth_scan(void);
 
