@@ -1418,7 +1418,7 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
    VkDescriptorPoolCreateInfo pool_info;
    VkDescriptorSetAllocateInfo alloc_info;
    struct vk_descriptor_pool *pool        =
-      (struct vk_descriptor_pool*)calloc(1, sizeof(*pool));
+      (struct vk_descriptor_pool*)malloc(sizeof(*pool));
    if (!pool)
       return NULL;
 
@@ -1428,6 +1428,11 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
    pool_info.maxSets       = VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS;
    pool_info.poolSizeCount = manager->num_sizes;
    pool_info.pPoolSizes    = manager->sizes;
+
+   pool->pool              = VK_NULL_HANDLE;
+   for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
+      pool->sets[i]        = VK_NULL_HANDLE;
+   pool->next              = NULL;
 
    vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool);
 
@@ -1471,12 +1476,22 @@ struct vk_descriptor_manager vulkan_create_descriptor_manager(
       unsigned num_sizes,
       VkDescriptorSetLayout set_layout)
 {
+   unsigned i;
    struct vk_descriptor_manager manager;
-   memset(&manager, 0, sizeof(manager));
+
    retro_assert(num_sizes <= VULKAN_MAX_DESCRIPTOR_POOL_SIZES);
+
+   manager.current    = NULL;
+   manager.count      = 0;
+
+   for (i = 0; i < VULKAN_MAX_DESCRIPTOR_POOL_SIZES; i++)
+   {
+      manager.sizes[i].type            = VK_DESCRIPTOR_TYPE_SAMPLER;
+      manager.sizes[i].descriptorCount = 0;
+   }
    memcpy(manager.sizes, sizes, num_sizes * sizeof(*sizes));
-   manager.num_sizes  = num_sizes;
    manager.set_layout = set_layout;
+   manager.num_sizes  = num_sizes;
 
    manager.head       = vulkan_alloc_descriptor_pool(device, &manager);
    retro_assert(manager.head);
@@ -1533,12 +1548,13 @@ static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
       size_t size, VkBufferUsageFlags usage)
 {
    struct vk_buffer_node *node = (struct vk_buffer_node*)
-      calloc(1, sizeof(*node));
+      malloc(sizeof(*node));
    if (!node)
       return NULL;
 
    node->buffer = vulkan_create_buffer(
          context, size, usage);
+   node->next   = NULL;
    return node;
 }
 
