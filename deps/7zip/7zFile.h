@@ -17,7 +17,7 @@ extern "C" {
 
 typedef struct
 {
-  FILE *file;
+  RFILE *file;
 } CSzFile;
 
 void File_Construct(CSzFile *p);
