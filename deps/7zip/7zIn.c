@@ -505,8 +505,12 @@ static SRes SzReadSwitch(CSzData *sd)
 
 static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
 {
-   uint32_t numCoders, numBindPairs, numPackStreams, i;
-   uint32_t numInStreams = 0, numOutStreams = 0;
+   unsigned i;
+   uint32_t numBindPairs   = 0;
+   uint32_t numPackStreams = 0;
+   uint32_t numInStreams   = 0;
+   uint32_t numOutStreams  = 0;
+   uint32_t numCoders      = 0;
 
    RINOK(SzReadNumber32(sd, &numCoders));
    if (numCoders > NUM_FOLDER_CODERS_MAX)

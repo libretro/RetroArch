@@ -71,7 +71,7 @@ WRes File_Write(CSzFile *p, const void *data, size_t *size)
    *size = rfwrite(data, 1, originalSize, p->file);
    if (*size == originalSize)
       return 0;
-   return ferror(p->file);
+   return rferror(p->file);
 }
 
 WRes File_Seek(CSzFile *p, int64_t *pos, ESzSeek origin)
