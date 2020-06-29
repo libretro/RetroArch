@@ -5346,12 +5346,22 @@ static menu_list_t *menu_list_new(struct rarch_state *p_rarch)
       goto error;
 
    for (i = 0; i < list->menu_stack_size; i++)
-      list->menu_stack[i]      = (file_list_t*)
-         calloc(1, sizeof(*list->menu_stack[i]));
+   {
+      list->menu_stack[i]           = (file_list_t*)
+         malloc(sizeof(*list->menu_stack[i]));
+      list->menu_stack[i]->list     = NULL;
+      list->menu_stack[i]->capacity = 0;
+      list->menu_stack[i]->size     = 0;
+   }
 
    for (i = 0; i < list->selection_buf_size; i++)
-      list->selection_buf[i]   = (file_list_t*)
-         calloc(1, sizeof(*list->selection_buf[i]));
+   {
+      list->selection_buf[i]           = (file_list_t*)
+         malloc(sizeof(*list->selection_buf[i]));
+      list->selection_buf[i]->list     = NULL;
+      list->selection_buf[i]->capacity = 0;
+      list->selection_buf[i]->size     = 0;
+   }
 
    return list;
 
