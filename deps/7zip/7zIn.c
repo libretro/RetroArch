@@ -724,9 +724,9 @@ static SRes SzReadSubStreamsInfo(
       uint32_t **digests,
       ISzAlloc *allocTemp)
 {
-   uint64_t type = 0;
    uint32_t i;
-   uint32_t si = 0;
+   uint64_t type       = 0;
+   uint32_t si         = 0;
    uint32_t numDigests = 0;
 
    for (i = 0; i < numFolders; i++)
@@ -757,9 +757,9 @@ static SRes SzReadSubStreamsInfo(
 
    if (*numUnpackStreams == 0)
    {
-      *unpackSizes = 0;
+      *unpackSizes    = 0;
       *digestsDefined = 0;
-      *digests = 0;
+      *digests        = 0;
    }
    else
    {
@@ -1168,9 +1168,9 @@ static SRes SzReadAndDecodePackedStreams2(
       ISzAlloc *allocTemp)
 {
    SRes res;
-   uint64_t dataStartPos;
-   CSzFolder *folder;
-   uint64_t unpackSize;
+   CSzFolder *folder         = NULL;
+   uint64_t dataStartPos     = 0;
+   uint64_t unpackSize       = 0;
    uint32_t numUnpackStreams = 0;
 
    RINOK(SzReadStreamsInfo(sd, &dataStartPos, p,

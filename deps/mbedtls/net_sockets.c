@@ -319,6 +319,8 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
     int type_len = (int) sizeof( type );
 #endif
 
+    client_addr.ss_family = 0;
+
     /* Is this a TCP or UDP socket? */
     if( getsockopt( bind_ctx->fd, SOL_SOCKET, SO_TYPE,
                     (void *) &type, &type_len ) != 0 ||
@@ -363,16 +365,18 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
      * then bind a new socket to accept new connections */
     if( type != SOCK_STREAM )
     {
-        struct sockaddr_storage local_addr;
         int one = 1;
+        struct sockaddr_storage local_addr;
+
+        local_addr.ss_family               = 0;
 
         if( connect( bind_ctx->fd, (struct sockaddr *) &client_addr, n ) != 0 )
             return( MBEDTLS_ERR_NET_ACCEPT_FAILED );
 
-        client_ctx->fd = bind_ctx->fd;
-        bind_ctx->fd   = -1; /* In case we exit early */
+        client_ctx->fd                     = bind_ctx->fd;
+        bind_ctx->fd                       = -1; /* In case we exit early */
 
-        n = sizeof( struct sockaddr_storage );
+        n                                  = sizeof( struct sockaddr_storage );
         if( getsockname( client_ctx->fd,
                          (struct sockaddr *) &local_addr, &n ) != 0 ||
             ( bind_ctx->fd = (int) socket( local_addr.ss_family,

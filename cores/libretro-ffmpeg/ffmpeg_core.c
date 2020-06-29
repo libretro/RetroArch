@@ -707,15 +707,17 @@ void CORE_PREFIX(retro_run)(void)
             if (!decode_thread_dead)
             {
                unsigned y;
-               const uint8_t *src;
                int stride, width;
-               uint32_t               *data = video_frame_temp_buffer;
-
+               const uint8_t *src           = NULL;
                video_decoder_context_t *ctx = NULL;
+               uint32_t               *data = NULL;
+
                video_buffer_get_finished_slot(video_buffer, &ctx);
                pts                          = ctx->pts;
 
-#ifndef HAVE_OPENGLES
+#ifdef HAVE_OPENGLES
+               data                         = video_frame_temp_buffer;
+#else
                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, frames[1].pbo);
 #ifdef __MACH__
                data                         = (uint32_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);

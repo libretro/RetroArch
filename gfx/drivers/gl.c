@@ -2064,6 +2064,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    init_data.gl.core_context_enabled = gl->core_context_in_use;
    init_data.shader_type             = type;
    init_data.shader                  = NULL;
+   init_data.shader_data             = NULL;
    init_data.data                    = gl;
    init_data.path                    = shader_path;
 
@@ -2076,13 +2077,14 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
 
    RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
 
-   init_data.shader = NULL;
-   init_data.path   = NULL;
+   init_data.shader                  = NULL;
+   init_data.shader_data             = NULL;
+   init_data.path                    = NULL;
 
-   ret              = gl_shader_driver_init(&init_data);
+   ret                               = gl_shader_driver_init(&init_data);
 
-   gl->shader       = init_data.shader;
-   gl->shader_data  = init_data.shader_data;
+   gl->shader                        = init_data.shader;
+   gl->shader_data                   = init_data.shader_data;
 
    return ret;
 }

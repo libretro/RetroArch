@@ -1548,15 +1548,15 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
       size_t write_frames    = write_left > can_write ? can_write : write_left;
       size_t write_size      = write_frames *
          handle->params.channels * handle->audio.sample_size;
-
       size_t bytes_in_buffer = handle->audio.frames_in_buffer *
          handle->params.channels * handle->audio.sample_size;
       size_t written_bytes   = written_frames *
          handle->params.channels * handle->audio.sample_size;
 
-      memcpy(handle->audio.buffer + bytes_in_buffer,
-            (const uint8_t*)aud->data + written_bytes,
-            write_size);
+      if (handle->audio.buffer)
+         memcpy(handle->audio.buffer + bytes_in_buffer,
+               (const uint8_t*)aud->data + written_bytes,
+               write_size);
 
       written_frames                 += write_frames;
       handle->audio.frames_in_buffer += write_frames;
@@ -1630,7 +1630,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
             fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
             aud.frames = handle->audio.codec->frame_size;
-            aud.data = audio_buf;
+            aud.data   = audio_buf;
             ffmpeg_push_audio_thread(handle, &aud, true);
 
             did_work = true;
@@ -1751,7 +1751,7 @@ static void ffmpeg_thread(void *data)
          scond_signal(ff->cond);
 
          aud.frames = ff->audio.codec->frame_size;
-         aud.data = audio_buf;
+         aud.data   = audio_buf;
 
          ffmpeg_push_audio_thread(ff, &aud, true);
       }
