@@ -30715,9 +30715,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.vfilter                     = settings->bools.video_vfilter;
 #endif
    video.smooth                      = settings->bools.video_smooth;
-#ifdef HAVE_ODROIDGO2
    video.ctx_scaling                 = settings->bools.video_ctx_scaling;
-#endif
    video.input_scale                 = scale;
    video.font_size                   = settings->floats.video_font_size;
    video.path_font                   = settings->paths.path_font;

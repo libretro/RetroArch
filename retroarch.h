@@ -1042,9 +1042,7 @@ typedef struct video_info
     * otherwise nearest filtering. */
    bool smooth;
 
-#ifdef HAVE_ODROIDGO2
    bool ctx_scaling;
-#endif
 
    bool is_threaded;
 
