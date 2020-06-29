@@ -5098,7 +5098,7 @@ float menu_entry_num_min(uint32_t i)
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs     ? cbs->setting      : NULL;
-   double               min      = setting ? setting->min      : NULL;
+   double               min      = setting ? setting->min      : 0.0f;
    return (float)min;
 }
 
@@ -29971,14 +29971,22 @@ void* video_display_server_init(enum rarch_display_type type)
          break;
    }
 
-   if (current_display_server && current_display_server->init)
-       p_rarch->current_display_server_data = current_display_server->init();
+   if (current_display_server)
+   {
+      if (current_display_server->init)
+         p_rarch->current_display_server_data = current_display_server->init();
 
-   RARCH_LOG("[Video]: Found display server: %s\n",
-		   current_display_server->ident);
+      if (!string_is_empty(current_display_server->ident))
+      {
+         RARCH_LOG("[Video]: Found display server: %s\n",
+               current_display_server->ident);
+      }
+   }
 
-   p_rarch->initial_screen_orientation = video_display_server_get_screen_orientation();
-   p_rarch->current_screen_orientation = p_rarch->initial_screen_orientation;
+   p_rarch->initial_screen_orientation = 
+      video_display_server_get_screen_orientation();
+   p_rarch->current_screen_orientation = 
+      p_rarch->initial_screen_orientation;
 
    return p_rarch->current_display_server_data;
 }
@@ -30441,29 +30449,31 @@ static void video_driver_monitor_compute_fps_statistics(void)
    }
 }
 
-static void video_driver_pixel_converter_free(void)
+static void video_driver_pixel_converter_free(
+      struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
-   scaler_ctx_gen_reset(p_rarch->video_driver_scaler_ptr->scaler);
+   if (     !p_rarch 
+         || !p_rarch->video_driver_scaler_ptr)
+      return;
 
    if (p_rarch->video_driver_scaler_ptr->scaler)
+   {
+      scaler_ctx_gen_reset(p_rarch->video_driver_scaler_ptr->scaler);
       free(p_rarch->video_driver_scaler_ptr->scaler);
-
+   }
    if (p_rarch->video_driver_scaler_ptr->scaler_out)
       free(p_rarch->video_driver_scaler_ptr->scaler_out);
-   if (p_rarch->video_driver_scaler_ptr)
-      free(p_rarch->video_driver_scaler_ptr);
 
    p_rarch->video_driver_scaler_ptr->scaler     = NULL;
    p_rarch->video_driver_scaler_ptr->scaler_out = NULL;
+
+   free(p_rarch->video_driver_scaler_ptr);
+
    p_rarch->video_driver_scaler_ptr             = NULL;
 }
 
-static void video_driver_free_hw_context(void)
+static void video_driver_free_hw_context(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    VIDEO_DRIVER_CONTEXT_LOCK();
 
    if (p_rarch->hw_render.context_destroy)
@@ -30490,14 +30500,17 @@ static void video_driver_free_internal(void)
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 
    if (!video_driver_is_video_cache_context())
-      video_driver_free_hw_context();
+      video_driver_free_hw_context(p_rarch);
 
    if (!(p_rarch->current_input_data == p_rarch->video_driver_data))
    {
-      if (p_rarch->current_input && p_rarch->current_input->free)
-         p_rarch->current_input->free(p_rarch->current_input_data);
-      p_rarch->current_input->keyboard_mapping_blocked = false;
-      p_rarch->current_input_data                      = NULL;
+      if (p_rarch->current_input)
+      {
+         if (p_rarch->current_input->free)
+            p_rarch->current_input->free(p_rarch->current_input_data);
+         p_rarch->current_input->keyboard_mapping_blocked = false;
+      }
+      p_rarch->current_input_data                         = NULL;
    }
 
    if (p_rarch->video_driver_data
@@ -30505,8 +30518,7 @@ static void video_driver_free_internal(void)
          && p_rarch->current_video->free)
       p_rarch->current_video->free(p_rarch->video_driver_data);
 
-   if (p_rarch->video_driver_scaler_ptr)
-      video_driver_pixel_converter_free();
+   video_driver_pixel_converter_free(p_rarch);
    video_driver_filter_free();
    dir_free_shader(p_rarch);
 
@@ -30578,8 +30590,7 @@ static bool video_driver_pixel_converter_init(
    return true;
 
 error:
-   if (p_rarch->video_driver_scaler_ptr)
-      video_driver_pixel_converter_free();
+   video_driver_pixel_converter_free(p_rarch);
    video_driver_filter_free();
 
    return false;
@@ -39430,7 +39441,7 @@ bool core_reset(void)
 
 static bool core_unload_game(struct rarch_state *p_rarch)
 {
-   video_driver_free_hw_context();
+   video_driver_free_hw_context(p_rarch);
 
    video_driver_set_cached_frame_ptr(NULL);
 
