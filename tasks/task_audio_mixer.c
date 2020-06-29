@@ -427,7 +427,7 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
          && (mixer->copy_data_over)
          && (!task_get_cancelled(task)))
    {
-      nbio_buf_t *img = (nbio_buf_t*)calloc(1, sizeof(*img));
+      nbio_buf_t *img = (nbio_buf_t*)malloc(sizeof(*img));
 
       if (img)
       {
