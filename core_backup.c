@@ -536,7 +536,7 @@ core_backup_list_t *core_backup_list_init(
    dir_list_sort(dir_list, true);
 
    /* Create core backup list */
-   backup_list = (core_backup_list_t*)calloc(1, sizeof(*backup_list));
+   backup_list = (core_backup_list_t*)malloc(sizeof(*backup_list));
 
    if (!backup_list)
       goto error;
