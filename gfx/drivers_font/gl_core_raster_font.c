@@ -179,11 +179,10 @@ static void gl_core_raster_font_draw_vertices(gl_core_raster_t *font,
    glActiveTexture(GL_TEXTURE1);
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
-   if (font->gl->pipelines.font_loc.flat_ubo_vertex >= 0)
-   {
+   if (  font->gl &&
+         font->gl->pipelines.font_loc.flat_ubo_vertex >= 0)
       glUniform4fv(font->gl->pipelines.font_loc.flat_ubo_vertex,
                    4, font->gl->mvp_no_rot.data);
-   }
 
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
@@ -335,7 +334,8 @@ static void gl_core_raster_font_setup_viewport(unsigned width, unsigned height,
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
-   glUseProgram(font->gl->pipelines.font);
+   if (font->gl)
+      glUseProgram(font->gl->pipelines.font);
 }
 
 static void gl_core_raster_font_render_msg(
@@ -407,33 +407,34 @@ static void gl_core_raster_font_render_msg(
    else
       gl_core_raster_font_setup_viewport(width, height, font, full_screen);
 
-   if (!string_is_empty(msg) && font->gl
-         && font->font_data  && font->font_driver)
+   if (font->gl)
    {
-      if (drop_x || drop_y)
+      if (!string_is_empty(msg)
+            && font->font_data  && font->font_driver)
       {
-         GLfloat color_dark[4];
+         if (drop_x || drop_y)
+         {
+            GLfloat color_dark[4];
 
-         color_dark[0] = color[0] * drop_mod;
-         color_dark[1] = color[1] * drop_mod;
-         color_dark[2] = color[2] * drop_mod;
-         color_dark[3] = color[3] * drop_alpha;
+            color_dark[0] = color[0] * drop_mod;
+            color_dark[1] = color[1] * drop_mod;
+            color_dark[2] = color[2] * drop_mod;
+            color_dark[3] = color[3] * drop_alpha;
 
-         if (font->gl)
             gl_core_raster_font_render_message(font, msg, scale, color_dark,
                   x + scale * drop_x / font->gl->vp.width, y +
-                  scale * drop_y / font->gl->vp.height, text_align);
-      }
+                      scale * drop_y / font->gl->vp.height, text_align);
+         }
 
-      if (font->gl)
          gl_core_raster_font_render_message(font, msg, scale, color,
                x, y, text_align);
-   }
+      }
 
-   if (!font->block && font->gl)
-   {
-      glDisable(GL_BLEND);
-      video_driver_set_viewport(width, height, false, true);
+      if (!font->block)
+      {
+         glDisable(GL_BLEND);
+         video_driver_set_viewport(width, height, false, true);
+      }
    }
 }
 

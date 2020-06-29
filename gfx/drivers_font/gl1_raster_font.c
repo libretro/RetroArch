@@ -501,37 +501,38 @@ static void gl1_raster_font_render_msg(
    else
       gl1_raster_font_setup_viewport(width, height, font, full_screen);
 
-   if (!string_is_empty(msg) && font->gl
-         && font->font_data  && font->font_driver)
+   if (font->gl)
    {
-      if (drop_x || drop_y)
+      if (!string_is_empty(msg)
+            && font->font_data  && font->font_driver)
       {
-         GLfloat color_dark[4];
+         if (drop_x || drop_y)
+         {
+            GLfloat color_dark[4];
 
-         color_dark[0] = color[0] * drop_mod;
-         color_dark[1] = color[1] * drop_mod;
-         color_dark[2] = color[2] * drop_mod;
-         color_dark[3] = color[3] * drop_alpha;
+            color_dark[0] = color[0] * drop_mod;
+            color_dark[1] = color[1] * drop_mod;
+            color_dark[2] = color[2] * drop_mod;
+            color_dark[3] = color[3] * drop_alpha;
 
-         if (font->gl)
             gl1_raster_font_render_message(font, msg, scale, color_dark,
                   x + scale * drop_x / font->gl->vp.width, y +
-                  scale * drop_y / font->gl->vp.height, text_align);
-      }
+                      scale * drop_y / font->gl->vp.height, text_align);
+         }
 
-      if (font->gl)
          gl1_raster_font_render_message(font, msg, scale, color,
                x, y, text_align);
-   }
+      }
 
-   if (!font->block && font->gl)
-   {
-      /* restore viewport */
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+      if (!font->block)
+      {
+         /* restore viewport */
+         glEnable(GL_TEXTURE_2D);
+         glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
-      glDisable(GL_BLEND);
-      video_driver_set_viewport(width, height, false, true);
+         glDisable(GL_BLEND);
+         video_driver_set_viewport(width, height, false, true);
+      }
    }
 }
 
