@@ -519,6 +519,10 @@ database_info_list_t *database_info_list_new(
                free(db_info.rom_name);
             if (db_info.serial)
                free(db_info.serial);
+            if (db_info.md5)
+               free(db_info.md5);
+            if (db_info.sha1)
+               free(db_info.sha1);
             database_info_list_free(database_info_list);
             free(database_info);
             free(database_info_list);
