@@ -5097,8 +5097,8 @@ float menu_entry_num_min(uint32_t i)
    file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
-   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
-   double               min      = setting->min;
+   rarch_setting_t *setting      = cbs     ? cbs->setting      : NULL;
+   double               min      = setting ? setting->min      : NULL;
    return (float)min;
 }
 
@@ -13709,7 +13709,7 @@ static bool run_translation_service(
    const char *rf2                       = "\"}\0";
    char *rf3                             = NULL;
    char *state_son                       = NULL;
-   int state_son_length                  = 0;
+   int state_son_length                  = 177;
    int curr_length                       = 0;
    bool TRANSLATE_USE_BMP                = false;
    bool use_overlay                      = false;
@@ -13852,27 +13852,33 @@ static bool run_translation_service(
    if (TRANSLATE_USE_BMP)
    {
       /*
-        At this point, we should have a screenshot in the buffer, so allocate
-        an array to contain the BMP image along with the BMP header as bytes,
-        and then covert that to a b64 encoded array for transport in JSON.
+        At this point, we should have a screenshot in the buffer, 
+        so allocate an array to contain the BMP image along with 
+        the BMP header as bytes, and then covert that to a 
+        b64 encoded array for transport in JSON.
       */
 
       form_bmp_header(header, width, height, false);
-      bmp_buffer = (uint8_t*)malloc(width * height * 3+54);
+      bmp_buffer  = (uint8_t*)malloc(width * height * 3 + 54);
       if (!bmp_buffer)
          goto finish;
 
-      memcpy(bmp_buffer, header, 54*sizeof(uint8_t));
-      memcpy(bmp_buffer+54, bit24_image, width * height * 3 * sizeof(uint8_t));
-      buffer_bytes = sizeof(uint8_t)*(width*height*3+54);
+      memcpy(bmp_buffer, header, 54 * sizeof(uint8_t));
+      memcpy(bmp_buffer + 54,
+            bit24_image,
+            width * height * 3 * sizeof(uint8_t));
+      buffer_bytes = sizeof(uint8_t) * (width * height * 3 + 54);
    }
    else
    {
-      pitch      = width * 3;
-      bmp_buffer = rpng_save_image_bgr24_string(bit24_image+width*(height-1)*3, width, height, -pitch, &buffer_bytes);
+      pitch        = width * 3;
+      bmp_buffer   = rpng_save_image_bgr24_string(
+            bit24_image + width * (height-1) * 3,
+            width, height, -pitch, &buffer_bytes);
    }
 
-   bmp64_buffer = base64((void *)bmp_buffer, sizeof(uint8_t)*buffer_bytes,
+   bmp64_buffer    = base64((void *)bmp_buffer,
+         sizeof(uint8_t)*buffer_bytes,
          &out_length);
 
    if (!bmp64_buffer)
@@ -13899,57 +13905,55 @@ static bool run_translation_service(
    else
       json_length = 11 + out_length + 1;
 
-   {
-      state_son_length = 177;
-      state_son        = (char*)malloc(state_son_length);
+   state_son        = (char*)malloc(state_son_length);
 
-      memcpy(state_son, ", \"state\": {\"paused\": 0, \"a\": 0, \"b\": 0, \"select\": 0, \"start\": 0, \"up\": 0, \"down\": 0, \"left\": 0, \"right\": 0, \"x\": 0, \"y\": 0, \"l\": 0, \"r\":0, \"l2\": 0, \"r2\": 0, \"l3\":0, \"r3\": 0}}\0", state_son_length*sizeof(uint8_t));
+   memcpy(state_son, ", \"state\": {\"paused\": 0, \"a\": 0, \"b\": 0, \"select\": 0, \"start\": 0, \"up\": 0, \"down\": 0, \"left\": 0, \"right\": 0, \"x\": 0, \"y\": 0, \"l\": 0, \"r\":0, \"l2\": 0, \"r2\": 0, \"l3\":0, \"r3\": 0}}\0",
+         state_son_length * sizeof(uint8_t));
 
-      if (paused)
-         state_son[22] = '1';
+   if (paused)
+      state_son[22] = '1';
 
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
-      if (p_rarch->ai_gamepad_state[8]) /* a */
-         state_son[30] = '1';
-      if (p_rarch->ai_gamepad_state[0]) /* b */
-         state_son[38] = '1';
-      if (p_rarch->ai_gamepad_state[2]) /* select */
-         state_son[51] = '1';
-      if (p_rarch->ai_gamepad_state[3]) /* start */
-         state_son[63] = '1';
+   if (p_rarch->ai_gamepad_state[8]) /* a */
+      state_son[30] = '1';
+   if (p_rarch->ai_gamepad_state[0]) /* b */
+      state_son[38] = '1';
+   if (p_rarch->ai_gamepad_state[2]) /* select */
+      state_son[51] = '1';
+   if (p_rarch->ai_gamepad_state[3]) /* start */
+      state_son[63] = '1';
 
-      if (p_rarch->ai_gamepad_state[4]) /* up */
-         state_son[72] = '1';
-      if (p_rarch->ai_gamepad_state[5]) /* down */
-         state_son[83] = '1';
-      if (p_rarch->ai_gamepad_state[6]) /* left */
-         state_son[94] = '1';
-      if (p_rarch->ai_gamepad_state[7]) /* right */
-         state_son[106] = '1';
+   if (p_rarch->ai_gamepad_state[4]) /* up */
+      state_son[72] = '1';
+   if (p_rarch->ai_gamepad_state[5]) /* down */
+      state_son[83] = '1';
+   if (p_rarch->ai_gamepad_state[6]) /* left */
+      state_son[94] = '1';
+   if (p_rarch->ai_gamepad_state[7]) /* right */
+      state_son[106] = '1';
 
-      if (p_rarch->ai_gamepad_state[9]) /* x */
-         state_son[114] = '1';
-      if (p_rarch->ai_gamepad_state[1]) /* y */
-         state_son[122] = '1';
-      if (p_rarch->ai_gamepad_state[10]) /* l */
-         state_son[130] = '1';
-      if (p_rarch->ai_gamepad_state[11]) /* r */
-         state_son[138] = '1';
+   if (p_rarch->ai_gamepad_state[9]) /* x */
+      state_son[114] = '1';
+   if (p_rarch->ai_gamepad_state[1]) /* y */
+      state_son[122] = '1';
+   if (p_rarch->ai_gamepad_state[10]) /* l */
+      state_son[130] = '1';
+   if (p_rarch->ai_gamepad_state[11]) /* r */
+      state_son[138] = '1';
 
-      if (p_rarch->ai_gamepad_state[12]) /* l2 */
-         state_son[147] = '1';
-      if (p_rarch->ai_gamepad_state[13]) /* r2 */
-         state_son[156] = '1';
-      if (p_rarch->ai_gamepad_state[14]) /* l3 */
-         state_son[165] = '1';
-      if (p_rarch->ai_gamepad_state[15]) /* r3 */
-         state_son[174] = '1';
+   if (p_rarch->ai_gamepad_state[12]) /* l2 */
+      state_son[147] = '1';
+   if (p_rarch->ai_gamepad_state[13]) /* r2 */
+      state_son[156] = '1';
+   if (p_rarch->ai_gamepad_state[14]) /* l3 */
+      state_son[165] = '1';
+   if (p_rarch->ai_gamepad_state[15]) /* r3 */
+      state_son[174] = '1';
 #endif
 #endif
 
-      json_length += state_son_length;
-   }
+   json_length += state_son_length;
 
    json_buffer = (char*)malloc(json_length);
    if (!json_buffer)
@@ -27740,7 +27744,13 @@ static bool midi_driver_init_io_buffers(struct rarch_state *p_rarch)
    uint8_t *midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
 
    if (!midi_drv_input_buffer || !midi_drv_output_buffer)
+   {
+      if (midi_drv_input_buffer)
+         free(midi_drv_input_buffer);
+      if (midi_drv_output_buffer)
+         free(midi_drv_output_buffer);
       return false;
+   }
 
    p_rarch->midi_drv_input_buffer           = midi_drv_input_buffer;
    p_rarch->midi_drv_output_buffer          = midi_drv_output_buffer;
