@@ -113,25 +113,19 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
 audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 {
    int sample_size;
-   int64_t len          = 0;
-   void *buf            = NULL;
-   audio_chunk_t *chunk = (audio_chunk_t*)malloc(sizeof(*chunk));
+   int64_t len                = 0;
+   void *buf                  = NULL;
+   audio_chunk_t *chunk       = (audio_chunk_t*)malloc(sizeof(*chunk));
 
    if (!chunk)
       return NULL;
 
-   if (!filestream_read_file(path, &buf, &len))
-   {
-      printf("Could not open WAV file for reading.\n");
-      goto error;
-   }
-
-   chunk->buf                 = buf;
+   chunk->buf                 = NULL;
    chunk->upsample_buf        = NULL;
    chunk->float_buf           = NULL;
    chunk->float_resample_buf  = NULL;
    chunk->resample_buf        = NULL;
-   chunk->len                 = len;
+   chunk->len                 = 0;
    chunk->resample_len        = 0;
    chunk->rwav                = (rwav_t*)malloc(sizeof(rwav_t));
    chunk->sample_rate         = sample_rate;
@@ -146,6 +140,15 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
    chunk->rwav->numsamples    = 0;
    chunk->rwav->subchunk2size = 0;
    chunk->rwav->samples       = NULL;
+
+   if (!filestream_read_file(path, &buf, &len))
+   {
+      printf("Could not open WAV file for reading.\n");
+      goto error;
+   }
+
+   chunk->buf                 = buf;
+   chunk->len                 = len;
 
    if (rwav_load(chunk->rwav, chunk->buf, chunk->len) == RWAV_ITERATE_ERROR)
    {
