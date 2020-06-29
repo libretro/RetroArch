@@ -914,6 +914,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       const VkViewport &vp)
 {
    unsigned i;
+   Texture source;
 
    /* First frame, make sure our history and feedback textures 
     * are in a clean state. */
@@ -934,7 +935,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       passes.front()->get_address_mode(),
    };
 
-   Texture source = original;
+   source = original;
 
    for (i = 0; i < passes.size() - 1; i++)
    {
