@@ -22,6 +22,7 @@
 #include <string>
 #include <stdint.h>
 #include <algorithm>
+#include <string/stdstring.h>
 
 #include "glslang_util.h"
 #include "slang_reflection.h"

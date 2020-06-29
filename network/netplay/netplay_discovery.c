@@ -418,13 +418,18 @@ static int16_t htons_for_morons(int16_t value)
 
 static bool netplay_lan_ad_client(void)
 {
+   unsigned i;
    fd_set fds;
    socklen_t addr_size;
    struct sockaddr their_addr;
-   struct timeval tmp_tv = {0};
+   struct timeval tmp_tv    = {0};
 
    if (lan_ad_client_fd < 0)
       return false;
+
+   their_addr.sa_family     = 0;
+   for (i = 0; i < 14; i++)
+      their_addr.sa_data[i] = 0;
 
    /* Check for any ad queries */
    for (;;)
