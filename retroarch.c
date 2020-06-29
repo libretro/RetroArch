@@ -25868,8 +25868,9 @@ static const input_device_driver_t *input_joypad_init_first(void *data)
 
    for (i = 0; joypad_drivers[i]; i++)
    {
-      if (  joypad_drivers[i] &&
-            joypad_drivers[i]->init(data))
+      if (     joypad_drivers[i]
+            && joypad_drivers[i]->init
+            && joypad_drivers[i]->init(data))
       {
          RARCH_LOG("[Joypad]: Found joypad driver: \"%s\".\n",
                joypad_drivers[i]->ident);
@@ -26163,9 +26164,13 @@ static bool input_mouse_button_raw(
    joypad_info.joy_idx               = settings->uints.input_joypad_map[port];
    joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
 
-   return p_rarch->current_input->input_state(p_rarch->current_input_data,
-         &joypad_info, p_rarch->libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id);
+   if (     p_rarch->current_input 
+         && p_rarch->current_input->input_state)
+      return p_rarch->current_input->input_state(p_rarch->current_input_data,
+            &joypad_info, p_rarch->libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id);
+   return false;
 }
+
 
 void input_pad_connect(unsigned port, input_device_driver_t *driver)
 {
