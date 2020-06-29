@@ -31,6 +31,10 @@
 #include "config.h"
 #endif
 
+#ifdef _MSC_VER
+#include <compat/msvc.h>
+#endif
+
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
