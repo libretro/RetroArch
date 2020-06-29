@@ -28,11 +28,12 @@ void GPU_Reset(u32* gxbuf, u32* gpuBuf, u32 gpuBufSize)
 void GPU_SetFloatUniform(GPU_SHADER_TYPE type,
       u32 startreg, u32* data, u32 numreg)
 {
-   int regOffset;
-   if(!data)
+   int regOffset = 0x0;;
+   if (!data)
       return;
 
-   regOffset = (type == GPU_GEOMETRY_SHADER) ? (-0x30) : (0x0);
+   if (type == GPU_GEOMETRY_SHADER)
+      regOffset = (-0x30);
 
    GPUCMD_AddWrite(GPUREG_VSH_FLOATUNIFORM_CONFIG+regOffset,
          0x80000000 | startreg);
@@ -153,28 +154,28 @@ void GPU_SetTextureEnable(GPU_TEXUNIT units)
 void GPU_SetTexture(GPU_TEXUNIT unit, u32* data, u16 width, u16 height, u32 param, GPU_TEXCOLOR colorType)
 {
 	switch (unit)
-	{
-	case GPU_TEXUNIT0:
-		GPUCMD_AddWrite(GPUREG_TEXUNIT0_TYPE, colorType);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT0_ADDR1, ((u32)data) >> 3);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT0_DIM, (width << 16)|height);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT0_PARAM, param);
-		break;
+   {
+      case GPU_TEXUNIT0:
+         GPUCMD_AddWrite(GPUREG_TEXUNIT0_TYPE, colorType);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT0_ADDR1, ((u32)data) >> 3);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT0_DIM, (width << 16)|height);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT0_PARAM, param);
+         break;
 
-	case GPU_TEXUNIT1:
-		GPUCMD_AddWrite(GPUREG_TEXUNIT1_TYPE, colorType);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT1_ADDR, ((u32)data) >> 3);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT1_DIM, (width << 16)|height);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT1_PARAM, param);
-		break;
+      case GPU_TEXUNIT1:
+         GPUCMD_AddWrite(GPUREG_TEXUNIT1_TYPE, colorType);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT1_ADDR, ((u32)data) >> 3);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT1_DIM, (width << 16)|height);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT1_PARAM, param);
+         break;
 
-	case GPU_TEXUNIT2:
-		GPUCMD_AddWrite(GPUREG_TEXUNIT2_TYPE, colorType);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT2_ADDR, ((u32)data) >> 3);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT2_DIM, (width << 16)|height);
-		GPUCMD_AddWrite(GPUREG_TEXUNIT2_PARAM, param);
-		break;
-	}
+      case GPU_TEXUNIT2:
+         GPUCMD_AddWrite(GPUREG_TEXUNIT2_TYPE, colorType);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT2_ADDR, ((u32)data) >> 3);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT2_DIM, (width << 16)|height);
+         GPUCMD_AddWrite(GPUREG_TEXUNIT2_PARAM, param);
+         break;
+   }
 }
 
 void GPU_SetTextureBorderColor(GPU_TEXUNIT unit,u32 borderColor)
@@ -266,7 +267,6 @@ void GPU_SetTexEnv(u8 id, u16 rgbSources, u16 alphaSources, u16 rgbOperands, u16
 	u32 param[0x5];
 	if(id > 6)
       return;
-	memset(param, 0x00, 5*4);
 
 	param[0x0] = (alphaSources  << 16) | (rgbSources);
 	param[0x1] = (alphaOperands << 12) | (rgbOperands);
