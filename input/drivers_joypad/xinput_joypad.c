@@ -138,8 +138,8 @@ typedef struct
    bool         connected;
 } xinput_joypad_state;
 
+/* TODO/FIXME - static globals */
 static XINPUT_VIBRATION g_xinput_rumble_states[4];
-
 static xinput_joypad_state g_xinput_states[4];
 
 static INLINE int pad_index_to_xuser_index(unsigned pad)
@@ -287,12 +287,17 @@ static bool xinput_joypad_init(void *data)
 
    /* Zero out the states. */
    for (i = 0; i < 4; ++i)
-      memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
-
-   /* Do a dummy poll to check which controllers are connected. */
-   for (i = 0; i < 4; ++i)
    {
-      g_xinput_states[i].connected = !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
+      g_xinput_states[i].xstate.dwPacketNumber        = 0;
+      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
+      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
+      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      g_xinput_states[i].connected                    = 
+         !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
 
    if (  (!g_xinput_states[0].connected) &&
@@ -372,7 +377,17 @@ static void xinput_joypad_destroy(void)
    unsigned i;
 
    for (i = 0; i < 4; ++i)
-      memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
+   {
+      g_xinput_states[i].xstate.dwPacketNumber        = 0;
+      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
+      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
+      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      g_xinput_states[i].connected                    = false;
+   }
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
    dylib_close(g_xinput_dll);
