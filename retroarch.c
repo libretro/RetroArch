@@ -2826,8 +2826,12 @@ static bool accessibility_speak_priority(
       const char* speak_text, int priority);
 #endif
 
-static bool input_mouse_button_raw(unsigned port, unsigned id);
-static void input_keyboard_line_append(const char *word);
+static bool input_mouse_button_raw(
+      struct rarch_state *p_rarch,
+      unsigned port, unsigned id);
+static void input_keyboard_line_append(
+      struct rarch_state *p_rarch,
+      const char *word);
 static const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb);
 static bool input_keyboard_ctl(
@@ -3477,12 +3481,12 @@ static void menu_input_key_bind_poll_bind_state_internal(
 }
 
 static void menu_input_key_bind_poll_bind_state(
+      struct rarch_state *p_rarch,
       struct menu_bind_state *state,
       bool timed_out)
 {
    unsigned b;
    rarch_joypad_info_t joypad_info;
-   struct rarch_state *p_rarch             = &rarch_st;
    input_driver_t *input_ptr               = p_rarch->current_input;
    void *input_data                        = p_rarch->current_input_data;
    unsigned port                           = state->port;
@@ -3496,7 +3500,7 @@ static void menu_input_key_bind_poll_bind_state(
    /* poll mouse (on the relevant port) */
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
       state->state[port].mouse_buttons[b] =
-         input_mouse_button_raw(port, b);
+         input_mouse_button_raw(p_rarch, port, b);
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -3704,12 +3708,12 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 #endif
 
 static bool menu_input_key_bind_poll_find_trigger(
+      struct rarch_state *p_rarch,
       struct menu_bind_state *state,
       struct menu_bind_state *new_state,
       struct retro_keybind * output)
 {
    unsigned i;
-   struct rarch_state *p_rarch = &rarch_st;
    unsigned max_users          = p_rarch->input_driver_max_users;
 
    if (!state || !new_state)
@@ -3779,7 +3783,7 @@ bool menu_input_key_bind_set_mode(
    menu_input_key_bind_poll_bind_get_rested_axes(
          p_rarch,
          binds);
-   menu_input_key_bind_poll_bind_state(
+   menu_input_key_bind_poll_bind_state(p_rarch,
          binds, false);
 
    rarch_timer_begin_new_time_us(
@@ -3880,7 +3884,8 @@ static bool menu_input_key_bind_iterate(
       if (input_drv)
          input_drv->keyboard_mapping_blocked = true;
 
-      menu_input_key_bind_poll_bind_state(&new_binds, timed_out);
+      menu_input_key_bind_poll_bind_state(p_rarch,
+            &new_binds, timed_out);
 
 #ifdef ANDROID
       /* Keep resetting bind during the hold period, 
@@ -3912,7 +3917,7 @@ static bool menu_input_key_bind_iterate(
       }
 #else
       if ((new_binds.skip && !_binds->skip) ||
-            menu_input_key_bind_poll_find_trigger(
+            menu_input_key_bind_poll_find_trigger(p_rarch,
                _binds, &new_binds, &(new_binds.buffer)))
          complete = true;
 #endif
@@ -11968,7 +11973,7 @@ bool menu_input_dialog_get_display_kb(void)
                a list of "null-terminated characters") */
             char oldchar = buf[i+1];
             buf[i+1]     = '\0';
-            input_keyboard_line_append(&buf[i]);
+            input_keyboard_line_append(p_rarch, &buf[i]);
             buf[i+1]     = oldchar;
          }
       }
@@ -12681,12 +12686,13 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-static void command_parse_msg(command_t *handle,
+static void command_parse_msg(
+      struct rarch_state *p_rarch,
+      command_t *handle,
       char *buf, enum cmd_source_t source)
 {
    char                            *save  = NULL;
    const char                        *tok = strtok_r(buf, "\n", &save);
-   struct rarch_state            *p_rarch = &rarch_st;
 
    p_rarch->lastcmd_source                = source;
 
@@ -12699,11 +12705,12 @@ static void command_parse_msg(command_t *handle,
    p_rarch->lastcmd_source = CMD_NONE;
 }
 
-static void command_network_poll(command_t *handle)
+static void command_network_poll(
+      struct rarch_state *p_rarch,
+      command_t *handle)
 {
    fd_set fds;
    struct timeval       tmp_tv = {0};
-   struct rarch_state *p_rarch = &rarch_st;
 
    if (handle->net_fd < 0)
       return;
@@ -12736,7 +12743,7 @@ static void command_network_poll(command_t *handle)
 
       buf[ret] = '\0';
 
-      command_parse_msg(handle, buf, CMD_NETWORK);
+      command_parse_msg(p_rarch, handle, buf, CMD_NETWORK);
    }
 }
 #endif
@@ -12801,7 +12808,8 @@ static void command_stdin_poll(command_t *handle)
    msg_len         = last_newline - handle->stdin_buf;
 
 #if defined(HAVE_NETWORKING)
-   command_parse_msg(handle, handle->stdin_buf, CMD_STDIN);
+   command_parse_msg(p_rarch,
+         handle, handle->stdin_buf, CMD_STDIN);
 #endif
 
    memmove(handle->stdin_buf, last_newline,
@@ -12908,9 +12916,10 @@ task_finished:
        free(task->user_data);
 }
 
-static bool call_auto_translate_task(bool *was_paused)
+static bool call_auto_translate_task(
+      struct rarch_state *p_rarch,
+      bool *was_paused)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t        *settings = p_rarch->configuration_settings;
    int        ai_service_mode  = settings->uints.ai_service_mode;
 
@@ -13472,7 +13481,7 @@ finish:
    {
       if (     (p_rarch->ai_service_auto != 0)
             && !settings->bools.ai_service_pause)
-         call_auto_translate_task(&was_paused);
+         call_auto_translate_task(p_rarch, &was_paused);
    }
    if (auto_string)
       free(auto_string);
@@ -17023,7 +17032,7 @@ void main_exit(void *args)
  **/
 int rarch_main(int argc, char *argv[], void *data)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
+   struct rarch_state *p_rarch                                   = &rarch_st;
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    p_rarch->shader_presets_need_reload                           = true;
 #endif
@@ -23365,7 +23374,8 @@ static void input_driver_poll(void)
       memset(p_rarch->input_driver_command->state,
             0, sizeof(p_rarch->input_driver_command->state));
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
-      command_network_poll(p_rarch->input_driver_command);
+      command_network_poll(p_rarch,
+            p_rarch->input_driver_command);
 #endif
 
 #ifdef HAVE_STDIN_CMD
@@ -24263,7 +24273,9 @@ static void menu_input_get_touchscreen_hw_state(
    last_cancel_pressed = hw_state->cancel_pressed;
 }
 
-void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui,
+static void input_event_osk_append(
+      struct rarch_state *p_rarch,
+      enum osk_type *osk_idx, int ptr, bool is_rgui,
       const char *word)
 {
 #ifdef HAVE_LANGEXTRA
@@ -24294,7 +24306,7 @@ void input_event_osk_append(enum osk_type *osk_idx, int ptr, bool is_rgui,
       else
          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
    else
-      input_keyboard_line_append(word);
+      input_keyboard_line_append(p_rarch, word);
 }
 
 static void input_event_osk_iterate(
@@ -24513,6 +24525,7 @@ static unsigned menu_event(
       {
          if (p_rarch->osk_ptr >= 0)
             input_event_osk_append(
+                  p_rarch,
                   &p_rarch->osk_idx,
                   p_rarch->osk_ptr,
                   menu_has_fb,
@@ -25175,7 +25188,9 @@ static int menu_input_pointer_post_iterate(
                       menu->driver_ctx->set_texture);
 
                   p_rarch->osk_ptr = point.retcode;
-                  input_event_osk_append(&p_rarch->osk_idx,
+                  input_event_osk_append(
+                        p_rarch,
+                        &p_rarch->osk_idx,
                         point.retcode,
                         menu_has_fb,
                         p_rarch->osk_grid[p_rarch->osk_ptr]);
@@ -26105,10 +26120,11 @@ static int16_t input_joypad_analog_axis(
  * Returns: true (1) if key was pressed, otherwise
  * false (0).
  **/
-static bool input_mouse_button_raw(unsigned port, unsigned id)
+static bool input_mouse_button_raw(
+      struct rarch_state *p_rarch,
+      unsigned port, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   struct rarch_state       *p_rarch = &rarch_st;
    settings_t              *settings = p_rarch->configuration_settings;
 
    /*ignore axes*/
@@ -26119,10 +26135,8 @@ static bool input_mouse_button_raw(unsigned port, unsigned id)
    joypad_info.joy_idx               = settings->uints.input_joypad_map[port];
    joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
 
-   if (p_rarch->current_input->input_state(p_rarch->current_input_data,
-         &joypad_info, p_rarch->libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id))
-      return true;
-   return false;
+   return p_rarch->current_input->input_state(p_rarch->current_input_data,
+         &joypad_info, p_rarch->libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id);
 }
 
 void input_pad_connect(unsigned port, input_device_driver_t *driver)
@@ -26308,9 +26322,10 @@ static bool input_keyboard_line_event(
    return ret;
 }
 
-static void input_keyboard_line_append(const char *word)
+static void input_keyboard_line_append(
+      struct rarch_state *p_rarch,
+      const char *word)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    unsigned i                  = 0;
    unsigned len                = (unsigned)strlen(word);
    char *newbuf                = (char*)realloc(
