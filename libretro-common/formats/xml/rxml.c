@@ -256,11 +256,23 @@ rxml_document_t *rxml_load_document_string(const char *str)
 
          case YXML_ATTRSTART:
             if (attr)
-               attr = attr->next   = (struct rxml_attrib_node*)
+            {
+               struct rxml_attrib_node 
+                  *new_node = (struct rxml_attrib_node*)
                   calloc(1, sizeof(*attr));
+               attr         = new_node;
+               attr->next   = new_node ;
+            }
             else
-               attr = node->attrib = (struct rxml_attrib_node*)
+            {
+               struct rxml_attrib_node 
+                  *new_node    = (struct rxml_attrib_node*)
                   calloc(1, sizeof(*attr));
+               attr            = new_node;
+               
+               if (node)
+                  node->attrib = new_node;
+            }
 
             if (attr)
             {
