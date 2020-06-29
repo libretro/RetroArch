@@ -532,7 +532,9 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    if (ret < 0)
       goto error;
 
-   filestream_close(file);
+   if (filestream_close(file) != 0)
+      if (file)
+         free(file);
 
    *buf    = content_buf;
 
@@ -576,7 +578,9 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
       return false;
 
    ret = filestream_write(file, data, size);
-   filestream_close(file);
+   if (filestream_close(file) != 0)
+      if (file)
+         free(file);
 
    if (ret != size)
       return false;
