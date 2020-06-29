@@ -2211,9 +2211,9 @@ struct rarch_state
 #ifdef HAVE_NETWORKING
    char server_address_deferred[512];
 #endif
-   char current_library_name[1024];
-   char current_library_version[1024];
-   char current_valid_extensions[1024];
+   char current_library_name[256];
+   char current_library_version[256];
+   char current_valid_extensions[256];
    char launch_arguments[4096];
    char path_main_basename[8192];
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
