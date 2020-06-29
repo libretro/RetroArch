@@ -112,7 +112,7 @@ static int16_t uwp_pressed_analog(uwp_input_t *uwp,
    unsigned port, unsigned idx, unsigned id)
 {
    const struct retro_keybind *bind_minus, *bind_plus;
-   int16_t pressed_minus = 0, pressed_plus = 0, pressed_keyboard;
+   int16_t pressed_minus = 0, pressed_plus = 0;
    unsigned id_minus = 0, id_plus = 0;
 
    /* First, process the keyboard bindings */
