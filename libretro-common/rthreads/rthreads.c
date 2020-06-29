@@ -331,24 +331,12 @@ bool sthread_isself(sthread_t *thread)
 slock_t *slock_new(void)
 {
    bool mutex_created = false;
-   slock_t      *lock = (slock_t*)malloc(sizeof(*lock));
+   slock_t      *lock = (slock_t*)calloc(1, sizeof(*lock));
    if (!lock)
       return NULL;
 
 
 #ifdef USE_WIN32_THREADS
-   lock->lock.LockCount      = 0;
-   lock->lock.RecursionCount = 0;
-#ifdef _XBOX
-   lock->lock.OwningThread   = 0;
-   lock->lock.Synchronization.RawEvent[0] = 0;
-   lock->lock.Synchronization.RawEvent[1] = 0;
-   lock->lock.Synchronization.RawEvent[2] = 0;
-   lock->lock.Synchronization.RawEvent[3] = 0;
-#else
-   lock->lock.LockSemaphore  = NULL;
-   lock->lock.SpinCount      = 0;
-#endif
    InitializeCriticalSection(&lock->lock);
    mutex_created             = true;
 #else
@@ -449,7 +437,7 @@ void slock_unlock(slock_t *lock)
  **/
 scond_t *scond_new(void)
 {
-   scond_t      *cond = (scond_t*)malloc(sizeof(*cond));
+   scond_t      *cond = (scond_t*)calloc(1, sizeof(*cond));
 
    if (!cond)
       return NULL;
@@ -480,21 +468,6 @@ scond_t *scond_new(void)
     *
     * Note: We might could simplify this using vista+ condition variables,
     * but we wanted an XP compatible solution. */
-   cond->waiters           = 0;
-   cond->wakens            = 0;
-   cond->head              = NULL;
-   cond->cs.LockCount      = 0;
-   cond->cs.RecursionCount = 0;
-#ifdef _XBOX
-   cond->cs.OwningThread   = 0;
-   cond->cs.Synchronization.RawEvent[0] = 0;
-   cond->cs.Synchronization.RawEvent[1] = 0;
-   cond->cs.Synchronization.RawEvent[2] = 0;
-   cond->cs.Synchronization.RawEvent[3] = 0;
-#else
-   cond->cs.LockSemaphore  = NULL;
-   cond->cs.SpinCount      = 0;
-#endif
    cond->event             = CreateEvent(NULL, FALSE, FALSE, NULL);
    if (!cond->event)
       goto error;
