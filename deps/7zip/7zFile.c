@@ -42,7 +42,7 @@ WRes File_Close(CSzFile *p)
 {
    if (p->file)
    {
-      int res = rfclose(p->file);
+      int res = rfclose((RFILE*)p->file);
       if (res != 0)
          return res;
       p->file = NULL;
@@ -56,10 +56,10 @@ WRes File_Read(CSzFile *p, void *data, size_t *size)
    if (originalSize == 0)
       return 0;
 
-   *size = rfread(data, 1, originalSize, p->file);
+   *size = rfread(data, 1, originalSize, (RFILE*)p->file);
    if (*size == originalSize)
       return 0;
-   return rferror(p->file);
+   return rferror((RFILE*)p->file);
 }
 
 WRes File_Write(CSzFile *p, const void *data, size_t *size)
@@ -68,10 +68,10 @@ WRes File_Write(CSzFile *p, const void *data, size_t *size)
    if (originalSize == 0)
       return 0;
 
-   *size = rfwrite(data, 1, originalSize, p->file);
+   *size = rfwrite(data, 1, originalSize, (RFILE*)p->file);
    if (*size == originalSize)
       return 0;
-   return rferror(p->file);
+   return rferror((RFILE*)p->file);
 }
 
 WRes File_Seek(CSzFile *p, int64_t *pos, ESzSeek origin)
@@ -92,17 +92,17 @@ WRes File_Seek(CSzFile *p, int64_t *pos, ESzSeek origin)
       default:
          return 1;
    }
-   res  = rfseek(p->file, (int64_t)*pos, whence);
-   *pos = rftell(p->file);
+   res  = rfseek((RFILE*)p->file, (int64_t)*pos, whence);
+   *pos = rftell((RFILE*)p->file);
    return res;
 }
 
 WRes File_GetLength(CSzFile *p, uint64_t *length)
 {
-   int64_t pos  = rftell(p->file);
-   int64_t res  = rfseek(p->file, 0, SEEK_END);
-   *length      = rftell(p->file);
-   rfseek(p->file, pos, SEEK_SET);
+   int64_t pos  = rftell((RFILE*)p->file);
+   int64_t res  = rfseek((RFILE*)p->file, 0, SEEK_END);
+   *length      = rftell((RFILE*)p->file);
+   rfseek((RFILE*)p->file, pos, SEEK_SET);
    return res;
 }
 
