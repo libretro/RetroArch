@@ -74,7 +74,7 @@ enum setting_list_flags
 
 #define SL_FLAG_SETTINGS_GROUP_ALL (SL_FLAG_SETTINGS_ALL - SL_FLAG_MAIN_MENU)
 
-int menu_setting_generic(rarch_setting_t *setting, bool wraparound);
+int menu_setting_generic(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int menu_setting_set(unsigned type, unsigned action, bool wraparound);
 

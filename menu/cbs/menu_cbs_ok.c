@@ -1561,7 +1561,7 @@ static int set_path_generic(const char *label, const char *action_path)
    {
       setting_set_with_string_representation(
             setting, action_path);
-      return menu_setting_generic(setting, false);
+      return menu_setting_generic(setting, 0, false);
    }
 
    return 0;
@@ -2695,7 +2695,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       if (setting)
       {
          setting_set_with_string_representation(setting, str);
-         menu_setting_generic(setting, false);
+         menu_setting_generic(setting, 0, false);
       }
       else if (!string_is_empty(label))
          ret = menu_shader_manager_save_preset(
@@ -2737,7 +2737,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
       if (setting)
       {
          setting_set_with_string_representation(setting, str);
-         menu_setting_generic(setting, false);
+         menu_setting_generic(setting, 0, false);
       }
       else if (!string_is_empty(label))
          cheat_manager_save(str, path_cheat_database,
