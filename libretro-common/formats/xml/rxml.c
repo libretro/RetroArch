@@ -142,10 +142,14 @@ rxml_document_t *rxml_load_document_string(const char *str)
    doc                           = (rxml_document_t*)malloc(sizeof(*doc));
    if (!doc)
       goto error;
+
+   doc->root_node                = (struct rxml_node *)malloc(
+         sizeof(*doc->root_node));
    
    doc->root_node->name          = NULL;
    doc->root_node->data          = NULL;
    doc->root_node->attrib        = NULL;
+
    doc->root_node->children      = NULL;
    doc->root_node->next          = NULL;
 

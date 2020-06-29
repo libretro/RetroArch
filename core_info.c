@@ -305,7 +305,13 @@ static core_info_list_t *core_info_list_new(const char *path,
       return NULL;
    }
 
-   core_info = (core_info_t*)calloc(contents->size, sizeof(*core_info));
+   core_info_list->list    = NULL;
+   core_info_list->count   = 0;
+   core_info_list->all_ext = NULL;
+
+   core_info               = (core_info_t*)
+      calloc(contents->size, sizeof(*core_info));
+
    if (!core_info)
    {
       core_info_list_free(core_info_list);
@@ -315,7 +321,6 @@ static core_info_list_t *core_info_list_new(const char *path,
 
    core_info_list->list    = core_info;
    core_info_list->count   = contents->size;
-   core_info_list->all_ext = NULL;
 
    for (i = 0; i < contents->size; i++)
    {
