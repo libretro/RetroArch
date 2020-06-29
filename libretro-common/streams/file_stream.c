@@ -549,7 +549,8 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
 error:
    if (file)
-      filestream_close(file);
+      if (filestream_close(file) != 0)
+         free(file);
    if (content_buf)
       free(content_buf);
    if (len)

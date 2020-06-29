@@ -256,13 +256,18 @@ rxml_document_t *rxml_load_document_string(const char *str)
 
          case YXML_ATTRSTART:
             if (attr)
-               attr = attr->next = (struct rxml_attrib_node*)calloc(1, sizeof(*attr));
+               attr = attr->next   = (struct rxml_attrib_node*)
+                  calloc(1, sizeof(*attr));
             else
-               attr = node->attrib = (struct rxml_attrib_node*)calloc(1, sizeof(*attr));
+               attr = node->attrib = (struct rxml_attrib_node*)
+                  calloc(1, sizeof(*attr));
 
-            if (attr->attrib)
-               free(attr->attrib);
-            attr->attrib = strdup(x.attr);
+            if (attr)
+            {
+               if (attr->attrib)
+                  free(attr->attrib);
+               attr->attrib = strdup(x.attr);
+            }
 
             valptr       = buf->val;
             break;
@@ -280,9 +285,12 @@ rxml_document_t *rxml_load_document_string(const char *str)
             {
                *valptr = '\0';
 
-               if (attr->value)
-                  free(attr->value);
-               attr->value = strdup(buf->val);
+               if (attr)
+               {
+                  if (attr->value)
+                     free(attr->value);
+                  attr->value = strdup(buf->val);
+               }
 
                valptr      = buf->val;
             }
