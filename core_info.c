@@ -672,11 +672,47 @@ void core_info_free_current_core(core_info_state_t *p_coreinfo)
 
 bool core_info_init_current_core(void)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
-   core_info_t *current          = (core_info_t*)calloc(1, sizeof(*current));
+   core_info_state_t *p_coreinfo          = coreinfo_get_ptr();
+   core_info_t *current                   = (core_info_t*)
+      malloc(sizeof(*current));
    if (!current)
       return false;
-   p_coreinfo->current = current;
+   current->supports_no_game              = false;
+   current->database_match_archive_member = false;
+   current->is_experimental               = false;
+   current->is_locked                     = false;
+   current->firmware_count                = 0;
+   current->path                          = NULL;
+   current->config_data                   = NULL;
+   current->display_name                  = NULL;
+   current->display_version               = NULL;
+   current->core_name                     = NULL;
+   current->system_manufacturer           = NULL;
+   current->systemname                    = NULL;
+   current->system_id                     = NULL;
+   current->supported_extensions          = NULL;
+   current->authors                       = NULL;
+   current->permissions                   = NULL;
+   current->licenses                      = NULL;
+   current->categories                    = NULL;
+   current->databases                     = NULL;
+   current->notes                         = NULL;
+   current->required_hw_api               = NULL;
+   current->description                   = NULL;
+   current->categories_list               = NULL;
+   current->databases_list                = NULL;
+   current->note_list                     = NULL;
+   current->supported_extensions_list     = NULL;
+   current->authors_list                  = NULL;
+   current->permissions_list              = NULL;
+   current->licenses_list                 = NULL;
+   current->required_hw_api_list          = NULL;
+   current->firmware                      = NULL;
+   current->core_file_id.str              = NULL;
+   current->core_file_id.len              = 0;
+   current->userdata                      = NULL;
+
+   p_coreinfo->current                    = current;
    return true;
 }
 

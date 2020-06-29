@@ -100,6 +100,7 @@ static wglCreateContextAttribsProc pcreate_context;
 #endif
 static BOOL (APIENTRY *p_swap_interval)(int);
 
+/* TODO/FIXME - static globals */
 static HGLRC win32_hrc;
 static HGLRC win32_hw_hrc;
 static HDC   win32_hdc;
