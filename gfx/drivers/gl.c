@@ -3110,7 +3110,8 @@ static bool gl2_frame(void *data, const void *frame,
    }
 #endif
 
-   gl->ctx_driver->swap_buffers(context_data);
+   if (gl->ctx_driver->swap_buffers)
+      gl->ctx_driver->swap_buffers(context_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (  gl->have_sync
@@ -4082,14 +4083,16 @@ static bool gl2_set_shader(void *data,
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
 
-   init_data.shader_type = fallback;
-   init_data.shader      = NULL;
-   init_data.data        = gl;
-   init_data.path        = path;
+   init_data.shader_type             = fallback;
+   init_data.path                    = path;
+   init_data.shader                  = NULL;
+   init_data.data                    = gl;
+   init_data.shader_data             = NULL;
+   init_data.gl.core_context_enabled = false;
 
    if (!gl_shader_driver_init(&init_data))
    {
-      init_data.path = NULL;
+      init_data.path   = NULL;
 
       gl_shader_driver_init(&init_data);
 
