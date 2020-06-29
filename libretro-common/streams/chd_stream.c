@@ -233,6 +233,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->track_start     = 0;
    stream->track_end       = 0;
    stream->offset          = 0;
+   stream->hunkmem         = NULL;
    stream->hunknum         = -1;
 
    hd                      = chd_get_header(chd);
