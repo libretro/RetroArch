@@ -111,31 +111,37 @@ static void task_queue_push_progress(retro_task_t *task)
 
 static void task_queue_put(task_queue_t *queue, retro_task_t *task)
 {
-   task->next = NULL;
+   task->next                   = NULL;
 
    if (queue->front)
    {
-      /* Make sure to insert in order - the queue is sorted by 'when' so items that aren't scheduled
-       * to run immediately are at the back of the queue. Items with the same 'when' are inserted after
-       * all the other items with the same 'when'. This primarily affects items with a 'when' of 0.
+      /* Make sure to insert in order - the queue is 
+       * sorted by 'when' so items that aren't scheduled
+       * to run immediately are at the back of the queue. 
+       * Items with the same 'when' are inserted after
+       * all the other items with the same 'when'. 
+       * This primarily affects items with a 'when' of 0.
        */
-      if (queue->back->when > task->when)
+      if (queue->back)
       {
-         retro_task_t** prev = &queue->front;
-         while (*prev && (*prev)->when <= task->when)
-            prev = &((*prev)->next);
+         if (queue->back->when > task->when)
+         {
+            retro_task_t** prev = &queue->front;
+            while (*prev && (*prev)->when <= task->when)
+               prev             = &((*prev)->next);
 
-         task->next = *prev;
-         *prev = task;
-         return;
+            task->next          = *prev;
+            *prev               = task;
+            return;
+         }
+
+         queue->back->next      = task;
       }
-
-      queue->back->next = task;
    }
    else
-      queue->front = task;
+      queue->front              = task;
 
-   queue->back = task;
+   queue->back                  = task;
 }
 
 static retro_task_t *task_queue_get(task_queue_t *queue)
