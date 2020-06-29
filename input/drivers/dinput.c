@@ -193,12 +193,14 @@ static void *dinput_init(const char *joypad_driver)
 
 static void dinput_poll(void *data)
 {
+   unsigned i;
    struct dinput_input *di = (struct dinput_input*)data;
 
    if (!di)
       return;
 
-   memset(di->state, 0, sizeof(di->state));
+   for (i = 0; i < 256; i++)
+      di->state[i] = 0;
    if (di->keyboard)
    {
       if (FAILED(IDirectInputDevice8_GetDeviceState(
@@ -207,7 +209,10 @@ static void dinput_poll(void *data)
          IDirectInputDevice8_Acquire(di->keyboard);
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->keyboard, sizeof(di->state), di->state)))
-            memset(di->state, 0, sizeof(di->state));
+         {
+            for (i = 0; i < 256; i++)
+               di->state[i] = 0;
+         }
       }
    }
 
@@ -219,7 +224,11 @@ static void dinput_poll(void *data)
       point.x = 0;
       point.y = 0;
 
-      memset(&mouse_state, 0, sizeof(mouse_state));
+      mouse_state.lX = 0;
+      mouse_state.lY = 0;
+      mouse_state.lZ = 0;
+      for (i = 0; i < 8; i++)
+         mouse_state.rgbButtons[i] = 0;
 
       if (FAILED(IDirectInputDevice8_GetDeviceState(
                   di->mouse, sizeof(mouse_state), &mouse_state)))
@@ -227,7 +236,13 @@ static void dinput_poll(void *data)
          IDirectInputDevice8_Acquire(di->mouse);
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->mouse, sizeof(mouse_state), &mouse_state)))
-            memset(&mouse_state, 0, sizeof(mouse_state));
+         {
+            mouse_state.lX = 0;
+            mouse_state.lY = 0;
+            mouse_state.lZ = 0;
+            for (i = 0; i < 8; i++)
+               mouse_state.rgbButtons[i] = 0;
+         }
       }
 
       di->mouse_rel_x = mouse_state.lX;

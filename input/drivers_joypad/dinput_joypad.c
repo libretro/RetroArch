@@ -195,14 +195,12 @@ static BOOL CALLBACK enum_axes_cb(
    DIPROPRANGE range;
    LPDIRECTINPUTDEVICE8 joypad = (LPDIRECTINPUTDEVICE8)p;
 
-   memset(&range, 0, sizeof(range));
-
-   range.diph.dwSize       = sizeof(DIPROPRANGE);
-   range.diph.dwHeaderSize = sizeof(DIPROPHEADER);
-   range.diph.dwHow        = DIPH_BYID;
-   range.diph.dwObj        = inst->dwType;
-   range.lMin              = -0x7fff;
-   range.lMax              = 0x7fff;
+   range.diph.dwSize           = sizeof(DIPROPRANGE);
+   range.diph.dwHeaderSize     = sizeof(DIPROPHEADER);
+   range.diph.dwHow            = DIPH_BYID;
+   range.diph.dwObj            = inst->dwType;
+   range.lMin                  = -0x7fff;
+   range.lMax                  = 0x7fff;
 
    IDirectInputDevice8_SetProperty(joypad, DIPROP_RANGE, &range.diph);
 
@@ -570,14 +568,52 @@ static void dinput_joypad_poll(void)
    unsigned i;
    for (i = 0; i < MAX_USERS; i++)
    {
+      unsigned j;
       HRESULT ret;
-      struct dinput_joypad_data *pad = &g_pads[i];
-      bool                    polled = g_xinput_pad_indexes[i] < 0;
+      struct dinput_joypad_data *pad  = &g_pads[i];
+      bool                    polled  = g_xinput_pad_indexes[i] < 0;
 
       if (!pad || !pad->joypad || !polled)
          continue;
 
-      memset(&pad->joy_state, 0, sizeof(pad->joy_state));
+      pad->joy_state.lX               = 0;
+      pad->joy_state.lY               = 0;
+      pad->joy_state.lRx              = 0;
+      pad->joy_state.lRy              = 0;
+      pad->joy_state.lRz              = 0;
+      pad->joy_state.rglSlider[0]     = 0;
+      pad->joy_state.rglSlider[1]     = 0;
+      pad->joy_state.rgdwPOV[0]       = 0;
+      pad->joy_state.rgdwPOV[1]       = 0;
+      pad->joy_state.rgdwPOV[2]       = 0;
+      pad->joy_state.rgdwPOV[3]       = 0;
+      for (j = 0; j < 128; j++)
+         pad->joy_state.rgbButtons[j] = 0;
+
+      pad->joy_state.lVX              = 0;
+      pad->joy_state.lVY              = 0;
+      pad->joy_state.lVZ              = 0;
+      pad->joy_state.lVRx             = 0;
+      pad->joy_state.lVRy             = 0;
+      pad->joy_state.lVRz             = 0;
+      pad->joy_state.rglVSlider[0]    = 0;
+      pad->joy_state.rglVSlider[1]    = 0;
+      pad->joy_state.lAX              = 0;
+      pad->joy_state.lAY              = 0;
+      pad->joy_state.lAZ              = 0;
+      pad->joy_state.lARx             = 0;
+      pad->joy_state.lARy             = 0;
+      pad->joy_state.lARz             = 0;
+      pad->joy_state.rglASlider[0]    = 0;
+      pad->joy_state.rglASlider[1]    = 0;
+      pad->joy_state.lFX              = 0;
+      pad->joy_state.lFY              = 0;
+      pad->joy_state.lFZ              = 0;
+      pad->joy_state.lFRx             = 0;
+      pad->joy_state.lFRy             = 0;
+      pad->joy_state.lFRz             = 0;
+      pad->joy_state.rglFSlider[0]    = 0;
+      pad->joy_state.rglFSlider[1]    = 0;
 
       /* If this fails, something *really* bad must have happened. */
       if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
