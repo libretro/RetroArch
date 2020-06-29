@@ -822,12 +822,16 @@ void ozone_refresh_horizontal_list(ozone_handle_t *ozone)
       ozone_free_list_nodes(ozone->horizontal_list, false);
       file_list_free(ozone->horizontal_list);
    }
-   ozone->horizontal_list = NULL;
+   ozone->horizontal_list           = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   ozone->horizontal_list         = (file_list_t*)
-      calloc(1, sizeof(file_list_t));
+   ozone->horizontal_list           = (file_list_t*)
+      malloc(sizeof(file_list_t));
+
+   ozone->horizontal_list->list     = NULL;
+   ozone->horizontal_list->capacity = 0;
+   ozone->horizontal_list->size     = 0;
 
    if (ozone->horizontal_list)
       ozone_init_horizontal_list(ozone);

@@ -203,7 +203,11 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    gfx_display_allocate_white_texture();
 
-   ozone->horizontal_list = (file_list_t*)calloc(1, sizeof(file_list_t));
+   ozone->horizontal_list           = (file_list_t*)malloc(sizeof(file_list_t));
+
+   ozone->horizontal_list->list     = NULL;
+   ozone->horizontal_list->capacity = 0;
+   ozone->horizontal_list->size     = 0;
 
    if (ozone->horizontal_list)
       ozone_init_horizontal_list(ozone);

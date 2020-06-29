@@ -2232,12 +2232,16 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
       xmb_free_list_nodes(xmb->horizontal_list, false);
       file_list_free(xmb->horizontal_list);
    }
-   xmb->horizontal_list = NULL;
+   xmb->horizontal_list           = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   xmb->horizontal_list         = (file_list_t*)
-      calloc(1, sizeof(file_list_t));
+   xmb->horizontal_list           = (file_list_t*)
+      malloc(sizeof(file_list_t));
+
+   xmb->horizontal_list->list     = NULL;
+   xmb->horizontal_list->capacity = 0;
+   xmb->horizontal_list->size     = 0;
 
    if (xmb->horizontal_list)
       xmb_init_horizontal_list(xmb);
@@ -5395,10 +5399,15 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    *userdata = xmb;
 
-   xmb->selection_buf_old     = (file_list_t*)calloc(1, sizeof(file_list_t));
+   xmb->selection_buf_old             = (file_list_t*)
+      malloc(sizeof(file_list_t));
 
    if (!xmb->selection_buf_old)
       goto error;
+
+   xmb->selection_buf_old->list       = NULL;
+   xmb->selection_buf_old->capacity   = 0;
+   xmb->selection_buf_old->size       = 0;
 
    xmb->categories_active_idx         = 0;
    xmb->categories_active_idx_old     = 0;
@@ -5448,7 +5457,11 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    gfx_display_allocate_white_texture();
 
-   xmb->horizontal_list         = (file_list_t*)calloc(1, sizeof(file_list_t));
+   xmb->horizontal_list           = (file_list_t*)malloc(sizeof(file_list_t));
+
+   xmb->horizontal_list->list     = NULL;
+   xmb->horizontal_list->capacity = 0;
+   xmb->horizontal_list->size     = 0;
 
    if (xmb->horizontal_list)
       xmb_init_horizontal_list(xmb);
