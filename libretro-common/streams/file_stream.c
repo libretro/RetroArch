@@ -111,7 +111,11 @@ bool filestream_exists(const char *path)
    if (!dummy)
       return false;
 
-   filestream_close(dummy);
+   if (filestream_close(dummy) != 0)
+      if (dummy)
+         free(dummy);
+
+   dummy = NULL;
    return true;
 }
 
