@@ -9471,7 +9471,7 @@ static void netplay_announce_cb(retro_task_t *task,
 static void netplay_announce(struct rarch_state *p_rarch)
 {
    char buf[4600];
-   char frontend_architecture[32];
+   char frontend_architecture[PATH_MAX_LENGTH];
    char frontend_architecture_tmp[32];
    const frontend_ctx_driver_t 
       *frontend_drv                 =  NULL;
