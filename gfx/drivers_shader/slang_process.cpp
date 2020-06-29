@@ -225,7 +225,8 @@ static bool slang_process_reflection(
          uniform.offset         = 0;
          uniform.id[0]          = '\0';
 
-         strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
+         if (!string_is_empty(uniform_id))
+            strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
 
          if (src.push_constant)
          {
@@ -528,8 +529,10 @@ bool slang_process(
             break;
       }
 
-      vs_resources = vs_compiler->get_shader_resources();
-      ps_resources = ps_compiler->get_shader_resources();
+      if (vs_compiler)
+         vs_resources   = vs_compiler->get_shader_resources();
+      if (ps_compiler)
+         ps_resources   = ps_compiler->get_shader_resources();
 
       if (!vs_resources.uniform_buffers.empty())
          vs_compiler->set_decoration(
