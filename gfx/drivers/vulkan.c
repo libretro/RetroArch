@@ -1237,6 +1237,12 @@ static void *vulkan_init(const video_info_t *video,
 
    RARCH_LOG("[Vulkan]: Using resolution %ux%u\n", temp_width, temp_height);
 
+   if (!vk->ctx_driver || !vk->ctx_driver->get_context_data)
+   {
+      RARCH_ERR("[Vulkan]: Failed to get context data.\n");
+      goto error;
+   }
+
    *(void**)&vk->context = vk->ctx_driver->get_context_data(vk->ctx_data);
 
    vk->vsync             = video->vsync;
