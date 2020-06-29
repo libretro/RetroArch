@@ -339,8 +339,16 @@ slock_t *slock_new(void)
 #ifdef USE_WIN32_THREADS
    lock->lock.LockCount      = 0;
    lock->lock.RecursionCount = 0;
+#ifdef _XBOX
+   lock->lock.OwningThread   = 0;
+   lock->lock.Synchronization.RawEvent[0] = 0;
+   lock->lock.Synchronization.RawEvent[1] = 0;
+   lock->lock.Synchronization.RawEvent[2] = 0;
+   lock->lock.Synchronization.RawEvent[3] = 0;
+#else
    lock->lock.LockSemaphore  = NULL;
    lock->lock.SpinCount      = 0;
+#endif
    InitializeCriticalSection(&lock->lock);
    mutex_created             = true;
 #else
@@ -477,8 +485,16 @@ scond_t *scond_new(void)
    cond->head              = NULL;
    cond->cs.LockCount      = 0;
    cond->cs.RecursionCount = 0;
+#ifdef _XBOX
+   cond->cs.OwningThread   = 0;
+   cond->cs.Synchronization.RawEvent[0] = 0;
+   cond->cs.Synchronization.RawEvent[1] = 0;
+   cond->cs.Synchronization.RawEvent[2] = 0;
+   cond->cs.Synchronization.RawEvent[3] = 0;
+#else
    cond->cs.LockSemaphore  = NULL;
    cond->cs.SpinCount      = 0;
+#endif
    cond->event             = CreateEvent(NULL, FALSE, FALSE, NULL);
    if (!cond->event)
       goto error;

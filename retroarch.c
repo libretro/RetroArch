@@ -12774,7 +12774,9 @@ static bool command_stdin_init(command_t *handle)
    return true;
 }
 
-static void command_stdin_poll(command_t *handle)
+static void command_stdin_poll(
+	struct rarch_state *p_rarch,
+		command_t *handle)
 {
    ptrdiff_t msg_len;
    char *last_newline = NULL;
@@ -23380,7 +23382,8 @@ static void input_driver_poll(void)
 
 #ifdef HAVE_STDIN_CMD
       if (p_rarch->input_driver_command->stdin_enable)
-         command_stdin_poll(p_rarch->input_driver_command);
+         command_stdin_poll(p_rarch,
+		 p_rarch->input_driver_command);
 #endif
    }
 #endif
