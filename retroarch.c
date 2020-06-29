@@ -3490,10 +3490,12 @@ static void menu_input_key_bind_poll_bind_state(
    input_driver_t *input_ptr               = p_rarch->current_input;
    void *input_data                        = p_rarch->current_input_data;
    unsigned port                           = state->port;
-   const input_device_driver_t *joypad     = 
-      p_rarch->current_input->get_joypad_driver(p_rarch->current_input_data);
+   const input_device_driver_t *joypad     = NULL;
    const input_device_driver_t *sec_joypad =
       input_driver_get_sec_joypad_driver();
+
+   if (p_rarch->current_input->get_joypad_driver)
+      joypad                               = p_rarch->current_input->get_joypad_driver(p_rarch->current_input_data);
 
    memset(state->state, 0, sizeof(state->state));
 
