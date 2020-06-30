@@ -1925,9 +1925,11 @@ struct rarch_state
    bool has_set_libretro_directory;
    bool has_set_save_path;
    bool has_set_state_path;
+#ifdef HAVE_PATCH
    bool has_set_ups_pref;
    bool has_set_bps_pref;
    bool has_set_ips_pref;
+#endif
 #ifdef HAVE_QT
    bool qt_is_inited;
 #endif
@@ -1940,7 +1942,9 @@ struct rarch_state
    bool rarch_ups_pref;
    bool rarch_bps_pref;
    bool rarch_ips_pref;
+#ifdef HAVE_PATCH
    bool rarch_patch_blocked;
+#endif
    bool runloop_missing_bios;
    bool runloop_force_nonblock;
    bool runloop_paused;
@@ -16860,13 +16864,19 @@ void retroarch_override_setting_set(
          break;
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
+#ifdef HAVE_PATCH
          p_rarch->has_set_ups_pref = true;
+#endif
          break;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
+#ifdef HAVE_PATCH
          p_rarch->has_set_bps_pref = true;
+#endif
          break;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
+#ifdef HAVE_PATCH
          p_rarch->has_set_ips_pref = true;
+#endif
          break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          p_rarch->has_set_log_to_file = true;
@@ -16927,13 +16937,19 @@ void retroarch_override_setting_unset(
          break;
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
+#ifdef HAVE_PATCH
          p_rarch->has_set_ups_pref = false;
+#endif
          break;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
+#ifdef HAVE_PATCH
          p_rarch->has_set_bps_pref = false;
+#endif
          break;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
+#ifdef HAVE_PATCH
          p_rarch->has_set_ips_pref = false;
+#endif
          break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          p_rarch->has_set_log_to_file = false;
@@ -16975,10 +16991,12 @@ static void global_free(struct rarch_state *p_rarch)
    p_rarch->rarch_is_sram_load_disabled  = false;
    p_rarch->rarch_is_sram_save_disabled  = false;
    p_rarch->rarch_use_sram               = false;
+#ifdef HAVE_PATCH
    rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    p_rarch->rarch_patch_blocked               = false;
+#endif
 #ifdef HAVE_CONFIGFILE
    p_rarch->rarch_block_config_read           = false;
    p_rarch->runloop_overrides_active          = false;
@@ -35321,8 +35339,10 @@ static void retroarch_parse_input_and_config(
       { "device",             1, NULL, 'd' },
       { "savestate",          1, NULL, 'S' },
       { "set-shader",         1, NULL, RA_OPT_SET_SHADER },
+#ifdef HAVE_BSV_MOVIE
       { "bsvplay",            1, NULL, 'P' },
       { "bsvrecord",          1, NULL, 'R' },
+#endif
       { "sram-mode",          1, NULL, 'M' },
 #ifdef HAVE_NETWORKING
       { "host",               0, NULL, 'H' },
@@ -35335,10 +35355,12 @@ static void retroarch_parse_input_and_config(
 #endif
 #endif
       { "nick",               1, NULL, RA_OPT_NICK },
+#ifdef HAVE_PATCH
       { "ups",                1, NULL, 'U' },
       { "bps",                1, NULL, RA_OPT_BPS },
       { "ips",                1, NULL, RA_OPT_IPS },
       { "no-patch",           0, NULL, RA_OPT_NO_PATCH },
+#endif
       { "detach",             0, NULL, 'D' },
       { "features",           0, NULL, RA_OPT_FEATURES },
       { "subsystem",          1, NULL, RA_OPT_SUBSYSTEM },
@@ -35398,13 +35420,14 @@ static void retroarch_parse_input_and_config(
    retroarch_override_setting_free_state();
 
    p_rarch->has_set_username             = false;
+#ifdef HAVE_PATCH
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    *global->name.ups                     = '\0';
    *global->name.bps                     = '\0';
    *global->name.ips                     = '\0';
-
+#endif
 #ifdef HAVE_CONFIGFILE
    p_rarch->runloop_overrides_active     = false;
 #endif
@@ -35766,28 +35789,36 @@ static void retroarch_parse_input_and_config(
 #endif
 
             case RA_OPT_BPS:
+#ifdef HAVE_PATCH
                strlcpy(global->name.bps, optarg,
                      sizeof(global->name.bps));
                p_rarch->rarch_bps_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
+#endif
                break;
 
             case 'U':
+#ifdef HAVE_PATCH
                strlcpy(global->name.ups, optarg,
                      sizeof(global->name.ups));
                p_rarch->rarch_ups_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
+#endif
                break;
 
             case RA_OPT_IPS:
+#ifdef HAVE_PATCH
                strlcpy(global->name.ips, optarg,
                      sizeof(global->name.ips));
                p_rarch->rarch_ips_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
+#endif
                break;
 
             case RA_OPT_NO_PATCH:
+#ifdef HAVE_PATCH
                p_rarch->rarch_patch_blocked = true;
+#endif
                break;
 
             case 'D':
@@ -36718,6 +36749,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (p_rarch->bsv_movie_state_handle != NULL);
 #endif
+#ifdef HAVE_PATCH
       case RARCH_CTL_IS_PATCH_BLOCKED:
          return p_rarch->rarch_patch_blocked;
       case RARCH_CTL_IS_BPS_PREF:
@@ -36735,6 +36767,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_UNSET_IPS_PREF:
          p_rarch->rarch_ips_pref = false;
          break;
+#endif
       case RARCH_CTL_IS_DUMMY_CORE:
          return (p_rarch->current_core_type == CORE_TYPE_DUMMY);
       case RARCH_CTL_HAS_SET_USERNAME:
@@ -37320,12 +37353,14 @@ bool retroarch_override_setting_is_set(
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          return p_rarch->has_set_netplay_check_frames;
 #endif
+#ifdef HAVE_PATCH
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
          return p_rarch->has_set_ups_pref;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
          return p_rarch->has_set_bps_pref;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
          return p_rarch->has_set_ips_pref;
+#endif
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          return p_rarch->has_set_log_to_file;
       case RARCH_OVERRIDE_SETTING_NONE:
