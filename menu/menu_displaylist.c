@@ -4110,17 +4110,15 @@ static bool menu_displaylist_push_internal(
 
          return true;
       }
-      else
-      {
-         if (!string_is_empty(info->path))
-            free(info->path);
 
-         info->path = strdup(dir_playlist);
+      if (!string_is_empty(info->path))
+         free(info->path);
 
-         if (menu_displaylist_ctl(
-                  DISPLAYLIST_DATABASE_PLAYLISTS, info))
-            return true;
-      }
+      info->path = strdup(dir_playlist);
+
+      if (menu_displaylist_ctl(
+               DISPLAYLIST_DATABASE_PLAYLISTS, info))
+         return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
    {
@@ -9643,19 +9641,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          /* Note: This would appear to be legacy code. Cannot find
           * a single instance where this case is met... */
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_HISTORY)))
+
+         if (     string_starts_with(info->path, "content_")
+               && string_ends_with(info->path, ".lpl"))
          {
-            if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
-               return menu_displaylist_process(info);
-            return false;
+            if (string_is_equal(info->path,
+                     file_path_str(FILE_PATH_CONTENT_HISTORY)))
+            {
+               if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
+                  return menu_displaylist_process(info);
+               return false;
+            }
+
+            if (string_is_equal(info->path,
+                     file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+            {
+               if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
+                  return menu_displaylist_process(info);
+               return false;
+            }
          }
-         else if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
-         {
-            if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
-               return menu_displaylist_process(info);
-            return false;
-         }
-         else
+
          {
             char path_playlist[PATH_MAX_LENGTH];
             playlist_t *playlist            = NULL;
@@ -10284,7 +10290,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         if (!menu_displaylist_parse_playlist_manager_settings(menu, info, info->path))
+         if (!menu_displaylist_parse_playlist_manager_settings(menu,
+                  info, info->path))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
