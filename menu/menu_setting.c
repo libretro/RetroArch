@@ -7263,14 +7263,17 @@ static bool setting_append_list_input_player_options(
    static char buffer[MAX_USERS][13+2+1];
    static char group_lbl[MAX_USERS][255];
    unsigned i;
-   rarch_setting_group_info_t group_info      = {0};
-   rarch_setting_group_info_t subgroup_info   = {0};
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *system                = runloop_get_system_info();
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
    const char *temp_value                     = msg_hash_to_str
       ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
+
+   group_info.name                            = NULL;
+   subgroup_info.name                         = NULL;
 
    strlcat(buffer[user], "", sizeof(buffer[user]));
 
