@@ -30151,6 +30151,20 @@ static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 }
 #endif
 
+#ifdef HAVE_D3D9
+static bool hw_render_context_is_d3d9(const struct retro_hw_render_callback* hwr)
+{
+   return hwr->context_type == RETRO_HW_CONTEXT_DIRECT3D && hwr->version_major == 9;
+}
+#endif
+
+#ifdef HAVE_D3D11
+static bool hw_render_context_is_d3d11(const struct retro_hw_render_callback* hwr)
+{
+   return hwr->context_type == RETRO_HW_CONTEXT_DIRECT3D && hwr->version_major == 11;
+}
+#endif
+
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
@@ -31600,6 +31614,42 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
                   "vulkan");
          }
          p_rarch->current_video = &video_vulkan;
+      }
+#endif
+
+#if defined(HAVE_D3D9)
+      if (hwr && hw_render_context_is_d3d9(hwr))
+      {
+         RARCH_LOG("[Video]: Using HW render, D3D9 driver forced.\n");
+         if (!string_is_equal(settings->arrays.video_driver, "d3d9"))
+         {
+            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
+            strlcpy(p_rarch->cached_video_driver,
+               settings->arrays.video_driver,
+               sizeof(p_rarch->cached_video_driver));
+            configuration_set_string(settings,
+               settings->arrays.video_driver,
+               "d3d9");
+         }
+         p_rarch->current_video = &video_d3d9;
+      }
+#endif
+
+#if defined(HAVE_D3D11)
+      if (hwr && hw_render_context_is_d3d11(hwr))
+      {
+         RARCH_LOG("[Video]: Using HW render, D3D11 driver forced.\n");
+         if (!string_is_equal(settings->arrays.video_driver, "d3d11"))
+         {
+            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
+            strlcpy(p_rarch->cached_video_driver,
+               settings->arrays.video_driver,
+               sizeof(p_rarch->cached_video_driver));
+            configuration_set_string(settings,
+               settings->arrays.video_driver,
+               "d3d11");
+         }
+         p_rarch->current_video = &video_d3d11;
       }
 #endif
 
