@@ -6209,30 +6209,6 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
    return NULL;
 }
 
-int menu_setting_set_flags(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-
-   switch (setting->type)
-   {
-      case ST_STRING_OPTIONS:
-         return MENU_SETTING_STRING_OPTIONS;
-      case ST_ACTION:
-         return MENU_SETTING_ACTION;
-      case ST_PATH:
-         return FILE_TYPE_PATH;
-      case ST_GROUP:
-         return MENU_SETTING_GROUP;
-      case ST_SUB_GROUP:
-         return MENU_SETTING_SUBGROUP;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 int menu_setting_set(unsigned type, unsigned action, bool wraparound)
 {
    int ret                    = 0;
@@ -6250,23 +6226,6 @@ int menu_setting_set(unsigned type, unsigned action, bool wraparound)
    if (ret == -1)
       return 0;
    return ret;
-}
-
-/**
- * setting_get_string_representation:
- * @setting            : pointer to setting
- * @s                  : buffer to write contents of string representation to.
- * @len                : size of the buffer (@s)
- *
- * Get a setting value's string representation.
- **/
-void setting_get_string_representation(rarch_setting_t *setting, char *s, size_t len)
-{
-   if (!setting || !s)
-      return;
-
-   if (setting->get_string_representation)
-      setting->get_string_representation(setting, s, len);
 }
 
 /**
@@ -6577,7 +6536,7 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
 
-void general_read_handler(rarch_setting_t *setting)
+static void general_read_handler(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
 
@@ -6625,7 +6584,7 @@ void general_read_handler(rarch_setting_t *setting)
    }
 }
 
-void general_write_handler(rarch_setting_t *setting)
+static void general_write_handler(rarch_setting_t *setting)
 {
    enum event_command rarch_cmd = CMD_EVENT_NONE;
    settings_t *settings         = config_get_ptr();

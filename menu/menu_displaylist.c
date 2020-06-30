@@ -2168,6 +2168,7 @@ static int menu_displaylist_parse_settings_internal_enum(
       const char *name              = setting->name;
       enum setting_type type        = setting->type;
       rarch_setting_t **list        = &setting;
+      int type_flags                = 0;
 
       switch (parse_type)
       {
@@ -2207,11 +2208,32 @@ static int menu_displaylist_parse_settings_internal_enum(
             goto loop;
       }
 
+      switch (type)
+      {
+         case ST_STRING_OPTIONS:
+            type_flags = MENU_SETTING_STRING_OPTIONS;
+            break;
+         case ST_ACTION:
+            type_flags = MENU_SETTING_ACTION;
+            break;
+         case ST_PATH:
+            type_flags = FILE_TYPE_PATH;
+            break;
+         case ST_GROUP:
+            type_flags = MENU_SETTING_GROUP;
+            break;
+         case ST_SUB_GROUP:
+            type_flags = MENU_SETTING_SUBGROUP;
+            break;
+         default:
+            break;
+      }
+
       if (is_enum)
          menu_entries_append_enum(info_list,
                short_description, name,
                (enum msg_hash_enums)entry_type,
-               menu_setting_set_flags(setting), 0, 0);
+               type_flags, 0, 0);
       else
       {
          if (
@@ -2220,7 +2242,7 @@ static int menu_displaylist_parse_settings_internal_enum(
             )
             entry_type = (unsigned)(MENU_SETTINGS_INPUT_BEGIN + count);
          if (entry_type == 0)
-            entry_type = menu_setting_set_flags(setting);
+            entry_type = type_flags;
 
          menu_entries_append(info_list, short_description,
                name, entry_type, 0, 0);
