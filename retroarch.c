@@ -2730,10 +2730,10 @@ static void retroarch_init_core_variables(
 static void rarch_init_core_options(
       struct rarch_state *p_rarch,
       const struct retro_core_option_definition *option_defs);
+#ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch);
 #endif
-#ifdef HAVE_RUNAHEAD
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 #endif
