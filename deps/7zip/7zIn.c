@@ -331,7 +331,7 @@ static SRes SzReaduint32_t(CSzData *sd, uint32_t *value)
    *value = 0;
    for (i = 0; i < 4; i++)
    {
-      uint8_t b;
+      uint8_t b = 0;
       RINOK(SzReaduint8_t(sd, &b));
       *value |= ((uint32_t)(b) << (8 * i));
    }
@@ -341,16 +341,16 @@ static SRes SzReaduint32_t(CSzData *sd, uint32_t *value)
 static SRes SzReadNumber(CSzData *sd, uint64_t *value)
 {
    int i;
-   uint8_t firstuint8_t;
-   uint8_t mask = 0x80;
+   uint8_t firstuint8_t = 0;
+   uint8_t mask         = 0x80;
 
    RINOK(SzReaduint8_t(sd, &firstuint8_t));
 
-   *value = 0;
+   *value               = 0;
 
    for (i = 0; i < 8; i++)
    {
-      uint8_t b;
+      uint8_t b         = 0;
       if ((firstuint8_t & mask) == 0)
       {
          uint64_t highPart = firstuint8_t & (mask - 1);
@@ -446,8 +446,8 @@ static SRes SzReadBoolVector(
 
 static SRes SzReadBoolVector2(CSzData *sd, size_t numItems, uint8_t **v, ISzAlloc *alloc)
 {
-   uint8_t allAreDefined;
    size_t i;
+   uint8_t allAreDefined = 0;
    RINOK(SzReaduint8_t(sd, &allAreDefined));
    if (allAreDefined == 0)
       return SzReadBoolVector(sd, numItems, v, alloc);
@@ -525,7 +525,7 @@ static SRes SzReadPackInfo(
 
 static SRes SzReadSwitch(CSzData *sd)
 {
-   uint8_t external;
+   uint8_t external = 0;
    RINOK(SzReaduint8_t(sd, &external));
    return (external == 0) ? SZ_OK: SZ_ERROR_UNSUPPORTED;
 }
@@ -551,41 +551,39 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
 
    for (i = 0; i < numCoders; i++)
    {
-      uint8_t mainuint8_t;
+      unsigned idSize, j;
+      uint8_t longID[15];
+      uint8_t mainuint8_t = 0;
       CSzCoderInfo *coder = folder->Coders + i;
-      {
-         unsigned idSize, j;
-         uint8_t longID[15];
-         RINOK(SzReaduint8_t(sd, &mainuint8_t));
-         idSize = (unsigned)(mainuint8_t & 0xF);
-         RINOK(SzReaduint8_ts(sd, longID, idSize));
-         if (idSize > sizeof(coder->MethodID))
-            return SZ_ERROR_UNSUPPORTED;
-         coder->MethodID = 0;
-         for (j = 0; j < idSize; j++)
-            coder->MethodID |= (uint64_t)longID[idSize - 1 - j] << (8 * j);
+      RINOK(SzReaduint8_t(sd, &mainuint8_t));
+      idSize = (unsigned)(mainuint8_t & 0xF);
+      RINOK(SzReaduint8_ts(sd, longID, idSize));
+      if (idSize > sizeof(coder->MethodID))
+         return SZ_ERROR_UNSUPPORTED;
+      coder->MethodID = 0;
+      for (j = 0; j < idSize; j++)
+         coder->MethodID |= (uint64_t)longID[idSize - 1 - j] << (8 * j);
 
-         if ((mainuint8_t & 0x10) != 0)
-         {
-            RINOK(SzReadNumber32(sd, &coder->NumInStreams));
-            RINOK(SzReadNumber32(sd, &coder->NumOutStreams));
-            if (coder->NumInStreams > NUM_CODER_STREAMS_MAX ||
-                  coder->NumOutStreams > NUM_CODER_STREAMS_MAX)
-               return SZ_ERROR_UNSUPPORTED;
-         }
-         else
-         {
-            coder->NumInStreams = 1;
-            coder->NumOutStreams = 1;
-         }
-         if ((mainuint8_t & 0x20) != 0)
-         {
-            uint64_t propertiesSize = 0;
-            RINOK(SzReadNumber(sd, &propertiesSize));
-            if (!Buf_Create(&coder->Props, (size_t)propertiesSize, alloc))
-               return SZ_ERROR_MEM;
-            RINOK(SzReaduint8_ts(sd, coder->Props.data, (size_t)propertiesSize));
-         }
+      if ((mainuint8_t & 0x10) != 0)
+      {
+         RINOK(SzReadNumber32(sd, &coder->NumInStreams));
+         RINOK(SzReadNumber32(sd, &coder->NumOutStreams));
+         if (coder->NumInStreams > NUM_CODER_STREAMS_MAX ||
+               coder->NumOutStreams > NUM_CODER_STREAMS_MAX)
+            return SZ_ERROR_UNSUPPORTED;
+      }
+      else
+      {
+         coder->NumInStreams  = 1;
+         coder->NumOutStreams = 1;
+      }
+      if ((mainuint8_t & 0x20) != 0)
+      {
+         uint64_t propertiesSize = 0;
+         RINOK(SzReadNumber(sd, &propertiesSize));
+         if (!Buf_Create(&coder->Props, (size_t)propertiesSize, alloc))
+            return SZ_ERROR_MEM;
+         RINOK(SzReaduint8_ts(sd, coder->Props.data, (size_t)propertiesSize));
       }
       while ((mainuint8_t & 0x80) != 0)
       {
@@ -741,10 +739,10 @@ static SRes SzReadSubStreamsInfo(
          *numUnpackStreams = 0;
          for (i = 0; i < numFolders; i++)
          {
-            uint32_t numStreams;
+            uint32_t numStreams = 0;
             RINOK(SzReadNumber32(sd, &numStreams));
-            folders[i].NumUnpackStreams = numStreams;
-            *numUnpackStreams += numStreams;
+            folders[i].NumUnpackStreams  = numStreams;
+            *numUnpackStreams           += numStreams;
          }
          continue;
       }
