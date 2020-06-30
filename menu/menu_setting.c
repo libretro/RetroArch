@@ -92,7 +92,9 @@
 #include "../lakka.h"
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_CHEATS
 #include "../managers/cheat_manager.h"
+#endif
 #include "../verbosity.h"
 #include "../playlist.h"
 #include "../manual_content_scan.h"
@@ -602,6 +604,7 @@ void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
             (*setting->value.target.sizet)/(1024*1024));
 }
 
+#ifdef HAVE_CHEATS
 static void setting_get_string_representation_uint_as_enum(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -612,6 +615,7 @@ static void setting_get_string_representation_uint_as_enum(
                setting->index_offset+(
                   *setting->value.target.unsigned_integer))));
 }
+#endif
 
 static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
 {
@@ -5488,6 +5492,7 @@ static int setting_string_action_right_midi_output(
    return -1;
 }
 
+#ifdef HAVE_CHEATS
 static void setting_get_string_representation_uint_cheat_exact(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -5554,7 +5559,8 @@ static void setting_get_string_representation_uint_cheat_eqminus(rarch_setting_t
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_uint_cheat_browse_address(rarch_setting_t *setting,
+static void setting_get_string_representation_uint_cheat_browse_address(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
    unsigned int address      = cheat_manager_state.browse_address;
@@ -5571,6 +5577,7 @@ static void setting_get_string_representation_uint_cheat_browse_address(rarch_se
    snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
 
 }
+#endif
 
 static void setting_get_string_representation_uint_video_rotation(rarch_setting_t *setting,
       char *s, size_t len)
@@ -6962,6 +6969,7 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_CHEAT_MEMORY_SEARCH_SIZE:
+#ifdef HAVE_CHEATS
          {
             rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_VALUE);
             if (setting)
@@ -6985,8 +6993,10 @@ static void general_write_handler(rarch_setting_t *setting)
             }
 
          }
+#endif
          break;
       case MENU_ENUM_LABEL_CHEAT_START_OR_RESTART:
+#ifdef HAVE_CHEATS
          {
             rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT);
             if (setting)
@@ -7008,6 +7018,7 @@ static void general_write_handler(rarch_setting_t *setting)
             }
 
          }
+#endif
          break;
       case MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE:
          {
@@ -9235,6 +9246,7 @@ static bool setting_append_list(
             break;
          }
       case SETTINGS_LIST_CHEAT_DETAILS:
+#ifdef HAVE_CHEATS
          {
             int max_bit_position;
             if (!cheat_manager_state.cheats)
@@ -9411,8 +9423,10 @@ static bool setting_append_list(
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
          }
+#endif
          break;
       case SETTINGS_LIST_CHEAT_SEARCH:
+#ifdef HAVE_CHEATS
          if (!cheat_manager_state.cheats)
             break;
 
@@ -9623,6 +9637,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
+#endif
          break;
       case SETTINGS_LIST_VIDEO:
          {

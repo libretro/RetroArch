@@ -223,7 +223,9 @@
 #include "configuration.h"
 #include "list_special.h"
 #include "managers/core_option_manager.h"
+#ifdef HAVE_CHEATS
 #include "managers/cheat_manager.h"
+#endif
 #include "managers/state_manager.h"
 #ifdef HAVE_AUDIOMIXER
 #include "tasks/task_audio_mixer.h"
@@ -10918,6 +10920,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                global->name.savestate);
       }
 
+#ifdef HAVE_CHEATS
       if (path_is_directory(global->name.cheatfile))
       {
          /* FIXME: Should this optionally use system->library_name like the others? */
@@ -10931,6 +10934,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
                global->name.cheatfile);
       }
+#endif
    }
 
    dir_set(RARCH_DIR_CURRENT_SAVEFILE,  new_savefile_dir);
@@ -11322,9 +11326,11 @@ static void path_set_names(struct rarch_state *p_rarch, const char *path)
                p_rarch->path_main_basename,
                ".state", sizeof(global->name.savestate));
 
+#ifdef HAVE_CHEATS
       fill_pathname_noext(global->name.cheatfile,
             p_rarch->path_main_basename,
             ".cht", sizeof(global->name.cheatfile));
+#endif
    }
 
    path_set_redirect(p_rarch);
@@ -14369,6 +14375,7 @@ static void command_event_deinit_core(
 #endif
 }
 
+#ifdef HAVE_CHEATS
 static void command_event_init_cheats(
       settings_t *settings,
       struct rarch_state *p_rarch)
@@ -14393,6 +14400,7 @@ static void command_event_init_cheats(
    if (apply_cheats_after_load)
       cheat_manager_apply_cheats();
 }
+#endif
 
 static void command_event_load_auto_state(
       settings_t *settings,
@@ -15374,13 +15382,19 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_CHEAT_INDEX_PLUS:
+#ifdef HAVE_CHEATS
          cheat_manager_index_next();
+#endif
          break;
       case CMD_EVENT_CHEAT_INDEX_MINUS:
+#ifdef HAVE_CHEATS
          cheat_manager_index_prev();
+#endif
          break;
       case CMD_EVENT_CHEAT_TOGGLE:
+#ifdef HAVE_CHEATS
          cheat_manager_toggle();
+#endif
          break;
       case CMD_EVENT_SHADER_NEXT:
          dir_check_shader(p_rarch, true, false);
@@ -15720,7 +15734,9 @@ bool command_event(enum event_command cmd, void *data)
                data ? *(const int*)data : DRIVERS_CMD_ALL);
          break;
       case CMD_EVENT_CHEATS_APPLY:
+#ifdef HAVE_CHEATS
          cheat_manager_apply_cheats();
+#endif
          break;
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_CHEEVOS
@@ -36200,8 +36216,10 @@ bool retroarch_main_init(int argc, char *argv[])
          goto error;
    }
 
+#ifdef HAVE_CHEATS
    cheat_manager_state_free();
    command_event_init_cheats(p_rarch->configuration_settings, p_rarch);
+#endif
    drivers_init(p_rarch, DRIVERS_CMD_ALL);
    input_driver_deinit_command(p_rarch);
    input_driver_init_command(p_rarch);
@@ -36740,7 +36758,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          command_event(CMD_EVENT_SAVE_FILES, NULL);
 
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+#ifdef HAVE_CHEATS
          cheat_manager_state_free();
+#endif
 #ifdef HAVE_BSV_MOVIE
          bsv_movie_deinit(p_rarch);
 #endif
@@ -38978,8 +38998,9 @@ int runloop_iterate(void)
    if (settings->bools.cheevos_enable && rcheevos_loaded)
       rcheevos_test();
 #endif
+#ifdef HAVE_CHEATS
    cheat_manager_apply_retro_cheats();
-
+#endif
 #ifdef HAVE_DISCORD
    if (discord_is_inited && discord_st->ready)
       discord_update(DISCORD_PRESENCE_GAME);

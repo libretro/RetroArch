@@ -34,7 +34,9 @@
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../managers/core_option_manager.h"
+#ifdef HAVE_CHEATS
 #include "../../managers/cheat_manager.h"
+#endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../performance_counters.h"
@@ -279,6 +281,7 @@ static int action_start_shader_num_passes(
 }
 #endif
 
+#ifdef HAVE_CHEATS
 static int action_start_cheat_num_passes(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -292,6 +295,7 @@ static int action_start_cheat_num_passes(
 
    return 0;
 }
+#endif
 
 static int action_start_core_setting(
       const char *path, const char *label,
@@ -591,7 +595,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
 #endif
             break;
          case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
+#ifdef HAVE_CHEATS
             BIND_ACTION_START(cbs, action_start_cheat_num_passes);
+#endif
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_START(cbs, action_start_video_resolution);

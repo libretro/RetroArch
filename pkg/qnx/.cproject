@@ -55,6 +55,7 @@
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIGFILE"/>
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
@@ -122,6 +123,7 @@
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIGFILE"/>
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
@@ -247,6 +249,7 @@
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIGFILE"/>
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
@@ -311,6 +314,7 @@
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIGFILE"/>
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
@@ -439,6 +443,7 @@
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIGFILE"/>
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
@@ -503,6 +508,7 @@
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIGFILE"/>
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
@@ -628,6 +634,7 @@
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIGFILE"/>
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
@@ -692,6 +699,7 @@
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_CONFIGFILE"/>
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>

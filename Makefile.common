@@ -178,6 +178,7 @@ OBJ += frontend/frontend_driver.o \
        tasks/task_content.o
 
 ifeq ($(HAVE_PATCH), 1)
+   DEFINES += -DHAVE_PATCH
 	OBJ += tasks/task_patch.o
 endif
 
@@ -249,8 +250,14 @@ OBJ += \
        input/input_keymaps.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
-       $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o \
-       managers/cheat_manager.o \
+       $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o
+
+ifeq ($(HAVE_CHEATS), 1)
+   DEFINES += -DHAVE_CHEATS
+   OBJ     += managers/cheat_manager.o
+endif
+
+OBJ += \
        core_info.o \
        core_backup.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \

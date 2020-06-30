@@ -34,7 +34,9 @@
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
+#ifdef HAVE_CHEATS
 #include "../../managers/cheat_manager.h"
+#endif
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -98,6 +100,7 @@ int shader_action_preset_parameter_right(unsigned type, const char *label, bool 
 }
 #endif
 
+#ifdef HAVE_CHEATS
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
 {
@@ -118,6 +121,22 @@ int action_right_cheat(unsigned type, const char *label,
    return generic_action_cheat_toggle(idx, type, label,
          wraparound);
 }
+
+static int action_right_cheat_num_passes(unsigned type, const char *label,
+      bool wraparound)
+{
+   bool refresh      = false;
+   unsigned new_size = 0;
+
+   new_size = cheat_manager_get_size() + 1;
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
+
+   return 0;
+}
+
+#endif
 
 int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
@@ -345,23 +364,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
          setting->type, MENU_ACTION_RIGHT,
          wraparound);
 }
-#endif
 
-static int action_right_cheat_num_passes(unsigned type, const char *label,
-      bool wraparound)
-{
-   bool refresh      = false;
-   unsigned new_size = 0;
-
-   new_size = cheat_manager_get_size() + 1;
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
-
-   return 0;
-}
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_right_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
@@ -819,20 +822,22 @@ int bind_right_generic(unsigned type, const char *label,
 static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type, const char *menu_label)
 {
+#ifdef HAVE_CHEATS
    if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_cheat);
-   }
+   } else
+#endif
 #ifdef HAVE_AUDIOMIXER
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
+   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
          && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
    {
       BIND_ACTION_RIGHT(cbs, audio_mixer_stream_volume_right);
-   }
+   } else
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       BIND_ACTION_RIGHT(cbs, shader_action_parameter_right);
@@ -841,9 +846,9 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
       BIND_ACTION_RIGHT(cbs, shader_action_preset_parameter_right);
-   }
+   } else
 #endif
-   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc);
@@ -1008,7 +1013,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
 #endif
                break;
             case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
+#ifdef HAVE_CHEATS
                BIND_ACTION_RIGHT(cbs, action_right_cheat_num_passes);
+#endif
                break;
             case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
                BIND_ACTION_RIGHT(cbs, action_right_video_resolution);

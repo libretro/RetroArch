@@ -54,7 +54,9 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
+#ifdef HAVE_CHEATS
 #include "../managers/cheat_manager.h"
+#endif
 
 #ifdef HAVE_LIBNX
 #define SAVE_STATE_CHUNK 4096 * 10
@@ -1686,15 +1688,19 @@ bool event_save_files(bool is_sram_used)
 {
    unsigned i;
    settings_t *settings            = config_get_ptr();
+#ifdef HAVE_CHEATS
    const char *path_cheat_database = settings->paths.path_cheat_database;
+#endif
 #if defined(HAVE_ZLIB)
    bool compress_files             = settings->bools.save_file_compression;
 #else
    bool compress_files             = false;
 #endif
 
+#ifdef HAVE_CHEATS
    cheat_manager_save_game_specific_cheats(
          path_cheat_database);
+#endif
    if (!task_save_files || !is_sram_used)
       return false;
 

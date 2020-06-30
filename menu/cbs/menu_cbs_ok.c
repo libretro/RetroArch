@@ -58,7 +58,9 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
 #include "../../managers/core_option_manager.h"
+#ifdef HAVE_CHEATS
 #include "../../managers/cheat_manager.h"
+#endif
 #ifdef HAVE_AUDIOMIXER
 #include "../../tasks/task_audio_mixer.h"
 #endif
@@ -903,12 +905,14 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_CHEAT_FILE:
       case ACTION_OK_DL_CHEAT_FILE_APPEND:
+#ifdef HAVE_CHEATS
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.path_cheat_database;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+#endif
          break;
       case ACTION_OK_DL_RGUI_MENU_THEME_PRESET:
          filebrowser_clear_type();
@@ -1146,45 +1150,49 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                                  = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST:
-      {
-         rarch_setting_t *setting = NULL;
-
-         cheat_manager_copy_idx_to_working(type-MENU_SETTINGS_CHEAT_BEGIN);
-         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_IDX);
-         if (setting)
-            setting->max = cheat_manager_get_size()-1;
-         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_VALUE);
-         if (setting)
-            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
-         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE);
-         if (setting)
-            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
-         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
-         if (setting)
+#ifdef HAVE_CHEATS
          {
-            int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 7 : 0;
-            setting->max = max_bit_position;
+            rarch_setting_t *setting = NULL;
+
+            cheat_manager_copy_idx_to_working(type-MENU_SETTINGS_CHEAT_BEGIN);
+            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_IDX);
+            if (setting)
+               setting->max = cheat_manager_get_size()-1;
+            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_VALUE);
+            if (setting)
+               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
+            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE);
+            if (setting)
+               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
+            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
+            if (setting)
+            {
+               int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 7 : 0;
+               setting->max = max_bit_position;
+            }
+            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS);
+            if (setting)
+               cheat_manager_state.browse_address = *setting->value.target.unsigned_integer;
+            ACTION_OK_DL_LBL(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          }
-         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS);
-         if (setting)
-            cheat_manager_state.browse_address = *setting->value.target.unsigned_integer;
-         ACTION_OK_DL_LBL(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
+#endif
          break;
-      }
       case ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST:
-      {
-         rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT);
-         if (setting)
-            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
-         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS);
-         if (setting)
-            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
-         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS);
-         if (setting)
-            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
-         ACTION_OK_DL_LBL(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
+#ifdef HAVE_CHEATS
+         {
+            rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT);
+            if (setting)
+               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS);
+            if (setting)
+               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS);
+            if (setting)
+               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+            ACTION_OK_DL_LBL(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
+         }
+#endif
          break;
-      }
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
       {
          unsigned player_no = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN;
@@ -1745,17 +1753,21 @@ static int generic_action_ok(const char *path,
 #endif
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
+#ifdef HAVE_CHEATS
          flush_char = msg_hash_to_str(flush_id);
          cheat_manager_state_free();
 
          if (!cheat_manager_load(action_path,false))
             goto error;
+#endif
          break;
       case ACTION_OK_LOAD_CHEAT_FILE_APPEND:
+#ifdef HAVE_CHEATS
          flush_char = msg_hash_to_str(flush_id);
 
          if (!cheat_manager_load(action_path,true))
             goto error;
+#endif
          break;
       case ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET:
          {
@@ -2719,62 +2731,12 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
 
    menu_input_dialog_end();
 }
-#endif
 
-static void menu_input_st_string_cb_cheat_file_save_as(
-      void *userdata, const char *str)
-{
-   if (str && *str)
-   {
-      rarch_setting_t *setting        = NULL;
-      const char        *label        = menu_input_dialog_get_label_buffer();
-      settings_t *settings            = config_get_ptr();
-      const char *path_cheat_database = settings->paths.path_cheat_database;
-
-      if (!string_is_empty(label))
-         setting = menu_setting_find(label);
-
-      if (setting)
-      {
-         setting_set_with_string_representation(setting, str);
-         menu_setting_generic(setting, 0, false);
-      }
-      else if (!string_is_empty(label))
-         cheat_manager_save(str, path_cheat_database,
-               false);
-   }
-
-   menu_input_dialog_end();
-}
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 DEFAULT_ACTION_DIALOG_START(action_ok_shader_preset_save_as,
    msg_hash_to_str(MSG_INPUT_PRESET_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_save_preset)
-#endif
-DEFAULT_ACTION_DIALOG_START(action_ok_enable_settings,
-   msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
-   (unsigned)entry_idx,
-   menu_input_st_string_cb_enable_settings)
-DEFAULT_ACTION_DIALOG_START(action_ok_wifi,
-   "Passphrase",
-   (unsigned)idx,
-   menu_input_wifi_cb)
-DEFAULT_ACTION_DIALOG_START(action_ok_cheat_file_save_as,
-   msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME),
-   (unsigned)idx,
-   menu_input_st_string_cb_cheat_file_save_as)
-DEFAULT_ACTION_DIALOG_START(action_ok_disable_kiosk_mode,
-   msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD),
-   (unsigned)entry_idx,
-   menu_input_st_string_cb_disable_kiosk_mode)
-DEFAULT_ACTION_DIALOG_START(action_ok_rename_entry,
-   msg_hash_to_str(MSG_INPUT_RENAME_ENTRY),
-   (unsigned)entry_idx,
-   menu_input_st_string_cb_rename_entry)
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 enum
 {
    ACTION_OK_SHADER_PRESET_SAVE_GLOBAL = 0,
@@ -2938,6 +2900,58 @@ static int action_ok_shader_preset_remove_game(const char *path,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_REMOVE_GAME);
 }
 #endif
+
+#ifdef HAVE_CHEATS
+static void menu_input_st_string_cb_cheat_file_save_as(
+      void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      rarch_setting_t *setting        = NULL;
+      const char        *label        = menu_input_dialog_get_label_buffer();
+      settings_t *settings            = config_get_ptr();
+      const char *path_cheat_database = settings->paths.path_cheat_database;
+
+      if (!string_is_empty(label))
+         setting = menu_setting_find(label);
+
+      if (setting)
+      {
+         setting_set_with_string_representation(setting, str);
+         menu_setting_generic(setting, 0, false);
+      }
+      else if (!string_is_empty(label))
+         cheat_manager_save(str, path_cheat_database,
+               false);
+   }
+
+   menu_input_dialog_end();
+}
+#endif
+
+DEFAULT_ACTION_DIALOG_START(action_ok_enable_settings,
+   msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
+   (unsigned)entry_idx,
+   menu_input_st_string_cb_enable_settings)
+DEFAULT_ACTION_DIALOG_START(action_ok_wifi,
+   "Passphrase",
+   (unsigned)idx,
+   menu_input_wifi_cb)
+#ifdef HAVE_CHEATS
+DEFAULT_ACTION_DIALOG_START(action_ok_cheat_file_save_as,
+   msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME),
+   (unsigned)idx,
+   menu_input_st_string_cb_cheat_file_save_as)
+#endif
+DEFAULT_ACTION_DIALOG_START(action_ok_disable_kiosk_mode,
+   msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD),
+   (unsigned)entry_idx,
+   menu_input_st_string_cb_disable_kiosk_mode)
+DEFAULT_ACTION_DIALOG_START(action_ok_rename_entry,
+   msg_hash_to_str(MSG_INPUT_RENAME_ENTRY),
+   (unsigned)entry_idx,
+   menu_input_st_string_cb_rename_entry)
+
 
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -3415,6 +3429,7 @@ int action_ok_core_option_dropdown_list(const char *path,
    return 0;
 }
 
+#ifdef HAVE_CHEATS
 static int action_ok_cheat_reload_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3431,6 +3446,7 @@ static int action_ok_cheat_reload_cheats(const char *path,
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    return 0;
 }
+#endif
 
 static int action_ok_start_recording(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3462,6 +3478,7 @@ static int action_ok_stop_streaming(const char *path,
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
+#ifdef HAVE_CHEATS
 static int action_ok_cheat_add_top(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3730,6 +3747,7 @@ static int action_ok_cheat_delete(const char *path,
 
    return 0;
 }
+#endif
 
 static int action_ok_file_load_imageviewer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4408,7 +4426,9 @@ DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_shaders_glsl, MENU_ENUM_LABEL_CB_UPD
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_shaders_slang, MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG)
 #endif
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_databases, MENU_ENUM_LABEL_CB_UPDATE_DATABASES)
+#ifdef HAVE_CHEATS
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_cheats, MENU_ENUM_LABEL_CB_UPDATE_CHEATS)
+#endif
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_autoconfig_profiles, MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES)
 
 static int action_ok_option_create(const char *path,
@@ -6697,6 +6717,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,          action_ok_start_streaming},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,           action_ok_stop_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING,           action_ok_stop_streaming},
+#ifdef HAVE_CHEATS
          {MENU_ENUM_LABEL_CHEAT_START_OR_CONT,                 action_ok_cheat_start_or_cont},
          {MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,                   action_ok_cheat_add_top},
          {MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,                 action_ok_cheat_reload_cheats},
@@ -6707,6 +6728,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CHEAT_COPY_AFTER,                    action_ok_cheat_copy_after},
          {MENU_ENUM_LABEL_CHEAT_COPY_BEFORE,                   action_ok_cheat_copy_before},
          {MENU_ENUM_LABEL_CHEAT_DELETE,                        action_ok_cheat_delete},
+#endif
          {MENU_ENUM_LABEL_RUN_MUSIC,                           action_ok_audio_run},
 #ifdef HAVE_AUDIOMIXER
          {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,         action_ok_audio_add_to_mixer_and_collection},
@@ -6805,8 +6827,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,                action_ok_help_send_debug_info},
          {MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,               action_ok_help_scanning_content},
          {MENU_ENUM_LABEL_HELP_LOADING_CONTENT,                action_ok_help_load_content},
+#ifdef HAVE_CHEATS
          {MENU_ENUM_LABEL_CHEAT_FILE_LOAD,                     action_ok_cheat_file},
          {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,              action_ok_cheat_file_append},
+         {MENU_ENUM_LABEL_UPDATE_CHEATS,                       action_ok_update_cheats},
+         {MENU_ENUM_LABEL_CHEAT_ADD_MATCHES,                   cheat_manager_add_matches},
+#endif
          {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                    action_ok_audio_dsp_plugin},
          {MENU_ENUM_LABEL_REMAP_FILE_LOAD,                     action_ok_remap_file},
          {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
@@ -6844,8 +6870,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,              action_ok_update_core_info_files},
          {MENU_ENUM_LABEL_UPDATE_OVERLAYS,                     action_ok_update_overlays},
          {MENU_ENUM_LABEL_UPDATE_DATABASES,                    action_ok_update_databases},
-         {MENU_ENUM_LABEL_UPDATE_CHEATS,                       action_ok_update_cheats},
-         {MENU_ENUM_LABEL_CHEAT_ADD_MATCHES,                   cheat_manager_add_matches},
          {MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,          action_ok_update_autoconfig_profiles},
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,                 action_ok_netplay_enable_host},
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,               action_ok_netplay_enable_client},
@@ -6911,8 +6935,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,                action_ok_push_generic_list},
          {MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,                 action_ok_push_generic_list},
          {MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,               action_ok_push_generic_list},
+#ifdef HAVE_CHEATS
          {MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,                 action_ok_cheat_apply_changes},
          {MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,                  action_ok_cheat_file_save_as},
+#endif
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,                action_ok_remap_file_save_core},
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,         action_ok_remap_file_save_content_dir},
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,                action_ok_remap_file_save_game},
@@ -7000,8 +7026,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_FAVORITES,                           action_ok_push_content_list},
          {MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,    action_ok_push_downloads_dir},
          {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,                 action_ok_file_load_detect_core},
+#ifdef HAVE_CHEATS
          {MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,                 action_ok_cheat_apply_changes},
          {MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,                  action_ok_cheat_file_save_as},
+#endif
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,                action_ok_remap_file_save_core},
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,         action_ok_remap_file_save_content_dir},
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,                action_ok_remap_file_save_game},

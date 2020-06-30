@@ -36,7 +36,9 @@
 #include "../../configuration.h"
 #include "../../file_path_special.h"
 #include "../../managers/core_option_manager.h"
+#ifdef HAVE_CHEATS
 #include "../../managers/cheat_manager.h"
+#endif
 #include "../../performance_counters.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
@@ -99,6 +101,7 @@ static void menu_action_setting_audio_mixer_stream_volume(
 }
 #endif
 
+#ifdef HAVE_CHEATS
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -111,6 +114,7 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
    strlcpy(s2, path, len2);
    snprintf(s, len, "%u", cheat_manager_get_buf_size());
 }
+#endif
 
 static void menu_action_setting_disp_add_null_drivers(
       file_list_t* list,
@@ -644,6 +648,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    strlcpy(s2, path, len2);
 }
 
+#ifdef HAVE_CHEATS
 static void menu_action_setting_disp_set_label_cheat(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -695,6 +700,7 @@ static void menu_action_setting_disp_set_label_cheat_match(
    *w = 19;
    strlcpy(s2, path, len2);
 }
+#endif
 
 static void menu_action_setting_disp_set_label_perf_counters_common(
       struct retro_perf_counter **counters,
@@ -1575,8 +1581,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
                   menu_action_setting_disp_set_label_wifi_is_online);
             break;
          case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
+#ifdef HAVE_CHEATS
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_cheat_num_passes);
+#endif
             break;
          case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_VALUE(cbs,
@@ -1741,11 +1749,13 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          MENU_SETTINGS_INPUT_DESC_END,
          menu_action_setting_disp_set_label_input_desc
       },
+#ifdef HAVE_CHEATS
       {
          MENU_SETTINGS_CHEAT_BEGIN,
          MENU_SETTINGS_CHEAT_END,
          menu_action_setting_disp_set_label_cheat
       },
+#endif
       {
          MENU_SETTINGS_PERF_COUNTERS_BEGIN,
          MENU_SETTINGS_PERF_COUNTERS_END,
@@ -1861,8 +1871,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
                menu_action_setting_disp_set_label_menu_file_cheat);
          break;
       case MENU_SETTINGS_CHEAT_MATCH:
+#ifdef HAVE_CHEATS
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_cheat_match);
+#endif
          break;
       case MENU_SETTING_SUBGROUP:
       case MENU_SETTINGS_CUSTOM_BIND_ALL:

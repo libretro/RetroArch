@@ -80,7 +80,9 @@
 #include "../file_path_special.h"
 #include "../defaults.h"
 #include "../verbosity.h"
+#ifdef HAVE_CHEATS
 #include "../managers/cheat_manager.h"
+#endif
 #include "../managers/core_option_manager.h"
 #include "../paths.h"
 #include "../retroarch.h"
@@ -2638,6 +2640,7 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 
+#ifdef HAVE_CHEATS
       if (settings->bools.quick_menu_show_cheats)
       {
          if (menu_entries_append_enum(list,
@@ -2647,6 +2650,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0))
             count++;
       }
+#endif
 
       if ((!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             && disk_control_enabled(&system->disk_control))
@@ -4014,11 +4018,13 @@ static bool menu_displaylist_push_internal(
       if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
          return true;
    }
+#ifdef HAVE_CHEATS
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS)))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST, info))
          return true;
    }
+#endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
       filebrowser_clear_type();
@@ -5877,6 +5883,7 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
+#ifdef HAVE_CHEATS
          if (cheat_manager_alloc_if_empty())
          {
             if (menu_entries_append_enum(list,
@@ -5961,6 +5968,7 @@ unsigned menu_displaylist_build_list(
                }
             }
          }
+#endif
          break;
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
          {
@@ -6500,6 +6508,7 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
+#ifdef HAVE_CHEATS
          {
             char cheat_label[64];
             menu_displaylist_build_info_t build_list[] = {
@@ -6585,8 +6594,10 @@ unsigned menu_displaylist_build_list(
                   setting->max = cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0 ;
             }
          }
+#endif
          break;
       case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
+#ifdef HAVE_CHEATS
          {
             if (!cheat_manager_state.memory_initialized)
                cheat_manager_initialize_memory(NULL, 0, true);
@@ -6692,6 +6703,7 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION, 0, 0))
                count++;
          }
+#endif
          break;
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          {
@@ -7947,7 +7959,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,           PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,   PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CURSOR_DIRECTORY,             PARSE_ONLY_DIR},
+#ifdef HAVE_CHEATS
                {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,          PARSE_ONLY_DIR},
+#endif
                {MENU_ENUM_LABEL_VIDEO_FILTER_DIR,             PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_AUDIO_FILTER_DIR,             PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_VIDEO_SHADER_DIR,             PARSE_ONLY_DIR},
