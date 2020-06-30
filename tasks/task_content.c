@@ -156,13 +156,15 @@ struct content_stream
 
 struct content_information_ctx
 {
-   bool is_ips_pref;
-   bool is_bps_pref;
-   bool is_ups_pref;
    bool block_extract;
    bool need_fullpath;
    bool set_supports_no_game_enable;
+#ifdef HAVE_PATCH
+   bool is_ips_pref;
+   bool is_bps_pref;
+   bool is_ups_pref;
    bool patch_is_blocked;
+#endif
    bool bios_is_missing;
    bool check_firmware_before_loading;
 
@@ -687,6 +689,7 @@ static bool load_content_into_memory(
       /* If we have a media type, ignore CRC32 calculation. */
       if (type == RARCH_CONTENT_NONE)
       {
+#ifdef HAVE_PATCH
          bool has_patch = false;
 
          /* First content file is significant, attempt to do patching,
@@ -710,6 +713,7 @@ static bool load_content_into_memory(
             RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
          }
          else
+#endif
          {
             strlcpy(p_content->pending_rom_crc_path,
                   path, sizeof(p_content->pending_rom_crc_path));
@@ -1539,10 +1543,12 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       return false;
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1631,10 +1637,12 @@ bool task_push_load_content_from_playlist_from_menu(
    const char *path_dir_system                = settings->paths.directory_system;
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1737,10 +1745,12 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       return false;
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1865,10 +1875,12 @@ bool task_push_load_content_with_new_core_from_menu(
    const char *path_dir_system                = settings->paths.directory_system;
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1977,10 +1989,12 @@ static bool task_load_content_internal(
    const char *path_dir_cache                 = settings->paths.directory_cache;
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -2501,10 +2515,12 @@ bool content_init(void)
    p_content->temporary_content               = string_list_new();
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#ifdef HAVE_PATCH
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+#endif
    content_ctx.temporary_content              = p_content->temporary_content;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
