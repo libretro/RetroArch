@@ -1924,7 +1924,7 @@ static int action_ok_file_load(const char *path,
    if (!string_is_empty(menu_label))
       setting = menu_setting_find(menu_label);
 
-   if (setting->type == ST_PATH)
+   if (setting && setting->type == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
    if (!string_is_empty(menu_path))
