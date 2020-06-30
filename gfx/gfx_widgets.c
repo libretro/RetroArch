@@ -202,7 +202,8 @@ const static gfx_widget_t* const widgets[] = {
    &gfx_widget_achievement_popup,
 #endif
    &gfx_widget_generic_message,
-   &gfx_widget_libretro_message
+   &gfx_widget_libretro_message,
+   &gfx_widget_progress_message
 };
 
 static void msg_widget_msg_transition_animation_done(void *userdata)

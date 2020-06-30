@@ -193,11 +193,20 @@ static struct
 {
    unsigned width;
    unsigned height;
-   
+
    double interpolate_fps;
    unsigned sample_rate;
 
    float aspect;
+
+   struct
+   {
+      double time;
+      unsigned hours;
+      unsigned minutes;
+      unsigned seconds;
+   } duration;
+
 } media;
 
 #ifdef HAVE_SSA
@@ -473,7 +482,13 @@ static void check_variables(bool firststart)
 static void seek_frame(int seek_frames)
 {
    char msg[256];
-   struct retro_message msg_obj = {0};
+   struct retro_message_ext msg_obj = {0};
+   unsigned seek_hours              = 0;
+   unsigned seek_minutes            = 0;
+   unsigned seek_seconds            = 0;
+   int8_t seek_progress             = -1;
+
+   msg[0] = '\0';
 
    if ((seek_frames < 0 && (unsigned)-seek_frames > frame_cnt) || reset_triggered)
       frame_cnt = 0;
@@ -484,10 +499,34 @@ static void seek_frame(int seek_frames)
    do_seek        = true;
    seek_time      = frame_cnt / media.interpolate_fps;
 
-   snprintf(msg, sizeof(msg), "Seek: %u s.", (unsigned)seek_time);
-   msg_obj.msg    = msg;
-   msg_obj.frames = 180;
-   CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+   /* Convert seek time to a printable format */
+   seek_seconds  = (unsigned)seek_time;
+   seek_minutes  = seek_seconds / 60;
+   seek_seconds %= 60;
+   seek_hours    = seek_minutes / 60;
+   seek_minutes %= 60;
+
+   snprintf(msg, sizeof(msg), "%02d:%02d:%02d / %02d:%02d:%02d",
+         seek_hours, seek_minutes, seek_seconds,
+         media.duration.hours, media.duration.minutes, media.duration.seconds);
+
+   /* Get current progress */
+   if (media.duration.time > 0.0)
+   {
+      seek_progress = (int8_t)((100.0 * seek_time / media.duration.time) + 0.5);
+      seek_progress = (seek_progress < -1)  ? -1  : seek_progress;
+      seek_progress = (seek_progress > 100) ? 100 : seek_progress;
+   }
+
+   /* Send message to frontend */
+   msg_obj.msg      = msg;
+   msg_obj.duration = 2000;
+   msg_obj.priority = 3;
+   msg_obj.level    = RETRO_LOG_INFO;
+   msg_obj.target   = RETRO_MESSAGE_TARGET_OSD;
+   msg_obj.type     = RETRO_MESSAGE_TYPE_PROGRESS;
+   msg_obj.progress = seek_progress;
+   CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg_obj);
 
    if (seek_frames < 0)
    {
@@ -579,7 +618,9 @@ void CORE_PREFIX(retro_run)(void)
    if (l && !last_l && audio_streams_num > 0)
    {
       char msg[256];
-      struct retro_message msg_obj = {0};
+      struct retro_message_ext msg_obj = {0};
+
+      msg[0] = '\0';
 
       slock_lock(decode_thread_lock);
       audio_streams_ptr = (audio_streams_ptr + 1) % audio_streams_num;
@@ -587,23 +628,36 @@ void CORE_PREFIX(retro_run)(void)
 
       snprintf(msg, sizeof(msg), "Audio Track #%d.", audio_streams_ptr);
 
-      msg_obj.msg    = msg;
-      msg_obj.frames = 180;
-      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+      msg_obj.msg      = msg;
+      msg_obj.duration = 3000;
+      msg_obj.priority = 1;
+      msg_obj.level    = RETRO_LOG_INFO;
+      msg_obj.target   = RETRO_MESSAGE_TARGET_ALL;
+      msg_obj.type     = RETRO_MESSAGE_TYPE_NOTIFICATION;
+      msg_obj.progress = -1;
+      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg_obj);
    }
    else if (r && !last_r && subtitle_streams_num > 0)
    {
       char msg[256];
-      struct retro_message msg_obj = {0};
+      struct retro_message_ext msg_obj = {0};
+
+      msg[0] = '\0';
 
       slock_lock(decode_thread_lock);
       subtitle_streams_ptr = (subtitle_streams_ptr + 1) % subtitle_streams_num;
       slock_unlock(decode_thread_lock);
 
       snprintf(msg, sizeof(msg), "Subtitle Track #%d.", subtitle_streams_ptr);
-      msg_obj.msg    = msg;
-      msg_obj.frames = 180;
-      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+
+      msg_obj.msg      = msg;
+      msg_obj.duration = 3000;
+      msg_obj.priority = 1;
+      msg_obj.level    = RETRO_LOG_INFO;
+      msg_obj.target   = RETRO_MESSAGE_TARGET_ALL;
+      msg_obj.type     = RETRO_MESSAGE_TYPE_NOTIFICATION;
+      msg_obj.progress = -1;
+      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg_obj);
    }
 
    last_left  = left;
@@ -1190,6 +1244,28 @@ static bool init_media_info(void)
       media.height = vctx->height;
       media.aspect = (float)vctx->width *
          av_q2d(vctx->sample_aspect_ratio) / vctx->height;
+   }
+
+   if (fctx)
+   {
+      if (fctx->duration != AV_NOPTS_VALUE)
+      {
+         int64_t duration        = fctx->duration + (fctx->duration <= INT64_MAX - 5000 ? 5000 : 0);
+         media.duration.time     = (double)(duration / AV_TIME_BASE);
+         media.duration.seconds  = (unsigned)media.duration.time;
+         media.duration.minutes  = media.duration.seconds / 60;
+         media.duration.seconds %= 60;
+         media.duration.hours    = media.duration.minutes / 60;
+         media.duration.minutes %= 60;
+      }
+      else
+      {
+         media.duration.time    = 0.0;
+         media.duration.hours   = 0;
+         media.duration.minutes = 0;
+         media.duration.seconds = 0;
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not determine media duration\n");
+      }
    }
 
 #ifdef HAVE_SSA
