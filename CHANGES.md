@@ -7,6 +7,7 @@
 - DRIVERS: Add 'Ignore null drivers' setting. When enabled, won't allow the user to set a driver to nothing. Can prevent the user from locking him/herself out of the program.
 - FILE I/O: VFS and NBIO interfaces will now use 64-bit fseek/ftell where possible, should allow for reading/writing to files bigger than 2GB
 - IOS: Fixed iOS 6 version
+- LOCALIZATION: Updates for several languages (synchronized from Crowdin)
 - MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - MENU: Fix cursor forced to first entry after displaying lists
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
