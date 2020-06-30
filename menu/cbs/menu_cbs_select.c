@@ -52,7 +52,7 @@ static int action_select_default(
 
    if (cbs->setting)
    {
-      switch (setting_get_type(cbs->setting))
+      switch (cbs->setting->type)
       {
          case ST_BOOL:
          case ST_INT:

@@ -2166,7 +2166,7 @@ static int menu_displaylist_parse_settings_internal_enum(
       bool time_to_exit             = false;
       const char *short_description = setting->short_description;
       const char *name              = setting->name;
-      enum setting_type type        = setting_get_type(setting);
+      enum setting_type type        = setting->type;
       rarch_setting_t **list        = &setting;
 
       switch (parse_type)
@@ -2234,7 +2234,7 @@ loop:
          case PARSE_GROUP:
          case PARSE_ONLY_GROUP:
          case PARSE_SUB_GROUP:
-            if (setting_get_type(setting) == precond)
+            if (setting->type == precond)
                time_to_exit = true;
             break;
          case PARSE_ONLY_BIND:

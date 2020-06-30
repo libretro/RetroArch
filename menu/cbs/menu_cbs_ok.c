@@ -1924,7 +1924,7 @@ static int action_ok_file_load(const char *path,
    if (!string_is_empty(menu_label))
       setting = menu_setting_find(menu_label);
 
-   if (setting_get_type(setting) == ST_PATH)
+   if (setting->type == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
    if (!string_is_empty(menu_path))
@@ -5446,7 +5446,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
    if (!setting)
       return -1;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_INT:
          *setting->value.target.integer = (int32_t)(idx + setting->offset_by);

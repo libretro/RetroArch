@@ -342,7 +342,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
    if (!setting)
       return menu_cbs_exit();
    return menu_action_handle_setting(setting,
-         setting_get_type(setting), MENU_ACTION_RIGHT,
+         setting->type, MENU_ACTION_RIGHT,
          wraparound);
 }
 #endif
@@ -938,7 +938,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       const char *parent_group   = cbs->setting->parent_group;
 
       if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
-               && (setting_get_type(cbs->setting) == ST_GROUP))
+               && (cbs->setting->type == ST_GROUP))
       {
          BIND_ACTION_RIGHT(cbs, action_right_scroll);
          return 0;

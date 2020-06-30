@@ -225,7 +225,7 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
 
    if (cbs->setting)
    {
-      if (setting_get_type(cbs->setting) == ST_BIND)
+      if (cbs->setting->type == ST_BIND)
       {
          BIND_ACTION_SCAN(cbs, action_scan_input_desc);
          return 0;

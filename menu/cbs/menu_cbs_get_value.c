@@ -1961,7 +1961,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 
    if (cbs->setting && !cbs->setting->get_string_representation)
    {
-      switch (setting_get_type(cbs->setting))
+      switch (cbs->setting->type)
       {
          case ST_BOOL:
             BIND_ACTION_GET_VALUE(cbs,

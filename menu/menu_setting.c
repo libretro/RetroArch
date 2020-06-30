@@ -330,7 +330,7 @@ static void *setting_get_ptr(rarch_setting_t *setting)
    if (!setting)
       return NULL;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_BOOL:
          return setting->value.target.boolean;
@@ -408,7 +408,7 @@ static int setting_generic_action_ok_linefeed(rarch_setting_t *setting, bool wra
 
    (void)wraparound;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_SIZE:
       case ST_UINT:
@@ -898,7 +898,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
    max          = setting->max;
    flags        = setting->flags;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_INT:
          sscanf(value, "%d", setting->value.target.integer);
@@ -1062,7 +1062,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
    if (!setting)
       return;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_BOOL:
          *setting->value.target.boolean          = setting->default_value.boolean;
@@ -1088,7 +1088,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
       case ST_DIR:
          if (setting->default_value.string)
          {
-            if (setting_get_type(setting) == ST_STRING)
+            if (setting->type == ST_STRING)
                setting_set_with_string_representation(setting, setting->default_value.string);
             else
                fill_pathname_expand_special(setting->value.target.string,
@@ -6034,7 +6034,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    if (!setting)
       return -1;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_PATH:
          if (action == MENU_ACTION_OK)
@@ -6156,14 +6156,14 @@ rarch_setting_t *menu_setting_find(const char *label)
    if (!setting)
       return NULL;
 
-   for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
+   for (; setting->type != ST_NONE; (*list = *list + 1))
    {
       const char *name              = setting->name;
       const char *short_description = setting->short_description;
 
       if (
             string_is_equal(label, name) &&
-            (setting_get_type(setting) <= ST_GROUP))
+            (setting->type <= ST_GROUP))
       {
          if (string_is_empty(short_description))
             break;
@@ -6190,10 +6190,10 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
 
    if (!setting)
       return NULL;
-   for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
+   for (; setting->type != ST_NONE; (*list = *list + 1))
    {
       if (  setting->enum_idx == enum_idx &&
-            setting_get_type(setting) <= ST_GROUP)
+            setting->type <= ST_GROUP)
       {
          const char *short_description = setting->short_description;
          if (string_is_empty(short_description))
@@ -6214,7 +6214,7 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    if (!setting)
       return 0;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_STRING_OPTIONS:
          return MENU_SETTING_STRING_OPTIONS;
@@ -17657,7 +17657,7 @@ void menu_setting_free(rarch_setting_t *setting)
    list                   = (rarch_setting_t**)&setting;
 
    /* Free data which was previously tagged */
-   for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
+   for (; setting->type != ST_NONE; (*list = *list + 1))
       for (values = (unsigned)setting->free_flags, n = 0; values != 0; values >>= 1, n++)
          if (values & 1)
             switch (1 << n)
@@ -17863,7 +17863,7 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
 
             flags                    = setting->flags;
 
-            if (setting_get_type(setting) != ST_ACTION)
+            if (setting->type != ST_ACTION)
                return false;
 
             if (!setting->change_handler)

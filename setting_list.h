@@ -262,7 +262,6 @@ int setting_uint_action_left_default(rarch_setting_t *setting, bool wraparound);
 int setting_uint_action_right_default(rarch_setting_t *setting, bool wraparound);
 void setting_get_string_representation_uint(rarch_setting_t *setting, char *s, size_t len);
 void setting_get_string_representation_hex_and_uint(rarch_setting_t *setting, char *s, size_t len);
-#define setting_get_type(setting) ((setting) ? setting->type : ST_NONE)
 
 RETRO_END_DECLS
 
