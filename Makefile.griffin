@@ -191,7 +191,6 @@ else ifeq ($(libogc_platform), 1)
 
    CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
-	HAVE_AUDIOMIXER			 := 1
    HAVE_RUNAHEAD            := 1
    HAVE_FILTERS_BUILTIN     := 1
    HAVE_THREADS             := 1
@@ -209,7 +208,6 @@ else ifeq ($(libogc_platform), 1)
    RARCH_CONSOLE             = 1
 
    ifeq ($(platform), wii)
-		HAVE_AUDIOMIXER			 := 1
       #HAVE_LANGEXTRA          := 1
       HAVE_WIIUSB_HID          := 1
       HAVE_RARCH_EXEC          := 1
@@ -480,6 +478,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
 else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_GDI                 := 1
    HAVE_AUDIOMIXER          := 1
+   HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -556,6 +555,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
 else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_GDI                 := 1
    HAVE_AUDIOMIXER          := 1
+   HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -636,6 +636,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
 else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_GDI                 := 1
    HAVE_AUDIOMIXER          := 1
+   HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -716,6 +717,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
 else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_GDI                 := 1
    HAVE_AUDIOMIXER          := 1
+   HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -811,6 +813,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    endif
 else ifeq (qnx,$(platform))
    HAVE_AUDIOMIXER          := 1
+   HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -851,6 +854,7 @@ else ifeq (qnx,$(platform))
    LIBS += -lEGL -lbps -lscreen -lsocket -lm -lGLESv2 -lOpenAL
 else ifneq (,$(findstring unix,$(platform)))
    HAVE_AUDIOMIXER          := 1
+   HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -883,7 +887,6 @@ else ifneq (,$(findstring unix,$(platform)))
    INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
    LIBS += -ldl -lm -lpthread -lGL -ludev -lpulse -lX11 -lX11-xcb -lXxf86vm
 else ifeq (dos,$(platform))
-   HAVE_AUDIOMIXER          := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -1020,6 +1023,10 @@ endif
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
    CFLAGS      += -DHAVE_AUDIOMIXER
+endif
+
+ifeq ($(HAVE_RWAV), 1)
+   CFLAGS      += -DHAVE_RWAV
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

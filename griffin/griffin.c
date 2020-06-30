@@ -369,7 +369,9 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
+#ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
+#endif
 
 /*============================================================
 VIDEO DRIVER

@@ -616,6 +616,7 @@
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
 				);
 				PREBINDING = NO;
@@ -697,6 +698,7 @@
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
 				);
 				PREBINDING = NO;

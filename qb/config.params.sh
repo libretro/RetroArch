@@ -151,6 +151,7 @@ HAVE_RPNG=yes              # RPNG support
 HAVE_RBMP=yes              # RBMP support
 HAVE_RJPEG=yes             # RJPEG support
 HAVE_RTGA=yes              # RTGA support
+HAVE_RWAV=yes              # WAV support
 HAVE_HID=yes               # Low-level HID (Human Interface Device) support
 HAVE_AUDIOMIXER=yes        # Audio Mixer
 HAVE_LANGEXTRA=yes         # Multi-language support
