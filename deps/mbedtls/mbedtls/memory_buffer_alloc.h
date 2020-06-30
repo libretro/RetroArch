@@ -134,15 +134,6 @@ void mbedtls_memory_buffer_alloc_cur_get( size_t *cur_used, size_t *cur_blocks )
  */
 int mbedtls_memory_buffer_alloc_verify( void );
 
-#if defined(MBEDTLS_SELF_TEST)
-/**
- * \brief          Checkup routine
- *
- * \return         0 if successful, or 1 if a test failed
- */
-int mbedtls_memory_buffer_alloc_self_test( int verbose );
-#endif
-
 #ifdef __cplusplus
 }
 #endif

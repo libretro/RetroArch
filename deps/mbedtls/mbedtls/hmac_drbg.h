@@ -282,16 +282,6 @@ int mbedtls_hmac_drbg_write_seed_file( mbedtls_hmac_drbg_context *ctx, const cha
 int mbedtls_hmac_drbg_update_seed_file( mbedtls_hmac_drbg_context *ctx, const char *path );
 #endif /* MBEDTLS_FS_IO */
 
-
-#if defined(MBEDTLS_SELF_TEST)
-/**
- * \brief               Checkup routine
- *
- * \return              0 if successful, or 1 if the test failed
- */
-int mbedtls_hmac_drbg_self_test( int verbose );
-#endif
-
 #ifdef __cplusplus
 }
 #endif

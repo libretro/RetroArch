@@ -662,17 +662,6 @@ int mbedtls_ecp_gen_key( mbedtls_ecp_group_id grp_id, mbedtls_ecp_keypair *key,
  */
 int mbedtls_ecp_check_pub_priv( const mbedtls_ecp_keypair *pub, const mbedtls_ecp_keypair *prv );
 
-#if defined(MBEDTLS_SELF_TEST)
-
-/**
- * \brief          Checkup routine
- *
- * \return         0 if successful, or 1 if a test failed
- */
-int mbedtls_ecp_self_test( int verbose );
-
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

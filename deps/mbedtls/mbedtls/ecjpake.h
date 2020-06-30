@@ -222,15 +222,6 @@ int mbedtls_ecjpake_derive_secret( mbedtls_ecjpake_context *ctx,
  */
 void mbedtls_ecjpake_free( mbedtls_ecjpake_context *ctx );
 
-#if defined(MBEDTLS_SELF_TEST)
-/**
- * \brief          Checkup routine
- *
- * \return         0 if successful, or 1 if a test failed
- */
-int mbedtls_ecjpake_self_test( int verbose );
-#endif
-
 #ifdef __cplusplus
 }
 #endif

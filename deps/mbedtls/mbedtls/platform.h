@@ -49,24 +49,11 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#if !defined(MBEDTLS_PLATFORM_STD_SNPRINTF)
-#if defined(_WIN32)
-#define MBEDTLS_PLATFORM_STD_SNPRINTF   mbedtls_platform_win32_snprintf /**< Default snprintf to use  */
-#else
-#define MBEDTLS_PLATFORM_STD_SNPRINTF   snprintf /**< Default snprintf to use  */
-#endif
-#endif
 #if !defined(MBEDTLS_PLATFORM_STD_PRINTF)
 #define MBEDTLS_PLATFORM_STD_PRINTF   printf /**< Default printf to use  */
 #endif
 #if !defined(MBEDTLS_PLATFORM_STD_FPRINTF)
 #define MBEDTLS_PLATFORM_STD_FPRINTF fprintf /**< Default fprintf to use */
-#endif
-#if !defined(MBEDTLS_PLATFORM_STD_CALLOC)
-#define MBEDTLS_PLATFORM_STD_CALLOC   calloc /**< Default allocator to use */
-#endif
-#if !defined(MBEDTLS_PLATFORM_STD_FREE)
-#define MBEDTLS_PLATFORM_STD_FREE       free /**< Default free to use */
 #endif
 #if !defined(MBEDTLS_PLATFORM_STD_EXIT)
 #define MBEDTLS_PLATFORM_STD_EXIT      exit /**< Default exit to use */
@@ -176,40 +163,6 @@ int mbedtls_platform_set_printf( int (*printf_func)( const char *, ... ) );
 #define mbedtls_printf     printf
 #endif /* MBEDTLS_PLATFORM_PRINTF_MACRO */
 #endif /* MBEDTLS_PLATFORM_PRINTF_ALT */
-
-/*
- * The function pointers for snprintf
- *
- * The snprintf implementation should conform to C99:
- * - it *must* always correctly zero-terminate the buffer
- *   (except when n == 0, then it must leave the buffer untouched)
- * - however it is acceptable to return -1 instead of the required length when
- *   the destination buffer is too short.
- */
-#if defined(_WIN32)
-/* For Windows (inc. MSYS2), we provide our own fixed implementation */
-int mbedtls_platform_win32_snprintf( char *s, size_t n, const char *fmt, ... );
-#endif
-
-#if defined(MBEDTLS_PLATFORM_SNPRINTF_ALT)
-extern int (*mbedtls_snprintf)( char * s, size_t n, const char * format, ... );
-
-/**
- * \brief   Set your own snprintf function pointer
- *
- * \param snprintf_func   the snprintf function implementation
- *
- * \return              0
- */
-int mbedtls_platform_set_snprintf( int (*snprintf_func)( char * s, size_t n,
-                                                 const char * format, ... ) );
-#else /* MBEDTLS_PLATFORM_SNPRINTF_ALT */
-#if defined(MBEDTLS_PLATFORM_SNPRINTF_MACRO)
-#define mbedtls_snprintf   MBEDTLS_PLATFORM_SNPRINTF_MACRO
-#else
-#define mbedtls_snprintf   snprintf
-#endif /* MBEDTLS_PLATFORM_SNPRINTF_MACRO */
-#endif /* MBEDTLS_PLATFORM_SNPRINTF_ALT */
 
 /*
  * The function pointers for exit

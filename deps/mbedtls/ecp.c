@@ -74,14 +74,6 @@
 
 #include "arc4_alt.h"
 
-#if defined(MBEDTLS_SELF_TEST)
-/*
- * Counts of point addition and doubling, and field multiplications.
- * Used to test resistance of point multiplication to simple timing attacks.
- */
-static unsigned long add_count, dbl_count, mul_count;
-#endif
-
 #if defined(MBEDTLS_ECP_DP_SECP192R1_ENABLED) ||   \
     defined(MBEDTLS_ECP_DP_SECP224R1_ENABLED) ||   \
     defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED) ||   \
@@ -702,11 +694,7 @@ cleanup:
 /*
  * Reduce a mbedtls_mpi mod p in-place, general case, to use after mbedtls_mpi_mul_mpi
  */
-#if defined(MBEDTLS_SELF_TEST)
-#define INC_MUL_COUNT   mul_count++;
-#else
 #define INC_MUL_COUNT
-#endif
 
 #define MOD_MUL( N )    do { MBEDTLS_MPI_CHK( ecp_modp( &N, grp ) ); INC_MUL_COUNT } \
                         while( 0 )
@@ -922,10 +910,6 @@ static int ecp_double_jac( const mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
     int ret;
     mbedtls_mpi M, S, T, U;
 
-#if defined(MBEDTLS_SELF_TEST)
-    dbl_count++;
-#endif
-
 #if defined(MBEDTLS_ECP_DOUBLE_JAC_ALT)
     if ( mbedtls_internal_ecp_grp_capable( grp ) )
     {
@@ -1019,10 +1003,6 @@ static int ecp_add_mixed( const mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
 {
     int ret;
     mbedtls_mpi T1, T2, T3, T4, X, Y, Z;
-
-#if defined(MBEDTLS_SELF_TEST)
-    add_count++;
-#endif
 
 #if defined(MBEDTLS_ECP_ADD_MIXED_ALT)
     if ( mbedtls_internal_ecp_grp_capable( grp ) )
@@ -2056,137 +2036,6 @@ cleanup:
 
     return( ret );
 }
-
-#if defined(MBEDTLS_SELF_TEST)
-
-/*
- * Checkup routine
- */
-int mbedtls_ecp_self_test( int verbose )
-{
-    int ret;
-    size_t i;
-    mbedtls_ecp_group grp;
-    mbedtls_ecp_point R, P;
-    mbedtls_mpi m;
-    unsigned long add_c_prev, dbl_c_prev, mul_c_prev;
-    /* exponents especially adapted for secp192r1 */
-    const char *exponents[] =
-    {
-        "000000000000000000000000000000000000000000000001", /* one */
-        "FFFFFFFFFFFFFFFFFFFFFFFF99DEF836146BC9B1B4D22830", /* N - 1 */
-        "5EA6F389A38B8BC81E767753B15AA5569E1782E30ABE7D25", /* random */
-        "400000000000000000000000000000000000000000000000", /* one and zeros */
-        "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", /* all ones */
-        "555555555555555555555555555555555555555555555555", /* 101010... */
-    };
-
-    mbedtls_ecp_group_init( &grp );
-    mbedtls_ecp_point_init( &R );
-    mbedtls_ecp_point_init( &P );
-    mbedtls_mpi_init( &m );
-
-    /* Use secp192r1 if available, or any available curve */
-#if defined(MBEDTLS_ECP_DP_SECP192R1_ENABLED)
-    MBEDTLS_MPI_CHK( mbedtls_ecp_group_load( &grp, MBEDTLS_ECP_DP_SECP192R1 ) );
-#else
-    MBEDTLS_MPI_CHK( mbedtls_ecp_group_load( &grp, mbedtls_ecp_curve_list()->grp_id ) );
-#endif
-
-    if( verbose != 0 )
-        mbedtls_printf( "  ECP test #1 (constant op_count, base point G): " );
-
-    /* Do a dummy multiplication first to trigger precomputation */
-    MBEDTLS_MPI_CHK( mbedtls_mpi_lset( &m, 2 ) );
-    MBEDTLS_MPI_CHK( mbedtls_ecp_mul( &grp, &P, &m, &grp.G, NULL, NULL ) );
-
-    add_count = 0;
-    dbl_count = 0;
-    mul_count = 0;
-    MBEDTLS_MPI_CHK( mbedtls_mpi_read_string( &m, 16, exponents[0] ) );
-    MBEDTLS_MPI_CHK( mbedtls_ecp_mul( &grp, &R, &m, &grp.G, NULL, NULL ) );
-
-    for( i = 1; i < sizeof( exponents ) / sizeof( exponents[0] ); i++ )
-    {
-        add_c_prev = add_count;
-        dbl_c_prev = dbl_count;
-        mul_c_prev = mul_count;
-        add_count = 0;
-        dbl_count = 0;
-        mul_count = 0;
-
-        MBEDTLS_MPI_CHK( mbedtls_mpi_read_string( &m, 16, exponents[i] ) );
-        MBEDTLS_MPI_CHK( mbedtls_ecp_mul( &grp, &R, &m, &grp.G, NULL, NULL ) );
-
-        if( add_count != add_c_prev ||
-            dbl_count != dbl_c_prev ||
-            mul_count != mul_c_prev )
-        {
-            if( verbose != 0 )
-                mbedtls_printf( "failed (%u)\n", (unsigned int) i );
-
-            ret = 1;
-            goto cleanup;
-        }
-    }
-
-    if( verbose != 0 )
-        mbedtls_printf( "passed\n" );
-
-    if( verbose != 0 )
-        mbedtls_printf( "  ECP test #2 (constant op_count, other point): " );
-    /* We computed P = 2G last time, use it */
-
-    add_count = 0;
-    dbl_count = 0;
-    mul_count = 0;
-    MBEDTLS_MPI_CHK( mbedtls_mpi_read_string( &m, 16, exponents[0] ) );
-    MBEDTLS_MPI_CHK( mbedtls_ecp_mul( &grp, &R, &m, &P, NULL, NULL ) );
-
-    for( i = 1; i < sizeof( exponents ) / sizeof( exponents[0] ); i++ )
-    {
-        add_c_prev = add_count;
-        dbl_c_prev = dbl_count;
-        mul_c_prev = mul_count;
-        add_count = 0;
-        dbl_count = 0;
-        mul_count = 0;
-
-        MBEDTLS_MPI_CHK( mbedtls_mpi_read_string( &m, 16, exponents[i] ) );
-        MBEDTLS_MPI_CHK( mbedtls_ecp_mul( &grp, &R, &m, &P, NULL, NULL ) );
-
-        if( add_count != add_c_prev ||
-            dbl_count != dbl_c_prev ||
-            mul_count != mul_c_prev )
-        {
-            if( verbose != 0 )
-                mbedtls_printf( "failed (%u)\n", (unsigned int) i );
-
-            ret = 1;
-            goto cleanup;
-        }
-    }
-
-    if( verbose != 0 )
-        mbedtls_printf( "passed\n" );
-
-cleanup:
-
-    if( ret < 0 && verbose != 0 )
-        mbedtls_printf( "Unexpected error, return code = %08X\n", ret );
-
-    mbedtls_ecp_group_free( &grp );
-    mbedtls_ecp_point_free( &R );
-    mbedtls_ecp_point_free( &P );
-    mbedtls_mpi_free( &m );
-
-    if( verbose != 0 )
-        mbedtls_printf( "\n" );
-
-    return( ret );
-}
-
-#endif /* MBEDTLS_SELF_TEST */
 
 #endif /* !MBEDTLS_ECP_ALT */
 

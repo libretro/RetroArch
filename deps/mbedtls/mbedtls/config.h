@@ -125,32 +125,6 @@
 #define MBEDTLS_HAVE_TIME_DATE
 
 /**
- * \def MBEDTLS_PLATFORM_MEMORY
- *
- * Enable the memory allocation layer.
- *
- * By default mbed TLS uses the system-provided calloc() and free().
- * This allows different allocators (self-implemented or provided) to be
- * provided to the platform abstraction layer.
- *
- * Enabling MBEDTLS_PLATFORM_MEMORY without the
- * MBEDTLS_PLATFORM_{FREE,CALLOC}_MACROs will provide
- * "mbedtls_platform_set_calloc_free()" allowing you to set an alternative calloc() and
- * free() function pointer at runtime.
- *
- * Enabling MBEDTLS_PLATFORM_MEMORY and specifying
- * MBEDTLS_PLATFORM_{CALLOC,FREE}_MACROs will allow you to specify the
- * alternate function at compile time.
- *
- * Requires: MBEDTLS_PLATFORM_C
- *
- * Enable this layer to allow use of alternative memory allocators.
- */
-#if 0
-#define MBEDTLS_PLATFORM_MEMORY
-#endif
-
-/**
  * \def MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
  *
  * Do not assign standard functions in the platform layer (e.g. calloc() to
@@ -169,39 +143,6 @@
  */
 #if 0
 #define MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
-#endif
-
-/**
- * \def MBEDTLS_PLATFORM_EXIT_ALT
- *
- * MBEDTLS_PLATFORM_XXX_ALT: Uncomment a macro to let mbed TLS support the
- * function in the platform abstraction layer.
- *
- * Example: In case you uncomment MBEDTLS_PLATFORM_PRINTF_ALT, mbed TLS will
- * provide a function "mbedtls_platform_set_printf()" that allows you to set an
- * alternative printf function pointer.
- *
- * All these define require MBEDTLS_PLATFORM_C to be defined!
- *
- * \note MBEDTLS_PLATFORM_SNPRINTF_ALT is required on Windows;
- * it will be enabled automatically by check_config.h
- *
- * \warning MBEDTLS_PLATFORM_XXX_ALT cannot be defined at the same time as
- * MBEDTLS_PLATFORM_XXX_MACRO!
- *
- * Requires: MBEDTLS_PLATFORM_TIME_ALT requires MBEDTLS_HAVE_TIME
- *
- * Uncomment a macro to enable alternate implementation of specific base
- * platform function
- */
-#if 0
-#define MBEDTLS_PLATFORM_EXIT_ALT
-#define MBEDTLS_PLATFORM_TIME_ALT
-#define MBEDTLS_PLATFORM_FPRINTF_ALT
-#define MBEDTLS_PLATFORM_PRINTF_ALT
-#define MBEDTLS_PLATFORM_SNPRINTF_ALT
-#define MBEDTLS_PLATFORM_NV_SEED_ALT
-#define MBEDTLS_PLATFORM_SETUP_TEARDOWN_ALT
 #endif
 
 /**
@@ -1072,15 +1013,6 @@
  */
 #if 0
 #define MBEDTLS_RSA_NO_CRT
-#endif
-
-/**
- * \def MBEDTLS_SELF_TEST
- *
- * Enable the checkup functions (*_self_test).
- */
-#if 0
-#define MBEDTLS_SELF_TEST
 #endif
 
 /**
@@ -2730,14 +2662,10 @@
 /* Platform options */
 #if 0
 #define MBEDTLS_PLATFORM_STD_MEM_HDR   <stdlib.h> /**< Header to include if MBEDTLS_PLATFORM_NO_STD_FUNCTIONS is defined. Don't define if no header is needed. */
-#define MBEDTLS_PLATFORM_STD_CALLOC        calloc /**< Default allocator to use, can be undefined */
-#define MBEDTLS_PLATFORM_STD_FREE            free /**< Default free to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_EXIT            exit /**< Default exit to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_TIME            time /**< Default time to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 #define MBEDTLS_PLATFORM_STD_FPRINTF      fprintf /**< Default fprintf to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_PRINTF        printf /**< Default printf to use, can be undefined */
-/* Note: your snprintf must correclty zero-terminate the buffer! */
-#define MBEDTLS_PLATFORM_STD_SNPRINTF    snprintf /**< Default snprintf to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_EXIT_SUCCESS       0 /**< Default exit value to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_EXIT_FAILURE       1 /**< Default exit value to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_NV_SEED_READ   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
@@ -2755,8 +2683,6 @@
 #define MBEDTLS_PLATFORM_TIME_TYPE_MACRO       time_t /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 #define MBEDTLS_PLATFORM_FPRINTF_MACRO      fprintf /**< Default fprintf macro to use, can be undefined */
 #define MBEDTLS_PLATFORM_PRINTF_MACRO        printf /**< Default printf macro to use, can be undefined */
-/* Note: your snprintf must correclty zero-terminate the buffer! */
-#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    snprintf /**< Default snprintf macro to use, can be undefined */
 #define MBEDTLS_PLATFORM_NV_SEED_READ_MACRO   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
 #define MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO  mbedtls_platform_std_nv_seed_write /**< Default nv_seed_write function to use, can be undefined */
 #endif

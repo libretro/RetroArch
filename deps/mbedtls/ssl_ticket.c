@@ -27,13 +27,7 @@
 
 #if defined(MBEDTLS_SSL_TICKET_C)
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free      free
-#endif
 
 #include "mbedtls/ssl_ticket.h"
 
@@ -240,7 +234,7 @@ static int ssl_load_session( mbedtls_ssl_session *session,
         if( p + cert_len > end )
             return( MBEDTLS_ERR_SSL_BAD_INPUT_DATA );
 
-        session->peer_cert = mbedtls_calloc( 1, sizeof( mbedtls_x509_crt ) );
+        session->peer_cert = calloc( 1, sizeof( mbedtls_x509_crt ) );
 
         if( session->peer_cert == NULL )
             return( MBEDTLS_ERR_SSL_ALLOC_FAILED );
@@ -251,7 +245,7 @@ static int ssl_load_session( mbedtls_ssl_session *session,
                                         p, cert_len ) ) != 0 )
         {
             mbedtls_x509_crt_free( session->peer_cert );
-            mbedtls_free( session->peer_cert );
+            free( session->peer_cert );
             session->peer_cert = NULL;
             return( ret );
         }

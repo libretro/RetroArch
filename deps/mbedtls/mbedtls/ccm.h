@@ -125,15 +125,6 @@ int mbedtls_ccm_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
                       const unsigned char *input, unsigned char *output,
                       const unsigned char *tag, size_t tag_len );
 
-#if defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_AES_C)
-/**
- * \brief          Checkup routine
- *
- * \return         0 if successful, or 1 if the test failed
- */
-int mbedtls_ccm_self_test( int verbose );
-#endif /* MBEDTLS_SELF_TEST && MBEDTLS_AES_C */
-
 #ifdef __cplusplus
 }
 #endif
