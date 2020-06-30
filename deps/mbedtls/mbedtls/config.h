@@ -1753,20 +1753,6 @@
 #define MBEDTLS_CTR_DRBG_C
 
 /**
- * \def MBEDTLS_DEBUG_C
- *
- * Enable the debug functions.
- *
- * Module:  library/debug.c
- * Caller:  library/ssl_cli.c
- *          library/ssl_srv.c
- *          library/ssl_tls.c
- *
- * This module provides debugging functions.
- */
-#define MBEDTLS_DEBUG_C
-
-/**
  * \def MBEDTLS_DES_C
  *
  * Enable the DES block cipher.
