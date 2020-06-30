@@ -14145,6 +14145,8 @@ finish:
       free(system_label);
    if (json_buffer)
       free(json_buffer);
+   if (state_son)
+      free(state_son);
    return !error;
 }
 #endif
