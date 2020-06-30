@@ -25,16 +25,8 @@ MSG_HASH(
    "پیشینه"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "نگاره"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    "موسیقی"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "ویدیو"
    )
 
 /* Main Menu */
@@ -91,14 +83,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "موسیقی"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   "نگاره"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   "ویدیو"
    )
 
 /* Main Menu > Online Updater */
@@ -335,6 +319,8 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay */
 
 
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -347,10 +333,6 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "بازدیدها"
-   )
 
 /* Settings > User Interface > Views */
 
@@ -363,10 +345,6 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
-   "زمینه"
-   )
 
 /* Settings > AI Service */
 
@@ -387,14 +365,6 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "فهرست پیشینه"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   "اندازه فهرست برگزیده‌ها"
-   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -567,7 +537,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
-   "Persian - فارسی (Restart)"
+   "Persian - فارسی (Restart Required)"
    )
 
 /* RGUI: Settings > User Interface > Appearance */
@@ -613,7 +583,6 @@ MSG_HASH(
 
 
 /* Environment Specific Settings */
-
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif

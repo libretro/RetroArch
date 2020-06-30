@@ -13,10 +13,6 @@ MSG_HASH(
    "História"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "Obrázok"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    "Hudba"
    )
@@ -55,10 +51,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "Hudba"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   "Obrázok"
    )
 
 /* Main Menu > Online Updater */
@@ -319,14 +311,6 @@ MSG_HASH(
 
 /* Settings > Input > Hotkey Binds */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "Hlasitosť +"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
-   "Hlasitosť -"
-   )
 
 /* Settings > Input > Port # Binds */
 
@@ -367,6 +351,8 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay */
 
 
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -375,10 +361,6 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "Zobrazenie"
-   )
 
 /* Settings > User Interface > Views */
 
@@ -411,10 +393,6 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   "Veľkosť zoznamu obľúbených"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jadro:"
@@ -495,10 +473,6 @@ MSG_HASH(
 
 /* Import content > Manual Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "Jadro"
-   )
 
 /* Playlist > Playlist Item */
 
@@ -1062,7 +1036,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Dotyk"
    )
-
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
