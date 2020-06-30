@@ -517,8 +517,9 @@ void gzclearerr(gzFile file)
       return;
 
    /* clear error and end-of-file */
-   if (state->mode == GZ_READ) {
-      state->eof = 0;
+   if (state->mode == GZ_READ)
+   {
+      state->eof  = 0;
       state->past = 0;
    }
    gz_error(state, Z_OK, NULL);
@@ -533,7 +534,8 @@ void gzclearerr(gzFile file)
 void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
 {
    /* free previously allocated message and clear */
-   if (state->msg != NULL) {
+   if (state->msg != NULL)
+   {
       if (state->err != Z_MEM_ERROR)
          free(state->msg);
       state->msg = NULL;
@@ -554,7 +556,8 @@ void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
 
    /* construct error message with path */
    if ((state->msg = (char *)malloc(strlen(state->path) + strlen(msg) + 3)) ==
-         NULL) {
+         NULL)
+   {
       state->err = Z_MEM_ERROR;
       return;
    }
@@ -566,7 +569,6 @@ void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
    strlcat(state->msg, ": ", sizeof(state->msg));
    strlcat(state->msg, msg, sizeof(state->msg));
 #endif
-   return;
 }
 
 #ifndef INT_MAX
@@ -574,7 +576,7 @@ void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
    available) -- we need to do this to cover cases where 2's complement not
    used, since C standard permits 1's complement and sign-bit representations,
    otherwise we could just use ((unsigned)-1) >> 1 */
-unsigned ZLIB_INTERNAL gz_intmax()
+unsigned ZLIB_INTERNAL gz_intmax(void)
 {
    unsigned p, q;
 
