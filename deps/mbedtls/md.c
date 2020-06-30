@@ -77,14 +77,6 @@ static const int supported_digests[] = {
         MBEDTLS_MD_MD5,
 #endif
 
-#if defined(MBEDTLS_MD4_C)
-        MBEDTLS_MD_MD4,
-#endif
-
-#if defined(MBEDTLS_MD2_C)
-        MBEDTLS_MD_MD2,
-#endif
-
         MBEDTLS_MD_NONE
 };
 
@@ -99,14 +91,6 @@ const mbedtls_md_info_t *mbedtls_md_info_from_string( const char *md_name )
         return( NULL );
 
     /* Get the appropriate digest information */
-#if defined(MBEDTLS_MD2_C)
-    if( !strcmp( "MD2", md_name ) )
-        return mbedtls_md_info_from_type( MBEDTLS_MD_MD2 );
-#endif
-#if defined(MBEDTLS_MD4_C)
-    if( !strcmp( "MD4", md_name ) )
-        return mbedtls_md_info_from_type( MBEDTLS_MD_MD4 );
-#endif
 #if defined(MBEDTLS_MD5_C)
     if( !strcmp( "MD5", md_name ) )
         return mbedtls_md_info_from_type( MBEDTLS_MD_MD5 );
@@ -138,14 +122,6 @@ const mbedtls_md_info_t *mbedtls_md_info_from_type( mbedtls_md_type_t md_type )
 {
     switch( md_type )
     {
-#if defined(MBEDTLS_MD2_C)
-        case MBEDTLS_MD_MD2:
-            return( &mbedtls_md2_info );
-#endif
-#if defined(MBEDTLS_MD4_C)
-        case MBEDTLS_MD_MD4:
-            return( &mbedtls_md4_info );
-#endif
 #if defined(MBEDTLS_MD5_C)
         case MBEDTLS_MD_MD5:
             return( &mbedtls_md5_info );

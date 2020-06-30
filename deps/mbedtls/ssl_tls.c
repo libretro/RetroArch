@@ -913,38 +913,6 @@ int mbedtls_ssl_derive_keys( mbedtls_ssl_context *ssl )
 
     mbedtls_zeroize( keyblk, sizeof( keyblk ) );
 
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    // Initialize compression
-    //
-    if( session->compression == MBEDTLS_SSL_COMPRESS_DEFLATE )
-    {
-        if( ssl->compress_buf == NULL )
-        {
-            MBEDTLS_SSL_DEBUG_MSG( 3, ( "Allocating compression buffer" ) );
-            ssl->compress_buf = calloc( 1, MBEDTLS_SSL_BUFFER_LEN );
-            if( ssl->compress_buf == NULL )
-            {
-                MBEDTLS_SSL_DEBUG_MSG( 1, ( "alloc(%d bytes) failed",
-                                    MBEDTLS_SSL_BUFFER_LEN ) );
-                return( MBEDTLS_ERR_SSL_ALLOC_FAILED );
-            }
-        }
-
-        MBEDTLS_SSL_DEBUG_MSG( 3, ( "Initializing zlib states" ) );
-
-        memset( &transform->ctx_deflate, 0, sizeof( transform->ctx_deflate ) );
-        memset( &transform->ctx_inflate, 0, sizeof( transform->ctx_inflate ) );
-
-        if( deflateInit( &transform->ctx_deflate,
-                         Z_DEFAULT_COMPRESSION )   != Z_OK ||
-            inflateInit( &transform->ctx_inflate ) != Z_OK )
-        {
-            MBEDTLS_SSL_DEBUG_MSG( 1, ( "Failed to initialize compression" ) );
-            return( MBEDTLS_ERR_SSL_COMPRESSION_FAILED );
-        }
-    }
-#endif /* MBEDTLS_ZLIB_SUPPORT */
-
     MBEDTLS_SSL_DEBUG_MSG( 2, ( "<= derive keys" ) );
 
     return( 0 );
@@ -2048,103 +2016,6 @@ static int ssl_decrypt_buf( mbedtls_ssl_context *ssl )
 #undef MAC_PLAINTEXT
 #undef MAC_CIPHERTEXT
 
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-/*
- * Compression/decompression functions
- */
-static int ssl_compress_buf( mbedtls_ssl_context *ssl )
-{
-    int ret;
-    unsigned char *msg_post = ssl->out_msg;
-    size_t len_pre = ssl->out_msglen;
-    unsigned char *msg_pre = ssl->compress_buf;
-
-    MBEDTLS_SSL_DEBUG_MSG( 2, ( "=> compress buf" ) );
-
-    if( len_pre == 0 )
-        return( 0 );
-
-    memcpy( msg_pre, ssl->out_msg, len_pre );
-
-    MBEDTLS_SSL_DEBUG_MSG( 3, ( "before compression: msglen = %d, ",
-                   ssl->out_msglen ) );
-
-    MBEDTLS_SSL_DEBUG_BUF( 4, "before compression: output payload",
-                   ssl->out_msg, ssl->out_msglen );
-
-    ssl->transform_out->ctx_deflate.next_in = msg_pre;
-    ssl->transform_out->ctx_deflate.avail_in = len_pre;
-    ssl->transform_out->ctx_deflate.next_out = msg_post;
-    ssl->transform_out->ctx_deflate.avail_out = MBEDTLS_SSL_BUFFER_LEN;
-
-    ret = deflate( &ssl->transform_out->ctx_deflate, Z_SYNC_FLUSH );
-    if( ret != Z_OK )
-    {
-        MBEDTLS_SSL_DEBUG_MSG( 1, ( "failed to perform compression (%d)", ret ) );
-        return( MBEDTLS_ERR_SSL_COMPRESSION_FAILED );
-    }
-
-    ssl->out_msglen = MBEDTLS_SSL_BUFFER_LEN -
-                      ssl->transform_out->ctx_deflate.avail_out;
-
-    MBEDTLS_SSL_DEBUG_MSG( 3, ( "after compression: msglen = %d, ",
-                   ssl->out_msglen ) );
-
-    MBEDTLS_SSL_DEBUG_BUF( 4, "after compression: output payload",
-                   ssl->out_msg, ssl->out_msglen );
-
-    MBEDTLS_SSL_DEBUG_MSG( 2, ( "<= compress buf" ) );
-
-    return( 0 );
-}
-
-static int ssl_decompress_buf( mbedtls_ssl_context *ssl )
-{
-    int ret;
-    unsigned char *msg_post = ssl->in_msg;
-    size_t len_pre = ssl->in_msglen;
-    unsigned char *msg_pre = ssl->compress_buf;
-
-    MBEDTLS_SSL_DEBUG_MSG( 2, ( "=> decompress buf" ) );
-
-    if( len_pre == 0 )
-        return( 0 );
-
-    memcpy( msg_pre, ssl->in_msg, len_pre );
-
-    MBEDTLS_SSL_DEBUG_MSG( 3, ( "before decompression: msglen = %d, ",
-                   ssl->in_msglen ) );
-
-    MBEDTLS_SSL_DEBUG_BUF( 4, "before decompression: input payload",
-                   ssl->in_msg, ssl->in_msglen );
-
-    ssl->transform_in->ctx_inflate.next_in = msg_pre;
-    ssl->transform_in->ctx_inflate.avail_in = len_pre;
-    ssl->transform_in->ctx_inflate.next_out = msg_post;
-    ssl->transform_in->ctx_inflate.avail_out = MBEDTLS_SSL_MAX_CONTENT_LEN;
-
-    ret = inflate( &ssl->transform_in->ctx_inflate, Z_SYNC_FLUSH );
-    if( ret != Z_OK )
-    {
-        MBEDTLS_SSL_DEBUG_MSG( 1, ( "failed to perform decompression (%d)", ret ) );
-        return( MBEDTLS_ERR_SSL_COMPRESSION_FAILED );
-    }
-
-    ssl->in_msglen = MBEDTLS_SSL_MAX_CONTENT_LEN -
-                     ssl->transform_in->ctx_inflate.avail_out;
-
-    MBEDTLS_SSL_DEBUG_MSG( 3, ( "after decompression: msglen = %d, ",
-                   ssl->in_msglen ) );
-
-    MBEDTLS_SSL_DEBUG_BUF( 4, "after decompression: input payload",
-                   ssl->in_msg, ssl->in_msglen );
-
-    MBEDTLS_SSL_DEBUG_MSG( 2, ( "<= decompress buf" ) );
-
-    return( 0 );
-}
-#endif /* MBEDTLS_ZLIB_SUPPORT */
-
 #if defined(MBEDTLS_SSL_SRV_C) && defined(MBEDTLS_SSL_RENEGOTIATION)
 static int ssl_write_hello_request( mbedtls_ssl_context *ssl );
 
@@ -2769,20 +2640,6 @@ int mbedtls_ssl_write_record( mbedtls_ssl_context *ssl )
         }
     }
 #endif
-
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    if( ssl->transform_out != NULL &&
-        ssl->session_out->compression == MBEDTLS_SSL_COMPRESS_DEFLATE )
-    {
-        if( ( ret = ssl_compress_buf( ssl ) ) != 0 )
-        {
-            MBEDTLS_SSL_DEBUG_RET( 1, "ssl_compress_buf", ret );
-            return( ret );
-        }
-
-        len = ssl->out_msglen;
-    }
-#endif /*MBEDTLS_ZLIB_SUPPORT */
 
 #if defined(MBEDTLS_SSL_HW_RECORD_ACCEL)
     if( mbedtls_ssl_hw_record_write != NULL )
@@ -3674,18 +3531,6 @@ static int ssl_prepare_record_content( mbedtls_ssl_context *ssl )
             return( MBEDTLS_ERR_SSL_INVALID_RECORD );
         }
     }
-
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    if( ssl->transform_in != NULL &&
-        ssl->session_in->compression == MBEDTLS_SSL_COMPRESS_DEFLATE )
-    {
-        if( ( ret = ssl_decompress_buf( ssl ) ) != 0 )
-        {
-            MBEDTLS_SSL_DEBUG_RET( 1, "ssl_decompress_buf", ret );
-            return( ret );
-        }
-    }
-#endif /* MBEDTLS_ZLIB_SUPPORT */
 
 #if defined(MBEDTLS_SSL_DTLS_ANTI_REPLAY)
     if( ssl->conf->transport == MBEDTLS_SSL_TRANSPORT_DATAGRAM )
@@ -6425,11 +6270,6 @@ int mbedtls_ssl_get_record_expansion( const mbedtls_ssl_context *ssl )
     size_t transform_expansion;
     const mbedtls_ssl_transform *transform = ssl->transform_out;
 
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    if( ssl->session_out->compression != MBEDTLS_SSL_COMPRESS_NULL )
-        return( MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE );
-#endif
-
     if( transform == NULL )
         return( (int) mbedtls_ssl_hdr_len( ssl ) );
 
@@ -7189,11 +7029,6 @@ void mbedtls_ssl_transform_free( mbedtls_ssl_transform *transform )
     if( transform == NULL )
         return;
 
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    deflateEnd( &transform->ctx_deflate );
-    inflateEnd( &transform->ctx_inflate );
-#endif
-
     mbedtls_cipher_free( &transform->cipher_ctx_enc );
     mbedtls_cipher_free( &transform->cipher_ctx_dec );
 
@@ -7334,14 +7169,6 @@ void mbedtls_ssl_free( mbedtls_ssl_context *ssl )
         mbedtls_zeroize( ssl->in_buf, MBEDTLS_SSL_BUFFER_LEN );
         free( ssl->in_buf );
     }
-
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    if( ssl->compress_buf != NULL )
-    {
-        mbedtls_zeroize( ssl->compress_buf, MBEDTLS_SSL_BUFFER_LEN );
-        free( ssl->compress_buf );
-    }
-#endif
 
     if( ssl->transform )
     {

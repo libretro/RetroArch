@@ -309,18 +309,6 @@ typedef struct {
 static const oid_sig_alg_t oid_sig_alg[] =
 {
 #if defined(MBEDTLS_RSA_C)
-#if defined(MBEDTLS_MD2_C)
-    {
-        { ADD_LEN( MBEDTLS_OID_PKCS1_MD2 ),        "md2WithRSAEncryption",     "RSA with MD2" },
-        MBEDTLS_MD_MD2,      MBEDTLS_PK_RSA,
-    },
-#endif /* MBEDTLS_MD2_C */
-#if defined(MBEDTLS_MD4_C)
-    {
-        { ADD_LEN( MBEDTLS_OID_PKCS1_MD4 ),        "md4WithRSAEncryption",     "RSA with MD4" },
-        MBEDTLS_MD_MD4,      MBEDTLS_PK_RSA,
-    },
-#endif /* MBEDTLS_MD4_C */
 #if defined(MBEDTLS_MD5_C)
     {
         { ADD_LEN( MBEDTLS_OID_PKCS1_MD5 ),        "md5WithRSAEncryption",     "RSA with MD5" },
@@ -566,18 +554,6 @@ typedef struct {
 
 static const oid_md_alg_t oid_md_alg[] =
 {
-#if defined(MBEDTLS_MD2_C)
-    {
-        { ADD_LEN( MBEDTLS_OID_DIGEST_ALG_MD2 ),       "id-md2",       "MD2" },
-        MBEDTLS_MD_MD2,
-    },
-#endif /* MBEDTLS_MD2_C */
-#if defined(MBEDTLS_MD4_C)
-    {
-        { ADD_LEN( MBEDTLS_OID_DIGEST_ALG_MD4 ),       "id-md4",       "MD4" },
-        MBEDTLS_MD_MD4,
-    },
-#endif /* MBEDTLS_MD4_C */
 #if defined(MBEDTLS_MD5_C)
     {
         { ADD_LEN( MBEDTLS_OID_DIGEST_ALG_MD5 ),       "id-md5",       "MD5" },

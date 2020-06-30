@@ -112,11 +112,7 @@
  * and allow for a maximum of 1024 of compression expansion if
  * enabled.
  */
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-#define MBEDTLS_SSL_COMPRESSION_ADD          1024
-#else
 #define MBEDTLS_SSL_COMPRESSION_ADD             0
-#endif
 
 #if defined(MBEDTLS_ARC4_C) || defined(MBEDTLS_CIPHER_MODE_CBC)
 /* Ciphersuites using HMAC */
@@ -315,14 +311,6 @@ struct mbedtls_ssl_transform
 
     mbedtls_cipher_context_t cipher_ctx_enc;    /*!<  encryption context      */
     mbedtls_cipher_context_t cipher_ctx_dec;    /*!<  decryption context      */
-
-    /*
-     * Session specific compression layer
-     */
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    z_stream ctx_deflate;               /*!<  compression context     */
-    z_stream ctx_inflate;               /*!<  decompression context   */
-#endif
 };
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)

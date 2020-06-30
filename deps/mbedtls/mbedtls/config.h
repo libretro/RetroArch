@@ -367,17 +367,6 @@
 #endif
 
 /**
- * \def MBEDTLS_AES_ROM_TABLES
- *
- * Store the AES tables in ROM.
- *
- * Uncomment this macro to store the AES tables in ROM.
- */
-#if 0
-#define MBEDTLS_AES_ROM_TABLES
-#endif
-
-/**
  * \def MBEDTLS_CAMELLIA_SMALL_MEMORY
  *
  * Use less ROM for the Camellia implementation (saves about 768 bytes).
@@ -1421,29 +1410,6 @@
  */
 #define MBEDTLS_X509_RSASSA_PSS_SUPPORT
 
-/**
- * \def MBEDTLS_ZLIB_SUPPORT
- *
- * If set, the SSL/TLS module uses ZLIB to support compression and
- * decompression of packet data.
- *
- * \warning TLS-level compression MAY REDUCE SECURITY! See for example the
- * CRIME attack. Before enabling this option, you should examine with care if
- * CRIME or similar exploits may be a applicable to your use case.
- *
- * \note Currently compression can't be used with DTLS.
- *
- * Used in: library/ssl_tls.c
- *          library/ssl_cli.c
- *          library/ssl_srv.c
- *
- * This feature requires zlib library and headers to be present.
- *
- * Uncomment to enable use of ZLIB
- */
-#if 0
-#define MBEDTLS_ZLIB_SUPPORT
-#endif
 /* \} name SECTION: mbed TLS feature support */
 
 /**
@@ -1948,34 +1914,6 @@
  * Uncomment to enable generic message digest wrappers.
  */
 #define MBEDTLS_MD_C
-
-/**
- * \def MBEDTLS_MD2_C
- *
- * Enable the MD2 hash algorithm.
- *
- * Module:  library/md2.c
- * Caller:
- *
- * Uncomment to enable support for (rare) MD2-signed X.509 certs.
- */
-#if 0
-#define MBEDTLS_MD2_C
-#endif
-
-/**
- * \def MBEDTLS_MD4_C
- *
- * Enable the MD4 hash algorithm.
- *
- * Module:  library/md4.c
- * Caller:
- *
- * Uncomment to enable support for (rare) MD4-signed X.509 certs.
- */
-#if 0
-#define MBEDTLS_MD4_C
-#endif
 
 /**
  * \def MBEDTLS_MD5_C

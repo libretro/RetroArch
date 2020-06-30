@@ -528,8 +528,6 @@ ifeq ($(HAVE_BUILTINMBEDTLS), 1)
                      deps/mbedtls/havege.o \
                      deps/mbedtls/hmac_drbg.o \
                      deps/mbedtls/md.o \
-                     deps/mbedtls/md2.o \
-                     deps/mbedtls/md4.o \
                      deps/mbedtls/md5.o \
                      deps/mbedtls/md_wrap.o \
                      deps/mbedtls/memory_buffer_alloc.o \

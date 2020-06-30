@@ -1550,8 +1550,6 @@ SSL
 #include "../deps/mbedtls/havege.c"
 #include "../deps/mbedtls/hmac_drbg.c"
 #include "../deps/mbedtls/md.c"
-#include "../deps/mbedtls/md2.c"
-#include "../deps/mbedtls/md4.c"
 #include "../deps/mbedtls/md5.c"
 #include "../deps/mbedtls/md_wrap.c"
 #include "../deps/mbedtls/memory_buffer_alloc.c"
