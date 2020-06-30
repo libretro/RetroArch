@@ -11952,7 +11952,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
 #ifdef HAVE_ACCESSIBILITY
-   accessibility_speak_priority(p_rarch, "Keyboard input:", 10);
+   if (is_accessibility_enabled(p_rarch))
+      accessibility_speak_priority(p_rarch, "Keyboard input:", 10);
 #endif
 
    p_rarch->menu_input_dialog_keyboard_buffer =
