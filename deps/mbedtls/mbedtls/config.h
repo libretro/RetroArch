@@ -1690,21 +1690,6 @@
 #define MBEDTLS_CIPHER_C
 
 /**
- * \def MBEDTLS_CMAC_C
- *
- * Enable the CMAC (Cipher-based Message Authentication Code) mode for block
- * ciphers.
- *
- * Module:  library/cmac.c
- *
- * Requires: MBEDTLS_AES_C or MBEDTLS_DES_C
- *
- */
-#if 0
-#define MBEDTLS_CMAC_C
-#endif
-
-/**
  * \def MBEDTLS_CTR_DRBG_C
  *
  * Enable the CTR_DRBG AES-256-based random generator.

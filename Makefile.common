@@ -512,7 +512,6 @@ ifeq ($(HAVE_BUILTINMBEDTLS), 1)
                      deps/mbedtls/ccm.o \
                      deps/mbedtls/cipher.o \
                      deps/mbedtls/cipher_wrap.o \
-                     deps/mbedtls/cmac.o \
                      deps/mbedtls/ctr_drbg.o \
                      deps/mbedtls/des.o \
                      deps/mbedtls/dhm.o \

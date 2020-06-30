@@ -1534,7 +1534,6 @@ SSL
 #include "../deps/mbedtls/ccm.c"
 #include "../deps/mbedtls/cipher.c"
 #include "../deps/mbedtls/cipher_wrap.c"
-#include "../deps/mbedtls/cmac.c"
 #include "../deps/mbedtls/ctr_drbg.c"
 #include "../deps/mbedtls/des.c"
 #include "../deps/mbedtls/dhm.c"
