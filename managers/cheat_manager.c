@@ -773,7 +773,7 @@ bool cheat_manager_alloc_if_empty(void)
    return true;
 }
 
-int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    unsigned i;
    retro_ctx_memory_info_t meminfo;
@@ -1132,47 +1132,47 @@ static int cheat_manager_search(enum cheat_search_type search_type)
    return 0;
 }
 
-int cheat_manager_search_exact(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_exact(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EXACT);
 }
 
-int cheat_manager_search_lt(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_lt(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_LT);
 }
 
-int cheat_manager_search_gt(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_gt(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_GT);
 }
 
-int cheat_manager_search_lte(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_lte(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_LTE);
 }
 
-int cheat_manager_search_gte(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_gte(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_GTE);
 }
 
-int cheat_manager_search_eq(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_eq(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQ);
 }
 
-int cheat_manager_search_neq(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_neq(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_NEQ);
 }
 
-int cheat_manager_search_eqplus(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_eqplus(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQPLUS);
 }
 
-int cheat_manager_search_eqminus(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_eqminus(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQMINUS);
 }
@@ -1401,7 +1401,7 @@ void cheat_manager_apply_retro_cheats(void)
       if (cheat_st->cheats[i].handler != CHEAT_HANDLER_TYPE_RETRO || !cheat_st->cheats[i].state)
          continue;
       if (!cheat_st->memory_initialized)
-         cheat_manager_initialize_memory(NULL, false);
+         cheat_manager_initialize_memory(NULL, 0, false);
 
       /* If we're still not initialized, something
        * must have gone wrong - just bail */
@@ -1735,7 +1735,7 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    }
 }
 
-int cheat_manager_copy_match(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_copy_match(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    cheat_manager_t *cheat_st = &cheat_manager_state;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_COPY,
@@ -1743,7 +1743,7 @@ int cheat_manager_copy_match(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
-int cheat_manager_delete_match(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_delete_match(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    bool              refresh = false;
    cheat_manager_t *cheat_st = &cheat_manager_state;

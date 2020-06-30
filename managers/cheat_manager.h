@@ -240,25 +240,25 @@ void cheat_manager_load_game_specific_cheats(const char *path_cheat_database);
 
 void cheat_manager_save_game_specific_cheats(const char *path_cheat_database);
 
-int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_exact(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_exact(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_lt(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_lt(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_gt(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_gt(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_lte(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_lte(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_gte(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_gte(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_eq(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_eq(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_neq(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_neq(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_eqplus(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_eqplus(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_search_eqminus(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_search_eqminus(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int cheat_manager_add_matches(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
@@ -271,9 +271,9 @@ void cheat_manager_match_action(
       unsigned int *address, unsigned int *address_mask,
       unsigned int *prev_value, unsigned int *curr_value);
 
-int cheat_manager_copy_match(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_copy_match(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int cheat_manager_delete_match(rarch_setting_t *setting, bool wraparound);
+int cheat_manager_delete_match(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 RETRO_END_DECLS
 

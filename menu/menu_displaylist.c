@@ -6589,7 +6589,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
          {
             if (!cheat_manager_state.memory_initialized)
-               cheat_manager_initialize_memory(NULL,true) ;
+               cheat_manager_initialize_memory(NULL, 0, true);
 
             {
                rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS);
