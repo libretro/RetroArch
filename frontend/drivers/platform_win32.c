@@ -177,6 +177,16 @@ enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
    return RETRO_LANGUAGE_ENGLISH;
 }
 #endif
+#else
+unsigned short win32_get_langid_from_retro_lang(enum retro_language lang)
+{
+   return 0x409; /* fallback to US English */
+}
+
+enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
+{
+   return RETRO_LANGUAGE_ENGLISH;
+}
 #endif
 
 static void gfx_dwm_shutdown(void)
