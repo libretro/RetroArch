@@ -152,8 +152,10 @@ CONFIG FILE
 #undef strcasecmp
 #endif
 
+#ifdef HAVE_CONFIGFILE
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/config_file_userdata.c"
+#endif
 
 /*============================================================
 CONTENT METADATA RECORDS
