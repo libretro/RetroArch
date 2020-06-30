@@ -7589,19 +7589,20 @@ static int directory_action_start_generic(rarch_setting_t *setting)
 }
 
 static bool setting_append_list(
+      settings_t *settings,
+      global_t *global,
       enum settings_list_type type,
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
    unsigned user;
-   rarch_setting_group_info_t group_info    = {0};
-   rarch_setting_group_info_t subgroup_info = {0};
-   settings_t *settings                     = config_get_ptr();
-   global_t   *global                       = global_get_ptr();
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
 
-   (void)settings;
-   (void)global;
+   group_info.name                           = NULL;
+   subgroup_info.name                        = NULL;
+
 
    switch (type)
    {
@@ -17745,6 +17746,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MIDI,
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
+   settings_t *settings                 = config_get_ptr();
+   global_t   *global                   = global_get_ptr();
    const char *root                     = NULL;
    rarch_setting_t **list_ptr           = NULL;
    rarch_setting_t *list                = (rarch_setting_t*)
@@ -17763,7 +17766,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
 
    for (i = 0; i < ARRAY_SIZE(list_types); i++)
    {
-      if (!setting_append_list(list_types[i], &list, list_info, root))
+      if (!setting_append_list(
+               settings, global,
+               list_types[i], &list, list_info, root))
       {
          free(list);
          return NULL;
