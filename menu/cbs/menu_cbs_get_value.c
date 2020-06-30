@@ -120,14 +120,14 @@ static void menu_action_setting_disp_add_null_drivers(
       const char *path,
       char *s2, size_t len2)
 {
-   settings_t *settings    = config_get_ptr();
-   bool add_null_drivers   = settings->bools.add_null_drivers;
+   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   bool val                  = *cbs->setting->value.target.boolean;
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (add_null_drivers)
+   if (val)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
@@ -231,17 +231,12 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
       char *s2, size_t len2)
 {
    unsigned j;
-   const char *netplay_mitm_server;
-   settings_t *settings = config_get_ptr();
+   menu_file_list_cbs_t       *cbs = list->list[i].actiondata;
+   const char *netplay_mitm_server = cbs->setting->value.target.string;
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-
-   if (!settings)
-      return;
-
-   netplay_mitm_server = settings->arrays.netplay_mitm_server;
 
    if (string_is_empty(netplay_mitm_server))
       return;
@@ -264,14 +259,14 @@ static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       const char *path,
       char *s2, size_t len2)
 {
-   settings_t *settings    = config_get_ptr();
-   bool shader_watch_files = settings->bools.video_shader_watch_files;
+   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   bool val                  = *cbs->setting->value.target.boolean;
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (shader_watch_files)
+   if (val)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE), len);
@@ -326,18 +321,13 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
       const char *path,
       char *s2, size_t len2)
 {
-   settings_t *settings = config_get_ptr();
-   bool video_smooth    = false;
+   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   bool val                  = *cbs->setting->value.target.boolean;
 
    *s = '\0';
    *w = 19;
 
-   if (!settings)
-      return;
-
-   video_smooth         = settings->bools.video_smooth;
-
-   if (video_smooth)
+   if (val)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST), len);
