@@ -550,8 +550,6 @@ ifeq ($(HAVE_BUILTINMBEDTLS), 1)
                      deps/mbedtls/sha512.o \
                      deps/mbedtls/threading.o \
                      deps/mbedtls/timing.o \
-                     deps/mbedtls/version.o \
-                     deps/mbedtls/version_features.o \
                      deps/mbedtls/xtea.o
 
    OBJS_TLS_X509 = deps/mbedtls/certs.o \

@@ -1572,8 +1572,6 @@ SSL
 #include "../deps/mbedtls/sha512.c"
 #include "../deps/mbedtls/threading.c"
 #include "../deps/mbedtls/timing.c"
-#include "../deps/mbedtls/version.c"
-#include "../deps/mbedtls/version_features.c"
 #include "../deps/mbedtls/xtea.c"
 
 #include "../deps/mbedtls/certs.c"
