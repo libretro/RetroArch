@@ -125,27 +125,6 @@
 #define MBEDTLS_HAVE_TIME_DATE
 
 /**
- * \def MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
- *
- * Do not assign standard functions in the platform layer (e.g. calloc() to
- * MBEDTLS_PLATFORM_STD_CALLOC and printf() to MBEDTLS_PLATFORM_STD_PRINTF)
- *
- * This makes sure there are no linking errors on platforms that do not support
- * these functions. You will HAVE to provide alternatives, either at runtime
- * via the platform_set_xxx() functions or at compile time by setting
- * the MBEDTLS_PLATFORM_STD_XXX defines, or enabling a
- * MBEDTLS_PLATFORM_XXX_MACRO.
- *
- * Requires: MBEDTLS_PLATFORM_C
- *
- * Uncomment to prevent default assignment of standard functions in the
- * platform layer.
- */
-#if 0
-#define MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
-#endif
-
-/**
  * \def MBEDTLS_DEPRECATED_WARNING
  *
  * Mark deprecated functions so that they generate a warning if used.
@@ -2661,7 +2640,6 @@
 
 /* Platform options */
 #if 0
-#define MBEDTLS_PLATFORM_STD_MEM_HDR   <stdlib.h> /**< Header to include if MBEDTLS_PLATFORM_NO_STD_FUNCTIONS is defined. Don't define if no header is needed. */
 #define MBEDTLS_PLATFORM_STD_EXIT            exit /**< Default exit to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_TIME            time /**< Default time to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 #define MBEDTLS_PLATFORM_STD_FPRINTF      fprintf /**< Default fprintf to use, can be undefined */

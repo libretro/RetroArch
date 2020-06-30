@@ -397,11 +397,6 @@
 #error "MBEDTLS_PLATFORM_SNPRINTF_MACRO and MBEDTLS_PLATFORM_STD_SNPRINTF/MBEDTLS_PLATFORM_SNPRINTF_ALT cannot be defined simultaneously"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_STD_MEM_HDR) &&\
-    !defined(MBEDTLS_PLATFORM_NO_STD_FUNCTIONS)
-#error "MBEDTLS_PLATFORM_STD_MEM_HDR defined, but not all prerequisites"
-#endif
-
 #if defined(MBEDTLS_PLATFORM_STD_CALLOC) && !defined(MBEDTLS_PLATFORM_MEMORY)
 #error "MBEDTLS_PLATFORM_STD_CALLOC defined, but not all prerequisites"
 #endif

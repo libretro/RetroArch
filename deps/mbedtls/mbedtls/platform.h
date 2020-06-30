@@ -45,7 +45,6 @@ extern "C" {
  * \{
  */
 
-#if !defined(MBEDTLS_PLATFORM_NO_STD_FUNCTIONS)
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -78,11 +77,6 @@ extern "C" {
 #define MBEDTLS_PLATFORM_STD_NV_SEED_FILE   "seedfile"
 #endif
 #endif /* MBEDTLS_FS_IO */
-#else /* MBEDTLS_PLATFORM_NO_STD_FUNCTIONS */
-#if defined(MBEDTLS_PLATFORM_STD_MEM_HDR)
-#include MBEDTLS_PLATFORM_STD_MEM_HDR
-#endif
-#endif /* MBEDTLS_PLATFORM_NO_STD_FUNCTIONS */
 
 
 /* \} name SECTION: Module settings */
@@ -207,7 +201,7 @@ int mbedtls_platform_set_exit( void (*exit_func)( int status ) );
  * Only enabled when the NV seed entropy source is enabled
  */
 #if defined(MBEDTLS_ENTROPY_NV_SEED)
-#if !defined(MBEDTLS_PLATFORM_NO_STD_FUNCTIONS) && defined(MBEDTLS_FS_IO)
+#if defined(MBEDTLS_FS_IO)
 /* Internal standard platform definitions */
 int mbedtls_platform_std_nv_seed_read( unsigned char *buf, size_t buf_len );
 int mbedtls_platform_std_nv_seed_write( unsigned char *buf, size_t buf_len );
