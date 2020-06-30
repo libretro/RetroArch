@@ -6577,35 +6577,6 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
 
-/**
- * menu_setting_get_label:
- * @list               : File list on which to perform the search
- * @s                  : String for the type to be represented on-screen as
- *                       a label.
- * @len                : Size of @s
- * @w                  : Width of the string (for text label representation
- *                       purposes in the menu display driver).
- * @type               : Identifier of setting.
- * @menu_label         : Menu Label identifier of setting.
- * @label              : Label identifier of setting.
- * @idx                : Index identifier of setting.
- *
- * Get associated label of a setting.
- **/
-void menu_setting_get_label(file_list_t *list, char *s,
-      size_t len, unsigned *w, unsigned type,
-      const char *menu_label, unsigned idx)
-{
-   rarch_setting_t *setting = NULL;
-   if (!list)
-      return;
-
-   setting = menu_setting_find(list->list[idx].label);
-
-   if (setting && setting->get_string_representation)
-      setting->get_string_representation(setting, s, len);
-}
-
 void general_read_handler(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();

@@ -1374,11 +1374,14 @@ static void menu_action_setting_disp_set_label_achievement_information(
       const char *path,
       char *s2, size_t len2)
 {
-   *s = '\0';
-   *w = 2;
+   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   rarch_setting_t *setting  = cbs->setting;
 
-   menu_setting_get_label(list, s,
-         len, w, type, label, i);
+   *s                        = '\0';
+   *w                        = 2;
+
+   if (setting && setting->get_string_representation)
+      setting->get_string_representation(setting, s, len);
 
    strlcpy(s2, path, len2);
 }
@@ -1466,11 +1469,14 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       const char *path,
       char *s2, size_t len2)
 {
-   *s = '\0';
-   *w = 19;
+   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   rarch_setting_t *setting  = cbs->setting;
 
-   menu_setting_get_label(list, s,
-         len, w, type, label, i);
+   *s                        = '\0';
+   *w                        = 19;
+
+   if (setting && setting->get_string_representation)
+      setting->get_string_representation(setting, s, len);
 
    strlcpy(s2, path, len2);
 }

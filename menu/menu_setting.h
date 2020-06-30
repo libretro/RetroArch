@@ -102,25 +102,6 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
  **/
 void menu_setting_get_string_representation(rarch_setting_t *setting, char *s, size_t len);
 
-/**
- * menu_setting_get_label:
- * @list               : File list on which to perform the search
- * @s                  : String for the type to be represented on-screen as
- *                       a label.
- * @len                : Size of @s.
- * @w                  : Width of the string (for text label representation
- *                       purposes in the menu display driver).
- * @type               : Identifier of setting.
- * @menu_label         : Menu Label identifier of setting.
- * @label              : Label identifier of setting.
- * @idx                : Index identifier of setting.
- *
- * Get associated label of a setting.
- **/
-void menu_setting_get_label(file_list_t *list, char *s,
-      size_t len, unsigned *w, unsigned type,
-      const char *menu_label, unsigned idx);
-
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);
 
