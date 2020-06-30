@@ -47,7 +47,9 @@ static const retro_resampler_t *resampler_drivers[] = {
 #ifdef HAVE_CC_RESAMPLER
    &CC_resampler,
 #endif
+#ifdef HAVE_NEAREST_RESAMPLER
    &nearest_resampler,
+#endif
    &null_resampler,
    NULL,
 };

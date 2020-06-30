@@ -25,6 +25,7 @@ HAVE_DSOUND=auto           # DirectSound support
 HAVE_XAUDIO=auto           # XAudio support
 HAVE_WASAPI=auto           # WASAPI support
 HAVE_WINMM=auto            # WinMM support
+HAVE_NEAREST_RESAMPLER=yes # Nearest resampler
 HAVE_CC_RESAMPLER=yes      # CC Resampler
 HAVE_SSL=auto              # SSL/mbedtls support
 C89_SSL=no

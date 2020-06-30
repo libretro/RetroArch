@@ -279,8 +279,14 @@ OBJ += \
        gfx/video_filter.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o \
-       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
-       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o
+
+ifeq ($(HAVE_NEAREST_RESAMPLER), 1)
+   DEFINES += -DHAVE_NEAREST_RESAMPLER
+   OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o
+endif
+
+OBJ += \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
