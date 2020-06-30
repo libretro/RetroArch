@@ -18634,16 +18634,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
                   break;
 
-               /* Handle 'progress' messages
-                * TODO/FIXME: At present, we also display messages
-                * of type RETRO_MESSAGE_TYPE_PROGRESS via
-                * gfx_widget_set_libretro_message(). We need to
-                * implement a separate 'progress bar' widget to
-                * handle these correctly */
+               /* Handle 'progress' messages */
                case RETRO_MESSAGE_TYPE_PROGRESS:
                   if (p_rarch->widgets_active)
-                     gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
-                           msg->msg, msg->duration);
+                     gfx_widget_set_progress_message(&p_rarch->dispwidget_st,
+                           msg->msg, msg->duration,
+                           msg->priority, msg->progress);
                   else
                      runloop_core_msg_queue_push(p_rarch, msg);
 

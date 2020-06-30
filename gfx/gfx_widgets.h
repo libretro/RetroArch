@@ -389,6 +389,11 @@ void gfx_widget_set_libretro_message(
       void *data,
       const char *message, unsigned duration);
 
+/* Warning: not thread safe! */
+void gfx_widget_set_progress_message(void *data,
+      const char *message, unsigned duration,
+      unsigned priority, int8_t progress);
+
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
@@ -404,6 +409,7 @@ extern const gfx_widget_t gfx_widget_screenshot;
 extern const gfx_widget_t gfx_widget_volume;
 extern const gfx_widget_t gfx_widget_generic_message;
 extern const gfx_widget_t gfx_widget_libretro_message;
+extern const gfx_widget_t gfx_widget_progress_message;
 
 #ifdef HAVE_CHEEVOS
 extern const gfx_widget_t gfx_widget_achievement_popup;
