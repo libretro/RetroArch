@@ -914,11 +914,10 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
-#define MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len, path, label, s2, len2) \
+#define MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len, path, label, label_size, s2, len2) \
    *s = '\0'; \
-   if (label) \
-      strlcpy(s, label, len); \
-   *w = (unsigned)strlen(s); \
+   strlcpy(s, label, len); \
+   *w = label_size; \
    strlcpy(s2, path, len2)
 
 static void menu_action_setting_disp_set_label_menu_file_plain(
@@ -929,8 +928,8 @@ static void menu_action_setting_disp_set_label_menu_file_plain(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(FILE)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(FILE)", STRLEN_CONST("(FILE)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_imageviewer(
@@ -941,8 +940,8 @@ static void menu_action_setting_disp_set_label_menu_file_imageviewer(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(IMAGE)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(IMAGE)", STRLEN_CONST("(IMAGE)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_movie(
@@ -953,8 +952,8 @@ static void menu_action_setting_disp_set_label_movie(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(MOVIE)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(MOVIE)", STRLEN_CONST("(MOVIE)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_music(
@@ -965,8 +964,8 @@ static void menu_action_setting_disp_set_label_music(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(MUSIC)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(MUSIC)", STRLEN_CONST("(MUSIC)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_directory(
@@ -977,8 +976,8 @@ static void menu_action_setting_disp_set_label_menu_file_directory(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(DIR)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(DIR)", STRLEN_CONST("(DIR)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_generic(
@@ -989,8 +988,9 @@ static void menu_action_setting_disp_set_label_generic(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, NULL, s2, len2);
+   *s = '\0';
+   *w = (unsigned)strlen(s);
+   strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_carchive(
@@ -1001,8 +1001,8 @@ static void menu_action_setting_disp_set_label_menu_file_carchive(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(COMP)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(COMP)", STRLEN_CONST("(COMP)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_shader(
@@ -1013,8 +1013,8 @@ static void menu_action_setting_disp_set_label_menu_file_shader(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(SHADER)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(SHADER)", STRLEN_CONST("(SHADER)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_shader_preset(
@@ -1025,8 +1025,8 @@ static void menu_action_setting_disp_set_label_menu_file_shader_preset(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(PRESET)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(PRESET)", STRLEN_CONST("(PRESET)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_in_carchive(
@@ -1037,8 +1037,8 @@ static void menu_action_setting_disp_set_label_menu_file_in_carchive(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(CFILE)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(CFILE)", STRLEN_CONST("(CFILE)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_overlay(
@@ -1049,8 +1049,8 @@ static void menu_action_setting_disp_set_label_menu_file_overlay(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(OVERLAY)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(OVERLAY)", STRLEN_CONST("(OVERLAY)"), s2, len2);
 }
 
 #ifdef HAVE_VIDEO_LAYOUT
@@ -1062,8 +1062,8 @@ static void menu_action_setting_disp_set_label_menu_file_video_layout(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(LAYOUT)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(LAYOUT)", STRLEN_CONST("(LAYOUT)"), s2, len2);
 }
 #endif
 
@@ -1075,8 +1075,8 @@ static void menu_action_setting_disp_set_label_menu_file_config(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(CONFIG)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(CONFIG)", STRLEN_CONST("(CONFIG)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_font(
@@ -1087,8 +1087,8 @@ static void menu_action_setting_disp_set_label_menu_file_font(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(FONT)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(FONT)", STRLEN_CONST("(FONT)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_filter(
@@ -1099,8 +1099,8 @@ static void menu_action_setting_disp_set_label_menu_file_filter(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(FILTER)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(FILTER)", STRLEN_CONST("(FILTER)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_rdb(
@@ -1111,8 +1111,8 @@ static void menu_action_setting_disp_set_label_menu_file_rdb(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(RDB)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(RDB)", STRLEN_CONST("(RDB)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_cursor(
@@ -1123,8 +1123,8 @@ static void menu_action_setting_disp_set_label_menu_file_cursor(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(CURSOR)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(CURSOR)", STRLEN_CONST("(CURSOR)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_cheat(
@@ -1135,8 +1135,8 @@ static void menu_action_setting_disp_set_label_menu_file_cheat(
       const char *path,
       char *s2, size_t len2)
 {
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL(w, s, len,
-         path, "(CHEAT)", s2, len2);
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         path, "(CHEAT)", STRLEN_CONST("(CHEAT)"), s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_core_option_create(
