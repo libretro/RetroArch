@@ -124,7 +124,8 @@ static void menu_action_setting_disp_add_null_drivers(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    bool val                  = *cbs->setting->value.target.boolean;
 
    *s = '\0';
@@ -235,7 +236,8 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
       char *s2, size_t len2)
 {
    unsigned j;
-   menu_file_list_cbs_t       *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t       *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    const char *netplay_mitm_server = cbs->setting->value.target.string;
 
    *s = '\0';
@@ -263,7 +265,8 @@ static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    bool val                  = *cbs->setting->value.target.boolean;
 
    *s = '\0';
@@ -317,7 +320,6 @@ static void menu_action_setting_disp_set_label_shader_pass(
 }
 
 static void menu_action_setting_disp_set_label_shader_default_filter(
-
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -325,7 +327,8 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    bool val                  = *cbs->setting->value.target.boolean;
 
    *s = '\0';
@@ -1380,7 +1383,8 @@ static void menu_action_setting_disp_set_label_achievement_information(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
 
    *s                        = '\0';
@@ -1475,7 +1479,8 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       const char *path,
       char *s2, size_t len2)
 {
-   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
 
    *s                        = '\0';
@@ -1494,7 +1499,8 @@ static void menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
       const char *path,
       char *s2, size_t len2)
 {
-   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
 
    *s = '\0';
@@ -1518,7 +1524,8 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
       const char *path,
       char *s2, size_t len2)
 {
-   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
 
    *w = 19;
@@ -1536,7 +1543,8 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
       const char *path,
       char *s2, size_t len2)
 {
-   menu_file_list_cbs_t *cbs = list->list[i].actiondata;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
    const char *basename     = setting ? path_basename(setting->value.target.string) : NULL;
 

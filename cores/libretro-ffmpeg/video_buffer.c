@@ -1,4 +1,10 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <libavformat/avformat.h>
+#ifdef __cplusplus
+}
+#endif
 
 #include <rthreads/rthreads.h>
 
@@ -6,7 +12,7 @@
 
 enum kbStatus
 {
-  KB_OPEN,
+  KB_OPEN = 0,
   KB_IN_PROGRESS,
   KB_FINISHED
 };
@@ -23,28 +29,37 @@ struct video_buffer
    int64_t tail;
 };
 
-video_buffer_t *video_buffer_create(size_t capacity, int frame_size, int width, int height)
+video_buffer_t *video_buffer_create(
+      size_t capacity, int frame_size, int width, int height)
 {
+   unsigned i;
    video_buffer_t *b = (video_buffer_t*)malloc(sizeof(video_buffer_t));
    if (!b)
       return NULL;
 
-   memset(b, 0, sizeof(video_buffer_t));
-   b->capacity = capacity;
+   b->buffer        = NULL;
+   b->capacity      = capacity;
+   b->lock          = NULL;
+   b->open_cond     = NULL;
+   b->finished_cond = NULL;
+   b->head          = 0;
+   b->tail          = 0;
+   b->status        = (enum kbStatus*)malloc(sizeof(enum kbStatus) * capacity);
 
-   b->status = (enum kbStatus*)malloc(sizeof(enum kbStatus) * capacity);
    if (!b->status)
       goto fail;
-   for (int i = 0; i < capacity; i++)
-      b->status[i] = KB_OPEN;
 
-   b->lock = slock_new();
-   b->open_cond = scond_new();
+   for (i = 0; i < capacity; i++)
+      b->status[i]  = KB_OPEN;
+
+   b->lock          = slock_new();
+   b->open_cond     = scond_new();
    b->finished_cond = scond_new();
    if (!b->lock || !b->open_cond || !b->finished_cond)
       goto fail;
 
-   b->buffer = (video_decoder_context_t*)malloc(sizeof(video_decoder_context_t) * capacity);
+   b->buffer        = (video_decoder_context_t*)
+      malloc(sizeof(video_decoder_context_t) * capacity);
    if (!b->buffer)
       goto fail;
 
@@ -60,15 +75,17 @@ video_buffer_t *video_buffer_create(size_t capacity, int frame_size, int width, 
       b->buffer[i].target    = av_frame_alloc();
       b->buffer[i].frame_buf = (uint8_t*)av_malloc(frame_size);
 
-      avpicture_fill((AVPicture*)b->buffer[i].target, (const uint8_t*)b->buffer[i].frame_buf,
+      avpicture_fill((AVPicture*)
+            b->buffer[i].target,
+            (const uint8_t*)b->buffer[i].frame_buf,
             PIX_FMT_RGB32, width, height);
 
-      if (!b->buffer[i].sws ||
-          !b->buffer[i].source ||
+      if (!b->buffer[i].sws       ||
+          !b->buffer[i].source    ||
 #if LIBAVUTIL_VERSION_MAJOR > 55
           !b->buffer[i].hw_source ||
 #endif
-          !b->buffer[i].target ||
+          !b->buffer[i].target    ||
           !b->buffer[i].frame_buf)
          goto fail;
    }
@@ -81,6 +98,7 @@ fail:
 
 void video_buffer_destroy(video_buffer_t *video_buffer)
 {
+   unsigned i;
    if (!video_buffer)
       return;
 
@@ -89,22 +107,25 @@ void video_buffer_destroy(video_buffer_t *video_buffer)
    scond_free(video_buffer->finished_cond);
    free(video_buffer->status);
    if (video_buffer->buffer)
-      for (int i = 0; i < video_buffer->capacity; i++)
+   {
+      for (i = 0; i < video_buffer->capacity; i++)
       {
-   #if LIBAVUTIL_VERSION_MAJOR > 55
+#if LIBAVUTIL_VERSION_MAJOR > 55
          av_frame_free(&video_buffer->buffer[i].hw_source);
-   #endif
+#endif
          av_frame_free(&video_buffer->buffer[i].source);
          av_frame_free(&video_buffer->buffer[i].target);
          av_freep(&video_buffer->buffer[i].frame_buf);
          sws_freeContext(video_buffer->buffer[i].sws);
       }
+   }
    free(video_buffer->buffer);
    free(video_buffer);
 }
 
 void video_buffer_clear(video_buffer_t *video_buffer)
 {
+   unsigned i;
    if (!video_buffer)
       return;
 
@@ -115,13 +136,14 @@ void video_buffer_clear(video_buffer_t *video_buffer)
 
    video_buffer->head = 0;
    video_buffer->tail = 0;
-   for (int i = 0; i < video_buffer->capacity; i++)
+   for (i = 0; i < video_buffer->capacity; i++)
       video_buffer->status[i] = KB_OPEN;
 
    slock_unlock(video_buffer->lock);
 }
 
-void video_buffer_get_open_slot(video_buffer_t *video_buffer, video_decoder_context_t **context)
+void video_buffer_get_open_slot(
+      video_buffer_t *video_buffer, video_decoder_context_t **context)
 {
    slock_lock(video_buffer->lock);
 
@@ -136,7 +158,8 @@ void video_buffer_get_open_slot(video_buffer_t *video_buffer, video_decoder_cont
    slock_unlock(video_buffer->lock);
 }
 
-void video_buffer_return_open_slot(video_buffer_t *video_buffer, video_decoder_context_t *context)
+void video_buffer_return_open_slot(
+      video_buffer_t *video_buffer, video_decoder_context_t *context)
 {
    slock_lock(video_buffer->lock);
 
@@ -150,7 +173,9 @@ void video_buffer_return_open_slot(video_buffer_t *video_buffer, video_decoder_c
    slock_unlock(video_buffer->lock);
 }
 
-void video_buffer_open_slot(video_buffer_t *video_buffer, video_decoder_context_t *context)
+void video_buffer_open_slot(
+      video_buffer_t *video_buffer,
+      video_decoder_context_t *context)
 {
    slock_lock(video_buffer->lock);
 
@@ -165,7 +190,9 @@ void video_buffer_open_slot(video_buffer_t *video_buffer, video_decoder_context_
    slock_unlock(video_buffer->lock);
 }
 
-void video_buffer_get_finished_slot(video_buffer_t *video_buffer, video_decoder_context_t **context)
+void video_buffer_get_finished_slot(
+      video_buffer_t *video_buffer,
+      video_decoder_context_t **context)
 {
    slock_lock(video_buffer->lock);
 
@@ -175,7 +202,9 @@ void video_buffer_get_finished_slot(video_buffer_t *video_buffer, video_decoder_
    slock_unlock(video_buffer->lock);
 }
 
-void video_buffer_finish_slot(video_buffer_t *video_buffer, video_decoder_context_t *context)
+void video_buffer_finish_slot(
+      video_buffer_t *video_buffer,
+      video_decoder_context_t *context)
 {
    slock_lock(video_buffer->lock);
 
