@@ -17641,43 +17641,54 @@ void menu_setting_free(rarch_setting_t *setting)
             }
 }
 
-static void menu_setting_terminate_last(rarch_setting_t *list, unsigned pos)
-{
-   (*&list)[pos].enum_idx           = MSG_UNKNOWN;
-   (*&list)[pos].type               = ST_NONE;
-   (*&list)[pos].size               = 0;
-   (*&list)[pos].name               = NULL;
-   (*&list)[pos].short_description  = NULL;
-   (*&list)[pos].group              = NULL;
-   (*&list)[pos].subgroup           = NULL;
-   (*&list)[pos].parent_group       = NULL;
-   (*&list)[pos].values             = NULL;
-   (*&list)[pos].index              = 0;
-   (*&list)[pos].index_offset       = 0;
-   (*&list)[pos].min                = 0.0;
-   (*&list)[pos].max                = 0.0;
-   (*&list)[pos].flags              = 0;
-   (*&list)[pos].free_flags         = 0;
-   (*&list)[pos].change_handler     = NULL;
-   (*&list)[pos].read_handler       = NULL;
-   (*&list)[pos].action_start       = NULL;
-   (*&list)[pos].action_left        = NULL;
-   (*&list)[pos].action_right       = NULL;
-   (*&list)[pos].action_up          = NULL;
-   (*&list)[pos].action_down        = NULL;
-   (*&list)[pos].action_cancel      = NULL;
-   (*&list)[pos].action_ok          = NULL;
-   (*&list)[pos].action_select      = NULL;
-   (*&list)[pos].get_string_representation = NULL;
-   (*&list)[pos].bind_type          = 0;
-   (*&list)[pos].browser_selection_type = ST_NONE;
-   (*&list)[pos].step               = 0.0f;
-   (*&list)[pos].rounding_fraction  = NULL;
-   (*&list)[pos].enforce_minrange   = false;
-   (*&list)[pos].enforce_maxrange   = false;
-   (*&list)[pos].cmd_trigger.idx    = CMD_EVENT_NONE;
-   (*&list)[pos].cmd_trigger.triggered = false;
-   (*&list)[pos].dont_use_enum_idx_representation = false;
+#define MENU_SETTING_INITIALIZE(list, _pos) \
+{ \
+   unsigned pos                                   = _pos; \
+   (*&list)[pos].ui_type                          = ST_UI_TYPE_NONE; \
+   (*&list)[pos].browser_selection_type           = ST_NONE; \
+   (*&list)[pos].enum_idx                         = MSG_UNKNOWN; \
+   (*&list)[pos].enum_value_idx                   = MSG_UNKNOWN; \
+   (*&list)[pos].type                             = ST_NONE; \
+   (*&list)[pos].dont_use_enum_idx_representation = false; \
+   (*&list)[pos].enforce_minrange                 = false; \
+   (*&list)[pos].enforce_maxrange                 = false; \
+   (*&list)[pos].index                            = 0; \
+   (*&list)[pos].index_offset                     = 0; \
+   (*&list)[pos].offset_by                        = 0; \
+   (*&list)[pos].bind_type                        = 0; \
+   (*&list)[pos].size                             = 0; \
+   (*&list)[pos].step                             = 0.0f; \
+   (*&list)[pos].flags                            = 0; \
+   (*&list)[pos].free_flags                       = 0; \
+   (*&list)[pos].min                              = 0.0; \
+   (*&list)[pos].placeholder                      = 0; \
+   (*&list)[pos].max                              = 0.0; \
+   (*&list)[pos].rounding_fraction                = NULL; \
+   (*&list)[pos].name                             = NULL; \
+   (*&list)[pos].short_description                = NULL; \
+   (*&list)[pos].group                            = NULL; \
+   (*&list)[pos].subgroup                         = NULL; \
+   (*&list)[pos].parent_group                     = NULL; \
+   (*&list)[pos].values                           = NULL; \
+   (*&list)[pos].change_handler                   = NULL; \
+   (*&list)[pos].read_handler                     = NULL; \
+   (*&list)[pos].action_start                     = NULL; \
+   (*&list)[pos].action_left                      = NULL; \
+   (*&list)[pos].action_right                     = NULL; \
+   (*&list)[pos].action_up                        = NULL; \
+   (*&list)[pos].action_down                      = NULL; \
+   (*&list)[pos].action_cancel                    = NULL; \
+   (*&list)[pos].action_ok                        = NULL; \
+   (*&list)[pos].action_select                    = NULL; \
+   (*&list)[pos].get_string_representation        = NULL; \
+   (*&list)[pos].default_value.fraction           = 0.0f; \
+   (*&list)[pos].value.target.fraction            = NULL; \
+   (*&list)[pos].original_value.fraction          = 0.0f; \
+   (*&list)[pos].dir.empty_path                   = NULL; \
+   (*&list)[pos].cmd_trigger.idx                  = CMD_EVENT_NONE; \
+   (*&list)[pos].cmd_trigger.triggered            = false; \
+   (*&list)[pos].boolean.off_label                = NULL; \
+   (*&list)[pos].boolean.on_label                 = NULL; \
 }
 
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)
@@ -17734,13 +17745,21 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MIDI,
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
-   const char *root                     = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
-   rarch_setting_t *list                = (rarch_setting_t*)calloc(
-         list_info->size, sizeof(*list));
+   const char *root                     = NULL;
    rarch_setting_t **list_ptr           = NULL;
+   rarch_setting_t *list                = (rarch_setting_t*)
+      malloc(list_info->size * sizeof(*list));
 
    if (!list)
       return NULL;
+
+   root                                 = 
+      msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
+
+   for (i = 0; i < list_info->size; i++)
+   {
+      MENU_SETTING_INITIALIZE(list, i);
+   }
 
    for (i = 0; i < ARRAY_SIZE(list_types); i++)
    {
@@ -17758,7 +17777,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       free(list);
       return NULL;
    }
-   menu_setting_terminate_last(list, list_info->index);
+
+   MENU_SETTING_INITIALIZE(list, list_info->index);
    list_info->index++;
 
    /* flatten this array to save ourselves some kilobytes. */
