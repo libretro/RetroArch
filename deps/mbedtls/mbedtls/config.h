@@ -893,36 +893,6 @@
 #endif
 
 /**
- * \def MBEDTLS_ENTROPY_NV_SEED
- *
- * Enable the non-volatile (NV) seed file-based entropy source.
- * (Also enables the NV seed read/write functions in the platform layer)
- *
- * This is crucial (if not required) on systems that do not have a
- * cryptographic entropy source (in hardware or kernel) available.
- *
- * Requires: MBEDTLS_ENTROPY_C, MBEDTLS_PLATFORM_C
- *
- * \note The read/write functions that are used by the entropy source are
- *       determined in the platform layer, and can be modified at runtime and/or
- *       compile-time depending on the flags (MBEDTLS_PLATFORM_NV_SEED_*) used.
- *
- * \note If you use the default implementation functions that read a seedfile
- *       with regular fopen(), please make sure you make a seedfile with the
- *       proper name (defined in MBEDTLS_PLATFORM_STD_NV_SEED_FILE) and at
- *       least MBEDTLS_ENTROPY_BLOCK_SIZE bytes in size that can be read from
- *       and written to or you will get an entropy source error! The default
- *       implementation will only use the first MBEDTLS_ENTROPY_BLOCK_SIZE
- *       bytes from the file.
- *
- * \note The entropy collector will write to the seed file before entropy is
- *       given to an external source, to update it.
- */
-#if 0
-#define MBEDTLS_ENTROPY_NV_SEED
-#endif
-
-/**
  * \def MBEDTLS_MEMORY_DEBUG
  *
  * Enable debugging of buffer allocator memory issues. Automatically prints
@@ -2646,9 +2616,6 @@
 #define MBEDTLS_PLATFORM_STD_PRINTF        printf /**< Default printf to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_EXIT_SUCCESS       0 /**< Default exit value to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_EXIT_FAILURE       1 /**< Default exit value to use, can be undefined */
-#define MBEDTLS_PLATFORM_STD_NV_SEED_READ   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
-#define MBEDTLS_PLATFORM_STD_NV_SEED_WRITE  mbedtls_platform_std_nv_seed_write /**< Default nv_seed_write function to use, can be undefined */
-#define MBEDTLS_PLATFORM_STD_NV_SEED_FILE  "seedfile" /**< Seed file to read/write with default implementation */
 #endif
 
 /* To Use Function Macros MBEDTLS_PLATFORM_C must be enabled */
@@ -2661,8 +2628,6 @@
 #define MBEDTLS_PLATFORM_TIME_TYPE_MACRO       time_t /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 #define MBEDTLS_PLATFORM_FPRINTF_MACRO      fprintf /**< Default fprintf macro to use, can be undefined */
 #define MBEDTLS_PLATFORM_PRINTF_MACRO        printf /**< Default printf macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_NV_SEED_READ_MACRO   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
-#define MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO  mbedtls_platform_std_nv_seed_write /**< Default nv_seed_write function to use, can be undefined */
 #endif
 
 /* SSL Cache options */

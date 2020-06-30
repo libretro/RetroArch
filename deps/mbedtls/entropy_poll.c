@@ -37,9 +37,6 @@
 #if defined(MBEDTLS_HAVEGE_C)
 #include "mbedtls/havege.h"
 #endif
-#if defined(MBEDTLS_ENTROPY_NV_SEED)
-#include "mbedtls/platform.h"
-#endif
 
 #if !defined(MBEDTLS_NO_PLATFORM_ENTROPY)
 
@@ -241,28 +238,5 @@ int mbedtls_havege_poll( void *data,
     return( 0 );
 }
 #endif /* MBEDTLS_HAVEGE_C */
-
-#if defined(MBEDTLS_ENTROPY_NV_SEED)
-int mbedtls_nv_seed_poll( void *data,
-                          unsigned char *output, size_t len, size_t *olen )
-{
-    unsigned char buf[MBEDTLS_ENTROPY_BLOCK_SIZE];
-    size_t use_len = MBEDTLS_ENTROPY_BLOCK_SIZE;
-    ((void) data);
-
-    memset( buf, 0, MBEDTLS_ENTROPY_BLOCK_SIZE );
-
-    if( mbedtls_nv_seed_read( buf, MBEDTLS_ENTROPY_BLOCK_SIZE ) < 0 )
-      return( MBEDTLS_ERR_ENTROPY_SOURCE_FAILED );
-
-    if( len < use_len )
-      use_len = len;
-
-    memcpy( output, buf, use_len );
-    *olen = use_len;
-
-    return( 0 );
-}
-#endif /* MBEDTLS_ENTROPY_NV_SEED */
 
 #endif /* MBEDTLS_ENTROPY_C */

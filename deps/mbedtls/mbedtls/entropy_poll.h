@@ -92,16 +92,6 @@ int mbedtls_hardware_poll( void *data,
                            unsigned char *output, size_t len, size_t *olen );
 #endif
 
-#if defined(MBEDTLS_ENTROPY_NV_SEED)
-/**
- * \brief           Entropy poll callback for a non-volatile seed file
- *
- * \note            This must accept NULL as its first argument.
- */
-int mbedtls_nv_seed_poll( void *data,
-                          unsigned char *output, size_t len, size_t *olen );
-#endif
-
 #ifdef __cplusplus
 }
 #endif
