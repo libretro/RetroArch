@@ -82,12 +82,14 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
    if (!chunk)
       return;
 
+#ifdef HAVE_RWAV
    if (chunk->rwav && chunk->rwav->samples)
    {
       /* rwav_free only frees the samples */
       rwav_free(chunk->rwav);
       free(chunk->rwav);
    }
+#endif
 
    if (chunk->buf)
       free(chunk->buf);
@@ -112,6 +114,7 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
 
 audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 {
+#ifdef HAVE_RWAV
    int sample_size;
    int64_t len                = 0;
    void *buf                  = NULL;
@@ -273,6 +276,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
 error:
    audio_mix_free_chunk(chunk);
+#endif
    return NULL;
 }
 
@@ -281,12 +285,14 @@ size_t audio_mix_get_chunk_num_samples(audio_chunk_t *chunk)
    if (!chunk)
       return 0;
 
+#ifdef HAVE_RWAV
    if (chunk->rwav)
    {
       if (chunk->resample)
          return chunk->resample_len;
       return chunk->rwav->numsamples;
    }
+#endif
 
    /* no other filetypes supported yet */
    return 0;
@@ -308,6 +314,7 @@ int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk,
    if (!chunk)
       return 0;
 
+#ifdef HAVE_RWAV
    if (chunk->rwav)
    {
       int sample_size    = chunk->rwav->bitspersample / 8;
@@ -329,6 +336,7 @@ int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk,
 
       return sample_out;
    }
+#endif
 
    /* no other filetypes supported yet */
    return 0;
@@ -339,6 +347,7 @@ int16_t* audio_mix_get_chunk_samples(audio_chunk_t *chunk)
    if (!chunk)
       return 0;
 
+#ifdef HAVE_RWAV
    if (chunk->rwav)
    {
       int16_t *sample;
@@ -350,6 +359,7 @@ int16_t* audio_mix_get_chunk_samples(audio_chunk_t *chunk)
 
       return sample;
    }
+#endif
 
    return NULL;
 }
@@ -359,8 +369,10 @@ int audio_mix_get_chunk_num_channels(audio_chunk_t *chunk)
    if (!chunk)
       return 0;
 
+#ifdef HAVE_RWAV
    if (chunk->rwav)
       return chunk->rwav->numchannels;
+#endif
 
    /* don't support other formats yet */
    return 0;

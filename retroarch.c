@@ -1103,15 +1103,17 @@ static const camera_driver_t *camera_drivers[] = {
 
 #define DEBUG_INFO_FILENAME "debug_info.txt"
 
-#define BSV_MAGIC          0x42535631
-
 #define MAGIC_INDEX        0
 #define SERIALIZER_INDEX   1
 #define CRC_INDEX          2
 #define STATE_SIZE_INDEX   3
 
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MAGIC          0x42535631
+
 #define BSV_MOVIE_IS_PLAYBACK_ON() (p_rarch->bsv_movie_state_handle && p_rarch->bsv_movie_state.movie_playback)
 #define BSV_MOVIE_IS_PLAYBACK_OFF() (p_rarch->bsv_movie_state_handle && !p_rarch->bsv_movie_state.movie_playback)
+#endif
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
@@ -1211,7 +1213,11 @@ static const camera_driver_t *camera_drivers[] = {
 #define RUNLOOP_MSG_QUEUE_UNLOCK()
 #endif
 
-#define BSV_MOVIE_IS_EOF() (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_EOF() || (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
+#else
+#define BSV_MOVIE_IS_EOF()
+#endif
 
 /* Time to exit out of the main loop?
  * Reasons for exiting:
@@ -1221,7 +1227,7 @@ static const camera_driver_t *camera_drivers[] = {
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive || BSV_MOVIE_IS_EOF() || ((p_rarch->runloop_max_frames != 0) && (frame_count >= p_rarch->runloop_max_frames)) || runloop_exec)
+#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((p_rarch->runloop_max_frames != 0) && (frame_count >= p_rarch->runloop_max_frames)) || runloop_exec)
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
@@ -1406,7 +1412,11 @@ static const camera_driver_t *camera_drivers[] = {
 #define CONFIG_FILE_ARG
 #endif
 
+#ifdef HAVE_BSV_MOVIE
 #define BSV_MOVIE_ARG "P:R:M:"
+#else
+#define BSV_MOVIE_ARG
+#endif
 
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
@@ -1527,6 +1537,7 @@ struct rarch_dir_list
    size_t ptr;
 };
 
+#ifdef HAVE_BSV_MOVIE
 struct bsv_state
 {
    bool movie_start_recording;
@@ -1560,6 +1571,7 @@ struct bsv_movie
    bool first_rewind;
    bool did_rewind;
 };
+#endif
 
 typedef struct video_pixel_scaler
 {
@@ -1590,7 +1602,9 @@ struct input_remote
 #endif
 };
 
+#ifdef HAVE_BSV_MOVIE
 typedef struct bsv_movie bsv_movie_t;
+#endif
 
 typedef struct input_remote input_remote_t;
 
@@ -2299,7 +2313,9 @@ struct rarch_state
 
    struct retro_system_av_info video_driver_av_info;
 
+#ifdef HAVE_BSV_MOVIE
    struct bsv_state bsv_movie_state;
+#endif
 
    struct retro_hw_render_callback hw_render;
 
@@ -2406,7 +2422,9 @@ struct rarch_state
 
    void *current_display_server_data;
 
+#ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;
+#endif
 
    rarch_softfilter_t *video_driver_state_filter;
    void               *video_driver_state_buffer;
@@ -2780,9 +2798,11 @@ static retro_proc_address_t video_driver_get_proc_address(const char *sym);
 static uintptr_t video_driver_get_current_framebuffer(void);
 static bool video_driver_find_driver(struct rarch_state *p_rarch);
 
+#ifdef HAVE_BSV_MOVIE
 static void bsv_movie_deinit(struct rarch_state *p_rarch);
 static bool bsv_movie_init(struct rarch_state *p_rarch);
 static bool bsv_movie_check(struct rarch_state *p_rarch);
+#endif
 
 static void driver_uninit(struct rarch_state *p_rarch, int flags);
 static void drivers_init(struct rarch_state *p_rarch,  int flags);
@@ -11148,10 +11168,12 @@ static void path_fill_names(struct rarch_state *p_rarch)
 
    path_init_savefile_internal(global, p_rarch);
 
+#ifdef HAVE_BSV_MOVIE
    if (global)
       strlcpy(p_rarch->bsv_movie_state.movie_path,
             global->name.savefile,
             sizeof(p_rarch->bsv_movie_state.movie_path));
+#endif
 
    if (string_is_empty(p_rarch->path_main_basename))
       return;
@@ -14358,7 +14380,9 @@ static void command_event_init_cheats(
    allow_cheats                 &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
 #endif
+#ifdef HAVE_BSV_MOVIE
    allow_cheats                 &= !(p_rarch->bsv_movie_state_handle != NULL);
+#endif
 
    if (!allow_cheats)
       return;
@@ -14547,8 +14571,10 @@ static bool event_init_content(
       command_event_load_auto_state(settings, 
             global, p_rarch);
 
+#ifdef HAVE_BSV_MOVIE
    bsv_movie_deinit(p_rarch);
    bsv_movie_init(p_rarch);
+#endif
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 
    return true;
@@ -15363,11 +15389,13 @@ bool command_event(enum event_command cmd, void *data)
          dir_check_shader(p_rarch, false, true);
          break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
+#ifdef HAVE_BSV_MOVIE
          if (!recording_is_enabled())
             command_event(CMD_EVENT_RECORD_INIT, NULL);
          else
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          bsv_movie_check(p_rarch);
+#endif
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
       {
@@ -15511,10 +15539,12 @@ bool command_event(enum event_command cmd, void *data)
             break;
          }
       case CMD_EVENT_LOAD_STATE:
+#ifdef HAVE_BSV_MOVIE
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
          if (p_rarch->bsv_movie_state_handle)
             return false;
+#endif
 
 #ifdef HAVE_CHEEVOS
          if (rcheevos_hardcore_active)
@@ -21555,6 +21585,7 @@ void recording_driver_update_streaming_url(void)
    }
 }
 
+#ifdef HAVE_BSV_MOVIE
 /* BSV MOVIE */
 static bool bsv_movie_init_playback(
       bsv_movie_t *handle, const char *path)
@@ -21968,6 +21999,7 @@ static bool bsv_movie_check(struct rarch_state *p_rarch)
 
    return true;
 }
+#endif
 
 /* INPUT OVERLAY */
 
@@ -23849,6 +23881,7 @@ static int16_t input_state(unsigned port, unsigned device,
    joypad_info.joy_idx         = settings->uints.input_joypad_map[port];
    joypad_info.auto_binds      = input_autoconf_binds[joypad_info.joy_idx];
 
+#ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_PLAYBACK_ON())
    {
       int16_t bsv_result;
@@ -23862,6 +23895,7 @@ static int16_t input_state(unsigned port, unsigned device,
 
       p_rarch->bsv_movie_state.movie_end = true;
    }
+#endif
 
    device &= RETRO_DEVICE_MASK;
    ret     = p_rarch->current_input->input_state(
@@ -23926,11 +23960,13 @@ static int16_t input_state(unsigned port, unsigned device,
          result = input_state_device(p_rarch, ret, port, device, idx, id, false);
    }
 
+#ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_PLAYBACK_OFF())
    {
       result = swap_if_big16(result);
       intfstream_write(p_rarch->bsv_movie_state_handle->file, &result, 2);
    }
+#endif
 
    return result;
 }
@@ -35171,11 +35207,13 @@ static void retroarch_print_help(const char *arg0)
       buf[0] = '\0';
       strlcpy(buf, "                        Format is PORT:ID, where ID is a number "
             "corresponding to the particular device.\n", sizeof(buf));
+#ifdef HAVE_BSV_MOVIE
       strlcat(buf, "  -P, --bsvplay=FILE    Playback a BSV movie file.\n", sizeof(buf));
       strlcat(buf, "  -R, --bsvrecord=FILE  Start recording a BSV movie file from "
             "the beginning.\n", sizeof(buf));
       strlcat(buf, "      --eof-exit        Exit upon reaching the end of the "
             "BSV movie file.\n", sizeof(buf));
+#endif
       strlcat(buf, "  -M, --sram-mode=MODE  SRAM handling mode. MODE can be "
             "'noload-nosave',\n"
             "                        'noload-save', 'load-nosave' or "
@@ -35205,6 +35243,7 @@ static void retroarch_print_help(const char *arg0)
       strlcat(buf, "      --recordconfig    Path to settings used during recording.\n", sizeof(buf));
       strlcat(buf, "      --size=WIDTHxHEIGHT\n"
             "                        Overrides output video size when recording.\n", sizeof(buf));
+#ifdef HAVE_PATCH
       strlcat(buf, "  -U, --ups=FILE        Specifies path for UPS patch that will be "
             "applied to content.\n", sizeof(buf));
       strlcat(buf, "      --bps=FILE        Specifies path for BPS patch that will be "
@@ -35212,6 +35251,7 @@ static void retroarch_print_help(const char *arg0)
       strlcat(buf, "      --ips=FILE        Specifies path for IPS patch that will be "
             "applied to content.\n", sizeof(buf));
       strlcat(buf, "      --no-patch        Disables all forms of content patching.\n", sizeof(buf));
+#endif
       strlcat(buf, "  -D, --detach          Detach program from the running console. "
             "Not relevant for all platforms.\n", sizeof(buf));
       strlcat(buf, "      --max-frames=NUMBER\n"
@@ -35221,10 +35261,12 @@ static void retroarch_print_help(const char *arg0)
             "                        Takes a screenshot at the end of max-frames.\n", sizeof(buf));
       strlcat(buf, "      --max-frames-ss-path=FILE\n"
             "                        Path to save the screenshot to at the end of max-frames.\n", sizeof(buf));
+#ifdef HAVE_ACCESSIBILITY
+      strlcat(buf, "      --accessibility\n"
+            "                        Enables accessibilty for blind users using text-to-speech.\n", sizeof(buf));
+#endif
       puts(buf);
    }
-   printf("      --accessibility\n"
-          "                        Enables accessibilty for blind users using text-to-speech.\n");
 }
 
 /**
@@ -35607,18 +35649,22 @@ static void retroarch_parse_input_and_config(
                break;
    #endif
             case 'P':
+#ifdef HAVE_BSV_MOVIE
                strlcpy(p_rarch->bsv_movie_state.movie_start_path, optarg,
                      sizeof(p_rarch->bsv_movie_state.movie_start_path));
 
                p_rarch->bsv_movie_state.movie_start_playback  = true;
                p_rarch->bsv_movie_state.movie_start_recording = false;
+#endif
                break;
             case 'R':
+#ifdef HAVE_BSV_MOVIE
                strlcpy(p_rarch->bsv_movie_state.movie_start_path, optarg,
                      sizeof(p_rarch->bsv_movie_state.movie_start_path));
 
                p_rarch->bsv_movie_state.movie_start_playback  = false;
                p_rarch->bsv_movie_state.movie_start_recording = true;
+#endif
                break;
 
             case 'M':
@@ -35790,7 +35836,9 @@ static void retroarch_parse_input_and_config(
                exit(0);
 
             case RA_OPT_EOF_EXIT:
+#ifdef HAVE_BSV_MOVIE
                p_rarch->bsv_movie_state.eof_exit = true;
+#endif
                break;
 
             case RA_OPT_VERSION:
@@ -36652,8 +36700,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return (p_rarch->current_core.has_set_subsystems);
       case RARCH_CTL_CORE_IS_RUNNING:
          return p_rarch->runloop_core_running;
+#ifdef HAVE_BSV_MOVIE
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (p_rarch->bsv_movie_state_handle != NULL);
+#endif
       case RARCH_CTL_IS_PATCH_BLOCKED:
          return p_rarch->rarch_patch_blocked;
       case RARCH_CTL_IS_BPS_PREF:
@@ -36695,7 +36745,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
          cheat_manager_state_free();
+#ifdef HAVE_BSV_MOVIE
          bsv_movie_deinit(p_rarch);
+#endif
 
          command_event(CMD_EVENT_CORE_DEINIT, NULL);
 
@@ -38835,10 +38887,12 @@ int runloop_iterate(void)
       autosave_lock();
 #endif
 
+#ifdef HAVE_BSV_MOVIE
    /* Used for rewinding while playback/record. */
    if (p_rarch->bsv_movie_state_handle)
       p_rarch->bsv_movie_state_handle->frame_pos[p_rarch->bsv_movie_state_handle->frame_ptr]
          = intfstream_tell(p_rarch->bsv_movie_state_handle->file);
+#endif
 
    if (  p_rarch->camera_cb.caps &&
          p_rarch->camera_driver  &&
@@ -38955,6 +39009,7 @@ int runloop_iterate(void)
       }
    }
 
+#ifdef HAVE_BSV_MOVIE
    if (p_rarch->bsv_movie_state_handle)
    {
       p_rarch->bsv_movie_state_handle->frame_ptr    =
@@ -38965,6 +39020,7 @@ int runloop_iterate(void)
          !p_rarch->bsv_movie_state_handle->did_rewind;
       p_rarch->bsv_movie_state_handle->did_rewind   = false;
    }
+#endif
 
 #ifdef HAVE_THREADS
    if (p_rarch->runloop_autosave)

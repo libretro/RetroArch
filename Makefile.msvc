@@ -61,6 +61,7 @@ HAVE_LANGEXTRA           := 1
 HAVE_CHEEVOS             := 1
 HAVE_SHADERPIPELINE      := 1
 HAVE_IMAGEVIEWER         := 1
+HAVE_BSV_MOVIE           := 1
 
 ifeq ($(HAVE_D3D8), 1)
    D3D8_LIBS := -ld3d8

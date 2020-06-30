@@ -23,7 +23,9 @@
 #include <audio/audio_mixer.h>
 #include <audio/audio_resampler.h>
 
+#ifdef HAVE_RWAV
 #include <formats/rwav.h>
+#endif
 #include <memalign.h>
 
 #include <stdio.h>
@@ -188,6 +190,7 @@ struct audio_mixer_voice
 static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {{0}};
 static unsigned s_rate = 0;
 
+#ifdef HAVE_RWAV
 static bool wav_to_float(const rwav_t* wav, float** pcm, size_t samples_out)
 {
    size_t i;
@@ -300,6 +303,7 @@ static bool one_shot_resample(const float* in, size_t samples_in,
    resampler->free(data);
    return true;
 }
+#endif
 
 void audio_mixer_init(unsigned rate)
 {
@@ -321,6 +325,7 @@ void audio_mixer_done(void)
 
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
 {
+#ifdef HAVE_RWAV
    /* WAV data */
    rwav_t wav;
    /* WAV samples converted to float */
@@ -365,6 +370,9 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
    rwav_free(&wav);
 
    return sound;
+#else
+   return NULL;
+#endif
 }
 
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)

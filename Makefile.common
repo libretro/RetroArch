@@ -294,6 +294,10 @@ ifeq ($(HAVE_AUDIOMIXER), 1)
           $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o
 endif
 
+ifeq ($(HAVE_BSV_MOVIE), 1)
+   DEFINES += -DHAVE_BSV_MOVIE
+endif
+
 ifeq ($(HAVE_RUNAHEAD), 1)
    DEFINES += -DHAVE_RUNAHEAD
 endif

@@ -140,6 +140,7 @@ HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_LUA=no                # Lua support (for Retro Achievements)
 HAVE_DISCORD=yes           # Discord Integration
 C89_DISCORD=no
+HAVE_BSV_MOVIE=yes         # BSV movie support
 HAVE_ACCESSIBILITY=yes     # Accessibility Integration
 HAVE_TRANSLATE=yes         # OCR and Translation Server Integration
 HAVE_SHADERPIPELINE=yes    # Additional shader-based pipelines
