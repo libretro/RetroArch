@@ -185,11 +185,6 @@ int mbedtls_md_clone( mbedtls_md_context_t *dst,
     return( 0 );
 }
 
-int mbedtls_md_init_ctx( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_info )
-{
-    return mbedtls_md_setup( ctx, md_info, 1 );
-}
-
 int mbedtls_md_setup( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_info, int hmac )
 {
     if( md_info == NULL || ctx == NULL )
