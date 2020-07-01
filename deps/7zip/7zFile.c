@@ -18,13 +18,15 @@ void File_Construct(CSzFile *p)
 static WRes File_Open(CSzFile *p, const char *name, int writeMode)
 {
    p->file = rfopen(name, writeMode ? "wb+" : "rb");
-#ifdef UNDER_CE
    if (!p->file)
+   {
+#ifdef UNDER_CE
       return 2; /* ENOENT */
 #else
-   if (!p->file)
       return errno;
 #endif
+   }
+
    return 0;
 }
 

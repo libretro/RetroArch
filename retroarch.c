@@ -22271,7 +22271,7 @@ static enum overlay_visibility input_overlay_get_visibility(
       struct rarch_state *p_rarch,
       int overlay_idx)
 {
-   enum overlay_visibility *visibility = p_rarch->overlay_visibility;;
+   enum overlay_visibility *visibility = p_rarch->overlay_visibility;
 
     if (!visibility)
        return OVERLAY_VISIBILITY_DEFAULT;
