@@ -907,6 +907,12 @@ chd_error chd_open_file(RFILE *file, int mode, chd_file *parent, chd_file **chd)
 						void* codec = NULL;
 						switch (newchd->header.compression[decompnum])
 						{
+                     case CHD_CODEC_ZLIB:
+#ifdef HAVE_ZLIB
+								codec = &newchd->zlib_codec_data;
+#endif
+								break;
+
 							case CHD_CODEC_CD_ZLIB:
 #ifdef HAVE_ZLIB
 								codec = &newchd->cdzl_codec_data;
@@ -1064,6 +1070,12 @@ void chd_close(chd_file *chd)
             case CHD_CODEC_CD_LZMA:
 #ifdef HAVE_7ZIP
                codec = &chd->cdlz_codec_data;
+#endif
+               break;
+
+            case CHD_CODEC_ZLIB:
+#ifdef HAVE_ZLIB
+               codec = &chd->zlib_codec_data;
 #endif
                break;
 
@@ -1723,6 +1735,12 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 						codec = &chd->cdlz_codec_data;
 #endif
 						break;
+
+               case CHD_CODEC_ZLIB:
+#ifdef HAVE_ZLIB
+                  codec = &chd->zlib_codec_data;
+#endif
+                  break;
 
 					case CHD_CODEC_CD_ZLIB:
 #ifdef HAVE_ZLIB
