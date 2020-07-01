@@ -29,8 +29,6 @@
 
 #include "mbedtls/timing.h"
 
-#if !defined(MBEDTLS_TIMING_ALT)
-
 #if !defined(unix) && !defined(__unix__) && !defined(__unix) && \
     !defined(__APPLE__) && !defined(_WIN32) && !defined(__HAIKU__)
 #error "This module only works on Unix and Windows, see MBEDTLS_TIMING_C in config.h"
@@ -347,7 +345,5 @@ int mbedtls_timing_get_delay( void *data )
 
     return( 0 );
 }
-
-#endif /* !MBEDTLS_TIMING_ALT */
 
 #endif /* MBEDTLS_TIMING_C */

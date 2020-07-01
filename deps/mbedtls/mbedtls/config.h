@@ -120,21 +120,6 @@
  */
 
 /**
- * \def MBEDTLS_TIMING_ALT
- *
- * Uncomment to provide your own alternate implementation for mbedtls_timing_hardclock(),
- * mbedtls_timing_get_timer(), mbedtls_set_alarm(), mbedtls_set/get_delay()
- *
- * Only works if you have MBEDTLS_TIMING_C enabled.
- *
- * You will need to provide a header "timing_alt.h" and an implementation at
- * compile time.
- */
-#if 0
-#define MBEDTLS_TIMING_ALT
-#endif
-
-/**
  * \def MBEDTLS_AES_ALT
  *
  * MBEDTLS__MODULE_NAME__ALT: Uncomment a macro to let mbed TLS use your
@@ -2210,11 +2195,6 @@
 #define MBEDTLS_ENTROPY_MAX_SOURCES                20 /**< Maximum number of sources supported */
 #define MBEDTLS_ENTROPY_MAX_GATHER                128 /**< Maximum amount requested from entropy sources */
 #define MBEDTLS_ENTROPY_MIN_HARDWARE               32 /**< Default minimum number of bytes required for the hardware entropy source mbedtls_hardware_poll() before entropy is released */
-#endif
-
-/* Memory buffer allocator options */
-#if 0
-#define MBEDTLS_MEMORY_ALIGN_MULTIPLE      4 /**< Align on multiples of this value */
 #endif
 
 /* Platform options */

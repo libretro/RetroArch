@@ -29,7 +29,6 @@
 #include MBEDTLS_CONFIG_FILE
 #endif
 
-#if !defined(MBEDTLS_TIMING_ALT)
 /* Regular implementation */
 
 #include <stdint.h>
@@ -115,10 +114,6 @@ int mbedtls_timing_get_delay( void *data );
 #ifdef __cplusplus
 }
 #endif
-
-#else  /* MBEDTLS_TIMING_ALT */
-#include "timing_alt.h"
-#endif /* MBEDTLS_TIMING_ALT */
 
 #ifdef __cplusplus
 extern "C" {
