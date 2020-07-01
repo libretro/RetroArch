@@ -46,7 +46,9 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -1856,9 +1858,15 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain, frame_index);
    vulkan_filter_chain_set_frame_count(
          (vulkan_filter_chain_t*)vk->filter_chain, frame_count);
+#ifdef HAVE_REWIND
    vulkan_filter_chain_set_frame_direction(
          (vulkan_filter_chain_t*)vk->filter_chain,
          state_manager_frame_is_reversed() ? -1 : 1);
+#else
+   vulkan_filter_chain_set_frame_direction(
+         (vulkan_filter_chain_t*)vk->filter_chain,
+         1);
+#endif
 
    /* Render offscreen filter chain passes. */
    {

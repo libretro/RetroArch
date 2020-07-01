@@ -247,8 +247,14 @@ OBJ += \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
-       $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
-       managers/state_manager.o \
+       $(LIBRETRO_COMM_DIR)/queues/message_queue.o
+
+ifeq ($(HAVE_REWIND), 1)
+DEFINES += -DHAVE_REWIND
+OBJ     += managers/state_manager.o
+endif
+
+OBJ += \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \

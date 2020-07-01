@@ -156,7 +156,9 @@ typedef struct retro_callbacks
 
 bool core_set_default_callbacks(struct retro_callbacks *cbs);
 
+#ifdef HAVE_REWIND
 bool core_set_rewind_callbacks(void);
+#endif
 
 #ifdef HAVE_NETWORKING
 bool core_set_netplay_callbacks(void);

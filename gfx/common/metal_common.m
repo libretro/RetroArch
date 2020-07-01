@@ -23,17 +23,20 @@
 #include <simd/simd.h>
 
 #import <gfx/video_frame.h>
-#include "../../managers/state_manager.h"
 
 #import "metal_common.h"
-#import "../../ui/drivers/cocoa/cocoa_common.h"
 #import "Context.h"
 
+#include "../../ui/drivers/cocoa/cocoa_common.h"
+
+#ifdef HAVE_REWIND
+#include "../../managers/state_manager.h"
+#endif
 #ifdef HAVE_MENU
-#import "../../menu/menu_driver.h"
+#include "../../menu/menu_driver.h"
 #endif
 #ifdef HAVE_GFX_WIDGETS
-#import "../gfx_widgets.h"
+#include "../gfx_widgets.h"
 #endif
 
 #define STRUCT_ASSIGN(x, y) \
@@ -986,7 +989,17 @@ typedef struct MTLALIGN(16)
       if (_shader->pass[i].frame_count_mod)
          _engine.pass[i].frame_count %= _shader->pass[i].frame_count_mod;
 
-      _engine.pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+#ifdef HAVE_REWIND
+      if (state_manager_frame_is_reversed())
+      {
+         _engine.pass[i].frame_direction = -1;
+      }
+      else
+#else
+      {
+         _engine.pass[i].frame_direction = 1;
+      }
+#endif
 
       for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)
       {

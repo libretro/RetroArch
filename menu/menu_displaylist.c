@@ -2603,6 +2603,7 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
+#ifdef HAVE_REWIND
       if (settings->bools.menu_show_rewind && !settings->bools.kiosk_mode_enable)
       {
          if (menu_entries_append_enum(list,
@@ -2612,6 +2613,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0))
             count++;
       }
+#endif
 
       if (settings->bools.menu_show_latency && !settings->bools.kiosk_mode_enable)
       {
@@ -7886,7 +7888,9 @@ unsigned menu_displaylist_build_list(
 
          {
             menu_displaylist_build_info_t build_list[] = {
+#ifdef HAVE_REWIND
                {MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,                    PARSE_ONLY_BOOL},
+#endif
                {MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,                   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,                  PARSE_ONLY_BOOL},
 #ifdef HAVE_VIDEO_LAYOUT
@@ -8134,7 +8138,9 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
+#ifdef HAVE_REWIND
                {MENU_ENUM_LABEL_REWIND_SETTINGS,         PARSE_ACTION    },
+#endif
                {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS, PARSE_ACTION},
                {MENU_ENUM_LABEL_FASTFORWARD_RATIO,       PARSE_ONLY_FLOAT},
                {MENU_ENUM_LABEL_SLOWMOTION_RATIO,        PARSE_ONLY_FLOAT},

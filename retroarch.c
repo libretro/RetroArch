@@ -226,7 +226,9 @@
 #ifdef HAVE_CHEATS
 #include "managers/cheat_manager.h"
 #endif
+#ifdef HAVE_REWIND
 #include "managers/state_manager.h"
+#endif
 #ifdef HAVE_AUDIOMIXER
 #include "tasks/task_audio_mixer.h"
 #endif
@@ -2128,8 +2130,10 @@ struct rarch_state
    size_t audio_driver_chunk_nonblock_size;
    size_t audio_driver_chunk_block_size;
 
+#ifdef HAVE_REWIND
    size_t audio_driver_rewind_ptr;
    size_t audio_driver_rewind_size;
+#endif
    size_t audio_driver_buffer_size;
    size_t audio_driver_data_ptr;
 
@@ -2464,7 +2468,9 @@ struct rarch_state
 
    void *video_context_data;
 
+#ifdef HAVE_REWIND
    int16_t *audio_driver_rewind_buf;
+#endif
    int16_t *audio_driver_output_samples_conv_buf;
 
    retro_dsp_filter_t *audio_driver_dsp;
@@ -15750,13 +15756,16 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_REWIND_DEINIT:
+#ifdef HAVE_REWIND
 #ifdef HAVE_CHEEVOS
          if (rcheevos_hardcore_active)
             return false;
 #endif
          state_manager_event_deinit();
+#endif
          break;
       case CMD_EVENT_REWIND_INIT:
+#ifdef HAVE_REWIND
          {
             bool rewind_enable        = settings->bools.rewind_enable;
             unsigned rewind_buf_size  = settings->sizes.rewind_buffer_size;
@@ -15777,8 +15786,10 @@ bool command_event(enum event_command cmd, void *data)
                }
             }
          }
+#endif
          break;
       case CMD_EVENT_REWIND_TOGGLE:
+#ifdef HAVE_REWIND
          {
             bool rewind_enable        = settings->bools.rewind_enable;
             if (rewind_enable)
@@ -15786,6 +15797,7 @@ bool command_event(enum event_command cmd, void *data)
             else
                command_event(CMD_EVENT_REWIND_DEINIT, NULL);
          }
+#endif
          break;
       case CMD_EVENT_AUTOSAVE_INIT:
 #ifdef HAVE_THREADS
@@ -16315,7 +16327,9 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Disable rewind & SRAM autosave if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
+#ifdef HAVE_REWIND
             state_manager_event_deinit();
+#endif
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
@@ -16355,7 +16369,9 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Disable rewind if it was enabled
                TODO/FIXME: Add a setting for these tweaks */
+#ifdef HAVE_REWIND
             state_manager_event_deinit();
+#endif
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
@@ -16393,7 +16409,9 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Disable rewind if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
+#ifdef HAVE_REWIND
             state_manager_event_deinit();
+#endif
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
@@ -16436,10 +16454,12 @@ bool command_event(enum event_command cmd, void *data)
                bool rewind_enable                  = settings->bools.rewind_enable;
                unsigned autosave_interval          = settings->uints.autosave_interval;
 
+#ifdef HAVE_REWIND
                /* Re-enable rewind if it was enabled
                 * TODO/FIXME: Add a setting for these tweaks */
                if (rewind_enable)
                   command_event(CMD_EVENT_REWIND_INIT, NULL);
+#endif
                if (autosave_interval != 0)
                   command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
             }
@@ -28480,11 +28500,13 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
 
    p_rarch->audio_driver_data_ptr           = 0;
 
+#ifdef HAVE_REWIND
    if (p_rarch->audio_driver_rewind_buf)
       free(p_rarch->audio_driver_rewind_buf);
    p_rarch->audio_driver_rewind_buf         = NULL;
 
    p_rarch->audio_driver_rewind_size        = 0;
+#endif
 
    if (!audio_enable)
    {
@@ -28579,16 +28601,17 @@ static bool audio_driver_init_internal(
    unsigned new_rate       = 0;
    float   *aud_inp_data   = NULL;
    float  *samples_buf     = NULL;
-   int16_t *rewind_buf     = NULL;
    size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings    = p_rarch->configuration_settings;
    bool audio_enable       = settings->bools.audio_enable;
    bool audio_sync         = settings->bools.audio_sync;
    bool audio_rate_control = settings->bools.audio_rate_control;
    float slowmotion_ratio  = settings->floats.slowmotion_ratio;
+#ifdef HAVE_REWIND
+   int16_t *rewind_buf     = NULL;
+#endif
    /* Accomodate rewind since at some point we might have two full buffers. */
-   size_t outsamples_max   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO *
-      slowmotion_ratio;
+   size_t outsamples_max   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * slowmotion_ratio;
    int16_t *conv_buf       = (int16_t*)malloc(outsamples_max
          * sizeof(int16_t));
 
@@ -28606,6 +28629,7 @@ static bool audio_driver_init_internal(
    p_rarch->audio_driver_chunk_nonblock_size     = AUDIO_CHUNK_SIZE_NONBLOCKING;
    p_rarch->audio_driver_chunk_size              = p_rarch->audio_driver_chunk_block_size;
 
+#ifdef HAVE_REWIND
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
    rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t));
@@ -28616,6 +28640,7 @@ static bool audio_driver_init_internal(
 
    p_rarch->audio_driver_rewind_buf              = rewind_buf;
    p_rarch->audio_driver_rewind_size             = max_bufsamples;
+#endif
 
    if (!audio_enable)
    {
@@ -29091,6 +29116,7 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    return frames;
 }
 
+#ifdef HAVE_REWIND
 /**
  * audio_driver_sample_rewind:
  * @left                 : value of the left audio channel.
@@ -29138,6 +29164,7 @@ static size_t audio_driver_sample_batch_rewind(
 
    return frames;
 }
+#endif
 
 void audio_driver_dsp_filter_free(void)
 {
@@ -29217,6 +29244,7 @@ static void audio_driver_monitor_adjust_system_rates(
          p_rarch->audio_driver_input);
 }
 
+#ifdef HAVE_REWIND
 void audio_driver_setup_rewind(void)
 {
    unsigned i;
@@ -29239,6 +29267,7 @@ void audio_driver_setup_rewind(void)
 
    p_rarch->audio_driver_data_ptr = 0;
 }
+#endif
 
 
 bool audio_driver_get_devices_list(void **data)
@@ -29933,6 +29962,7 @@ static bool audio_driver_stop(struct rarch_state *p_rarch)
          p_rarch->audio_driver_context_audio_data);
 }
 
+#ifdef HAVE_REWIND
 void audio_driver_frame_is_reverse(void)
 {
    struct rarch_state            *p_rarch = &rarch_st;
@@ -29967,6 +29997,7 @@ void audio_driver_frame_is_reverse(void)
             p_rarch->runloop_slowmotion,
             p_rarch->runloop_fastmotion);
 }
+#endif
 
 void audio_set_float(enum audio_action action, float val)
 {
@@ -36293,7 +36324,9 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
    input_driver_deinit_mapper(p_rarch);
    input_driver_init_mapper(p_rarch);
+#ifdef HAVE_REWIND
    command_event(CMD_EVENT_REWIND_INIT, NULL);
+#endif
    command_event_init_controllers(p_rarch);
    if (!string_is_empty(global->record.path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
@@ -36820,7 +36853,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          command_event(CMD_EVENT_SAVE_FILES, NULL);
 
+#ifdef HAVE_REWIND
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+#endif
 #ifdef HAVE_CHEATS
          cheat_manager_state_free();
 #endif
@@ -38561,8 +38596,12 @@ static enum runloop_state runloop_check_state(
                CMD_EVENT_FULLSCREEN_TOGGLE, true, &toggle);
 
          /* Check if it's not oneshot */
-         if (!(trig_frameadvance || BIT256_GET(current_bits, RARCH_REWIND)))
+         if (!trig_frameadvance)
             focused = false;
+#ifdef HAVE_REWIND
+         else if (!(BIT256_GET(current_bits, RARCH_REWIND)))
+            focused = false;
+#endif
       }
    }
 
@@ -38712,6 +38751,7 @@ static enum runloop_state runloop_check_state(
 
    if (!rcheevos_hardcore_active)
 #endif
+#ifdef HAVE_REWIND
    {
       char s[128];
       bool rewinding = false;
@@ -38736,6 +38776,7 @@ static enum runloop_state runloop_check_state(
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
+#endif
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
 #ifdef HAVE_CHEEVOS
@@ -38764,11 +38805,13 @@ static enum runloop_state runloop_check_state(
          if (!widgets_active)
 #endif
          {
+#ifdef HAVE_REWIND
             if (state_manager_frame_is_reversed())
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             else
+#endif
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -39437,6 +39480,7 @@ bool core_set_default_callbacks(struct retro_callbacks *cbs)
    return true;
 }
 
+#ifdef HAVE_REWIND
 /**
  * core_set_rewind_callbacks:
  *
@@ -39459,6 +39503,7 @@ bool core_set_rewind_callbacks(void)
    }
    return true;
 }
+#endif
 
 #ifdef HAVE_NETWORKING
 /**

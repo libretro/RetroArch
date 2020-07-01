@@ -33,7 +33,9 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -1907,7 +1909,11 @@ static bool gl_core_frame(void *data, const void *frame,
       texture.padded_height = streamed->height;
    }
    gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
+#ifdef HAVE_REWIND
    gl_core_filter_chain_set_frame_direction(gl->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
+#else
+   gl_core_filter_chain_set_frame_direction(gl->filter_chain, 1);
+#endif
    gl_core_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl_core_filter_chain_build_offscreen_passes(gl->filter_chain, &gl->filter_chain_vp);
 

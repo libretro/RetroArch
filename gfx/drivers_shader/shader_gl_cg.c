@@ -49,7 +49,9 @@
 #include "../../core.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)
 
@@ -338,16 +340,31 @@ static void gl_cg_set_params(void *dat, void *shader_data)
    set_param_2f(cg->prg[cg->active_idx].vid_size_f, width, height);
    set_param_2f(cg->prg[cg->active_idx].tex_size_f, tex_width, tex_height);
    set_param_2f(cg->prg[cg->active_idx].out_size_f, out_width, out_height);
-   cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_f,
-         state_manager_frame_is_reversed() ? -1.0 : 1.0);
+
+#ifdef HAVE_REWIND
+   if (state_manager_frame_is_reversed())
+   {
+      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_f,
+            -1.0);
+      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_v,
+            -1.0);
+   }
+   else
+#else
+   {
+      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_f,
+            1.0);
+      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_v,
+            1.0);
+   }
+#endif
 
    set_param_2f(cg->prg[cg->active_idx].vid_size_v, width, height);
    set_param_2f(cg->prg[cg->active_idx].tex_size_v, tex_width, tex_height);
    set_param_2f(cg->prg[cg->active_idx].out_size_v, out_width, out_height);
-   cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_v,
-         state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
-   if (cg->prg[cg->active_idx].frame_cnt_f || cg->prg[cg->active_idx].frame_cnt_v)
+   if (  cg->prg[cg->active_idx].frame_cnt_f || 
+         cg->prg[cg->active_idx].frame_cnt_v)
    {
       unsigned modulo = cg->shader->pass[cg->active_idx - 1].frame_count_mod;
       if (modulo)

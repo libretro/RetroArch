@@ -34,7 +34,9 @@
 #endif
 
 #include "shader_glsl.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 #include "../../core.h"
 #include "../../verbosity.h"
 
@@ -1191,7 +1193,14 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    }
 
    if (uni->frame_direction >= 0)
-      glUniform1i(uni->frame_direction, state_manager_frame_is_reversed() ? -1 : 1);
+   {
+#ifdef HAVE_REWIND
+      if (state_manager_frame_is_reversed())
+         glUniform1i(uni->frame_direction, -1);
+      else
+#endif
+         glUniform1i(uni->frame_direction, 1);
+   }
 
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
