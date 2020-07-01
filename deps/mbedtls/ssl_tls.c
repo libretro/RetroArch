@@ -50,7 +50,7 @@
 #include "arc4_alt.h"
 
 /* Length of the "epoch" field in the record header */
-static inline size_t ssl_ep_len( const mbedtls_ssl_context *ssl )
+static INLINE size_t ssl_ep_len( const mbedtls_ssl_context *ssl )
 {
 #if defined(MBEDTLS_SSL_PROTO_DTLS)
     if( ssl->conf->transport == MBEDTLS_SSL_TRANSPORT_DATAGRAM )
@@ -3040,7 +3040,7 @@ static void ssl_dtls_replay_reset( mbedtls_ssl_context *ssl )
     ssl->in_window = 0;
 }
 
-static inline uint64_t ssl_load_six_bytes( unsigned char *buf )
+static INLINE uint64_t ssl_load_six_bytes( unsigned char *buf )
 {
     return( ( (uint64_t) buf[0] << 40 ) |
             ( (uint64_t) buf[1] << 32 ) |

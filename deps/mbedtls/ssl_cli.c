@@ -946,8 +946,7 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
         *p++ = MBEDTLS_SSL_COMPRESS_NULL;
     }
 
-    // First write extensions, then the total length
-    //
+    /* First write extensions, then the total length */
 #if defined(MBEDTLS_SSL_SERVER_NAME_INDICATION)
     ssl_write_hostname_ext( ssl, p + 2 + ext_len, &olen );
     ext_len += olen;
