@@ -266,10 +266,11 @@ static chd_error metadata_find_entry(chd_file *chd, UINT32 metatag, UINT32 metai
 
 #define CHD_MAKE_TAG(a,b,c,d)       (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
+#define CHD_CODEC_ZLIB				CHD_MAKE_TAG('z','l','i','b')
 /* general codecs with CD frontend */
-#define CHD_CODEC_CD_ZLIB CHD_MAKE_TAG('c','d','z','l')
-#define CHD_CODEC_CD_LZMA CHD_MAKE_TAG('c','d','l','z')
-#define CHD_CODEC_CD_FLAC CHD_MAKE_TAG('c','d','f','l')
+#define CHD_CODEC_CD_ZLIB        CHD_MAKE_TAG('c','d','z','l')
+#define CHD_CODEC_CD_LZMA        CHD_MAKE_TAG('c','d','l','z')
+#define CHD_CODEC_CD_FLAC        CHD_MAKE_TAG('c','d','f','l')
 
 static const codec_interface codec_interfaces[] =
 {
@@ -300,6 +301,17 @@ static const codec_interface codec_interfaces[] =
 	{
 		CHDCOMPRESSION_ZLIB_PLUS,
 		"zlib+",
+		FALSE,
+		zlib_codec_init,
+		zlib_codec_free,
+		zlib_codec_decompress,
+		NULL
+	},
+
+   /* V5 zlib compression */
+	{
+		CHD_CODEC_ZLIB,
+		"zlib (Deflate)",
 		FALSE,
 		zlib_codec_init,
 		zlib_codec_free,
