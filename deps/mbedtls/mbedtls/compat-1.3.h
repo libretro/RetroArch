@@ -186,9 +186,6 @@
 #if defined MBEDTLS_ENTROPY_FORCE_SHA256
 #define POLARSSL_ENTROPY_FORCE_SHA256 MBEDTLS_ENTROPY_FORCE_SHA256
 #endif
-#if defined MBEDTLS_ERROR_C
-#define POLARSSL_ERROR_C MBEDTLS_ERROR_C
-#endif
 #if defined MBEDTLS_ERROR_STRERROR_DUMMY
 #define POLARSSL_ERROR_STRERROR_DUMMY MBEDTLS_ERROR_STRERROR_DUMMY
 #endif
@@ -1865,7 +1862,7 @@
 #define entropy_update_manual mbedtls_entropy_update_manual
 #define entropy_update_seed_file mbedtls_entropy_update_seed_file
 #define entropy_write_seed_file mbedtls_entropy_write_seed_file
-#define error_strerror mbedtls_strerror
+#define error_strerror strerror
 #define f_source_ptr mbedtls_entropy_f_source_ptr
 #define gcm_auth_decrypt mbedtls_gcm_auth_decrypt
 #define gcm_context mbedtls_gcm_context

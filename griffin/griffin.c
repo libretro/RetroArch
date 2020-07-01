@@ -1543,7 +1543,6 @@ SSL
 #include "../deps/mbedtls/ecp_curves.c"
 #include "../deps/mbedtls/entropy.c"
 #include "../deps/mbedtls/entropy_poll.c"
-#include "../deps/mbedtls/error.c"
 #include "../deps/mbedtls/gcm.c"
 #include "../deps/mbedtls/hmac_drbg.c"
 #include "../deps/mbedtls/md.c"

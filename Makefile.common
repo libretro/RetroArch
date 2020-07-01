@@ -521,7 +521,6 @@ ifeq ($(HAVE_BUILTINMBEDTLS), 1)
                      deps/mbedtls/ecp_curves.o \
                      deps/mbedtls/entropy.o \
                      deps/mbedtls/entropy_poll.o \
-                     deps/mbedtls/error.o \
                      deps/mbedtls/gcm.o \
                      deps/mbedtls/hmac_drbg.o \
                      deps/mbedtls/md.o \
