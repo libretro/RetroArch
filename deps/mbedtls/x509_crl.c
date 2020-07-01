@@ -227,7 +227,7 @@ static int x509_get_entries( unsigned char **p,
 
         if( *p < end )
         {
-            cur_entry->next = calloc( 1, sizeof( mbedtls_x509_crl_entry ) );
+            cur_entry->next = (mbedtls_x509_crl_entry*)calloc( 1, sizeof( mbedtls_x509_crl_entry ) );
 
             if( cur_entry->next == NULL )
                 return( MBEDTLS_ERR_X509_ALLOC_FAILED );
@@ -269,7 +269,7 @@ int mbedtls_x509_crl_parse_der( mbedtls_x509_crl *chain,
 
     if( crl->version != 0 && crl->next == NULL )
     {
-        crl->next = calloc( 1, sizeof( mbedtls_x509_crl ) );
+        crl->next = (mbedtls_x509_crl*)calloc( 1, sizeof( mbedtls_x509_crl ) );
 
         if( crl->next == NULL )
         {
@@ -284,7 +284,7 @@ int mbedtls_x509_crl_parse_der( mbedtls_x509_crl *chain,
     /*
      * Copy raw DER-encoded CRL
      */
-    if( ( p = calloc( 1, buflen ) ) == NULL )
+    if( ( p = (unsigned char*)calloc( 1, buflen ) ) == NULL )
         return( MBEDTLS_ERR_X509_ALLOC_FAILED );
 
     memcpy( p, buf, buflen );

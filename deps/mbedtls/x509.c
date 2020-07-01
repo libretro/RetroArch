@@ -449,7 +449,8 @@ int mbedtls_x509_get_name( unsigned char **p, const unsigned char *end,
             /* Mark this item as being no the only one in a set */
             cur->next_merged = 1;
 
-            cur->next = calloc( 1, sizeof( mbedtls_x509_name ) );
+            cur->next        = (mbedtls_asn1_named_data*)
+               calloc( 1, sizeof( mbedtls_x509_name ) );
 
             if( cur->next == NULL )
                 return( MBEDTLS_ERR_X509_ALLOC_FAILED );
@@ -463,7 +464,8 @@ int mbedtls_x509_get_name( unsigned char **p, const unsigned char *end,
         if( *p == end )
             return( 0 );
 
-        cur->next = calloc( 1, sizeof( mbedtls_x509_name ) );
+        cur->next = (mbedtls_asn1_named_data*)
+           calloc( 1, sizeof( mbedtls_x509_name ) );
 
         if( cur->next == NULL )
             return( MBEDTLS_ERR_X509_ALLOC_FAILED );
@@ -656,10 +658,10 @@ int mbedtls_x509_get_sig_alg( const mbedtls_x509_buf *sig_oid, const mbedtls_x50
 #if defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT)
     if( *pk_alg == MBEDTLS_PK_RSASSA_PSS )
     {
-        mbedtls_pk_rsassa_pss_options *pss_opts;
-
-        pss_opts = calloc( 1, sizeof( mbedtls_pk_rsassa_pss_options ) );
-        if( pss_opts == NULL )
+        mbedtls_pk_rsassa_pss_options *pss_opts = 
+           (mbedtls_pk_rsassa_pss_options *)
+           calloc( 1, sizeof( mbedtls_pk_rsassa_pss_options ) );
+        if (!pss_opts)
             return( MBEDTLS_ERR_X509_ALLOC_FAILED );
 
         ret = mbedtls_x509_get_rsassa_pss_params( sig_params,

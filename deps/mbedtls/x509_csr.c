@@ -102,9 +102,9 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
     /*
      * first copy the raw DER data
      */
-    p = calloc( 1, len = buflen );
+    p = (unsigned char*)calloc( 1, len = buflen );
 
-    if( p == NULL )
+    if (!p)
         return( MBEDTLS_ERR_X509_ALLOC_FAILED );
 
     memcpy( p, buf, buflen );

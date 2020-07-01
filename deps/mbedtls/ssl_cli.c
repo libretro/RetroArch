@@ -1338,7 +1338,7 @@ static int ssl_parse_hello_verify_request( mbedtls_ssl_context *ssl )
 
     free( ssl->handshake->verify_cookie );
 
-    ssl->handshake->verify_cookie = calloc( 1, cookie_len );
+    ssl->handshake->verify_cookie = (unsigned char*)calloc( 1, cookie_len );
     if( ssl->handshake->verify_cookie  == NULL )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "alloc failed (%d bytes)", cookie_len ) );
@@ -3217,7 +3217,7 @@ static int ssl_parse_new_session_ticket( mbedtls_ssl_context *ssl )
     ssl->session_negotiate->ticket = NULL;
     ssl->session_negotiate->ticket_len = 0;
 
-    if( ( ticket = calloc( 1, ticket_len ) ) == NULL )
+    if( ( ticket = (unsigned char*)calloc( 1, ticket_len ) ) == NULL )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "ticket alloc failed" ) );
         mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,

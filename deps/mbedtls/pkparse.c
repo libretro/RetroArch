@@ -86,7 +86,7 @@ int mbedtls_pk_load_file( const char *path, unsigned char **buf, size_t *n )
     *n = (size_t) size;
 
     if( *n + 1 == 0 ||
-        ( *buf = calloc( 1, *n + 1 ) ) == NULL )
+        ( *buf = (unsigned char*)calloc( 1, *n + 1 ) ) == NULL )
     {
         fclose( f );
         return( MBEDTLS_ERR_PK_ALLOC_FAILED );

@@ -480,7 +480,8 @@ static int x509_get_subject_alt_name( unsigned char **p,
             if( cur->next != NULL )
                 return( MBEDTLS_ERR_X509_INVALID_EXTENSIONS );
 
-            cur->next = calloc( 1, sizeof( mbedtls_asn1_sequence ) );
+            cur->next = (mbedtls_asn1_sequence*)
+               calloc( 1, sizeof( mbedtls_asn1_sequence ) );
 
             if( cur->next == NULL )
                 return( MBEDTLS_ERR_X509_INVALID_EXTENSIONS +
@@ -698,7 +699,7 @@ static int x509_crt_parse_der_core( mbedtls_x509_crt *crt, const unsigned char *
 
     /* Create and populate a new buffer for the raw field */
     crt->raw.len = crt_end - buf;
-    crt->raw.p = p = calloc( 1, crt->raw.len );
+    crt->raw.p = p = (unsigned char*)calloc( 1, crt->raw.len );
     if( p == NULL )
         return( MBEDTLS_ERR_X509_ALLOC_FAILED );
 
@@ -932,7 +933,7 @@ int mbedtls_x509_crt_parse_der( mbedtls_x509_crt *chain, const unsigned char *bu
      */
     if( crt->version != 0 && !crt->next)
     {
-        crt->next = calloc( 1, sizeof( mbedtls_x509_crt ) );
+        crt->next = (mbedtls_x509_crt*)calloc( 1, sizeof( mbedtls_x509_crt ) );
 
         if( crt->next == NULL )
             return( MBEDTLS_ERR_X509_ALLOC_FAILED );
@@ -1719,7 +1720,7 @@ static int x509_memcasecmp( const void *s1, const void *s2, size_t len )
 {
     size_t i;
     unsigned char diff;
-    const unsigned char *n1 = s1, *n2 = s2;
+    const unsigned char *n1 = (const unsigned char*)s1, *n2 = (const unsigned char*)s2;
 
     for( i = 0; i < len; i++ )
     {

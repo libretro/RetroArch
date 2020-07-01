@@ -99,7 +99,7 @@ int mbedtls_ssl_cache_get( void *data, mbedtls_ssl_session *session )
          */
         if( entry->peer_cert.p != NULL )
         {
-            if( ( session->peer_cert = calloc( 1,
+            if( ( session->peer_cert = (mbedtls_x509_crt*)calloc( 1,
                                  sizeof(mbedtls_x509_crt) ) ) == NULL )
             {
                 ret = 1;
@@ -218,8 +218,10 @@ int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session )
             /*
              * max_entries not reached, create new entry
              */
-            cur = calloc( 1, sizeof(mbedtls_ssl_cache_entry) );
-            if( cur == NULL )
+            cur = (mbedtls_ssl_cache_entry*)
+               calloc( 1, sizeof(mbedtls_ssl_cache_entry) );
+
+            if (!cur)
             {
                 ret = 1;
                 goto exit;
@@ -253,7 +255,8 @@ int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session )
      */
     if( session->peer_cert != NULL )
     {
-        cur->peer_cert.p = calloc( 1, session->peer_cert->raw.len );
+        cur->peer_cert.p = (unsigned char*)
+           calloc( 1, session->peer_cert->raw.len );
         if( cur->peer_cert.p == NULL )
         {
             ret = 1;

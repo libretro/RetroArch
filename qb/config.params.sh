@@ -31,7 +31,6 @@ HAVE_SSL=auto              # SSL/mbedtls support
 C89_SSL=no
 HAVE_BUILTINMBEDTLS=auto   # Bake in the mbedtls library
 C89_BUILTINMBEDTLS=no
-CXX_BUILTINMBEDTLS=no
 HAVE_OVERLAY=yes           # Overlay support
 HAVE_VIDEO_LAYOUT=yes      # Layout support
 HAVE_DYNAMIC=yes           # Dynamic loading of libretro library

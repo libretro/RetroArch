@@ -323,7 +323,7 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
 
     /* Is this a TCP or UDP socket? */
     if( getsockopt( bind_ctx->fd, SOL_SOCKET, SO_TYPE,
-                    (void *) &type, &type_len ) != 0 ||
+                    (char *) &type, &type_len ) != 0 ||
         ( type != SOCK_STREAM && type != SOCK_DGRAM ) )
     {
         return( MBEDTLS_ERR_NET_ACCEPT_FAILED );
@@ -488,7 +488,7 @@ int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
 
     if( ret < 0 )
     {
-        if( net_would_block( ctx ) != 0 )
+        if( net_would_block((const mbedtls_net_context*)ctx ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_READ );
 
 #if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \

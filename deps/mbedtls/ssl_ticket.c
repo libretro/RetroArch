@@ -234,7 +234,7 @@ static int ssl_load_session( mbedtls_ssl_session *session,
         if( p + cert_len > end )
             return( MBEDTLS_ERR_SSL_BAD_INPUT_DATA );
 
-        session->peer_cert = calloc( 1, sizeof( mbedtls_x509_crt ) );
+        session->peer_cert = (mbedtls_x509_crt*)calloc( 1, sizeof( mbedtls_x509_crt ) );
 
         if( session->peer_cert == NULL )
             return( MBEDTLS_ERR_SSL_ALLOC_FAILED );
@@ -281,14 +281,14 @@ int mbedtls_ssl_ticket_write( void *p_ticket,
                               uint32_t *ticket_lifetime )
 {
     int ret;
-    mbedtls_ssl_ticket_context *ctx = p_ticket;
-    mbedtls_ssl_ticket_key *key;
-    unsigned char *key_name = start;
-    unsigned char *iv = start + 4;
-    unsigned char *state_len_bytes = iv + 12;
-    unsigned char *state = state_len_bytes + 2;
     unsigned char *tag;
     size_t clear_len, ciph_len;
+    mbedtls_ssl_ticket_key *key     = NULL;
+    mbedtls_ssl_ticket_context *ctx = (mbedtls_ssl_ticket_context*)p_ticket;
+    unsigned char *key_name         = start;
+    unsigned char *iv               = start + 4;
+    unsigned char *state_len_bytes  = iv + 12;
+    unsigned char *state            = state_len_bytes + 2;
 
     *tlen = 0;
 
@@ -377,14 +377,14 @@ int mbedtls_ssl_ticket_parse( void *p_ticket,
                               size_t len )
 {
     int ret;
-    mbedtls_ssl_ticket_context *ctx = p_ticket;
-    mbedtls_ssl_ticket_key *key;
-    unsigned char *key_name = buf;
-    unsigned char *iv = buf + 4;
-    unsigned char *enc_len_p = iv + 12;
-    unsigned char *ticket = enc_len_p + 2;
     unsigned char *tag;
     size_t enc_len, clear_len;
+    mbedtls_ssl_ticket_key *key     = NULL;
+    mbedtls_ssl_ticket_context *ctx = (mbedtls_ssl_ticket_context*)p_ticket;
+    unsigned char *key_name         = buf;
+    unsigned char *iv               = buf + 4;
+    unsigned char *enc_len_p        = iv + 12;
+    unsigned char *ticket           = enc_len_p + 2;
 
     if( ctx == NULL || ctx->f_rng == NULL )
         return( MBEDTLS_ERR_SSL_BAD_INPUT_DATA );
