@@ -243,21 +243,29 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 #ifdef HAVE_NETPLAYDISCOVERY
    fd_set fds;
    int ret;
-   struct timeval tmp_tv = {0};
-   struct sockaddr their_addr;
+   unsigned i;
+   char buf[4096];
+   net_ifinfo_t interfaces;
    socklen_t addr_size;
-   unsigned k = 0;
    char reply_addr[NETPLAY_HOST_STR_LEN], port_str[6];
+   struct sockaddr their_addr;
+   struct timeval tmp_tv            = {0};
+   unsigned k                       = 0;
    struct addrinfo *our_addr, hints = {0};
    struct string_list *subsystem    = path_get_subsystem_list();
-   char buf[4096];
 
-   net_ifinfo_t interfaces;
+   interfaces.entries               = NULL;
+   interfaces.size                  = 0;
+
+   their_addr.sa_family             = 0;
+   for (i = 0; i < 14; i++)
+      their_addr.sa_data[i]         = 0;
 
    if (!net_ifinfo_new(&interfaces))
       return false;
 
-   if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
+   if (     (lan_ad_server_fd < 0)
+         && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
       return false;
 
    /* Check for any ad queries */
@@ -323,7 +331,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                      reply_addr, interfaces.entries[k].host);
 
                   /* Now build our response */
-                  buf[0] = '\0';
+                  buf[0]      = '\0';
                   content_crc = content_get_crc();
 
                   memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
