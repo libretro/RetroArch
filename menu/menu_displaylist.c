@@ -2455,6 +2455,7 @@ static int menu_displaylist_parse_load_content_settings(
                0, 0))
             count++;
 
+#ifdef HAVE_SCREENSHOTS
       if (settings->bools.quick_menu_show_take_screenshot)
       {
          if (menu_entries_append_enum(list,
@@ -2464,6 +2465,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0))
             count++;
       }
+#endif
 
       if (settings->bools.quick_menu_show_save_load_state)
       {
@@ -4078,6 +4080,7 @@ static bool menu_displaylist_push_internal(
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
 #if 0
+#ifdef HAVE_SCREENSHOTS
       if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
@@ -4086,6 +4089,7 @@ static bool menu_displaylist_push_internal(
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       else
          info->need_push_no_playlist_entries = true;
+#endif
 #endif
       menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info);
       return true;
@@ -7846,7 +7850,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESTART_CONTENT,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,          PARSE_ONLY_BOOL},
+#ifdef HAVE_SCREENSHOTS
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,        PARSE_ONLY_BOOL},
+#endif
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,       PARSE_ONLY_BOOL},
@@ -7974,7 +7980,9 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_VIDEO_LAYOUT
                {MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY,       PARSE_ONLY_DIR},
 #endif
+#ifdef HAVE_SCREENSHOTS
                {MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,         PARSE_ONLY_DIR},
+#endif
                {MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,        PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,    PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,           PARSE_ONLY_DIR},
