@@ -8735,14 +8735,12 @@ static void discord_init(
 
    discord_st->start_time      = time(0);
 
-   memset(&handlers, 0, sizeof(handlers));
-
-   handlers.ready         = handle_discord_ready;
-   handlers.disconnected  = handle_discord_disconnected;
-   handlers.errored       = handle_discord_error;
-   handlers.joinGame      = handle_discord_join;
-   handlers.spectateGame  = handle_discord_spectate;
-   handlers.joinRequest   = handle_discord_join_request;
+   handlers.ready              = handle_discord_ready;
+   handlers.disconnected       = handle_discord_disconnected;
+   handlers.errored            = handle_discord_error;
+   handlers.joinGame           = handle_discord_join;
+   handlers.spectateGame       = handle_discord_spectate;
+   handlers.joinRequest        = handle_discord_join_request;
 
    Discord_Initialize(discord_app_id, &handlers, 0, NULL);
 
@@ -22766,13 +22764,6 @@ void input_overlay_set_visibility(int overlay_idx,
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
 }
 
-bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key)
-{
-   input_overlay_state_t *ol_state  = ol ? &ol->overlay_state : NULL;
-   if (!ol)
-      return false;
-   return (BIT256_GET(ol_state->buttons, key));
-}
 
 /*
  * input_poll_overlay:
@@ -23324,17 +23315,29 @@ static void input_driver_poll(void)
             case RETRO_DEVICE_KEYBOARD:
                for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
                {
-                  unsigned remap_button         =
+                  unsigned remap_button            =
                      settings->uints.input_keymapper_ids[i][j];
-                  bool remap_valid              = remap_button != RETROK_UNKNOWN;
+                  bool remap_valid                 = 
+                     remap_button != RETROK_UNKNOWN;
                   if (remap_valid)
                   {
-                     unsigned current_button_value = BIT256_GET_PTR(p_new_state, j);
+                     unsigned current_button_value = 
+                        BIT256_GET_PTR(p_new_state, j);
+
 #ifdef HAVE_OVERLAY
                      if (poll_overlay && i == 0)
-                        current_button_value |= input_overlay_key_pressed(overlay_pointer, j);
+                     {
+                        input_overlay_state_t *ol_state  = 
+                           overlay_pointer 
+                           ? &overlay_pointer->overlay_state 
+                           : NULL;
+                        if (ol_state)
+                           current_button_value |= 
+                              BIT256_GET(ol_state->buttons, j);
+                     }
 #endif
-                     if ((current_button_value == 1) && (j != remap_button))
+                     if ((current_button_value == 1) 
+                           && (j != remap_button))
                      {
                         MAPPER_SET_KEY (handle,
                               remap_button);
@@ -23370,11 +23373,20 @@ static void input_driver_poll(void)
                   bool remap_valid;
                   unsigned remap_button         =
                      settings->uints.input_remap_ids[i][j];
-                  unsigned current_button_value = BIT256_GET_PTR(p_new_state, j);
+                  unsigned current_button_value = 
+                     BIT256_GET_PTR(p_new_state, j);
+
 #ifdef HAVE_OVERLAY
                   if (poll_overlay && i == 0)
-                     current_button_value      |= 
-                        input_overlay_key_pressed(overlay_pointer, j);
+                  {
+                     input_overlay_state_t *ol_state  = 
+                        overlay_pointer 
+                        ? &overlay_pointer->overlay_state 
+                        : NULL;
+                     if (ol_state)
+                        current_button_value            |= 
+                           BIT256_GET(ol_state->buttons, j);
+                  }
 #endif
                   remap_valid                   = 
                      (current_button_value == 1) &&
@@ -23383,7 +23395,8 @@ static void input_driver_poll(void)
 
 #ifdef HAVE_ACCESSIBILITY
                   /* gamepad override */
-                  if (i == 0 && p_rarch->gamepad_input_override & (1 << j))
+                  if (i == 0 && 
+                        p_rarch->gamepad_input_override & (1 << j))
                   {
                      BIT256_SET(handle->buttons[i], j);
                   }
