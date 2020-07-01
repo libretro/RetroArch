@@ -54,9 +54,6 @@ extern "C" {
 #if !defined(MBEDTLS_PLATFORM_STD_FPRINTF)
 #define MBEDTLS_PLATFORM_STD_FPRINTF fprintf /**< Default fprintf to use */
 #endif
-#if !defined(MBEDTLS_PLATFORM_STD_EXIT)
-#define MBEDTLS_PLATFORM_STD_EXIT      exit /**< Default exit to use */
-#endif
 #if !defined(MBEDTLS_PLATFORM_STD_TIME)
 #define MBEDTLS_PLATFORM_STD_TIME       time    /**< Default time to use */
 #endif
@@ -73,40 +70,10 @@ extern "C" {
 #include <stddef.h>
 
 /*
- * The function pointers for exit
- */
-#if defined(MBEDTLS_PLATFORM_EXIT_ALT)
-extern void (*mbedtls_exit)( int status );
-
-/**
- * \brief   Set your own exit function pointer
- *
- * \param exit_func   the exit function implementation
- *
- * \return              0
- */
-int mbedtls_platform_set_exit( void (*exit_func)( int status ) );
-#else
-#if defined(MBEDTLS_PLATFORM_EXIT_MACRO)
-#define mbedtls_exit   MBEDTLS_PLATFORM_EXIT_MACRO
-#else
-#define mbedtls_exit   exit
-#endif /* MBEDTLS_PLATFORM_EXIT_MACRO */
-#endif /* MBEDTLS_PLATFORM_EXIT_ALT */
-
-/*
  * The default exit values
  */
-#if defined(MBEDTLS_PLATFORM_STD_EXIT_SUCCESS)
-#define MBEDTLS_EXIT_SUCCESS MBEDTLS_PLATFORM_STD_EXIT_SUCCESS
-#else
 #define MBEDTLS_EXIT_SUCCESS 0
-#endif
-#if defined(MBEDTLS_PLATFORM_STD_EXIT_FAILURE)
-#define MBEDTLS_EXIT_FAILURE MBEDTLS_PLATFORM_STD_EXIT_FAILURE
-#else
 #define MBEDTLS_EXIT_FAILURE 1
-#endif
 
 #if !defined(MBEDTLS_PLATFORM_SETUP_TEARDOWN_ALT)
 

@@ -243,12 +243,6 @@
 #error "MBEDTLS_PLATFORM_EXIT_MACRO defined, but not all prerequisites"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_EXIT_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_EXIT) ||\
-        defined(MBEDTLS_PLATFORM_EXIT_ALT) )
-#error "MBEDTLS_PLATFORM_EXIT_MACRO and MBEDTLS_PLATFORM_STD_EXIT/MBEDTLS_PLATFORM_EXIT_ALT cannot be defined simultaneously"
-#endif
-
 #if defined(MBEDTLS_PLATFORM_TIME_ALT) &&\
     ( !defined(MBEDTLS_PLATFORM_C) ||\
         !defined(MBEDTLS_HAVE_TIME) )
@@ -363,11 +357,6 @@
 
 #if defined(MBEDTLS_PLATFORM_STD_FREE) && !defined(MBEDTLS_PLATFORM_MEMORY)
 #error "MBEDTLS_PLATFORM_STD_FREE defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_EXIT) &&\
-    !defined(MBEDTLS_PLATFORM_EXIT_ALT)
-#error "MBEDTLS_PLATFORM_STD_EXIT defined, but not all prerequisites"
 #endif
 
 #if defined(MBEDTLS_PLATFORM_STD_TIME) &&\

@@ -351,9 +351,6 @@
 #if defined MBEDTLS_PLATFORM_SNPRINTF_MACRO
 #define POLARSSL_PLATFORM_SNPRINTF_MACRO MBEDTLS_PLATFORM_SNPRINTF_MACRO
 #endif
-#if defined MBEDTLS_PLATFORM_STD_EXIT
-#define POLARSSL_PLATFORM_STD_EXIT MBEDTLS_PLATFORM_STD_EXIT
-#endif
 #if defined MBEDTLS_PLATFORM_STD_FPRINTF
 #define POLARSSL_PLATFORM_STD_FPRINTF MBEDTLS_PLATFORM_STD_FPRINTF
 #endif
@@ -2100,7 +2097,7 @@
 #define platform_set_fprintf mbedtls_platform_set_fprintf
 #define platform_set_printf mbedtls_platform_set_printf
 #define platform_set_snprintf mbedtls_platform_set_snprintf
-#define polarssl_exit mbedtls_exit
+#define polarssl_exit exit
 #define polarssl_fprintf fprintf
 #define polarssl_free free
 #define polarssl_mutex_free mbedtls_mutex_free

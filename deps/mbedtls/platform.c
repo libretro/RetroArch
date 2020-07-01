@@ -29,28 +29,6 @@
 
 #include "mbedtls/platform.h"
 
-#if defined(MBEDTLS_PLATFORM_EXIT_ALT)
-#if !defined(MBEDTLS_PLATFORM_STD_EXIT)
-/*
- * Make dummy function to prevent NULL pointer dereferences
- */
-static void platform_exit_uninit( int status )
-{
-    ((void) status);
-}
-
-#define MBEDTLS_PLATFORM_STD_EXIT   platform_exit_uninit
-#endif /* !MBEDTLS_PLATFORM_STD_EXIT */
-
-void (*mbedtls_exit)( int status ) = MBEDTLS_PLATFORM_STD_EXIT;
-
-int mbedtls_platform_set_exit( void (*exit_func)( int status ) )
-{
-    mbedtls_exit = exit_func;
-    return( 0 );
-}
-#endif /* MBEDTLS_PLATFORM_EXIT_ALT */
-
 #if defined(MBEDTLS_HAVE_TIME)
 
 #if defined(MBEDTLS_PLATFORM_TIME_ALT)
