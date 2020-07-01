@@ -1716,7 +1716,6 @@ endif
 ifeq ($(HAVE_BUILTINZLIB), 1)
    HAVE_ZLIB_COMMON = 1
    OBJ += $(DEPS_DIR)/libz/adler32.o \
-          $(DEPS_DIR)/libz/compress.o \
           $(DEPS_DIR)/libz/libz-crc32.o \
           $(DEPS_DIR)/libz/deflate.o \
           $(DEPS_DIR)/libz/gzclose.o \
@@ -1727,7 +1726,6 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
           $(DEPS_DIR)/libz/inflate.o \
           $(DEPS_DIR)/libz/inftrees.o \
           $(DEPS_DIR)/libz/trees.o \
-          $(DEPS_DIR)/libz/uncompr.o \
           $(DEPS_DIR)/libz/zutil.o
    INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
 else ifeq ($(HAVE_ZLIB),1)
