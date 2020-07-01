@@ -87,9 +87,6 @@ uLong zlibCompileFlags(void)
       default:
          flags += 3 << 6;
    }
-#ifdef DEBUG
-   flags += 1 << 8;
-#endif
 #if defined(ASMV) || defined(ASMINF)
    flags += 1 << 9;
 #endif
@@ -140,20 +137,6 @@ uLong zlibCompileFlags(void)
 #endif
    return flags;
 }
-
-#ifdef DEBUG
-
-#  ifndef verbose
-#    define verbose 0
-#  endif
-int ZLIB_INTERNAL z_verbose = verbose;
-
-void ZLIB_INTERNAL z_error (char *m)
-{
-   fprintf(stderr, "%s\n", m);
-   exit(1);
-}
-#endif
 
 /* exported to allow conversion of error code to string for compress() and
  * uncompress()

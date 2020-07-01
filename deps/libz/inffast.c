@@ -47,10 +47,6 @@ output space.
 */
 void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start)
 {
-   struct inflate_state FAR *state;
-   unsigned char FAR *in;      /* local strm->next_in */
-   unsigned char FAR *last;    /* have enough input while in < last */
-   unsigned char FAR *out;     /* local strm->next_out */
    unsigned char FAR *beg;     /* inflate()'s initial strm->next_out */
    unsigned char FAR *end;     /* while out < end, enough space available */
    unsigned wsize;             /* window size or zero if not using window */
@@ -71,10 +67,10 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start)
    unsigned char FAR *from;    /* where to copy match from */
 
    /* copy state to local variables */
-   state = (struct inflate_state FAR *)strm->state;
-   in = strm->next_in;
-   last = in + (strm->avail_in - 5);
-   out = strm->next_out;
+   struct inflate_state FAR *state = (struct inflate_state FAR *)strm->state;
+   unsigned char FAR           *in = strm->next_in;
+   unsigned char FAR         *last = last = in + (strm->avail_in - 5);
+   unsigned char FAR         *out  = strm->next_out;
    beg = out - (start - strm->avail_out);
    end = out + (strm->avail_out - 257);
    wsize = state->wsize;
@@ -154,25 +150,6 @@ dodist:
                      state->mode = BAD;
                      break;
                   }
-#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
-                  if (len <= op - whave) {
-                     do {
-                        *out++ = 0;
-                     } while (--len);
-                     continue;
-                  }
-                  len -= op - whave;
-                  do {
-                     *out++ = 0;
-                  } while (--op > whave);
-                  if (op == 0) {
-                     from = out - dist;
-                     do {
-                        *out++ = *from++;
-                     } while (--len);
-                     continue;
-                  }
-#endif
                }
                from = window;
                if (wnext == 0) {           /* very common case */

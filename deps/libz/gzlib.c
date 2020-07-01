@@ -15,14 +15,6 @@
 #endif
 #endif
 
-/* Forward declarations */
-z_off_t gzoffset(gzFile file);
-int gzbuffer(gzFile file, unsigned size);
-
-/* Local functions */
-static void gz_reset OF((gz_statep));
-static gzFile gz_open OF((const void *, int, const char *));
-
 #if defined UNDER_CE
 
 /* Map the Windows error number in ERROR to a locale-dependent error message
@@ -34,8 +26,7 @@ static gzFile gz_open OF((const void *, int, const char *));
 
    The gz_strwinerror function does not change the current setting of
    GetLastError. */
-char ZLIB_INTERNAL *gz_strwinerror (error)
-   DWORD error;
+char ZLIB_INTERNAL *gz_strwinerror (DWORD error)
 {
    static char buf[1024];
 

@@ -1095,19 +1095,6 @@ int inflate(z_streamp strm, int flush)
                            state->mode = BAD;
                            break;
                         }
-#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
-                        Trace((stderr, "inflate.c too far\n"));
-                        copy -= state->whave;
-                        if (copy > state->length) copy = state->length;
-                        if (copy > left) copy = left;
-                        left -= copy;
-                        state->length -= copy;
-                        do {
-                           *put++ = 0;
-                        } while (--copy);
-                        if (state->length == 0) state->mode = LEN;
-                        break;
-#endif
                      }
                      if (copy > state->wnext) {
                         copy -= state->wnext;
@@ -1433,13 +1420,8 @@ int inflateUndermine(z_streamp strm, int subvert)
    if (strm == Z_NULL || strm->state == Z_NULL)
 	   return Z_STREAM_ERROR;
    state = (struct inflate_state FAR *)strm->state;
-   state->sane = !subvert;
-#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
-   return Z_OK;
-#else
    state->sane = 1;
    return Z_DATA_ERROR;
-#endif
 }
 
 long inflateMark(z_streamp strm)
