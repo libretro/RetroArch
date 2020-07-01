@@ -49,6 +49,10 @@ matrix:
     - compiler: gcc
       env: DISABLE_VIDEO_LAYOUT=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: DISABLE_PATCH=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: DISABLE_CHEATS=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
       env: DISABLE_THREADS=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: DISABLE_AUDIOMIXER=1 CC=gcc-8 CXX=g++-8
@@ -139,6 +143,14 @@ before_script:
   - |
      if [ -n "$DISABLE_OVERLAY" ]; then
        ARGS="$ARGS --disable-overlay"
+     fi
+   - |
+     if [ -n "$DISABLE_PATCH" ]; then
+       ARGS="$ARGS --disable-patch"
+     fi
+   - |
+     if [ -n "$DISABLE_CHEATS" ]; then
+       ARGS="$ARGS --disable-cheats"
      fi
   - |
      if [ -n "$DISABLE_NETWORKING" ]; then
