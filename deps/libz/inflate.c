@@ -127,7 +127,6 @@ int inflateResetKeep(z_streamp strm)
    state->mode = HEAD;
    state->last = 0;
    state->havedict = 0;
-   state->dmax = 32768U;
    state->head = Z_NULL;
    state->hold = 0;
    state->bits = 0;
@@ -671,7 +670,6 @@ int inflate(z_streamp strm, int flush)
                   state->mode = BAD;
                   break;
                   }
-                  state->dmax = 1U << len;
                   Tracev((stderr, "inflate:   zlib header ok\n"));
                   strm->adler = state->check = adler32(0L, Z_NULL, 0);
                   state->mode = hold & 0x200 ? DICTID : TYPE;
@@ -1105,13 +1103,6 @@ int inflate(z_streamp strm, int flush)
                      DROPBITS(state->extra);
                      state->back += state->extra;
                   }
-#ifdef INFLATE_STRICT
-                  if (state->offset > state->dmax) {
-                     strm->msg = (char *)"invalid distance too far back";
-                     state->mode = BAD;
-                     break;
-                  }
-#endif
                   Tracevv((stderr, "inflate:         distance %u\n", state->offset));
                   state->mode = MATCH;
          case MATCH:
