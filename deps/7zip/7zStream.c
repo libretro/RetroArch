@@ -7,18 +7,29 @@
 
 #include "7zTypes.h"
 
-SRes SeqInStream_Readuint8_t(ISeqInStream *stream, uint8_t *buf);
+SRes SeqInStream_Readuint8_t(ISeqInStream *stream, uint8_t *buf)
+{
+   size_t processed = 1;
+   int result       = stream->Read(stream, buf, &processed);
+   if (result != 0)
+      return result;
+   if (processed != 1)
+      return SZ_ERROR_INPUT_EOF;
+   return SZ_OK;
+}
 
 SRes SeqInStream_Read2(ISeqInStream *stream, void *buf, size_t size, SRes errorType)
 {
    while (size != 0)
    {
       size_t processed = size;
-      RINOK(stream->Read(stream, buf, &processed));
+      int result       = stream->Read(stream, buf, &processed);
+      if (result    != 0)
+         return result;
       if (processed == 0)
          return errorType;
-      buf = (void *)((uint8_t *)buf + processed);
-      size -= processed;
+      buf              = (void *)((uint8_t *)buf + processed);
+      size            -= processed;
    }
    return SZ_OK;
 }
@@ -28,12 +39,6 @@ SRes SeqInStream_Read(ISeqInStream *stream, void *buf, size_t size)
    return SeqInStream_Read2(stream, buf, size, SZ_ERROR_INPUT_EOF);
 }
 
-SRes SeqInStream_Readuint8_t(ISeqInStream *stream, uint8_t *buf)
-{
-   size_t processed = 1;
-   RINOK(stream->Read(stream, buf, &processed));
-   return (processed == 1) ? SZ_OK : SZ_ERROR_INPUT_EOF;
-}
 
 SRes LookInStream_SeekTo(ILookInStream *stream, uint64_t offset)
 {
@@ -43,24 +48,30 @@ SRes LookInStream_SeekTo(ILookInStream *stream, uint64_t offset)
 
 SRes LookInStream_LookRead(ILookInStream *stream, void *buf, size_t *size)
 {
+   int result;
    const void *lookBuf;
    if (*size == 0)
       return SZ_OK;
-   RINOK(stream->Look(stream, &lookBuf, size));
+   result = stream->Look(stream, &lookBuf, size);
+   if (result != 0)
+      return result;
    memcpy(buf, lookBuf, *size);
    return stream->Skip(stream, *size);
 }
 
-SRes LookInStream_Read2(ILookInStream *stream, void *buf, size_t size, SRes errorType)
+SRes LookInStream_Read2(ILookInStream *stream,
+      void *buf, size_t size, SRes errorType)
 {
    while (size != 0)
    {
       size_t processed = size;
-      RINOK(stream->Read(stream, buf, &processed));
+      int result       = stream->Read(stream, buf, &processed);
+      if (result    != 0)
+         return result;
       if (processed == 0)
          return errorType;
-      buf = (void *)((uint8_t *)buf + processed);
-      size -= processed;
+      buf              = (void *)((uint8_t *)buf + processed);
+      size            -= processed;
    }
    return SZ_OK;
 }
