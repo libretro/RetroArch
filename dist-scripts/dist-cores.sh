@@ -20,8 +20,9 @@ cd dist-scripts
 
 elif [ $PLATFORM = "ps2" ] ; then
 platform=ps2
-SALAMANDER=NO
+SALAMANDER=yes
 EXT=a
+OPTS=release
 
 mkdir -p ../pkg/${platform}/cores/
 
@@ -151,6 +152,9 @@ fi
 # Compile Salamander core
 if [ $SALAMANDER = "yes" ]; then
    make -C ../ -f Makefile.${platform}.salamander $OPTS || exit 1
+   if [ $PLATFORM = "ps2" ] ; then
+   mv -f ../raboot.elf ../pkg/${platform}/raboot.PBP
+   fi
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
    fi
@@ -249,15 +253,13 @@ for f in `ls -v *_${platform}.${EXT}`; do
       make -C ../ -f Makefile.${platform} $OPTS APP_TITLE="$name" LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ps2" ]; then
       # TODO PS2 should be able to compile in parallel
-      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS || exit 1
    else
       make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack -j3 || exit 1
    fi
 
    # Do manual executable step
-   if [ $PLATFORM = "ps2" ] ; then
-      make -C ../ -f Makefile.${platform} package -j3
-   elif [ $PLATFORM = "dex-ps3" ] ; then
+   if [ $PLATFORM = "dex-ps3" ] ; then
       $MAKE_FSELF_NPDRM -c ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "cex-ps3" ] ; then
       $SCETOOL_PATH $SCETOOL_FLAGS_CORE ../retroarch_${platform}.elf ../CORE.SELF
@@ -287,7 +289,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
          fi
       fi
    elif [ $PLATFORM = "ps2" ] ; then
-      mv -f ../retroarchps2-release.elf ../pkg/${platform}/cores/retroarchps2_${name}.elf
+      mv -f ../retroarchps2.elf ../pkg/${platform}/cores/${name}_libretro_${platform}.elf
    elif [ $PLATFORM = "psp1" ] ; then
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
@@ -330,6 +332,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       rm -f ../retroarch_${platform}.elf ../retroarch_${platform}.self ../CORE.SELF
    elif [ $PLATFORM = "ps2" ] ; then
       rm -f ../retroarchps2.elf
+      rm -f ../retroarchps2-debug.elf
    elif [ $PLATFORM = "psp1" ] ; then
       rm -f ../retroarchpsp.elf
    elif [ $PLATFORM = "vita" ] ; then
