@@ -263,7 +263,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 	}
 
 	/* alloc a new one */
-	ptr = (UINT32 *)malloc(size + sizeof(UINT32));
+	ptr = (UINT32 *)malloc(size + sizeof(uintptr_t));
 	if (!ptr)
 		return NULL;
 

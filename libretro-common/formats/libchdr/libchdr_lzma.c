@@ -88,7 +88,7 @@ static void *lzma_fast_alloc(void *p, size_t size)
 	}
 
 	/* alloc a new one and put it into the list */
-	addr = (uint32_t *)malloc(sizeof(uint32_t) * (size + sizeof(uint32_t)));
+	addr = (uint32_t *)malloc(sizeof(uint32_t) * size + sizeof(uintptr_t));
 	if (!addr)
 		return NULL;
 
