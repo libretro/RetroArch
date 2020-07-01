@@ -71,7 +71,7 @@ static void ssl_debug(void *ctx, int level,
 {
    ((void) level);
 
-   mbedtls_fprintf((FILE*)ctx, "%s:%04d: %s", file, line, str);
+   fprintf((FILE*)ctx, "%s:%04d: %s", file, line, str);
    fflush((FILE*)ctx);
 }
 

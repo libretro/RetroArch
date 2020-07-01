@@ -36,11 +36,8 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
-#include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
 #endif
+#include <stdlib.h>
 
 #include <string.h>
 
@@ -167,7 +164,7 @@ void mbedtls_md_free( mbedtls_md_context_t *ctx )
     if( ctx->hmac_ctx != NULL )
     {
         mbedtls_zeroize( ctx->hmac_ctx, 2 * ctx->md_info->block_size );
-        mbedtls_free( ctx->hmac_ctx );
+        free( ctx->hmac_ctx );
     }
 
     mbedtls_zeroize( ctx, sizeof( mbedtls_md_context_t ) );
@@ -203,7 +200,7 @@ int mbedtls_md_setup( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_inf
 
     if( hmac != 0 )
     {
-        ctx->hmac_ctx = mbedtls_calloc( 2, md_info->block_size );
+        ctx->hmac_ctx = calloc( 2, md_info->block_size );
         if( ctx->hmac_ctx == NULL )
         {
             md_info->ctx_free_func( ctx->md_ctx );

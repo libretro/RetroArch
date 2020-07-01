@@ -29,54 +29,6 @@
 
 #include "mbedtls/platform.h"
 
-#if defined(MBEDTLS_PLATFORM_PRINTF_ALT)
-#if !defined(MBEDTLS_PLATFORM_STD_PRINTF)
-/*
- * Make dummy function to prevent NULL pointer dereferences
- */
-static int platform_printf_uninit( const char *format, ... )
-{
-    ((void) format);
-    return( 0 );
-}
-
-#define MBEDTLS_PLATFORM_STD_PRINTF    platform_printf_uninit
-#endif /* !MBEDTLS_PLATFORM_STD_PRINTF */
-
-int (*mbedtls_printf)( const char *, ... ) = MBEDTLS_PLATFORM_STD_PRINTF;
-
-int mbedtls_platform_set_printf( int (*printf_func)( const char *, ... ) )
-{
-    mbedtls_printf = printf_func;
-    return( 0 );
-}
-#endif /* MBEDTLS_PLATFORM_PRINTF_ALT */
-
-#if defined(MBEDTLS_PLATFORM_FPRINTF_ALT)
-#if !defined(MBEDTLS_PLATFORM_STD_FPRINTF)
-/*
- * Make dummy function to prevent NULL pointer dereferences
- */
-static int platform_fprintf_uninit( FILE *stream, const char *format, ... )
-{
-    ((void) stream);
-    ((void) format);
-    return( 0 );
-}
-
-#define MBEDTLS_PLATFORM_STD_FPRINTF   platform_fprintf_uninit
-#endif /* !MBEDTLS_PLATFORM_STD_FPRINTF */
-
-int (*mbedtls_fprintf)( FILE *, const char *, ... ) =
-                                        MBEDTLS_PLATFORM_STD_FPRINTF;
-
-int mbedtls_platform_set_fprintf( int (*fprintf_func)( FILE *, const char *, ... ) )
-{
-    mbedtls_fprintf = fprintf_func;
-    return( 0 );
-}
-#endif /* MBEDTLS_PLATFORM_FPRINTF_ALT */
-
 #if defined(MBEDTLS_PLATFORM_EXIT_ALT)
 #if !defined(MBEDTLS_PLATFORM_STD_EXIT)
 /*

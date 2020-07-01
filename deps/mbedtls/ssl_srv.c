@@ -29,11 +29,8 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
-#include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free      free
 #endif
+#include <stdlib.h>
 
 #include "mbedtls/debug.h"
 #include "mbedtls/ssl.h"
@@ -61,9 +58,9 @@ int mbedtls_ssl_set_client_transport_id( mbedtls_ssl_context *ssl,
     if( ssl->conf->endpoint != MBEDTLS_SSL_IS_SERVER )
         return( MBEDTLS_ERR_SSL_BAD_INPUT_DATA );
 
-    mbedtls_free( ssl->cli_id );
+    free( ssl->cli_id );
 
-    if( ( ssl->cli_id = mbedtls_calloc( 1, ilen ) ) == NULL )
+    if( ( ssl->cli_id = calloc( 1, ilen ) ) == NULL )
         return( MBEDTLS_ERR_SSL_ALLOC_FAILED );
 
     memcpy( ssl->cli_id, info, ilen );
@@ -267,7 +264,7 @@ static int ssl_parse_supported_elliptic_curves( mbedtls_ssl_context *ssl,
     if( our_size > MBEDTLS_ECP_DP_MAX )
         our_size = MBEDTLS_ECP_DP_MAX;
 
-    if( ( curves = mbedtls_calloc( our_size, sizeof( *curves ) ) ) == NULL )
+    if( ( curves = calloc( our_size, sizeof( *curves ) ) ) == NULL )
     {
         mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
                                         MBEDTLS_SSL_ALERT_MSG_INTERNAL_ERROR );

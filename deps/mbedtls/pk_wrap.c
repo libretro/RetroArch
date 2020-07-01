@@ -44,11 +44,8 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
-#include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
 #endif
+#include <stdlib.h>
 
 #include <limits.h>
 
@@ -143,7 +140,7 @@ static int rsa_check_pair_wrap( const void *pub, const void *prv )
 
 static void *rsa_alloc_wrap( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_rsa_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_rsa_context ) );
 
     if( ctx != NULL )
         mbedtls_rsa_init( (mbedtls_rsa_context *) ctx, 0, 0 );
@@ -154,7 +151,7 @@ static void *rsa_alloc_wrap( void )
 static void rsa_free_wrap( void *ctx )
 {
     mbedtls_rsa_free( (mbedtls_rsa_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static void rsa_debug( const void *ctx, mbedtls_pk_debug_item *items )
@@ -259,7 +256,7 @@ static int eckey_check_pair( const void *pub, const void *prv )
 
 static void *eckey_alloc_wrap( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_ecp_keypair ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_ecp_keypair ) );
 
     if( ctx != NULL )
         mbedtls_ecp_keypair_init( ctx );
@@ -270,7 +267,7 @@ static void *eckey_alloc_wrap( void )
 static void eckey_free_wrap( void *ctx )
 {
     mbedtls_ecp_keypair_free( (mbedtls_ecp_keypair *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static void eckey_debug( const void *ctx, mbedtls_pk_debug_item *items )
@@ -358,7 +355,7 @@ static int ecdsa_sign_wrap( void *ctx, mbedtls_md_type_t md_alg,
 
 static void *ecdsa_alloc_wrap( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_ecdsa_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_ecdsa_context ) );
 
     if( ctx != NULL )
         mbedtls_ecdsa_init( (mbedtls_ecdsa_context *) ctx );
@@ -369,7 +366,7 @@ static void *ecdsa_alloc_wrap( void )
 static void ecdsa_free_wrap( void *ctx )
 {
     mbedtls_ecdsa_free( (mbedtls_ecdsa_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 const mbedtls_pk_info_t mbedtls_ecdsa_info = {
@@ -472,7 +469,7 @@ static int rsa_alt_check_pair( const void *pub, const void *prv )
 
 static void *rsa_alt_alloc_wrap( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_rsa_alt_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_rsa_alt_context ) );
 
     if( ctx != NULL )
         memset( ctx, 0, sizeof( mbedtls_rsa_alt_context ) );
@@ -483,7 +480,7 @@ static void *rsa_alt_alloc_wrap( void )
 static void rsa_alt_free_wrap( void *ctx )
 {
     mbedtls_zeroize( ctx, sizeof( mbedtls_rsa_alt_context ) );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 const mbedtls_pk_info_t mbedtls_rsa_alt_info = {

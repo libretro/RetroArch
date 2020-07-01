@@ -29,11 +29,8 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
-#include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free      free
 #endif
+#include <stdlib.h>
 
 #include "mbedtls/debug.h"
 #include "mbedtls/ssl.h"
@@ -390,7 +387,7 @@ static void ssl_write_ecjpake_kkpp_ext( mbedtls_ssl_context *ssl,
             return;
         }
 
-        ssl->handshake->ecjpake_cache = mbedtls_calloc( 1, kkpp_len );
+        ssl->handshake->ecjpake_cache = calloc( 1, kkpp_len );
         if( ssl->handshake->ecjpake_cache == NULL )
         {
             MBEDTLS_SSL_DEBUG_MSG( 1, ( "allocation failed" ) );
@@ -1203,7 +1200,7 @@ static int ssl_parse_ecjpake_kkpp( mbedtls_ssl_context *ssl,
     }
 
     /* If we got here, we no longer need our cached extension */
-    mbedtls_free( ssl->handshake->ecjpake_cache );
+    free( ssl->handshake->ecjpake_cache );
     ssl->handshake->ecjpake_cache = NULL;
     ssl->handshake->ecjpake_cache_len = 0;
 
@@ -1339,9 +1336,9 @@ static int ssl_parse_hello_verify_request( mbedtls_ssl_context *ssl )
         return( MBEDTLS_ERR_SSL_BAD_HS_SERVER_HELLO );
     }
 
-    mbedtls_free( ssl->handshake->verify_cookie );
+    free( ssl->handshake->verify_cookie );
 
-    ssl->handshake->verify_cookie = mbedtls_calloc( 1, cookie_len );
+    ssl->handshake->verify_cookie = calloc( 1, cookie_len );
     if( ssl->handshake->verify_cookie  == NULL )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "alloc failed (%d bytes)", cookie_len ) );
@@ -1427,7 +1424,7 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
         else
         {
             /* We made it through the verification process */
-            mbedtls_free( ssl->handshake->verify_cookie );
+            free( ssl->handshake->verify_cookie );
             ssl->handshake->verify_cookie = NULL;
             ssl->handshake->verify_cookie_len = 0;
         }
@@ -3216,11 +3213,11 @@ static int ssl_parse_new_session_ticket( mbedtls_ssl_context *ssl )
 
     mbedtls_zeroize( ssl->session_negotiate->ticket,
                       ssl->session_negotiate->ticket_len );
-    mbedtls_free( ssl->session_negotiate->ticket );
+    free( ssl->session_negotiate->ticket );
     ssl->session_negotiate->ticket = NULL;
     ssl->session_negotiate->ticket_len = 0;
 
-    if( ( ticket = mbedtls_calloc( 1, ticket_len ) ) == NULL )
+    if( ( ticket = calloc( 1, ticket_len ) ) == NULL )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "ticket alloc failed" ) );
         mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,

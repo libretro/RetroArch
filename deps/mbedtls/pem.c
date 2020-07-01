@@ -38,11 +38,8 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
-#include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
 #endif
+#include <stdlib.h>
 
 #if defined(MBEDTLS_PEM_PARSE_C)
 #include "arc4_alt.h"
@@ -323,12 +320,12 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
     if( ret == MBEDTLS_ERR_BASE64_INVALID_CHARACTER )
         return( MBEDTLS_ERR_PEM_INVALID_DATA + ret );
 
-    if( ( buf = (unsigned char*)mbedtls_calloc( 1, len ) ) == NULL )
+    if( ( buf = (unsigned char*)calloc( 1, len ) ) == NULL )
         return( MBEDTLS_ERR_PEM_ALLOC_FAILED );
 
     if( ( ret = mbedtls_base64_decode( buf, len, &len, s1, s2 - s1 ) ) != 0 )
     {
-        mbedtls_free( buf );
+        free( buf );
         return( MBEDTLS_ERR_PEM_INVALID_DATA + ret );
     }
 
@@ -338,7 +335,7 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
     ( defined(MBEDTLS_DES_C) || defined(MBEDTLS_AES_C) )
         if( pwd == NULL )
         {
-            mbedtls_free( buf );
+            free( buf );
             return( MBEDTLS_ERR_PEM_PASSWORD_REQUIRED );
         }
 
@@ -366,11 +363,11 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
          */
         if( len <= 2 || buf[0] != 0x30 || buf[1] > 0x83 )
         {
-            mbedtls_free( buf );
+            free( buf );
             return( MBEDTLS_ERR_PEM_PASSWORD_MISMATCH );
         }
 #else
-        mbedtls_free( buf );
+        free( buf );
         return( MBEDTLS_ERR_PEM_FEATURE_UNAVAILABLE );
 #endif /* MBEDTLS_MD5_C && MBEDTLS_CIPHER_MODE_CBC &&
           ( MBEDTLS_AES_C || MBEDTLS_DES_C ) */
@@ -384,8 +381,8 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
 
 void mbedtls_pem_free( mbedtls_pem_context *ctx )
 {
-    mbedtls_free( ctx->buf );
-    mbedtls_free( ctx->info );
+    free( ctx->buf );
+    free( ctx->info );
 
     mbedtls_zeroize( ctx, sizeof( mbedtls_pem_context ) );
 }
@@ -409,13 +406,13 @@ int mbedtls_pem_write_buffer( const char *header, const char *footer,
         return( MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL );
     }
 
-    if( ( encode_buf = (unsigned char*)mbedtls_calloc( 1, use_len ) ) == NULL )
+    if( ( encode_buf = (unsigned char*)calloc( 1, use_len ) ) == NULL )
         return( MBEDTLS_ERR_PEM_ALLOC_FAILED );
 
     if( ( ret = mbedtls_base64_encode( encode_buf, use_len, &use_len, der_data,
                                der_len ) ) != 0 )
     {
-        mbedtls_free( encode_buf );
+        free( encode_buf );
         return( ret );
     }
 
@@ -439,7 +436,7 @@ int mbedtls_pem_write_buffer( const char *header, const char *footer,
     *p++ = '\0';
     *olen = p - buf;
 
-    mbedtls_free( encode_buf );
+    free( encode_buf );
     return( 0 );
 }
 #endif /* MBEDTLS_PEM_WRITE_C */

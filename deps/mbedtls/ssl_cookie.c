@@ -33,9 +33,6 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
-#define mbedtls_calloc    calloc
-#define mbedtls_free      free
 #endif
 
 #include "mbedtls/ssl_cookie.h"

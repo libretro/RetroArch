@@ -50,13 +50,9 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
+#endif
 #include <stdio.h>
 #include <stdlib.h>
-#define mbedtls_printf     printf
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
 
 /* Implementation that should never be optimized out by the compiler */
 static void mbedtls_mpi_zeroize( mbedtls_mpi_uint *v, size_t n ) {
@@ -100,7 +96,7 @@ void mbedtls_mpi_free( mbedtls_mpi *X )
     if( X->p != NULL )
     {
         mbedtls_mpi_zeroize( X->p, X->n );
-        mbedtls_free( X->p );
+        free( X->p );
     }
 
     X->s = 1;
@@ -120,14 +116,14 @@ int mbedtls_mpi_grow( mbedtls_mpi *X, size_t nblimbs )
 
     if( X->n < nblimbs )
     {
-        if( ( p = (mbedtls_mpi_uint*)mbedtls_calloc( nblimbs, ciL ) ) == NULL )
+        if( ( p = (mbedtls_mpi_uint*)calloc( nblimbs, ciL ) ) == NULL )
             return( MBEDTLS_ERR_MPI_ALLOC_FAILED );
 
         if( X->p != NULL )
         {
             memcpy( p, X->p, X->n * ciL );
             mbedtls_mpi_zeroize( X->p, X->n );
-            mbedtls_free( X->p );
+            free( X->p );
         }
 
         X->n = nblimbs;
@@ -158,14 +154,14 @@ int mbedtls_mpi_shrink( mbedtls_mpi *X, size_t nblimbs )
     if( i < nblimbs )
         i = nblimbs;
 
-    if( ( p = (mbedtls_mpi_uint*)mbedtls_calloc( i, ciL ) ) == NULL )
+    if( ( p = (mbedtls_mpi_uint*)calloc( i, ciL ) ) == NULL )
         return( MBEDTLS_ERR_MPI_ALLOC_FAILED );
 
     if( X->p != NULL )
     {
         memcpy( p, X->p, i * ciL );
         mbedtls_mpi_zeroize( X->p, X->n );
-        mbedtls_free( X->p );
+        free( X->p );
     }
 
     X->n = i;
@@ -658,7 +654,7 @@ int mbedtls_mpi_write_file( const char *p, const mbedtls_mpi *X, int radix, FILE
             return( MBEDTLS_ERR_MPI_FILE_IO_ERROR );
     }
     else
-        mbedtls_printf( "%s%s", p, s );
+        printf( "%s%s", p, s );
 
 cleanup:
 

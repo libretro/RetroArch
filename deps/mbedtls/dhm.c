@@ -49,13 +49,9 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
+#endif
 #include <stdlib.h>
 #include <stdio.h>
-#define mbedtls_printf     printf
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
 
 #include "arc4_alt.h"
 
@@ -530,7 +526,7 @@ static int load_file( const char *path, unsigned char **buf, size_t *n )
     *n = (size_t) size;
 
     if( *n + 1 == 0 ||
-        ( *buf = (unsigned char*)mbedtls_calloc( 1, *n + 1 ) ) == NULL )
+        ( *buf = (unsigned char*)calloc( 1, *n + 1 ) ) == NULL )
     {
         fclose( f );
         return( MBEDTLS_ERR_DHM_ALLOC_FAILED );
@@ -539,7 +535,7 @@ static int load_file( const char *path, unsigned char **buf, size_t *n )
     if( fread( *buf, 1, *n, f ) != *n )
     {
         fclose( f );
-        mbedtls_free( *buf );
+        free( *buf );
         return( MBEDTLS_ERR_DHM_FILE_IO_ERROR );
     }
 
@@ -568,7 +564,7 @@ int mbedtls_dhm_parse_dhmfile( mbedtls_dhm_context *dhm, const char *path )
     ret = mbedtls_dhm_parse_dhm( dhm, buf, n );
 
     mbedtls_zeroize( buf, n );
-    mbedtls_free( buf );
+    free( buf );
 
     return( ret );
 }

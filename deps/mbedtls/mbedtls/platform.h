@@ -69,82 +69,8 @@ extern "C" {
 
 /* \} name SECTION: Module settings */
 
-/*
- * The function pointers for calloc and free
- */
-#if defined(MBEDTLS_PLATFORM_MEMORY)
-#if defined(MBEDTLS_PLATFORM_FREE_MACRO) && \
-    defined(MBEDTLS_PLATFORM_CALLOC_MACRO)
-#define mbedtls_free       MBEDTLS_PLATFORM_FREE_MACRO
-#define mbedtls_calloc     MBEDTLS_PLATFORM_CALLOC_MACRO
-#else
 /* For size_t */
 #include <stddef.h>
-extern void * (*mbedtls_calloc)( size_t n, size_t size );
-extern void (*mbedtls_free)( void *ptr );
-
-/**
- * \brief   Set your own memory implementation function pointers
- *
- * \param calloc_func   the calloc function implementation
- * \param free_func     the free function implementation
- *
- * \return              0 if successful
- */
-int mbedtls_platform_set_calloc_free( void * (*calloc_func)( size_t, size_t ),
-                              void (*free_func)( void * ) );
-#endif /* MBEDTLS_PLATFORM_FREE_MACRO && MBEDTLS_PLATFORM_CALLOC_MACRO */
-#else /* !MBEDTLS_PLATFORM_MEMORY */
-#define mbedtls_free       free
-#define mbedtls_calloc     calloc
-#endif /* MBEDTLS_PLATFORM_MEMORY && !MBEDTLS_PLATFORM_{FREE,CALLOC}_MACRO */
-
-/*
- * The function pointers for fprintf
- */
-#if defined(MBEDTLS_PLATFORM_FPRINTF_ALT)
-/* We need FILE * */
-#include <stdio.h>
-extern int (*mbedtls_fprintf)( FILE *stream, const char *format, ... );
-
-/**
- * \brief   Set your own fprintf function pointer
- *
- * \param fprintf_func   the fprintf function implementation
- *
- * \return              0
- */
-int mbedtls_platform_set_fprintf( int (*fprintf_func)( FILE *stream, const char *,
-                                               ... ) );
-#else
-#if defined(MBEDTLS_PLATFORM_FPRINTF_MACRO)
-#define mbedtls_fprintf    MBEDTLS_PLATFORM_FPRINTF_MACRO
-#else
-#define mbedtls_fprintf    fprintf
-#endif /* MBEDTLS_PLATFORM_FPRINTF_MACRO */
-#endif /* MBEDTLS_PLATFORM_FPRINTF_ALT */
-
-/*
- * The function pointers for printf
- */
-#if defined(MBEDTLS_PLATFORM_PRINTF_ALT)
-extern int (*mbedtls_printf)( const char *format, ... );
-
-/**
- * \brief   Set your own printf function pointer
- *
- * \param printf_func   the printf function implementation
- *
- * \return              0
- */
-int mbedtls_platform_set_printf( int (*printf_func)( const char *, ... ) );
-#else /* !MBEDTLS_PLATFORM_PRINTF_ALT */
-#if defined(MBEDTLS_PLATFORM_PRINTF_MACRO)
-#define mbedtls_printf     MBEDTLS_PLATFORM_PRINTF_MACRO
-#else
-#define mbedtls_printf     printf
-#endif /* MBEDTLS_PLATFORM_PRINTF_MACRO */
-#endif /* MBEDTLS_PLATFORM_PRINTF_ALT */
 
 /*
  * The function pointers for exit

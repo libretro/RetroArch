@@ -57,13 +57,9 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
+#endif
 #include <stdlib.h>
 #include <stdio.h>
-#define mbedtls_printf     printf
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
 
 #include "mbedtls/ecp_internal.h"
 
@@ -331,7 +327,7 @@ void mbedtls_ecp_group_free( mbedtls_ecp_group *grp )
     {
         for( i = 0; i < grp->T_size; i++ )
             mbedtls_ecp_point_free( &grp->T[i] );
-        mbedtls_free( grp->T );
+        free( grp->T );
     }
 
     mbedtls_zeroize( grp, sizeof( mbedtls_ecp_group ) );
@@ -798,7 +794,7 @@ static int ecp_normalize_jac_many( const mbedtls_ecp_group *grp,
     }
 #endif
 
-    if( ( c = (mbedtls_mpi*)mbedtls_calloc( t_len, sizeof( mbedtls_mpi ) ) ) == NULL )
+    if( ( c = (mbedtls_mpi*)calloc( t_len, sizeof( mbedtls_mpi ) ) ) == NULL )
         return( MBEDTLS_ERR_ECP_ALLOC_FAILED );
 
     mbedtls_mpi_init( &u ); mbedtls_mpi_init( &Zi ); mbedtls_mpi_init( &ZZi );
@@ -860,7 +856,7 @@ cleanup:
     mbedtls_mpi_free( &u ); mbedtls_mpi_free( &Zi ); mbedtls_mpi_free( &ZZi );
     for( i = 0; i < t_len; i++ )
         mbedtls_mpi_free( &c[i] );
-    mbedtls_free( c );
+    free( c );
 
     return( ret );
 }
@@ -1385,7 +1381,7 @@ static int ecp_mul_comb( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
 
     if( T == NULL )
     {
-        T = (mbedtls_ecp_point*)mbedtls_calloc( pre_len, sizeof( mbedtls_ecp_point ) );
+        T = (mbedtls_ecp_point*)calloc( pre_len, sizeof( mbedtls_ecp_point ) );
         if( T == NULL )
         {
             ret = MBEDTLS_ERR_ECP_ALLOC_FAILED;
@@ -1428,7 +1424,7 @@ cleanup:
     {
         for( i = 0; i < pre_len; i++ )
             mbedtls_ecp_point_free( &T[i] );
-        mbedtls_free( T );
+        free( T );
     }
 
     mbedtls_mpi_free( &M );

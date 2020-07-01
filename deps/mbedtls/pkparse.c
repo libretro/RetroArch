@@ -54,11 +54,8 @@
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
-#include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
 #endif
+#include <stdlib.h>
 
 #if defined(MBEDTLS_FS_IO)
 #include "arc4_alt.h"
@@ -89,7 +86,7 @@ int mbedtls_pk_load_file( const char *path, unsigned char **buf, size_t *n )
     *n = (size_t) size;
 
     if( *n + 1 == 0 ||
-        ( *buf = mbedtls_calloc( 1, *n + 1 ) ) == NULL )
+        ( *buf = calloc( 1, *n + 1 ) ) == NULL )
     {
         fclose( f );
         return( MBEDTLS_ERR_PK_ALLOC_FAILED );
@@ -98,7 +95,7 @@ int mbedtls_pk_load_file( const char *path, unsigned char **buf, size_t *n )
     if( fread( *buf, 1, *n, f ) != *n )
     {
         fclose( f );
-        mbedtls_free( *buf );
+        free( *buf );
         return( MBEDTLS_ERR_PK_FILE_IO_ERROR );
     }
 
@@ -132,7 +129,7 @@ int mbedtls_pk_parse_keyfile( mbedtls_pk_context *ctx,
                 (const unsigned char *) pwd, strlen( pwd ) );
 
     mbedtls_zeroize( buf, n );
-    mbedtls_free( buf );
+    free( buf );
 
     return( ret );
 }
@@ -152,7 +149,7 @@ int mbedtls_pk_parse_public_keyfile( mbedtls_pk_context *ctx, const char *path )
     ret = mbedtls_pk_parse_public_key( ctx, buf, n );
 
     mbedtls_zeroize( buf, n );
-    mbedtls_free( buf );
+    free( buf );
 
     return( ret );
 }
