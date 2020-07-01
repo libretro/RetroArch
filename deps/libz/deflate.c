@@ -1510,7 +1510,6 @@ static void fill_window(deflate_state *s)
          (last)); \
    s->block_start = s->strstart; \
    flush_pending(s->strm); \
-   Tracev((stderr,"[FLUSH]")); \
 }
 
 /* Same but force premature exit if necessary. */
@@ -1676,7 +1675,6 @@ static block_state deflate_fast(deflate_state *s, int flush)
       else
       {
          /* No match, output a literal byte */
-         Tracevv((stderr,"%c", s->window[s->strstart]));
          _tr_tally_lit (s, s->window[s->strstart], bflush);
          s->lookahead--;
          s->strstart++;
@@ -1796,7 +1794,6 @@ static block_state deflate_slow(deflate_state *s, int flush)
           * single literal. If there was a match but the current match
           * is longer, truncate the previous match to a single literal.
           */
-         Tracevv((stderr,"%c", s->window[s->strstart-1]));
          _tr_tally_lit(s, s->window[s->strstart-1], bflush);
          if (bflush) {
             FLUSH_BLOCK_ONLY(s, 0);
@@ -1818,7 +1815,6 @@ static block_state deflate_slow(deflate_state *s, int flush)
    Assert (flush != Z_NO_FLUSH, "no flush?");
    if (s->match_available)
    {
-      Tracevv((stderr,"%c", s->window[s->strstart-1]));
       _tr_tally_lit(s, s->window[s->strstart-1], bflush);
       s->match_available = 0;
    }
@@ -1894,7 +1890,6 @@ static block_state deflate_rle(deflate_state *s, int flush)
       else
       {
          /* No match, output a literal byte */
-         Tracevv((stderr,"%c", s->window[s->strstart]));
          _tr_tally_lit (s, s->window[s->strstart], bflush);
          s->lookahead--;
          s->strstart++;
@@ -1936,7 +1931,6 @@ static block_state deflate_huff(deflate_state *s, int flush)
 
       /* Output a literal byte */
       s->match_length = 0;
-      Tracevv((stderr,"%c", s->window[s->strstart]));
       _tr_tally_lit (s, s->window[s->strstart], bflush);
       s->lookahead--;
       s->strstart++;
