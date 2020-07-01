@@ -27,16 +27,12 @@
 
 #if defined(MBEDTLS_SSL_SRV_C)
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
+#include <string.h>
 
 #include "mbedtls/debug.h"
 #include "mbedtls/ssl.h"
 #include "mbedtls/ssl_internal.h"
-
-#include <string.h>
 
 #if defined(MBEDTLS_ECP_C)
 #include "mbedtls/ecp.h"

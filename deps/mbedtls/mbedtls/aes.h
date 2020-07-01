@@ -32,17 +32,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <retro_inline.h>
+
 /* padlock.c and aesni.c rely on these values! */
 #define MBEDTLS_AES_ENCRYPT     1
 #define MBEDTLS_AES_DECRYPT     0
 
 #define MBEDTLS_ERR_AES_INVALID_KEY_LENGTH                -0x0020  /**< Invalid key length. */
 #define MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH              -0x0022  /**< Invalid data input length. */
-
-#if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
-    !defined(inline) && !defined(__cplusplus)
-#define inline __inline
-#endif
 
 #if !defined(MBEDTLS_AES_ALT)
 /* Regular implementation */

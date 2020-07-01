@@ -53,14 +53,8 @@
 #include "mbedtls/md.h"
 #endif
 
-#if defined(MBEDTLS_PKCS1_V15) && !defined(__OpenBSD__)
-#include <stdlib.h>
-#endif
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "arc4_alt.h"
 

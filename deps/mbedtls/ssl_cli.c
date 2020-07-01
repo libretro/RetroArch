@@ -27,18 +27,13 @@
 
 #if defined(MBEDTLS_SSL_CLI_C)
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "mbedtls/debug.h"
 #include "mbedtls/ssl.h"
 #include "mbedtls/ssl_internal.h"
-
-#include <string.h>
-
-#include <stdint.h>
 
 #if defined(MBEDTLS_HAVE_TIME)
 #include "mbedtls/platform_time.h"

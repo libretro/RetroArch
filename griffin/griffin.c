@@ -1557,7 +1557,6 @@ SSL
 #include "../deps/mbedtls/pkcs5.c"
 #include "../deps/mbedtls/pkparse.c"
 #include "../deps/mbedtls/pkwrite.c"
-#include "../deps/mbedtls/platform.c"
 #include "../deps/mbedtls/ripemd160.c"
 #include "../deps/mbedtls/rsa.c"
 #include "../deps/mbedtls/sha1.c"

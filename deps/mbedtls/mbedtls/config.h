@@ -1850,26 +1850,6 @@
 #define MBEDTLS_PKCS12_C
 
 /**
- * \def MBEDTLS_PLATFORM_C
- *
- * Enable the platform abstraction layer that allows you to re-assign
- * functions like calloc(), free(), snprintf(), printf(), fprintf(), exit().
- *
- * Enabling MBEDTLS_PLATFORM_C enables to use of MBEDTLS_PLATFORM_XXX_ALT
- * or MBEDTLS_PLATFORM_XXX_MACRO directives, allowing the functions mentioned
- * above to be specified at runtime or compile time respectively.
- *
- * \note This abstraction layer must be enabled on Windows (including MSYS2)
- * as other module rely on it for a fixed snprintf implementation.
- *
- * Module:  library/platform.c
- * Caller:  Most other .c files
- *
- * This module enables abstraction of common (libc) functions.
- */
-#define MBEDTLS_PLATFORM_C
-
-/**
  * \def MBEDTLS_RIPEMD160_C
  *
  * Enable the RIPEMD-160 hash algorithm.
@@ -2257,18 +2237,6 @@
 #define MBEDTLS_PLATFORM_STD_TIME            time /**< Default time to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 #define MBEDTLS_PLATFORM_STD_FPRINTF      fprintf /**< Default fprintf to use, can be undefined */
 #define MBEDTLS_PLATFORM_STD_PRINTF        printf /**< Default printf to use, can be undefined */
-#endif
-
-/* To Use Function Macros MBEDTLS_PLATFORM_C must be enabled */
-/* MBEDTLS_PLATFORM_XXX_MACRO and MBEDTLS_PLATFORM_XXX_ALT cannot both be defined */
-#if 0
-#define MBEDTLS_PLATFORM_CALLOC_MACRO        calloc /**< Default allocator macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_FREE_MACRO            free /**< Default free macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_EXIT_MACRO            exit /**< Default exit macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_TIME_MACRO            time /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
-#define MBEDTLS_PLATFORM_TIME_TYPE_MACRO       time_t /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
-#define MBEDTLS_PLATFORM_FPRINTF_MACRO      fprintf /**< Default fprintf macro to use, can be undefined */
-#define MBEDTLS_PLATFORM_PRINTF_MACRO        printf /**< Default printf macro to use, can be undefined */
 #endif
 
 /* SSL Cache options */

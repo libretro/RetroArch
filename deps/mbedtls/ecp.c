@@ -55,18 +55,12 @@
 
 #if !defined(MBEDTLS_ECP_ALT)
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "mbedtls/ecp_internal.h"
+#include <retro_inline.h>
 
-#if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
-    !defined(inline) && !defined(__cplusplus)
-#define inline __inline
-#endif
+#include "mbedtls/ecp_internal.h"
 
 #include "arc4_alt.h"
 

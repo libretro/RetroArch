@@ -535,7 +535,6 @@ ifeq ($(HAVE_BUILTINMBEDTLS), 1)
                      deps/mbedtls/pkcs5.o \
                      deps/mbedtls/pkparse.o \
                      deps/mbedtls/pkwrite.o \
-                     deps/mbedtls/platform.o \
                      deps/mbedtls/ripemd160.o \
                      deps/mbedtls/rsa.o \
                      deps/mbedtls/sha1.o \

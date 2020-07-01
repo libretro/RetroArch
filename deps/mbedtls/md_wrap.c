@@ -53,9 +53,6 @@
 #include "mbedtls/sha512.h"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
 
 #if defined(MBEDTLS_MD5_C)

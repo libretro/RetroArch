@@ -42,11 +42,7 @@
 #include "mbedtls/ecdsa.h"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
-
 #include <limits.h>
 
 #if defined(MBEDTLS_PK_RSA_ALT_SUPPORT)

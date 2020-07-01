@@ -31,14 +31,10 @@
 
 #if defined(MBEDTLS_SSL_CACHE_C)
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
+#include <string.h>
 
 #include "mbedtls/ssl_cache.h"
-
-#include <string.h>
 
 void mbedtls_ssl_cache_init( mbedtls_ssl_cache_context *cache )
 {

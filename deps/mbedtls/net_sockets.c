@@ -36,15 +36,10 @@
 #error "This module only works on Unix and Windows, see MBEDTLS_NET_C in config.h"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
-#endif
+#include <string.h>
 
 #include "mbedtls/net_sockets.h"
-
-#include <string.h>
 
 #if (defined(_WIN32) || defined(_WIN32_WCE)) && !defined(EFIX64) && \
     !defined(EFI32)

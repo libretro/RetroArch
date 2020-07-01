@@ -42,12 +42,8 @@
 #include "mbedtls/cipher.h"
 #include "mbedtls/oid.h"
 
-#include <string.h>
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdio.h>
+#include <string.h>
 
 static int pkcs5_parse_pbkdf2_params( const mbedtls_asn1_buf *params,
                                       mbedtls_asn1_buf *salt, int *iterations,

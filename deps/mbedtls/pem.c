@@ -34,12 +34,8 @@
 #include "mbedtls/md5.h"
 #include "mbedtls/cipher.h"
 
-#include <string.h>
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(MBEDTLS_PEM_PARSE_C)
 #include "arc4_alt.h"

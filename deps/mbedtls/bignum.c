@@ -48,9 +48,6 @@
 
 #include <string.h>
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -30,10 +30,6 @@
 #include "mbedtls/asn1write.h"
 
 #include <string.h>
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
 
 int mbedtls_asn1_write_len( unsigned char **p, unsigned char *start, size_t len )

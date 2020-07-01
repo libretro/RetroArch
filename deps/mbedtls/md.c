@@ -34,11 +34,7 @@
 #include "mbedtls/md.h"
 #include "mbedtls/md_internal.h"
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
-
 #include <string.h>
 
 #if defined(MBEDTLS_FS_IO)

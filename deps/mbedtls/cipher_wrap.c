@@ -61,14 +61,8 @@
 #include "mbedtls/ccm.h"
 #endif
 
-#if defined(MBEDTLS_CIPHER_NULL_CIPHER)
-#include <string.h>
-#endif
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#endif
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(MBEDTLS_GCM_C)
 /* shared by all GCM ciphers */
