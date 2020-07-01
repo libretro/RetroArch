@@ -11,6 +11,7 @@ WindowsSdkDir = C:\Program Files (x86)\Windows Kits\10\$(NOTHING)
 WindowsSDKVersion := 10.0.14393.0\$(NOTHING)
 VCINSTALLDIR := C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\$(NOTHING)
 
+HAVE_SCREENSHOTS         := 1
 HAVE_AUDIOMIXER          := 1
 HAVE_D3DX                := 1
 HAVE_D3D8                := 0
@@ -195,7 +196,7 @@ else
    OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 endif
 
-DEFINES += -DRARCH_INTERNAL -DHAVE_DYNAMIC -DJSON_STATIC
+DEFINES += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_DYNAMIC -DJSON_STATIC
 INCLUDE_DIRS += -I. -Igfx/include
 
 #OBJ := version_git.o

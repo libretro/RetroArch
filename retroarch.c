@@ -2005,7 +2005,9 @@ struct rarch_state
 #endif
    bool runloop_game_options_active;
    bool runloop_autosave;
+#ifdef HAVE_SCREENSHOTS
    bool runloop_max_frames_screenshot;
+#endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool cli_shader_disable;
 #endif
@@ -2240,7 +2242,9 @@ struct rarch_state
    char cli_shader[PATH_MAX_LENGTH];
    char runtime_shader_preset[PATH_MAX_LENGTH];
 #endif
+#ifdef HAVE_SCREENSHOTS
    char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH];
+#endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
    char subsystem_path[PATH_MAX_LENGTH];
@@ -15641,6 +15645,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
+#ifdef HAVE_SCREENSHOTS
          {
             const char *dir_screenshot = settings->paths.directory_screenshot;
             if (!take_screenshot(dir_screenshot,
@@ -15648,6 +15653,7 @@ bool command_event(enum event_command cmd, void *data)
                      video_driver_cached_frame_has_valid_framebuffer(), false, true))
                return false;
          }
+#endif
          break;
       case CMD_EVENT_UNLOAD_CORE:
          {
@@ -31444,10 +31450,12 @@ bool video_driver_prefer_viewport_read(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
+#ifdef HAVE_SCREENSHOTS
    bool video_gpu_screenshot   = settings->bools.video_gpu_screenshot;
-
-   return video_gpu_screenshot ||
-      (video_driver_is_hw_context() &&
+   if (video_gpu_screenshot)
+      return true;
+#endif
+   return (video_driver_is_hw_context() &&
        !p_rarch->current_video->read_frame_raw);
 }
 
@@ -35303,10 +35311,12 @@ static void retroarch_print_help(const char *arg0)
       strlcat(buf, "      --max-frames=NUMBER\n"
             "                        Runs for the specified number of frames, "
             "then exits.\n", sizeof(buf));
+#ifdef HAVE_SCREENSHOTS
       strlcat(buf, "      --max-frames-ss\n"
             "                        Takes a screenshot at the end of max-frames.\n", sizeof(buf));
       strlcat(buf, "      --max-frames-ss-path=FILE\n"
             "                        Path to save the screenshot to at the end of max-frames.\n", sizeof(buf));
+#endif
 #ifdef HAVE_ACCESSIBILITY
       strlcat(buf, "      --accessibility\n"
             "                        Enables accessibilty for blind users using text-to-speech.\n", sizeof(buf));
@@ -35877,13 +35887,17 @@ static void retroarch_parse_input_and_config(
                break;
 
             case RA_OPT_MAX_FRAMES_SCREENSHOT:
+#ifdef HAVE_SCREENSHOTS
                p_rarch->runloop_max_frames_screenshot = true;
+#endif
                break;
 
             case RA_OPT_MAX_FRAMES_SCREENSHOT_PATH:
+#ifdef HAVE_SCREENSHOTS
                strlcpy(p_rarch->runloop_max_frames_screenshot_path,
                      optarg,
                      sizeof(p_rarch->runloop_max_frames_screenshot_path));
+#endif
                break;
 
             case RA_OPT_SUBSYSTEM:
@@ -38175,6 +38189,7 @@ static enum runloop_state runloop_check_state(
       if (TIME_TO_EXIT(trig_quit_key))
       {
          bool quit_runloop           = false;
+#ifdef HAVE_SCREENSHOTS
          unsigned runloop_max_frames = p_rarch->runloop_max_frames;
 
          if ((runloop_max_frames != 0)
@@ -38202,6 +38217,7 @@ static enum runloop_state runloop_check_state(
                RARCH_ERR("Could not take a screenshot before exiting.\n");
             }
          }
+#endif
 
          if (runloop_exec)
             runloop_exec = false;
@@ -38479,8 +38495,10 @@ static enum runloop_state runloop_check_state(
    if (pause_nonactive)
       focused                = is_focused;
 
+#ifdef HAVE_SCREENSHOTS
    /* Check if we have pressed the screenshot toggle button */
    HOTKEY_CHECK(RARCH_SCREENSHOT, CMD_EVENT_TAKE_SCREENSHOT, true, NULL);
+#endif
 
    /* Check if we have pressed the audio mute toggle button */
    HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE, true, NULL);

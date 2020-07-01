@@ -206,6 +206,7 @@ else ifeq ($(libogc_platform), 1)
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_SCREENSHOTS         := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    RARCH_CONSOLE             = 1
@@ -486,6 +487,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    endif
 else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_GDI                 := 1
+	HAVE_SCREENSHOTS         := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
@@ -564,6 +566,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    endif
 else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_GDI                 := 1
+   HAVE_SCREENSHOTS         := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
@@ -646,6 +649,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    endif
 else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_GDI                 := 1
+   HAVE_SCREENSHOTS         := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
@@ -728,6 +732,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    endif
 else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_GDI                 := 1
+   HAVE_SCREENSHOTS         := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
@@ -825,6 +830,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
       export LIB := $(LIB)
    endif
 else ifeq (qnx,$(platform))
+   HAVE_SCREENSHOTS         := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
@@ -867,6 +873,7 @@ else ifeq (qnx,$(platform))
    INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
    LIBS += -lEGL -lbps -lscreen -lsocket -lm -lGLESv2 -lOpenAL
 else ifneq (,$(findstring unix,$(platform)))
+   HAVE_SCREENSHOTS         := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
@@ -1039,6 +1046,10 @@ endif
 
 ifeq ($(HAVE_7ZIP), 1)
    CFLAGS      += -DHAVE_7ZIP
+endif
+
+ifeq ($(HAVE_SCREENSHOTS), 1)
+	CFLAGS      += -DHAVE_SCREENSHOTS
 endif
 
 ifeq ($(HAVE_AUDIOMIXER), 1)

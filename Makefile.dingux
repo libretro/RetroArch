@@ -4,6 +4,7 @@ PACKAGE_NAME = retroarch
 
 DEBUG ?= 0
 
+HAVE_SCREENSHOTS = 1
 HAVE_7ZIP = 1
 HAVE_AL = 1
 # this freezes when switching back from menu

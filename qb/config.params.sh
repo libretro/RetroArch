@@ -157,6 +157,7 @@ HAVE_RWAV=yes              # WAV support
 HAVE_HID=yes               # Low-level HID (Human Interface Device) support
 HAVE_AUDIOMIXER=yes        # Audio Mixer
 HAVE_LANGEXTRA=yes         # Multi-language support
+HAVE_SCREENSHOTS=yes       # Screenshot support
 HAVE_OSMESA=no             # Off-screen Mesa rendering
 HAVE_VIDEOPROCESSOR=auto   # Enable video processor core
 HAVE_VIDEOCORE=auto        # Broadcom Videocore 4 support

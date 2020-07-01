@@ -1094,6 +1094,7 @@ static void save_state_cb(retro_task_t *task,
       void *user_data, const char *error)
 {
    save_task_state_t *state   = (save_task_state_t*)task_data;
+#ifdef HAVE_SCREENSHOTS
    char               *path   = strdup(state->path);
    settings_t     *settings   = config_get_ptr();
    const char *dir_screenshot = settings->paths.directory_screenshot; 
@@ -1101,8 +1102,9 @@ static void save_state_cb(retro_task_t *task,
    if (state->thumbnail_enable)
       take_screenshot(dir_screenshot,
             path, true, state->has_valid_framebuffer, false, true);
-
    free(path);
+#endif
+
    free(state);
 }
 

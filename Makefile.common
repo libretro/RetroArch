@@ -268,8 +268,14 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
-       disk_index_file.o \
-       tasks/task_screenshot.o \
+       disk_index_file.o
+
+ifeq ($(HAVE_SCREENSHOTS), 1)
+   DEFINES += -DHAVE_SCREENSHOTS
+   OBJ     += tasks/task_screenshot.o
+endif
+
+OBJ += \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.o \
@@ -873,8 +879,13 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 endif
 
 ifeq ($(HAVE_GFX_WIDGETS), 1)
-   OBJ += gfx/gfx_widgets.o \
-          gfx/widgets/gfx_widget_screenshot.o \
+   OBJ += gfx/gfx_widgets.o
+
+   ifeq ($(HAVE_SCREENSHOTS), 1)
+       OBJ += gfx/widgets/gfx_widget_screenshot.o
+   endif
+
+   OBJ += \
           gfx/widgets/gfx_widget_volume.o \
           gfx/widgets/gfx_widget_generic_message.o \
           gfx/widgets/gfx_widget_libretro_message.o \

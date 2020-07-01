@@ -826,7 +826,6 @@ static void rcheevos_async_award_achievement(rcheevos_async_io_request* request)
 static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
 {
    char buffer[256];
-   settings_t *settings = config_get_ptr();
    buffer[0] = 0;
 
    CHEEVOS_LOG(RCHEEVOS_TAG "awarding cheevo %u: %s (%s)\n",
@@ -866,24 +865,29 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
       rcheevos_async_award_achievement(request);
    }
 
-   /* Take a screenshot of the achievement. */
-   if (settings && settings->bools.cheevos_auto_screenshot)
+#ifdef HAVE_SCREENSHOTS
    {
-      char shotname[8192];
+      settings_t *settings = config_get_ptr();
+      /* Take a screenshot of the achievement. */
+      if (settings && settings->bools.cheevos_auto_screenshot)
+      {
+         char shotname[8192];
 
-      snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
-      settings->paths.directory_screenshot,
-      path_basename(path_get(RARCH_PATH_BASENAME)),
-      cheevo->info->id);
-      shotname[sizeof(shotname) - 1] = '\0';
+         snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
+               settings->paths.directory_screenshot,
+               path_basename(path_get(RARCH_PATH_BASENAME)),
+               cheevo->info->id);
+         shotname[sizeof(shotname) - 1] = '\0';
 
-      if (take_screenshot(settings->paths.directory_screenshot,
-               shotname, true,
-               video_driver_cached_frame_has_valid_framebuffer(), false, true))
-         CHEEVOS_LOG(RCHEEVOS_TAG "got a screenshot for cheevo %u\n", cheevo->info->id);
-      else
-         CHEEVOS_LOG(RCHEEVOS_TAG "failed to get screenshot for cheevo %u\n", cheevo->info->id);
+         if (take_screenshot(settings->paths.directory_screenshot,
+                  shotname, true,
+                  video_driver_cached_frame_has_valid_framebuffer(), false, true))
+            CHEEVOS_LOG(RCHEEVOS_TAG "got a screenshot for cheevo %u\n", cheevo->info->id);
+         else
+            CHEEVOS_LOG(RCHEEVOS_TAG "failed to get screenshot for cheevo %u\n", cheevo->info->id);
+      }
    }
+#endif
 }
 
 static int rcheevos_has_indirect_memref(const rc_memref_value_t* memrefs)

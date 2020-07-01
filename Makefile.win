@@ -1,5 +1,6 @@
 TARGET = retroarch.exe
 
+HAVE_SCREENSHOTS = 1
 HAVE_AUDIOMIXER = 1
 HAVE_RWAV = 1
 HAVE_DINPUT = 1
@@ -99,7 +100,7 @@ OS               := Win32
 OBJ              :=
 LIBS             := -lm
 DEFINES			  :=
-DEFINES          += -I. -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -DRARCH_INTERNAL -DHAVE_OVERLAY
+DEFINES          += -I. -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_OVERLAY
 #DEFINES			  += -DHAVE_VIDEO_LAYOUT
 LDFLAGS          := -L. -static-libgcc
 

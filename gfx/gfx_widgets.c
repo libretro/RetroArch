@@ -196,7 +196,9 @@ size_t gfx_widgets_get_msg_queue_size(void *data)
 
 /* Widgets list */
 const static gfx_widget_t* const widgets[] = {
+#ifdef HAVE_SCREENSHOTS
    &gfx_widget_screenshot,
+#endif
    &gfx_widget_volume,
 #ifdef HAVE_CHEEVOS
    &gfx_widget_achievement_popup,
