@@ -22,6 +22,7 @@ elif [ $PLATFORM = "ps2" ] ; then
 platform=ps2
 SALAMANDER=yes
 EXT=a
+OPTS=release
 
 mkdir -p ../pkg/${platform}/cores/
 
@@ -252,15 +253,13 @@ for f in `ls -v *_${platform}.${EXT}`; do
       make -C ../ -f Makefile.${platform} $OPTS APP_TITLE="$name" LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ps2" ]; then
       # TODO PS2 should be able to compile in parallel
-      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS || exit 1
    else
       make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack -j3 || exit 1
    fi
 
    # Do manual executable step
-   if [ $PLATFORM = "ps2" ] ; then
-      make -C ../ -f Makefile.${platform} package -j3
-   elif [ $PLATFORM = "dex-ps3" ] ; then
+   if [ $PLATFORM = "dex-ps3" ] ; then
       $MAKE_FSELF_NPDRM -c ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "cex-ps3" ] ; then
       $SCETOOL_PATH $SCETOOL_FLAGS_CORE ../retroarch_${platform}.elf ../CORE.SELF
