@@ -397,14 +397,9 @@ int mbedtls_rsa_private( mbedtls_rsa_context *ctx,
     size_t olen;
     mbedtls_mpi T, T1, T2;
     mbedtls_mpi P1, Q1, R;
-#if defined(MBEDTLS_RSA_NO_CRT)
-    mbedtls_mpi D_blind;
-    mbedtls_mpi *D = &ctx->D;
-#else
     mbedtls_mpi DP_blind, DQ_blind;
     mbedtls_mpi *DP = &ctx->DP;
     mbedtls_mpi *DQ = &ctx->DQ;
-#endif
 
     /* Make sure we have private key info, prevent possible misuse */
     if( ctx->P.p == NULL || ctx->Q.p == NULL || ctx->D.p == NULL )
@@ -416,12 +411,8 @@ int mbedtls_rsa_private( mbedtls_rsa_context *ctx,
 
     if( f_rng != NULL )
     {
-#if defined(MBEDTLS_RSA_NO_CRT)
-        mbedtls_mpi_init( &D_blind );
-#else
         mbedtls_mpi_init( &DP_blind );
         mbedtls_mpi_init( &DQ_blind );
-#endif
     }
 
 
@@ -453,18 +444,6 @@ int mbedtls_rsa_private( mbedtls_rsa_context *ctx,
         MBEDTLS_MPI_CHK( mbedtls_mpi_sub_int( &P1, &ctx->P, 1 ) );
         MBEDTLS_MPI_CHK( mbedtls_mpi_sub_int( &Q1, &ctx->Q, 1 ) );
 
-#if defined(MBEDTLS_RSA_NO_CRT)
-        /*
-         * D_blind = ( P - 1 ) * ( Q - 1 ) * R + D
-         */
-        MBEDTLS_MPI_CHK( mbedtls_mpi_fill_random( &R, RSA_EXPONENT_BLINDING,
-                         f_rng, p_rng ) );
-        MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi( &D_blind, &P1, &Q1 ) );
-        MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi( &D_blind, &D_blind, &R ) );
-        MBEDTLS_MPI_CHK( mbedtls_mpi_add_mpi( &D_blind, &D_blind, &ctx->D ) );
-
-        D = &D_blind;
-#else
         /*
          * DP_blind = ( P - 1 ) * R + DP
          */
@@ -486,12 +465,8 @@ int mbedtls_rsa_private( mbedtls_rsa_context *ctx,
                     &ctx->DQ ) );
 
         DQ = &DQ_blind;
-#endif /* MBEDTLS_RSA_NO_CRT */
     }
 
-#if defined(MBEDTLS_RSA_NO_CRT)
-    MBEDTLS_MPI_CHK( mbedtls_mpi_exp_mod( &T, &T, D, &ctx->N, &ctx->RN ) );
-#else
     /*
      * Faster decryption using the CRT
      *
@@ -513,7 +488,6 @@ int mbedtls_rsa_private( mbedtls_rsa_context *ctx,
      */
     MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi( &T1, &T, &ctx->Q ) );
     MBEDTLS_MPI_CHK( mbedtls_mpi_add_mpi( &T, &T2, &T1 ) );
-#endif /* MBEDTLS_RSA_NO_CRT */
 
     if( f_rng != NULL )
     {
@@ -539,12 +513,8 @@ cleanup:
 
     if( f_rng != NULL )
     {
-#if defined(MBEDTLS_RSA_NO_CRT)
-        mbedtls_mpi_free( &D_blind );
-#else
         mbedtls_mpi_free( &DP_blind );
         mbedtls_mpi_free( &DQ_blind );
-#endif
     }
 
     if( ret != 0 )

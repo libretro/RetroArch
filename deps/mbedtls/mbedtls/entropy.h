@@ -45,10 +45,6 @@
 #include "threading.h"
 #endif
 
-#if defined(MBEDTLS_HAVEGE_C)
-#include "havege.h"
-#endif
-
 #define MBEDTLS_ERR_ENTROPY_SOURCE_FAILED                 -0x003C  /**< Critical entropy source failure. */
 #define MBEDTLS_ERR_ENTROPY_MAX_SOURCES                   -0x003E  /**< No more sources can be added. */
 #define MBEDTLS_ERR_ENTROPY_NO_SOURCES_DEFINED            -0x0040  /**< No sources have been added to poll. */
@@ -128,9 +124,6 @@ typedef struct
 #endif
     int             source_count;
     mbedtls_entropy_source_state    source[MBEDTLS_ENTROPY_MAX_SOURCES];
-#if defined(MBEDTLS_HAVEGE_C)
-    mbedtls_havege_state    havege_data;
-#endif
 #if defined(MBEDTLS_THREADING_C)
     mbedtls_threading_mutex_t mutex;    /*!< mutex                  */
 #endif

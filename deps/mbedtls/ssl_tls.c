@@ -5289,13 +5289,6 @@ static void ssl_handshake_params_init( mbedtls_ssl_handshake_params *handshake )
 #if defined(MBEDTLS_ECDH_C)
     mbedtls_ecdh_init( &handshake->ecdh_ctx );
 #endif
-#if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
-    mbedtls_ecjpake_init( &handshake->ecjpake_ctx );
-#if defined(MBEDTLS_SSL_CLI_C)
-    handshake->ecjpake_cache = NULL;
-    handshake->ecjpake_cache_len = 0;
-#endif
-#endif
 
 #if defined(MBEDTLS_SSL_SERVER_NAME_INDICATION)
     handshake->sni_authmode = MBEDTLS_SSL_VERIFY_UNSET;
@@ -5828,32 +5821,6 @@ void mbedtls_ssl_set_hs_authmode( mbedtls_ssl_context *ssl,
     ssl->handshake->sni_authmode = authmode;
 }
 #endif /* MBEDTLS_SSL_SERVER_NAME_INDICATION */
-
-#if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
-/*
- * Set EC J-PAKE password for current handshake
- */
-int mbedtls_ssl_set_hs_ecjpake_password( mbedtls_ssl_context *ssl,
-                                         const unsigned char *pw,
-                                         size_t pw_len )
-{
-    mbedtls_ecjpake_role role;
-
-    if( ssl->handshake == NULL || ssl->conf == NULL )
-        return( MBEDTLS_ERR_SSL_BAD_INPUT_DATA );
-
-    if( ssl->conf->endpoint == MBEDTLS_SSL_IS_SERVER )
-        role = MBEDTLS_ECJPAKE_SERVER;
-    else
-        role = MBEDTLS_ECJPAKE_CLIENT;
-
-    return( mbedtls_ecjpake_setup( &ssl->handshake->ecjpake_ctx,
-                                   role,
-                                   MBEDTLS_MD_SHA256,
-                                   MBEDTLS_ECP_DP_SECP256R1,
-                                   pw, pw_len ) );
-}
-#endif /* MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED */
 
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED)
 int mbedtls_ssl_conf_psk( mbedtls_ssl_config *conf,
@@ -7077,17 +7044,8 @@ void mbedtls_ssl_handshake_free( mbedtls_ssl_handshake_params *handshake )
 #if defined(MBEDTLS_ECDH_C)
     mbedtls_ecdh_free( &handshake->ecdh_ctx );
 #endif
-#if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
-    mbedtls_ecjpake_free( &handshake->ecjpake_ctx );
-#if defined(MBEDTLS_SSL_CLI_C)
-    free( handshake->ecjpake_cache );
-    handshake->ecjpake_cache = NULL;
-    handshake->ecjpake_cache_len = 0;
-#endif
-#endif
 
-#if defined(MBEDTLS_ECDH_C) || defined(MBEDTLS_ECDSA_C) || \
-    defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
+#if defined(MBEDTLS_ECDH_C) || defined(MBEDTLS_ECDSA_C)
     /* explicit void pointer cast for buggy MS compiler */
     free( (void *) handshake->curves );
 #endif

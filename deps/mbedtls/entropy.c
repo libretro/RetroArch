@@ -27,12 +27,6 @@
 
 #if defined(MBEDTLS_ENTROPY_C)
 
-#if defined(MBEDTLS_TEST_NULL_ENTROPY)
-#warning "**** WARNING!  MBEDTLS_TEST_NULL_ENTROPY defined! "
-#warning "**** THIS BUILD HAS NO DEFINED ENTROPY SOURCES "
-#warning "**** THIS BUILD IS *NOT* SUITABLE FOR PRODUCTION USE "
-#endif
-
 #include "mbedtls/entropy.h"
 #include "mbedtls/entropy_poll.h"
 
@@ -40,10 +34,6 @@
 
 #if defined(MBEDTLS_FS_IO)
 #include <stdio.h>
-#endif
-
-#if defined(MBEDTLS_HAVEGE_C)
-#include "mbedtls/havege.h"
 #endif
 
 #include "arc4_alt.h"
@@ -63,44 +53,24 @@ void mbedtls_entropy_init( mbedtls_entropy_context *ctx )
 #else
     mbedtls_sha256_starts( &ctx->accumulator, 0 );
 #endif
-#if defined(MBEDTLS_HAVEGE_C)
-    mbedtls_havege_init( &ctx->havege_data );
-#endif
 
-#if defined(MBEDTLS_TEST_NULL_ENTROPY)
-    mbedtls_entropy_add_source( ctx, mbedtls_null_entropy_poll, NULL,
-                                1, MBEDTLS_ENTROPY_SOURCE_STRONG );
-#endif
-
-#if !defined(MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES)
-#if !defined(MBEDTLS_NO_PLATFORM_ENTROPY)
     mbedtls_entropy_add_source( ctx, mbedtls_platform_entropy_poll, NULL,
                                 MBEDTLS_ENTROPY_MIN_PLATFORM,
                                 MBEDTLS_ENTROPY_SOURCE_STRONG );
-#endif
 #if defined(MBEDTLS_TIMING_C)
     mbedtls_entropy_add_source( ctx, mbedtls_hardclock_poll, NULL,
                                 MBEDTLS_ENTROPY_MIN_HARDCLOCK,
                                 MBEDTLS_ENTROPY_SOURCE_WEAK );
-#endif
-#if defined(MBEDTLS_HAVEGE_C)
-    mbedtls_entropy_add_source( ctx, mbedtls_havege_poll, &ctx->havege_data,
-                                MBEDTLS_ENTROPY_MIN_HAVEGE,
-                                MBEDTLS_ENTROPY_SOURCE_STRONG );
 #endif
 #if defined(MBEDTLS_ENTROPY_HARDWARE_ALT)
     mbedtls_entropy_add_source( ctx, mbedtls_hardware_poll, NULL,
                                 MBEDTLS_ENTROPY_MIN_HARDWARE,
                                 MBEDTLS_ENTROPY_SOURCE_STRONG );
 #endif
-#endif /* MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES */
 }
 
 void mbedtls_entropy_free( mbedtls_entropy_context *ctx )
 {
-#if defined(MBEDTLS_HAVEGE_C)
-    mbedtls_havege_free( &ctx->havege_data );
-#endif
 #if defined(MBEDTLS_THREADING_C)
     mbedtls_mutex_free( &ctx->mutex );
 #endif

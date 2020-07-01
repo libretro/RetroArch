@@ -34,11 +34,6 @@
 #include <string.h>
 #include "mbedtls/timing.h"
 #endif
-#if defined(MBEDTLS_HAVEGE_C)
-#include "mbedtls/havege.h"
-#endif
-
-#if !defined(MBEDTLS_NO_PLATFORM_ENTROPY)
 
 #if !defined(unix) && !defined(__unix__) && !defined(__unix) && \
     !defined(__APPLE__) && !defined(_WIN32) && !defined(__HAIKU__)
@@ -53,8 +48,9 @@
 #include <windows.h>
 #include <wincrypt.h>
 
-int mbedtls_platform_entropy_poll( void *data, unsigned char *output, size_t len,
-                           size_t *olen )
+int mbedtls_platform_entropy_poll(
+      void *data, unsigned char *output, size_t len,
+      size_t *olen )
 {
     HCRYPTPROV provider;
     ((void) data);
@@ -62,9 +58,7 @@ int mbedtls_platform_entropy_poll( void *data, unsigned char *output, size_t len
 
     if( CryptAcquireContext( &provider, NULL, NULL,
                               PROV_RSA_FULL, CRYPT_VERIFYCONTEXT ) == FALSE )
-    {
         return( MBEDTLS_ERR_ENTROPY_SOURCE_FAILED );
-    }
 
     if( CryptGenRandom( provider, (DWORD) len, output ) == FALSE )
     {
@@ -186,24 +180,6 @@ int mbedtls_platform_entropy_poll( void *data,
     return( 0 );
 }
 #endif /* _WIN32 && !EFIX64 && !EFI32 */
-#endif /* !MBEDTLS_NO_PLATFORM_ENTROPY */
-
-#if defined(MBEDTLS_TEST_NULL_ENTROPY)
-int mbedtls_null_entropy_poll( void *data,
-                    unsigned char *output, size_t len, size_t *olen )
-{
-    ((void) data);
-    ((void) output);
-    *olen = 0;
-
-    if( len < sizeof(unsigned char) )
-        return( 0 );
-
-    *olen = sizeof(unsigned char);
-
-    return( 0 );
-}
-#endif
 
 #if defined(MBEDTLS_TIMING_C)
 int mbedtls_hardclock_poll( void *data,
@@ -222,21 +198,5 @@ int mbedtls_hardclock_poll( void *data,
     return( 0 );
 }
 #endif /* MBEDTLS_TIMING_C */
-
-#if defined(MBEDTLS_HAVEGE_C)
-int mbedtls_havege_poll( void *data,
-                 unsigned char *output, size_t len, size_t *olen )
-{
-    mbedtls_havege_state *hs = (mbedtls_havege_state *) data;
-    *olen = 0;
-
-    if( mbedtls_havege_random( hs, output, len ) != 0 )
-        return( MBEDTLS_ERR_ENTROPY_SOURCE_FAILED );
-
-    *olen = len;
-
-    return( 0 );
-}
-#endif /* MBEDTLS_HAVEGE_C */
 
 #endif /* MBEDTLS_ENTROPY_C */

@@ -124,37 +124,6 @@
  */
 #define MBEDTLS_HAVE_TIME_DATE
 
-/**
- * \def MBEDTLS_DEPRECATED_WARNING
- *
- * Mark deprecated functions so that they generate a warning if used.
- * Functions deprecated in one version will usually be removed in the next
- * version. You can enable this to help you prepare the transition to a new
- * major version by making sure your code is not using these functions.
- *
- * This only works with GCC and Clang. With other compilers, you may want to
- * use MBEDTLS_DEPRECATED_REMOVED
- *
- * Uncomment to get warnings on using deprecated functions.
- */
-#if 0
-#define MBEDTLS_DEPRECATED_WARNING
-#endif
-
-/**
- * \def MBEDTLS_DEPRECATED_REMOVED
- *
- * Remove deprecated functions so that they generate an error if used.
- * Functions deprecated in one version will usually be removed in the next
- * version. You can enable this to help you prepare the transition to a new
- * major version by making sure your code is not using these functions.
- *
- * Uncomment to get errors on using deprecated functions.
- */
-#if 0
-#define MBEDTLS_DEPRECATED_REMOVED
-#endif
-
 /* \} name SECTION: System support */
 
 /**
@@ -330,25 +299,6 @@
 #define MBEDTLS_ECP_DOUBLE_ADD_MXZ_ALT
 #define MBEDTLS_ECP_RANDOMIZE_MXZ_ALT
 #define MBEDTLS_ECP_NORMALIZE_MXZ_ALT
-#endif
-
-/**
- * \def MBEDTLS_TEST_NULL_ENTROPY
- *
- * Enables testing and use of mbed TLS without any configured entropy sources.
- * This permits use of the library on platforms before an entropy source has
- * been integrated (see for example the MBEDTLS_ENTROPY_HARDWARE_ALT or the
- * MBEDTLS_ENTROPY_NV_SEED switches).
- *
- * WARNING! This switch MUST be disabled in production builds, and is suitable
- * only for development.
- * Enabling the switch negates any security provided by the library.
- *
- * Requires MBEDTLS_ENTROPY_C, MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
- *
- */
-#if 0
-#define MBEDTLS_TEST_NULL_ENTROPY
 #endif
 
 /**
@@ -768,27 +718,6 @@
 #define MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
 
 /**
- * \def MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
- *
- * Enable the ECJPAKE based ciphersuite modes in SSL / TLS.
- *
- * \warning This is currently experimental. EC J-PAKE support is based on the
- * Thread v1.0.0 specification; incompatible changes to the specification
- * might still happen. For this reason, this is disabled by default.
- *
- * Requires: MBEDTLS_ECJPAKE_C
- *           MBEDTLS_SHA256_C
- *           MBEDTLS_ECP_DP_SECP256R1_ENABLED
- *
- * This enables the following ciphersuites (if other requisites are
- * enabled as well):
- *      MBEDTLS_TLS_ECJPAKE_WITH_AES_128_CCM_8
- */
-#if 0
-#define MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
-#endif
-
-/**
  * \def MBEDTLS_PK_PARSE_EC_EXTENDED
  *
  * Enhance support for reading EC keys using variants of SEC1 not allowed by
@@ -836,34 +765,6 @@
 #define MBEDTLS_FS_IO
 
 /**
- * \def MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
- *
- * Do not add default entropy sources. These are the platform specific,
- * mbedtls_timing_hardclock and HAVEGE based poll functions.
- *
- * This is useful to have more control over the added entropy sources in an
- * application.
- *
- * Uncomment this macro to prevent loading of default entropy functions.
- */
-#if 0
-#define MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
-#endif
-
-/**
- * \def MBEDTLS_NO_PLATFORM_ENTROPY
- *
- * Do not use built-in platform entropy functions.
- * This is useful if your platform does not support
- * standards like the /dev/urandom or Windows CryptoAPI.
- *
- * Uncomment this macro to disable the built-in platform entropy functions.
- */
-#if 0
-#define MBEDTLS_NO_PLATFORM_ENTROPY
-#endif
-
-/**
  * \def MBEDTLS_ENTROPY_FORCE_SHA256
  *
  * Force the entropy accumulator to use a SHA-256 accumulator instead of the
@@ -879,35 +780,6 @@
  */
 #if 0
 #define MBEDTLS_ENTROPY_FORCE_SHA256
-#endif
-
-/**
- * \def MBEDTLS_MEMORY_DEBUG
- *
- * Enable debugging of buffer allocator memory issues. Automatically prints
- * (to stderr) all (fatal) messages on memory allocation issues. Enables
- * function for 'debug output' of allocated memory.
- *
- * Requires: MBEDTLS_MEMORY_BUFFER_ALLOC_C
- *
- * Uncomment this macro to let the buffer allocator print out error messages.
- */
-#if 0
-#define MBEDTLS_MEMORY_DEBUG
-#endif
-
-/**
- * \def MBEDTLS_MEMORY_BACKTRACE
- *
- * Include backtrace information with each allocated block.
- *
- * Requires: MBEDTLS_MEMORY_BUFFER_ALLOC_C
- *           GLIBC-compatible backtrace() an backtrace_symbols() support
- *
- * Uncomment this macro to include backtrace information
- */
-#if 0
-#define MBEDTLS_MEMORY_BACKTRACE
 #endif
 
 /**
@@ -940,18 +812,6 @@
  * This enables support for RSAES-OAEP and RSASSA-PSS operations.
  */
 #define MBEDTLS_PKCS1_V21
-
-/**
- * \def MBEDTLS_RSA_NO_CRT
- *
- * Do not use the Chinese Remainder Theorem for the RSA private operation.
- *
- * Uncomment this macro to disable the use of CRT in RSA.
- *
- */
-#if 0
-#define MBEDTLS_RSA_NO_CRT
-#endif
 
 /**
  * \def MBEDTLS_SHA256_SMALLER
@@ -1330,21 +1190,6 @@
  */
 #if 0
 #define MBEDTLS_THREADING_PTHREAD
-#endif
-
-/**
- * \def MBEDTLS_VERSION_FEATURES
- *
- * Allow run-time checking of compile-time enabled features. Thus allowing users
- * to check at run-time if the library is for instance compiled with threading
- * support via mbedtls_version_check_feature().
- *
- * Requires: MBEDTLS_VERSION_C
- *
- * Comment this to disable run-time checking and save ROM space
- */
-#if 0
-#define MBEDTLS_VERSION_FEATURES
 #endif
 
 /**
@@ -1775,27 +1620,6 @@
 #define MBEDTLS_ECDSA_C
 
 /**
- * \def MBEDTLS_ECJPAKE_C
- *
- * Enable the elliptic curve J-PAKE library.
- *
- * \warning This is currently experimental. EC J-PAKE support is based on the
- * Thread v1.0.0 specification; incompatible changes to the specification
- * might still happen. For this reason, this is disabled by default.
- *
- * Module:  library/ecjpake.c
- * Caller:
- *
- * This module is used by the following key exchanges:
- *      ECJPAKE
- *
- * Requires: MBEDTLS_ECP_C, MBEDTLS_MD_C
- */
-#if 0
-#define MBEDTLS_ECJPAKE_C
-#endif
-
-/**
  * \def MBEDTLS_ECP_C
  *
  * Enable the elliptic curve over GF(p) library.
@@ -1850,31 +1674,6 @@
 #define MBEDTLS_GCM_C
 
 /**
- * \def MBEDTLS_HAVEGE_C
- *
- * Enable the HAVEGE random generator.
- *
- * Warning: the HAVEGE random generator is not suitable for virtualized
- *          environments
- *
- * Warning: the HAVEGE random generator is dependent on timing and specific
- *          processor traits. It is therefore not advised to use HAVEGE as
- *          your applications primary random generator or primary entropy pool
- *          input. As a secondary input to your entropy pool, it IS able add
- *          the (limited) extra entropy it provides.
- *
- * Module:  library/havege.c
- * Caller:
- *
- * Requires: MBEDTLS_TIMING_C
- *
- * Uncomment to enable the HAVEGE random generator.
- */
-#if 0
-#define MBEDTLS_HAVEGE_C
-#endif
-
-/**
  * \def MBEDTLS_HMAC_DRBG_C
  *
  * Enable the HMAC_DRBG random generator.
@@ -1914,24 +1713,6 @@
  * PEM_PARSE uses MD5 for decrypting encrypted keys.
  */
 #define MBEDTLS_MD5_C
-
-/**
- * \def MBEDTLS_MEMORY_BUFFER_ALLOC_C
- *
- * Enable the buffer allocator implementation that makes use of a (stack)
- * based buffer to 'allocate' dynamic memory. (replaces calloc() and free()
- * calls)
- *
- * Module:  library/memory_buffer_alloc.c
- *
- * Requires: MBEDTLS_PLATFORM_C
- *           MBEDTLS_PLATFORM_MEMORY (to use it within mbed TLS)
- *
- * Enable this module to enable the buffer memory allocator.
- */
-#if 0
-#define MBEDTLS_MEMORY_BUFFER_ALLOC_C
-#endif
 
 /**
  * \def MBEDTLS_NET_C
@@ -2080,23 +1861,6 @@
  * This module adds support for the PKCS#5 functions.
  */
 #define MBEDTLS_PKCS5_C
-
-/**
- * \def MBEDTLS_PKCS11_C
- *
- * Enable wrapper for PKCS#11 smartcard support.
- *
- * Module:  library/pkcs11.c
- * Caller:  library/pk.c
- *
- * Requires: MBEDTLS_PK_C
- *
- * This module enables SSL/TLS PKCS #11 smartcard support.
- * Requires the presence of the PKCS#11 helper library (libpkcs11-helper)
- */
-#if 0
-#define MBEDTLS_PKCS11_C
-#endif
 
 /**
  * \def MBEDTLS_PKCS12_C

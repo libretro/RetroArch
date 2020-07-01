@@ -163,12 +163,7 @@ int mbedtls_ecdsa_write_signature( mbedtls_ecdsa_context *ctx, mbedtls_md_type_t
                            void *p_rng );
 
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC)
-#if ! defined(MBEDTLS_DEPRECATED_REMOVED)
-#if defined(MBEDTLS_DEPRECATED_WARNING)
-#define MBEDTLS_DEPRECATED    __attribute__((deprecated))
-#else
 #define MBEDTLS_DEPRECATED
-#endif
 /**
  * \brief           Compute ECDSA signature and write it to buffer,
  *                  serialized as defined in RFC 4492 page 20.
@@ -201,7 +196,6 @@ int mbedtls_ecdsa_write_signature_det( mbedtls_ecdsa_context *ctx,
                                unsigned char *sig, size_t *slen,
                                mbedtls_md_type_t md_alg ) MBEDTLS_DEPRECATED;
 #undef MBEDTLS_DEPRECATED
-#endif /* MBEDTLS_DEPRECATED_REMOVED */
 #endif /* MBEDTLS_ECDSA_DETERMINISTIC */
 
 /**

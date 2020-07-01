@@ -118,12 +118,7 @@ void mbedtls_md_init( mbedtls_md_context_t *ctx );
  */
 void mbedtls_md_free( mbedtls_md_context_t *ctx );
 
-#if ! defined(MBEDTLS_DEPRECATED_REMOVED)
-#if defined(MBEDTLS_DEPRECATED_WARNING)
-#define MBEDTLS_DEPRECATED    __attribute__((deprecated))
-#else
 #define MBEDTLS_DEPRECATED
-#endif
 /**
  * \brief           Select MD to use and allocate internal structures.
  *                  Should be called after mbedtls_md_init() or mbedtls_md_free().
@@ -140,7 +135,6 @@ void mbedtls_md_free( mbedtls_md_context_t *ctx );
  */
 int mbedtls_md_init_ctx( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_info ) MBEDTLS_DEPRECATED;
 #undef MBEDTLS_DEPRECATED
-#endif /* MBEDTLS_DEPRECATED_REMOVED */
 
 /**
  * \brief           Select MD to use and allocate internal structures.

@@ -339,8 +339,7 @@ cleanup:
     return( ret );
 }
 
-#if ! defined(MBEDTLS_DEPRECATED_REMOVED) && \
-    defined(MBEDTLS_ECDSA_DETERMINISTIC)
+#if defined(MBEDTLS_ECDSA_DETERMINISTIC)
 int mbedtls_ecdsa_write_signature_det( mbedtls_ecdsa_context *ctx,
                                const unsigned char *hash, size_t hlen,
                                unsigned char *sig, size_t *slen,
