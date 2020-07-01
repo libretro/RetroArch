@@ -206,6 +206,8 @@ else ifeq ($(libogc_platform), 1)
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_AUDIOMIXER          := 1
+   HAVE_RWAV                := 1
    RARCH_CONSOLE             = 1
 
    ifeq ($(platform), wii)
