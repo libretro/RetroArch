@@ -50,10 +50,8 @@ void mbedtls_ssl_cache_init( mbedtls_ssl_cache_context *cache )
 
 int mbedtls_ssl_cache_get( void *data, mbedtls_ssl_session *session )
 {
-    int ret = 1;
-#if defined(MBEDTLS_HAVE_TIME)
-    mbedtls_time_t t = mbedtls_time( NULL );
-#endif
+    int ret  = 1;
+    time_t t = time( NULL );
     mbedtls_ssl_cache_context *cache = (mbedtls_ssl_cache_context *) data;
     mbedtls_ssl_cache_entry *cur, *entry;
 
@@ -70,11 +68,9 @@ int mbedtls_ssl_cache_get( void *data, mbedtls_ssl_session *session )
         entry = cur;
         cur = cur->next;
 
-#if defined(MBEDTLS_HAVE_TIME)
         if( cache->timeout != 0 &&
             (int) ( t - entry->timestamp ) > cache->timeout )
             continue;
-#endif
 
         if( session->ciphersuite != entry->session.ciphersuite ||
             session->compression != entry->session.compression ||
@@ -129,11 +125,9 @@ exit:
 
 int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session )
 {
-    int ret = 1;
-#if defined(MBEDTLS_HAVE_TIME)
-    mbedtls_time_t t = time( NULL ), oldest = 0;
-    mbedtls_ssl_cache_entry *old = NULL;
-#endif
+    int ret  = 1;
+    time_t t = time( NULL ), oldest  = 0;
+    mbedtls_ssl_cache_entry *old     = NULL;
     mbedtls_ssl_cache_context *cache = (mbedtls_ssl_cache_context *) data;
     mbedtls_ssl_cache_entry *cur, *prv;
     int count = 0;
@@ -150,25 +144,21 @@ int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session )
     {
         count++;
 
-#if defined(MBEDTLS_HAVE_TIME)
         if( cache->timeout != 0 &&
             (int) ( t - cur->timestamp ) > cache->timeout )
         {
             cur->timestamp = t;
             break; /* expired, reuse this slot, update timestamp */
         }
-#endif
 
         if( memcmp( session->id, cur->session.id, cur->session.id_len ) == 0 )
             break; /* client reconnected, keep timestamp for session id */
 
-#if defined(MBEDTLS_HAVE_TIME)
         if( oldest == 0 || cur->timestamp < oldest )
         {
             oldest = cur->timestamp;
             old = cur;
         }
-#endif
 
         prv = cur;
         cur = cur->next;
@@ -176,7 +166,6 @@ int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session )
 
     if( cur == NULL )
     {
-#if defined(MBEDTLS_HAVE_TIME)
         /*
          * Reuse oldest entry if max_entries reached
          */
@@ -190,25 +179,6 @@ int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session )
 
             cur = old;
         }
-#else /* MBEDTLS_HAVE_TIME */
-        /*
-         * Reuse first entry in chain if max_entries reached,
-         * but move to last place
-         */
-        if( count >= cache->max_entries )
-        {
-            if( cache->chain == NULL )
-            {
-                ret = 1;
-                goto exit;
-            }
-
-            cur = cache->chain;
-            cache->chain = cur->next;
-            cur->next = NULL;
-            prv->next = cur;
-        }
-#endif /* MBEDTLS_HAVE_TIME */
         else
         {
             /*
@@ -229,9 +199,7 @@ int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session )
                 prv->next = cur;
         }
 
-#if defined(MBEDTLS_HAVE_TIME)
         cur->timestamp = t;
-#endif
     }
 
     memcpy( &cur->session, session, sizeof( mbedtls_ssl_session ) );
@@ -278,14 +246,13 @@ exit:
     return( ret );
 }
 
-#if defined(MBEDTLS_HAVE_TIME)
 void mbedtls_ssl_cache_set_timeout( mbedtls_ssl_cache_context *cache, int timeout )
 {
-    if( timeout < 0 ) timeout = 0;
+    if( timeout < 0 )
+       timeout = 0;
 
     cache->timeout = timeout;
 }
-#endif /* MBEDTLS_HAVE_TIME */
 
 void mbedtls_ssl_cache_set_max_entries( mbedtls_ssl_cache_context *cache, int max )
 {

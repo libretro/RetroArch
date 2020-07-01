@@ -59,9 +59,7 @@ static int ssl_ticket_gen_key( mbedtls_ssl_ticket_context *ctx,
     unsigned char buf[MAX_KEY_BYTES];
     mbedtls_ssl_ticket_key *key = ctx->keys + index;
 
-#if defined(MBEDTLS_HAVE_TIME)
-    key->generation_time = (uint32_t) mbedtls_time( NULL );
-#endif
+    key->generation_time        = (uint32_t)time( NULL );
 
     if( ( ret = ctx->f_rng( ctx->p_rng, key->name, sizeof( key->name ) ) ) != 0 )
         return( ret );
@@ -84,27 +82,20 @@ static int ssl_ticket_gen_key( mbedtls_ssl_ticket_context *ctx,
  */
 static int ssl_ticket_update_keys( mbedtls_ssl_ticket_context *ctx )
 {
-#if !defined(MBEDTLS_HAVE_TIME)
-    ((void) ctx);
-#else
     if( ctx->ticket_lifetime != 0 )
     {
-        uint32_t current_time = (uint32_t) mbedtls_time( NULL );
-        uint32_t key_time = ctx->keys[ctx->active].generation_time;
+        uint32_t current_time = (uint32_t)time( NULL );
+        uint32_t key_time     = ctx->keys[ctx->active].generation_time;
 
         if( current_time > key_time &&
             current_time - key_time < ctx->ticket_lifetime )
-        {
             return( 0 );
-        }
 
         ctx->active = 1 - ctx->active;
 
         return( ssl_ticket_gen_key( ctx, ctx->active ) );
     }
-    else
-#endif /* MBEDTLS_HAVE_TIME */
-        return( 0 );
+    return( 0 );
 }
 
 /*
@@ -439,10 +430,9 @@ int mbedtls_ssl_ticket_parse( void *p_ticket,
     if( ( ret = ssl_load_session( session, ticket, clear_len ) ) != 0 )
         goto cleanup;
 
-#if defined(MBEDTLS_HAVE_TIME)
     {
         /* Check for expiration */
-        mbedtls_time_t current_time = mbedtls_time( NULL );
+        time_t current_time = time( NULL );
 
         if( current_time < session->start ||
             (uint32_t)( current_time - session->start ) > ctx->ticket_lifetime )
@@ -451,7 +441,6 @@ int mbedtls_ssl_ticket_parse( void *p_ticket,
             goto cleanup;
         }
     }
-#endif
 
 cleanup:
 #if defined(MBEDTLS_THREADING_C)

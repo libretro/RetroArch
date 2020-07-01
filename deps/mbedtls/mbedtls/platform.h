@@ -29,9 +29,7 @@
 #include MBEDTLS_CONFIG_FILE
 #endif
 
-#if defined(MBEDTLS_HAVE_TIME)
-#include "platform_time.h"
-#endif
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {

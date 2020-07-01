@@ -47,9 +47,7 @@
 #include "ecdh.h"
 #endif
 
-#if defined(MBEDTLS_HAVE_TIME)
-#include "platform_time.h"
-#endif
+#include <time.h>
 
 /*
  * SSL Error codes
@@ -543,9 +541,7 @@ typedef struct mbedtls_ssl_flight_item mbedtls_ssl_flight_item;
  */
 struct mbedtls_ssl_session
 {
-#if defined(MBEDTLS_HAVE_TIME)
-    mbedtls_time_t start;       /*!< starting time      */
-#endif
+    time_t start;               /*!< starting time      */
     int ciphersuite;            /*!< chosen ciphersuite */
     int compression;            /*!< chosen compression */
     size_t id_len;              /*!< session id length  */

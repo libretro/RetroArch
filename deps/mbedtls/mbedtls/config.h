@@ -98,21 +98,6 @@
 #endif
 
 /**
- * \def MBEDTLS_HAVE_TIME
- *
- * System has time.h and time().
- * The time does not need to be correct, only time differences are used,
- * by contrast with MBEDTLS_HAVE_TIME_DATE
- *
- * Defining MBEDTLS_HAVE_TIME allows you to specify MBEDTLS_PLATFORM_TIME_ALT,
- * MBEDTLS_PLATFORM_TIME_MACRO, MBEDTLS_PLATFORM_TIME_TYPE_MACRO and
- * MBEDTLS_PLATFORM_STD_TIME.
- *
- * Comment if your system does not support time functions
- */
-#define MBEDTLS_HAVE_TIME
-
-/**
  * \def MBEDTLS_HAVE_TIME_DATE
  *
  * System has time.h and time(), gmtime() and the clock is correct.

@@ -43,10 +43,6 @@
 #error "The NET and TIMING modules are not available for mbed OS - please use the network and timing functions provided by mbed OS"
 #endif
 
-#if defined(MBEDTLS_HAVE_TIME_DATE) && !defined(MBEDTLS_HAVE_TIME)
-#error "MBEDTLS_HAVE_TIME_DATE without MBEDTLS_HAVE_TIME does not make sense"
-#endif
-
 #if defined(MBEDTLS_AESNI_C) && !defined(MBEDTLS_HAVE_ASM)
 #error "MBEDTLS_AESNI_C defined, but not all prerequisites"
 #endif

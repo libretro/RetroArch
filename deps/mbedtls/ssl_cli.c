@@ -35,9 +35,7 @@
 #include "mbedtls/ssl.h"
 #include "mbedtls/ssl_internal.h"
 
-#if defined(MBEDTLS_HAVE_TIME)
-#include "mbedtls/platform_time.h"
-#endif
+#include <time.h>
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
 #include "arc4_alt.h"
@@ -659,9 +657,7 @@ static int ssl_generate_random( mbedtls_ssl_context *ssl )
 {
     int ret;
     unsigned char *p = ssl->handshake->randbytes;
-#if defined(MBEDTLS_HAVE_TIME)
-    mbedtls_time_t t;
-#endif
+    time_t t;
 
     /*
      * When responding to a verify request, MUST reuse random (RFC 6347 4.2.1)
@@ -669,25 +665,16 @@ static int ssl_generate_random( mbedtls_ssl_context *ssl )
 #if defined(MBEDTLS_SSL_PROTO_DTLS)
     if( ssl->conf->transport == MBEDTLS_SSL_TRANSPORT_DATAGRAM &&
         ssl->handshake->verify_cookie != NULL )
-    {
         return( 0 );
-    }
 #endif
 
-#if defined(MBEDTLS_HAVE_TIME)
-    t = mbedtls_time( NULL );
+    t    = time( NULL );
     *p++ = (unsigned char)( t >> 24 );
     *p++ = (unsigned char)( t >> 16 );
     *p++ = (unsigned char)( t >>  8 );
     *p++ = (unsigned char)( t       );
 
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello, current time: %lu", t ) );
-#else
-    if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 4 ) ) != 0 )
-        return( ret );
-
-    p += 4;
-#endif /* MBEDTLS_HAVE_TIME */
 
     if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 28 ) ) != 0 )
         return( ret );
@@ -1549,19 +1536,17 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
 #if defined(MBEDTLS_SSL_RENEGOTIATION)
         ssl->renego_status != MBEDTLS_SSL_INITIAL_HANDSHAKE ||
 #endif
-        ssl->session_negotiate->ciphersuite != i ||
+        ssl->session_negotiate->ciphersuite != i    ||
         ssl->session_negotiate->compression != comp ||
-        ssl->session_negotiate->id_len != n ||
+        ssl->session_negotiate->id_len      != n    ||
         memcmp( ssl->session_negotiate->id, buf + 35, n ) != 0 )
     {
         ssl->state++;
-        ssl->handshake->resume = 0;
-#if defined(MBEDTLS_HAVE_TIME)
-        ssl->session_negotiate->start = mbedtls_time( NULL );
-#endif
+        ssl->handshake->resume              = 0;
+        ssl->session_negotiate->start       = time( NULL );
         ssl->session_negotiate->ciphersuite = i;
         ssl->session_negotiate->compression = comp;
-        ssl->session_negotiate->id_len = n;
+        ssl->session_negotiate->id_len      = n;
         memcpy( ssl->session_negotiate->id, buf + 35, n );
     }
     else

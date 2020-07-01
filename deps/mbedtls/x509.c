@@ -51,10 +51,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-#if defined(MBEDTLS_HAVE_TIME)
-#include "mbedtls/platform_time.h"
-#endif
+#include <time.h>
 
 #if defined(_WIN32) && !defined(EFIX64) && !defined(EFI32)
 #include <windows.h>
@@ -909,7 +906,7 @@ static int x509_get_current_time( mbedtls_x509_time *now )
 static int x509_get_current_time( mbedtls_x509_time *now )
 {
     struct tm *lt;
-    mbedtls_time_t tt;
+    time_t tt;
     int ret = 0;
 
 #if defined(MBEDTLS_THREADING_C)
@@ -917,7 +914,7 @@ static int x509_get_current_time( mbedtls_x509_time *now )
         return( MBEDTLS_ERR_THREADING_MUTEX_ERROR );
 #endif
 
-    tt = mbedtls_time( NULL );
+    tt = time( NULL );
     lt = gmtime( &tt );
 
     if( lt == NULL )

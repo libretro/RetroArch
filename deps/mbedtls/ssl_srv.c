@@ -38,9 +38,7 @@
 #include "mbedtls/ecp.h"
 #endif
 
-#if defined(MBEDTLS_HAVE_TIME)
-#include "mbedtls/platform_time.h"
-#endif
+#include <time.h>
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
 #include "arc4_alt.h"
@@ -2284,10 +2282,8 @@ static int ssl_write_hello_verify_request( mbedtls_ssl_context *ssl )
 
 static int ssl_write_server_hello( mbedtls_ssl_context *ssl )
 {
-#if defined(MBEDTLS_HAVE_TIME)
-    mbedtls_time_t t;
-#endif
     int ret;
+    time_t t;
     size_t olen, ext_len = 0, n;
     unsigned char *buf, *p;
 
@@ -2327,20 +2323,13 @@ static int ssl_write_server_hello( mbedtls_ssl_context *ssl )
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, chosen version: [%d:%d]",
                         buf[4], buf[5] ) );
 
-#if defined(MBEDTLS_HAVE_TIME)
-    t = mbedtls_time( NULL );
+    t    = time( NULL );
     *p++ = (unsigned char)( t >> 24 );
     *p++ = (unsigned char)( t >> 16 );
     *p++ = (unsigned char)( t >>  8 );
     *p++ = (unsigned char)( t       );
 
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, current time: %lu", t ) );
-#else
-    if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 4 ) ) != 0 )
-        return( ret );
-
-    p += 4;
-#endif /* MBEDTLS_HAVE_TIME */
 
     if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 28 ) ) != 0 )
         return( ret );
@@ -2376,9 +2365,7 @@ static int ssl_write_server_hello( mbedtls_ssl_context *ssl )
          */
         ssl->state++;
 
-#if defined(MBEDTLS_HAVE_TIME)
-        ssl->session_negotiate->start = mbedtls_time( NULL );
-#endif
+        ssl->session_negotiate->start = time( NULL );
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
         if( ssl->handshake->new_session_ticket != 0 )
