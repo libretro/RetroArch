@@ -940,6 +940,38 @@ cleanup:
 }
 
 /*-------------------------------------------------
+    chd_precache - precache underlying file in
+    memory
+-------------------------------------------------*/
+
+chd_error chd_precache(chd_file *chd)
+{
+	int64_t size, count;
+
+	if (!chd->file_cache)
+	{
+		filestream_seek(chd->file, 0, SEEK_END);
+		size = filestream_tell(chd->file);
+		if (size <= 0)
+			return CHDERR_INVALID_DATA;
+		chd->file_cache = (UINT8*)malloc(size);
+		if (chd->file_cache == NULL)
+			return CHDERR_OUT_OF_MEMORY;
+		filestream_seek(chd->file, 0, SEEK_SET);
+		count = filestream_read(chd->file, chd->file_cache, size);
+		if (count != size)
+		{
+			free(chd->file_cache);
+			chd->file_cache = NULL;
+			return CHDERR_READ_ERROR;
+		}
+	}
+
+	return CHDERR_NONE;
+}
+
+
+/*-------------------------------------------------
     chd_open - open a CHD file by
     filename
 -------------------------------------------------*/
@@ -983,32 +1015,6 @@ cleanup:
 	if ((err != CHDERR_NONE) && (file != NULL))
 		filestream_close(file);
 	return err;
-}
-
-chd_error chd_precache(chd_file *chd)
-{
-	int64_t size, count;
-
-	if (!chd->file_cache)
-	{
-		filestream_seek(chd->file, 0, SEEK_END);
-		size = filestream_tell(chd->file);
-		if (size <= 0)
-			return CHDERR_INVALID_DATA;
-		chd->file_cache = (UINT8*)malloc(size);
-		if (chd->file_cache == NULL)
-			return CHDERR_OUT_OF_MEMORY;
-		filestream_seek(chd->file, 0, SEEK_SET);
-		count = filestream_read(chd->file, chd->file_cache, size);
-		if (count != size)
-		{
-			free(chd->file_cache);
-			chd->file_cache = NULL;
-			return CHDERR_READ_ERROR;
-		}
-	}
-
-	return CHDERR_NONE;
 }
 
 /*-------------------------------------------------
@@ -1530,7 +1536,12 @@ static chd_error hunk_read_into_cache(chd_file *chd, UINT32 hunknum)
 }
 #endif
 
-static UINT8* read_compressed(chd_file *chd, UINT64 offset, size_t size)
+/*-------------------------------------------------
+    hunk_read_compressed - read a compressed
+    hunk
+-------------------------------------------------*/
+
+static UINT8* hunk_read_compressed(chd_file *chd, UINT64 offset, size_t size)
 {
    int64_t bytes;
    if (chd->file_cache)
@@ -1542,7 +1553,12 @@ static UINT8* read_compressed(chd_file *chd, UINT64 offset, size_t size)
    return chd->compressed;
 }
 
-static chd_error read_uncompressed(chd_file *chd, UINT64 offset, size_t size, UINT8 *dest)
+/*-------------------------------------------------
+    hunk_read_uncompressed - read an uncompressed
+    hunk
+-------------------------------------------------*/
+
+static chd_error hunk_read_uncompressed(chd_file *chd, UINT64 offset, size_t size, UINT8 *dest)
 {
    int64_t bytes;
    if (chd->file_cache)
@@ -1589,7 +1605,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 			case MAP_ENTRY_TYPE_COMPRESSED:
             {
                void *codec;
-               UINT8 *bytes = read_compressed(chd, entry->offset,
+               UINT8 *bytes = hunk_read_compressed(chd, entry->offset,
                      entry->length);
                if (bytes == NULL)
                   return CHDERR_READ_ERROR;
@@ -1608,7 +1624,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 
 			/* uncompressed data */
 			case MAP_ENTRY_TYPE_UNCOMPRESSED:
-            err = read_uncompressed(chd, entry->offset, chd->header.hunkbytes, dest);
+            err = hunk_read_uncompressed(chd, entry->offset, chd->header.hunkbytes, dest);
             if (err != CHDERR_NONE)
                return err;
 				break;
@@ -1678,7 +1694,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 			case COMPRESSION_TYPE_1:
 			case COMPRESSION_TYPE_2:
 			case COMPRESSION_TYPE_3:
-            bytes = read_compressed(chd, blockoffs, blocklen);
+            bytes = hunk_read_compressed(chd, blockoffs, blocklen);
             if (bytes == NULL)
                return CHDERR_READ_ERROR;
             if (!chd->codecintf[rawmap[0]])
@@ -1715,7 +1731,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 				return CHDERR_NONE;
 
 			case COMPRESSION_NONE:
-            err = read_uncompressed(chd, blockoffs, blocklen, dest);
+            err = hunk_read_uncompressed(chd, blockoffs, blocklen, dest);
             if (err != CHDERR_NONE)
                return err;
 #ifdef VERIFY_BLOCK_CRC
