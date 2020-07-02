@@ -91,7 +91,9 @@
 #ifdef HAVE_AUDIOMIXER
 #include <audio/audio_mixer.h>
 #endif
+#ifdef HAVE_DSP_FILTER
 #include <audio/dsp_filter.h>
+#endif
 #include <compat/posix_string.h>
 #include <streams/file_stream.h>
 #include <streams/interface_stream.h>
@@ -2473,7 +2475,9 @@ struct rarch_state
 #endif
    int16_t *audio_driver_output_samples_conv_buf;
 
+#ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *audio_driver_dsp;
+#endif
    struct string_list *audio_driver_devices_list;
    const retro_resampler_t *audio_driver_resampler;
 
@@ -15883,6 +15887,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
+#ifdef HAVE_DSP_FILTER
          {
             const char *path_audio_dsp_plugin = settings->paths.path_audio_dsp_plugin;
             audio_driver_dsp_filter_free();
@@ -15894,6 +15899,7 @@ bool command_event(enum event_command cmd, void *data)
                      path_audio_dsp_plugin);
             }
          }
+#endif
          break;
       case CMD_EVENT_RECORD_DEINIT:
          p_rarch->recording_enable = false;
@@ -28524,7 +28530,9 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
       free(p_rarch->audio_driver_output_samples_buf);
    p_rarch->audio_driver_output_samples_buf = NULL;
 
+#ifdef HAVE_DSP_FILTER
    audio_driver_dsp_filter_free();
+#endif
    report_audio_buffer_statistics(p_rarch);
 
    return true;
@@ -28831,6 +28839,7 @@ static void audio_driver_flush(
    src_data.data_in                  = p_rarch->audio_driver_input_data;
    src_data.input_frames             = samples >> 1;
 
+#ifdef HAVE_DSP_FILTER
    if (p_rarch->audio_driver_dsp)
    {
       struct retro_dsp_data dsp_data;
@@ -28851,6 +28860,7 @@ static void audio_driver_flush(
          src_data.input_frames       = dsp_data.output_frames;
       }
    }
+#endif
 
    src_data.data_out                 = p_rarch->audio_driver_output_samples_buf;
 
@@ -29166,6 +29176,7 @@ static size_t audio_driver_sample_batch_rewind(
 }
 #endif
 
+#ifdef HAVE_DSP_FILTER
 void audio_driver_dsp_filter_free(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -29210,6 +29221,7 @@ bool audio_driver_dsp_filter_init(const char *device)
 
    return true;
 }
+#endif
 
 void audio_driver_set_buffer_size(size_t bufsize)
 {

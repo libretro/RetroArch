@@ -5370,10 +5370,12 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
 
+#ifdef HAVE_DSP_FILTER
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
                   PARSE_ONLY_PATH, false) == 0)
             count++;
+#endif
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          {
@@ -7980,7 +7982,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,          PARSE_ONLY_DIR},
 #endif
                {MENU_ENUM_LABEL_VIDEO_FILTER_DIR,             PARSE_ONLY_DIR},
+#ifdef HAVE_DSP_FILTER
                {MENU_ENUM_LABEL_AUDIO_FILTER_DIR,             PARSE_ONLY_DIR},
+#endif
                {MENU_ENUM_LABEL_VIDEO_SHADER_DIR,             PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,   PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,   PARSE_ONLY_DIR},

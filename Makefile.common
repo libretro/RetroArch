@@ -289,9 +289,14 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.o \
        gfx/font_driver.o \
        gfx/video_filter.o \
-       $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o \
-       $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o \
-       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o
+       $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
+
+ifeq ($(HAVE_DSP_FILTER), 1)
+DEFINES += -DHAVE_DSP_FILTER
+OBJ     += $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o
+endif
+
+OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o
 
 ifeq ($(HAVE_NEAREST_RESAMPLER), 1)
    DEFINES += -DHAVE_NEAREST_RESAMPLER

@@ -3,6 +3,7 @@ HAVE_ASSETS_DIR=           # Assets install directory
 HAVE_NVDA=yes              # NVDA support
 HAVE_PATCH=yes             # Softpatching support (BPS/IPS/UPS)
 HAVE_SAPI=no               # SAPI support
+HAVE_DSP_FILTER=yes        # DSP filter support
 HAVE_BLISSBOX=auto         # Blissbox support
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
 HAVE_CONFIGFILE=yes        # Config file support

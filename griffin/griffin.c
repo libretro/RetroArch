@@ -950,7 +950,7 @@ SCALERS
 /*============================================================
 FILTERS
 ============================================================ */
-
+#ifdef HAVE_DSP_FILTER
 #ifdef HAVE_FILTERS_BUILTIN
 #include "../gfx/video_filters/2xsai.c"
 #include "../gfx/video_filters/super2xsai.c"
@@ -974,13 +974,16 @@ FILTERS
 #include "../libretro-common/audio/dsp_filters/reverb.c"
 #include "../libretro-common/audio/dsp_filters/wahwah.c"
 #endif
+#endif
 
 /*============================================================
 DYNAMIC
 ============================================================ */
 #include "../libretro-common/dynamic/dylib.c"
 #include "../gfx/video_filter.c"
+#ifdef HAVE_DSP_FILTER
 #include "../libretro-common/audio/dsp_filter.c"
+#endif
 
 /*============================================================
 CORES
