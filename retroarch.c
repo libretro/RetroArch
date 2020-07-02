@@ -38642,12 +38642,12 @@ static enum runloop_state runloop_check_state(
                CMD_EVENT_FULLSCREEN_TOGGLE, true, &toggle);
 
          /* Check if it's not oneshot */
-         if (!trig_frameadvance)
-            focused = false;
 #ifdef HAVE_REWIND
-         else if (!(BIT256_GET(current_bits, RARCH_REWIND)))
-            focused = false;
+         if (!(trig_frameadvance || BIT256_GET(current_bits, RARCH_REWIND)))
+#else
+         if (!trig_frameadvance)
 #endif
+            focused = false;
       }
    }
 
