@@ -48,17 +48,19 @@
 /* ========================================================================= */
 uint32_t adler32(uint32_t adler, const uint8_t *buf, size_t len)
 {
+   int k;
    uint32_t s1 = adler & 0xffff;
    uint32_t s2 = (adler >> 16) & 0xffff;
-   int k;
 
    if (buf == NULL)
       return 1L;
 
-   while (len > 0) {
-      k = len < NMAX ? (int)len : NMAX;
+   while (len > 0)
+   {
+      k    = len < NMAX ? (int)len : NMAX;
       len -= k;
-      while (k >= 16) {
+      while (k >= 16)
+      {
          DO16(buf);
          buf += 16;
          k -= 16;

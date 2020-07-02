@@ -171,7 +171,7 @@ int inflateReset2(z_streamp strm, int windowBits)
    if (  state->window != Z_NULL && 
          state->wbits  != (unsigned)windowBits)
    {
-      ZFREE(strm, state->window);
+      free(state->window);
       state->window = Z_NULL;
    }
 
@@ -193,24 +193,12 @@ int inflateInit2_(z_streamp strm, int windowBits,
       return Z_VERSION_ERROR;
    if (strm == Z_NULL)
       return Z_STREAM_ERROR;
-   strm->msg       = Z_NULL; /* in case we return an error */
-   if (strm->zalloc == (alloc_func)0)
-   {
-#ifdef Z_SOLO
-      return Z_STREAM_ERROR;
-#else
-      strm->zalloc = zcalloc;
-      strm->opaque = (voidpf)0;
-#endif
-   }
-   if (strm->zfree == Z_NULL)
-#ifdef Z_SOLO
-      return Z_STREAM_ERROR;
-#else
+   strm->msg      = Z_NULL; /* in case we return an error */
+   strm->zalloc   = zcalloc;
+   strm->opaque   = (voidpf)0;
    strm->zfree    = zcfree;
-#endif
    state          = (struct inflate_state FAR *)
-      ZALLOC(strm, 1, sizeof(struct inflate_state));
+      calloc(1, sizeof(struct inflate_state));
    if (state == Z_NULL)
       return Z_MEM_ERROR;
    strm->state    = (struct internal_state FAR *)state;
@@ -218,7 +206,7 @@ int inflateInit2_(z_streamp strm, int windowBits,
    ret            = inflateReset2(strm, windowBits);
    if (ret != Z_OK)
    {
-      ZFREE(strm, state);
+      free(state);
       strm->state = Z_NULL;
    }
    return ret;
@@ -395,7 +383,7 @@ static int updatewindow(z_streamp strm, const Bytef *end, unsigned copy)
    if (state->window == Z_NULL)
    {
       state->window = (unsigned char FAR *)
-         ZALLOC(strm, 1U << state->wbits,
+         calloc(1U << state->wbits,
                sizeof(unsigned char));
       if (state->window == Z_NULL)
          return 1;
@@ -412,7 +400,7 @@ static int updatewindow(z_streamp strm, const Bytef *end, unsigned copy)
    /* copy state->wsize or less output bytes into the circular window */
    if (copy >= state->wsize)
    {
-      zmemcpy(state->window, end - state->wsize, state->wsize);
+      memcpy(state->window, end - state->wsize, state->wsize);
       state->wnext = 0;
       state->whave = state->wsize;
    }
@@ -420,11 +408,11 @@ static int updatewindow(z_streamp strm, const Bytef *end, unsigned copy)
    {
       dist = state->wsize - state->wnext;
       if (dist > copy) dist = copy;
-      zmemcpy(state->window + state->wnext, end - copy, dist);
+      memcpy(state->window + state->wnext, end - copy, dist);
       copy -= dist;
       if (copy)
       {
-         zmemcpy(state->window, end - copy, copy);
+         memcpy(state->window, end - copy, copy);
          state->wnext = copy;
          state->whave = state->wsize;
       }
@@ -666,7 +654,7 @@ int inflate(z_streamp strm, int flush)
                         if (state->head != Z_NULL &&
                               state->head->extra != Z_NULL) {
                            len = state->head->extra_len - state->length;
-                           zmemcpy(state->head->extra + len, next,
+                           memcpy(state->head->extra + len, next,
                                  len + copy > state->head->extra_max ?
                                  state->head->extra_max - len : copy);
                         }
@@ -803,7 +791,7 @@ int inflate(z_streamp strm, int flush)
                      if (copy > have) copy = have;
                      if (copy > left) copy = left;
                      if (copy == 0) goto inf_leave;
-                     zmemcpy(put, next, copy);
+                     memcpy(put, next, copy);
                      have -= copy;
                      next += copy;
                      left -= copy;
@@ -1144,13 +1132,13 @@ int inflateEnd(z_streamp strm)
    struct inflate_state FAR *state;
    if (
          strm        == Z_NULL || 
-         strm->state == Z_NULL ||
-         strm->zfree == Z_NULL)
+         strm->state == Z_NULL
+         )
       return Z_STREAM_ERROR;
    state = (struct inflate_state FAR *)strm->state;
    if (state->window != Z_NULL)
-      ZFREE(strm, state->window);
-   ZFREE(strm, strm->state);
+      free(state->window);
+   free(strm->state);
    strm->state = Z_NULL;
    return Z_OK;
 }
@@ -1169,9 +1157,9 @@ int inflateGetDictionary(z_streamp strm, Bytef *dictionary, uInt *dictLength)
    /* copy dictionary */
    if (state->whave && dictionary != Z_NULL)
    {
-      zmemcpy(dictionary, state->window + state->wnext,
+      memcpy(dictionary, state->window + state->wnext,
             state->whave - state->wnext);
-      zmemcpy(dictionary + state->whave - state->wnext,
+      memcpy(dictionary + state->whave - state->wnext,
             state->window, state->wnext);
    }
 
@@ -1351,33 +1339,32 @@ int inflateCopy(z_streamp dest, z_streamp source)
    /* check input */
    if (  dest           == Z_NULL || 
          source         == Z_NULL ||
-         source->state  == Z_NULL ||
-         source->zalloc == Z_NULL ||
-         source->zfree  == Z_NULL)
+         source->state  == Z_NULL
+         )
       return Z_STREAM_ERROR;
 
    state = (struct inflate_state FAR *)source->state;
 
    /* allocate space */
    copy = (struct inflate_state FAR *)
-      ZALLOC(source, 1, sizeof(struct inflate_state));
+      calloc(1, sizeof(struct inflate_state));
    if (copy == Z_NULL)
       return Z_MEM_ERROR;
    window = Z_NULL;
    if (state->window != Z_NULL)
    {
       window = (unsigned char FAR *)
-         ZALLOC(source, 1U << state->wbits, sizeof(unsigned char));
+         calloc(1U << state->wbits, sizeof(unsigned char));
       if (window == Z_NULL)
       {
-         ZFREE(source, copy);
+         free(copy);
          return Z_MEM_ERROR;
       }
    }
 
    /* copy state */
-   zmemcpy((voidpf)dest, (voidpf)source, sizeof(z_stream));
-   zmemcpy((voidpf)copy, (voidpf)state, sizeof(struct inflate_state));
+   memcpy((voidpf)dest, (voidpf)source, sizeof(z_stream));
+   memcpy((voidpf)copy, (voidpf)state, sizeof(struct inflate_state));
 
    if (  state->lencode >= state->codes &&
          state->lencode <= state->codes + ENOUGH - 1)
@@ -1390,7 +1377,7 @@ int inflateCopy(z_streamp dest, z_streamp source)
    if (window != Z_NULL)
    {
       wsize = 1U << state->wbits;
-      zmemcpy(window, state->window, wsize);
+      memcpy(window, state->window, wsize);
    }
    copy->window = window;
    dest->state  = (struct internal_state FAR *)copy;

@@ -59,6 +59,6 @@ int uncompress (
    }
    *destLen = stream.total_out;
 
-   err = inflateEnd(&stream);
+   err      = inflateEnd(&stream);
    return err;
 }
