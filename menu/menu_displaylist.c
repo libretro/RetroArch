@@ -5424,11 +5424,13 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
+#ifdef HAVE_SCREENSHOTS
             if (video_driver_supports_viewport_read())
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
+#endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_SMOOTH,
                      PARSE_ONLY_BOOL, false) == 0)
