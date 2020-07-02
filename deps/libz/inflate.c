@@ -185,6 +185,7 @@ int inflateInit2_(z_streamp strm, int windowBits,
       const char *version, int stream_size)
 {
    int ret;
+   unsigned i;
    struct inflate_state FAR *state;
 
    if (  version     == Z_NULL || 
@@ -193,17 +194,56 @@ int inflateInit2_(z_streamp strm, int windowBits,
       return Z_VERSION_ERROR;
    if (strm == Z_NULL)
       return Z_STREAM_ERROR;
-   strm->msg      = Z_NULL; /* in case we return an error */
-   strm->zalloc   = zcalloc;
-   strm->opaque   = (voidpf)0;
-   strm->zfree    = zcfree;
-   state          = (struct inflate_state FAR *)
-      calloc(1, sizeof(struct inflate_state));
+   strm->msg       = Z_NULL; /* in case we return an error */
+   strm->zalloc    = zcalloc;
+   strm->opaque    = (voidpf)0;
+   strm->zfree     = zcfree;
+   state           = (struct inflate_state FAR *)
+      malloc(sizeof(*state));
    if (state == Z_NULL)
       return Z_MEM_ERROR;
-   strm->state    = (struct internal_state FAR *)state;
-   state->window  = Z_NULL;
-   ret            = inflateReset2(strm, windowBits);
+   state->mode     = 0;
+   state->last     = 0;
+   state->wrap     = 0;
+   state->havedict = 0;
+   state->flags    = 0;
+   state->check    = 0;
+   state->total    = 0;
+   state->head     = Z_NULL;
+   state->wbits       = 0;
+   state->wsize       = 0;
+   state->whave       = 0;
+   state->wnext       = 0;
+   state->window      = Z_NULL;
+   state->hold        = 0;
+   state->bits        = 0;
+   state->length      = 0;
+   state->offset      = 0;
+   state->extra       = 0;
+   state->lencode     = Z_NULL;
+   state->distcode    = Z_NULL;
+   state->lenbits     = 0;
+   state->distbits    = 0;
+   state->ncode       = 0;
+   state->nlen        = 0;
+   state->ndist    = 0;
+   state->have     = 0;
+   state->next       = Z_NULL;
+   for (i = 0; i < 320; i++)
+      state->lens[i] = 0;
+   for (i = 0; i < 288; i++)
+      state->work[i] = 0;
+   for (i = 0; i < ENOUGH; i++)
+   {
+      state->codes[i].op   = 0;
+      state->codes[i].bits = 0;
+      state->codes[i].val  = 0;
+   }
+   state->sane     = 0;
+   state->back     = 0;
+   state->was      = 0;
+   strm->state     = (struct internal_state FAR *)state;
+   ret             = inflateReset2(strm, windowBits);
    if (ret != Z_OK)
    {
       free(state);
@@ -1331,10 +1371,11 @@ int inflateSyncPoint(z_streamp strm)
 
 int inflateCopy(z_streamp dest, z_streamp source)
 {
+   unsigned i;
+   unsigned wsize;
    struct inflate_state FAR *state;
    struct inflate_state FAR *copy;
    unsigned char FAR *window;
-   unsigned wsize;
 
    /* check input */
    if (  dest           == Z_NULL || 
@@ -1347,10 +1388,50 @@ int inflateCopy(z_streamp dest, z_streamp source)
 
    /* allocate space */
    copy = (struct inflate_state FAR *)
-      calloc(1, sizeof(struct inflate_state));
+      malloc(sizeof(*copy));
    if (copy == Z_NULL)
       return Z_MEM_ERROR;
-   window = Z_NULL;
+   window         = Z_NULL;
+   copy->mode     = 0;
+   copy->last     = 0;
+   copy->wrap     = 0;
+   copy->havedict = 0;
+   copy->flags    = 0;
+   copy->check    = 0;
+   copy->total    = 0;
+   copy->head     = Z_NULL;
+   copy->wbits       = 0;
+   copy->wsize       = 0;
+   copy->whave       = 0;
+   copy->wnext       = 0;
+   copy->window      = Z_NULL;
+   copy->hold        = 0;
+   copy->bits        = 0;
+   copy->length      = 0;
+   copy->offset      = 0;
+   copy->extra       = 0;
+   copy->lencode     = Z_NULL;
+   copy->distcode    = Z_NULL;
+   copy->lenbits     = 0;
+   copy->distbits    = 0;
+   copy->ncode       = 0;
+   copy->nlen        = 0;
+   copy->ndist    = 0;
+   copy->have     = 0;
+   copy->next       = Z_NULL;
+   for (i = 0; i < 320; i++)
+      copy->lens[i] = 0;
+   for (i = 0; i < 288; i++)
+      copy->work[i] = 0;
+   for (i = 0; i < ENOUGH; i++)
+   {
+      copy->codes[i].op   = 0;
+      copy->codes[i].bits = 0;
+      copy->codes[i].val  = 0;
+   }
+   copy->sane     = 0;
+   copy->back     = 0;
+   copy->was      = 0;
    if (state->window != Z_NULL)
    {
       window = (unsigned char FAR *)
