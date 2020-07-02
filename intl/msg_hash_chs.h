@@ -2129,19 +2129,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "加载状态"
+   "加载即时存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "从当前选定的卡槽加载状态。"
+   "从当前选定的栏位加载即时存档。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "保存状态"
+   "保存即时存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "在当前选定的卡槽保存状态。"
+   "在当前选定的栏位保存即时存档。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -2153,11 +2153,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "状态存储卡槽 +"
+   "即时存档栏位 +"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "状态存储卡槽 -"
+   "即时存档栏位 -"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -2520,55 +2520,55 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "在以核心命名的文件夹中排序状态存储。"
+   "在以核心命名的文件夹中排序即时存档。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "加载状态时不覆盖卡带内存"
+   "加载即时存档时不覆盖内置存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "读取状态时不覆盖游戏卡带内存。可能会导致某些游戏出错。"
+   "加载即时存档时不覆盖游戏游戏内置存档。可能会导致某些游戏出错。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "卡带内存自动保存间隔"
+   "内置存档自动保存间隔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "自动保存状态"
+   "自动保存即时存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   "开始游戏时，自动加载最近自动保存的状态。"
+   "开始游戏时，自动加载最近自动保存的即时存档。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "状态存储缩略图"
+   "即时存档缩略图"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "卡带内存压缩"
+   "内置存档压缩"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "状态存储压缩"
+   "即时存档压缩"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "写入存档到游戏文件夹"
+   "在游戏文件夹中存放游戏内置存档"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "写入状态存储到游戏文件夹"
+   "在游戏文件夹中存放即时存档"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "系统文件在游戏文件夹中"
+   "在游戏文件夹中存放系统文件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "写入截图到游戏文件夹"
+   "在游戏文件夹中存放截图"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -2703,19 +2703,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "加载状态后重置"
+   "加载即时存档后重置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "加载状态后重置帧时间计数器。"
+   "加载即时存档后重置帧时间计数器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "保存状态后重置"
+   "保存即时存档后重置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "保存状态后重置帧时间计数器。"
+   "保存即时存档后重置帧时间计数器。"
    )
 
 /* Settings > Recording */
@@ -3341,19 +3341,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "显示「保存/加载状态」"
+   "显示「保存/加载即时存档」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "显示或隐藏「保存/加载状态」选项。"
+   "显示或隐藏「保存/加载即时存档」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "显示「撤消保存/加载状态」"
+   "显示「撤消保存/加载即时存档」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "显示或隐藏「撤消保存/加载状态」选项。"
+   "显示或隐藏「撤消保存/加载即时存档」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -3861,7 +3861,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "联机无状态模式"
+   "联机无即时存档模式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -4327,11 +4327,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-   "状态存储"
+   "即时存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "保存所有状态到该文件夹。如果没有设置，将尝试保存游戏 ROM 文件夹内。"
+   "保存所有即时存档到该文件夹。如果没有设置，将尝试保存游戏 ROM 文件夹内。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -4607,43 +4607,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   "状态卡槽"
+   "即时存档栏位"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "更改当前选择的状态卡槽。"
+   "更改当前选择的即时存档栏位。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "保存状态"
+   "保存即时存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "在当前选定的卡槽保存状态。"
+   "在当前选定的栏位保存即时存档。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   "加载状态"
+   "加载即时存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "从当前选定的卡槽加载状态。"
+   "从当前选定的卡槽加载即时存档。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-   "撤销加载状态"
+   "撤销加载即时存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-   "状态加载后，游戏会回到之前的状态。"
+   "即时存档加载后，游戏会回到之前保存的状态。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-   "撤销保存状态"
+   "撤销保存即时存档"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "状态覆盖后，可以撤销并回到之前保存的状态."
+   "即时存档覆盖后，可以撤销并回到之前保存的状态."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -7860,7 +7860,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "自动加载状态存储于"
+   "自动加载即时存档于"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -7988,7 +7988,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "自动保存状态至"
+   "自动保存即时存档至"
    )
 MSG_HASH(
    MSG_BLOCKING_SRAM_OVERWRITE,
@@ -8004,7 +8004,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "成就硬核模式已启用，状态存储和回溯被禁用。"
+   "硬核成就模式已启用，即时存档和回溯被禁用。"
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -8032,7 +8032,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "核心不支持状态存储。"
+   "核心不支持即时存档。"
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -8196,7 +8196,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
-   "加载状态失败于"
+   "加载即时存档失败于"
    )
 MSG_HASH(
    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
@@ -8240,7 +8240,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
-   "保存状态于此失败"
+   "保存即时存档于此失败"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -8284,7 +8284,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "撤消保存状态失败。"
+   "撤消即时存档失败。"
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
@@ -8296,7 +8296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
-   "找到自动状态存储于"
+   "找到自动即时存档于"
    )
 MSG_HASH(
    MSG_FOUND_DISK_LABEL,
@@ -8304,7 +8304,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_LAST_STATE_SLOT,
-   "已找到最后的状态卡槽"
+   "已找到最后的即时存档栏位"
    )
 MSG_HASH(
    MSG_FRAMES,
@@ -8376,11 +8376,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
-   "加载卡槽 #%d 的状态。"
+   "加载栏位 #%d 的即时存档。"
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "加载卡槽 #%d (自动) 的状态。"
+   "加载栏位 #%d (自动) 的即时存档。"
    )
 MSG_HASH(
    MSG_LOADING,
@@ -8404,7 +8404,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_STATE,
-   "正在加载状态"
+   "正在加载即时存档"
    )
 MSG_HASH(
    MSG_MEMORY,
@@ -8436,11 +8436,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-   "尚未覆盖状态存储。"
+   "尚未覆盖即时存档。"
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
-   "尚未加载状态。"
+   "尚未加载即时存档。"
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
@@ -8484,7 +8484,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "正在重定向状态存储至"
+   "正在重定向即时存档至"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
@@ -8512,7 +8512,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "已恢复旧的状态存储。"
+   "已恢复旧的即时存档。"
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -8524,7 +8524,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "正在还原状态存储文件夹到"
+   "正在还原即时存档文件夹到"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -8548,11 +8548,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "已保存状态到卡槽 #%d。"
+   "已保存即时存档到栏位 #%d。"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "已保存状态到卡槽 #%d (自动)。"
+   "已保存即时存档到栏位 #%d (自动)。"
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -8564,7 +8564,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVING_STATE,
-   "正在保存状态"
+   "正在保存即时存档"
    )
 MSG_HASH(
    MSG_SCANNING,
@@ -8616,11 +8616,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_STATE_SIZE,
-   "状态大小"
+   "即时存档大小"
    )
 MSG_HASH(
    MSG_STATE_SLOT,
-   "状态卡槽"
+   "即时存档栏位"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
@@ -8660,11 +8660,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
-   "已撤销状态加载。"
+   "已撤销即时存档加载。"
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "正在撤销保存状态"
+   "正在撤销保存即时存档"
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -8776,11 +8776,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "保存状态失败。已禁用超前运行。"
+   "保存即时存档失败。已禁用超前运行。"
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "加载状态失败。已禁用超前运行。"
+   "加载即时存档失败。已禁用超前运行。"
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
@@ -8876,7 +8876,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "已加载状态存储。成就硬核模式在当前游戏中已经禁用。"
+   "已加载即时存档。成就硬核模式在当前游戏中已经禁用。"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
