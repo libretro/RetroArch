@@ -4130,10 +4130,7 @@ static bool menu_displaylist_push_internal(
 
       if (menu_displaylist_ctl(
                DISPLAYLIST_DATABASE_PLAYLISTS, info))
-      {
-         free(info->path);
          return true;
-      }
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
    {
