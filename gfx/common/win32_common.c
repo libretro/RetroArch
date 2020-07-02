@@ -915,9 +915,6 @@ static LRESULT CALLBACK wnd_proc_common(
             uint16_t mod          = 0;
             unsigned keycode      = 0;
             unsigned keysym       = (lparam >> 16) & 0xff;
-#if _WIN32_WINNT >= 0x0501 /* XP */
-            settings_t *settings  = config_get_ptr();
-#endif
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
@@ -932,17 +929,20 @@ static LRESULT CALLBACK wnd_proc_common(
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
-#if _WIN32_WINNT >= 0x0501 /* XP */
-            if (settings && 
-                  string_is_equal(settings->arrays.input_driver, "raw"))
-               keysym             = (unsigned)wparam;
-            else
-#endif
             {
+               input_driver_t *driver = input_get_ptr();
+
+#if _WIN32_WINNT >= 0x0501 /* XP */
+#ifdef HAVE_WINRAWINPUT
+               if (driver == &input_winraw)
+                  keysym             = (unsigned)wparam;
+               else
+#endif
+#endif
 #ifdef HAVE_DINPUT
-               /* extended keys will map to dinput if the high bit is set */
-               if (input_get_ptr() == &input_dinput && (lparam >> 24 & 0x1))
-                  keysym |= 0x80;
+                  /* extended keys will map to dinput if the high bit is set */
+                  if (driver == &input_dinput && (lparam >> 24 & 0x1))
+                     keysym |= 0x80;
 #else
                /* fix key binding issues on winraw when DirectInput is not available */
 #endif

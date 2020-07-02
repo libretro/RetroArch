@@ -183,6 +183,7 @@ static void gfx_ctx_gdi_input_driver(void *data,
       input_driver_t **input, void **input_data)
 {
 #if _WIN32_WINNT >= 0x0501
+#ifdef HAVE_WINRAWINPUT
    settings_t *settings = config_get_ptr();
 
    /* winraw only available since XP */
@@ -196,6 +197,7 @@ static void gfx_ctx_gdi_input_driver(void *data,
          return;
       }
    }
+#endif
 #endif
 
 #ifdef HAVE_DINPUT
