@@ -950,8 +950,8 @@ SCALERS
 /*============================================================
 FILTERS
 ============================================================ */
-#ifdef HAVE_DSP_FILTER
 #ifdef HAVE_FILTERS_BUILTIN
+#ifdef HAVE_VIDEO_FILTER
 #include "../gfx/video_filters/2xsai.c"
 #include "../gfx/video_filters/super2xsai.c"
 #include "../gfx/video_filters/supereagle.c"
@@ -964,7 +964,9 @@ FILTERS
 #include "../gfx/video_filters/phosphor2x.c"
 #include "../gfx/video_filters/normal2x.c"
 #include "../gfx/video_filters/scanline2x.c"
+#endif
 
+#ifdef HAVE_DSP_FILTER
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
 #include "../libretro-common/audio/dsp_filters/chorus.c"
@@ -980,7 +982,9 @@ FILTERS
 DYNAMIC
 ============================================================ */
 #include "../libretro-common/dynamic/dylib.c"
+#ifdef HAVE_VIDEO_FILTER
 #include "../gfx/video_filter.c"
+#endif
 #ifdef HAVE_DSP_FILTER
 #include "../libretro-common/audio/dsp_filter.c"
 #endif

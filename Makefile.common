@@ -287,9 +287,14 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.o \
-       gfx/font_driver.o \
-       gfx/video_filter.o \
-       $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
+       gfx/font_driver.o
+
+ifeq ($(HAVE_VIDEO_FILTER), 1)
+DEFINES += -DHAVE_VIDEO_FILTER
+OBJ     += gfx/video_filter.o
+endif
+
+OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
 
 ifeq ($(HAVE_DSP_FILTER), 1)
 DEFINES += -DHAVE_DSP_FILTER

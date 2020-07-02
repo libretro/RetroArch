@@ -11,6 +11,7 @@ HAVE_AL = 1
 # this freezes when switching back from menu
 HAVE_ALSA = 0
 HAVE_DSP_FILTER = 1
+HAVE_VIDEO_FILTER = 1
 HAVE_BUILTINMBEDTLS = 1
 HAVE_BUILTINZLIB = 1
 HAVE_C99 = 1

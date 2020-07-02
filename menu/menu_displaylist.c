@@ -5443,10 +5443,12 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
+#ifdef HAVE_VIDEO_FILTER
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_FILTER,
                      PARSE_ONLY_PATH, false) == 0)
                count++;
+#endif
          }
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
@@ -7983,7 +7985,9 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_CHEATS
                {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,          PARSE_ONLY_DIR},
 #endif
+#ifdef HAVE_VIDEO_FILTER
                {MENU_ENUM_LABEL_VIDEO_FILTER_DIR,             PARSE_ONLY_DIR},
+#endif
 #ifdef HAVE_DSP_FILTER
                {MENU_ENUM_LABEL_AUDIO_FILTER_DIR,             PARSE_ONLY_DIR},
 #endif

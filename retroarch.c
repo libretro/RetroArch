@@ -141,6 +141,7 @@
 #include "gfx/gfx_animation.h"
 #include "gfx/gfx_display.h"
 #include "gfx/gfx_thumbnail.h"
+#include "gfx/video_filter.h"
 
 #include "input/input_osk.h"
 
@@ -2022,7 +2023,9 @@ struct rarch_state
    bool video_driver_active;
    bool audio_driver_active;
    bool camera_driver_active;
+#ifdef HAVE_VIDEO_FILTER
    bool video_driver_state_out_rgb32;
+#endif
    bool video_driver_crt_switching_active;
    bool video_driver_crt_dynamic_super_width;
    bool video_driver_threaded;
@@ -2155,8 +2158,10 @@ struct rarch_state
    unsigned recording_width;
    unsigned recording_height;
 
+#ifdef HAVE_VIDEO_FILTER
    unsigned video_driver_state_scale;
    unsigned video_driver_state_out_bpp;
+#endif
    unsigned frame_cache_width;
    unsigned frame_cache_height;
    unsigned video_driver_width;
@@ -2442,8 +2447,10 @@ struct rarch_state
    bsv_movie_t     *bsv_movie_state_handle;
 #endif
 
+#ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *video_driver_state_filter;
    void               *video_driver_state_buffer;
+#endif
 
    const void *frame_cache_data;
 
@@ -21573,6 +21580,7 @@ static bool recording_init(
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
+#ifdef HAVE_VIDEO_FILTER
       if (settings->bools.video_post_filter_record
             && !!p_rarch->video_driver_state_filter)
       {
@@ -21590,6 +21598,7 @@ static bool recording_init(
          params.fb_width  = next_pow2(max_width);
          params.fb_height = next_pow2(max_height);
       }
+#endif
    }
 
    RARCH_LOG("[recording] %s %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
@@ -30440,6 +30449,7 @@ static retro_proc_address_t video_driver_get_proc_address(const char *sym)
    return NULL;
 }
 
+#ifdef HAVE_VIDEO_FILTER
 static void video_driver_filter_free(void)
 {
    struct rarch_state          *p_rarch = &rarch_st;
@@ -30462,7 +30472,9 @@ static void video_driver_filter_free(void)
    p_rarch->video_driver_state_out_bpp   = 0;
    p_rarch->video_driver_state_out_rgb32 = false;
 }
+#endif
 
+#ifdef HAVE_VIDEO_FILTER
 static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
 {
    unsigned pow2_x, pow2_y, maxsize;
@@ -30541,6 +30553,7 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
 
    p_rarch->video_driver_state_buffer    = buf;
 }
+#endif
 
 static void video_driver_init_input(input_driver_t *tmp)
 {
@@ -30669,7 +30682,9 @@ static void video_driver_free_internal(void)
       p_rarch->current_video->free(p_rarch->video_driver_data);
 
    video_driver_pixel_converter_free(p_rarch);
+#ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
+#endif
    dir_free_shader(p_rarch);
 
 #ifdef HAVE_THREADS
@@ -30741,7 +30756,9 @@ static bool video_driver_pixel_converter_init(
 
 error:
    video_driver_pixel_converter_free(p_rarch);
+#ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
+#endif
 
    return false;
 }
@@ -30825,19 +30842,23 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    struct rarch_state            *p_rarch = &rarch_st;
    settings_t *settings                   = p_rarch->configuration_settings;
    struct retro_game_geometry *geom       = &p_rarch->video_driver_av_info.geometry;
-   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
    const enum retro_pixel_format
       video_driver_pix_fmt                = p_rarch->video_driver_pix_fmt;
+#ifdef HAVE_VIDEO_FILTER
+   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
    if (!string_is_empty(path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt);
+#endif
 
    max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = MAX(scale, 1);
 
+#ifdef HAVE_VIDEO_FILTER
    if (p_rarch->video_driver_state_filter)
       scale  = p_rarch->video_driver_state_scale;
+#endif
 
    /* Update core-dependent aspect ratio values. */
    video_driver_set_viewport_square_pixel(p_rarch);
@@ -30932,10 +30953,15 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.input_scale                 = scale;
    video.font_size                   = settings->floats.video_font_size;
    video.path_font                   = settings->paths.path_font;
+#ifdef HAVE_VIDEO_FILTER
    video.rgb32                       =
       p_rarch->video_driver_state_filter ?
       p_rarch->video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+#else
+   video.rgb32                       =
+      (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+#endif
    video.parent                      = 0;
 
    p_rarch->video_started_fullscreen = video.fullscreen;
@@ -32255,8 +32281,10 @@ static void video_driver_frame(const void *data, unsigned width,
     */
    if (
          (
-             !p_rarch->video_driver_state_filter
-          || !video_info.post_filter_record
+#ifdef HAVE_VIDEO_FILTER
+             !p_rarch->video_driver_state_filter ||
+#endif
+             !video_info.post_filter_record
           || !data
           || p_rarch->video_driver_record_gpu_buffer
          ) && p_rarch->recording_data
@@ -32266,6 +32294,7 @@ static void video_driver_frame(const void *data, unsigned width,
             data, width, height,
             pitch, runloop_idle);
 
+#ifdef HAVE_VIDEO_FILTER
    if (data && p_rarch->video_driver_state_filter)
    {
       unsigned output_width                             = 0;
@@ -32295,6 +32324,7 @@ static void video_driver_frame(const void *data, unsigned width,
       height = output_height;
       pitch  = output_pitch;
    }
+#endif
 
    if (p_rarch->runloop_msg_queue_size > 0)
    {
@@ -34022,7 +34052,9 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
       p_rarch->video_driver_frame_time_count = 0;
 
       video_driver_lock_new();
+#ifdef HAVE_VIDEO_FILTER
       video_driver_filter_free();
+#endif
       video_driver_set_cached_frame_ptr(NULL);
       video_driver_init_internal(&video_is_threaded);
 

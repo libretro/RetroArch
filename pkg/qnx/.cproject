@@ -57,6 +57,7 @@
 									<listOptionValue builtIn="false" value="HAVE_PATCH"/>
 									<listOptionValue builtIn="false" value="HAVE_REWIND"/>
 									<listOptionValue builtIn="false" value="HAVE_DSP_FILTER"/>
+									<listOptionValue builtIn="false" value="HAVE_VIDEO_FILTER"/>
 									<listOptionValue builtIn="false" value="HAVE_SCREENSHOTS"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEATS"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>

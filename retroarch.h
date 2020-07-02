@@ -716,7 +716,6 @@ void recording_driver_update_streaming_url(void);
 
 #include "gfx/video_defines.h"
 #include "gfx/video_coord_array.h"
-#include "gfx/video_filter.h"
 
 #include "input/input_driver.h"
 #include "input/input_types.h"
