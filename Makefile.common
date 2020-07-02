@@ -1164,7 +1164,10 @@ ifeq ($(HAVE_PARPORT), 1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += input/drivers/winraw_input.o
+ifeq ($(HAVE_WINRAWINPUT), 1)
+   DEFINES += -DHAVE_WINRAWINPUT
+   OBJ     += input/drivers/winraw_input.o
+endif
 endif
 
 # Companion UI

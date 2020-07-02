@@ -742,8 +742,10 @@ static input_driver_t *input_drivers[] = {
    &input_dos,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+#ifdef HAVE_WINRAWINPUT
    /* winraw only available since XP */
    &input_winraw,
+#endif
 #endif
    &input_null,
    NULL,

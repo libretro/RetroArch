@@ -803,6 +803,7 @@ static void gfx_ctx_wgl_input_driver(void *data,
    settings_t *settings     = config_get_ptr();
 
 #if _WIN32_WINNT >= 0x0501
+#ifdef HAVE_WINRAWINPUT
    const char *input_driver = settings->arrays.input_driver;
 
    /* winraw only available since XP */
@@ -816,6 +817,7 @@ static void gfx_ctx_wgl_input_driver(void *data,
          return;
       }
    }
+#endif
 #endif
 
 #ifdef HAVE_DINPUT
