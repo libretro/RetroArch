@@ -47,18 +47,6 @@ output space.
 */
 void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start)
 {
-   unsigned char FAR *beg;     /* inflate()'s initial strm->next_out */
-   unsigned char FAR *end;     /* while out < end, enough space available */
-   unsigned wsize;             /* window size or zero if not using window */
-   unsigned whave;             /* valid bytes in the window */
-   unsigned wnext;             /* window write index */
-   unsigned char FAR *window;  /* allocated sliding window, if wsize != 0 */
-   unsigned long hold;         /* local strm->hold */
-   unsigned bits;              /* local strm->bits */
-   code const FAR *lcode;      /* local strm->lencode */
-   code const FAR *dcode;      /* local strm->distcode */
-   unsigned lmask;             /* mask for first level of length codes */
-   unsigned dmask;             /* mask for first level of distance codes */
    code here;                  /* retrieved table entry */
    unsigned op;                /* code bits, operation, extra bits, or */
    /*  window position, window bytes to copy */
@@ -69,25 +57,27 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start)
    /* copy state to local variables */
    struct inflate_state FAR *state = (struct inflate_state FAR *)strm->state;
    unsigned char FAR           *in = strm->next_in;
-   unsigned char FAR         *last = last = in + (strm->avail_in - 5);
+   unsigned char FAR         *last = in + (strm->avail_in - 5);
    unsigned char FAR         *out  = strm->next_out;
-   beg = out - (start - strm->avail_out);
-   end = out + (strm->avail_out - 257);
-   wsize = state->wsize;
-   whave = state->whave;
-   wnext = state->wnext;
-   window = state->window;
-   hold = state->hold;
-   bits = state->bits;
-   lcode = state->lencode;
-   dcode = state->distcode;
-   lmask = (1U << state->lenbits) - 1;
-   dmask = (1U << state->distbits) - 1;
+   unsigned char FAR         *beg  = out - (start - strm->avail_out);
+   unsigned char FAR         *end  = out + (strm->avail_out - 257);
+   unsigned                  wsize = state->wsize;
+   unsigned                  whave = state->whave;
+   unsigned                  wnext = state->wnext;
+   unsigned char FAR       *window = state->window;
+   unsigned long              hold = state->hold;
+   unsigned                   bits = state->bits;
+   code const FAR           *lcode = state->lencode;
+   code const FAR           *dcode = state->distcode;
+   unsigned                  lmask = (1U << state->lenbits) - 1;
+   unsigned                  dmask = (1U << state->distbits) - 1;
 
    /* decode literals and length/distances until end-of-block or not enough
       input data or output space */
-   do {
-      if (bits < 15) {
+   do
+   {
+      if (bits < 15)
+      {
          hold += (unsigned long)(*in++) << bits;
          bits += 8;
          hold += (unsigned long)(*in++) << bits;
@@ -99,52 +89,64 @@ dolen:
       hold >>= op;
       bits -= op;
       op = (unsigned)(here.op);
-      if (op == 0) {                          /* literal */
+      if (op == 0)                          /* literal */
          *out++ = (unsigned char)(here.val);
-      }
-      else if (op & 16) {                     /* length base */
+      else if (op & 16)                     /* length base */
+      {
          len = (unsigned)(here.val);
          op &= 15;                           /* number of extra bits */
-         if (op) {
-            if (bits < op) {
+         if (op)
+         {
+            if (bits < op)
+            {
                hold += (unsigned long)(*in++) << bits;
                bits += 8;
             }
-            len += (unsigned)hold & ((1U << op) - 1);
+            len   += (unsigned)hold & ((1U << op) - 1);
             hold >>= op;
-            bits -= op;
+            bits  -= op;
          }
-         if (bits < 15) {
+
+         if (bits < 15)
+         {
             hold += (unsigned long)(*in++) << bits;
             bits += 8;
             hold += (unsigned long)(*in++) << bits;
             bits += 8;
          }
+
          here = dcode[hold & dmask];
+
 dodist:
          op = (unsigned)(here.bits);
          hold >>= op;
          bits -= op;
          op = (unsigned)(here.op);
-         if (op & 16) {                      /* distance base */
+         if (op & 16)                       /* distance base */
+         {
             dist = (unsigned)(here.val);
             op &= 15;                       /* number of extra bits */
-            if (bits < op) {
+            if (bits < op)
+            {
                hold += (unsigned long)(*in++) << bits;
                bits += 8;
-               if (bits < op) {
+               if (bits < op)
+               {
                   hold += (unsigned long)(*in++) << bits;
                   bits += 8;
                }
             }
-            dist += (unsigned)hold & ((1U << op) - 1);
+            dist  += (unsigned)hold & ((1U << op) - 1);
             hold >>= op;
-            bits -= op;
-            op = (unsigned)(out - beg);     /* max distance in output */
-            if (dist > op) {                /* see if copy from window */
-               op = dist - op;             /* distance back in window */
-               if (op > whave) {
-                  if (state->sane) {
+            bits  -= op;
+            op     = (unsigned)(out - beg);     /* max distance in output */
+            if (dist > op)                      /* see if copy from window */
+            {
+               op  = dist - op;                 /* distance back in window */
+               if (op > whave)
+               {
+                  if (state->sane)
+                  {
                      strm->msg =
                         (char *)"invalid distance too far back";
                      state->mode = BAD;
@@ -152,9 +154,11 @@ dodist:
                   }
                }
                from = window;
-               if (wnext == 0) {           /* very common case */
+               if (wnext == 0)             /* very common case */
+               {
                   from += wsize - op;
-                  if (op < len) {         /* some from window */
+                  if (op < len)           /* some from window */
+                  {
                      len -= op;
                      do {
                         *out++ = *from++;
@@ -162,16 +166,19 @@ dodist:
                      from = out - dist;  /* rest from output */
                   }
                }
-               else if (wnext < op) {      /* wrap around window */
+               else if (wnext < op)        /* wrap around window */
+               {
                   from += wsize + wnext - op;
                   op -= wnext;
-                  if (op < len) {         /* some from end of window */
+                  if (op < len)           /* some from end of window */
+                  {
                      len -= op;
                      do {
                         *out++ = *from++;
                      } while (--op);
                      from = window;
-                     if (wnext < len) {  /* some from start of window */
+                     if (wnext < len)    /* some from start of window */
+                     {
                         op = wnext;
                         len -= op;
                         do {
@@ -181,9 +188,11 @@ dodist:
                      }
                   }
                }
-               else {                      /* contiguous in window */
+               else                        /* contiguous in window */
+               {
                   from += wnext - op;
-                  if (op < len) {         /* some from window */
+                  if (op < len)           /* some from window */
+                  {
                      len -= op;
                      do {
                         *out++ = *from++;
@@ -191,52 +200,64 @@ dodist:
                      from = out - dist;  /* rest from output */
                   }
                }
-               while (len > 2) {
+
+               while (len > 2)
+               {
                   *out++ = *from++;
                   *out++ = *from++;
                   *out++ = *from++;
                   len -= 3;
                }
-               if (len) {
+
+               if (len)
+               {
                   *out++ = *from++;
                   if (len > 1)
                      *out++ = *from++;
                }
             }
-            else {
+            else
+            {
                from = out - dist;          /* copy direct from output */
                do {                        /* minimum length is three */
                   *out++ = *from++;
                   *out++ = *from++;
                   *out++ = *from++;
                   len -= 3;
-               } while (len > 2);
-               if (len) {
+               }while(len > 2);
+
+               if (len)
+               {
                   *out++ = *from++;
                   if (len > 1)
                      *out++ = *from++;
                }
             }
          }
-         else if ((op & 64) == 0) {          /* 2nd level distance code */
+         else if ((op & 64) == 0)            /* 2nd level distance code */
+         {
             here = dcode[here.val + (hold & ((1U << op) - 1))];
             goto dodist;
          }
-         else {
-            strm->msg = (char *)"invalid distance code";
+         else
+         {
+            strm->msg   = (char *)"invalid distance code";
             state->mode = BAD;
             break;
          }
       }
-      else if ((op & 64) == 0) {              /* 2nd level length code */
+      else if ((op & 64) == 0)                /* 2nd level length code */
+      {
          here = lcode[here.val + (hold & ((1U << op) - 1))];
          goto dolen;
       }
-      else if (op & 32) {                     /* end-of-block */
+      else if (op & 32)                       /* end-of-block */
+      {
          state->mode = TYPE;
          break;
       }
-      else {
+      else
+      {
          strm->msg = (char *)"invalid literal/length code";
          state->mode = BAD;
          break;
@@ -244,19 +265,19 @@ dodist:
    } while (in < last && out < end);
 
    /* return unused bytes (on entry, bits < 8, so in won't go too far back) */
-   len = bits >> 3;
-   in -= len;
-   bits -= len << 3;
-   hold &= (1U << bits) - 1;
+   len              = bits >> 3;
+   in              -= len;
+   bits            -= len << 3;
+   hold            &= (1U << bits) - 1;
 
    /* update state and return */
-   strm->next_in = in;
-   strm->next_out = out;
-   strm->avail_in = (unsigned)(in < last ? 5 + (last - in) : 5 - (in - last));
-   strm->avail_out = (unsigned)(out < end ?
+   strm->next_in    = in;
+   strm->next_out   = out;
+   strm->avail_in   = (unsigned)(in < last ? 5 + (last - in) : 5 - (in - last));
+   strm->avail_out  = (unsigned)(out < end ?
          257 + (end - out) : 257 - (out - end));
-   state->hold = hold;
-   state->bits = bits;
+   state->hold      = hold;
+   state->bits      = bits;
 }
 
 /*
