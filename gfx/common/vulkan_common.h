@@ -472,26 +472,6 @@ typedef struct vk
    vkInvalidateMappedMemoryRanges(device, 1, &range); \
 }
 
-#define VULKAN_TRANSFER_IMAGE_OWNERSHIP(cmd, img, layout, src_stages, dst_stages, src_queue_family, dst_queue_family) \
-{ \
-   VkImageMemoryBarrier barrier; \
-   barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; \
-   barrier.pNext                           = NULL; \
-   barrier.srcAccessMask                   = 0; \
-   barrier.dstAccessMask                   = 0; \
-   barrier.oldLayout                       = layout; \
-   barrier.newLayout                       = layout; \
-   barrier.srcQueueFamilyIndex             = src_queue_family; \
-   barrier.dstQueueFamilyIndex             = dst_queue_family; \
-   barrier.image                           = img; \
-   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT; \
-   barrier.subresourceRange.baseMipLevel   = 0; \
-   barrier.subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS; \
-   barrier.subresourceRange.baseArrayLayer = 0; \
-   barrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS; \
-   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
-}
-
 #define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, src_queue_family_idx, dst_queue_family_idx) \
 { \
    VkImageMemoryBarrier barrier; \
@@ -511,6 +491,8 @@ typedef struct vk
    barrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS; \
    vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
 }
+
+#define VULKAN_TRANSFER_IMAGE_OWNERSHIP(cmd, img, layout, src_stages, dst_stages, src_queue_family, dst_queue_family) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, layout, layout, 0, 0, src_stages, dst_stages, src_queue_family, dst_queue_family)
 
 #define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED)
 
