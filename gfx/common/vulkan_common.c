@@ -371,7 +371,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
     * We would also need to optionally maintain extra textures due to
     * changes in resolution, so this seems like the sanest and
     * simplest solution. */
-   vulkan_image_layout_transition(vk, cmd, dynamic->image,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, dynamic->image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -396,7 +396,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
          dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
-   vulkan_image_layout_transition(vk, cmd,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd,
          dynamic->image,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -895,7 +895,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                 * mess around with lots of extra transitions at 
                 * per-level granularity.
                 */
-               vulkan_image_layout_transition(vk,
+               VULKAN_IMAGE_LAYOUT_TRANSITION(
                      staging,
                      tex.image,
                      VK_IMAGE_LAYOUT_UNDEFINED,
@@ -959,7 +959,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
                      /* Only injects execution and memory barriers,
                       * not actual transition. */
-                     vulkan_image_layout_transition(vk, staging, tex.image,
+                     VULKAN_IMAGE_LAYOUT_TRANSITION(
+                           staging, tex.image,
                            VK_IMAGE_LAYOUT_GENERAL,
                            VK_IMAGE_LAYOUT_GENERAL,
                            VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -975,7 +976,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                }
 
                /* Complete our texture. */
-               vulkan_image_layout_transition(vk, staging, tex.image,
+               VULKAN_IMAGE_LAYOUT_TRANSITION(staging, tex.image,
                      tex.mipmap
                      ? VK_IMAGE_LAYOUT_GENERAL
                      : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
@@ -1120,7 +1121,7 @@ void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture 
    switch (texture->type)
    {
       case VULKAN_TEXTURE_STREAMED:
-         vulkan_image_layout_transition(vk, cmd, texture->image,
+         VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
                texture->layout, VK_IMAGE_LAYOUT_GENERAL,
                VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                VK_PIPELINE_STAGE_HOST_BIT,
@@ -1300,39 +1301,6 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
    /* Draw the quad */
    vkCmdDraw(vk->cmd, 6, 1, 0, 0);
-}
-
-void vulkan_image_layout_transition(
-      vk_t *vk,
-      VkCommandBuffer cmd, VkImage image,
-      VkImageLayout old_layout,
-      VkImageLayout new_layout,
-      VkAccessFlags srcAccess,
-      VkAccessFlags dstAccess,
-      VkPipelineStageFlags srcStages,
-      VkPipelineStageFlags dstStages)
-{
-   VkImageMemoryBarrier barrier        =
-   { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-
-   barrier.srcAccessMask               = srcAccess;
-   barrier.dstAccessMask               = dstAccess;
-   barrier.oldLayout                   = old_layout;
-   barrier.newLayout                   = new_layout;
-   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   barrier.image                       = image;
-   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-   barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-   vkCmdPipelineBarrier(cmd,
-         srcStages,
-         dstStages,
-         0,
-         0, NULL,
-         0, NULL,
-         1, &barrier);
 }
 
 struct vk_buffer vulkan_create_buffer(

@@ -494,11 +494,24 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad);
  */
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call);
 
-void vulkan_image_layout_transition(vk_t *vk,
-      VkCommandBuffer cmd, VkImage image,
-      VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-      VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
+#define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, old_layout, new_layout, srcAccess, dstAccess, srcStages, dstStages) \
+{ \
+   VkImageMemoryBarrier barrier; \
+   barrier.sType                         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; \
+   barrier.pNext                         = NULL; \
+   barrier.srcAccessMask                 = srcAccess; \
+   barrier.dstAccessMask                 = dstAccess; \
+   barrier.oldLayout                     = old_layout; \
+   barrier.newLayout                     = new_layout; \
+   barrier.srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED; \
+   barrier.dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED; \
+   barrier.image                         = img; \
+   barrier.subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT; \
+   barrier.subresourceRange.baseMipLevel = 0; \
+   barrier.subresourceRange.levelCount   = VK_REMAINING_MIP_LEVELS; \
+   barrier.subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS; \
+   vkCmdPipelineBarrier(cmd, srcStages, dstStages, 0, 0, NULL, 0, NULL, 1, &barrier); \
+}
 
 #define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) \
 { \
@@ -516,7 +529,7 @@ void vulkan_image_layout_transition(vk_t *vk,
    barrier.subresourceRange.baseMipLevel = 0; \
    barrier.subresourceRange.levelCount   = levels; \
    barrier.subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS; \
-   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, false, 0, NULL, 0, NULL, 1, &barrier); \
+   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
 }
 
 static INLINE unsigned vulkan_format_to_bpp(VkFormat format)

@@ -1647,7 +1647,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
    vkResetCommandBuffer(vk->cmd, 0);
    vkBeginCommandBuffer(vk->cmd, &begin_info);
 
-   vulkan_image_layout_transition(vk, vk->cmd, backbuffer->image,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, backbuffer->image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1656,7 +1656,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
    vkCmdClearColorImage(vk->cmd, backbuffer->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          &clear_color, 1, &range);
 
-   vulkan_image_layout_transition(vk, vk->cmd, backbuffer->image,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, backbuffer->image,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -1990,7 +1990,7 @@ static bool vulkan_frame(void *data, const void *frame,
       clear_color.color.float32[3]     = 0.0f;
 
       /* Prepare backbuffer for rendering. */
-      vulkan_image_layout_transition(vk, vk->cmd, backbuffer->image,
+      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, backbuffer->image,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -2084,7 +2084,7 @@ static bool vulkan_frame(void *data, const void *frame,
        *
        * If we're reading back, perform the readback before presenting.
        */
-      vulkan_image_layout_transition(vk,
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
             vk->cmd, backbuffer->image,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -2096,7 +2096,7 @@ static bool vulkan_frame(void *data, const void *frame,
       vulkan_readback(vk);
 
       /* Prepare for presentation after transfers are complete. */
-      vulkan_image_layout_transition(vk, vk->cmd,
+      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd,
             backbuffer->image,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
@@ -2111,7 +2111,7 @@ static bool vulkan_frame(void *data, const void *frame,
          vk->context->has_acquired_swapchain)
    {
       /* Prepare backbuffer for presentation. */
-      vulkan_image_layout_transition(vk, vk->cmd,
+      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd,
             backbuffer->image,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
