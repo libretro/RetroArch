@@ -36879,6 +36879,35 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
       case RARCH_CTL_IS_DUMMY_CORE:
          return (p_rarch->current_core_type == CORE_TYPE_DUMMY);
+      case RARCH_CTL_IS_CORE_LOADED:
+         {
+            const char *core_path        = (const char*)data;
+            const char *core_file        = NULL;
+            const char *loaded_core_path = NULL;
+            const char *loaded_core_file = NULL;
+
+            if (string_is_empty(core_path))
+               return false;
+
+            /* Get core file name */
+            core_file = path_basename(core_path);
+            if (string_is_empty(core_file))
+               return false;
+
+            /* Get loaded core file name */
+            loaded_core_path = path_get(RARCH_PATH_CORE);
+            if (!string_is_empty(loaded_core_path))
+               loaded_core_file = path_basename(loaded_core_path);
+
+            /* Check whether specified core and currently
+             * loaded core are the same */
+            if (!string_is_empty(loaded_core_file) &&
+                string_is_equal(core_file, loaded_core_file))
+               return true;
+
+            return false;
+         }
+         break;
       case RARCH_CTL_HAS_SET_USERNAME:
          return p_rarch->has_set_username;
       case RARCH_CTL_IS_INITED:

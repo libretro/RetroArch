@@ -7928,6 +7928,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,    PARSE_ONLY_BOOL},
+#ifndef HAVE_DYNAMIC
+               {MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT, PARSE_ONLY_BOOL},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

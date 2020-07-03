@@ -1445,7 +1445,6 @@ static bool command_event_cmd_exec(
    content_info.argc        = 0;
    content_info.argv        = NULL;
    content_info.args        = NULL;
-   content_info.environ_get = NULL;
    content_info.environ_get = menu_content_environment_get;
 #endif
 
@@ -1635,6 +1634,9 @@ bool task_push_load_content_from_playlist_from_menu(
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
    const char *path_dir_system                = settings->paths.directory_system;
+#ifndef HAVE_DYNAMIC
+   bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
+#endif
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
 #ifdef HAVE_PATCH
@@ -1674,19 +1676,73 @@ bool task_push_load_content_from_playlist_from_menu(
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
 
-   path_set(RARCH_PATH_CORE, core_path);
-
    /* Is content required by this core? */
    if (fullpath)
       sys_info->load_no_content = false;
    else
       sys_info->load_no_content = true;
 
-   /* On targets that have no dynamic core loading support, we'd
-    * execute the new core from this point. If this returns false,
-    * we assume we can dynamically load the core. */
-   if (!command_event_cmd_exec(p_content,
-            fullpath, &content_ctx, CONTENT_MODE_LOAD_NONE, &error_string))
+#ifndef HAVE_DYNAMIC
+   /* Check whether specified core is already loaded
+    * > If so, content can be launched directly with
+    *   the currently loaded core */
+   if (!force_core_reload &&
+       rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+   {
+      if (!content_info->environ_get)
+         content_info->environ_get = menu_content_environment_get;
+
+      /* Register content path */
+      path_clear(RARCH_PATH_CONTENT);
+      if (!string_is_empty(fullpath))
+         path_set(RARCH_PATH_CONTENT, fullpath);
+
+      /* Load content */
+      ret = content_load(content_info, p_content);
+
+      if (!ret)
+         goto end;
+
+      /* Update content history */
+      task_push_to_history_list(p_content, true, false, false);
+
+      goto end;
+   }
+#endif
+
+   /* Specified core is not loaded
+    * > Load it */
+   path_set(RARCH_PATH_CORE, core_path);
+#ifdef HAVE_DYNAMIC
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+
+   /* Load content
+    * > On targets that do not support dynamic core loading,
+    *   command_event_cmd_exec() will fork a new instance */
+   ret = command_event_cmd_exec(p_content,
+         fullpath, &content_ctx, false, &error_string);
+
+   if (!ret)
+      goto end;
+
+#ifdef HAVE_COCOATOUCH
+   /* This seems to be needed for iOS for some reason
+    * to show the quick menu after the menu is shown */
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+
+#ifndef HAVE_DYNAMIC
+   /* No dynamic core loading support: if we reach
+    * this point then a new instance has been
+    * forked - have to shut down this one */
+   rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+   retroarch_menu_running_finished(true);
+#endif
+
+end:
+   /* Handle load content failure */
+   if (!ret)
    {
       if (error_string)
       {
@@ -1696,25 +1752,8 @@ bool task_push_load_content_from_playlist_from_menu(
       }
 
       retroarch_menu_running();
-
-      ret = false;
-      goto end;
    }
 
-   /* Load core */
-#ifdef HAVE_DYNAMIC
-   command_event(CMD_EVENT_LOAD_CORE, NULL);
-#ifdef HAVE_COCOATOUCH
-    /* This seems to be needed for iOS for some reason to show the 
-     * quick menu after the menu is shown */
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-#else
-   rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   retroarch_menu_running_finished(true);
-#endif
-
-end:
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
    if (content_ctx.name_bps)
@@ -1873,6 +1912,19 @@ bool task_push_load_content_with_new_core_from_menu(
    settings_t *settings                       = config_get_ptr();
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
    const char *path_dir_system                = settings->paths.directory_system;
+#ifndef HAVE_DYNAMIC
+   bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
+
+   /* Check whether specified core is already loaded
+    * > If so, we can skip loading the core and
+    *   just load the content directly */
+   if (!force_core_reload &&
+       (type == CORE_TYPE_PLAIN) &&
+       rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+      return task_push_load_content_with_core_from_menu(
+            fullpath, content_info,
+            type, cb, user_data);
+#endif
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
 #ifdef HAVE_PATCH
