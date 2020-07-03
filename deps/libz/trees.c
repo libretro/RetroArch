@@ -103,8 +103,6 @@ static int  detect_data_type (deflate_state *s);
 static unsigned bi_reverse (unsigned value, int length);
 static void bi_windup      (deflate_state *s);
 static void bi_flush       (deflate_state *s);
-static void copy_block     (deflate_state *s, charf *buf, unsigned len,
-         int header);
 
 #  define send_code(s, c, tree) send_bits(s, tree[c].Code, tree[c].Len)
 /* Send a code of the given tree. c and tree must not have side effects */
@@ -595,7 +593,11 @@ static void send_all_trees(deflate_state *s, int lcodes, int dcodes, int blcodes
 void ZLIB_INTERNAL _tr_stored_block(deflate_state *s, charf *buf, ulg stored_len, int last)
 {
    send_bits(s, (STORED_BLOCK<<1)+last, 3);    /* send block type */
-   copy_block(s, buf, (unsigned)stored_len, 1); /* with header */
+   bi_windup(s);        /* align on byte boundary */
+   put_short(s, (ush)stored_len);
+   put_short(s, (ush)~stored_len);
+   memcpy(s->pending_buf + s->pending, buf, stored_len);
+   s->pending += stored_len;
 }
 
 /* ===========================================================================
@@ -873,21 +875,4 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf, ulg stored_len,
       }
       s->bi_buf = 0;
       s->bi_valid = 0;
-   }
-
-   /* ===========================================================================
-    * Copy a stored block, storing first the length and its
-    * one's complement if requested.
-    */
-   static void copy_block(deflate_state *s, charf *buf, unsigned len, int header)
-   {
-      bi_windup(s);        /* align on byte boundary */
-
-      if (header) {
-         put_short(s, (ush)len);
-         put_short(s, (ush)~len);
-      }
-      while (len--) {
-         put_byte(s, *buf++);
-      }
    }
