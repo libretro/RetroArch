@@ -1789,7 +1789,7 @@ static bool vulkan_frame(void *data, const void *frame,
       retro_assert(vk->hw.image);
 
       /* Acquire ownership of image from other queue family. */
-      vulkan_transfer_image_ownership(vk->cmd,
+      VULKAN_TRANSFER_IMAGE_OWNERSHIP(vk->cmd,
             vk->hw.image->create_info.image,
             vk->hw.image->image_layout,
             /* Create a dependency chain from semaphore wait. */
@@ -1847,8 +1847,10 @@ static bool vulkan_frame(void *data, const void *frame,
          vulkan_copy_staging_to_dynamic(vk, vk->cmd,
                &chain->texture_optimal, &chain->texture);
       }
-      else
-         vulkan_sync_texture_to_gpu(vk, &chain->texture);
+      else if (chain->texture.need_manual_cache_management
+            && chain->texture.memory != VK_NULL_HANDLE)
+         VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device,
+               chain->texture.memory);
 
       vk->last_valid_index = frame_index;
    }
@@ -2128,7 +2130,7 @@ static bool vulkan_frame(void *data, const void *frame,
       retro_assert(vk->hw.image);
 
       /* Release ownership of image back to other queue family. */
-      vulkan_transfer_image_ownership(vk->cmd,
+      VULKAN_TRANSFER_IMAGE_OWNERSHIP(vk->cmd,
             vk->hw.image->create_info.image,
             vk->hw.image->image_layout,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
@@ -2425,8 +2427,9 @@ static void vulkan_set_texture_frame(void *data,
             NULL, rgb32 ? NULL : &br_swizzle,
             VULKAN_TEXTURE_DYNAMIC);
    }
-   else
-       vulkan_sync_texture_to_gpu(vk, texture);
+   else if (texture->need_manual_cache_management
+         && texture->memory != VK_NULL_HANDLE)
+       VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, texture->memory);
 
    vkUnmapMemory(vk->context->device, texture->memory);
    vk->menu.dirty[index] = true;
@@ -2626,7 +2629,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          vkMapMemory(vk->context->device, staging->memory,
                staging->offset, staging->size, 0, (void**)&src);
 
-         vulkan_sync_texture_to_cpu(vk, staging);
+         if (staging->need_manual_cache_management
+               && staging->memory != VK_NULL_HANDLE)
+            VULKAN_SYNC_TEXTURE_TO_CPU(vk->context->device, staging->memory);
 
          ctx->in_stride  = staging->stride;
          ctx->out_stride = -(int)vk->vp.width * 3;
@@ -2660,7 +2665,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          VK_MAP_PERSISTENT_TEXTURE(vk->context->device, staging);
       }
 
-      vulkan_sync_texture_to_cpu(vk, staging);
+      if (staging->need_manual_cache_management
+            && staging->memory != VK_NULL_HANDLE)
+         VULKAN_SYNC_TEXTURE_TO_CPU(vk->context->device, staging->memory);
 
       {
          unsigned x, y;

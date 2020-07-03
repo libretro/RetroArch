@@ -323,34 +323,6 @@ uint32_t vulkan_find_memory_type_fallback(
          device_reqs, host_reqs_second, 0);
 }
 
-void vulkan_transfer_image_ownership(VkCommandBuffer cmd,
-      VkImage image, VkImageLayout layout,
-      VkPipelineStageFlags src_stages,
-      VkPipelineStageFlags dst_stages,
-      uint32_t src_queue_family,
-      uint32_t dst_queue_family)
-{
-   VkImageMemoryBarrier barrier;
-
-   barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-   barrier.pNext                           = NULL;
-   barrier.srcAccessMask                   = 0;
-   barrier.dstAccessMask                   = 0;
-   barrier.oldLayout                       = layout;
-   barrier.newLayout                       = layout;
-   barrier.srcQueueFamilyIndex             = src_queue_family;
-   barrier.dstQueueFamilyIndex             = dst_queue_family;
-   barrier.image                           = image;
-   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.baseMipLevel   = 0;
-   barrier.subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
-   barrier.subresourceRange.baseArrayLayer = 0;
-   barrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
-
-   vkCmdPipelineBarrier(cmd, src_stages, dst_stages,
-         false, 0, NULL, 0, NULL, 1, &barrier);
-}
-
 void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       struct vk_texture *dynamic,
       struct vk_texture *staging)
@@ -360,7 +332,9 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    retro_assert(dynamic->type == VULKAN_TEXTURE_DYNAMIC);
    retro_assert(staging->type == VULKAN_TEXTURE_STAGING);
 
-   vulkan_sync_texture_to_gpu(vk, staging);
+   if (  staging->need_manual_cache_management && 
+         staging->memory != VK_NULL_HANDLE)
+      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, staging->memory);
 
    /* We don't have to sync against previous TRANSFER,
     * since we observed the completion by fences.
@@ -448,34 +422,6 @@ static void vulkan_track_dealloc(VkImage image)
    retro_assert(0 && "Couldn't find VkImage in dealloc!");
 }
 #endif
-
-void vulkan_sync_texture_to_gpu(vk_t *vk, const struct vk_texture *tex)
-{
-   VkMappedMemoryRange range;
-   if (!tex || !tex->need_manual_cache_management || tex->memory == VK_NULL_HANDLE)
-      return;
-
-   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-   range.pNext  = NULL;
-   range.memory = tex->memory;
-   range.offset = 0;
-   range.size   = VK_WHOLE_SIZE;
-   vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
-}
-
-void vulkan_sync_texture_to_cpu(vk_t *vk, const struct vk_texture *tex)
-{
-   VkMappedMemoryRange range;
-   if (!tex || !tex->need_manual_cache_management || tex->memory == VK_NULL_HANDLE)
-      return;
-
-   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-   range.pNext  = NULL;
-   range.memory = tex->memory;
-   range.offset = 0;
-   range.size   = VK_WHOLE_SIZE;
-   vkInvalidateMappedMemoryRanges(vk->context->device, 1, &range);
-}
 
 static unsigned vulkan_num_miplevels(unsigned width, unsigned height)
 {
@@ -828,10 +774,10 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    tex.size                                = layout.size;
    tex.layout                              = info.initialLayout;
 
-   tex.width  = width;
-   tex.height = height;
-   tex.format = format;
-   tex.type   = type;
+   tex.width                               = width;
+   tex.height                              = height;
+   tex.format                              = format;
+   tex.type                                = type;
 
    if (initial)
    {
@@ -854,7 +800,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
                   memcpy(dst, src, width * bpp);
 
-               vulkan_sync_texture_to_gpu(vk, &tex);
+               if (  tex.need_manual_cache_management && 
+                     tex.memory != VK_NULL_HANDLE)
+                  VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, tex.memory);
                vkUnmapMemory(device, tex.memory);
             }
             break;
