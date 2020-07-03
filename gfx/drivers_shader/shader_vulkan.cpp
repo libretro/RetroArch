@@ -622,7 +622,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    memcpy(ptr, image.pixels, image.width * image.height * sizeof(uint32_t));
    buffer->unmap();
 
-   vulkan_image_layout_transition_levels(cmd, tex,
+   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, tex,
          VK_REMAINING_MIP_LEVELS,
          VK_IMAGE_LAYOUT_UNDEFINED,
          shader->mipmap ? VK_IMAGE_LAYOUT_GENERAL 
@@ -677,7 +677,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
 
       /* Only injects execution and memory barriers,
        * not actual transition. */
-      vulkan_image_layout_transition_levels(
+      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
             cmd,
             tex,
             VK_REMAINING_MIP_LEVELS,
@@ -694,7 +694,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
             1, &blit_region, VK_FILTER_LINEAR);
    }
 
-   vulkan_image_layout_transition_levels(
+   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
          cmd,
          tex,
          VK_REMAINING_MIP_LEVELS,
@@ -965,7 +965,7 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
    /* Transition input texture to something appropriate. */
    if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
    {
-      vulkan_image_layout_transition_levels(cmd,
+      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
             input_texture.image,VK_REMAINING_MIP_LEVELS,
             input_texture.layout,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -992,7 +992,7 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
    /* Transition input texture back. */
    if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
    {
-      vulkan_image_layout_transition_levels(cmd,
+      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
             input_texture.image,VK_REMAINING_MIP_LEVELS,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             input_texture.layout,
@@ -2252,7 +2252,7 @@ void Pass::build_commands(
       VkRenderPassBeginInfo rp_info;
 
       /* Render. */
-      vulkan_image_layout_transition_levels(cmd,
+      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
             framebuffer->get_image(), 1,
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -2346,7 +2346,7 @@ void Pass::build_commands(
       else
       {
          /* Barrier to sync with next pass. */
-         vulkan_image_layout_transition_levels(
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
                cmd,
                framebuffer->get_image(),
                VK_REMAINING_MIP_LEVELS,

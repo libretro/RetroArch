@@ -500,11 +500,24 @@ void vulkan_image_layout_transition(vk_t *vk,
       VkAccessFlags srcAccess, VkAccessFlags dstAccess,
       VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
 
-void vulkan_image_layout_transition_levels(
-      VkCommandBuffer cmd, VkImage image, uint32_t levels,
-      VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags src_access, VkAccessFlags dst_access,
-      VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages);
+#define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) \
+{ \
+   VkImageMemoryBarrier barrier; \
+   barrier.sType                         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; \
+   barrier.pNext                         = NULL; \
+   barrier.srcAccessMask                 = src_access; \
+   barrier.dstAccessMask                 = dst_access; \
+   barrier.oldLayout                     = old_layout; \
+   barrier.newLayout                     = new_layout; \
+   barrier.srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED; \
+   barrier.dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED; \
+   barrier.image                         = img; \
+   barrier.subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT; \
+   barrier.subresourceRange.baseMipLevel = 0; \
+   barrier.subresourceRange.levelCount   = levels; \
+   barrier.subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS; \
+   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, false, 0, NULL, 0, NULL, 1, &barrier); \
+}
 
 static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
 {

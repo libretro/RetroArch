@@ -1335,37 +1335,6 @@ void vulkan_image_layout_transition(
          1, &barrier);
 }
 
-void vulkan_image_layout_transition_levels(
-      VkCommandBuffer cmd, VkImage image, uint32_t levels,
-      VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags src_access, VkAccessFlags dst_access,
-      VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages)
-{
-   VkImageMemoryBarrier barrier;
-
-   barrier.sType                         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-   barrier.pNext                         = NULL;
-   barrier.srcAccessMask                 = src_access;
-   barrier.dstAccessMask                 = dst_access;
-   barrier.oldLayout                     = old_layout;
-   barrier.newLayout                     = new_layout;
-   barrier.srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barrier.dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barrier.image                         = image;
-   barrier.subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.baseMipLevel = 0;
-   barrier.subresourceRange.levelCount   = levels;
-   barrier.subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
-
-   vkCmdPipelineBarrier(cmd,
-         src_stages,
-         dst_stages,
-         false,
-         0, NULL,
-         0, NULL,
-         1, &barrier);
-}
-
 struct vk_buffer vulkan_create_buffer(
       const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage)
@@ -3686,7 +3655,7 @@ void vulkan_framebuffer_copy(VkImage image,
 {
    VkImageCopy region;
 
-   vulkan_image_layout_transition_levels(cmd, image,VK_REMAINING_MIP_LEVELS,
+   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, image,VK_REMAINING_MIP_LEVELS,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -3712,7 +3681,7 @@ void vulkan_framebuffer_copy(VkImage image,
          image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
-   vulkan_image_layout_transition_levels(cmd,
+   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
          image,
          VK_REMAINING_MIP_LEVELS,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -3728,7 +3697,7 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
    VkClearColorValue color;
    VkImageSubresourceRange range;
 
-   vulkan_image_layout_transition_levels(cmd,
+   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
          image,
          VK_REMAINING_MIP_LEVELS,
          VK_IMAGE_LAYOUT_UNDEFINED,
@@ -3755,7 +3724,7 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
          1,
          &range);
 
-   vulkan_image_layout_transition_levels(cmd,
+   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
          image,
          VK_REMAINING_MIP_LEVELS,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
