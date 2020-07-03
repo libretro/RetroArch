@@ -630,7 +630,10 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
          0,
          VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_QUEUE_FAMILY_IGNORED,
+         VK_QUEUE_FAMILY_IGNORED
+         );
 
    region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    region.imageSubresource.mipLevel       = 0;
@@ -686,7 +689,9 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
             VK_ACCESS_TRANSFER_WRITE_BIT,
             VK_ACCESS_TRANSFER_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT);
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED);
 
       vkCmdBlitImage(cmd,
             tex, VK_IMAGE_LAYOUT_GENERAL,
@@ -705,7 +710,9 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
          VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_QUEUE_FAMILY_IGNORED,
+         VK_QUEUE_FAMILY_IGNORED);
 
    image_texture_free(&image);
    image.pixels = nullptr;
@@ -972,7 +979,9 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
             0,
             VK_ACCESS_TRANSFER_READ_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT);
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED);
 
       src_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    }
@@ -999,7 +1008,9 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
             0,
             VK_ACCESS_SHADER_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED);
    }
 
    /* Should ring buffer, but we don't have *that* many passes. */
@@ -2260,7 +2271,9 @@ void Pass::build_commands(
             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | 
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED);
 
       rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp_info.pNext                    = NULL;
@@ -2355,7 +2368,9 @@ void Pass::build_commands(
                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                VK_ACCESS_SHADER_READ_BIT,
                VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
       }
    }
 }

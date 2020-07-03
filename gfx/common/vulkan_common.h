@@ -492,7 +492,7 @@ typedef struct vk
    vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
 }
 
-#define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) \
+#define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, src_queue_family_idx, dst_queue_family_idx) \
 { \
    VkImageMemoryBarrier barrier; \
    barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; \
@@ -501,8 +501,8 @@ typedef struct vk
    barrier.dstAccessMask                   = dst_access; \
    barrier.oldLayout                       = old_layout; \
    barrier.newLayout                       = new_layout; \
-   barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED; \
-   barrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED; \
+   barrier.srcQueueFamilyIndex             = src_queue_family_idx; \
+   barrier.dstQueueFamilyIndex             = dst_queue_family_idx; \
    barrier.image                           = img; \
    barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT; \
    barrier.subresourceRange.baseMipLevel   = 0; \
@@ -512,7 +512,7 @@ typedef struct vk
    vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
 }
 
-#define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages)
+#define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED)
 
 #define VK_DESCRIPTOR_MANAGER_RESTART(manager) \
 { \

@@ -3575,7 +3575,9 @@ void vulkan_framebuffer_copy(VkImage image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_QUEUE_FAMILY_IGNORED,
+         VK_QUEUE_FAMILY_IGNORED);
 
    region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    region.srcSubresource.mipLevel       = 0;
@@ -3605,7 +3607,9 @@ void vulkan_framebuffer_copy(VkImage image,
          VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_QUEUE_FAMILY_IGNORED,
+         VK_QUEUE_FAMILY_IGNORED);
 }
 
 void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
@@ -3621,7 +3625,9 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
          0,
          VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_QUEUE_FAMILY_IGNORED,
+         VK_QUEUE_FAMILY_IGNORED);
 
    color.float32[0]     = 0.0f;
    color.float32[1]     = 0.0f;
@@ -3648,7 +3654,9 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
          VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_QUEUE_FAMILY_IGNORED,
+         VK_QUEUE_FAMILY_IGNORED);
 }
 
 void vulkan_pass_set_texture(
