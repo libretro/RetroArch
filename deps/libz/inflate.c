@@ -125,9 +125,11 @@ int inflateResetKeep(z_streamp strm)
 
 int inflateReset(z_streamp strm)
 {
+   int ret;
    struct inflate_state FAR *state;
 
-   if (strm == Z_NULL || strm->state == Z_NULL)
+   if (  strm        == Z_NULL || 
+         strm->state == Z_NULL)
       return Z_STREAM_ERROR;
 
    state        = (struct inflate_state FAR *)strm->state;
@@ -135,7 +137,9 @@ int inflateReset(z_streamp strm)
    state->whave = 0;
    state->wnext = 0;
 
-   return inflateResetKeep(strm);
+   ret          = inflateResetKeep(strm);
+
+   return ret;
 }
 
 int inflateReset2(z_streamp strm, int windowBits)
@@ -157,7 +161,7 @@ int inflateReset2(z_streamp strm, int windowBits)
    }
    else
    {
-      wrap           = (windowBits >> 4) + 1;
+      wrap           = (windowBits >> 4) + 5;
 #ifdef GUNZIP
       if (windowBits < 48)
          windowBits &= 15;
@@ -657,14 +661,16 @@ int inflate(z_streamp strm, int flush)
                   }
                   if (state->head != Z_NULL)
                      state->head->text = (int)((hold >> 8) & 1);
-                  if (state->flags & 0x0200) CRC2(state->check, hold);
+                  if ((state->flags & 0x0200) && (state->wrap & 4))
+                     CRC2(state->check, hold);
                   INITBITS();
                   state->mode = TIME;
          case TIME:
                   NEEDBITS(32);
                   if (state->head != Z_NULL)
                      state->head->time = hold;
-                  if (state->flags & 0x0200) CRC4(state->check, hold);
+                  if ((state->flags & 0x0200) && (state->wrap & 4))
+                     CRC4(state->check, hold);
                   INITBITS();
                   state->mode = OS;
          case OS:
@@ -673,7 +679,8 @@ int inflate(z_streamp strm, int flush)
                      state->head->xflags = (int)(hold & 0xff);
                      state->head->os = (int)(hold >> 8);
                   }
-                  if (state->flags & 0x0200) CRC2(state->check, hold);
+                  if ((state->flags & 0x0200) && (state->wrap & 4))
+                     CRC2(state->check, hold);
                   INITBITS();
                   state->mode = EXLEN;
          case EXLEN:
@@ -682,7 +689,8 @@ int inflate(z_streamp strm, int flush)
                      state->length = (unsigned)(hold);
                      if (state->head != Z_NULL)
                         state->head->extra_len = (unsigned)hold;
-                     if (state->flags & 0x0200) CRC2(state->check, hold);
+                     if ((state->flags & 0x0200) && (state->wrap & 4))
+                        CRC2(state->check, hold);
                      INITBITS();
                   }
                   else if (state->head != Z_NULL)
@@ -700,7 +708,7 @@ int inflate(z_streamp strm, int flush)
                                  len + copy > state->head->extra_max ?
                                  state->head->extra_max - len : copy);
                         }
-                        if (state->flags & 0x0200)
+                        if ((state->flags & 0x0200) && (state->wrap & 4))
                            state->check = crc32(state->check, next, copy);
                         have -= copy;
                         next += copy;
@@ -721,7 +729,7 @@ int inflate(z_streamp strm, int flush)
                               state->length < state->head->name_max)
                            state->head->name[state->length++] = len;
                      } while (len && copy < have);
-                     if (state->flags & 0x0200)
+                     if ((state->flags & 0x0200) && (state->wrap & 4))
                         state->check = crc32(state->check, next, copy);
                      have -= copy;
                      next += copy;
@@ -742,7 +750,7 @@ int inflate(z_streamp strm, int flush)
                               state->length < state->head->comm_max)
                            state->head->comment[state->length++] = len;
                      } while (len && copy < have);
-                     if (state->flags & 0x0200)
+                     if ((state->flags & 0x0200) && (state->wrap & 4))
                         state->check = crc32(state->check, next, copy);
                      have -= copy;
                      next += copy;
@@ -754,7 +762,7 @@ int inflate(z_streamp strm, int flush)
          case HCRC:
                   if (state->flags & 0x0200) {
                      NEEDBITS(16);
-                     if (hold != (state->check & 0xffff)) {
+                     if ((state->wrap & 4) && hold != (state->check & 0xffff)) {
                         strm->msg = (char *)"header crc mismatch";
                         state->mode = BAD;
                         break;
@@ -1097,11 +1105,11 @@ int inflate(z_streamp strm, int flush)
                      out -= left;
                      strm->total_out += out;
                      state->total += out;
-                     if (out)
+                     if ((state->wrap & 4) && out)
                         strm->adler = state->check =
                            UPDATE(state->check, put - out, out);
                      out = left;
-                     if ((
+                     if ((state->wrap & 4) && (
 #ifdef GUNZIP
                               state->flags ? hold :
 #endif
@@ -1158,7 +1166,7 @@ inf_leave:
    strm->total_in += in;
    strm->total_out += out;
    state->total += out;
-   if (state->wrap && out)
+   if ((state->wrap & 4) && out)
       strm->adler = state->check =
          UPDATE(state->check, strm->next_out - out, out);
    strm->data_type = state->bits + (state->last ? 64 : 0) +
@@ -1480,6 +1488,21 @@ int inflateUndermine(z_streamp strm, int subvert)
    state->sane = 1;
 
    return Z_DATA_ERROR;
+}
+
+int inflateValidate(z_streamp strm, int check)
+{
+   struct inflate_state FAR *state;
+
+   if (  strm        == Z_NULL || 
+         strm->state == Z_NULL)
+      return Z_STREAM_ERROR;
+   state = (struct inflate_state FAR *)strm->state;
+   if (check)
+      state->wrap |= 4;
+   else
+      state->wrap &= ~4;
+   return Z_OK;
 }
 
 long inflateMark(z_streamp strm)
