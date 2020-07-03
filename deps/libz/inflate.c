@@ -1498,7 +1498,7 @@ int inflateValidate(z_streamp strm, int check)
          strm->state == Z_NULL)
       return Z_STREAM_ERROR;
    state = (struct inflate_state FAR *)strm->state;
-   if (check)
+   if (check && state->wrap)
       state->wrap |= 4;
    else
       state->wrap &= ~4;
