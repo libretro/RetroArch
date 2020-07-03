@@ -1342,6 +1342,8 @@ int inflateSync(z_streamp strm)
    /* return no joy or set up to restart inflate() on a new block */
    if (state->have != 4)
       return Z_DATA_ERROR;
+   if (state->mode == HEAD)
+        state->wrap = 0;    /* never processed header, so assume raw */
 
    in              = strm->total_in;
    out             = strm->total_out;
