@@ -489,7 +489,7 @@ typedef struct vk
    barrier.subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS; \
    barrier.subresourceRange.baseArrayLayer = 0; \
    barrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS; \
-   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, false, 0, NULL, 0, NULL, 1, &barrier); \
+   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
 }
 
 #define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) \
