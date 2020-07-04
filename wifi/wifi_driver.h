@@ -78,6 +78,7 @@ typedef struct wifi_driver
 } wifi_driver_t;
 
 extern wifi_driver_t wifi_connmanctl;
+extern wifi_driver_t wifi_nmcli;
 
 /**
  * config_get_wifi_driver_options:

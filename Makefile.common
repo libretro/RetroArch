@@ -754,6 +754,11 @@ ifeq ($(HAVE_LAKKA), 1)
    OBJ += wifi/drivers/connmanctl.o
 endif
 
+ifeq ($(HAVE_WIFI), 1)
+   OBJ += wifi/drivers/nmcli.o
+   DEFINES += -DHAVE_WIFI
+endif
+
 # Audio
 
 ifeq ($(HAVE_COREAUDIO), 1)
