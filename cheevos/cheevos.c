@@ -999,14 +999,6 @@ static void rcheevos_lboard_submit(rcheevos_lboard_t* lboard)
    /* Deactivate the leaderboard. */
    lboard->active = 0;
 
-   /* Failsafe for improper leaderboards. */
-   if (lboard->last_value == 0)
-   {
-      CHEEVOS_ERR(RCHEEVOS_TAG "Leaderboard %s tried to submit 0\n", lboard->info->title);
-      runloop_msg_queue_push("Leaderboard attempt cancelled!", 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      return;
-   }
-
    /* Show the OSD message. */
    rc_format_value(value, sizeof(value), lboard->last_value, lboard->format);
 
