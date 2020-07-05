@@ -1,4 +1,0 @@
-{
-  global: softfilter_*;
-  local: *;
-};

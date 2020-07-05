@@ -1,4 +1,0 @@
-# Ignore compiled binaries.
-/c_converter
-/libretrodb_tool
-/rmsgpack_test

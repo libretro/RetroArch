@@ -1,2 +1,0 @@
-# lintian complains about *.dsp files, they aren't windows stuff
-retroarch binary: windows-devel-file-in-package
