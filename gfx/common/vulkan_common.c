@@ -1260,7 +1260,7 @@ struct vk_buffer vulkan_create_buffer(
    VkBufferCreateInfo info;
    VkMemoryAllocateInfo alloc;
 
-   info.sType                 = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
    info.pNext                 = NULL;
    info.flags                 = 0;
    info.size                  = size;
