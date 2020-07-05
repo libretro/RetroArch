@@ -96,6 +96,7 @@ typedef struct texture_unit {
 	SceGxmTextureFilter mag_filter;
 	SceGxmTextureAddrMode u_mode;
 	SceGxmTextureAddrMode v_mode;
+	uint32_t lod_bias;
 } texture_unit;
 
 // Framebuffer struct

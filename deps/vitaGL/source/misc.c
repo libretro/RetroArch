@@ -119,7 +119,7 @@ void glPolygonMode(GLenum face, GLenum mode) {
 		new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 	switch (face) {
@@ -140,7 +140,7 @@ void glPolygonMode(GLenum face, GLenum mode) {
 		sceGxmSetBackPolygonMode(gxm_context, new_mode);
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		return;
 	}
 	update_polygon_offset();
@@ -167,8 +167,7 @@ void glFrontFace(GLenum mode) {
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((width < 0) || (height < 0)) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 	x_scale = width >> 1;
@@ -197,8 +196,7 @@ void glDepthRangef(GLfloat nearVal, GLfloat farVal) {
 void glEnable(GLenum cap) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
-		vgl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 	switch (cap) {
@@ -250,7 +248,7 @@ void glEnable(GLenum cap) {
 		clip_plane0 = GL_TRUE;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -258,8 +256,7 @@ void glEnable(GLenum cap) {
 void glDisable(GLenum cap) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
-		vgl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 	switch (cap) {
@@ -311,7 +308,7 @@ void glDisable(GLenum cap) {
 		clip_plane0 = GL_FALSE;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -411,7 +408,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			}
 			break;
 		default:
-			vgl_error = GL_INVALID_ENUM;
+			SET_GL_ERROR(GL_INVALID_ENUM)
 			break;
 		}
 		break;
@@ -429,12 +426,12 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			}
 			break;
 		default:
-			vgl_error = GL_INVALID_ENUM;
+			SET_GL_ERROR(GL_INVALID_ENUM)
 			break;
 		}
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -443,8 +440,7 @@ void glLineWidth(GLfloat width) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (width <= 0) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -457,8 +453,7 @@ void glPointSize(GLfloat size) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (size <= 0) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -483,7 +478,7 @@ void glFogf(GLenum pname, GLfloat param) {
 		fog_far = param;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -504,10 +499,10 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		fog_far = params[0];
 		break;
 	case GL_FOG_COLOR:
-		memcpy(&fog_color.r, params, sizeof(vector4f));
+		memcpy_neon(&fog_color.r, params, sizeof(vector4f));
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -528,7 +523,7 @@ void glFogi(GLenum pname, const GLint param) {
 		fog_far = param;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -545,10 +540,10 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 		matrix4x4_transpose(inverted_transposed, inverted);
 		vector4f temp;
 		vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_plane0_eq);
-		memcpy(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
+		memcpy_neon(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }

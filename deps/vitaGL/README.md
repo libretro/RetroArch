@@ -20,7 +20,7 @@ Here you can find a list of projects using vitaGL:
 Direct OpenGL Usage:<br>
 [vitaQuake](https://vitadb.rinnegatamante.it/#/info/10) - Port of Quake I and mission packs<br>
 [vitaQuakeII](https://vitadb.rinnegatamante.it/#/info/278) -Port of Quake II and mission packs<br>
-[vitaQuakeIII](https://vitadb.rinnegatamante.it/#/info/375) - Port of ioquake3 (Quake III: Arena, Quake III: Team Arena, OpenArena)<br>
+[vitaQuakeIII](https://vitadb.rinnegatamante.it/#/info/375) - Port of ioquake3 (Quake III: Arena, Quake III: Team Arena, OpenArena, Urban Terror)<br>
 [vitaRTCW](https://vitadb.rinnegatamante.it/#/info/459) - Port of iortcw (Return to Castle Wolfenstein)<br>
 [vitaHexenII](https://vitadb.rinnegatamante.it/#/info/196) - Port of Hexen II<br>
 [vitaXash3D](https://vitadb.rinnegatamante.it/#/info/365) - Port of Xash3D (Half Life, Counter Strike 1.6)<br>

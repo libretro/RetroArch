@@ -56,6 +56,8 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "state.h"
 #include "texture_callbacks.h"
 
+#define SET_GL_ERROR(x) vgl_error = x; return;
+
 // Texture environment mode
 typedef enum texEnvMode {
 	MODULATE = 0,
@@ -107,6 +109,9 @@ void LOG(const char *format, ...);
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+extern uint8_t use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot
+extern uint8_t is_shark_online; // Current vitaShaRK status
+
 // sceGxm viewport setup (NOTE: origin is on center screen)
 extern float x_port;
 extern float y_port;
@@ -126,10 +131,11 @@ extern float fullscreen_z_scale;
 extern SceGxmContext *gxm_context; // sceGxm context instance
 extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
+extern uint8_t system_app_mode; // Flag for system app mode usage
 
-matrix4x4 mvp_matrix; // ModelViewProjection Matrix
-matrix4x4 projection_matrix; // Projection Matrix
-matrix4x4 modelview_matrix; // ModelView Matrix
+extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
+extern matrix4x4 projection_matrix; // Projection Matrix
+extern matrix4x4 modelview_matrix; // ModelView Matrix
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)

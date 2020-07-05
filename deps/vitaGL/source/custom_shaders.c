@@ -23,12 +23,14 @@
 
 #include "shared.h"
 
-#define MAX_CUSTOM_SHADERS 32 // Maximum number of linkable custom shaders
-#define MAX_SHADER_PARAMS 16 // Maximum number of parameters per custom shader
+#define MAX_CUSTOM_SHADERS 64 // Maximum number of linkable custom shaders
+#define MAX_SHADER_PARAMS 8 // Maximum number of parameters per custom shader
 
 // Internal stuffs
 void *frag_uniforms = NULL;
 void *vert_uniforms = NULL;
+uint8_t use_shark = 1; // Flag to check if vitaShaRK should be initialized at vitaGL boot
+uint8_t is_shark_online = 0; // Current vitaShaRK status
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
@@ -45,6 +47,7 @@ typedef struct shader {
 	GLboolean valid;
 	SceGxmShaderPatcherId id;
 	const SceGxmProgram *prog;
+	uint32_t size;
 } shader;
 
 // Program struct holding vertex/fragment shader info
@@ -52,8 +55,8 @@ typedef struct program {
 	shader *vshader;
 	shader *fshader;
 	GLboolean valid;
-	SceGxmVertexAttribute attr[16];
-	SceGxmVertexStream stream[16];
+	SceGxmVertexAttribute attr[MAX_SHADER_PARAMS];
+	SceGxmVertexStream stream[MAX_SHADER_PARAMS];
 	SceGxmVertexProgram *vprog;
 	SceGxmFragmentProgram *fprog;
 	GLuint attr_num;
@@ -102,8 +105,8 @@ void reloadCustomShader(void) {
 }
 
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
-	program *p = &progs[cur_program - 1];
 	if (implicit_wvp) {
+		program *p = &progs[cur_program - 1];
 		if (mvp_modified) {
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 			mvp_modified = GL_FALSE;
@@ -121,6 +124,10 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
+ 
+void vglEnableRuntimeShaderCompiler(GLboolean usage) {
+	use_shark = usage;
+}
 
 GLuint glCreateShader(GLenum shaderType) {
 	// Looking for a free shader slot
@@ -146,11 +153,47 @@ GLuint glCreateShader(GLenum shaderType) {
 		break;
 	default:
 		vgl_error = GL_INVALID_ENUM;
+		return 0;
 		break;
 	}
 	shaders[res - 1].valid = GL_TRUE;
 
 	return res;
+}
+
+void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	switch (pname) {
+	case GL_SHADER_TYPE:
+		*params = s->type;
+		break;
+	case GL_COMPILE_STATUS:
+		*params = s->prog ? GL_TRUE : GL_FALSE;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
+void glShaderSource(GLuint handle, GLsizei count, const GLchar * const *string, const GLint *length) {
+#ifndef SKIP_ERROR_HANDLING
+	if (count < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+    if (!is_shark_online) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+	
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	// Temporarily setting prog to point to the shader source
+	s->prog = (SceGxmProgram *)string;
+	s->size = *length;
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
@@ -159,9 +202,31 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 
 	// Allocating compiled shader on RAM and registering it into sceGxmShaderPatcher
 	s->prog = (SceGxmProgram *)malloc(length);
-	memcpy((void *)s->prog, binary, length);
+	memcpy_neon((void *)s->prog, binary, length);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+}
+
+void glCompileShader(GLuint handle) {
+	// If vitaShaRK is not enabled, we just error out
+	if (!is_shark_online) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#ifdef HAVE_SHARK
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	// Compiling shader source
+	s->prog = shark_compile_shader((const char*)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER);
+	if (s->prog) {
+		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
+		memcpy_neon((void *)res, (void *)s->prog, s->size);
+		s->prog = res;
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
+		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+	}
+	shark_clear_output();
+#endif
 }
 
 void glDeleteShader(GLuint shad) {
@@ -193,8 +258,9 @@ void glAttachShader(GLuint prog, GLuint shad) {
 		default:
 			break;
 		}
-	} else
-		vgl_error = GL_INVALID_VALUE;
+	} else {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
 }
 
 GLuint glCreateProgram(void) {
@@ -335,6 +401,43 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	}
 }
 
+void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+	if (u->ptr == NULL)
+		return;
+
+	// Setting passed value to desired uniform
+	if (u->isVertex) {
+		if (vert_uniforms == NULL)
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
+		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 3 * count, value);
+	} else {
+		if (frag_uniforms == NULL)
+			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
+		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 3 * count, value);
+	}
+}
+
+void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+	if (u->ptr == NULL)
+		return;
+
+	// Setting passed value to desired uniform
+	float v[4] = {v0, v1, v2, v3};
+	if (u->isVertex) {
+		if (vert_uniforms == NULL)
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
+		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 4, v);
+	} else {
+		if (frag_uniforms == NULL)
+			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
+		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 4, v);
+	}
+}
+
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
@@ -402,7 +505,7 @@ void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, 
 		bpe = sizeof(uint8_t);
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 
@@ -425,8 +528,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (stride < 0) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -440,7 +542,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 
@@ -449,13 +551,13 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 
 	// Copying passed data to vitaGL mempool
 	if (stride == 0)
-		memcpy(ptr, pointer, count * bpe * size); // Faster if stride == 0
+		memcpy_neon(ptr, pointer, count * bpe * size); // Faster if stride == 0
 	else {
 		int i;
 		uint8_t *dst = (uint8_t *)ptr;
 		uint8_t *src = (uint8_t *)pointer;
 		for (i = 0; i < count; i++) {
-			memcpy(dst, src, bpe * size);
+			memcpy_neon(dst, src, bpe * size);
 			dst += (bpe * size);
 			src += stride;
 		}

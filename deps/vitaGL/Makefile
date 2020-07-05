@@ -7,18 +7,23 @@ SOURCES += source/hacks
 endif
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
+ASMFILES := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.S))
 CGFILES  := $(foreach dir,$(SHADERS), $(wildcard $(dir)/*.cg))
 HEADERS  := $(CGFILES:.cg=.h)
-OBJS     := $(CFILES:.c=.o)
+OBJS     := $(CFILES:.c=.o) $(ASMFILES:.S=.o)
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -ftree-vectorize -DSTB_DXT_IMPLEMENTATION
+CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -ftree-vectorize -DSTB_DXT_IMPLEMENTATION
 ASFLAGS = $(CFLAGS)
 
 ifeq ($(NO_DEBUG),1)
 CFLAGS  += -DSKIP_ERROR_HANDLING
+endif
+
+ifeq ($(HAVE_SHARK),1)
+CFLAGS  += -DHAVE_SHARK
 endif
 
 all: $(TARGET).a
@@ -47,6 +52,7 @@ clean:
 	@make -C samples/sample5 clean
 	@make -C samples/sample6 clean
 	@make -C samples/sample7 clean
+	@make -C samples/sample8 clean
 	
 install: $(TARGET).a
 	@mkdir -p $(VITASDK)/$(PREFIX)/lib/
@@ -69,3 +75,5 @@ samples: $(TARGET).a
 	cp "samples/sample6/vitaGL-Sample006.vpk" .
 	@make -C samples/sample7
 	cp "samples/sample7/vitaGL-Sample007.vpk" .
+	@make -C samples/sample8
+	cp "samples/sample8/vitaGL-Sample008.vpk" .

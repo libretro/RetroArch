@@ -24,20 +24,32 @@ extern "C" {
 #endif
 
 #include <vitasdk.h>
+#ifdef HAVE_SHARK
+#include <vitashark.h>
+#endif
 
 // clang-format off
-#define GLfloat       float
-#define GLint         int32_t
-#define GLdouble      double
-#define GLshort       int16_t
-#define GLuint        uint32_t
-#define GLsizei       int32_t
-#define GLenum        uint16_t
-#define GLubyte       uint8_t
-#define GLvoid        void
-#define GLbyte        int8_t
 #define GLboolean     uint8_t
+#define GLbyte        int8_t
+#define GLubyte       uint8_t
 #define GLchar        char
+#define GLshort       int16_t
+#define GLushort      uint16_t
+#define GLint         int32_t
+#define GLuint        uint32_t
+#define GLfixed       int32_t
+#define GLint64       int64_t
+#define GLuint64      uint64_t
+#define GLsizei       int32_t
+#define GLenum        uint32_t
+#define GLintptr      int32_t
+#define GLsizeiptr    uint32_t
+#define GLsync        int32_t
+#define GLfloat       float
+#define GLclampf      float
+#define GLdouble      double
+#define GLclampd      double
+#define GLvoid        void
 
 #define GL_FALSE                          0
 #define GL_TRUE                           1
@@ -46,6 +58,8 @@ extern "C" {
 
 #define GL_ZERO                           0
 #define GL_ONE                            1
+
+#define GL_NONE                           0
 
 #define GL_POINTS                         0x0000
 #define GL_LINES                          0x0001
@@ -108,6 +122,8 @@ extern "C" {
 #define GL_MAX_MODELVIEW_STACK_DEPTH      0x0D36
 #define GL_MAX_PROJECTION_STACK_DEPTH     0x0D38
 #define GL_MAX_TEXTURE_STACK_DEPTH        0x0D39
+#define GL_DEPTH_BITS                     0x0D56
+#define GL_STENCIL_BITS                   0x0D57
 #define GL_TEXTURE_2D                     0x0DE1
 #define GL_BYTE                           0x1400
 #define GL_UNSIGNED_BYTE                  0x1401
@@ -218,6 +234,7 @@ extern "C" {
 #define GL_TEXTURE30                      0x84DE
 #define GL_TEXTURE31                      0x84DF
 #define GL_ACTIVE_TEXTURE                 0x84E0
+#define GL_TEXTURE_LOD_BIAS               0x8501
 #define GL_INCR_WRAP                      0x8507
 #define GL_MIRROR_CLAMP_EXT               0x8742
 #define GL_DECR_WRAP                      0x8508
@@ -234,12 +251,15 @@ extern "C" {
 #define GL_DYNAMIC_COPY                   0x88EA
 #define GL_FRAGMENT_SHADER                0x8B30
 #define GL_VERTEX_SHADER                  0x8B31
+#define GL_SHADER_TYPE                    0x8B4F
+#define GL_COMPILE_STATUS                 0x8B81
 #define GL_READ_FRAMEBUFFER               0x8CA8
 #define GL_DRAW_FRAMEBUFFER               0x8CA9
 #define GL_COLOR_ATTACHMENT0              0x8CE0
 #define GL_FRAMEBUFFER                    0x8D40
 
-#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 32
+#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   32
+#define GL_MAX_TEXTURE_LOD_BIAS               31
 
 // Aliases
 #define GL_CLAMP GL_CLAMP_TO_EDGE
@@ -282,6 +302,7 @@ void glColor4ubv(const GLubyte *v);
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data);
+void glCompileShader(GLuint shader);
 GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
@@ -316,6 +337,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
 GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
+void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 const GLubyte *glGetString(GLenum name);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 GLboolean glIsEnabled(GLenum cap);
@@ -336,6 +358,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
+void glShaderSource(GLuint handle, GLsizei count, const GLchar * const *string, const GLint *length); // NOTE: Uses CG shader sources
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
 void glStencilMask(GLuint mask);
@@ -357,6 +380,8 @@ void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glUniform1f(GLint location, GLfloat v0);
 void glUniform1i(GLint location, GLint v0);
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value);
+void glUniform3fv(GLint location, GLsizei count, const GLfloat *value);
+void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void glUseProgram(GLuint program);
@@ -366,6 +391,9 @@ void glVertex3fv(const GLfloat *v);
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
+// glu*
+void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
+	
 // VGL_EXT_gpu_objects_array extension
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer);
@@ -394,12 +422,15 @@ typedef enum {
 
 // vgl*
 void *vglAlloc(uint32_t size, vglMemType type);
+void vglEnableRuntimeShaderCompiler(GLboolean usage);
 void vglEnd(void);
 void vglFree(void *addr);
 void *vglGetTexDataPointer(GLenum target);
 void vglInit(uint32_t gpu_pool_size);
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
+void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa);
 size_t vglMemFree(vglMemType type);
+void vglSetParamBufferSize(uint32_t size);
 void vglStartRendering();
 void vglStopRendering();
 void vglStopRenderingInit();
@@ -409,6 +440,9 @@ void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);
 void vglUseExtraMem(GLboolean usage);
 void vglWaitVblankStart(GLboolean enable);
+
+// NEON optimized memcpy
+void *memcpy_neon(void *destination, const void *source, size_t num);
 
 #ifdef __cplusplus
 }

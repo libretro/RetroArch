@@ -66,8 +66,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 	int i = 0, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 	for (i = 0; i < BUFFERS_NUM; i++) {
@@ -85,8 +84,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 	while (n > 0) {
@@ -117,7 +115,7 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 		active_write_fb = active_read_fb = (framebuffer *)fb;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -134,7 +132,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		fb = active_read_fb;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 
@@ -178,7 +176,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		sceGxmCreateRenderTarget(&renderTargetParams, &fb->target);
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
