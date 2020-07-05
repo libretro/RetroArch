@@ -965,44 +965,48 @@ void *libretrodb_query_compile(libretrodb_t *db,
    struct buffer buff;
    /* TODO/FIXME - static local variable */
    static char tmp_error_buff [MAX_ERROR_LEN] = {0};
-   struct query *q = (struct query*)malloc(sizeof(*q));
+   struct query *q       = (struct query*)malloc(sizeof(*q));
+   size_t error_buff_len = sizeof(tmp_error_buff);
 
    if (!q)
       return NULL;
 
-   q->ref_count  = 1;
-   q->root.argc  = 0;
-   q->root.func  = NULL;
-   q->root.argv  = NULL;
+   q->ref_count          = 1;
+   q->root.argc          = 0;
+   q->root.func          = NULL;
+   q->root.argv          = NULL;
 
-   buff.data     = query;
-   buff.len      = buff_len;
-   buff.offset   = 0;
-   *error_string = NULL;
+   buff.data             = query;
+   buff.len              = buff_len;
+   buff.offset           = 0;
+   *error_string         = NULL;
 
-   buff          = query_chomp(buff);
+   buff                  = query_chomp(buff);
 
    if (query_peek(buff, "{"))
    {
       buff = query_parse_table(tmp_error_buff,
-            sizeof(tmp_error_buff), buff, &q->root, error_string);
+            error_buff_len, buff, &q->root, error_string);
       if (*error_string)
          goto error;
    }
    else if (isalpha((int)buff.data[buff.offset]))
       buff = query_parse_method_call(tmp_error_buff,
-            sizeof(tmp_error_buff),
+            error_buff_len,
             buff, &q->root, error_string);
 
    buff = query_expect_eof(tmp_error_buff,
-         sizeof(tmp_error_buff), buff, error_string);
+            error_buff_len,
+            buff, error_string);
+
    if (*error_string)
       goto error;
 
    if (!q->root.func)
    {
       query_raise_unexpected_eof(
-            tmp_error_buff, sizeof(tmp_error_buff),
+            tmp_error_buff,
+            error_buff_len,
             buff.offset, error_string);
       goto error;
    }
