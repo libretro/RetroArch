@@ -2289,7 +2289,6 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
-   /* TODO/FIXME - global state - perhaps move outside this file */
    core_info_state_t core_info_st;
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t dispwidget_st;
@@ -2602,7 +2601,7 @@ static gfx_api_gpu_map gpu_map[] = {
 };
 
 /* TODO/FIXME - turn these into static global variable */
-const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
+static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
       DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
       DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT),
@@ -2690,6 +2689,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
       DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
+
 #ifdef HAVE_DISCORD
 bool discord_is_inited                                          = false;
 #endif
