@@ -310,7 +310,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 	initGxm();
 
 	// Initializing memory heap for CDRAM and RAM memory
-	mem_init(ram_pool_size, cdram_pool_size, phycont_pool_size);
+	vgl_mem_init(ram_pool_size, cdram_pool_size, phycont_pool_size);
 
 	// Initializing sceGxm context
 	initGxmContext();
