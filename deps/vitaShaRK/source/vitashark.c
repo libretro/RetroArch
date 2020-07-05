@@ -19,7 +19,7 @@
 
 #include "vitashark.h"
 #include <stdlib.h>
-#include <psp2/shacccg.h>
+#include "shacccg.h"
 
 // Default path for SceShaccCg module location
 #define DEFAULT_SHACCCG_PATH "ur0:/data/libshacccg.suprx"

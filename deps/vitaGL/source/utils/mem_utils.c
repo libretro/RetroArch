@@ -256,7 +256,7 @@ static void heap_free(void *addr) {
 	heap_blk_free((uintptr_t)addr);
 }
 
-void mem_term(void) {
+void vgl_mem_term(void) {
 	heap_destroy();
 	if (mempool_addr[0] != NULL) {
 		sceKernelFreeMemBlock(mempool_id[0]);
@@ -268,9 +268,9 @@ void mem_term(void) {
 	}
 }
 
-int mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
+int vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	if (mempool_addr[0] != NULL)
-		mem_term();
+		vgl_mem_term();
 
 	mempool_size[VGL_MEM_VRAM - 1] = ALIGN(size_cdram, 256 * 1024);
 	mempool_size[VGL_MEM_RAM - 1] = ALIGN(size_ram, 4 * 1024);
