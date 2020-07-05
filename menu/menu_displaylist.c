@@ -7369,10 +7369,12 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT, true },
+#ifdef HAVE_RUNAHEAD
                {MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,                     PARSE_ONLY_BOOL, true },
                {MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,                      PARSE_ONLY_UINT, false },
                {MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,          PARSE_ONLY_BOOL, false },
                {MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,               PARSE_ONLY_BOOL, false },
+#endif
             };
 
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
