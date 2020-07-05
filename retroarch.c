@@ -2600,7 +2600,6 @@ static gfx_api_gpu_map gpu_map[] = {
    { GFX_CTX_DIRECT3D12_API, NULL }
 };
 
-/* TODO/FIXME - turn these into static global variable */
 static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
       DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
@@ -2690,6 +2689,7 @@ static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NUL
       DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
 
+/* TODO/FIXME - turn these into static global variable */
 #ifdef HAVE_DISCORD
 bool discord_is_inited                                          = false;
 #endif
