@@ -234,7 +234,7 @@ static bool linuxraw_joypad_init(void *data)
       path[0]                     = '\0';
 
       pad->fd                     = -1;
-      pad->ident                  = input_device_names[i];
+      pad->ident                  = input_config_get_device_name(i);
 
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
