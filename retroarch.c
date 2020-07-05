@@ -10531,10 +10531,8 @@ struct string_list *string_list_new_special(enum string_list_type type,
    unsigned i;
    core_info_list_t *core_info_list = NULL;
    const core_info_t *core_info     = NULL;
-   struct rarch_state *p_rarch      = &rarch_st;
-   settings_t *settings             = p_rarch->configuration_settings;
-   bool add_null_entries            = settings->bools.add_null_drivers;
    struct string_list *s            = string_list_new();
+   bool add_null_entries            = true;
 
    if (!s || !len)
       goto error;
@@ -10550,14 +10548,13 @@ struct string_list *string_list_new_special(enum string_list_type type,
          {
             if (menu_ctx_drivers[i])
             {
-               bool add_null    = add_null_entries;
                const char *opt  = menu_ctx_drivers[i]->ident;
                *len            += strlen(opt) + 1;
 
-               if (!add_null)
-                  add_null = (i == 0) || !string_is_equal(opt, "null");
+               if (!add_null_entries)
+                  add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-               if (add_null)
+               if (add_null_entries)
                   string_list_append(s, opt, attr);
             }
          }
@@ -10566,14 +10563,13 @@ struct string_list *string_list_new_special(enum string_list_type type,
       case STRING_LIST_CAMERA_DRIVERS:
          for (i = 0; camera_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = camera_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
@@ -10596,14 +10592,13 @@ struct string_list *string_list_new_special(enum string_list_type type,
 #ifdef HAVE_WIFI
          for (i = 0; wifi_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = wifi_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
@@ -10611,70 +10606,65 @@ struct string_list *string_list_new_special(enum string_list_type type,
       case STRING_LIST_LOCATION_DRIVERS:
          for (i = 0; location_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = location_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_AUDIO_DRIVERS:
          for (i = 0; audio_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = audio_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_AUDIO_RESAMPLER_DRIVERS:
          for (i = 0; audio_resampler_driver_find_handle(i); i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = audio_resampler_driver_find_ident(i);
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_VIDEO_DRIVERS:
          for (i = 0; video_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = video_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_INPUT_DRIVERS:
          for (i = 0; input_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = input_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
@@ -10682,14 +10672,13 @@ struct string_list *string_list_new_special(enum string_list_type type,
 #ifdef HAVE_HID
          for (i = 0; hid_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = hid_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
 #endif
@@ -10697,42 +10686,39 @@ struct string_list *string_list_new_special(enum string_list_type type,
       case STRING_LIST_INPUT_JOYPAD_DRIVERS:
          for (i = 0; joypad_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = joypad_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_RECORD_DRIVERS:
          for (i = 0; record_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = record_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_MIDI_DRIVERS:
          for (i = 0; midi_driver_find_handle(i); i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = midi_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
+            if (!add_null_entries)
+               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
 
-            if (add_null)
+            if (add_null_entries)
                string_list_append(s, opt, attr);
          }
          break;
@@ -34342,8 +34328,7 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
 bool driver_ctl(enum driver_ctl_state state, void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
-   bool      add_null_entries  = settings->bools.add_null_drivers;
+   bool      add_null_entries  = true;
 
    switch (state)
    {

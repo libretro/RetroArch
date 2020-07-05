@@ -3129,10 +3129,6 @@ MSG_HASH(
    "video_shared_context"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ADD_NULL_DRIVERS,
-   "ignore_null_drivers"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SMOOTH,
    "video_smooth"
    )
