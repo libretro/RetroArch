@@ -18,6 +18,7 @@ int main(int argc, const char *argv[]) {
 		sprintf(uri, "psgm:play?titleid=%s&param=%s&param2=%s", "RETROVITA", core, rom);
 
 		sceAppMgrLaunchAppByUri(0xFFFFF, uri);
+		sceKernelDelayThread(1000);
 	}
 	
 	sceKernelExitProcess(0);
