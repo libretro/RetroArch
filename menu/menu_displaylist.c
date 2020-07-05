@@ -10897,6 +10897,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      PARSE_ACTION, false) == 0)
                   count++;
 
+#ifdef HAVE_CDROM
             if (settings->bools.menu_show_load_disc)
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
@@ -10912,6 +10913,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         PARSE_ACTION, false) == 0)
                   count++;
             }
+#endif
 
             if ((string_is_equal(menu_ident, "rgui") ||
                  string_is_equal(menu_ident, "glui")) &&
@@ -10928,11 +10930,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                      PARSE_ACTION, false) == 0)
                   count++;
+#ifdef HAVE_NETWORKING
             if (settings->bools.menu_content_show_netplay)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                      MENU_ENUM_LABEL_NETPLAY,
                      PARSE_ACTION, false) == 0)
                   count++;
+#endif
 #ifdef HAVE_ONLINE_UPDATER
             if (settings->bools.menu_show_online_updater)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
@@ -10948,11 +10952,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_INFORMATION_LIST,
                      PARSE_ACTION, false) == 0)
                   count++;
+#ifdef HAVE_CONFIGFILE
             if (settings->bools.menu_show_configurations)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                     MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
-                     PARSE_ACTION, false) == 0)
+                        MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
+                        PARSE_ACTION, false) == 0)
                   count++;
+#endif
             if (settings->bools.menu_show_help)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                      MENU_ENUM_LABEL_HELP_LIST,
