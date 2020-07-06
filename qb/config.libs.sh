@@ -527,14 +527,14 @@ else
 fi
 
 if [ "$HAVE_MENU" != 'no' ]; then
-   if [ "$HAVE_OPENGL" = 'no' ]      && 
+   if [ "$HAVE_OPENGL" = 'no' ]      &&
       [ "$HAVE_OPENGL1" = 'no' ]     &&
-      [ "$HAVE_OPENGLES" = 'no' ]    && 
+      [ "$HAVE_OPENGLES" = 'no' ]    &&
       [ "$HAVE_OPENGL_CORE" = 'no' ] &&
-      [ "$HAVE_VULKAN" = 'no' ]      && 
-      [ "$HAVE_D3D10" = 'no' ]       && 
-      [ "$HAVE_D3D11" = 'no' ]       && 
-      [ "$HAVE_D3D12" = 'no' ]       && 
+      [ "$HAVE_VULKAN" = 'no' ]      &&
+      [ "$HAVE_D3D10" = 'no' ]       &&
+      [ "$HAVE_D3D11" = 'no' ]       &&
+      [ "$HAVE_D3D12" = 'no' ]       &&
       [ "$HAVE_METAL" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
@@ -570,10 +570,10 @@ if [ "$HAVE_GLSLANG" != no ]; then
       glslang/Public/ShaderLang.h \
       glslang/SPIRV/GlslangToSpv.h
 
-   check_lib cxx GLSLANG -lglslang
+   check_lib cxx GLSLANG -lglslang '' '-lSPIRV'
    check_lib cxx GLSLANG_OSDEPENDENT -lOSDependent
    check_lib cxx GLSLANG_OGLCOMPILER -lOGLCompiler
-   check_lib cxx GLSLANG_HLSL -lHLSL
+   check_lib cxx GLSLANG_HLSL -lHLSL '' '-lglslang -lSPIRV'
    check_lib cxx GLSLANG_SPIRV -lSPIRV
    check_lib cxx GLSLANG_SPIRV_TOOLS_OPT -lSPIRV-Tools-opt
    check_lib cxx GLSLANG_SPIRV_TOOLS -lSPIRV-Tools
