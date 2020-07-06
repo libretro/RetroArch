@@ -1298,26 +1298,12 @@ static const camera_driver_t *camera_drivers[] = {
 #define INPUT_REMOTE_KEY_PRESSED(key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 #endif
 
-/**
- * check_input_driver_block_hotkey:
- *
- * Checks if 'hotkey enable' key is pressed.
- *
- * If we haven't bound anything to this,
- * always allow hotkeys.
-
- * If we hold ENABLE_HOTKEY button, block all libretro input to allow
- * hotkeys to be bound to same keys as RetroPad.
- **/
-#define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind, autoconf_bind) \
+#define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind) \
 ( \
          (((normal_bind)->key      != RETROK_UNKNOWN) \
       || ((normal_bind)->mbutton   != NO_BTN) \
       || ((normal_bind)->joykey    != NO_BTN) \
-      || ((normal_bind)->joyaxis   != AXIS_NONE) \
-      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
-      || ((autoconf_bind)->joykey  != NO_BTN) \
-      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
+      || ((normal_bind)->joyaxis   != AXIS_NONE)) \
 )
 
 #define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
@@ -25664,8 +25650,15 @@ static void input_keys_pressed(
 {
    unsigned i;
 
-   if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
+   if (     CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm)
+         || CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_auto))
    {
+      /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
+       * hotkeys to be bound to same keys as RetroPad.
+       *
+       * If we haven't bound anything to this,
+       * always allow hotkeys.
+       **/
       if (  p_rarch->current_input->input_state(
             p_rarch->current_input_data, joypad_info,
             &binds[port], port, RETRO_DEVICE_JOYPAD, 0,
@@ -25693,8 +25686,8 @@ static void input_keys_pressed(
 
       /* Allows rarch_focus_toggle hotkey to still work
        * even though every hotkey is blocked */
-      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(
-               focus_normal, focus_binds_auto))
+      if (     CHECK_INPUT_DRIVER_BLOCK_HOTKEY(focus_normal)
+            || CHECK_INPUT_DRIVER_BLOCK_HOTKEY(focus_binds_auto))
       {
          if (p_rarch->current_input->input_state(
                   p_rarch->current_input_data,
