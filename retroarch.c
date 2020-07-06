@@ -10548,7 +10548,10 @@ struct string_list *string_list_new_special(enum string_list_type type,
             const char *opt  = menu_ctx_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            string_list_append(s, opt, attr);
+            /* Don't allow the user to set menu driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
+               string_list_append(s, opt, attr);
          }
          break;
 #endif
@@ -10616,7 +10619,10 @@ struct string_list *string_list_new_special(enum string_list_type type,
             const char *opt  = video_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            string_list_append(s, opt, attr);
+            /* Don't allow the user to set video driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
+               string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_INPUT_DRIVERS:
@@ -10625,7 +10631,10 @@ struct string_list *string_list_new_special(enum string_list_type type,
             const char *opt  = input_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            string_list_append(s, opt, attr);
+            /* Don't allow the user to set input driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
+               string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_INPUT_HID_DRIVERS:
@@ -10635,7 +10644,10 @@ struct string_list *string_list_new_special(enum string_list_type type,
             const char *opt  = hid_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            string_list_append(s, opt, attr);
+            /* Don't allow the user to set input HID driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
+               string_list_append(s, opt, attr);
          }
 #endif
          break;
@@ -10645,7 +10657,10 @@ struct string_list *string_list_new_special(enum string_list_type type,
             const char *opt  = joypad_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            string_list_append(s, opt, attr);
+            /* Don't allow the user to set input joypad driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
+               string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_RECORD_DRIVERS:
