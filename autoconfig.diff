@@ -1,0 +1,1591 @@
+diff --git a/Makefile.common b/Makefile.common
+index 69ed7c2e99..e05cabba5e 100644
+--- a/Makefile.common
++++ b/Makefile.common
+@@ -255,10 +255,16 @@ DEFINES += -DHAVE_REWIND
+ OBJ     += managers/state_manager.o
+ endif
+ 
++OBJ += gfx/drivers_font_renderer/bitmapfont.o
++
++ifeq ($(HAVE_AUTOCONFIG), 1)
++defines += -DHAVE_AUTOCONFIG
+ OBJ += \
+-       gfx/drivers_font_renderer/bitmapfont.o \
+        tasks/task_autodetect.o \
+-       input/input_autodetect_builtin.o \
++       input/input_autodetect_builtin.o
++endif
++
++OBJ += \
+        input/input_keymaps.o \
+        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
+        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
+diff --git a/configuration.c b/configuration.c
+index 062085d892..c6c647e777 100644
+--- a/configuration.c
++++ b/configuration.c
+@@ -1325,8 +1325,10 @@ static struct config_path_setting *populate_settings_path(
+          settings->paths.directory_playlist, true, NULL, true);
+    SETTING_PATH("runtime_log_directory",
+          settings->paths.directory_runtime_log, true, NULL, true);
++#ifdef HAVE_AUTOCONFIG
+    SETTING_PATH("joypad_autoconfig_dir",
+          settings->paths.directory_autoconfig, false, NULL, true);
++#endif
+    SETTING_PATH("audio_filter_dir",
+          settings->paths.directory_audio_filter, true, NULL, true);
+    SETTING_PATH("savefile_directory",
+@@ -1680,7 +1682,9 @@ static struct config_bool_setting *populate_settings_bool(
+    SETTING_BOOL("sort_savestates_enable",       &settings->bools.sort_savestates_enable, true, default_sort_savestates_enable, false);
+    SETTING_BOOL("config_save_on_exit",          &settings->bools.config_save_on_exit, true, DEFAULT_CONFIG_SAVE_ON_EXIT, false);
+    SETTING_BOOL("show_hidden_files",            &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
++#ifdef HAVE_AUTOCONFIG
+    SETTING_BOOL("input_autodetect_enable",      &settings->bools.input_autodetect_enable, true, input_autodetect_enable, false);
++#endif
+    SETTING_BOOL("audio_rate_control",           &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
+ #ifdef HAVE_WASAPI
+    SETTING_BOOL("audio_wasapi_exclusive_mode",  &settings->bools.audio_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
+@@ -2266,7 +2270,9 @@ void config_set_defaults(void *data)
+ #ifdef HAVE_CONFIGFILE
+    input_remapping_set_defaults(true);
+ #endif
++#ifdef HAVE_AUTOCONFIG
+    input_autoconfigure_reset();
++#endif
+ 
+    /* Verify that binds are in proper order. */
+    for (i = 0; i < MAX_USERS; i++)
+@@ -2322,7 +2328,9 @@ void config_set_defaults(void *data)
+    *settings->paths.directory_thumbnails = '\0';
+    *settings->paths.directory_playlist = '\0';
+    *settings->paths.directory_runtime_log = '\0';
++#ifdef HAVE_AUTOCONFIG
+    *settings->paths.directory_autoconfig = '\0';
++#endif
+ #ifdef HAVE_MENU
+    *settings->paths.directory_menu_content = '\0';
+    *settings->paths.directory_menu_config = '\0';
+@@ -2488,10 +2496,12 @@ void config_set_defaults(void *data)
+             settings->paths.directory_menu_content,
+             g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]);
+ #endif
++#ifdef HAVE_AUTOCONFIG
+    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]))
+       configuration_set_string(settings,
+             settings->paths.directory_autoconfig,
+             g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]);
++#endif
+ 
+    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]))
+       dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
+@@ -3805,6 +3815,7 @@ static void video_driver_save_settings(config_file_t *conf)
+          global->console.screen.flicker_filter_index);
+ }
+ 
++#ifdef HAVE_AUTOCONFIG
+ /**
+  * config_save_autoconf_profile:
+  * @path            : Path that shall be written to.
+@@ -3920,6 +3931,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
+    free(autoconf_file);
+    return ret;
+ }
++#endif
+ 
+ /**
+  * config_save_file:
+diff --git a/configuration.h b/configuration.h
+index 3d21ae781e..53d1d300d5 100644
+--- a/configuration.h
++++ b/configuration.h
+@@ -135,7 +135,9 @@ typedef struct settings
+ 
+       /* Input */
+       bool input_remap_binds_enable;
++#ifdef HAVE_AUTOCONFIG
+       bool input_autodetect_enable;
++#endif
+       bool input_overlay_enable;
+       bool input_overlay_enable_autopreferred;
+       bool input_overlay_hide_in_menu;
+@@ -720,7 +722,9 @@ typedef struct settings
+       char path_rgui_theme_preset[PATH_MAX_LENGTH];
+ 
+       char directory_audio_filter[PATH_MAX_LENGTH];
++#ifdef HAVE_AUTOCONFIG
+       char directory_autoconfig[PATH_MAX_LENGTH];
++#endif
+       char directory_video_filter[PATH_MAX_LENGTH];
+       char directory_video_shader[PATH_MAX_LENGTH];
+       char directory_content_history[PATH_MAX_LENGTH];
+@@ -884,6 +888,7 @@ bool config_unload_override(void);
+ bool config_load_remap(const char *directory_input_remapping,
+       void *data);
+ 
++#ifdef HAVE_AUTOCONFIG
+ /**
+  * config_save_autoconf_profile:
+  * @path            : Path that shall be written to.
+@@ -891,6 +896,7 @@ bool config_load_remap(const char *directory_input_remapping,
+  * Writes a controller autoconf file to disk.
+  **/
+ bool config_save_autoconf_profile(const char *path, unsigned user);
++#endif
+ 
+ /**
+  * config_save_file:
+diff --git a/file_path_special.c b/file_path_special.c
+index b1057e5988..6f6d0b679e 100644
+--- a/file_path_special.c
++++ b/file_path_special.c
+@@ -146,12 +146,14 @@ void fill_pathname_application_special(char *s,
+    switch (type)
+    {
+       case APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG:
++#ifdef HAVE_AUTOCONFIG
+          {
+             settings_t *settings       = config_get_ptr();
+             const char *dir_autoconfig = settings->paths.directory_autoconfig;
+             const char *joypad_driver  = settings->arrays.input_joypad_driver;
+             fill_pathname_join(s, dir_autoconfig, joypad_driver, len);
+          }
++#endif
+          break;
+       case APPLICATION_SPECIAL_DIRECTORY_CONFIG:
+          {
+diff --git a/input/drivers/android_input.c b/input/drivers/android_input.c
+index e60ffaedcc..5c11956476 100644
+--- a/input/drivers/android_input.c
++++ b/input/drivers/android_input.c
+@@ -1196,6 +1196,7 @@ static void handle_hotplug(android_input_t *android,
+    if (*port < 0)
+       *port = android->pads_connected;
+ 
++#ifdef HAVE_AUTOCONFIG
+    input_autoconfigure_connect(
+          name_buf,
+          NULL,
+@@ -1203,6 +1204,7 @@ static void handle_hotplug(android_input_t *android,
+          *port,
+          vendorId,
+          productId);
++#endif
+ 
+    android->pad_states[android->pads_connected].id   = id;
+    android->pad_states[android->pads_connected].port = *port;
+diff --git a/input/drivers/psl1ght_input.c b/input/drivers/psl1ght_input.c
+index 917a72311d..06398420b0 100644
+--- a/input/drivers/psl1ght_input.c
++++ b/input/drivers/psl1ght_input.c
+@@ -382,18 +382,6 @@ static const char *ps3_joypad_name(unsigned pad)
+    return "SixAxis Controller";
+ }
+ 
+-static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
+-{
+-   input_autoconfigure_connect(
+-         ps3_joypad_name(autoconf_pad),
+-         NULL,
+-         ps3_joypad.ident,
+-         autoconf_pad,
+-         0,
+-         0
+-         );
+-}
+-
+ static bool ps3_joypad_init(void *data)
+ {
+    (void)data;
+@@ -503,12 +491,23 @@ static void ps3_joypad_poll(void)
+ 
+       if (!pads_connected[port] && padinfo.status[port])
+       {
+-         ps3_joypad_autodetect_add(port);
++#ifdef HAVE_AUTOCONFIG
++         input_autoconfigure_connect(
++               ps3_joypad_name(port),
++               NULL,
++               ps3_joypad.ident,
++               port,
++               0,
++               0
++               );
++#endif
+          pads_connected[port] = 1;
+       }
+       else
+       {
++#ifdef HAVE_AUTOCONFIG
+          input_autoconfigure_disconnect(port, ps3_joypad.ident);
++#endif
+          pads_connected[port] = 0;
+       }
+ 
+diff --git a/input/drivers/qnx_input.c b/input/drivers/qnx_input.c
+index 4cfdaa8670..9781332f06 100644
+--- a/input/drivers/qnx_input.c
++++ b/input/drivers/qnx_input.c
+@@ -245,6 +245,7 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
+    {
+       controller->port = qnx->pads_connected;
+ 
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_connect(
+             name_buf,
+             NULL,
+@@ -252,6 +253,7 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
+             controller->port,
+             *controller->vid,
+             *controller->pid);
++#endif
+ 
+       qnx->pads_connected++;
+    }
+diff --git a/input/drivers_hid/iohidmanager_hid.c b/input/drivers_hid/iohidmanager_hid.c
+index da2a99f16a..f340649365 100644
+--- a/input/drivers_hid/iohidmanager_hid.c
++++ b/input/drivers_hid/iohidmanager_hid.c
+@@ -457,7 +457,9 @@ static void iohidmanager_hid_device_remove(void *data,
+ 
+    if (hid && adapter && (adapter->slot < MAX_USERS))
+    {
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_disconnect(adapter->slot, adapter->name);
++#endif
+ 
+       hid->buttons[adapter->slot] = 0;
+       memset(hid->axes[adapter->slot], 0, sizeof(hid->axes));
+@@ -545,22 +547,6 @@ static void iohidmanager_hid_device_get_product_string(
+       CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
+ }
+ 
+-static void iohidmanager_hid_device_add_autodetect(unsigned idx,
+-      const char *device_name, const char *driver_name,
+-      uint16_t dev_vid, uint16_t dev_pid)
+-{
+-   input_autoconfigure_connect(
+-         device_name,
+-         NULL,
+-         driver_name,
+-         idx,
+-         dev_vid,
+-         dev_pid
+-         );
+-
+-   RARCH_LOG("Port %d: %s.\n", idx, device_name);
+-}
+-
+ #if defined(__ppc__) || defined(__ppc64__)
+ static void iohidmanager_hid_device_add(IOHIDDeviceRef device,
+       iohidmanager_hid_t* hid)
+@@ -873,8 +859,16 @@ static void iohidmanager_hid_device_add_device(
+       tmpButtons              = next;
+    }
+ 
+-   iohidmanager_hid_device_add_autodetect(adapter->slot,
+-         adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);
++#ifdef HAVE_AUTOCONFIG
++   input_autoconfigure_connect(
++         adapter->name,
++         NULL,
++         iohidmanager_hid.ident,
++         adapter->slot,
++         dev_vid,
++         dev_pid
++         );
++#endif
+ 
+    return;
+ 
+diff --git a/input/drivers_hid/libusb_hid.c b/input/drivers_hid/libusb_hid.c
+index 97ae624260..2db8170c8c 100644
+--- a/input/drivers_hid/libusb_hid.c
++++ b/input/drivers_hid/libusb_hid.c
+@@ -75,6 +75,7 @@ struct libusb_adapter
+    struct libusb_adapter *next;
+ };
+ 
++/* TODO/FIXME - static global variable */
+ static struct libusb_adapter adapters;
+ 
+ static void adapter_thread(void *data)
+@@ -88,9 +89,9 @@ static void adapter_thread(void *data)
+ 
+    while (!adapter->quitting)
+    {
+-      size_t send_command_size;
+       int tmp;
+       int report_number;
++      size_t send_command_size;
+       int size = 0;
+ 
+       slock_lock(adapter->send_control_lock);
+@@ -144,20 +145,6 @@ static void libusb_hid_device_send_control(void *data,
+    slock_unlock(adapter->send_control_lock);
+ }
+ 
+-static void libusb_hid_device_add_autodetect(unsigned idx,
+-      const char *device_name, const char *driver_name,
+-      uint16_t dev_vid, uint16_t dev_pid)
+-{
+-   input_autoconfigure_connect(
+-         device_name,
+-         NULL,
+-         driver_name,
+-         idx,
+-         dev_vid,
+-         dev_pid
+-         );
+-}
+-
+ static void libusb_get_description(struct libusb_device *device,
+       struct libusb_adapter *adapter)
+ {
+@@ -339,10 +326,18 @@ static int add_adapter(void *data, struct libusb_device *dev)
+    RARCH_LOG("Device 0x%p attached (VID/PID: %04x:%04x).\n",
+          adapter->device, desc.idVendor, desc.idProduct);
+ 
+-   libusb_hid_device_add_autodetect(adapter->slot,
+-         device_name, libusb_hid.ident, desc.idVendor, desc.idProduct);
++#ifdef HAVE_AUTOCONFIG
++   input_autoconfigure_connect(
++         device_name,
++         NULL,
++         libusb_hid.ident,
++         adapter->slot,
++         desc.idVendor,
++         desc.idProduct
++         );
++#endif
+ 
+-   adapter->hid = hid;
++   adapter->hid    = hid;
+    adapter->thread = sthread_create(adapter_thread, adapter);
+ 
+    if (!adapter->thread)
+@@ -382,7 +377,9 @@ static int remove_adapter(void *data, struct libusb_device *dev)
+       struct libusb_adapter *new_next = NULL;
+       const char                *name = (const char*)adapter->next->name;
+ 
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_disconnect(adapter->slot, name);
++#endif
+ 
+       adapter->next->quitting = true;
+       sthread_join(adapter->next->thread);
+diff --git a/input/drivers_hid/wiiusb_hid.c b/input/drivers_hid/wiiusb_hid.c
+index 554cdc234d..7aa22c2698 100644
+--- a/input/drivers_hid/wiiusb_hid.c
++++ b/input/drivers_hid/wiiusb_hid.c
+@@ -139,19 +139,6 @@ static void wiiusb_hid_device_send_control(void *data,
+    adapter->send_control_type = control_type;
+ }
+ 
+-static void wiiusb_hid_device_add_autodetect(unsigned idx,
+-      const char *device_name, const char *driver_name,
+-      uint16_t dev_vid, uint16_t dev_pid)
+-{
+-   input_autoconfigure_connect(
+-         device_name,
+-         NULL,
+-         driver_name,
+-         idx,
+-         dev_vid,
+-         dev_pid);
+-}
+-
+ static void wiiusb_get_description(usb_device_entry *device,
+       struct wiiusb_adapter *adapter, usb_devdesc *devdesc)
+ {
+@@ -215,7 +202,9 @@ static int32_t wiiusb_hid_release_adapter(struct wiiusb_adapter *adapter)
+    hid  = adapter->hid;
+    name = wiiusb_hid_joypad_name(hid, adapter->slot);
+ 
++#ifdef HAVE_AUTOCONFIG
+    input_autoconfigure_disconnect(adapter->slot, name);
++#endif
+ 
+    pad_connection_pad_deinit(&hid->connections[adapter->slot], adapter->slot);
+ 
+@@ -379,24 +368,45 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
+    if (isRetrodeGamepad(desc))
+    {
+        /* Retrode port #1 */
+-       RARCH_LOG("Interface Retrode1 gamepad slot: %d\n", adapter->slot);
+-       wiiusb_hid_device_add_autodetect(adapter->slot, device_name, wiiusb_hid.ident, desc.idVendor, desc.idProduct);
++#ifdef HAVE_AUTOCONFIG
++      input_autoconfigure_connect(
++            device_name,
++            NULL,
++            wiiusb_hid.ident,
++            adapter->slot,
++            desc.idVendor,
++            desc.idProduct);
++#endif
+        /* Retrode port #2, #3, #4 */
+        for (i = 2; i <= 4; i++)
+        {
+            slot1 = pad_connection_pad_init(hid->connections, "hid", desc.idVendor, desc.idProduct, adapter, &wiiusb_hid);
+            if (slot1 == -1)
+                RARCH_LOG("No slot free for Retrode%d gamepad\n", i);
++#ifdef HAVE_AUTOCONFIG
+            else
+            {
+-               RARCH_LOG("Interface Retrode%d gamepad slot: %d\n", i, slot1);
+-               wiiusb_hid_device_add_autodetect(slot1, device_name, wiiusb_hid.ident, desc.idVendor, desc.idProduct);
++              input_autoconfigure_connect(
++                    device_name,
++                    NULL,
++                    wiiusb_hid.ident,
++                    slot1,
++                    desc.idVendor,
++                    desc.idProduct);
+            }
++#endif
+        }
+    }
++#ifdef HAVE_AUTOCONFIG
+    else
+-       wiiusb_hid_device_add_autodetect(adapter->slot,
+-             device_name, wiiusb_hid.ident, desc.idVendor, desc.idProduct);
++      input_autoconfigure_connect(
++            device_name,
++            NULL,
++            wiiusb_hid.ident,
++            adapter->slot,
++            desc.idVendor,
++            desc.idProduct);
++#endif
+ 
+    USB_FreeDescriptors(&desc);
+    USB_DeviceRemovalNotifyAsync(adapter->handle, wiiusb_hid_removal_cb, adapter);
+diff --git a/input/drivers_joypad/ctr_joypad.c b/input/drivers_joypad/ctr_joypad.c
+index a66ea7be07..9f7ec1d944 100644
+--- a/input/drivers_joypad/ctr_joypad.c
++++ b/input/drivers_joypad/ctr_joypad.c
+@@ -37,21 +37,18 @@ static const char *ctr_joypad_name(unsigned pad)
+    return "3DS Controller";
+ }
+ 
+-static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
++static bool ctr_joypad_init(void *data)
+ {
++#ifdef HAVE_AUTOCONFIG
+    input_autoconfigure_connect(
+-         ctr_joypad_name(autoconf_pad),
++         ctr_joypad_name(0),
+          NULL,
+          ctr_joypad.ident,
+-         autoconf_pad,
++         0,
+          0,
+          0
+          );
+-}
+-
+-static bool ctr_joypad_init(void *data)
+-{
+-   ctr_joypad_autodetect_add(0);
++#endif
+ 
+    (void)data;
+ 
+diff --git a/input/drivers_joypad/dinput_joypad.c b/input/drivers_joypad/dinput_joypad.c
+index d7fba8d1ca..4522032103 100644
+--- a/input/drivers_joypad/dinput_joypad.c
++++ b/input/drivers_joypad/dinput_joypad.c
+@@ -310,6 +310,7 @@ static const char *dinput_joypad_name(unsigned pad)
+    return NULL;
+ }
+ 
++#ifdef HAVE_AUTOCONFIG
+ static int32_t dinput_joypad_vid(unsigned pad)
+ {
+     return g_pads[pad].vid;
+@@ -327,6 +328,7 @@ static const char *dinput_joypad_friendly_name(unsigned pad)
+ 
+    return NULL;
+ }
++#endif
+ 
+ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
+ {
+@@ -396,6 +398,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
+ 
+    dinput_create_rumble_effects(&g_pads[g_joypad_cnt]);
+ 
++#ifdef HAVE_AUTOCONFIG
+ #ifdef HAVE_XINPUT
+    if (!is_xinput_pad)
+ #endif
+@@ -408,6 +411,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
+             dinput_joypad_vid(g_joypad_cnt),
+             dinput_joypad_pid(g_joypad_cnt));
+    }
++#endif
+ 
+ #ifdef HAVE_XINPUT
+ enum_iteration_done:
+@@ -627,7 +631,11 @@ static void dinput_joypad_poll(void)
+             sizeof(DIJOYSTATE2), &pad->joy_state);
+ 
+       if (ret == DIERR_INPUTLOST || ret == DIERR_NOTACQUIRED)
++      {
++#ifdef HAVE_AUTOCONFIG
+          input_autoconfigure_disconnect(i, g_pads[i].joy_friendly_name);
++#endif
++      }
+    }
+ }
+ 
+diff --git a/input/drivers_joypad/dos_joypad.c b/input/drivers_joypad/dos_joypad.c
+index 49b53be44a..c3bd738d53 100644
+--- a/input/drivers_joypad/dos_joypad.c
++++ b/input/drivers_joypad/dos_joypad.c
+@@ -141,23 +141,20 @@ static const char *dos_joypad_name(unsigned pad)
+    return "DOS Controller";
+ }
+ 
+-static void dos_joypad_autodetect_add(unsigned autoconf_pad)
++static bool dos_joypad_init(void *data)
+ {
++   hook_keyb_int();
++
++#ifdef HAVE_AUTOCONFIG
+    input_autoconfigure_connect(
+-         dos_joypad_name(autoconf_pad),
++         dos_joypad_name(0),
+          NULL,
+          dos_joypad.ident,
+-         autoconf_pad,
++         0,
+          0,
+          0
+          );
+-}
+-
+-static bool dos_joypad_init(void *data)
+-{
+-   hook_keyb_int();
+-
+-   dos_joypad_autodetect_add(0);
++#endif
+ 
+    (void)data;
+ 
+diff --git a/input/drivers_joypad/gx_joypad.c b/input/drivers_joypad/gx_joypad.c
+index be499fa45e..c371584e50 100644
+--- a/input/drivers_joypad/gx_joypad.c
++++ b/input/drivers_joypad/gx_joypad.c
+@@ -205,6 +205,7 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
+ {
+    pad_type[port] = ptype;
+ 
++#ifdef HAVE_AUTOCONFIG
+    if (ptype != WPAD_EXP_NOCONTROLLER)
+       input_autoconfigure_connect(
+             gx_joypad_name(port),
+@@ -214,6 +215,7 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
+             0,
+             0
+             );
++#endif
+ }
+ 
+ static void check_port0_active(uint8_t pad_count)
+@@ -230,14 +232,16 @@ static void check_port0_active(uint8_t pad_count)
+ #endif
+       settings->uints.input_joypad_map[0] = 0;
+                
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_connect(
+             gx_joypad_name(0),
+             NULL,
+             gx_joypad.ident,
+-            0, // port
++            0, /* port */
+             0,
+             0
+             );
++#endif
+ 
+       input_config_set_device_name(0, gx_joypad_name(0));
+    }
+diff --git a/input/drivers_joypad/linuxraw_joypad.c b/input/drivers_joypad/linuxraw_joypad.c
+index c43c50eae7..211ea486a5 100644
+--- a/input/drivers_joypad/linuxraw_joypad.c
++++ b/input/drivers_joypad/linuxraw_joypad.c
+@@ -48,10 +48,13 @@ struct linuxraw_joypad
+    char *ident;
+ };
+ 
++/* TODO/FIXME - static global variables */
+ static struct linuxraw_joypad linuxraw_pads[MAX_USERS];
+ static int linuxraw_epoll                              = 0;
+ static int linuxraw_inotify                            = 0;
++#ifdef HAVE_AUTOCONFIG
+ static bool linuxraw_hotplug                           = false;
++#endif
+ 
+ static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
+ {
+@@ -168,9 +171,11 @@ retry:
+                {
+                   if (linuxraw_pads[idx].fd >= 0)
+                   {
++#ifdef HAVE_AUTOCONFIG
+                      if (linuxraw_hotplug)
+                         input_autoconfigure_disconnect(idx,
+                               linuxraw_pads[idx].ident);
++#endif
+ 
+                      close(linuxraw_pads[idx].fd);
+                      linuxraw_pads[idx].buttons = 0;
+@@ -179,6 +184,7 @@ retry:
+                      linuxraw_pads[idx].fd = -1;
+                      *linuxraw_pads[idx].ident = '\0';
+ 
++#ifdef HAVE_AUTOCONFIG
+                      input_autoconfigure_connect(
+                            NULL,
+                            NULL,
+@@ -186,6 +192,7 @@ retry:
+                            idx,
+                            0,
+                            0);
++#endif
+                   }
+                }
+                /* Sometimes, device will be created before
+@@ -200,6 +207,8 @@ retry:
+ 
+                   if (     !string_is_empty(linuxraw_pads[idx].ident)
+                         && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
++                  {
++#ifdef HAVE_AUTOCONFIG
+                      input_autoconfigure_connect(
+                            linuxraw_pads[idx].ident,
+                            NULL,
+@@ -207,6 +216,8 @@ retry:
+                            idx,
+                            0,
+                            0);
++#endif
++                  }
+                }
+             }
+          }
+@@ -238,6 +249,7 @@ static bool linuxraw_joypad_init(void *data)
+ 
+       snprintf(path, sizeof(path), "/dev/input/js%u", i);
+ 
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_connect(
+             pad->ident,
+             NULL,
+@@ -245,6 +257,7 @@ static bool linuxraw_joypad_init(void *data)
+             i,
+             0,
+             0);
++#endif
+ 
+       if (linuxraw_joypad_init_pad(path, pad))
+          linuxraw_poll_pad(pad);
+@@ -270,7 +283,9 @@ static bool linuxraw_joypad_init(void *data)
+       }
+    }
+ 
++#ifdef HAVE_AUTOCONFIG
+    linuxraw_hotplug = true;
++#endif
+ 
+    return true;
+ }
+@@ -298,7 +313,9 @@ static void linuxraw_joypad_destroy(void)
+       close(linuxraw_epoll);
+    linuxraw_epoll = -1;
+ 
++#ifdef HAVE_AUTOCONFIG
+    linuxraw_hotplug = false;
++#endif
+ }
+ 
+ static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
+diff --git a/input/drivers_joypad/mfi_joypad.m b/input/drivers_joypad/mfi_joypad.m
+index bcbbee234d..2c6d5a517b 100644
+--- a/input/drivers_joypad/mfi_joypad.m
++++ b/input/drivers_joypad/mfi_joypad.m
+@@ -222,11 +222,6 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
+     }
+ }
+ 
+-static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
+-{
+-    input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, autoconf_pad, 0, 0);
+-}
+-
+ static void apple_gamecontroller_joypad_connect(GCController *controller)
+ {
+     signed desired_index = (int32_t)controller.playerIndex;
+@@ -284,7 +279,9 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
+         }
+ 
+         apple_gamecontroller_joypad_register(controller.gamepad);
+-        mfi_joypad_autodetect_add(controller.playerIndex);
++#ifdef HAVE_AUTOCONFIG
++        input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, controller.playerIndex, 0, 0);
++#endif
+     }
+ }
+ 
+@@ -299,7 +296,9 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
+     if ( [mfiControllers containsObject:controller] )
+     {
+         [mfiControllers removeObject:controller];
++#ifdef HAVE_AUTOCONFIG
+         input_autoconfigure_disconnect(pad, mfi_joypad.ident);
++#endif
+     }
+ }
+ 
+diff --git a/input/drivers_joypad/parport_joypad.c b/input/drivers_joypad/parport_joypad.c
+index 44eeb6784b..83e401dde2 100644
+--- a/input/drivers_joypad/parport_joypad.c
++++ b/input/drivers_joypad/parport_joypad.c
+@@ -300,6 +300,7 @@ static bool parport_joypad_init(void *data)
+          }
+       }
+ 
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_connect(
+             "Generic Parallel Port device",
+             NULL,
+@@ -308,6 +309,7 @@ static bool parport_joypad_init(void *data)
+             0,
+             0
+             );
++#endif
+    }
+ 
+    return true;
+diff --git a/input/drivers_joypad/ps2_joypad.c b/input/drivers_joypad/ps2_joypad.c
+index 86ca6069af..aaf9b6537d 100644
+--- a/input/drivers_joypad/ps2_joypad.c
++++ b/input/drivers_joypad/ps2_joypad.c
+@@ -65,12 +65,14 @@ static bool ps2_joypad_init(void *data)
+ 
+    for (port = 0; port < DEFAULT_MAX_PADS; port++)
+    {
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_connect( ps2_joypad_name(port),
+             NULL,
+             ps2_joypad.ident,
+             port,
+             0,
+             0);
++#endif
+ 
+       /* Port 0 -> Connector 1, Port 1 -> Connector 2 */
+       if((ret = padPortOpen(port, PS2_PAD_SLOT, padBuf[port])) == 0)
+diff --git a/input/drivers_joypad/ps3_joypad.c b/input/drivers_joypad/ps3_joypad.c
+index b2847fee9e..f38b942b3a 100644
+--- a/input/drivers_joypad/ps3_joypad.c
++++ b/input/drivers_joypad/ps3_joypad.c
+@@ -40,18 +40,6 @@ static const char *ps3_joypad_name(unsigned pad)
+    return "SixAxis Controller";
+ }
+ 
+-static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
+-{
+-   input_autoconfigure_connect(
+-         ps3_joypad_name(autoconf_pad),
+-         NULL,
+-         ps3_joypad.ident,
+-         autoconf_pad,
+-         0,
+-         0
+-         );
+-}
+-
+ static bool ps3_joypad_init(void *data)
+ {
+    (void)data;
+@@ -139,13 +127,24 @@ static void ps3_joypad_poll(void)
+       {
+          if ( (pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) == 0 )
+          {
++#ifdef HAVE_AUTOCONFIG
+             input_autoconfigure_disconnect(port, ps3_joypad.ident);
++#endif
+             pads_connected[port] = 0;
+          }
+          else if ((pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) > 0 )
+          {
+             pads_connected[port] = 1;
+-            ps3_joypad_autodetect_add(port);
++#ifdef HAVE_AUTOCONFIG
++            input_autoconfigure_connect(
++                  ps3_joypad_name(port),
++                  NULL,
++                  ps3_joypad.ident,
++                  port,
++                  0,
++                  0
++                  );
++#endif
+          }
+       }
+ 
+diff --git a/input/drivers_joypad/ps4_joypad.c b/input/drivers_joypad/ps4_joypad.c
+index 08ef34bcd8..9e3567d4a0 100644
+--- a/input/drivers_joypad/ps4_joypad.c
++++ b/input/drivers_joypad/ps4_joypad.c
+@@ -111,6 +111,7 @@ static bool ps4_joypad_init(void *data)
+                   ds_joypad_states[num_players].connected = true;
+                   ds_joypad_states[num_players].userId = userId;
+ 
++#ifdef HAVE_AUTOCONFIG
+                   input_autoconfigure_connect(
+                         ps4_joypad_name(num_players),
+                         NULL,
+@@ -118,6 +119,7 @@ static bool ps4_joypad_init(void *data)
+                         num_players,
+                         0,
+                         0);
++#endif
+                   num_players++;
+                }
+             }
+diff --git a/input/drivers_joypad/psp_joypad.c b/input/drivers_joypad/psp_joypad.c
+index 1a6b7219fa..789535d8cc 100644
+--- a/input/drivers_joypad/psp_joypad.c
++++ b/input/drivers_joypad/psp_joypad.c
+@@ -106,6 +106,7 @@ static bool psp_joypad_init(void *data)
+    memcpy(&old_ctrl_info, &curr_ctrl_info, sizeof(SceCtrlPortInfo));
+ #endif
+ 
++#ifdef HAVE_AUTOCONFIG
+    for (i = 0; i < players_count; i++)
+       input_autoconfigure_connect(
+             psp_joypad_name(i),
+@@ -115,6 +116,7 @@ static bool psp_joypad_init(void *data)
+             0,
+             0
+             );
++#endif
+ 
+    return true;
+ }
+@@ -211,9 +213,12 @@ static void psp_joypad_poll(void)
+                curr_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED)
+          {
+             memset(&actuators[player], 0, sizeof(SceCtrlActuator));
++#ifdef HAVE_AUTOCONFIG
+             input_autoconfigure_disconnect(player, psp_joypad.ident);
++#endif
+          }
+ 
++#ifdef HAVE_AUTOCONFIG
+          if (old_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED &&
+                curr_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED)
+             input_autoconfigure_connect(
+@@ -224,6 +229,7 @@ static void psp_joypad_poll(void)
+                   0,
+                   0
+                   );
++#endif
+       }
+       memcpy(&old_ctrl_info, &curr_ctrl_info, sizeof(SceCtrlPortInfo));
+    }
+diff --git a/input/drivers_joypad/qnx_joypad.c b/input/drivers_joypad/qnx_joypad.c
+index 586093607e..6d76a58245 100644
+--- a/input/drivers_joypad/qnx_joypad.c
++++ b/input/drivers_joypad/qnx_joypad.c
+@@ -27,10 +27,8 @@ static const char *qnx_joypad_name(unsigned pad)
+ 
+ static bool qnx_joypad_init(void *data)
+ {
++#ifdef HAVE_AUTOCONFIG
+    unsigned autoconf_pad;
+-
+-   (void)data;
+-
+    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
+       input_autoconfigure_connect(
+             qnx_joypad_name(autoconf_pad),
+@@ -40,6 +38,9 @@ static bool qnx_joypad_init(void *data)
+             0,
+             0
+             );
++#endif
++
++   (void)data;
+ 
+    return true;
+ }
+diff --git a/input/drivers_joypad/rwebpad_joypad.c b/input/drivers_joypad/rwebpad_joypad.c
+index 463a9d4aa6..74158195b7 100644
+--- a/input/drivers_joypad/rwebpad_joypad.c
++++ b/input/drivers_joypad/rwebpad_joypad.c
+@@ -45,6 +45,7 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
+       pid = 1;
+    }
+ 
++#ifdef HAVE_AUTOCONFIG
+    if (event_type == EMSCRIPTEN_EVENT_GAMEPADCONNECTED)
+       input_autoconfigure_connect(
+                gamepad_event->id,    /* name */
+@@ -56,6 +57,7 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
+    else if (event_type == EMSCRIPTEN_EVENT_GAMEPADDISCONNECTED)
+       input_autoconfigure_disconnect(gamepad_event->index,
+          rwebpad_joypad.ident);
++#endif
+ 
+    return EM_TRUE;
+ }
+diff --git a/input/drivers_joypad/sdl_joypad.c b/input/drivers_joypad/sdl_joypad.c
+index 40f6b2bdf0..7b705f7341 100644
+--- a/input/drivers_joypad/sdl_joypad.c
++++ b/input/drivers_joypad/sdl_joypad.c
+@@ -100,8 +100,6 @@ static void sdl_pad_connect(unsigned id)
+ {
+    sdl_joypad_t *pad          = (sdl_joypad_t*)&sdl_pads[id];
+    bool success               = false;
+-   int32_t product            = 0;
+-   int32_t vendor             = 0;
+ 
+ #ifdef HAVE_SDL2
+    SDL_JoystickGUID guid;
+@@ -133,25 +131,31 @@ static void sdl_pad_connect(unsigned id)
+       return;
+    }
+ 
++
++#ifdef HAVE_AUTOCONFIG
++   {
++      int32_t product = 0;
++      int32_t vendor  = 0;
+ #ifdef HAVE_SDL2
+-   guid       = SDL_JoystickGetGUID(pad->joypad);
+-   guid_ptr   = (uint16_t*)guid.data;
++      guid       = SDL_JoystickGetGUID(pad->joypad);
++      guid_ptr   = (uint16_t*)guid.data;
+ #ifdef __linux
+-   vendor     = guid_ptr[2];
+-   product    = guid_ptr[4];
++      vendor     = guid_ptr[2];
++      product    = guid_ptr[4];
+ #elif _WIN32
+-   vendor     = guid_ptr[0];
+-   product    = guid_ptr[1];
++      vendor     = guid_ptr[0];
++      product    = guid_ptr[1];
+ #endif
+ #endif
+-
+-   input_autoconfigure_connect(
+-         sdl_joypad_name(id),
+-         NULL,
+-         sdl_joypad.ident,
+-         id,
+-         vendor,
+-         product);
++      input_autoconfigure_connect(
++            sdl_joypad_name(id),
++            NULL,
++            sdl_joypad.ident,
++            id,
++            vendor,
++            product);
++   }
++#endif
+ 
+ #ifdef HAVE_SDL2
+    if (pad->controller)
+@@ -220,14 +224,18 @@ static void sdl_pad_disconnect(unsigned id)
+    if (sdl_pads[id].controller)
+    {
+       SDL_GameControllerClose(sdl_pads[id].controller);
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_disconnect(id, sdl_joypad.ident);
++#endif
+    }
+    else
+ #endif
+    if (sdl_pads[id].joypad)
+    {
+       SDL_JoystickClose(sdl_pads[id].joypad);
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_disconnect(id, sdl_joypad.ident);
++#endif
+    }
+ 
+    memset(&sdl_pads[id], 0, sizeof(sdl_pads[id]));
+diff --git a/input/drivers_joypad/switch_joypad.c b/input/drivers_joypad/switch_joypad.c
+index 5a998146e1..303bb4a6c3 100644
+--- a/input/drivers_joypad/switch_joypad.c
++++ b/input/drivers_joypad/switch_joypad.c
+@@ -37,17 +37,6 @@ static const char *switch_joypad_name(unsigned pad)
+    return "Switch Controller";
+ }
+ 
+-static void switch_joypad_autodetect_add(unsigned autoconf_pad)
+-{
+-   input_autoconfigure_connect(
+-            switch_joypad_name(autoconf_pad), /* name */
+-            NULL,                             /* display name */
+-            switch_joypad.ident,              /* driver */
+-            autoconf_pad,                     /* idx */
+-            0,                                /* vid */
+-            0);                               /* pid */
+-}
+-
+ static bool switch_joypad_init(void *data)
+ {
+ #ifdef HAVE_LIBNX
+@@ -63,7 +52,15 @@ static bool switch_joypad_init(void *data)
+ 
+    for (i = 0; i < DEFAULT_MAX_PADS; i++)
+    {
+-      switch_joypad_autodetect_add(i);
++#ifdef HAVE_AUTOCONFIG
++      input_autoconfigure_connect(
++            switch_joypad_name(i),            /* name */
++            NULL,                             /* display name */
++            switch_joypad.ident,              /* driver */
++            i,                                /* idx */
++            0,                                /* vid */
++            0);                               /* pid */
++#endif
+       hidInitializeVibrationDevices(
+             vibration_handles[i], 2, i,
+             TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+@@ -76,8 +73,22 @@ static bool switch_joypad_init(void *data)
+          2, CONTROLLER_HANDHELD, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+ #else
+    hid_init();
+-   switch_joypad_autodetect_add(0);
+-   switch_joypad_autodetect_add(1);
++#ifdef HAVE_AUTOCONFIG
++   input_autoconfigure_connect(
++         switch_joypad_name(0),            /* name */
++         NULL,                             /* display name */
++         switch_joypad.ident,              /* driver */
++         0,                                /* idx */
++         0,                                /* vid */
++         0);                               /* pid */
++   input_autoconfigure_connect(
++         switch_joypad_name(1),            /* name */
++         NULL,                             /* display name */
++         switch_joypad.ident,              /* driver */
++         1,                                /* idx */
++         0,                                /* vid */
++         0);                               /* pid */
++#endif
+ #endif
+ 
+    return true;
+diff --git a/input/drivers_joypad/udev_joypad.c b/input/drivers_joypad/udev_joypad.c
+index 31ba12101c..ca2cec2462 100644
+--- a/input/drivers_joypad/udev_joypad.c
++++ b/input/drivers_joypad/udev_joypad.c
+@@ -237,6 +237,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
+ 
+    if (!string_is_empty(pad->ident))
+    {
++#ifdef HAVE_AUTOCONFIG
+       input_autoconfigure_connect(
+                pad->ident,
+                NULL,
+@@ -244,6 +245,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char
+                p,
+                pad->vid,
+                pad->pid);
++#endif
+ 
+       ret = 1;
+    }
+@@ -335,7 +337,9 @@ static void udev_joypad_remove_device(const char *path)
+       if (     !string_is_empty(udev_pads[i].path)
+             &&  string_is_equal(udev_pads[i].path, path))
+       {
++#ifdef HAVE_AUTOCONFIG
+          input_autoconfigure_disconnect(i, udev_pads[i].ident);
++#endif
+          udev_free_pad(i);
+          break;
+       }
+diff --git a/input/drivers_joypad/xdk_joypad.c b/input/drivers_joypad/xdk_joypad.c
+index 1d88746d65..6ad5534adc 100644
+--- a/input/drivers_joypad/xdk_joypad.c
++++ b/input/drivers_joypad/xdk_joypad.c
+@@ -46,25 +46,20 @@ static const char *xdk_joypad_name(unsigned pad)
+    return XBOX_CONTROLLER_NAMES[pad];
+ }
+ 
+-static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
+-{
+-   input_autoconfigure_connect(
+-         xdk_joypad_name(autoconf_pad),
+-         NULL,
+-         xdk_joypad.ident,
+-         autoconf_pad,
+-         0,
+-         0);
+-}
+-
+ static bool xdk_joypad_init(void *data)
+ {
+ #ifdef _XBOX1
+    XInitDevices(0, NULL);
+-#else
++#elif defined(HAVE_AUTOCONFIG)
+    unsigned autoconf_pad;
+    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
+-      xdk_joypad_autodetect_add(autoconf_pad);
++      input_autoconfigure_connect(
++            xdk_joypad_name(autoconf_pad),
++            NULL,
++            xdk_joypad.ident,
++            autoconf_pad,
++            0,
++            0);
+ #endif
+ 
+    (void)data;
+@@ -258,7 +253,9 @@ static void xdk_joypad_poll(void)
+ 
+          gamepads[port]  = 0;
+ 
++#ifdef HAVE_AUTOCONFIG
+          input_autoconfigure_disconnect(port, xdk_joypad.ident);
++#endif
+       }
+ 
+       if (device_inserted)
+@@ -274,7 +271,15 @@ static void xdk_joypad_poll(void)
+                XDEVICE_TYPE_GAMEPAD, port,
+                XDEVICE_NO_SLOT, &m_pollingParameters);
+ 
+-         xdk_joypad_autodetect_add(port);
++#ifdef HAVE_AUTOCONFIG
++         input_autoconfigure_connect(
++               xdk_joypad_name(port),
++               NULL,
++               xdk_joypad.ident,
++               port,
++               0,
++               0);
++#endif
+       }
+ 
+       if (!gamepads[port])
+diff --git a/input/drivers_joypad/xinput_joypad.c b/input/drivers_joypad/xinput_joypad.c
+index d3971c2d1c..2b2a6a1a65 100644
+--- a/input/drivers_joypad/xinput_joypad.c
++++ b/input/drivers_joypad/xinput_joypad.c
+@@ -337,6 +337,7 @@ static bool xinput_joypad_init(void *data)
+          /* On success, found VID/PID from dinput index */
+ #endif
+ 
++#ifdef HAVE_AUTOCONFIG
+          input_autoconfigure_connect(
+                name,
+                NULL,
+@@ -344,6 +345,7 @@ static bool xinput_joypad_init(void *data)
+                j,
+                vid,
+                pid);
++#endif
+       }
+    }
+ 
+@@ -546,7 +548,9 @@ static void xinput_joypad_poll(void)
+                == ERROR_DEVICE_NOT_CONNECTED)
+          {
+             g_xinput_states[i].connected = false;
++#ifdef HAVE_AUTOCONFIG
+             input_autoconfigure_disconnect(i, xinput_joypad_name(i));
++#endif
+          }
+       }
+ #else
+@@ -567,8 +571,10 @@ static void xinput_joypad_poll(void)
+          }
+ 
+          g_xinput_states[i].connected = new_connected;
++#ifdef HAVE_AUTOCONFIG
+          if (!g_xinput_states[i].connected)
+             input_autoconfigure_disconnect(i, xinput_joypad_name(i));
++#endif
+       }
+ #endif
+    }
+diff --git a/input/input_driver.h b/input/input_driver.h
+index d79a2b8da7..5434bb0978 100644
+--- a/input/input_driver.h
++++ b/input/input_driver.h
+@@ -389,7 +389,9 @@ void input_keyboard_event(bool down, unsigned code, uint32_t character,
+       uint16_t mod, unsigned device);
+ 
+ extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
++#ifdef HAVE_AUTOCONFIG
+ extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
++#endif
+ extern char input_device_names[MAX_USERS][64];
+ 
+ const char *input_config_bind_map_get_base(unsigned i);
+@@ -428,7 +430,9 @@ unsigned input_config_translate_str_to_bind_id(const char *str);
+ 
+ void config_read_keybinds_conf(void *data);
+ 
++#ifdef HAVE_AUTOCONFIG
+ void input_autoconfigure_joypad_conf(void *data, struct retro_keybind *binds);
++#endif
+ 
+ void input_config_set_device_name(unsigned port, const char *name);
+ 
+diff --git a/menu/cbs/menu_cbs_ok.c b/menu/cbs/menu_cbs_ok.c
+index ca69167ec7..2e4c3233bb 100644
+--- a/menu/cbs/menu_cbs_ok.c
++++ b/menu/cbs/menu_cbs_ok.c
+@@ -4069,7 +4069,9 @@ void cb_generic_download(retro_task_t *task,
+          dir_path = settings->paths.directory_assets;
+          break;
+       case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
++#ifdef HAVE_AUTOCONFIG
+          dir_path = settings->paths.directory_autoconfig;
++#endif
+          break;
+       case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
+          dir_path = settings->paths.path_content_database;
+diff --git a/menu/cbs/menu_cbs_sublabel.c b/menu/cbs/menu_cbs_sublabel.c
+index fb328a1a8d..11b0122bea 100644
+--- a/menu/cbs/menu_cbs_sublabel.c
++++ b/menu/cbs/menu_cbs_sublabel.c
+@@ -858,6 +858,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
+       char *s, size_t len)
+ {
+    char tmp[4096];
++#ifdef HAVE_AUTOCONFIG
+    unsigned controller;
+ 
+    for(controller = 0; controller < MAX_USERS; controller++)
+@@ -874,11 +875,15 @@ static int action_bind_sublabel_systeminfo_controller_entry(
+                break;
+       }
+    }
+-   snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice identifiers: %d/%d",
+-      input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+-      input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
++
++   snprintf(tmp, sizeof(tmp), "Device display name: %s\n",
++         input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
++   snprintf(tmp, sizeof(tmp), "%sDevice config name: %s\n", 
++         input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
++   snprintf(tmp, sizeof(tmp), "%sDevice identifiers: %d/%d",
+       input_config_get_vid(controller), input_config_get_pid(controller));
+    strlcpy(s, tmp, len);
++#endif
+ 
+    return 0;
+ }
+diff --git a/menu/menu_displaylist.c b/menu/menu_displaylist.c
+index 3d4dff4ea4..590479e34d 100644
+--- a/menu/menu_displaylist.c
++++ b/menu/menu_displaylist.c
+@@ -1018,6 +1018,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
+          count++;
+    }
+ 
++#ifdef HAVE_AUTOCONFIG
+    for (controller = 0; controller < MAX_USERS; controller++)
+    {
+       if (input_is_autoconfigured(controller))
+@@ -1063,6 +1064,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
+ #endif
+       }
+    }
++#endif
+ 
+    if (frontend)
+    {
+@@ -5660,10 +5662,12 @@ unsigned menu_displaylist_build_list(
+                   MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
+                   PARSE_ONLY_BOOL, false) == 0)
+             count++;
++#ifdef HAVE_AUTOCONFIG
+          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                   MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
+                   PARSE_ONLY_BOOL, false) == 0)
+             count++;
++#endif
+          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                   MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW,
+                   PARSE_ONLY_BOOL, false) == 0)
+@@ -8000,7 +8004,9 @@ unsigned menu_displaylist_build_list(
+ #ifdef HAVE_SCREENSHOTS
+                {MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,         PARSE_ONLY_DIR},
+ #endif
++#ifdef HAVE_AUTOCONFIG
+                {MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,        PARSE_ONLY_DIR},
++#endif
+                {MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,    PARSE_ONLY_DIR},
+                {MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,           PARSE_ONLY_DIR},
+                {MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,        PARSE_ONLY_DIR},
+@@ -10668,12 +10674,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
+                count++;
+ #endif
+ 
++#ifdef HAVE_AUTOCONFIG
+             if (menu_entries_append_enum(info->list,
+                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES),
+                      msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES),
+                      MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,
+                      MENU_SETTING_ACTION, 0, 0))
+                count++;
++#endif
+ 
+             if (menu_entries_append_enum(info->list,
+                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS),
+diff --git a/menu/menu_setting.c b/menu/menu_setting.c
+index 08cd8789ce..454b80c153 100644
+--- a/menu/menu_setting.c
++++ b/menu/menu_setting.c
+@@ -2600,7 +2600,7 @@ static int setting_action_ok_bind_all(
+    return 0;
+ }
+ 
+-#ifdef HAVE_CONFIGFILE
++#if defined(HAVE_CONFIGFILE) && defined(HAVE_AUTOCONFIG)
+ static int setting_action_ok_bind_all_save_autoconfig(
+       rarch_setting_t *setting, size_t idx, bool wraparound)
+ {
+@@ -6546,6 +6546,7 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
+ 
+       if (!string_is_empty(device_name))
+       {
++#ifdef HAVE_AUTOCONFIG
+          unsigned idx = input_autoconfigure_get_device_name_index(map);
+ 
+          /*if idx is non-zero, it's part of a set*/
+@@ -6555,6 +6556,7 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
+                   device_name,
+                   idx);
+          else
++#endif
+             strlcpy(s, device_name, len);
+       }
+       else
+@@ -7338,7 +7340,9 @@ static bool setting_append_list_input_player_options(
+       static char key_type[MAX_USERS][64];
+       static char key_analog[MAX_USERS][64];
+       static char key_bind_all[MAX_USERS][64];
++#ifdef HAVE_AUTOCONFIG
+       static char key_bind_all_save_autoconfig[MAX_USERS][64];
++#endif
+       static char split_joycon[MAX_USERS][64];
+       static char split_joycon_lbl[MAX_USERS][64];
+       static char key_bind_defaults[MAX_USERS][64];
+@@ -7348,7 +7352,9 @@ static bool setting_append_list_input_player_options(
+       static char label_type[MAX_USERS][64];
+       static char label_analog[MAX_USERS][64];
+       static char label_bind_all[MAX_USERS][64];
++#ifdef HAVE_AUTOCONFIG
+       static char label_bind_all_save_autoconfig[MAX_USERS][64];
++#endif
+       static char label_bind_defaults[MAX_USERS][64];
+       static char label_mouse_index[MAX_USERS][64];
+ 
+@@ -7370,9 +7376,11 @@ static bool setting_append_list_input_player_options(
+                user + 1);
+       fill_pathname_join_delim(key_bind_all[user], tmp_string, "bind_all", '_',
+             sizeof(key_bind_all[user]));
++#ifdef HAVE_AUTOCONFIG
+       fill_pathname_join_delim(key_bind_all_save_autoconfig[user],
+             tmp_string, "bind_all_save_autoconfig", '_',
+             sizeof(key_bind_all_save_autoconfig[user]));
++#endif
+       fill_pathname_join_delim(key_bind_defaults[user],
+             tmp_string, "bind_defaults", '_',
+             sizeof(key_bind_defaults[user]));
+@@ -7397,9 +7405,11 @@ static bool setting_append_list_input_player_options(
+       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
+                "%s",
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL));
++#ifdef HAVE_AUTOCONFIG
+       snprintf(label_bind_all_save_autoconfig[user], sizeof(label_bind_all_save_autoconfig[user]),
+                "%s",
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG));
++#endif
+       snprintf(label_mouse_index[user], sizeof(label_mouse_index[user]),
+                "%s",
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX));
+@@ -7514,7 +7524,7 @@ static bool setting_append_list_input_player_options(
+       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_defaults;
+       (*list)[list_info->index - 1].action_cancel  = NULL;
+ 
+-#ifdef HAVE_CONFIGFILE
++#if defined(HAVE_CONFIGFILE) && defined(HAVE_AUTOCONF)
+       CONFIG_ACTION_ALT(
+             list, list_info,
+             key_bind_all_save_autoconfig[user],
+@@ -11484,6 +11494,7 @@ static bool setting_append_list(
+                   SD_FLAG_ADVANCED
+                   );
+ 
++#ifdef HAVE_AUTOCONFIG
+             CONFIG_BOOL(
+                   list, list_info,
+                   &settings->bools.input_autodetect_enable,
+@@ -11499,6 +11510,7 @@ static bool setting_append_list(
+                   general_read_handler,
+                   SD_FLAG_ADVANCED
+                   );
++#endif
+ 
+ #if 0
+             CONFIG_BOOL(
+@@ -17279,6 +17291,7 @@ static bool setting_append_list(
+                general_read_handler);
+          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+ 
++#ifdef HAVE_AUTOCONFIG
+          CONFIG_DIR(
+                list, list_info,
+                settings->paths.directory_autoconfig,
+@@ -17293,6 +17306,7 @@ static bool setting_append_list(
+                general_write_handler,
+                general_read_handler);
+          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
++#endif
+ 
+          CONFIG_DIR(
+                list, list_info,
+diff --git a/retroarch.c b/retroarch.c
+index 7c04702f5d..107963f82d 100644
+--- a/retroarch.c
++++ b/retroarch.c
+@@ -1309,15 +1309,13 @@ static const camera_driver_t *camera_drivers[] = {
+  * If we hold ENABLE_HOTKEY button, block all libretro input to allow
+  * hotkeys to be bound to same keys as RetroPad.
+  **/
+-#define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind, autoconf_bind) \
++#define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(bind) \
+ ( \
+-         (((normal_bind)->key      != RETROK_UNKNOWN) \
+-      || ((normal_bind)->mbutton   != NO_BTN) \
+-      || ((normal_bind)->joykey    != NO_BTN) \
+-      || ((normal_bind)->joyaxis   != AXIS_NONE) \
+-      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
+-      || ((autoconf_bind)->joykey  != NO_BTN) \
+-      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
++         (((bind)->key       != RETROK_UNKNOWN) \
++      || ( (bind)->mbutton   != NO_BTN) \
++      || ( (bind)->joykey    != NO_BTN) \
++      || ( (bind)->joyaxis   != AXIS_NONE) \
++         ) \
+ )
+ 
+ #define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
+@@ -24551,13 +24549,18 @@ static unsigned menu_event(
+    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
+    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
+    bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
++#ifdef HAVE_AUTOCONFIG
+    bool input_swap_override                        = input_autoconfigure_get_swap_override();
+    unsigned menu_ok_btn                            =
+-         (!input_swap_override && swap_ok_cancel_btns) ?
+-               RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
++      (!input_swap_override && swap_ok_cancel_btns) ?
++      RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
+    unsigned menu_cancel_btn                        =
+-         (!input_swap_override && swap_ok_cancel_btns) ?
+-               RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
++      (!input_swap_override && swap_ok_cancel_btns) ?
++      RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
++#else
++   unsigned menu_ok_btn                            = RETRO_DEVICE_ID_JOYPAD_A;
++   unsigned menu_cancel_btn                        = RETRO_DEVICE_ID_JOYPAD_B;
++#endif
+    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
+    unsigned ok_trigger                             = ok_current & ~ok_old;
+ #ifdef HAVE_RGUI
+@@ -25663,8 +25666,12 @@ static void input_keys_pressed(
+       rarch_joypad_info_t *joypad_info)
+ {
+    unsigned i;
+-
+-   if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
++   if (
++            CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm)
++#ifdef HAVE_AUTOCONFIG
++         || CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_auto)
++#endif
++      )
+    {
+       if (  p_rarch->current_input->input_state(
+             p_rarch->current_input_data, joypad_info,
+@@ -25693,8 +25700,12 @@ static void input_keys_pressed(
+ 
+       /* Allows rarch_focus_toggle hotkey to still work
+        * even though every hotkey is blocked */
+-      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(
+-               focus_normal, focus_binds_auto))
++      if (
++               CHECK_INPUT_DRIVER_BLOCK_HOTKEY(focus_normal)
++#ifdef HAVE_AUTOCONFIG
++            || CHECK_INPUT_DRIVER_BLOCK_HOTKEY(focus_binds_auto)
++#endif
++         )
+       {
+          if (p_rarch->current_input->input_state(
+                   p_rarch->current_input_data,
+@@ -26309,8 +26320,10 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
+ 
+    fire_connection_listener(p_rarch, port, driver);
+ 
++#ifdef HAVE_AUTOCONFIG
+    input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
+           port, 0, 0);
++#endif
+ }
+ 
+ #ifdef HAVE_HID
+@@ -27367,7 +27380,9 @@ void input_config_set_device_name(unsigned port, const char *name)
+          name,
+          sizeof(input_device_names[port]));
+ 
++#ifdef HAVE_AUTOCONFIG
+    input_autoconfigure_joypad_reindex_devices();
++#endif
+ }
+ 
+ void input_config_set_device_config_path(unsigned port, const char *path)
+@@ -27408,7 +27423,9 @@ void input_config_set_device_display_name(unsigned port, const char *name)
+ void input_config_clear_device_name(unsigned port)
+ {
+    input_device_names[port][0] = '\0';
++#ifdef HAVE_AUTOCONFIG
+    input_autoconfigure_joypad_reindex_devices();
++#endif
+ }
+ 
+ void input_config_clear_device_display_name(unsigned port)
+@@ -27548,6 +27565,7 @@ void config_read_keybinds_conf(void *data)
+    }
+ }
+ 
++#ifdef HAVE_AUTOCONFIG
+ void input_autoconfigure_joypad_conf(void *data,
+       struct retro_keybind *binds)
+ {
+@@ -27565,6 +27583,7 @@ void input_autoconfigure_joypad_conf(void *data,
+             input_config_bind_map_get_base(i), &binds[i]);
+    }
+ }
++#endif
+ 
+ /**
+  * input_config_save_keybinds_user:
