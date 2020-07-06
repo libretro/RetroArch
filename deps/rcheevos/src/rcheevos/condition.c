@@ -213,9 +213,20 @@ int rc_evaluate_condition_value(rc_condition_t* self, rc_eval_state_t* eval_stat
 
     case RC_OPERATOR_DIV:
       if (self->operand2.type == RC_OPERAND_FP)
-        value = (int)((double)value / self->operand2.value.dbl);
+      {
+        if (self->operand2.value.dbl == 0.0)
+          value = 0;
+        else
+          value = (int)((double)value / self->operand2.value.dbl);
+      }
       else
-        value /= rc_evaluate_operand(&self->operand2, eval_state);
+      {
+        unsigned value2 = rc_evaluate_operand(&self->operand2, eval_state);
+        if (value2 == 0)
+          value = 0;
+        else
+          value /= value2;
+      }
       break;
 
     case RC_OPERATOR_AND:
