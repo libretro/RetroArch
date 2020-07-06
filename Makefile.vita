@@ -187,7 +187,8 @@ $(TARGET).elf: $(OBJ) libretro_vita.a libSceShaccCg_stub.a
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk libSceShaccCg_stub.a deps/vitaShaRK/SceShaccCg
+	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk libSceShaccCg_stub.a
+	rm -rf  deps/vitaShaRK/SceShaccCg
 	rm -f $(OBJ:.o=.depend)
 
 # Useful for developers
