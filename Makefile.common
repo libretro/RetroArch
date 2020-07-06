@@ -1611,7 +1611,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
 
    GLSLANG_SOURCES := \
       gfx/drivers_shader/glslang.cpp \
-		$(DEPS_DIR)/glslang/glslang/SPIRV/doc.cpp \
 		$(DEPS_DIR)/glslang/glslang/SPIRV/GlslangToSpv.cpp \
 		$(DEPS_DIR)/glslang/glslang/SPIRV/InReadableOrder.cpp \
 		$(DEPS_DIR)/glslang/glslang/SPIRV/Logger.cpp \

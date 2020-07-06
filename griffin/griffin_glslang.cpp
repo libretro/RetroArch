@@ -9,7 +9,6 @@
 #endif
 
 #include "../gfx/drivers_shader/glslang.cpp"
-#include "../deps/glslang/glslang/SPIRV/doc.cpp"
 #include "../deps/glslang/glslang/SPIRV/GlslangToSpv.cpp"
 #include "../deps/glslang/glslang/SPIRV/InReadableOrder.cpp"
 #include "../deps/glslang/glslang/SPIRV/Logger.cpp"
