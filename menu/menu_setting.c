@@ -10449,7 +10449,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_NONE
+                  SD_FLAG_CMD_APPLY_AUTO
                   );
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 #endif
