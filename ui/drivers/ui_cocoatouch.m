@@ -319,7 +319,6 @@ enum
 @implementation RetroArch_iOS
 
 #pragma mark - ApplePlatform
-
 #ifdef HAVE_COCOA_METAL
 -(id)renderView {
     return _renderView;
@@ -376,6 +375,17 @@ enum
    return _vt;
 }
 
+- (void)setVideoMode:(gfx_ctx_mode_t)mode {
+    // no-op for iOS?
+}
+
+- (void)setCursorVisible:(bool)v {
+    // no-op for iOS
+}
+
+- (bool)setDisableDisplaySleep:(bool)disable {
+    // no-op for iOS
+}
 #endif
 
 + (RetroArch_iOS*)get
