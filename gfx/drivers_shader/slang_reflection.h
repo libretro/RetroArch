@@ -93,7 +93,7 @@ enum slang_constant_buffer
 };
 
 /* Vulkan minimum limit. */
-#define SLANG_NUM_BINDINGS 16
+#define SLANG_NUM_BINDINGS 32
 
 struct slang_texture_semantic_map
 {
