@@ -2579,7 +2579,6 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "9:16",          0.5625f },
    { "5:4",           1.25f },
    { "6:5",           1.2f },
-   { "7:3",           2.3333f },
    { "7:9",           0.7777f },
    { "8:3",           2.6666f },
    { "8:7",           1.1428f },
