@@ -2541,6 +2541,7 @@ struct rarch_state
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    struct video_shader *menu_driver_shader;
 #endif
+   frontend_ctx_driver_t *current_frontend_ctx;
 };
 
 static struct rarch_state         rarch_st;
@@ -39770,7 +39771,7 @@ static bool accessibility_speak_priority(
 
    if (is_accessibility_enabled(p_rarch))
    {
-      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
       if (frontend && frontend->accessibility_speak)
       {
          int speed = settings->uints.accessibility_narrator_speech_speed;
@@ -39800,7 +39801,7 @@ static bool is_narrator_running(struct rarch_state *p_rarch)
 {
    if (is_accessibility_enabled(p_rarch))
    {
-      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
       if (frontend && frontend->is_narrator_running)
          return frontend->is_narrator_running();
    }
@@ -39894,4 +39895,320 @@ void menu_content_environment_get(int *argc, char *argv[],
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
       wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) ? NULL :
          path_get(RARCH_PATH_CORE);
+}
+
+frontend_ctx_driver_t *frontend_get_ptr(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->current_frontend_ctx;
+}
+
+int frontend_driver_parse_drive_list(void *data, bool load_content)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend || !frontend->parse_drive_list)
+      return -1;
+   return frontend->parse_drive_list(data, load_content);
+}
+
+void frontend_driver_content_loaded(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend || !frontend->content_loaded)
+      return;
+   frontend->content_loaded();
+}
+
+bool frontend_driver_has_fork(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend || !frontend->set_fork)
+      return false;
+   return true;
+}
+
+bool frontend_driver_set_fork(enum frontend_fork fork_mode)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend_driver_has_fork())
+      return false;
+   return frontend->set_fork(fork_mode);
+}
+
+void frontend_driver_process_args(int *argc, char *argv[])
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend || !frontend->process_args)
+      return;
+   frontend->process_args(argc, argv);
+}
+
+bool frontend_driver_is_inited(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend)
+      return false;
+   return true;
+}
+
+void frontend_driver_init_first(void *args)
+{
+   struct rarch_state *p_rarch   = &rarch_st;
+   p_rarch->current_frontend_ctx = (frontend_ctx_driver_t*)
+      frontend_ctx_init_first();
+
+   if (p_rarch->current_frontend_ctx && p_rarch->current_frontend_ctx->init)
+      p_rarch->current_frontend_ctx->init(args);
+}
+
+void frontend_driver_free(void)
+{
+   struct rarch_state *p_rarch      = &rarch_st;
+
+   if (p_rarch)
+      p_rarch->current_frontend_ctx = NULL;
+}
+
+environment_get_t frontend_driver_environment_get_ptr(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend)
+      return NULL;
+   return frontend->environment_get;
+}
+
+bool frontend_driver_has_get_video_driver_func(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_video_driver)
+      return false;
+   return true;
+}
+
+const struct video_driver *frontend_driver_get_video_driver(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_video_driver)
+      return NULL;
+   return frontend->get_video_driver();
+}
+
+void frontend_driver_exitspawn(char *s, size_t len, char *args)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->exitspawn)
+      return;
+   frontend->exitspawn(s, len, args);
+}
+
+void frontend_driver_deinit(void *args)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->deinit)
+      return;
+   frontend->deinit(args);
+}
+
+void frontend_driver_shutdown(bool a)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->shutdown)
+      return;
+   frontend->shutdown(a);
+}
+
+enum frontend_architecture frontend_driver_get_cpu_architecture(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_architecture)
+      return FRONTEND_ARCH_NONE;
+   return frontend->get_architecture();
+}
+
+const void *frontend_driver_get_cpu_architecture_str(
+      char *architecture, size_t size)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
+
+   switch (arch)
+   {
+      case FRONTEND_ARCH_X86:
+         strlcpy(architecture, "x86", size);
+         break;
+      case FRONTEND_ARCH_X86_64:
+         strlcpy(architecture, "x64", size);
+         break;
+      case FRONTEND_ARCH_PPC:
+         strlcpy(architecture, "PPC", size);
+         break;
+      case FRONTEND_ARCH_ARM:
+         strlcpy(architecture, "ARM", size);
+         break;
+      case FRONTEND_ARCH_ARMV7:
+         strlcpy(architecture, "ARMv7", size);
+         break;
+      case FRONTEND_ARCH_ARMV8:
+         strlcpy(architecture, "ARMv8", size);
+         break;
+      case FRONTEND_ARCH_MIPS:
+         strlcpy(architecture, "MIPS", size);
+         break;
+      case FRONTEND_ARCH_TILE:
+         strlcpy(architecture, "Tilera", size);
+         break;
+      case FRONTEND_ARCH_NONE:
+      default:
+         strlcpy(architecture, "N/A", size);
+         break;
+   }
+
+   return frontend;
+}
+
+uint64_t frontend_driver_get_total_memory(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_total_mem)
+      return 0;
+   return frontend->get_total_mem();
+}
+
+uint64_t frontend_driver_get_free_memory(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_free_mem)
+      return 0;
+   return frontend->get_free_mem();
+}
+
+void frontend_driver_install_signal_handler(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->install_signal_handler)
+      return;
+   frontend->install_signal_handler();
+}
+
+int frontend_driver_get_signal_handler_state(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_signal_handler_state)
+      return -1;
+   return frontend->get_signal_handler_state();
+}
+
+void frontend_driver_set_signal_handler_state(int value)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->set_signal_handler_state)
+      return;
+   frontend->set_signal_handler_state(value);
+}
+
+void frontend_driver_attach_console(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->attach_console)
+      return;
+   frontend->attach_console();
+}
+
+void frontend_driver_detach_console(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->detach_console)
+      return;
+   frontend->detach_console();
+}
+
+void frontend_driver_destroy_signal_handler_state(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->destroy_signal_handler_state)
+      return;
+   frontend->destroy_signal_handler_state();
+}
+
+bool frontend_driver_can_watch_for_changes(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->watch_path_for_changes)
+      return false;
+   return true;
+}
+
+void frontend_driver_watch_path_for_changes(
+      struct string_list *list, int flags,
+      path_change_data_t **change_data)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->watch_path_for_changes)
+      return;
+   frontend->watch_path_for_changes(list, flags, change_data);
+}
+
+bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->check_for_path_changes)
+      return false;
+   return frontend->check_for_path_changes(change_data);
+}
+
+void frontend_driver_set_sustained_performance_mode(bool on)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->set_sustained_performance_mode)
+      return;
+   frontend->set_sustained_performance_mode(on);
+}
+
+const char* frontend_driver_get_cpu_model_name(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_cpu_model_name)
+      return NULL;
+   return frontend->get_cpu_model_name();
+}
+
+enum retro_language frontend_driver_get_user_language(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_user_language)
+      return RETRO_LANGUAGE_ENGLISH;
+   return frontend->get_user_language();
 }
