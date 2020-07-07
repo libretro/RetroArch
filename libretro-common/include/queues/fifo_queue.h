@@ -63,15 +63,9 @@ static INLINE void fifo_free(fifo_buffer_t *buffer)
    free(buffer);
 }
 
-static INLINE size_t fifo_read_avail(fifo_buffer_t *buffer)
-{
-   return (buffer->end + ((buffer->end < buffer->first) ? buffer->size : 0)) - buffer->first;
-}
+#define FIFO_READ_AVAIL(buffer) (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first)
 
-static INLINE size_t fifo_write_avail(fifo_buffer_t *buffer)
-{
-   return (buffer->size - 1) - ((buffer->end + ((buffer->end < buffer->first) ? buffer->size : 0)) - buffer->first);
-}
+#define FIFO_WRITE_AVAIL(buffer) (((buffer)->size - 1) - (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first))
 
 RETRO_END_DECLS
 

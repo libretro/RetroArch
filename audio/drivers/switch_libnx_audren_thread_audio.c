@@ -96,7 +96,7 @@ static void thread_job(void* data)
       if (current_wavebuf)
       {
          mutexLock(&aud->fifo_lock);
-         available = aud->paused ? 0 : fifo_read_avail(aud->fifo);
+         available = aud->paused ? 0 : FIFO_READ_AVAIL(aud->fifo);
          written_tmp = MIN(available, aud->buffer_size - current_size);
          dstbuf = current_pool_ptr + current_size;
          if (written_tmp > 0)
@@ -295,7 +295,7 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
    if (aud->nonblock)
    {
       mutexLock(&aud->fifo_lock);
-      available = fifo_write_avail(aud->fifo);
+      available = FIFO_WRITE_AVAIL(aud->fifo);
       written = MIN(available, size);
       if (written > 0)
          fifo_write(aud->fifo, buf, written);
@@ -307,7 +307,7 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
       while (written < size && aud->running)
       {
          mutexLock(&aud->fifo_lock);
-         available = fifo_write_avail(aud->fifo);
+         available = FIFO_WRITE_AVAIL(aud->fifo);
          if (available)
          {
             written_tmp = MIN(size - written, available);
@@ -407,7 +407,7 @@ static size_t libnx_audren_thread_audio_write_avail(void *data)
       return 0;
 
    mutexLock(&aud->fifo_lock);
-   available = fifo_write_avail(aud->fifo);
+   available = FIFO_WRITE_AVAIL(aud->fifo);
    mutexUnlock(&aud->fifo_lock);
 
    return available;

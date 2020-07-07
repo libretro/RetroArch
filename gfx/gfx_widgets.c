@@ -236,7 +236,7 @@ void gfx_widgets_msg_queue_push(
    disp_widget_msg_t    *msg_widget = NULL;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
 
-   if (fifo_write_avail(p_dispwidget->msg_queue) > 0)
+   if (FIFO_WRITE_AVAIL(p_dispwidget->msg_queue) > 0)
    {
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
@@ -861,7 +861,7 @@ void gfx_widgets_iterate(
    /* Messages queue */
 
    /* Consume one message if available */
-   if ((fifo_read_avail(p_dispwidget->msg_queue) > 0)
+   if ((FIFO_READ_AVAIL(p_dispwidget->msg_queue) > 0)
          && !p_dispwidget->widgets_moving 
          && (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs)))
    {
@@ -871,7 +871,7 @@ void gfx_widgets_iterate(
 
       if (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs))
       {
-         if (fifo_read_avail(p_dispwidget->msg_queue) > 0)
+         if (FIFO_READ_AVAIL(p_dispwidget->msg_queue) > 0)
             fifo_read(p_dispwidget->msg_queue, &msg_widget, sizeof(msg_widget));
 
          if (msg_widget)
@@ -2078,7 +2078,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    /* Purge everything from the fifo */
    if (p_dispwidget->msg_queue)
    {
-      while (fifo_read_avail(p_dispwidget->msg_queue) > 0)
+      while (FIFO_READ_AVAIL(p_dispwidget->msg_queue) > 0)
       {
          disp_widget_msg_t *msg_widget;
 

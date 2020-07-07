@@ -107,7 +107,7 @@ static void mainLoop(void* data)
 
       compat_mutex_lock(&swa->fifoLock);
 
-      avail    = fifo_read_avail(swa->fifo);
+      avail    = FIFO_READ_AVAIL(swa->fifo);
       to_write = MIN(avail, buf_avail);
       if (to_write > 0)
       {
@@ -349,7 +349,7 @@ static ssize_t switch_thread_audio_write(void *data, const void *buf, size_t siz
    if (swa->nonblock)
    {
       compat_mutex_lock(&swa->fifoLock);
-      avail = fifo_write_avail(swa->fifo);
+      avail = FIFO_WRITE_AVAIL(swa->fifo);
       written = MIN(avail, size);
       if (written > 0)
          fifo_write(swa->fifo, buf, written);
@@ -361,7 +361,7 @@ static ssize_t switch_thread_audio_write(void *data, const void *buf, size_t siz
       while (written < size && swa->running)
       {
          compat_mutex_lock(&swa->fifoLock);
-         avail = fifo_write_avail(swa->fifo);
+         avail = FIFO_WRITE_AVAIL(swa->fifo);
          if (avail == 0)
          {
             compat_mutex_unlock(&swa->fifoLock);
@@ -413,7 +413,7 @@ static size_t switch_thread_audio_write_avail(void *data)
    switch_thread_audio_t* swa = (switch_thread_audio_t*)data;
 
    compat_mutex_lock(&swa->fifoLock);
-   val = fifo_write_avail(swa->fifo);
+   val = FIFO_WRITE_AVAIL(swa->fifo);
    compat_mutex_unlock(&swa->fifoLock);
 
    return val;
