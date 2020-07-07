@@ -12,6 +12,7 @@
 - MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - MENU: Fix cursor forced to first entry after displaying lists
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
+- SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
 - X11: Add lightgun support
 
 # 1.8.9
