@@ -6437,10 +6437,7 @@ int action_ok_core_lock(const char *path,
 static int action_ok_core_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *core_path        = label;
-   const char *core             = NULL;
-   const char *loaded_core_path = NULL;
-   const char *loaded_core      = NULL;
+   const char *core_path = label;
 
    if (string_is_empty(core_path))
       return -1;
@@ -6483,20 +6480,9 @@ static int action_ok_core_delete(const char *path,
       return 0;
    }
 
-   /* Get core file name */
-   core = path_basename(core_path);
-   if (string_is_empty(core))
-      return -1;
-
-   /* Get loaded core file name */
-   loaded_core_path = path_get(RARCH_PATH_CORE);
-   if (!string_is_empty(loaded_core_path))
-      loaded_core = path_basename(loaded_core_path);
-
    /* Check if core to be deleted is currently
     * loaded - if so, unload it */
-   if (!string_is_empty(loaded_core) &&
-       string_is_equal(core, loaded_core))
+   if (rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
       generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
    /* Delete core file */

@@ -258,6 +258,18 @@
 #endif
 #define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
 
+/* Specifies whether to 'reload' (fork and quit)
+ * RetroArch when launching content with the
+ * currently loaded core
+ * > Only relevant on platforms without dynamic core
+ *   loading support
+ * > Setting this to 'false' will decrease loading
+ *   times when required core is already running,
+ *   but may cause stability issues (if core misbehaves) */
+#ifndef HAVE_DYNAMIC
+#define DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT true
+#endif
+
 /* Forcibly disable composition.
  * Only valid on Windows Vista/7/8 for now. */
 #define DEFAULT_DISABLE_COMPOSITION false

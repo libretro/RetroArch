@@ -8587,8 +8587,11 @@ static bool setting_append_list(
       case SETTINGS_LIST_CORE:
          {
             unsigned i, listing = 0;
+#ifndef HAVE_DYNAMIC
+            struct bool_entry bool_entries[7];
+#else
             struct bool_entry bool_entries[6];
-
+#endif
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_CORE_SETTINGS);
@@ -8642,6 +8645,14 @@ static bool setting_append_list(
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 
+#ifndef HAVE_DYNAMIC
+            bool_entries[listing].target         = &settings->bools.always_reload_core_on_run_content;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
+            bool_entries[listing].default_value  = DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+#endif
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
                CONFIG_BOOL(

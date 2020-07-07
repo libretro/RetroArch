@@ -646,41 +646,6 @@ error:
 /* Core Restore */
 /****************/
 
-/* Unloads core if it is currently loaded
- * > Returns true if core was unloaded */
-static bool task_core_restore_unload_core(const char *core_path)
-{
-   const char *core_filename        = NULL;
-   const char *loaded_core_path     = NULL;
-   const char *loaded_core_filename = NULL;
-
-   if (string_is_empty(core_path))
-      return false;
-
-   /* Get core file name */
-   core_filename = path_basename(core_path);
-   if (string_is_empty(core_filename))
-      return false;
-
-   /* Get loaded core file name */
-   loaded_core_path = path_get(RARCH_PATH_CORE);
-   if (string_is_empty(loaded_core_path))
-      return false;
-
-   loaded_core_filename = path_basename(loaded_core_path);
-   if (string_is_empty(loaded_core_filename))
-      return false;
-
-   /* Check if whether file names match */
-   if (string_is_equal(core_filename, loaded_core_filename))
-   {
-      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-      return true;
-   }
-
-   return false;
-}
-
 static void cb_task_core_restore(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -1086,7 +1051,13 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
 
    /* If core to be restored is currently loaded, must
     * unload it before pushing the task */
-   *core_loaded = task_core_restore_unload_core(core_path);
+   if (rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+   {
+      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+      *core_loaded = true;
+   }
+   else
+      *core_loaded = false;
 
    /* Push task */
    task_queue_push(task);
