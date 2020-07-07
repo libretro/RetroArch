@@ -5,6 +5,7 @@
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 
+#if !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
 
@@ -22,6 +23,7 @@
 }
 
 @end
+#endif
 
 @protocol ApplePlatform
 
@@ -48,6 +50,36 @@
 extern id<ApplePlatform> apple_platform;
 
 id<ApplePlatform> apple_platform;
+
+#if defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA_METAL)
+@interface RetroArch_iOS : UINavigationController<ApplePlatform, UIApplicationDelegate,
+UINavigationControllerDelegate> {
+    UIView *_renderView;
+    apple_view_type_t _vt;
+}
+#else
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate,
+UINavigationControllerDelegate>
+#endif
+
+@property (nonatomic) UIWindow* window;
+@property (nonatomic) NSString* documentsDirectory;
+@property (nonatomic) RAMenuBase* mainmenu;
+@property (nonatomic) int menu_count;
+
++ (RetroArch_iOS*)get;
+
+- (void)showGameView;
+- (void)toggleUI;
+- (void)supportOtherAudioSessions;
+
+- (void)refreshSystemConfig;
+- (void)mainMenuPushPop: (bool)pushp;
+- (void)mainMenuRefresh;
+@end
+
+#else
 @interface RetroArch_OSX : NSObject<ApplePlatform, NSApplicationDelegate> {
 	NSWindow *_window;
 	apple_view_type_t _vt;
@@ -55,6 +87,8 @@ id<ApplePlatform> apple_platform;
 	id _sleepActivity;
 	WindowListener *_listener;
 }
+#endif
+
 #elif defined(HAVE_COCOA)
 id apple_platform;
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
@@ -67,7 +101,7 @@ id apple_platform;
 }
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
 @property(nonatomic, retain) NSWindow IBOutlet *window;
 
 @end

@@ -81,25 +81,6 @@ typedef enum apple_view_type {
 + (CocoaView*)get;
 @end
 
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate,
-UINavigationControllerDelegate>
-
-@property (nonatomic) UIWindow* window;
-@property (nonatomic) NSString* documentsDirectory;
-@property (nonatomic) RAMenuBase* mainmenu;
-@property (nonatomic) int menu_count;
-
-+ (RetroArch_iOS*)get;
-
-- (void)showGameView;
-- (void)toggleUI;
-- (void)supportOtherAudioSessions;
-
-- (void)refreshSystemConfig;
-- (void)mainMenuPushPop: (bool)pushp;
-- (void)mainMenuRefresh;
-@end
-
 void get_ios_version(int *major, int *minor);
 
 #endif
@@ -112,7 +93,7 @@ typedef struct
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
 #include <AppKit/AppKit.h>
 
 @interface CocoaView : NSView

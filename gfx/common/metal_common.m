@@ -27,7 +27,8 @@
 
 #import "metal_common.h"
 #import "../../ui/drivers/cocoa/cocoa_common.h"
-#import "Context.h"
+//#import "Context.h"
+#include "metal/Context.h"
 
 #ifdef HAVE_MENU
 #import "../../menu/menu_driver.h"
@@ -50,9 +51,11 @@
 
 @implementation MetalView
 
+#if !defined(HAVE_COCOATOUCH)
 - (void)keyDown:(NSEvent*)theEvent
 {
 }
+#endif
 
 /* Stop the annoying sound when pressing a key. */
 - (BOOL)acceptsFirstResponder
@@ -690,7 +693,11 @@ typedef struct MTLALIGN(16)
       switch (i)
       {
          case RARCH_WRAP_BORDER:
+#if defined(HAVE_COCOATOUCH)
+            sd.sAddressMode = MTLSamplerAddressModeClampToZero;
+#else
             sd.sAddressMode = MTLSamplerAddressModeClampToBorderColor;
+#endif
             break;
 
          case RARCH_WRAP_EDGE:
@@ -1010,7 +1017,9 @@ typedef struct MTLALIGN(16)
 
             if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
                [rce setFragmentBuffer:buffer offset:0 atIndex:buffer_sem->binding];
+#if !defined(HAVE_COCOATOUCH)
             [buffer didModifyRange:NSMakeRange(0, buffer.length)];
+#endif
          }
       }
 
@@ -1343,7 +1352,11 @@ typedef struct MTLALIGN(16)
                if (size == 0)
                   continue;
 
+#if defined(HAVE_COCOATOUCH)
+                id<MTLBuffer> buf = [_context.device newBufferWithLength:size options:MTLResourceStorageModeShared];
+#else
                id<MTLBuffer> buf = [_context.device newBufferWithLength:size options:MTLResourceStorageModeManaged];
+#endif
                STRUCT_ASSIGN(_engine.pass[i].buffers[j], buf);
             }
          } @finally
@@ -1459,7 +1472,11 @@ typedef struct MTLALIGN(16)
    NSUInteger needed = sizeof(SpriteVertex) * count * 4;
    if (!_vert || _vert.length < needed)
    {
+#if defined(HAVE_COCOATOUCH)
+      _vert = [_context.device newBufferWithLength:needed options:MTLResourceStorageModeShared];
+#else
       _vert = [_context.device newBufferWithLength:needed options:MTLResourceStorageModeManaged];
+#endif
    }
 
    for (NSUInteger i = 0; i < count; i++)
@@ -1477,11 +1494,13 @@ typedef struct MTLALIGN(16)
 
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
 {
+#if !defined(HAVE_COCOATOUCH)
    if (_vertDirty)
    {
       [_vert didModifyRange:NSMakeRange(0, _vert.length)];
       _vertDirty = NO;
    }
+#endif
 
    NSUInteger count = _images.count;
    for (NSUInteger i = 0; i < count; ++i)

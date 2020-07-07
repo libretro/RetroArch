@@ -26,6 +26,12 @@
 		9204BE201D319EF300BD49DB /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		9204BE261D319EF300BD49DB /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
+		9210C2F224B3A19100E6FE7C /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9210C2F024B3A19100E6FE7C /* MetalKit.framework */; };
+		9210C2F324B3A19100E6FE7C /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9210C2F124B3A19100E6FE7C /* Metal.framework */; };
+		9210C2F624B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */; };
+		9210C2F724B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */; };
+		9210C2F824B3A32D00E6FE7C /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2F524B3A32D00E6FE7C /* griffin_glslang.cpp */; };
+		9210C2F924B3A32D00E6FE7C /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2F524B3A32D00E6FE7C /* griffin_glslang.cpp */; };
 		9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9222F1FE2314BA7C0097C0FD /* assets.zip */; };
 		9222F2002314BA7C0097C0FD /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9222F1FE2314BA7C0097C0FD /* assets.zip */; };
 		9222F2092315DAD50097C0FD /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9222F2082315DAD50097C0FD /* Launch Screen.storyboard */; };
@@ -85,7 +91,11 @@
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
-		9204BE2B1D319EF300BD49DB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9204BE2B1D319EF300BD49DB /* RADEBUG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RADEBUG.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9210C2F024B3A19100E6FE7C /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		9210C2F124B3A19100E6FE7C /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
+		9210C2F524B3A32D00E6FE7C /* griffin_glslang.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_glslang.cpp; path = ../../griffin/griffin_glslang.cpp; sourceTree = "<group>"; };
 		9222F1FE2314BA7C0097C0FD /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = "<group>"; };
 		9222F2082315DAD50097C0FD /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		9222F20A2315DD3D0097C0FD /* retroarch_logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = retroarch_logo.png; sourceTree = "<group>"; };
@@ -153,6 +163,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9210C2F224B3A19100E6FE7C /* MetalKit.framework in Frameworks */,
+				9210C2F324B3A19100E6FE7C /* Metal.framework in Frameworks */,
 				92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */,
 				92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */,
 				9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */,
@@ -343,7 +355,7 @@
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9204BE2B1D319EF300BD49DB /* RetroArch.app */,
+				9204BE2B1D319EF300BD49DB /* RADEBUG.app */,
 				926C77D721FD1E6500103EDE /* RetroArchTV.app */,
 			);
 			name = Products;
@@ -352,6 +364,8 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				9210C2F124B3A19100E6FE7C /* Metal.framework */,
+				9210C2F024B3A19100E6FE7C /* MetalKit.framework */,
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
 				92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */,
 				926C77F021FD26E800103EDE /* GameController.framework */,
@@ -398,6 +412,8 @@
 			children = (
 				50521A431AA23BF500185CC9 /* griffin_objc.m */,
 				501232C9192E5FC40063A359 /* griffin.c */,
+				9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */,
+				9210C2F524B3A32D00E6FE7C /* griffin_glslang.cpp */,
 			);
 			name = griffin;
 			sourceTree = "<group>";
@@ -420,7 +436,7 @@
 			);
 			name = RetroArchiOS11;
 			productName = RetroArch;
-			productReference = 9204BE2B1D319EF300BD49DB /* RetroArch.app */;
+			productReference = 9204BE2B1D319EF300BD49DB /* RADEBUG.app */;
 			productType = "com.apple.product-type.application";
 		};
 		926C77D621FD1E6500103EDE /* RetroArchTV */ = {
@@ -554,6 +570,7 @@
 				92CC05B621FE3C1700FF79F0 /* GCDWebServerMultiPartFormRequest.m in Sources */,
 				92CC05AC21FE3C1700FF79F0 /* GCDWebServerErrorResponse.m in Sources */,
 				92CC05A621FE3C1700FF79F0 /* GCDWebServerFunctions.m in Sources */,
+				9210C2F824B3A32D00E6FE7C /* griffin_glslang.cpp in Sources */,
 				92CC05A821FE3C1700FF79F0 /* GCDWebServer.m in Sources */,
 				9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */,
 				9204BE101D319EF300BD49DB /* griffin.c in Sources */,
@@ -562,6 +579,7 @@
 				92CC05C221FE3C6D00FF79F0 /* WebServer.m in Sources */,
 				92CC05BA21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */,
 				92CC05AE21FE3C1700FF79F0 /* GCDWebServerFileResponse.m in Sources */,
+				9210C2F624B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */,
 				92CC05B221FE3C1700FF79F0 /* GCDWebServerStreamedResponse.m in Sources */,
 				92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */,
 			);
@@ -578,6 +596,7 @@
 				92CC05B721FE3C1700FF79F0 /* GCDWebServerMultiPartFormRequest.m in Sources */,
 				92CC05AD21FE3C1700FF79F0 /* GCDWebServerErrorResponse.m in Sources */,
 				92CC05A721FE3C1700FF79F0 /* GCDWebServerFunctions.m in Sources */,
+				9210C2F924B3A32D00E6FE7C /* griffin_glslang.cpp in Sources */,
 				92CC05A921FE3C1700FF79F0 /* GCDWebServer.m in Sources */,
 				926C77EA21FD20C100103EDE /* griffin_objc.m in Sources */,
 				926C77EB21FD20C400103EDE /* griffin.c in Sources */,
@@ -586,6 +605,7 @@
 				92CC05C321FE3C6D00FF79F0 /* WebServer.m in Sources */,
 				92CC05BB21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */,
 				92CC05AF21FE3C1700FF79F0 /* GCDWebServerFileResponse.m in Sources */,
+				9210C2F724B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */,
 				92CC05B321FE3C1700FF79F0 /* GCDWebServerStreamedResponse.m in Sources */,
 				92CC05A321FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */,
 			);
@@ -610,11 +630,13 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.8.5;
+				CURRENT_PROJECT_VERSION = 1.8.9;
+				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -626,12 +648,18 @@
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
+					"$(DEPS_DIR)/glslang",
+					"$(DEPS_DIR)/SPIRV-Cross",
+					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
+					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
+					"$(DEPS_DIR)/glslang/glslang/SPIRV",
+					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				MARKETING_VERSION = 1.8.5;
+				MARKETING_VERSION = 1.8.9;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DDONT_WANT_ARM_OPTIMIZATIONS",
@@ -690,10 +718,20 @@
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_KEYMAPPER",
+					"-DHAVE_COCOA_METAL",
+					"-DHAVE_METAL",
+					"-DHAVE_SLANG",
+					"-DHAVE_SPIRV_CROSS",
+					"-DHAVE_GLSLANG",
+					"-DWANT_GLSLANG",
+					"-DGLSLANG_OSINCLUDE_UNIX",
+					"-DENABLE_HLSL",
+					"-DHAVE_BUILTINGLSLANG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchDBUG;
+				PRODUCT_NAME = RADEBUG;
 				PROVISIONING_PROFILE = "";
+				SRCBASE = "$(SRCROOT)/../..";
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
@@ -705,11 +743,13 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.8.5;
+				CURRENT_PROJECT_VERSION = 1.8.9;
+				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -721,12 +761,18 @@
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
+					"$(DEPS_DIR)/glslang",
+					"$(DEPS_DIR)/SPIRV-Cross",
+					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
+					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
+					"$(DEPS_DIR)/glslang/glslang/SPIRV",
+					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				MARKETING_VERSION = 1.8.5;
+				MARKETING_VERSION = 1.8.9;
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -788,9 +834,10 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchDBUG;
+				PRODUCT_NAME = RADEBUG;
 				PROVISIONING_PROFILE = "";
+				SRCBASE = "$(SRCROOT)/../..";
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
@@ -828,7 +875,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.8.5;
+				CURRENT_PROJECT_VERSION = 1.8.9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -850,7 +897,7 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.8.5;
+				MARKETING_VERSION = 1.8.9;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -950,7 +997,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.8.5;
+				CURRENT_PROJECT_VERSION = 1.8.9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -972,7 +1019,7 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.8.5;
+				MARKETING_VERSION = 1.8.9;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (

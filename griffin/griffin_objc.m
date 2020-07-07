@@ -41,7 +41,7 @@
 
 #else
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
 #include "../ui/drivers/cocoa/ui_cocoa_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_browser_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_application.m"

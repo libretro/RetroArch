@@ -26,6 +26,7 @@
 #include <retro_timers.h>
 
 #include "cocoa/cocoa_common.h"
+#include "cocoa/apple_platform.h"
 #include "../ui_companion_driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
@@ -316,6 +317,66 @@ enum
 @end
 
 @implementation RetroArch_iOS
+
+#pragma mark - ApplePlatform
+
+#ifdef HAVE_COCOA_METAL
+-(id)renderView {
+    return _renderView;
+}
+-(bool)hasFocus {
+    return YES;
+}
+- (void)setViewType:(apple_view_type_t)vt {
+   if (vt == _vt)
+      return;
+
+   RARCH_LOG("[Cocoa]: change view type: %d ? %d\n", _vt, vt);
+
+   _vt = vt;
+   if (_renderView != nil)
+   {
+//      _renderView.wantsLayer = NO;
+//      _renderView.layer = nil;
+      [_renderView removeFromSuperview];
+//      self.window.contentView = nil;
+      _renderView = nil;
+   }
+
+   switch (vt) {
+      case APPLE_VIEW_TYPE_VULKAN:
+      case APPLE_VIEW_TYPE_METAL:
+      {
+         MetalView *v = [MetalView new];
+         v.paused = YES;
+         v.enableSetNeedsDisplay = NO;
+         _renderView = v;
+      }
+      break;
+
+      case APPLE_VIEW_TYPE_OPENGL:
+      {
+         _renderView = [CocoaView get];
+         break;
+      }
+
+      case APPLE_VIEW_TYPE_NONE:
+      default:
+         return;
+   }
+
+//   _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    [_renderView setFrame:self.window.bounds];
+
+    [self.window addSubview:_renderView];
+//   self.window.contentView.nextResponder = _listener;
+}
+
+- (apple_view_type_t)viewType {
+   return _vt;
+}
+
+#endif
 
 + (RetroArch_iOS*)get
 {

@@ -46,13 +46,13 @@ void *glkitview_init(void);
 
 @implementation CocoaView
 
-#if defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
 - (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window {
    return YES;
 }
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
 - (void)scrollWheel:(NSEvent *)theEvent {
     cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
     (void)apple;
@@ -74,7 +74,7 @@ void *glkitview_init(void);
 {
    self = [super init];
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 #endif
 
@@ -83,7 +83,7 @@ void *glkitview_init(void);
    cocoa_view.data = (CocoaView*)self;
 
    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
-#elif defined(HAVE_COCOA_METAL)
+#elif !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
    [self registerForDraggedTypes:@[NSColorPboardType, NSFilenamesPboardType]];
 #elif defined(HAVE_COCOATOUCH)
    self.view = (BRIDGE GLKView*)glkitview_init();
@@ -108,7 +108,7 @@ void *glkitview_init(void);
    return self;
 }
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
@@ -169,7 +169,7 @@ void *glkitview_init(void);
 #elif TARGET_OS_IOS
 -(void) showNativeMenu {
     dispatch_async(dispatch_get_main_queue(), ^{
-        [[RetroArch_iOS get] toggleUI];
+//        [[RetroArch_iOS get] toggleUI];
     });
 }
 
