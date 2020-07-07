@@ -46,7 +46,8 @@
 #endif
 #endif
 
-struct sevenzip_context_t {
+struct sevenzip_context_t
+{
    CFileInStream archiveStream;
    CLookToRead lookStream;
    ISzAlloc allocImp;

@@ -74,6 +74,18 @@ enum core_updater_download_status
    CORE_UPDATER_DOWNLOAD_END
 };
 
+/* Update installed cores */
+enum update_installed_cores_status
+{
+   UPDATE_INSTALLED_CORES_BEGIN = 0,
+   UPDATE_INSTALLED_CORES_WAIT_LIST,
+   UPDATE_INSTALLED_CORES_ITERATE,
+   UPDATE_INSTALLED_CORES_UPDATE_CORE,
+   UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD,
+   UPDATE_INSTALLED_CORES_END
+};
+
+
 typedef struct core_updater_download_handle
 {
    bool auto_backup;
@@ -98,17 +110,6 @@ typedef struct core_updater_download_handle
    retro_task_t *backup_task;
    enum core_updater_download_status status;
 } core_updater_download_handle_t;
-
-/* Update installed cores */
-enum update_installed_cores_status
-{
-   UPDATE_INSTALLED_CORES_BEGIN = 0,
-   UPDATE_INSTALLED_CORES_WAIT_LIST,
-   UPDATE_INSTALLED_CORES_ITERATE,
-   UPDATE_INSTALLED_CORES_UPDATE_CORE,
-   UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD,
-   UPDATE_INSTALLED_CORES_END
-};
 
 typedef struct update_installed_cores_handle
 {

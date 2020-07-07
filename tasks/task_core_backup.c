@@ -138,6 +138,7 @@ static void free_core_backup_handle(core_backup_handle_t *backup_handle)
 
 /* Forward declarations, required for task_core_backup_finder() */
 static void task_core_backup_handler(retro_task_t *task);
+
 static void task_core_restore_handler(retro_task_t *task);
 
 static bool task_core_backup_finder(retro_task_t *task, void *user_data)

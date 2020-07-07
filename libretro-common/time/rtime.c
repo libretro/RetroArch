@@ -30,6 +30,7 @@
 #include <time/rtime.h>
 
 #ifdef HAVE_THREADS
+/* TODO/FIXME - global */
 slock_t *rtime_localtime_lock = NULL;
 #endif
 
