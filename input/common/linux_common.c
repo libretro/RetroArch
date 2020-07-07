@@ -25,6 +25,7 @@
 
 #include "linux_common.h"
 
+/* TODO/FIXME - static globals */
 static struct termios oldTerm, newTerm;
 static long oldKbmd                = 0xffff;
 static bool linux_stdin_claimed    = false;
