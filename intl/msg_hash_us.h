@@ -1302,11 +1302,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "Threaded Video"
+   "Threaded Video (Restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise."
+   "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise. NOTE: Restart RetroArch for the changes to take effect."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
