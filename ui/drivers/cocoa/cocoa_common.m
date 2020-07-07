@@ -29,6 +29,9 @@
 #ifdef HAVE_COCOATOUCH
 #import "GCDWebUploader.h"
 #import "WebServer.h"
+#ifdef HAVE_COCOA_METAL
+#include "apple_platform.h"
+#endif
 #endif
 
 
@@ -86,7 +89,11 @@ void *glkitview_init(void);
 #elif !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
    [self registerForDraggedTypes:@[NSColorPboardType, NSFilenamesPboardType]];
 #elif defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA_METAL)
+    self.view = [UIView new];
+#else
    self.view = (BRIDGE GLKView*)glkitview_init();
+#endif
 #if TARGET_OS_IOS
     UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
     swipe.numberOfTouchesRequired = 4;

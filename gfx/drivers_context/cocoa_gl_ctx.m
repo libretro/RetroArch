@@ -102,7 +102,7 @@ void *nsview_get_ptr(void)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);
-#elif defined(HAVE_COCOA_METAL)
+#elif defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);

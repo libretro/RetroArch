@@ -366,8 +366,9 @@ enum
 
 //   _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
     [_renderView setFrame:self.window.bounds];
+    [[CocoaView get].view addSubview:_renderView];
 
-    [self.window addSubview:_renderView];
+//    [self.window addSubview:_renderView];
 //   self.window.contentView.nextResponder = _listener;
 }
 
