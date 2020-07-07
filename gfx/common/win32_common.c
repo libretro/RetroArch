@@ -230,9 +230,18 @@ typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM
 typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
 typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 
+/* TODO/FIXME - globals */
 bool g_win32_restore_desktop        = false;
 static bool taskbar_is_created      = false;
 bool g_win32_inited                 = false;
+
+unsigned g_win32_resize_width       = 0;
+unsigned g_win32_resize_height      = 0;
+
+ui_window_win32_t main_window;
+
+static HMONITOR win32_monitor_last;
+static HMONITOR win32_monitor_all[MAX_MONITORS];
 
 typedef struct win32_common_state
 {
@@ -257,11 +266,6 @@ static win32_common_state_t win32_st =
    0,                   /* monitor_count */
    false                /* resized */
 };
-
-unsigned g_win32_resize_width       = 0;
-unsigned g_win32_resize_height      = 0;
-
-ui_window_win32_t main_window;
 
 /* Power Request APIs */
 
@@ -309,9 +313,6 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #else
 #define INT_PTR_COMPAT INT_PTR
 #endif
-
-static HMONITOR win32_monitor_last;
-static HMONITOR win32_monitor_all[MAX_MONITORS];
 
 bool win32_taskbar_is_created(void)
 {

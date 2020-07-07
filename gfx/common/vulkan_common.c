@@ -46,6 +46,7 @@
 #define VULKAN_EMULATE_MAILBOX
 #endif
 
+/* TODO/FIXME - static globals */
 static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
