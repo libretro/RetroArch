@@ -2398,6 +2398,7 @@ struct rarch_state
    struct retro_callbacks     retro_ctx;
    struct retro_core_t        current_core;
    struct global              g_extern;
+   content_state_t            content_st;
 
    jmp_buf error_sjlj_context;
 
@@ -2541,6 +2542,7 @@ struct rarch_state
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    struct video_shader *menu_driver_shader;
 #endif
+   frontend_ctx_driver_t *current_frontend_ctx;
 };
 
 static struct rarch_state         rarch_st;
@@ -2579,7 +2581,6 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "9:16",          0.5625f },
    { "5:4",           1.25f },
    { "6:5",           1.2f },
-   { "7:3",           2.3333f },
    { "7:9",           0.7777f },
    { "8:3",           2.6666f },
    { "8:7",           1.1428f },
@@ -2897,6 +2898,28 @@ static void menu_input_post_iterate(
       retro_time_t current_time);
 static void menu_input_reset(struct rarch_state *p_rarch);
 #endif
+
+content_state_t *content_state_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->content_st;
+}
+
+/* Get the current subsystem rom id */
+unsigned content_get_subsystem_rom_id(void)
+{
+   struct rarch_state *p_rarch   = &rarch_st;
+   content_state_t    *p_content = &p_rarch->content_st;
+   return p_content->pending_subsystem_rom_id;
+}
+
+/* Get the current subsystem */
+int content_get_subsystem(void)
+{
+   struct rarch_state *p_rarch   = &rarch_st;
+   content_state_t    *p_content = &p_rarch->content_st;
+   return p_content->pending_subsystem_id;
+}
 
 int input_event_get_osk_ptr(void)
 {
@@ -10532,9 +10555,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
    unsigned i;
    core_info_list_t *core_info_list = NULL;
    const core_info_t *core_info     = NULL;
-   struct rarch_state *p_rarch      = &rarch_st;
-   settings_t *settings             = p_rarch->configuration_settings;
-   bool add_null_entries            = settings->bools.add_null_drivers;
    struct string_list *s            = string_list_new();
 
    if (!s || !len)
@@ -10549,33 +10569,23 @@ struct string_list *string_list_new_special(enum string_list_type type,
 #ifdef HAVE_MENU
          for (i = 0; menu_ctx_drivers[i]; i++)
          {
-            if (menu_ctx_drivers[i])
-            {
-               bool add_null    = add_null_entries;
-               const char *opt  = menu_ctx_drivers[i]->ident;
-               *len            += strlen(opt) + 1;
+            const char *opt  = menu_ctx_drivers[i]->ident;
+            *len            += strlen(opt) + 1;
 
-               if (!add_null)
-                  add_null = (i == 0) || !string_is_equal(opt, "null");
-
-               if (add_null)
-                  string_list_append(s, opt, attr);
-            }
+            /* Don't allow the user to set menu driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
+               string_list_append(s, opt, attr);
          }
          break;
 #endif
       case STRING_LIST_CAMERA_DRIVERS:
          for (i = 0; camera_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = camera_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
-               string_list_append(s, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_BLUETOOTH_DRIVERS:
@@ -10585,11 +10595,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
             const char *opt  = bluetooth_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null_entries)
-               add_null_entries = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null_entries)
-               string_list_append(s, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
 #endif
@@ -10597,85 +10603,61 @@ struct string_list *string_list_new_special(enum string_list_type type,
 #ifdef HAVE_WIFI
          for (i = 0; wifi_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = wifi_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
-               string_list_append(s, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
 #endif
       case STRING_LIST_LOCATION_DRIVERS:
          for (i = 0; location_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = location_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
-               string_list_append(s, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_AUDIO_DRIVERS:
          for (i = 0; audio_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = audio_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
-               string_list_append(s, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_AUDIO_RESAMPLER_DRIVERS:
          for (i = 0; audio_resampler_driver_find_handle(i); i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = audio_resampler_driver_find_ident(i);
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
-               string_list_append(s, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_VIDEO_DRIVERS:
          for (i = 0; video_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = video_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
+            /* Don't allow the user to set video driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
                string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_INPUT_DRIVERS:
          for (i = 0; input_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = input_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
+            /* Don't allow the user to set input driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
                string_list_append(s, opt, attr);
          }
          break;
@@ -10683,14 +10665,12 @@ struct string_list *string_list_new_special(enum string_list_type type,
 #ifdef HAVE_HID
          for (i = 0; hid_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = hid_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
+            /* Don't allow the user to set input HID driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
                string_list_append(s, opt, attr);
          }
 #endif
@@ -10698,43 +10678,31 @@ struct string_list *string_list_new_special(enum string_list_type type,
       case STRING_LIST_INPUT_JOYPAD_DRIVERS:
          for (i = 0; joypad_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = joypad_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
+            /* Don't allow the user to set input joypad driver to "null" using the UI.
+             * Can prevent the user from locking him/herself out of the program. */
+            if (string_is_not_equal(opt, "null"))
                string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_RECORD_DRIVERS:
          for (i = 0; record_drivers[i]; i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = record_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
-               string_list_append(s, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_MIDI_DRIVERS:
          for (i = 0; midi_driver_find_handle(i); i++)
          {
-            bool add_null    = add_null_entries;
             const char *opt  = midi_drivers[i]->ident;
             *len            += strlen(opt) + 1;
 
-            if (!add_null)
-               add_null = (i == 0) || !string_is_equal(opt, "null");
-
-            if (add_null)
-               string_list_append(s, opt, attr);
+            string_list_append(s, opt, attr);
          }
          break;
       case STRING_LIST_SUPPORTED_CORES_PATHS:
@@ -33635,25 +33603,17 @@ static void camera_driver_find_driver(struct rarch_state *p_rarch)
  * pointer to driver.
  **/
 static const void *find_driver_nonempty(
-      bool add_null_entries,
       const char *label, int i,
       char *s, size_t len)
 {
-   bool add_entry = add_null_entries;
-
    if (string_is_equal(label, "camera_driver"))
    {
       if (camera_drivers[i])
       {
          const char *ident = camera_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return camera_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return camera_drivers[i];
       }
    }
    else if (string_is_equal(label, "location_driver"))
@@ -33661,14 +33621,9 @@ static const void *find_driver_nonempty(
       if (location_drivers[i])
       {
          const char *ident = location_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return location_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return location_drivers[i];
       }
    }
 #ifdef HAVE_MENU
@@ -33677,14 +33632,9 @@ static const void *find_driver_nonempty(
       if (menu_ctx_drivers[i])
       {
          const char *ident = menu_ctx_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return menu_ctx_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return menu_ctx_drivers[i];
       }
    }
 #endif
@@ -33693,14 +33643,9 @@ static const void *find_driver_nonempty(
       if (input_drivers[i])
       {
          const char *ident = input_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return input_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return input_drivers[i];
       }
    }
    else if (string_is_equal(label, "input_joypad_driver"))
@@ -33708,14 +33653,9 @@ static const void *find_driver_nonempty(
       if (joypad_drivers[i])
       {
          const char *ident = joypad_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return joypad_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return joypad_drivers[i];
       }
    }
    else if (string_is_equal(label, "video_driver"))
@@ -33723,14 +33663,9 @@ static const void *find_driver_nonempty(
       if (video_drivers[i])
       {
          const char *ident = video_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return video_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return video_drivers[i];
       }
    }
    else if (string_is_equal(label, "audio_driver"))
@@ -33738,14 +33673,9 @@ static const void *find_driver_nonempty(
       if (audio_drivers[i])
       {
          const char *ident = audio_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return audio_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return audio_drivers[i];
       }
    }
    else if (string_is_equal(label, "record_driver"))
@@ -33753,14 +33683,9 @@ static const void *find_driver_nonempty(
       if (record_drivers[i])
       {
          const char *ident = record_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return record_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return record_drivers[i];
       }
    }
    else if (string_is_equal(label, "midi_driver"))
@@ -33768,14 +33693,9 @@ static const void *find_driver_nonempty(
       if (midi_driver_find_handle(i))
       {
          const char *ident = midi_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return midi_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return midi_drivers[i];
       }
    }
    else if (string_is_equal(label, "audio_resampler_driver"))
@@ -33783,14 +33703,9 @@ static const void *find_driver_nonempty(
       if (audio_resampler_driver_find_handle(i))
       {
          const char *ident = audio_resampler_driver_find_ident(i);
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return audio_resampler_driver_find_handle(i);
-         }
+         strlcpy(s, ident, len);
+         return audio_resampler_driver_find_handle(i);
       }
    }
    else if (string_is_equal(label, "bluetooth_driver"))
@@ -33798,14 +33713,9 @@ static const void *find_driver_nonempty(
       if (bluetooth_drivers[i])
       {
          const char *ident = bluetooth_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return bluetooth_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return bluetooth_drivers[i];
       }
    }
    else if (string_is_equal(label, "wifi_driver"))
@@ -33813,14 +33723,9 @@ static const void *find_driver_nonempty(
       if (wifi_drivers[i])
       {
          const char *ident = wifi_drivers[i]->ident;
-         if (!add_entry)
-            add_entry      = i == 0 || !string_is_equal(ident, "null");
 
-         if (add_entry)
-         {
-            strlcpy(s, ident, len);
-            return wifi_drivers[i];
-         }
+         strlcpy(s, ident, len);
+         return wifi_drivers[i];
       }
    }
 
@@ -33837,8 +33742,7 @@ static const void *find_driver_nonempty(
  * Returns: -1 if no driver based on @label and @drv found, otherwise
  * index number of the driver found in the array.
  **/
-static int driver_find_index(bool add_null_entries,
-      const char * label, const char *drv)
+static int driver_find_index(const char *label, const char *drv)
 {
    unsigned i;
    char str[256];
@@ -33846,8 +33750,7 @@ static int driver_find_index(bool add_null_entries,
    str[0] = '\0';
 
    for (i = 0;
-         find_driver_nonempty(add_null_entries,
-            label, i, str, sizeof(str)) != NULL; i++)
+         find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
    {
       if (string_is_empty(str))
          break;
@@ -33866,15 +33769,12 @@ static int driver_find_index(bool add_null_entries,
  *
  * Find last driver in driver array.
  **/
-static bool driver_find_last(
-      bool add_null_entries,
-      const char *label, char *s, size_t len)
+static bool driver_find_last(const char *label, char *s, size_t len)
 {
    unsigned i;
 
    for (i = 0;
-         find_driver_nonempty(add_null_entries,
-            label, i, s, len) != NULL; i++)
+         find_driver_nonempty(label, i, s, len) != NULL; i++)
    {}
 
    if (i)
@@ -33882,7 +33782,7 @@ static bool driver_find_last(
    else
       i = 0;
 
-   find_driver_nonempty(add_null_entries, label, i, s, len);
+   find_driver_nonempty(label, i, s, len);
    return true;
 }
 
@@ -33894,17 +33794,13 @@ static bool driver_find_last(
  *
  * Find previous driver in driver array.
  **/
-static bool driver_find_prev(
-      bool add_null_entries,
-      const char *label, char *s, size_t len)
+static bool driver_find_prev(const char *label, char *s, size_t len)
 {
-   int i = driver_find_index(add_null_entries, label, s);
+   int i = driver_find_index(label, s);
 
    if (i > 0)
    {
-      find_driver_nonempty(
-            add_null_entries,
-            label, i - 1, s, len);
+      find_driver_nonempty(label, i - 1, s, len);
       return true;
    }
 
@@ -33921,17 +33817,13 @@ static bool driver_find_prev(
  *
  * Find next driver in driver array.
  **/
-static bool driver_find_next(
-      bool add_null_entries,
-      const char *label, char *s, size_t len)
+static bool driver_find_next(const char *label, char *s, size_t len)
 {
-   int i = driver_find_index(add_null_entries, label, s);
+   int i = driver_find_index(label, s);
 
    if (i >= 0 && string_is_not_equal(s, "null"))
    {
-      find_driver_nonempty(
-            add_null_entries,
-            label, i + 1, s, len);
+      find_driver_nonempty(label, i + 1, s, len);
       return true;
    }
 
@@ -34343,8 +34235,6 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
 bool driver_ctl(enum driver_ctl_state state, void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
-   bool      add_null_entries  = settings->bools.add_null_drivers;
 
    switch (state)
    {
@@ -34361,8 +34251,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
             if (!drv)
                return false;
-            find_driver_nonempty(add_null_entries,
-                  drv->label, 0, drv->s, drv->len);
+            find_driver_nonempty(drv->label, 0, drv->s, drv->len);
          }
          break;
       case RARCH_DRIVER_CTL_FIND_LAST:
@@ -34370,32 +34259,28 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
             if (!drv)
                return false;
-            return driver_find_last(add_null_entries,
-                  drv->label, drv->s, drv->len);
+            return driver_find_last(drv->label, drv->s, drv->len);
          }
       case RARCH_DRIVER_CTL_FIND_PREV:
          {
             driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
             if (!drv)
                return false;
-            return driver_find_prev(add_null_entries,
-                  drv->label, drv->s, drv->len);
+            return driver_find_prev(drv->label, drv->s, drv->len);
          }
       case RARCH_DRIVER_CTL_FIND_NEXT:
          {
             driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
             if (!drv)
                return false;
-            return driver_find_next(add_null_entries,
-                  drv->label, drv->s, drv->len);
+            return driver_find_next(drv->label, drv->s, drv->len);
          }
       case RARCH_DRIVER_CTL_FIND_INDEX:
          {
             driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
             if (!drv)
                return false;
-            drv->len = driver_find_index(add_null_entries,
-                  drv->label, drv->s);
+            drv->len = driver_find_index(drv->label, drv->s);
          }
          break;
       case RARCH_DRIVER_CTL_NONE:
@@ -36880,6 +36765,35 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
       case RARCH_CTL_IS_DUMMY_CORE:
          return (p_rarch->current_core_type == CORE_TYPE_DUMMY);
+      case RARCH_CTL_IS_CORE_LOADED:
+         {
+            const char *core_path        = (const char*)data;
+            const char *core_file        = NULL;
+            const char *loaded_core_path = NULL;
+            const char *loaded_core_file = NULL;
+
+            if (string_is_empty(core_path))
+               return false;
+
+            /* Get core file name */
+            core_file = path_basename(core_path);
+            if (string_is_empty(core_file))
+               return false;
+
+            /* Get loaded core file name */
+            loaded_core_path = path_get(RARCH_PATH_CORE);
+            if (!string_is_empty(loaded_core_path))
+               loaded_core_file = path_basename(loaded_core_path);
+
+            /* Check whether specified core and currently
+             * loaded core are the same */
+            if (!string_is_empty(loaded_core_file) &&
+                string_is_equal(core_file, loaded_core_file))
+               return true;
+
+            return false;
+         }
+         break;
       case RARCH_CTL_HAS_SET_USERNAME:
          return p_rarch->has_set_username;
       case RARCH_CTL_IS_INITED:
@@ -39880,7 +39794,7 @@ static bool accessibility_speak_priority(
 
    if (is_accessibility_enabled(p_rarch))
    {
-      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
       if (frontend && frontend->accessibility_speak)
       {
          int speed = settings->uints.accessibility_narrator_speech_speed;
@@ -39910,7 +39824,7 @@ static bool is_narrator_running(struct rarch_state *p_rarch)
 {
    if (is_accessibility_enabled(p_rarch))
    {
-      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
       if (frontend && frontend->is_narrator_running)
          return frontend->is_narrator_running();
    }
@@ -40004,4 +39918,320 @@ void menu_content_environment_get(int *argc, char *argv[],
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
       wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) ? NULL :
          path_get(RARCH_PATH_CORE);
+}
+
+frontend_ctx_driver_t *frontend_get_ptr(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->current_frontend_ctx;
+}
+
+int frontend_driver_parse_drive_list(void *data, bool load_content)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend || !frontend->parse_drive_list)
+      return -1;
+   return frontend->parse_drive_list(data, load_content);
+}
+
+void frontend_driver_content_loaded(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend || !frontend->content_loaded)
+      return;
+   frontend->content_loaded();
+}
+
+bool frontend_driver_has_fork(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend || !frontend->set_fork)
+      return false;
+   return true;
+}
+
+bool frontend_driver_set_fork(enum frontend_fork fork_mode)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend_driver_has_fork())
+      return false;
+   return frontend->set_fork(fork_mode);
+}
+
+void frontend_driver_process_args(int *argc, char *argv[])
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+   if (!frontend || !frontend->process_args)
+      return;
+   frontend->process_args(argc, argv);
+}
+
+bool frontend_driver_is_inited(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend)
+      return false;
+   return true;
+}
+
+void frontend_driver_init_first(void *args)
+{
+   struct rarch_state *p_rarch   = &rarch_st;
+   p_rarch->current_frontend_ctx = (frontend_ctx_driver_t*)
+      frontend_ctx_init_first();
+
+   if (p_rarch->current_frontend_ctx && p_rarch->current_frontend_ctx->init)
+      p_rarch->current_frontend_ctx->init(args);
+}
+
+void frontend_driver_free(void)
+{
+   struct rarch_state *p_rarch      = &rarch_st;
+
+   if (p_rarch)
+      p_rarch->current_frontend_ctx = NULL;
+}
+
+environment_get_t frontend_driver_environment_get_ptr(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend)
+      return NULL;
+   return frontend->environment_get;
+}
+
+bool frontend_driver_has_get_video_driver_func(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_video_driver)
+      return false;
+   return true;
+}
+
+const struct video_driver *frontend_driver_get_video_driver(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_video_driver)
+      return NULL;
+   return frontend->get_video_driver();
+}
+
+void frontend_driver_exitspawn(char *s, size_t len, char *args)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->exitspawn)
+      return;
+   frontend->exitspawn(s, len, args);
+}
+
+void frontend_driver_deinit(void *args)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->deinit)
+      return;
+   frontend->deinit(args);
+}
+
+void frontend_driver_shutdown(bool a)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->shutdown)
+      return;
+   frontend->shutdown(a);
+}
+
+enum frontend_architecture frontend_driver_get_cpu_architecture(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_architecture)
+      return FRONTEND_ARCH_NONE;
+   return frontend->get_architecture();
+}
+
+const void *frontend_driver_get_cpu_architecture_str(
+      char *architecture, size_t size)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
+
+   switch (arch)
+   {
+      case FRONTEND_ARCH_X86:
+         strlcpy(architecture, "x86", size);
+         break;
+      case FRONTEND_ARCH_X86_64:
+         strlcpy(architecture, "x64", size);
+         break;
+      case FRONTEND_ARCH_PPC:
+         strlcpy(architecture, "PPC", size);
+         break;
+      case FRONTEND_ARCH_ARM:
+         strlcpy(architecture, "ARM", size);
+         break;
+      case FRONTEND_ARCH_ARMV7:
+         strlcpy(architecture, "ARMv7", size);
+         break;
+      case FRONTEND_ARCH_ARMV8:
+         strlcpy(architecture, "ARMv8", size);
+         break;
+      case FRONTEND_ARCH_MIPS:
+         strlcpy(architecture, "MIPS", size);
+         break;
+      case FRONTEND_ARCH_TILE:
+         strlcpy(architecture, "Tilera", size);
+         break;
+      case FRONTEND_ARCH_NONE:
+      default:
+         strlcpy(architecture, "N/A", size);
+         break;
+   }
+
+   return frontend;
+}
+
+uint64_t frontend_driver_get_total_memory(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_total_mem)
+      return 0;
+   return frontend->get_total_mem();
+}
+
+uint64_t frontend_driver_get_free_memory(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_free_mem)
+      return 0;
+   return frontend->get_free_mem();
+}
+
+void frontend_driver_install_signal_handler(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->install_signal_handler)
+      return;
+   frontend->install_signal_handler();
+}
+
+int frontend_driver_get_signal_handler_state(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_signal_handler_state)
+      return -1;
+   return frontend->get_signal_handler_state();
+}
+
+void frontend_driver_set_signal_handler_state(int value)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->set_signal_handler_state)
+      return;
+   frontend->set_signal_handler_state(value);
+}
+
+void frontend_driver_attach_console(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->attach_console)
+      return;
+   frontend->attach_console();
+}
+
+void frontend_driver_detach_console(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->detach_console)
+      return;
+   frontend->detach_console();
+}
+
+void frontend_driver_destroy_signal_handler_state(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->destroy_signal_handler_state)
+      return;
+   frontend->destroy_signal_handler_state();
+}
+
+bool frontend_driver_can_watch_for_changes(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->watch_path_for_changes)
+      return false;
+   return true;
+}
+
+void frontend_driver_watch_path_for_changes(
+      struct string_list *list, int flags,
+      path_change_data_t **change_data)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->watch_path_for_changes)
+      return;
+   frontend->watch_path_for_changes(list, flags, change_data);
+}
+
+bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->check_for_path_changes)
+      return false;
+   return frontend->check_for_path_changes(change_data);
+}
+
+void frontend_driver_set_sustained_performance_mode(bool on)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->set_sustained_performance_mode)
+      return;
+   frontend->set_sustained_performance_mode(on);
+}
+
+const char* frontend_driver_get_cpu_model_name(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_cpu_model_name)
+      return NULL;
+   return frontend->get_cpu_model_name();
+}
+
+enum retro_language frontend_driver_get_user_language(void)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (!frontend || !frontend->get_user_language)
+      return RETRO_LANGUAGE_ENGLISH;
+   return frontend->get_user_language();
 }

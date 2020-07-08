@@ -4870,6 +4870,25 @@ static void setting_get_string_representation_uint_video_3ds_display_mode(
 }
 #endif
 
+/* A protected driver is such that the user cannot set to "null" using the UI.
+ * Can prevent the user from locking him/herself out of the program. */
+static bool setting_is_protected_driver(rarch_setting_t *setting)
+{
+   if (!setting)
+      return false;
+
+   switch (setting->enum_idx)
+   {
+      case MENU_ENUM_LABEL_INPUT_DRIVER:
+      case MENU_ENUM_LABEL_JOYPAD_DRIVER:
+      case MENU_ENUM_LABEL_VIDEO_DRIVER:
+      case MENU_ENUM_LABEL_MENU_DRIVER:
+         return true;
+      default:
+         return false;
+   }
+}
+
 static int setting_action_left_analog_dpad_mode(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -5140,6 +5159,7 @@ static int setting_string_action_left_driver(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    driver_ctx_info_t drv;
+   bool success = false;
 
    if (!setting)
       return -1;
@@ -5148,17 +5168,47 @@ static int setting_string_action_left_driver(
    drv.s     = setting->value.target.string;
    drv.len   = setting->size;
 
-   if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
+   /* Find the previous driver in the array of drivers.
+    * If the driver is protected, keep finding more previous drivers while the
+    * driver is null or until there are no more previous drivers. */
+   success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv);
+   if (setting_is_protected_driver(setting))
+   {
+      while (success &&
+             string_is_equal(drv.s, "null") &&
+             (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
+   }
+
+   if (!success)
    {
       settings_t                   *settings = config_get_ptr();
       bool menu_navigation_wraparound_enable = settings ? settings->bools.menu_navigation_wraparound_enable: false;
 
       if (menu_navigation_wraparound_enable)
       {
+         /* If wraparound is enabled, find the LAST driver in the array of drivers.
+          * If the driver is protected, find the previous driver and keep finding more
+          * previous drivers while the driver is null or until there are no more previous drivers. */
          drv.label = setting->name;
          drv.s     = setting->value.target.string;
          drv.len   = setting->size;
-         driver_ctl(RARCH_DRIVER_CTL_FIND_LAST, &drv);
+         success = driver_ctl(RARCH_DRIVER_CTL_FIND_LAST, &drv);
+         if (setting_is_protected_driver(setting))
+         {
+            while (success &&
+                   string_is_equal(drv.s, "null") &&
+                   (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
+         }
+      }
+      else if (setting_is_protected_driver(setting))
+      {
+         /* If wraparound is disabled and if the driver is protected,
+          * find the next driver in the array of drivers and keep finding more
+          * next drivers while the driver is null or until there are no more next drivers. */
+         success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv);
+         while (success &&
+                string_is_equal(drv.s, "null") &&
+                (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
       }
    }
 
@@ -5376,6 +5426,7 @@ static int setting_string_action_right_driver(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    driver_ctx_info_t drv;
+   bool success = false;
 
    if (!setting)
       return -1;
@@ -5384,17 +5435,47 @@ static int setting_string_action_right_driver(
    drv.s     = setting->value.target.string;
    drv.len   = setting->size;
 
-   if (!driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv))
+   /* Find the next driver in the array of drivers.
+    * If the driver is protected, keep finding next drivers while the
+    * driver is null or until there are no more next drivers. */
+   success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv);
+   if (setting_is_protected_driver(setting))
+   {
+      while (success &&
+             string_is_equal(drv.s, "null") &&
+             (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
+   }
+
+   if (!success)
    {
       settings_t                   *settings = config_get_ptr();
       bool menu_navigation_wraparound_enable = settings ? settings->bools.menu_navigation_wraparound_enable: false;
 
       if (menu_navigation_wraparound_enable)
       {
+         /* If wraparound is enabled, find the first driver in the array of drivers.
+          * If the driver is protected, find the next driver and keep finding more
+          * next drivers while the driver is null or until there are no more next drivers. */
          drv.label = setting->name;
          drv.s     = setting->value.target.string;
          drv.len   = setting->size;
-         driver_ctl(RARCH_DRIVER_CTL_FIND_FIRST, &drv);
+         success = driver_ctl(RARCH_DRIVER_CTL_FIND_FIRST, &drv);
+         if (setting_is_protected_driver(setting))
+         {
+            while (success &&
+                   string_is_equal(drv.s, "null") &&
+                   (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
+         }
+      }
+      else if (setting_is_protected_driver(setting))
+      {
+         /* If wraparound is disabled and if the driver is protected,
+          * find the previous driver in the array of drivers and keep finding more
+          * previous drivers while the driver is null or until there are no more previous drivers. */
+         success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv);
+         while (success &&
+                string_is_equal(drv.s, "null") &&
+                (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
       }
    }
 
@@ -8587,8 +8668,11 @@ static bool setting_append_list(
       case SETTINGS_LIST_CORE:
          {
             unsigned i, listing = 0;
+#ifndef HAVE_DYNAMIC
+            struct bool_entry bool_entries[7];
+#else
             struct bool_entry bool_entries[6];
-
+#endif
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_CORE_SETTINGS);
@@ -8642,6 +8726,14 @@ static bool setting_append_list(
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 
+#ifndef HAVE_DYNAMIC
+            bool_entries[listing].target         = &settings->bools.always_reload_core_on_run_content;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
+            bool_entries[listing].default_value  = DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+#endif
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
                CONFIG_BOOL(
@@ -14942,21 +15034,6 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,
                MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
                DEFAULT_SETTINGS_SHOW_DRIVERS,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.add_null_drivers,
-               MENU_ENUM_LABEL_ADD_NULL_DRIVERS,
-               MENU_ENUM_LABEL_VALUE_ADD_NULL_DRIVERS,
-               false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

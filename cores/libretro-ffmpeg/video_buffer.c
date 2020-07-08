@@ -63,7 +63,7 @@ video_buffer_t *video_buffer_create(
    if (!b->buffer)
       goto fail;
 
-   for (int i = 0; i < capacity; i++)
+   for (i = 0; i < (unsigned)capacity; i++)
    {
       b->buffer[i].index     = i;
       b->buffer[i].pts       = 0;

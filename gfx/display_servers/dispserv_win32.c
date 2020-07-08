@@ -306,8 +306,8 @@ static bool win32_display_server_set_resolution(void *data,
    return true;
 }
 
-void *win32_display_server_get_resolution_list(void *data,
-      unsigned *len)
+static void *win32_display_server_get_resolution_list(
+      void *data, unsigned *len)
 {
    DEVMODE dm                        = {0};
    unsigned i, j, count              = 0;

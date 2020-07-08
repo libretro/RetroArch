@@ -327,6 +327,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_allow_rotate,             MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_on_core_shutdown,        MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_check_missing_firmware,  MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE)
+#ifndef HAVE_DYNAMIC
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_always_reload_core_on_run_content, MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_refresh_rate,            MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_refresh_rate_polled,     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_enable,                  MENU_ENUM_SUBLABEL_AUDIO_ENABLE)
@@ -335,7 +338,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_max_timing_skew,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_nonactive,               MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_disable_composition,     MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_smooth,                  MENU_ENUM_SUBLABEL_VIDEO_SMOOTH)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_null_drivers,                  MENU_ENUM_SUBLABEL_ADD_NULL_DRIVERS)
 #ifdef HAVE_ODROIDGO2
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_ctx_scaling,             MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING)
 #else
@@ -3023,9 +3025,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_crop_overscan);
             break;
-         case MENU_ENUM_LABEL_ADD_NULL_DRIVERS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_add_null_drivers);
-            break;
          case MENU_ENUM_LABEL_VIDEO_SMOOTH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_smooth);
             break;
@@ -3059,6 +3058,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dummy_check_missing_firmware);
             break;
+#ifndef HAVE_DYNAMIC
+         case MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_always_reload_core_on_run_content);
+            break;
+#endif
          case MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_allow_rotate);
             break;

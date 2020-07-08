@@ -185,29 +185,6 @@ struct content_information_ctx
    struct string_list *temporary_content;
 };
 
-typedef struct content_state
-{
-   bool is_inited;
-   bool core_does_not_need_content;
-   bool pending_subsystem_init;
-   bool pending_rom_crc;
-
-   int pending_subsystem_rom_num;
-   int pending_subsystem_id;
-   unsigned pending_subsystem_rom_id;
-   uint32_t rom_crc;
-
-   char companion_ui_crc32[32];
-   char pending_subsystem_ident[255];
-   char pending_rom_crc_path[PATH_MAX_LENGTH];
-   char companion_ui_db_name[PATH_MAX_LENGTH];
-   char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
-
-   struct string_list *temporary_content;
-} content_state_t;
-
-static content_state_t content_st;
-
 #ifdef HAVE_CDROM
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
@@ -1445,7 +1422,6 @@ static bool command_event_cmd_exec(
    content_info.argc        = 0;
    content_info.argv        = NULL;
    content_info.args        = NULL;
-   content_info.environ_get = NULL;
    content_info.environ_get = menu_content_environment_get;
 #endif
 
@@ -1530,7 +1506,7 @@ static bool firmware_update_status(
 bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
-   content_state_t                 *p_content = (content_state_t*)&content_st;
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1628,13 +1604,16 @@ bool task_push_load_content_from_playlist_from_menu(
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
    const char *path_dir_system                = settings->paths.directory_system;
+#ifndef HAVE_DYNAMIC
+   bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
+#endif
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
 #ifdef HAVE_PATCH
@@ -1674,19 +1653,73 @@ bool task_push_load_content_from_playlist_from_menu(
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
 
-   path_set(RARCH_PATH_CORE, core_path);
-
    /* Is content required by this core? */
    if (fullpath)
       sys_info->load_no_content = false;
    else
       sys_info->load_no_content = true;
 
-   /* On targets that have no dynamic core loading support, we'd
-    * execute the new core from this point. If this returns false,
-    * we assume we can dynamically load the core. */
-   if (!command_event_cmd_exec(p_content,
-            fullpath, &content_ctx, CONTENT_MODE_LOAD_NONE, &error_string))
+#ifndef HAVE_DYNAMIC
+   /* Check whether specified core is already loaded
+    * > If so, content can be launched directly with
+    *   the currently loaded core */
+   if (!force_core_reload &&
+       rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+   {
+      if (!content_info->environ_get)
+         content_info->environ_get = menu_content_environment_get;
+
+      /* Register content path */
+      path_clear(RARCH_PATH_CONTENT);
+      if (!string_is_empty(fullpath))
+         path_set(RARCH_PATH_CONTENT, fullpath);
+
+      /* Load content */
+      ret = content_load(content_info, p_content);
+
+      if (!ret)
+         goto end;
+
+      /* Update content history */
+      task_push_to_history_list(p_content, true, false, false);
+
+      goto end;
+   }
+#endif
+
+   /* Specified core is not loaded
+    * > Load it */
+   path_set(RARCH_PATH_CORE, core_path);
+#ifdef HAVE_DYNAMIC
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+
+   /* Load content
+    * > On targets that do not support dynamic core loading,
+    *   command_event_cmd_exec() will fork a new instance */
+   ret = command_event_cmd_exec(p_content,
+         fullpath, &content_ctx, false, &error_string);
+
+   if (!ret)
+      goto end;
+
+#ifdef HAVE_COCOATOUCH
+   /* This seems to be needed for iOS for some reason
+    * to show the quick menu after the menu is shown */
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+
+#ifndef HAVE_DYNAMIC
+   /* No dynamic core loading support: if we reach
+    * this point then a new instance has been
+    * forked - have to shut down this one */
+   rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+   retroarch_menu_running_finished(true);
+#endif
+
+end:
+   /* Handle load content failure */
+   if (!ret)
    {
       if (error_string)
       {
@@ -1696,25 +1729,8 @@ bool task_push_load_content_from_playlist_from_menu(
       }
 
       retroarch_menu_running();
-
-      ret = false;
-      goto end;
    }
 
-   /* Load core */
-#ifdef HAVE_DYNAMIC
-   command_event(CMD_EVENT_LOAD_CORE, NULL);
-#ifdef HAVE_COCOATOUCH
-    /* This seems to be needed for iOS for some reason to show the 
-     * quick menu after the menu is shown */
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-#else
-   rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   retroarch_menu_running_finished(true);
-#endif
-
-end:
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
    if (content_ctx.name_bps)
@@ -1732,8 +1748,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1865,14 +1880,26 @@ bool task_push_load_content_with_new_core_from_menu(
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
    const char *path_dir_system                = settings->paths.directory_system;
+#ifndef HAVE_DYNAMIC
+   bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
+
+   /* Check whether specified core is already loaded
+    * > If so, we can skip loading the core and
+    *   just load the content directly */
+   if (!force_core_reload &&
+       (type == CORE_TYPE_PLAIN) &&
+       rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+      return task_push_load_content_with_core_from_menu(
+            fullpath, content_info,
+            type, cb, user_data);
+#endif
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
 #ifdef HAVE_PATCH
@@ -1976,8 +2003,7 @@ static bool task_load_content_internal(
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = false;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -2104,7 +2130,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       void *user_data)
 {
    global_t *global            = global_get_ptr();
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE, core_path);
@@ -2196,7 +2222,7 @@ bool task_push_load_content_with_current_core_from_companion_ui(
       retro_task_callback_t cb,
       void *user_data)
 {
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    path_set(RARCH_PATH_CONTENT, fullpath);
 
@@ -2253,7 +2279,7 @@ bool task_push_load_subsystem_with_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    p_content->pending_subsystem_init = true;
 
@@ -2277,7 +2303,7 @@ void content_get_status(
       bool *contentless,
       bool *is_inited)
 {
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    *contentless = p_content->core_does_not_need_content;
    *is_inited   = p_content->is_inited;
@@ -2287,7 +2313,7 @@ void content_get_status(
 void content_clear_subsystem(void)
 {
    unsigned i;
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    p_content->pending_subsystem_rom_id    = 0;
    p_content->pending_subsystem_init      = false;
@@ -2302,19 +2328,12 @@ void content_clear_subsystem(void)
    }
 }
 
-/* Get the current subsystem */
-int content_get_subsystem(void)
-{
-   content_state_t *p_content = (content_state_t*)&content_st;
-   return p_content->pending_subsystem_id;
-}
-
 /* Set the current subsystem*/
 void content_set_subsystem(unsigned idx)
 {
    const struct retro_subsystem_info *subsystem;
    rarch_system_info_t                  *system = runloop_get_system_info();
-   content_state_t                   *p_content = (content_state_t*)&content_st;
+   content_state_t  *p_content                  = content_state_get_ptr();
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
@@ -2393,7 +2412,7 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    size_t pending_size        = PATH_MAX_LENGTH * sizeof(char);
    p_content->pending_subsystem_roms[p_content->pending_subsystem_rom_id] = (char*)malloc(pending_size);
 
@@ -2410,28 +2429,21 @@ void content_add_subsystem(const char* path)
    p_content->pending_subsystem_rom_id++;
 }
 
-/* Get the current subsystem rom id */
-unsigned content_get_subsystem_rom_id(void)
-{
-   content_state_t *p_content = (content_state_t*)&content_st;
-   return p_content->pending_subsystem_rom_id;
-}
-
 void content_set_does_not_need_content(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    p_content->core_does_not_need_content = true;
 }
 
 void content_unset_does_not_need_content(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    p_content->core_does_not_need_content = false;
 }
 
 uint32_t content_get_crc(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    if (p_content->pending_rom_crc)
    {
       p_content->pending_rom_crc   = false;
@@ -2444,20 +2456,20 @@ uint32_t content_get_crc(void)
 
 char* content_get_subsystem_rom(unsigned index)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    return p_content->pending_subsystem_roms[index];
 }
 
 bool content_is_inited(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    return p_content->is_inited;
 }
 
 void content_deinit(void)
 {
    unsigned i;
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
 
    if (p_content->temporary_content)
    {
@@ -2485,7 +2497,7 @@ void content_deinit(void)
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    if (!p_content->pending_subsystem_init)
       return;
 
@@ -2499,7 +2511,7 @@ void content_set_subsystem_info(void)
 bool content_init(void)
 {
    content_information_ctx_t content_ctx;
-   content_state_t *p_content                 = (content_state_t*)&content_st;
+   content_state_t *p_content                 = content_state_get_ptr();
 
    bool ret                                   = true;
    char *error_string                         = NULL;

@@ -116,28 +116,6 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
 }
 #endif
 
-static void menu_action_setting_disp_add_null_drivers(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *path,
-      char *s2, size_t len2)
-{
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      list->list[i].actiondata;
-   bool val                  = *cbs->setting->value.target.boolean;
-
-   *s = '\0';
-   *w = 19;
-   strlcpy(s2, path, len2);
-
-   if (val)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
-}
-
 #ifdef HAVE_CHEEVOS
 static void menu_action_setting_disp_set_label_cheevos_entry(
    file_list_t* list,
@@ -1563,9 +1541,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
    {
       switch (cbs->enum_idx)
       {
-         case MENU_ENUM_LABEL_ADD_NULL_DRIVERS:
-            BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_add_null_drivers);
-            break;
          case MENU_ENUM_LABEL_VIDEO_DRIVER:
          case MENU_ENUM_LABEL_AUDIO_DRIVER:
          case MENU_ENUM_LABEL_INPUT_DRIVER:

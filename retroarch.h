@@ -31,6 +31,7 @@
 #include "config.h"
 #endif
 
+#include <lists/string_list.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
 #ifdef HAVE_AUDIOMIXER
@@ -88,6 +89,7 @@ enum rarch_ctl_state
    RARCH_CTL_IS_INITED,
 
    RARCH_CTL_IS_DUMMY_CORE,
+   RARCH_CTL_IS_CORE_LOADED,
 
    RARCH_CTL_IS_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
@@ -291,6 +293,27 @@ typedef struct global
 #endif
 } global_t;
 
+typedef struct content_state
+{
+   bool is_inited;
+   bool core_does_not_need_content;
+   bool pending_subsystem_init;
+   bool pending_rom_crc;
+
+   int pending_subsystem_rom_num;
+   int pending_subsystem_id;
+   unsigned pending_subsystem_rom_id;
+   uint32_t rom_crc;
+
+   char companion_ui_crc32[32];
+   char pending_subsystem_ident[255];
+   char pending_rom_crc_path[PATH_MAX_LENGTH];
+   char companion_ui_db_name[PATH_MAX_LENGTH];
+   char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
+
+   struct string_list *temporary_content;
+} content_state_t;
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
@@ -328,6 +351,12 @@ bool retroarch_main_init(int argc, char *argv[]);
 bool retroarch_main_quit(void);
 
 global_t *global_get_ptr(void);
+
+content_state_t *content_state_get_ptr(void);
+
+unsigned content_get_subsystem_rom_id(void);
+
+int content_get_subsystem(void);
 
 /**
  * runloop_iterate:

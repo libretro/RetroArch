@@ -109,6 +109,7 @@
 
 #endif
 
+/* TODO/FIXME - globals */
 static retro_vfs_stat_t path_stat_cb   = retro_vfs_stat_impl;
 static retro_vfs_mkdir_t path_mkdir_cb = retro_vfs_mkdir_impl;
 

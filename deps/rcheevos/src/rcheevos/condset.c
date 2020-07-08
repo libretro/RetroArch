@@ -114,6 +114,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
   rc_condition_t* condition;
   int set_valid, cond_valid, and_next, or_next;
   unsigned measured_value = 0;
+  unsigned total_hits = 0;
   int can_measure = 1, measured_from_hits = 0;
 
   eval_state->primed = 1;
@@ -207,12 +208,14 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
         break;
     }
 
+    /* STEP 4: calculate total hits */
+    total_hits = condition->current_hits;
+
     if (eval_state->add_hits) {
       if (condition->required_hits != 0) {
         /* if the condition has a target hit count, we have to recalculate cond_valid including the AddHits counter */
-        measured_from_hits = 1;
-        measured_value = condition->current_hits + eval_state->add_hits;
-        cond_valid = (measured_value >= condition->required_hits);
+        total_hits = condition->current_hits + eval_state->add_hits;
+        cond_valid = (total_hits >= condition->required_hits);
       }
       else {
         /* no target hit count. we can't tell if the add_hits value is from this frame or not, so ignore it.
@@ -221,13 +224,8 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
 
       eval_state->add_hits = 0;
     }
-    else if (condition->required_hits != 0) {
-      /* if there's a hit target, capture the current hits for recording Measured value later */
-      measured_from_hits = 1;
-      measured_value = condition->current_hits;
-    }
 
-    /* STEP 4: handle special flags */
+    /* STEP 5: handle special flags */
     switch (condition->type) {
       case RC_CONDITION_PAUSE_IF:
         /* as soon as we find a PauseIf that evaluates to true, stop processing the rest of the group */
@@ -255,6 +253,14 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
           set_valid = 0; /* cannot be valid if we've hit a reset condition */
         }
         continue;
+
+      case RC_CONDITION_MEASURED:
+        if (condition->required_hits != 0) {
+          /* if there's a hit target, capture the current hits for recording Measured value later */
+          measured_from_hits = 1;
+          measured_value = total_hits;
+        }
+        break;
 
       case RC_CONDITION_MEASURED_IF:
         if (!cond_valid)

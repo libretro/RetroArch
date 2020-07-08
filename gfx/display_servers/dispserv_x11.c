@@ -40,6 +40,7 @@
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 
 #ifdef HAVE_XRANDR
+/* TODO/FIXME - static globals */
 static char xrandr[1024]        = {0};
 static char crt_name[16]        = {0};
 static int crt_name_id          = 0;

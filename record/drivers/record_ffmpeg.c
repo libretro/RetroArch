@@ -1121,7 +1121,7 @@ static bool ffmpeg_push_video(void *data,
       unsigned avail;
 
       slock_lock(handle->lock);
-      avail = fifo_write_avail(handle->attr_fifo);
+      avail = FIFO_WRITE_AVAIL(handle->attr_fifo);
       slock_unlock(handle->lock);
 
       if (!handle->alive)
@@ -1183,7 +1183,7 @@ static bool ffmpeg_push_audio(void *data,
       unsigned avail;
 
       slock_lock(handle->lock);
-      avail = fifo_write_avail(handle->audio_fifo);
+      avail = FIFO_WRITE_AVAIL(handle->audio_fifo);
       slock_unlock(handle->lock);
 
       if (!handle->alive)
@@ -1578,7 +1578,7 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
 static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
       size_t audio_buf_size)
 {
-   size_t avail = fifo_read_avail(handle->audio_fifo);
+   size_t avail = FIFO_READ_AVAIL(handle->audio_fifo);
 
    if (avail)
    {
@@ -1624,7 +1624,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
       if (handle->config.audio_enable)
       {
-         if (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
+         if (FIFO_READ_AVAIL(handle->audio_fifo) >= audio_buf_size)
          {
             struct record_audio_data aud = {0};
 
@@ -1637,7 +1637,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
          }
       }
 
-      if (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
+      if (FIFO_READ_AVAIL(handle->attr_fifo) >= sizeof(attr_buf))
       {
          fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
          fifo_read(handle->video_fifo, video_buf,
@@ -1705,11 +1705,11 @@ static void ffmpeg_thread(void *data)
       bool avail_audio = false;
 
       slock_lock(ff->lock);
-      if (fifo_read_avail(ff->attr_fifo) >= sizeof(attr_buf))
+      if (FIFO_READ_AVAIL(ff->attr_fifo) >= sizeof(attr_buf))
          avail_video = true;
 
       if (ff->config.audio_enable)
-         if (fifo_read_avail(ff->audio_fifo) >= audio_buf_size)
+         if (FIFO_READ_AVAIL(ff->audio_fifo) >= audio_buf_size)
             avail_audio = true;
       slock_unlock(ff->lock);
 

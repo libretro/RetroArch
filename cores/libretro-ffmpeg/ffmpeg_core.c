@@ -703,7 +703,7 @@ void CORE_PREFIX(retro_run)(void)
       to_read_bytes = to_read_frames * sizeof(int16_t) * 2;
 
       slock_lock(fifo_lock);
-      while (!decode_thread_dead && fifo_read_avail(audio_decode_fifo) < to_read_bytes)
+      while (!decode_thread_dead && FIFO_READ_AVAIL(audio_decode_fifo) < to_read_bytes)
       {
          main_sleeping = true;
          scond_signal(fifo_decode_cond);
@@ -712,7 +712,7 @@ void CORE_PREFIX(retro_run)(void)
       }
 
       reading_pts  = decode_last_audio_time -
-         (double)fifo_read_avail(audio_decode_fifo) / (media.sample_rate * sizeof(int16_t) * 2);
+         (double)FIFO_READ_AVAIL(audio_decode_fifo) / (media.sample_rate * sizeof(int16_t) * 2);
       expected_pts = (double)audio_frames / media.sample_rate;
       old_pts_bias = pts_bias;
       pts_bias     = reading_pts - expected_pts;
@@ -1574,7 +1574,8 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
       pts = frame->best_effort_timestamp;
       slock_lock(fifo_lock);
 
-      while (!decode_thread_dead && fifo_write_avail(audio_decode_fifo) < required_buffer)
+      while (!decode_thread_dead && 
+            FIFO_WRITE_AVAIL(audio_decode_fifo) < required_buffer)
       {
          if (!main_sleeping)
             scond_wait(fifo_decode_cond, fifo_lock);

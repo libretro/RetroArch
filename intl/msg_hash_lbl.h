@@ -1088,6 +1088,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
    "dummy_on_core_shutdown"
    )
+#ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "always_reload_core_on_run_content"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,
    "menu_dynamic_wallpaper_enable"
@@ -3121,10 +3127,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,
    "video_shared_context"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_ADD_NULL_DRIVERS,
-   "ignore_null_drivers"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SMOOTH,

@@ -153,7 +153,7 @@ fi
 if [ $SALAMANDER = "yes" ]; then
    make -C ../ -f Makefile.${platform}.salamander $OPTS || exit 1
    if [ $PLATFORM = "ps2" ] ; then
-   mv -f ../raboot.elf ../pkg/${platform}/raboot.PBP
+   mv -f ../raboot.elf ../pkg/${platform}/raboot.elf
    fi
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP

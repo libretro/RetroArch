@@ -57,14 +57,26 @@ struct retro_task_impl
    void (*deinit)(void);
 };
 
-static retro_task_queue_msg_t msg_push_bak;
-static task_queue_t tasks_running  = {NULL, NULL};
-static task_queue_t tasks_finished = {NULL, NULL};
+/* TODO/FIXME - static globals */
+static retro_task_queue_msg_t msg_push_bak  = NULL;
+static task_queue_t tasks_running           = {NULL, NULL};
+static task_queue_t tasks_finished          = {NULL, NULL};
 
 static struct retro_task_impl *impl_current = NULL;
 static bool task_threaded_enable            = false;
 
 static uint32_t task_count                  = 0;
+
+#ifdef HAVE_THREADS
+static slock_t *running_lock                = NULL;
+static slock_t *finished_lock               = NULL;
+static slock_t *property_lock               = NULL;
+static slock_t *queue_lock                  = NULL;
+static scond_t *worker_cond                 = NULL;
+static sthread_t *worker_thread             = NULL;
+static bool worker_continue                 = true; 
+/* use running_lock when touching it */
+#endif
 
 static void task_queue_msg_push(retro_task_t *task,
       unsigned prio, unsigned duration,
@@ -266,7 +278,8 @@ static void retro_task_regular_retrieve(task_retriever_data_t *data)
          continue;
 
       /* Create new link */
-      info       = (task_retriever_info_t*)malloc(sizeof(task_retriever_info_t));
+      info       = (task_retriever_info_t*)
+         malloc(sizeof(task_retriever_info_t));
       info->data = malloc(data->element_size);
       info->next = NULL;
 
@@ -311,13 +324,6 @@ static struct retro_task_impl impl_regular = {
 };
 
 #ifdef HAVE_THREADS
-static slock_t *running_lock    = NULL;
-static slock_t *finished_lock   = NULL;
-static slock_t *property_lock   = NULL;
-static slock_t *queue_lock      = NULL;
-static scond_t *worker_cond     = NULL;
-static sthread_t *worker_thread = NULL;
-static bool worker_continue     = true; /* use running_lock when touching it */
 
 /* 'queue_lock' must be held for the duration of this function */
 static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
@@ -489,7 +495,7 @@ static void threaded_worker(void *userdata)
 
       if (task->when)
       {
-         retro_time_t now = cpu_features_get_time_usec();
+         retro_time_t now   = cpu_features_get_time_usec();
          retro_time_t delay = task->when - now - 500; /* allow half a millisecond for context switching */
          if (delay > 0)
          {
@@ -511,10 +517,13 @@ static void threaded_worker(void *userdata)
       if (!finished)
       {
          /* Move the task to the back of the queue */
-         /* mimics retro_task_threaded_push_running, but also includes a task_queue_remove */
+         /* mimics retro_task_threaded_push_running, 
+          * but also includes a task_queue_remove */
          slock_lock(running_lock);
          slock_lock(queue_lock);
-         if (task->next != NULL) /* do nothing if only item in queue */
+
+         /* do nothing if only item in queue */
+         if (task->next) 
          {
             task_queue_remove(&tasks_running, task);
             task_queue_put(&tasks_running, task);
@@ -542,17 +551,17 @@ static void threaded_worker(void *userdata)
 
 static void retro_task_threaded_init(void)
 {
-   running_lock  = slock_new();
-   finished_lock = slock_new();
-   property_lock = slock_new();
-   queue_lock    = slock_new();
-   worker_cond   = scond_new();
+   running_lock    = slock_new();
+   finished_lock   = slock_new();
+   property_lock   = slock_new();
+   queue_lock      = slock_new();
+   worker_cond     = scond_new();
 
    slock_lock(running_lock);
    worker_continue = true;
    slock_unlock(running_lock);
 
-   worker_thread = sthread_create(threaded_worker, NULL);
+   worker_thread   = sthread_create(threaded_worker, NULL);
 }
 
 static void retro_task_threaded_deinit(void)
@@ -570,12 +579,12 @@ static void retro_task_threaded_deinit(void)
    slock_free(property_lock);
    slock_free(queue_lock);
 
-   worker_thread = NULL;
-   worker_cond   = NULL;
-   running_lock  = NULL;
-   finished_lock = NULL;
-   property_lock = NULL;
-   queue_lock = NULL;
+   worker_thread   = NULL;
+   worker_cond     = NULL;
+   running_lock    = NULL;
+   finished_lock   = NULL;
+   property_lock   = NULL;
+   queue_lock      = NULL;
 }
 
 static struct retro_task_impl impl_threaded = {

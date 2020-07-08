@@ -33,6 +33,7 @@
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 
+/* TODO/FIXME - globals */
 bool g_egl_inited    = false;
 
 unsigned g_egl_major = 0;

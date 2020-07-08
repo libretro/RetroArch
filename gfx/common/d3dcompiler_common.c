@@ -27,6 +27,7 @@
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
 
+/* TODO/FIXME - static globals */
 static dylib_t     d3dcompiler_dll;
 static const char* d3dcompiler_dll_list[] = {
    "D3DCompiler_47.dll", "D3DCompiler_46.dll", "D3DCompiler_45.dll", "D3DCompiler_44.dll",
