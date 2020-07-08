@@ -185,29 +185,6 @@ struct content_information_ctx
    struct string_list *temporary_content;
 };
 
-typedef struct content_state
-{
-   bool is_inited;
-   bool core_does_not_need_content;
-   bool pending_subsystem_init;
-   bool pending_rom_crc;
-
-   int pending_subsystem_rom_num;
-   int pending_subsystem_id;
-   unsigned pending_subsystem_rom_id;
-   uint32_t rom_crc;
-
-   char companion_ui_crc32[32];
-   char pending_subsystem_ident[255];
-   char pending_rom_crc_path[PATH_MAX_LENGTH];
-   char companion_ui_db_name[PATH_MAX_LENGTH];
-   char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
-
-   struct string_list *temporary_content;
-} content_state_t;
-
-static content_state_t content_st;
-
 #ifdef HAVE_CDROM
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
@@ -1529,7 +1506,7 @@ static bool firmware_update_status(
 bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
-   content_state_t                 *p_content = (content_state_t*)&content_st;
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1627,7 +1604,7 @@ bool task_push_load_content_from_playlist_from_menu(
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1771,8 +1748,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1904,8 +1880,7 @@ bool task_push_load_content_with_new_core_from_menu(
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -2028,8 +2003,7 @@ static bool task_load_content_internal(
 {
    content_information_ctx_t content_ctx;
 
-   content_state_t                 *p_content = (content_state_t*)&content_st;
-
+   content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = false;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -2156,7 +2130,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       void *user_data)
 {
    global_t *global            = global_get_ptr();
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE, core_path);
@@ -2248,7 +2222,7 @@ bool task_push_load_content_with_current_core_from_companion_ui(
       retro_task_callback_t cb,
       void *user_data)
 {
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    path_set(RARCH_PATH_CONTENT, fullpath);
 
@@ -2305,7 +2279,7 @@ bool task_push_load_subsystem_with_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    p_content->pending_subsystem_init = true;
 
@@ -2329,7 +2303,7 @@ void content_get_status(
       bool *contentless,
       bool *is_inited)
 {
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    *contentless = p_content->core_does_not_need_content;
    *is_inited   = p_content->is_inited;
@@ -2339,7 +2313,7 @@ void content_get_status(
 void content_clear_subsystem(void)
 {
    unsigned i;
-   content_state_t *p_content  = (content_state_t*)&content_st;
+   content_state_t  *p_content = content_state_get_ptr();
 
    p_content->pending_subsystem_rom_id    = 0;
    p_content->pending_subsystem_init      = false;
@@ -2354,19 +2328,12 @@ void content_clear_subsystem(void)
    }
 }
 
-/* Get the current subsystem */
-int content_get_subsystem(void)
-{
-   content_state_t *p_content = (content_state_t*)&content_st;
-   return p_content->pending_subsystem_id;
-}
-
 /* Set the current subsystem*/
 void content_set_subsystem(unsigned idx)
 {
    const struct retro_subsystem_info *subsystem;
    rarch_system_info_t                  *system = runloop_get_system_info();
-   content_state_t                   *p_content = (content_state_t*)&content_st;
+   content_state_t  *p_content                  = content_state_get_ptr();
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
@@ -2445,7 +2412,7 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    size_t pending_size        = PATH_MAX_LENGTH * sizeof(char);
    p_content->pending_subsystem_roms[p_content->pending_subsystem_rom_id] = (char*)malloc(pending_size);
 
@@ -2462,28 +2429,21 @@ void content_add_subsystem(const char* path)
    p_content->pending_subsystem_rom_id++;
 }
 
-/* Get the current subsystem rom id */
-unsigned content_get_subsystem_rom_id(void)
-{
-   content_state_t *p_content = (content_state_t*)&content_st;
-   return p_content->pending_subsystem_rom_id;
-}
-
 void content_set_does_not_need_content(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    p_content->core_does_not_need_content = true;
 }
 
 void content_unset_does_not_need_content(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    p_content->core_does_not_need_content = false;
 }
 
 uint32_t content_get_crc(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    if (p_content->pending_rom_crc)
    {
       p_content->pending_rom_crc   = false;
@@ -2496,20 +2456,20 @@ uint32_t content_get_crc(void)
 
 char* content_get_subsystem_rom(unsigned index)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    return p_content->pending_subsystem_roms[index];
 }
 
 bool content_is_inited(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    return p_content->is_inited;
 }
 
 void content_deinit(void)
 {
    unsigned i;
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
 
    if (p_content->temporary_content)
    {
@@ -2537,7 +2497,7 @@ void content_deinit(void)
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info(void)
 {
-   content_state_t *p_content = (content_state_t*)&content_st;
+   content_state_t *p_content = content_state_get_ptr();
    if (!p_content->pending_subsystem_init)
       return;
 
@@ -2551,7 +2511,7 @@ void content_set_subsystem_info(void)
 bool content_init(void)
 {
    content_information_ctx_t content_ctx;
-   content_state_t *p_content                 = (content_state_t*)&content_st;
+   content_state_t *p_content                 = content_state_get_ptr();
 
    bool ret                                   = true;
    char *error_string                         = NULL;

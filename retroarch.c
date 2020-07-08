@@ -2398,6 +2398,7 @@ struct rarch_state
    struct retro_callbacks     retro_ctx;
    struct retro_core_t        current_core;
    struct global              g_extern;
+   content_state_t            content_st;
 
    jmp_buf error_sjlj_context;
 
@@ -2897,6 +2898,28 @@ static void menu_input_post_iterate(
       retro_time_t current_time);
 static void menu_input_reset(struct rarch_state *p_rarch);
 #endif
+
+content_state_t *content_state_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->content_st;
+}
+
+/* Get the current subsystem rom id */
+unsigned content_get_subsystem_rom_id(void)
+{
+   struct rarch_state *p_rarch   = &rarch_st;
+   content_state_t    *p_content = &p_rarch->content_st;
+   return p_content->pending_subsystem_rom_id;
+}
+
+/* Get the current subsystem */
+int content_get_subsystem(void)
+{
+   struct rarch_state *p_rarch   = &rarch_st;
+   content_state_t    *p_content = &p_rarch->content_st;
+   return p_content->pending_subsystem_id;
+}
 
 int input_event_get_osk_ptr(void)
 {
