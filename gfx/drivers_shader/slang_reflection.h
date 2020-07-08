@@ -92,8 +92,8 @@ enum slang_constant_buffer
    SLANG_CBUFFER_MAX
 };
 
-/* Vulkan minimum limit. */
-#define SLANG_NUM_BINDINGS 32
+/* Vulkan maximum texture bindings inside shader. D3D11 has hard limit of 16 */
+#define SLANG_NUM_BINDINGS 16
 
 struct slang_texture_semantic_map
 {
