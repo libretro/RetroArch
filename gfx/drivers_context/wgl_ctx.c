@@ -282,14 +282,11 @@ static void create_gl_context(HWND hwnd, bool *quit)
       if (pcreate_context)
       {
          int i;
-         int (*versions)[2];
          int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
          int gl_version_rows  = ARRAY_SIZE(gl_versions);
-         int version_rows     = 0;
          HGLRC context        = NULL;
          int version_rows     = gl_version_rows;
-
-         versions             = gl_versions;
+         int (*versions)[2]   = gl_versions;
 
          /* only try higher versions when core_context is true */
          if (!core_context)
