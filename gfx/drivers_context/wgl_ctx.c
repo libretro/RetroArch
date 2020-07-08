@@ -189,15 +189,15 @@ static bool wgl_has_extension(const char *extension, const char *extensions)
 static void create_gl_context(HWND hwnd, bool *quit)
 {
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-   bool debug                           = hwr->debug_context;
    bool core_context                    = (win32_major * 1000 + win32_minor) >= 3001;
    win32_hdc                            = GetDC(hwnd);
+#ifdef GL_DEBUG
+   bool debug                           = true;
+#else
+   bool debug                           = hwr->debug_context;
+#endif
 
    win32_setup_pixel_format(win32_hdc, true);
-
-#ifdef GL_DEBUG
-   debug = true;
-#endif
 
    if (win32_hrc)
    {
@@ -272,21 +272,24 @@ static void create_gl_context(HWND hwnd, bool *quit)
       if (!pcreate_context)
          pcreate_context = (wglCreateContextAttribsProc)gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
 
-      /* In order to support the core info "required_hw_api" field correctly, we should try to init the highest available
-       * version GL context possible. This means trying successively lower versions until it works, because GL has
-       * no facility for determining the highest possible supported version.
+      /* In order to support the core info "required_hw_api" 
+       * field correctly, we should try to init the highest available
+       * version GL context possible. This means trying successively 
+       * lower versions until it works, because GL has
+       * no facility for determining the highest possible 
+       * supported version.
        */
       if (pcreate_context)
       {
          int i;
-         int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
-         int gl_version_rows = ARRAY_SIZE(gl_versions);
          int (*versions)[2];
-         int version_rows = 0;
-         HGLRC context = NULL;
+         int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
+         int gl_version_rows  = ARRAY_SIZE(gl_versions);
+         int version_rows     = 0;
+         HGLRC context        = NULL;
+         int version_rows     = gl_version_rows;
 
-         versions = gl_versions;
-         version_rows = gl_version_rows;
+         versions             = gl_versions;
 
          /* only try higher versions when core_context is true */
          if (!core_context)
@@ -330,9 +333,13 @@ static void create_gl_context(HWND hwnd, bool *quit)
                /* found a suitable version that is high enough, we can stop now */
                break;
             }
-            else if (versions[i][0] == win32_major && versions[i][1] == win32_minor)
+            else if (
+                  versions[i][0] == win32_major && 
+                  versions[i][1] == win32_minor)
             {
-               /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
+               /* The requested version was tried and 
+                * is not supported, go ahead and fail 
+                * since everything else will be lower than that. */
                break;
             }
          }

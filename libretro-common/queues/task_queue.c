@@ -65,8 +65,6 @@ static task_queue_t tasks_finished          = {NULL, NULL};
 static struct retro_task_impl *impl_current = NULL;
 static bool task_threaded_enable            = false;
 
-static uint32_t task_count                  = 0;
-
 #ifdef HAVE_THREADS
 static slock_t *running_lock                = NULL;
 static slock_t *finished_lock               = NULL;
@@ -890,7 +888,9 @@ char* task_get_title(retro_task_t *task)
 
 retro_task_t *task_init(void)
 {
-   retro_task_t *task      = (retro_task_t*)malloc(sizeof(*task));
+   /* TODO/FIXME - static local global */
+   static uint32_t task_count = 0;
+   retro_task_t *task         = (retro_task_t*)malloc(sizeof(*task));
 
    if (!task)
       return NULL;

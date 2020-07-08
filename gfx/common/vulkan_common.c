@@ -386,6 +386,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
 static VkImage vk_images[4 * 1024];
 static unsigned vk_count;
+static unsigned track_seq;
 
 void vulkan_log_textures(void)
 {
@@ -398,7 +399,6 @@ void vulkan_log_textures(void)
    vk_count = 0;
 }
 
-static unsigned track_seq;
 static void vulkan_track_alloc(VkImage image)
 {
    vk_images[vk_count++] = image;

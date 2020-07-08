@@ -42,14 +42,7 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
-static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
-
-/* forward declaration */
-int system_property_get(const char *cmd, const char *args, char *value);
-
 #ifdef HAVE_OPENGLES
-static bool g_es3                             = false;
-
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR                  0x0040
 #endif
@@ -67,6 +60,16 @@ typedef struct
    int swap_interval;
 #endif
 } android_ctx_data_t;
+
+
+/* Forward declaration */
+int system_property_get(const char *cmd, const char *args, char *value);
+
+/* TODO/FIXME - static global */
+static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
+#ifdef HAVE_OPENGLES
+static bool g_es3                             = false;
+#endif
 
 static void android_gfx_ctx_destroy(void *data)
 {
