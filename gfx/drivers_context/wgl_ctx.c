@@ -184,12 +184,13 @@ static void create_gl_context(HWND hwnd, bool *quit)
 {
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    bool core_context                    = (win32_major * 1000 + win32_minor) >= 3001;
-   win32_hdc                            = GetDC(hwnd);
 #ifdef GL_DEBUG
    bool debug                           = true;
 #else
    bool debug                           = hwr->debug_context;
 #endif
+
+   win32_hdc                            = GetDC(hwnd);
 
    win32_setup_pixel_format(win32_hdc, true);
 

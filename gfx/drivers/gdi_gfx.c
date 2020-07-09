@@ -136,10 +136,9 @@ static bool gfx_ctx_gdi_set_video_mode(
 static void gfx_ctx_gdi_input_driver(
       input_driver_t **input, void **input_data)
 {
+   settings_t *settings = config_get_ptr();
 #if _WIN32_WINNT >= 0x0501
 #ifdef HAVE_WINRAWINPUT
-   settings_t *settings = config_get_ptr();
-
    /* winraw only available since XP */
    if (string_is_equal(settings->arrays.input_driver, "raw"))
    {
