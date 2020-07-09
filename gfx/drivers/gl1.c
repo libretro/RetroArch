@@ -720,8 +720,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       mode.width        = width;
       mode.height       = height;
 
-      video_info->cb_set_resize(video_info->context_data,
-            mode.width, mode.height);
+      if (gl1->ctx_driver->set_resize)
+         gl1->ctx_driver->set_resize(video_info->context_data,
+               mode.width, mode.height);
 
       gl1_gfx_set_viewport(gl1,
             video_width, video_height, false, true);

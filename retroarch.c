@@ -32694,7 +32694,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state = p_rarch->input_driver_nonblock_state;
    video_info->context_data                = p_rarch->video_context_data;
    video_info->cb_swap_buffers             = p_rarch->current_video_context.swap_buffers;
-   video_info->cb_set_resize               = p_rarch->current_video_context.set_resize;
 
    video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(false);
 

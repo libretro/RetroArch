@@ -1198,7 +1198,6 @@ typedef struct video_frame_info
    } osd_stat_params;
 
    void (*cb_swap_buffers)(void*);
-   bool (*cb_set_resize)(void*, unsigned, unsigned);
 
    void *context_data;
    void *userdata;

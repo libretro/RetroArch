@@ -1877,7 +1877,9 @@ static bool gl_core_frame(void *data, const void *frame,
 
    if (gl->should_resize)
    {
-      video_info->cb_set_resize(context_data, width, height);
+      if (gl->ctx_driver->set_resize)
+         gl->ctx_driver->set_resize(context_data,
+               width, height);
       gl->should_resize = false;
    }
 
