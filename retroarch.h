@@ -1197,9 +1197,6 @@ typedef struct video_frame_info
       enum text_alignment text_align;
    } osd_stat_params;
 
-   void (*cb_swap_buffers)(void*);
-
-   void *context_data;
    void *userdata;
 } video_frame_info_t;
 

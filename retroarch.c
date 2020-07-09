@@ -17244,6 +17244,54 @@ int rarch_main(int argc, char *argv[], void *data)
    return 0;
 }
 
+#if defined(EMSCRIPTEN)
+void RWebAudioRecalibrateTime(void);
+
+void emscripten_mainloop(void)
+{
+   int ret;
+   static unsigned emscripten_frame_count = 0;
+   struct rarch_state *p_rarch            = &rarch_st;
+   settings_t        *settings            = p_rarch->configuration_settings;
+   bool black_frame_insertion             = settings->bools.video_black_frame_insertion;
+   bool input_driver_nonblock_state       = p_rarch->input_driver_nonblock_state;
+   bool runloop_is_slowmotion             = p_rarch->runloop_slowmotion;
+   bool runloop_is_paused                 = p_rarch->runloop_paused;
+
+   RWebAudioRecalibrateTime();
+
+   emscripten_frame_count++;
+
+   /* Disable BFI during fast forward, slow-motion,
+    * and pause to prevent flicker. */
+   if (
+             black_frame_insertion
+         && !input_driver_nonblock_state
+         && !runloop_is_slowmotion
+         && !runloop_is_paused)
+   {
+      if ((emscripten_frame_count & 1) == 0)
+      {
+         glClear(GL_COLOR_BUFFER_BIT);
+         if (p_rarch->current_video_context.swap_buffers)
+            p_rarch->current_video_context.swap_buffers(
+                  p_rarch->video_context_data);
+         return;
+      }
+   }
+
+   ret = runloop_iterate();
+
+   task_queue_check();
+
+   if (ret != -1)
+      return;
+
+   main_exit(NULL);
+   emscripten_force_exit(0);
+}
+#endif
+
 #ifndef HAVE_MAIN
 #ifdef __cplusplus
 extern "C"
@@ -32692,9 +32740,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_slowmotion       = p_rarch->runloop_slowmotion;
 
    video_info->input_driver_nonblock_state = p_rarch->input_driver_nonblock_state;
-   video_info->context_data                = p_rarch->video_context_data;
-   video_info->cb_swap_buffers             = p_rarch->current_video_context.swap_buffers;
-
    video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(false);
 
 #ifdef HAVE_THREADS

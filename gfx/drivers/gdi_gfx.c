@@ -352,7 +352,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    if (gdi->ctx_driver->update_window_title)
       gdi->ctx_driver->update_window_title(
-            video_info->context_data);
+            gdi->ctx_data);
 
    return true;
 }

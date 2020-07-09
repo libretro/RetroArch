@@ -1847,7 +1847,6 @@ static bool gl_core_frame(void *data, const void *frame,
    bool statistics_show                        = video_info->statistics_show;
    bool msg_bgcolor_enable                     = video_info->msg_bgcolor_enable;
    bool black_frame_insertion                  = video_info->black_frame_insertion;
-   void *context_data                          = video_info->context_data;
    unsigned hard_sync_frames                   = video_info->hard_sync_frames;
    bool runloop_is_paused                      = video_info->runloop_is_paused;
    bool runloop_is_slowmotion                  = video_info->runloop_is_slowmotion;
@@ -1878,7 +1877,7 @@ static bool gl_core_frame(void *data, const void *frame,
    if (gl->should_resize)
    {
       if (gl->ctx_driver->set_resize)
-         gl->ctx_driver->set_resize(context_data,
+         gl->ctx_driver->set_resize(gl->ctx_data,
                width, height);
       gl->should_resize = false;
    }
@@ -1961,7 +1960,7 @@ static bool gl_core_frame(void *data, const void *frame,
    }
 
    if (gl->ctx_driver->update_window_title)
-      gl->ctx_driver->update_window_title(context_data);
+      gl->ctx_driver->update_window_title(gl->ctx_data);
 
    if (gl->readback_buffer_screenshot)
    {
@@ -1985,11 +1984,11 @@ static bool gl_core_frame(void *data, const void *frame,
          && !runloop_is_slowmotion
          && !runloop_is_paused)
    {
-      gl->ctx_driver->swap_buffers(context_data);
+      gl->ctx_driver->swap_buffers(gl->ctx_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   gl->ctx_driver->swap_buffers(context_data);
+   gl->ctx_driver->swap_buffers(gl->ctx_data);
 
    if (video_info->hard_sync &&
        !input_driver_nonblock_state &&

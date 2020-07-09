@@ -721,7 +721,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       mode.height       = height;
 
       if (gl1->ctx_driver->set_resize)
-         gl1->ctx_driver->set_resize(video_info->context_data,
+         gl1->ctx_driver->set_resize(gl1->ctx_data,
                mode.width, mode.height);
 
       gl1_gfx_set_viewport(gl1,
@@ -881,7 +881,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (gl1->ctx_driver->update_window_title)
       gl1->ctx_driver->update_window_title(
-            video_info->context_data);
+            gl1->ctx_data);
 
    /* Screenshots. */
    if (gl1->readback_buffer_screenshot)
@@ -899,12 +899,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
    {
-      gl1->ctx_driver->swap_buffers(video_info->context_data);
+      gl1->ctx_driver->swap_buffers(gl1->ctx_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
-   gl1->ctx_driver->swap_buffers(video_info->context_data);
+   gl1->ctx_driver->swap_buffers(gl1->ctx_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (video_info->hard_sync

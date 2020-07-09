@@ -2829,7 +2829,6 @@ static bool gl2_frame(void *data, const void *frame,
    bool runloop_is_paused              = video_info->runloop_is_paused;
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
-   void *context_data                  = video_info->context_data;
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
@@ -2866,7 +2865,7 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->should_resize)
    {
       if (gl->ctx_driver->set_resize)
-         gl->ctx_driver->set_resize(context_data,
+         gl->ctx_driver->set_resize(gl->ctx_data,
             width, height);
       gl->should_resize = false;
 
@@ -3073,7 +3072,7 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
    if (gl->ctx_driver->update_window_title)
-      gl->ctx_driver->update_window_title(context_data);
+      gl->ctx_driver->update_window_title(gl->ctx_data);
 
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
@@ -3108,13 +3107,13 @@ static bool gl2_frame(void *data, const void *frame,
          && !runloop_is_paused)
    {
       if (gl->ctx_driver->swap_buffers)
-         gl->ctx_driver->swap_buffers(context_data);
+         gl->ctx_driver->swap_buffers(gl->ctx_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
    if (gl->ctx_driver->swap_buffers)
-      gl->ctx_driver->swap_buffers(context_data);
+      gl->ctx_driver->swap_buffers(gl->ctx_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (  gl->have_sync

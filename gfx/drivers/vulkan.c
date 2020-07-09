@@ -1716,7 +1716,6 @@ static bool vulkan_frame(void *data, const void *frame,
    bool waits_for_semaphores                     = false;
    unsigned width                                = video_info->width;
    unsigned height                               = video_info->height;
-   void *context_data                            = video_info->context_data;
    bool statistics_show                          = video_info->statistics_show;
    const char *stat_text                         = video_info->stat_text;
    bool black_frame_insertion                    = video_info->black_frame_insertion;
@@ -2225,12 +2224,12 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   vk->ctx_driver->swap_buffers(context_data);
+   vk->ctx_driver->swap_buffers(vk->ctx_data);
 
    if (!vk->context->swap_interval_emulation_lock)
    {
       if (vk->ctx_driver->update_window_title)
-         vk->ctx_driver->update_window_title(context_data);
+         vk->ctx_driver->update_window_title(vk->ctx_data);
    }
 
    /* Handle spurious swapchain invalidations as soon as we can,
@@ -2242,7 +2241,7 @@ static bool vulkan_frame(void *data, const void *frame,
       mode.height = height;
 
       if (vk->ctx_driver->set_resize)
-         vk->ctx_driver->set_resize(context_data, mode.width, mode.height);
+         vk->ctx_driver->set_resize(vk->ctx_data, mode.width, mode.height);
 
       vk->should_resize = false;
    }
@@ -2258,7 +2257,7 @@ static bool vulkan_frame(void *data, const void *frame,
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
          && !runloop_is_paused)
-      vulkan_inject_black_frame(vk, video_info, context_data);
+      vulkan_inject_black_frame(vk, video_info, vk->ctx_data);
 
    /* Vulkan doesn't directly support swap_interval > 1, 
     * so we fake it by duping out more frames. */
