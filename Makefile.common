@@ -2040,7 +2040,6 @@ ifneq ($(findstring Win32,$(OS)),)
 
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o \
-				 gfx/drivers_context/gdi_ctx.o \
 				 gfx/drivers_font/gdi_font.o \
 				 gfx/drivers_display/gfx_display_gdi.o
 		LIBS += -lmsimg32

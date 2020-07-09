@@ -39,6 +39,140 @@
 #include "../common/win32_common.h"
 #endif
 
+static HDC   win32_gdi_hdc;
+static void *dinput_gdi;
+
+static void gfx_ctx_gdi_update_title(void)
+{
+   char title[128];
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
+   title[0] = '\0';
+
+   video_driver_get_window_title(title, sizeof(title));
+
+   if (window && title[0])
+      window->set_title(&main_window, title);
+}
+
+static void gfx_ctx_gdi_get_video_size(
+      unsigned *width, unsigned *height)
+{
+   HWND         window  = win32_get_window();
+
+   if (window)
+   {
+      *width  = g_win32_resize_width;
+      *height = g_win32_resize_height;
+   }
+   else
+   {
+      RECT mon_rect;
+      MONITORINFOEX current_mon;
+      unsigned mon_id           = 0;
+      HMONITOR hm_to_use        = NULL;
+
+      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+      mon_rect = current_mon.rcMonitor;
+      *width  = mon_rect.right - mon_rect.left;
+      *height = mon_rect.bottom - mon_rect.top;
+   }
+}
+
+static bool gfx_ctx_gdi_init(void)
+{
+   WNDCLASSEX wndclass     = {0};
+
+   if (g_win32_inited)
+      return true;
+
+   win32_window_reset();
+   win32_monitor_init();
+
+   wndclass.lpfnWndProc   = WndProcGDI;
+   if (!win32_window_init(&wndclass, true, NULL))
+      return false;
+   return true;
+}
+
+static void gfx_ctx_gdi_destroy(void)
+{
+   HWND     window         = win32_get_window();
+
+   if (window && win32_gdi_hdc)
+   {
+      ReleaseDC(window, win32_gdi_hdc);
+      win32_gdi_hdc = NULL;
+   }
+
+   if (window)
+   {
+      win32_monitor_from_window();
+      win32_destroy_window();
+   }
+
+   if (g_win32_restore_desktop)
+   {
+      win32_monitor_get_info();
+      g_win32_restore_desktop     = false;
+   }
+
+   g_win32_inited                   = false;
+}
+
+static bool gfx_ctx_gdi_set_video_mode(
+      unsigned width, unsigned height,
+      bool fullscreen)
+{
+   if (!win32_set_video_mode(NULL, width, height, fullscreen))
+   {
+      gfx_ctx_gdi_destroy();
+      return false;
+   }
+
+   return true;
+}
+
+static void gfx_ctx_gdi_input_driver(
+      input_driver_t **input, void **input_data)
+{
+#if _WIN32_WINNT >= 0x0501
+#ifdef HAVE_WINRAWINPUT
+   settings_t *settings = config_get_ptr();
+
+   /* winraw only available since XP */
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+   {
+      *input_data = input_winraw.init(settings->arrays.input_driver);
+      if (*input_data)
+      {
+         *input     = &input_winraw;
+         dinput_gdi = NULL;
+         return;
+      }
+   }
+#endif
+#endif
+
+#ifdef HAVE_DINPUT
+   dinput_gdi  = input_dinput.init(settings->arrays.input_driver);
+   *input      = dinput_gdi ? &input_dinput : NULL;
+#else
+   dinput_gdi  = NULL;
+   *input      = NULL;
+#endif
+   *input_data = dinput_gdi;
+}
+
+void create_gdi_context(HWND hwnd, bool *quit)
+{
+   win32_gdi_hdc = GetDC(hwnd);
+
+   win32_setup_pixel_format(win32_gdi_hdc, false);
+
+   g_win32_inited = true;
+}
+
 static void gdi_gfx_create(gdi_t *gdi)
 {
    char os[64] = {0};
@@ -65,11 +199,10 @@ static void *gdi_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
-   gfx_ctx_input_t inp;
-   gfx_ctx_mode_t mode;
    void *ctx_data                       = NULL;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
-   unsigned win_width = 0, win_height   = 0;
+   unsigned mode_width = 0, mode_height = 0;
+   unsigned win_width  = 0, win_height  = 0;
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
    bool video_font_enable               = settings->bools.video_font_enable;
@@ -93,28 +226,15 @@ static void *gdi_gfx_init(const video_info_t *video,
       gdi->video_pitch                  = video->width * 2;
 
    gdi_gfx_create(gdi);
-
-   ctx_driver = video_context_driver_init_first(gdi,
-         settings->arrays.video_context_driver,
-         GFX_CTX_GDI_API, 1, 0, false, &ctx_data);
-   if (!ctx_driver)
+   if (!gfx_ctx_gdi_init())
       goto error;
 
-   if (ctx_data)
-      gdi->ctx_data = ctx_data;
+   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
 
-   gdi->ctx_driver  = ctx_driver;
-
-   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
-
-   RARCH_LOG("[GDI]: Found GDI context: %s\n", ctx_driver->ident);
-
-   video_context_driver_get_video_size(&mode);
-
-   full_x      = mode.width;
-   full_y      = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
+   full_x      = mode_width;
+   full_y      = mode_height;
+   mode_width  = 0;
+   mode_height = 0;
 
    RARCH_LOG("[GDI]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
@@ -127,22 +247,22 @@ static void *gdi_gfx_init(const video_info_t *video,
       win_height = full_y;
    }
 
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
+   mode_width      = win_width;
+   mode_height     = win_height;
 
-   if (!video_context_driver_set_video_mode(&mode))
+   if (!gfx_ctx_gdi_set_video_mode(mode_width,
+            mode_height, video->fullscreen))
       goto error;
 
-   mode.width     = 0;
-   mode.height    = 0;
+   mode_width     = 0;
+   mode_height    = 0;
 
-   video_context_driver_get_video_size(&mode);
+   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
 
-   temp_width     = mode.width;
-   temp_height    = mode.height;
-   mode.width     = 0;
-   mode.height    = 0;
+   temp_width     = mode_width;
+   temp_height    = mode_height;
+   mode_width     = 0;
+   mode_height    = 0;
 
    /* Get real known video size, which might have been altered by context. */
 
@@ -153,10 +273,7 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    RARCH_LOG("[GDI]: Using resolution %ux%u\n", temp_width, temp_height);
 
-   inp.input      = input;
-   inp.input_data = input_data;
-
-   video_context_driver_input_driver(&inp);
+   gfx_ctx_gdi_input_driver(input, input_data);
 
    if (video_font_enable)
       font_driver_init_osd(gdi,
@@ -170,7 +287,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    return gdi;
 
 error:
-   video_context_driver_destroy();
+   gfx_ctx_gdi_destroy();
    if (gdi)
       free(gdi);
    return NULL;
@@ -181,7 +298,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    BITMAPINFO *info;
-   gfx_ctx_mode_t mode;
+   unsigned mode_width       = 0;
+   unsigned mode_height      = 0;
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;
@@ -276,10 +394,10 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       }
    }
 
-   video_context_driver_get_video_size(&mode);
+   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
 
-   gdi->screen_width           = mode.width;
-   gdi->screen_height          = mode.height;
+   gdi->screen_width           = mode_width;
+   gdi->screen_height          = mode_height;
 
    info                        = (BITMAPINFO*)
       calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
@@ -350,9 +468,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    InvalidateRect(hwnd, NULL, false);
 
-   if (gdi->ctx_driver->update_window_title)
-      gdi->ctx_driver->update_window_title(
-            gdi->ctx_data);
+   gfx_ctx_gdi_update_title();
 
    return true;
 }
@@ -368,12 +484,11 @@ static bool gdi_gfx_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    bool ret             = false;
-   gdi_t *gdi           = (gdi_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-   gdi->ctx_driver->check_window(gdi->ctx_data,
+   win32_check_window(
             &quit, &resize, &temp_width, &temp_height);
 
    ret = !quit;
@@ -440,7 +555,7 @@ static void gdi_gfx_free(void *data)
    }
 
    font_driver_free_osd();
-   video_context_driver_free();
+   gfx_ctx_gdi_destroy();
    free(gdi);
 }
 
@@ -495,13 +610,7 @@ static void gdi_set_texture_frame(void *data,
 static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gfx_ctx_mode_t mode;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
+   gfx_ctx_gdi_set_video_mode(width, height, fullscreen);
 }
 
 static uintptr_t gdi_load_texture(void *video_data, void *data,

@@ -642,11 +642,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
 #endif
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-#ifdef HAVE_GDI
-   &gfx_ctx_gdi,
-#endif
-#endif
 #ifdef HAVE_NETWORK_VIDEO
    &gfx_ctx_network,
 #endif
