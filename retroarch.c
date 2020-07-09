@@ -2891,11 +2891,13 @@ static void menu_input_post_iterate(
 static void menu_input_reset(struct rarch_state *p_rarch);
 #endif
 
+#ifdef HAVE_NETWORKING
 struct netplay_room* netplay_get_host_room(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    return &p_rarch->netplay_host_room;
 }
+#endif
 
 content_state_t *content_state_get_ptr(void)
 {
