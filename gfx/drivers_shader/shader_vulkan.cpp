@@ -2028,7 +2028,9 @@ void Pass::set_semantic_texture(VkDescriptorSet set,
       slang_texture_semantic semantic, const Texture &texture)
 {
    if (reflection.semantic_textures[semantic][0].texture)
-      vulkan_pass_set_texture(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic][0].binding, texture.texture.view, texture.texture.layout);
+   {
+      VULKAN_PASS_SET_TEXTURE(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic][0].binding, texture.texture.view, texture.texture.layout);
+   }
 }
 
 void Pass::set_semantic_texture_array(VkDescriptorSet set,
@@ -2037,7 +2039,9 @@ void Pass::set_semantic_texture_array(VkDescriptorSet set,
 {
    if (index < reflection.semantic_textures[semantic].size() &&
          reflection.semantic_textures[semantic][index].texture)
-      vulkan_pass_set_texture(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic][index].binding, texture.texture.view, texture.texture.layout);
+   {
+      VULKAN_PASS_SET_TEXTURE(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic][index].binding, texture.texture.view, texture.texture.layout);
+   }
 }
 
 void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,

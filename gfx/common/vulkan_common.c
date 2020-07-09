@@ -2814,6 +2814,8 @@ static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
 
 static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
 {
+   VkSemaphore sem;
+
    if (ctx->num_recycled_acquire_semaphores == 0)
    {
       VkSemaphoreCreateInfo sem_info;
@@ -2825,7 +2827,7 @@ static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
             &ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++]);
    }
 
-   VkSemaphore sem =
+   sem               =
       ctx->swapchain_recycled_semaphores[--ctx->num_recycled_acquire_semaphores];
    ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores] =
       VK_NULL_HANDLE;
@@ -2834,16 +2836,21 @@ static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
 
 static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
 {
-   VkFenceCreateInfo fence_info =
-   { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+   unsigned index;
+   VkFenceCreateInfo fence_info;
+   VkFence *next_fence             = NULL;
+
+   fence_info.sType                = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   fence_info.pNext                = NULL;
+   fence_info.flags                = 0;
 
    /* Decouples the frame fence index from swapchain index. */
    vk->context.current_frame_index =
        (vk->context.current_frame_index + 1) %
        vk->context.num_swapchain_images;
 
-   unsigned index      = vk->context.current_frame_index;
-   VkFence *next_fence = &vk->context.swapchain_fences[index];
+   index                           = vk->context.current_frame_index;
+   next_fence                      = &vk->context.swapchain_fences[index];
 
    if (*next_fence != VK_NULL_HANDLE)
    {
@@ -2880,13 +2887,19 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned index;
    VkResult err;
-   VkFence fence = VK_NULL_HANDLE;
-   VkSemaphore semaphore = VK_NULL_HANDLE;
-   VkFenceCreateInfo fence_info   =
-   { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-   VkSemaphoreCreateInfo sem_info =
-   { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+   VkFenceCreateInfo fence_info;
+   VkSemaphoreCreateInfo sem_info;
+   VkFence fence                  = VK_NULL_HANDLE;
+   VkSemaphore semaphore          = VK_NULL_HANDLE;
    bool is_retrying               = false;
+
+   fence_info.sType               = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   fence_info.pNext               = NULL;
+   fence_info.flags               = 0;
+   
+   sem_info.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+   sem_info.pNext                 = NULL;
+   sem_info.flags                 = 0;
 
 retry:
    if (vk->swapchain == VK_NULL_HANDLE)
@@ -2903,10 +2916,10 @@ retry:
       {
          /* We still don't have a swapchain, so just fake it ... */
          vk->context.current_swapchain_index = 0;
-         vk->context.current_frame_index = 0;
+         vk->context.current_frame_index     = 0;
          vulkan_acquire_clear_fences(vk);
          vulkan_acquire_wait_fences(vk);
-         vk->context.invalid_swapchain = true;
+         vk->context.invalid_swapchain       = true;
          return;
       }
    }
@@ -3012,10 +3025,8 @@ retry:
 
    index = vk->context.current_swapchain_index;
    if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
-   {
       vkCreateSemaphore(vk->context.device, &sem_info,
             NULL, &vk->context.swapchain_semaphores[index]);
-   }
    vulkan_acquire_wait_fences(vk);
 }
 
@@ -3027,6 +3038,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    uint32_t format_count;
    uint32_t present_mode_count;
    uint32_t desired_swapchain_images;
+   VkResult res;
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
    VkPresentModeKHR present_modes[16];
@@ -3039,7 +3051,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    settings_t                    *settings = config_get_ptr();
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-   VkResult res;
 
    vkDeviceWaitIdle(vk->context.device);
    vulkan_acquire_clear_fences(vk);
@@ -3346,33 +3357,39 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
       VkRenderPass *render_pass)
 {
-   VkRenderPassCreateInfo rp_info     = {
-      VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
-   VkAttachmentReference color_ref    = { 0,
-      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-   VkAttachmentDescription attachment = {0};
+   VkAttachmentReference color_ref;
+   VkRenderPassCreateInfo rp_info;
+   VkAttachmentDescription attachment;
    VkSubpassDescription subpass       = {0};
+
+   rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+   rp_info.pNext                = NULL;
+   rp_info.flags                = 0;
+   rp_info.attachmentCount      = 1;
+   rp_info.pAttachments         = &attachment;
+   rp_info.subpassCount         = 1;
+   rp_info.pSubpasses           = &subpass;
+   rp_info.dependencyCount      = 0;
+   rp_info.pDependencies        = NULL;
+
+   color_ref.attachment         = 0;
+   color_ref.layout             = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
    /* We will always write to the entire framebuffer,
     * so we don't really need to clear. */
+   attachment.flags             = 0;
    attachment.format            = format;
    attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
    attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
    attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
    attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
    attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
    attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
    attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
    subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
    subpass.colorAttachmentCount = 1;
    subpass.pColorAttachments    = &color_ref;
-
-   rp_info.attachmentCount      = 1;
-   rp_info.pAttachments         = &attachment;
-   rp_info.subpassCount         = 1;
-   rp_info.pSubpasses           = &subpass;
 
    vkCreateRenderPass(device, &rp_info, NULL, render_pass);
 }
@@ -3658,31 +3675,4 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
          VK_QUEUE_FAMILY_IGNORED,
          VK_QUEUE_FAMILY_IGNORED);
-}
-
-void vulkan_pass_set_texture(
-      VkDevice device,
-      VkDescriptorSet set, VkSampler sampler,
-      unsigned binding,
-      VkImageView imageView, VkImageLayout imageLayout)
-{
-   VkDescriptorImageInfo image_info;
-   VkWriteDescriptorSet write;
-
-   image_info.sampler         = sampler;
-   image_info.imageView       = imageView;
-   image_info.imageLayout     = imageLayout;
-
-   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-   write.pNext                = NULL;
-   write.dstSet               = set;
-   write.dstBinding           = binding;
-   write.dstArrayElement      = 0;
-   write.descriptorCount      = 1;
-   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   write.pImageInfo           = &image_info;
-   write.pBufferInfo          = NULL;
-   write.pTexelBufferView     = NULL;
-
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 }

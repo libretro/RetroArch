@@ -507,6 +507,26 @@ typedef struct vk
    vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped); \
 }
 
+#define VULKAN_PASS_SET_TEXTURE(device, set, _sampler, binding, image_view, image_layout) \
+{ \
+   VkDescriptorImageInfo image_info; \
+   VkWriteDescriptorSet write; \
+   image_info.sampler         = _sampler; \
+   image_info.imageView       = image_view; \
+   image_info.imageLayout     = image_layout; \
+   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
+   write.pNext                = NULL; \
+   write.dstSet               = set; \
+   write.dstBinding           = binding; \
+   write.dstArrayElement      = 0; \
+   write.descriptorCount      = 1; \
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; \
+   write.pImageInfo           = &image_info; \
+   write.pBufferInfo          = NULL; \
+   write.pTexelBufferView     = NULL; \
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
+}
+
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs);
@@ -653,12 +673,6 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
 
 void vulkan_initialize_render_pass(VkDevice device,
       VkFormat format, VkRenderPass *render_pass);
-
-void vulkan_pass_set_texture(
-      VkDevice device,
-      VkDescriptorSet set, VkSampler sampler,
-      unsigned binding,
-      VkImageView imageView, VkImageLayout imageLayout);
 
 RETRO_END_DECLS
 
