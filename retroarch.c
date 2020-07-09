@@ -111,6 +111,10 @@
 #include <wiiu/os/energy.h>
 #endif
 
+#ifdef EMSCRIPTEN
+#include <emscripten/emscripten.h>
+#endif
+
 #ifdef HAVE_LIBNX
 #include <switch.h>
 #include "switch_performance_profiles.h"
