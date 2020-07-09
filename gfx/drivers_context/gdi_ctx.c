@@ -56,18 +56,6 @@ typedef struct gfx_ctx_gdi_data
 
 static void *dinput_gdi;
 
-static void gfx_ctx_gdi_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-   win32_check_window(quit, resize, width, height);
-}
-
-static bool gfx_ctx_gdi_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   return false;
-}
-
 static void gfx_ctx_gdi_update_title(void *data)
 {
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
@@ -210,11 +198,6 @@ static void gfx_ctx_gdi_input_driver(void *data,
    *input_data = dinput_gdi;
 }
 
-static enum gfx_ctx_api gfx_ctx_gdi_get_api(void *data)
-{
-   return win32_gdi_api;
-}
-
 static bool gfx_ctx_gdi_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -227,29 +210,14 @@ static bool gfx_ctx_gdi_bind_api(void *data,
    return true;
 }
 
-static void gfx_ctx_gdi_swap_interval(void *data, int interval)
-{
-   (void)data;
-   (void)interval;
-}
-
-static void gfx_ctx_gdi_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-   (void)flags;
-}
-
-static uint32_t gfx_ctx_gdi_get_flags(void *data)
-{
-   uint32_t flags = 0;
-
-   return flags;
-}
-
-static void gfx_ctx_gdi_swap_buffers(void *data)
-{
-   SwapBuffers(win32_gdi_hdc);
-}
+static void gfx_ctx_gdi_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height) { win32_check_window(quit, resize, width, height); }
+static bool gfx_ctx_gdi_set_resize(void *data, unsigned width, unsigned height) { return false; }
+static enum gfx_ctx_api gfx_ctx_gdi_get_api(void *data) { return win32_gdi_api; }
+static void gfx_ctx_gdi_swap_interval(void *data, int interval) { }
+static void gfx_ctx_gdi_set_flags(void *data, uint32_t flags) { }
+static uint32_t gfx_ctx_gdi_get_flags(void *data) { return 0; }
+static void gfx_ctx_gdi_swap_buffers(void *data) { SwapBuffers(win32_gdi_hdc); }
 
 void create_gdi_context(HWND hwnd, bool *quit)
 {
