@@ -190,10 +190,13 @@ static void *sixel_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    void *ctx_data                       = NULL;
+   const char *scale_str                = NULL;
    settings_t *settings                 = config_get_ptr();
    bool video_font_enable               = settings->bools.video_font_enable;
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
-   const char *scale_str                = NULL;
+
+   if (!sixel)
+      return NULL;
 
    *input                               = NULL;
    *input_data                          = NULL;
@@ -218,7 +221,7 @@ static void *sixel_gfx_init(const video_info_t *video,
    }
 
 #ifdef HAVE_UDEV
-   *input_data    = input_udev.init(joypad_name);
+   *input_data    = input_udev.init(settings->arrays.input_driver);
 
    if (*input_data)
       *input      = &input_udev;
@@ -236,14 +239,7 @@ static void *sixel_gfx_init(const video_info_t *video,
             video->is_threaded,
             FONT_DRIVER_RENDER_SIXEL);
 
-   RARCH_LOG("[SIXEL]: Init complete.\n");
-
    return sixel;
-
-error:
-   if (sixel)
-      free(sixel);
-   return NULL;
 }
 
 static bool sixel_gfx_frame(void *data, const void *frame,

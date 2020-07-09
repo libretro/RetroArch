@@ -83,7 +83,7 @@ static void sixel_render_msg(
 {
    float x, y, scale;
    unsigned width, height;
-   unsigned newX, newY;
+   unsigned new_x, new_y;
    unsigned align;
    sixel_raster_t              *font = (sixel_raster_t*)data;
    const struct font_params *params  = (const struct font_params*)_params;
@@ -114,19 +114,19 @@ static void sixel_render_msg(
 
    width    = font->sixel->screen_width;
    height   = font->sixel->screen_height;
-   newY     = height - (y * height * scale);
+   new_y    = height - (y * height * scale);
 
    switch (align)
    {
       case TEXT_ALIGN_RIGHT:
-         newX = (x * width * scale) - strlen(msg);
+         new_x = (x * width * scale) - strlen(msg);
          break;
       case TEXT_ALIGN_CENTER:
-         newX = (x * width * scale) - (strlen(msg) / 2);
+         new_x =  (x * width * scale) - (strlen(msg) / 2);
          break;
       case TEXT_ALIGN_LEFT:
       default:
-         newX = x * width * scale;
+         new_x = x * width * scale;
          break;
    }
 
