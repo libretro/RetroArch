@@ -297,7 +297,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   BITMAPINFO *info;
+   BITMAPINFO info;
    unsigned mode_width       = 0;
    unsigned mode_height      = 0;
    const void *frame_to_copy = frame;
@@ -396,18 +396,25 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
 
-   gdi->screen_width           = mode_width;
-   gdi->screen_height          = mode_height;
+   gdi->screen_width             = mode_width;
+   gdi->screen_height            = mode_height;
 
-   info                        = (BITMAPINFO*)
-      calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
+   info.bmiColors[0].rgbBlue     = 0;
+   info.bmiColors[0].rgbGreen    = 0;
+   info.bmiColors[0].rgbRed      = 0;
+   info.bmiColors[0].rgbReserved = 0;
 
-   info->bmiHeader.biBitCount  = bits;
-   info->bmiHeader.biWidth     = pitch / (bits / 8);
-   info->bmiHeader.biHeight    = -height;
-   info->bmiHeader.biPlanes    = 1;
-   info->bmiHeader.biSize      = sizeof(BITMAPINFOHEADER);
-   info->bmiHeader.biSizeImage = 0;
+   info.bmiHeader.biSize         = sizeof(BITMAPINFOHEADER);
+   info.bmiHeader.biWidth        = pitch / (bits / 8);
+   info.bmiHeader.biHeight       = -height;
+   info.bmiHeader.biPlanes       = 1;
+   info.bmiHeader.biBitCount     = bits;
+   info.bmiHeader.biCompression  = 0;
+   info.bmiHeader.biSizeImage    = 0;
+   info.bmiHeader.biXPelsPerMeter= 0;
+   info.bmiHeader.biYPelsPerMeter= 0;
+   info.bmiHeader.biClrUsed      = 0;
+   info.bmiHeader.biClrImportant = 0;
 
    if (bits == 16)
    {
@@ -427,13 +434,13 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          }
 
          frame_to_copy = gdi->temp_buf;
-         info->bmiHeader.biCompression = BI_RGB;
+         info.bmiHeader.biCompression = BI_RGB;
       }
       else
       {
-         unsigned *masks = (unsigned*)info->bmiColors;
+         unsigned *masks = (unsigned*)info.bmiColors;
 
-         info->bmiHeader.biCompression = BI_BITFIELDS;
+         info.bmiHeader.biCompression = BI_BITFIELDS;
 
          /* default 16-bit format on Windows is XRGB1555 */
          if (frame_to_copy == gdi->menu_frame)
@@ -453,15 +460,13 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       }
    }
    else
-      info->bmiHeader.biCompression = BI_RGB;
+      info.bmiHeader.biCompression = BI_RGB;
 
    if (draw)
       StretchDIBits(gdi->memDC, 0, 0, width, height, 0, 0, width, height,
-            frame_to_copy, info, DIB_RGB_COLORS, SRCCOPY);
+            frame_to_copy, &info, DIB_RGB_COLORS, SRCCOPY);
 
    SelectObject(gdi->memDC, gdi->bmp_old);
-
-   free(info);
 
    if (msg)
       font_driver_render_msg(gdi, msg, NULL, NULL);
