@@ -40,12 +40,6 @@ struct memstream
    unsigned writing;
 };
 
-static void memstream_update_pos(memstream_t *stream)
-{
-   if (stream && stream->ptr > stream->max_ptr)
-      stream->max_ptr = stream->ptr;
-}
-
 void memstream_set_buffer(uint8_t *buffer, uint64_t size)
 {
    g_buffer = buffer;
@@ -55,19 +49,6 @@ void memstream_set_buffer(uint8_t *buffer, uint64_t size)
 uint64_t memstream_get_last_size(void)
 {
    return last_file_size;
-}
-
-static void memstream_init(memstream_t *stream,
-      uint8_t *buffer, uint64_t max_size, unsigned writing)
-{
-   if (!stream)
-      return;
-
-   stream->buf     = buffer;
-   stream->size    = max_size;
-   stream->ptr     = 0;
-   stream->max_ptr = 0;
-   stream->writing = writing;
 }
 
 memstream_t *memstream_open(unsigned writing)
@@ -81,13 +62,11 @@ memstream_t *memstream_open(unsigned writing)
    if (!stream)
       return NULL;
 
-   stream->buf       = NULL;
-   stream->size      = 0;
+   stream->buf       = g_buffer;
+   stream->size      = g_size;
    stream->ptr       = 0;
    stream->max_ptr   = 0;
-   stream->writing   = 0;
-
-   memstream_init(stream, g_buffer, g_size, writing);
+   stream->writing   = writing;
 
    g_buffer          = NULL;
    g_size            = 0;
@@ -116,17 +95,19 @@ uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes)
    if (!stream)
       return 0;
 
-   avail = stream->size - stream->ptr;
+   avail               = stream->size - stream->ptr;
    if (bytes > avail)
-      bytes = avail;
+      bytes            = avail;
 
    memcpy(data, stream->buf + stream->ptr, (size_t)bytes);
-   stream->ptr += bytes;
-   memstream_update_pos(stream);
+   stream->ptr        += bytes;
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr  = stream->ptr;
    return bytes;
 }
 
-uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes)
+uint64_t memstream_write(memstream_t *stream,
+      const void *data, uint64_t bytes)
 {
    uint64_t avail = 0;
 
@@ -139,7 +120,8 @@ uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes)
 
    memcpy(stream->buf + stream->ptr, data, (size_t)bytes);
    stream->ptr += bytes;
-   memstream_update_pos(stream);
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr = stream->ptr;
    return bytes;
 }
 
@@ -193,7 +175,8 @@ int memstream_getc(memstream_t *stream)
       return EOF;
    ret = stream->buf[stream->ptr++];
 
-   memstream_update_pos(stream);
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr = stream->ptr;
 
    return ret;
 }
@@ -203,5 +186,6 @@ void memstream_putc(memstream_t *stream, int c)
    if (stream->ptr < stream->size)
       stream->buf[stream->ptr++] = c;
 
-   memstream_update_pos(stream);
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr = stream->ptr;
 }
