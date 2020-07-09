@@ -92,12 +92,6 @@
 #endif
 #endif
 
-static void gfx_ctx_wgl_destroy(void *data);
-
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
-static wglCreateContextAttribsProc pcreate_context;
-#endif
 static BOOL (APIENTRY *p_swap_interval)(int);
 
 /* TODO/FIXME - static globals */
@@ -240,8 +234,15 @@ static void create_gl_context(HWND hwnd, bool *quit)
 
    if (core_context || debug)
    {
-      int attribs[16] = {0};
+      unsigned i;
+      int attribs[16];
       int *aptr = attribs;
+      typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)
+         (HDC, HGLRC, const int*);
+      static wglCreateContextAttribsProc pcreate_context;
+
+      for (i = 0; i < 16; i++)
+         attribs[i] = 0;
 
       if (core_context)
       {
@@ -270,7 +271,8 @@ static void create_gl_context(HWND hwnd, bool *quit)
       *aptr = 0;
 
       if (!pcreate_context)
-         pcreate_context = (wglCreateContextAttribsProc)gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
+         pcreate_context = (wglCreateContextAttribsProc)
+            gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
 
       /* In order to support the core info "required_hw_api" 
        * field correctly, we should try to init the highest available
@@ -375,20 +377,18 @@ static void create_gl_context(HWND hwnd, bool *quit)
 #if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
 static void create_gles_context(HWND hwnd, bool *quit)
 {
-
    EGLint n, major, minor;
    EGLint format;
-   EGLint attribs[] = {
-   EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-   EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-   EGL_BLUE_SIZE, 8,
-   EGL_GREEN_SIZE, 8,
-   EGL_RED_SIZE, 8,
-   EGL_ALPHA_SIZE, 8,
-   EGL_DEPTH_SIZE, 16,
-   EGL_NONE
+   EGLint attribs[]            = {
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+      EGL_BLUE_SIZE, 8,
+      EGL_GREEN_SIZE, 8,
+      EGL_RED_SIZE, 8,
+      EGL_ALPHA_SIZE, 8,
+      EGL_DEPTH_SIZE, 16,
+      EGL_NONE
    };
-
    EGLint context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2,
       EGL_NONE
@@ -482,9 +482,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
       case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          win32_interval = interval;
-         if (!win32_hrc)
-            return;
-         if (!p_swap_interval)
+         if (!win32_hrc || !p_swap_interval)
             return;
 
          RARCH_LOG("[WGL]: wglSwapInterval(%i)\n", win32_interval);
@@ -642,53 +640,6 @@ static void gfx_ctx_wgl_get_video_size(void *data,
    }
 }
 
-static void *gfx_ctx_wgl_init(void *video_driver)
-{
-   WNDCLASSEX wndclass     = {0};
-   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)calloc(1, sizeof(*wgl));
-
-   if (!wgl)
-      return NULL;
-
-   if (g_win32_inited)
-      gfx_ctx_wgl_destroy(NULL);
-
-#ifdef HAVE_DYNAMIC
-#ifdef HAVE_OPENGL
-   dll_handle = dylib_load("OpenGL32.dll");
-#else
-   dll_handle = dylib_load("libGLESv2.dll");
-#endif
-#endif
-
-   win32_window_reset();
-   win32_monitor_init();
-
-   wndclass.lpfnWndProc   = WndProcWGL;
-   if (!win32_window_init(&wndclass, true, NULL))
-      goto error;
-
-   switch (win32_api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         if (!vulkan_context_init(&win32_vk, VULKAN_WSI_WIN32))
-            goto error;
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
-   return wgl;
-
-error:
-   if (wgl)
-      free(wgl);
-   return NULL;
-}
-
 static void gfx_ctx_wgl_destroy(void *data)
 {
    HWND            window  = win32_get_window();
@@ -708,7 +659,7 @@ static void gfx_ctx_wgl_destroy(void *data)
                if (win32_hw_hrc)
                   wglDeleteContext(win32_hw_hrc);
                wglDeleteContext(win32_hrc);
-               win32_hrc = NULL;
+               win32_hrc    = NULL;
                win32_hw_hrc = NULL;
             }
          }
@@ -766,6 +717,54 @@ static void gfx_ctx_wgl_destroy(void *data)
    win32_major                  = 0;
    win32_minor                  = 0;
    p_swap_interval              = NULL;
+}
+
+
+static void *gfx_ctx_wgl_init(void *video_driver)
+{
+   WNDCLASSEX wndclass     = {0};
+   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)calloc(1, sizeof(*wgl));
+
+   if (!wgl)
+      return NULL;
+
+   if (g_win32_inited)
+      gfx_ctx_wgl_destroy(NULL);
+
+#ifdef HAVE_DYNAMIC
+#ifdef HAVE_OPENGL
+   dll_handle = dylib_load("OpenGL32.dll");
+#else
+   dll_handle = dylib_load("libGLESv2.dll");
+#endif
+#endif
+
+   win32_window_reset();
+   win32_monitor_init();
+
+   wndclass.lpfnWndProc   = WndProcWGL;
+   if (!win32_window_init(&wndclass, true, NULL))
+      goto error;
+
+   switch (win32_api)
+   {
+      case GFX_CTX_VULKAN_API:
+#ifdef HAVE_VULKAN
+         if (!vulkan_context_init(&win32_vk, VULKAN_WSI_WIN32))
+            goto error;
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   return wgl;
+
+error:
+   if (wgl)
+      free(wgl);
+   return NULL;
 }
 
 static bool gfx_ctx_wgl_set_video_mode(void *data,
@@ -870,7 +869,12 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
          win32_use_hw_ctx = enable;
 
          if (win32_hdc)
-            wglMakeCurrent(win32_hdc, enable ? win32_hw_hrc : win32_hrc);
+         {
+            if (enable)
+               wglMakeCurrent(win32_hdc, win32_hw_hrc);
+            else
+               wglMakeCurrent(win32_hdc, win32_hrc);
+         }
 #endif
          break;
 
