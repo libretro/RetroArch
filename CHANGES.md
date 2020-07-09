@@ -11,8 +11,10 @@
 - LOCALIZATION: Updates for several languages (synchronized from Crowdin)
 - MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - MENU: Fix cursor forced to first entry after displaying lists
+- MENU/WIDGETS: Add optional widget-based 'load content' launch feedback animation
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 - SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
+- WINDOWS/RAWINPUT: Fix invalid calls to dinput_handle_message when input driver is not set to dinput
 - X11: Add lightgun support
 
 # 1.8.9
