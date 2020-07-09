@@ -71,9 +71,11 @@ struct ad_packet
    char subsystem_name[NETPLAY_HOST_STR_LEN];
 };
 
+/* TODO/FIXME - global referenced outside */
+struct netplay_room *netplay_room_list = NULL;
+
 /* TODO/FIXME - globals - remove to make code thread-safe */
 int netplay_room_count                 = 0;
-struct netplay_room *netplay_room_list = NULL;
 
 /* LAN discovery sockets */
 static int lan_ad_server_fd            = -1;
@@ -86,15 +88,8 @@ static struct ad_packet ad_packet_buffer;
 static struct netplay_host_list discovered_hosts;
 static size_t discovered_hosts_allocated;
 
-static struct netplay_room netplay_host_room = {0};
-
 /* Forward declarations */
 static bool netplay_lan_ad_client(void);
-
-struct netplay_room* netplay_get_host_room(void)
-{
-   return &netplay_host_room;
-}
 
 /** Initialize Netplay discovery (client) */
 bool init_netplay_discovery(void)

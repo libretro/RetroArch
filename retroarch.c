@@ -2308,6 +2308,9 @@ struct rarch_state
 #ifdef HAVE_DYNAMIC
    dylib_t lib_handle;
 #endif
+#ifdef HAVE_NETWORKING
+   struct netplay_room netplay_host_room;
+#endif
 
 #if defined(HAVE_RUNAHEAD)
    retro_ctx_load_content_info_t *load_content_info;
@@ -2898,6 +2901,12 @@ static void menu_input_post_iterate(
       retro_time_t current_time);
 static void menu_input_reset(struct rarch_state *p_rarch);
 #endif
+
+struct netplay_room* netplay_get_host_room(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->netplay_host_room;
+}
 
 content_state_t *content_state_get_ptr(void)
 {
