@@ -33,46 +33,6 @@
 
 static enum gfx_ctx_api sixel_ctx_api = GFX_CTX_NONE;
 
-static void gfx_ctx_sixel_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-}
-
-static bool gfx_ctx_sixel_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-
-   return false;
-}
-
-static void gfx_ctx_sixel_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   (void)data;
-}
-
-static void *gfx_ctx_sixel_init(void *video_driver)
-{
-   (void)video_driver;
-
-   return (void*)"sixel";
-}
-
-static void gfx_ctx_sixel_destroy(void *data)
-{
-   (void)data;
-}
-
-static bool gfx_ctx_sixel_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen)
-{
-   return true;
-}
-
 static void gfx_ctx_sixel_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
@@ -92,58 +52,27 @@ static void gfx_ctx_sixel_input_driver(void *data,
    *input_data = NULL;
 }
 
-static bool gfx_ctx_sixel_has_focus(void *data)
-{
-   return true;
-}
-
-static bool gfx_ctx_sixel_suppress_screensaver(void *data, bool enable)
-{
-   return true;
-}
-
-static bool gfx_ctx_sixel_get_metrics(void *data,
-	enum display_metric_types type, float *value)
-{
-   return false;
-}
-
-static enum gfx_ctx_api gfx_ctx_sixel_get_api(void *data)
-{
-   return sixel_ctx_api;
-}
-
+static void *gfx_ctx_sixel_init(void *video_driver) { return (void*)"sixel"; }
+static void gfx_ctx_sixel_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height) { }
+static bool gfx_ctx_sixel_set_resize(void *data,
+      unsigned width, unsigned height) { return false; }
+static void gfx_ctx_sixel_get_video_size(void *data,
+      unsigned *width, unsigned *height) { }
+static void gfx_ctx_sixel_destroy(void *data) { }
+static bool gfx_ctx_sixel_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen) { return true; }
+static bool gfx_ctx_sixel_has_focus(void *data) { return true; }
+static bool gfx_ctx_sixel_suppress_screensaver(void *data, bool enable) { return true; }
+static bool gfx_ctx_sixel_get_metrics(void *data, enum display_metric_types type, float *value) { return false; }
+static enum gfx_ctx_api gfx_ctx_sixel_get_api(void *data) { return sixel_ctx_api; }
 static bool gfx_ctx_sixel_bind_api(void *data,
-      enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   (void)data;
-
-   return true;
-}
-
-static void gfx_ctx_sixel_show_mouse(void *data, bool state)
-{
-   (void)data;
-}
-
-static void gfx_ctx_sixel_swap_interval(void *data, int interval)
-{
-   (void)data;
-   (void)interval;
-}
-
-static void gfx_ctx_sixel_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-   (void)flags;
-}
-
-static uint32_t gfx_ctx_sixel_get_flags(void *data)
-{
-   uint32_t flags = 0;
-
-   return flags;
-}
+      enum gfx_ctx_api api, unsigned major, unsigned minor) { return true; }
+static void gfx_ctx_sixel_show_mouse(void *data, bool state) { }
+static void gfx_ctx_sixel_swap_interval(void *data, int interval) { }
+static void gfx_ctx_sixel_set_flags(void *data, uint32_t flags) { }
+static uint32_t gfx_ctx_sixel_get_flags(void *data) { return 0; }
 
 const gfx_ctx_driver_t gfx_ctx_sixel = {
    gfx_ctx_sixel_init,
