@@ -708,9 +708,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    video_info->xmb_shadows_enable   = false;
    video_info->menu_shader_pipeline = 0;
 
-   if (!frame || !frame_width || !frame_height)
-      return true;
-
    if (gl1->should_resize)
    {
       gfx_ctx_mode_t mode;
@@ -757,7 +754,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    pot_width = get_pot(width);
    pot_height = get_pot(height);
 
-   if (  frame == RETRO_HW_FRAME_BUFFER_VALID || (
+   if (  !frame || frame == RETRO_HW_FRAME_BUFFER_VALID || (
          frame_width  == 4 &&
          frame_height == 4 &&
          (frame_width < width && frame_height < height))
@@ -792,9 +789,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (draw)
    {
-      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    
@@ -914,6 +908,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
+
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
  
    gl1_context_bind_hw_render(gl1, true);
 
