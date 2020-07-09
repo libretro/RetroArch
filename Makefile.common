@@ -1206,8 +1206,8 @@ endif
 ifeq ($(HAVE_SIXEL), 1)
    DEFINES += -DHAVE_SIXEL
    INCLUDE_DIRS += -I/usr/include/sixel
-   OBJ += gfx/drivers/sixel_gfx.o gfx/drivers_font/sixel_font.o \
-          gfx/drivers_context/sixel_ctx.o
+   OBJ += gfx/drivers/sixel_gfx.o \
+			 gfx/drivers_font/sixel_font.o
    LIBS += $(SIXEL_LIBS)
    DEF_FLAGS += $(SIXEL_CFLAGS)
 endif
