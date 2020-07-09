@@ -33,52 +33,10 @@
 
 static enum gfx_ctx_api network_ctx_api = GFX_CTX_NONE;
 
-static void gfx_ctx_network_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-}
-
-static bool gfx_ctx_network_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-
-   return false;
-}
-
-static void gfx_ctx_network_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   (void)data;
-}
-
-static void *gfx_ctx_network_init(void *video_driver)
-{
-   (void)video_driver;
-
-   return (void*)"network";
-}
-
-static void gfx_ctx_network_destroy(void *data)
-{
-   (void)data;
-}
-
-static bool gfx_ctx_network_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen)
-{
-   return true;
-}
-
 static void gfx_ctx_network_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   (void)data;
-
 #ifdef HAVE_UDEV
    *input_data = input_udev.init(joypad_name);
 
@@ -88,67 +46,33 @@ static void gfx_ctx_network_input_driver(void *data,
       return;
    }
 #endif
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 }
 
-static bool gfx_ctx_network_has_focus(void *data)
-{
-   return true;
-}
-
-static bool gfx_ctx_network_suppress_screensaver(void *data, bool enable)
-{
-   return true;
-}
-
+static void gfx_ctx_network_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height) { }
+static bool gfx_ctx_network_set_resize(void *data,
+      unsigned width, unsigned height) { return false; }
+static void gfx_ctx_network_get_video_size(void *data,
+      unsigned *width, unsigned *height) { }
+static void *gfx_ctx_network_init(void *video_driver) { return (void*)"network"; }
+static void gfx_ctx_network_destroy(void *data) { }
+static bool gfx_ctx_network_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen) { return true; }
+static bool gfx_ctx_network_has_focus(void *data) { return true; }
+static bool gfx_ctx_network_suppress_screensaver(void *data, bool enable) { return true; }
 static bool gfx_ctx_network_get_metrics(void *data,
-	enum display_metric_types type, float *value)
-{
-   return false;
-}
-
-static enum gfx_ctx_api gfx_ctx_network_get_api(void *data)
-{
-   return network_ctx_api;
-}
-
+	enum display_metric_types type, float *value) { return false; }
+static enum gfx_ctx_api gfx_ctx_network_get_api(void *data) { return network_ctx_api; }
 static bool gfx_ctx_network_bind_api(void *data,
-      enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   (void)data;
-
-   return true;
-}
-
-static void gfx_ctx_network_show_mouse(void *data, bool state)
-{
-   (void)data;
-}
-
-static void gfx_ctx_network_swap_interval(void *data, int interval)
-{
-   (void)data;
-   (void)interval;
-}
-
-static void gfx_ctx_network_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-   (void)flags;
-}
-
-static uint32_t gfx_ctx_network_get_flags(void *data)
-{
-   uint32_t flags = 0;
-
-   return flags;
-}
-
-static void gfx_ctx_network_swap_buffers(void *data)
-{
-   (void)data;
-}
+      enum gfx_ctx_api api, unsigned major, unsigned minor) { return true; }
+static void gfx_ctx_network_show_mouse(void *data, bool state) { }
+static void gfx_ctx_network_swap_interval(void *data, int interval) { }
+static void gfx_ctx_network_set_flags(void *data, uint32_t flags) { }
+static uint32_t gfx_ctx_network_get_flags(void *data) { return 0; }
+static void gfx_ctx_network_swap_buffers(void *data) { }
 
 const gfx_ctx_driver_t gfx_ctx_network = {
    gfx_ctx_network_init,
