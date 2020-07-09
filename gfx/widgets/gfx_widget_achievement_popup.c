@@ -144,7 +144,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT],
                0,
                state->y,
-               video_width, video_height, 0, 1, gfx_widgets_get_pure_white());
+               0, 1, gfx_widgets_get_pure_white());
             gfx_display_blend_end(video_info->userdata);
          }
       }
@@ -160,8 +160,6 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             state->queue[state->queue_read_index].badge,
             0,
             state->y,
-            video_width,
-            video_height,
             0,
             1,
             gfx_widgets_get_pure_white());

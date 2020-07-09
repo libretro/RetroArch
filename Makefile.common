@@ -906,7 +906,8 @@ ifeq ($(HAVE_GFX_WIDGETS), 1)
           gfx/widgets/gfx_widget_volume.o \
           gfx/widgets/gfx_widget_generic_message.o \
           gfx/widgets/gfx_widget_libretro_message.o \
-          gfx/widgets/gfx_widget_progress_message.o
+          gfx/widgets/gfx_widget_progress_message.o \
+          gfx/widgets/gfx_widget_load_content_animation.o
    ifeq ($(HAVE_CHEEVOS), 1)
        OBJ += gfx/widgets/gfx_widget_achievement_popup.o
    endif

@@ -4515,6 +4515,5 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_update_savestate_thumbnail_image,
    NULL,                                     /* pointer_down */
    stripes_pointer_up,                       /* pointer_up   */
-   NULL,                                     /* get_load_content_animation_data   */
    generic_menu_entry_action
 };

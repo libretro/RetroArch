@@ -7455,6 +7455,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,              PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_STATISTICS_SHOW,              PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_MEMORY_SHOW,                  PARSE_ONLY_BOOL,   false },
+               {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION, PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_VIDEO_FONT_PATH,              PARSE_ONLY_PATH,   false },
                {MENU_ENUM_LABEL_VIDEO_FONT_SIZE,              PARSE_ONLY_FLOAT,  false },
                {MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X,          PARSE_ONLY_FLOAT,  false },
@@ -7508,6 +7509,12 @@ unsigned menu_displaylist_build_list(
 #endif
                      break;
 #endif
+                  case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION:
+#ifdef HAVE_GFX_WIDGETS
+                     if (menu_enable_widgets)
+                        build_list[i].checked = true;
+#endif
+                     break;
                   default:
                      if (video_font_enable)
                         build_list[i].checked = true;

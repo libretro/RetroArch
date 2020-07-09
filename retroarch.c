@@ -4824,7 +4824,6 @@ static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* update_savestate_thumbnail_image */
   NULL,  /* pointer_down */
   NULL,  /* pointer_up   */
-  NULL,  /* get_load_content_animation_data */
   NULL   /* entry_action */
 };
 
@@ -6455,16 +6454,6 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
    struct rarch_state   *p_rarch  = &rarch_st;
    if (menu_is_alive && p_rarch->menu_driver_ctx->frame)
       p_rarch->menu_driver_ctx->frame(p_rarch->menu_userdata, video_info);
-}
-
-bool menu_driver_get_load_content_animation_data(
-      uintptr_t *icon, char **playlist_name)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return p_rarch->menu_driver_ctx 
-      && p_rarch->menu_driver_ctx->get_load_content_animation_data
-      && p_rarch->menu_driver_ctx->get_load_content_animation_data(
-            p_rarch->menu_userdata, icon, playlist_name);
 }
 
 /* Time format strings with AM-PM designation require special
