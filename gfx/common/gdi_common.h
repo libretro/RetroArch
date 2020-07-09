@@ -48,6 +48,9 @@ typedef struct gdi
    bool lte_win98;
    unsigned short *temp_buf;
    unsigned char *menu_frame;
+
+   bool menu_enable;
+   bool menu_full_screen;
 } gdi_t;
 
 typedef struct gdi_texture

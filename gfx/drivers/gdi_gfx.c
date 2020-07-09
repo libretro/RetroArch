@@ -317,7 +317,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(menu_is_alive, video_info);
+   if (gdi->menu_enable)
+      menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (  gdi->video_width  != frame_width  ||
@@ -574,6 +575,17 @@ static bool gdi_gfx_set_shader(void *data,
    return false;
 }
 
+static void gdi_set_texture_enable(
+      void *data, bool state, bool full_screen)
+{
+   gdi_t *gdi     = (gdi_t*)data;
+   if (!gdi)
+      return;
+
+   gdi->menu_enable      = state;
+   gdi->menu_full_screen = full_screen;
+}
+
 static void gdi_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -694,7 +706,7 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL,
    NULL,
    gdi_set_texture_frame,
-   NULL,
+   gdi_set_texture_enable,
    font_driver_render_msg,
    NULL,
    NULL,                         /* grab_mouse_toggle */
