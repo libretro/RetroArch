@@ -1092,6 +1092,7 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
             taskbar_is_created = true;
 #endif
 #ifdef HAVE_DINPUT
+         if (input_get_ptr() == &input_dinput)
          {
             void* input_data = input_get_data();
             if (input_data && dinput_handle_message(input_data,
@@ -1155,6 +1156,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
             taskbar_is_created = true;
 #endif
 #ifdef HAVE_DINPUT
+         if (input_get_ptr() == &input_dinput)
          {
             void* input_data = input_get_data();
             if (input_data && dinput_handle_message(input_data,
