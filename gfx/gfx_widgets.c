@@ -44,13 +44,6 @@
 
 #define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.69f)
 
-#ifdef HAVE_MENU
-#define ANIMATION_LOAD_CONTENT_DURATION            333
-
-#define LOAD_CONTENT_ANIMATION_INITIAL_ICON_SIZE   320
-#define LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE    240
-#endif
-
 /* TODO/FIXME - global state - perhaps move outside this file */
 static float msg_queue_background[16]                    =
 COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f);
@@ -108,10 +101,6 @@ static const char
 };
 
 /* Forward declarations */
-#ifdef HAVE_MENU
-bool menu_driver_get_load_content_animation_data(
-      uintptr_t *icon, char **playlist_name);
-#endif
 static void gfx_widgets_context_reset(
       dispgfx_widget_t *p_dispwidget,
       bool is_threaded,
@@ -205,7 +194,8 @@ const static gfx_widget_t* const widgets[] = {
 #endif
    &gfx_widget_generic_message,
    &gfx_widget_libretro_message,
-   &gfx_widget_progress_message
+   &gfx_widget_progress_message,
+   &gfx_widget_load_content_animation
 };
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
@@ -622,7 +612,6 @@ void gfx_widgets_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      unsigned width, unsigned height,
       float rotation, float scale_factor,
       float *color)
 {
@@ -650,7 +639,7 @@ void gfx_widgets_draw_icon(
    coords.color         = color;
 
    draw.x               = x;
-   draw.y               = height - y - icon_height;
+   draw.y               = video_height - y - icon_height;
    draw.width           = icon_width;
    draw.height          = icon_height;
    draw.scale_factor    = scale_factor;
@@ -674,7 +663,6 @@ static void gfx_widgets_draw_icon_blend(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      unsigned width, unsigned height,
       float rotation, float scale_factor,
       float *color)
 {
@@ -702,7 +690,7 @@ static void gfx_widgets_draw_icon_blend(
    coords.color         = color;
 
    draw.x               = x;
-   draw.y               = height - y - icon_height;
+   draw.y               = video_height - y - icon_height;
    draw.width           = icon_width;
    draw.height          = icon_height;
    draw.scale_factor    = scale_factor;
@@ -976,7 +964,6 @@ static int gfx_widgets_draw_indicator(
             video_height,
             width, height,
             icon, top_right_x_advance - width, y,
-            video_width, video_height,
             0, 1, gfx_widgets_pure_white
             );
       gfx_display_blend_end(userdata);
@@ -1116,8 +1103,6 @@ static void gfx_widgets_draw_task_msg(
          : MENU_WIDGETS_ICON_HOURGLASS],
          p_dispwidget->msg_queue_task_hourglass_x,
          video_height - msg->offset_y,
-         video_width,
-         video_height,
          msg->task_finished ? 0 : msg->hourglass_rotation,
          1, gfx_widgets_pure_white);
    gfx_display_blend_end(userdata);
@@ -1230,7 +1215,6 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_icon_rect,
             p_dispwidget->msg_queue_spacing,
             (int)(video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y),
-            video_width, video_height, 
             0, 1, msg_queue_background);
 
       gfx_display_blend_end(userdata);
@@ -1287,7 +1271,6 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_icon,
             p_dispwidget->msg_queue_spacing, video_height 
             - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y, 
-            video_width, video_height,
             0, 1, msg_queue_info);
 
       gfx_widgets_draw_icon(
@@ -1299,7 +1282,6 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_icon_outline,
             p_dispwidget->msg_queue_spacing,
             video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y, 
-            video_width, video_height,
             0, 1, gfx_widgets_pure_white);
 
       gfx_widgets_draw_icon(
@@ -1309,94 +1291,11 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_internal_icon_size, p_dispwidget->msg_queue_internal_icon_size,
             icon, p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_internal_icon_offset,
             video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y + p_dispwidget->msg_queue_internal_icon_offset, 
-            video_width, video_height,
             0, 1, gfx_widgets_pure_white);
 
       gfx_display_blend_end(userdata);
    }
 }
-
-#ifdef HAVE_MENU
-static void gfx_widgets_draw_backdrop(
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      float alpha)
-{
-   gfx_display_set_alpha(gfx_widgets_backdrop, alpha);
-   gfx_display_draw_quad(userdata,
-         video_width, video_height, 0, 0,
-         video_width, video_height, video_width, video_height,
-         gfx_widgets_backdrop);
-}
-
-static void gfx_widgets_draw_load_content_animation(
-      dispgfx_widget_t *p_dispwidget,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height)
-{
-   /* TODO: change metrics? */
-   int icon_size         = (int)p_dispwidget->load_content_animation_icon_size;
-   uint32_t text_alpha   = p_dispwidget->load_content_animation_fade_alpha * 255.0f;
-   uint32_t text_color   = COLOR_TEXT_ALPHA(0xB8B8B800, text_alpha);
-   unsigned text_offset  = -25 * p_dispwidget->last_scale_factor * 
-      p_dispwidget->load_content_animation_fade_alpha;
-   float *icon_color     = p_dispwidget->load_content_animation_icon_color;
-
-   /* Fade out */
-   gfx_widgets_draw_backdrop(userdata,
-         video_width, video_height,
-         p_dispwidget->load_content_animation_fade_alpha);
-
-   /* Icon */
-   gfx_display_set_alpha(icon_color,
-         p_dispwidget->load_content_animation_icon_alpha);
-   gfx_display_blend_begin(userdata);
-   gfx_widgets_draw_icon(
-         userdata,
-         video_width,
-         video_height,
-         icon_size,
-         icon_size,
-         p_dispwidget->load_content_animation_icon,
-         video_width  / 2 - icon_size/2,
-         video_height / 2 - icon_size/2,
-         video_width,
-         video_height,
-         0, 1, icon_color
-         );
-   gfx_display_blend_end(userdata);
-
-   /* Text
-    * TODO/FIXME: Check vertical alignment - where is
-    * this text actually meant to go...? */
-   gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.bold,
-         p_dispwidget->load_content_animation_content_name,
-         video_width  / 2,
-         video_height / 2 + (175 + 25) * p_dispwidget->last_scale_factor 
-         + text_offset 
-         + p_dispwidget->gfx_widget_fonts.bold.line_centre_offset,
-         video_width,
-         video_height,
-         text_color,
-         TEXT_ALIGN_CENTER,
-         false);
-
-   /* Flush text layer */
-   gfx_widgets_flush_text(video_width, video_height,
-         &p_dispwidget->gfx_widget_fonts.regular);
-   gfx_widgets_flush_text(video_width, video_height,
-         &p_dispwidget->gfx_widget_fonts.bold);
-   gfx_widgets_flush_text(video_width, video_height,
-         &p_dispwidget->gfx_widget_fonts.msg_queue);
-
-   /* Everything disappears */
-   gfx_widgets_draw_backdrop(userdata,
-         video_width, video_height,
-         p_dispwidget->load_content_animation_final_fade_alpha);
-}
-#endif
 
 static void INLINE gfx_widgets_font_bind(gfx_widget_font_data_t *font_data)
 {
@@ -1458,8 +1357,6 @@ void gfx_widgets_frame(void *data)
             p_dispwidget->ai_service_overlay_texture,
             0,
             0,
-            video_width,
-            video_height,
             0,
             1,
             gfx_widgets_pure_white
@@ -1648,24 +1545,13 @@ void gfx_widgets_frame(void *data)
       SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
    }
 
-#ifdef HAVE_MENU
-   /* Load content animation */
-   if (p_dispwidget->load_content_animation_running)
-      gfx_widgets_draw_load_content_animation(
-            p_dispwidget,
-            userdata,
-            video_width,
-            video_height);
-   else
-#endif
-   {
-      gfx_widgets_flush_text(video_width, video_height,
-            &p_dispwidget->gfx_widget_fonts.regular);
-      gfx_widgets_flush_text(video_width, video_height,
-            &p_dispwidget->gfx_widget_fonts.bold);
-      gfx_widgets_flush_text(video_width, video_height,
-            &p_dispwidget->gfx_widget_fonts.msg_queue);
-   }
+   /* Ensure all text is flushed */
+   gfx_widgets_flush_text(video_width, video_height,
+         &p_dispwidget->gfx_widget_fonts.regular);
+   gfx_widgets_flush_text(video_width, video_height,
+         &p_dispwidget->gfx_widget_fonts.bold);
+   gfx_widgets_flush_text(video_width, video_height,
+         &p_dispwidget->gfx_widget_fonts.msg_queue);
 
    /* Unbind fonts */
    gfx_widgets_font_unbind(&p_dispwidget->gfx_widget_fonts.regular);
@@ -1877,15 +1763,6 @@ static void gfx_widgets_layout(
       ->gfx_widget_fonts.msg_queue.glyph_width * 40.0f;
    p_dispwidget->msg_queue_default_rect_width            = p_dispwidget->last_video_width 
       - p_dispwidget->msg_queue_regular_text_start - (2 * p_dispwidget->simple_widget_padding);
-
-#ifdef HAVE_MENU
-   p_dispwidget->load_content_animation_icon_size_initial = 
-      LOAD_CONTENT_ANIMATION_INITIAL_ICON_SIZE * 
-      p_dispwidget->last_scale_factor;
-   p_dispwidget->load_content_animation_icon_size_target  = 
-      LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE  * 
-      p_dispwidget->last_scale_factor;
-#endif
 
    p_dispwidget->divider_width_1px    = 1;
    if (p_dispwidget->last_scale_factor > 1.0f)
@@ -2188,132 +2065,3 @@ void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget)
    }
 }
 #endif
-
-#ifdef HAVE_MENU
-static void gfx_widgets_end_load_content_animation(void *userdata)
-{
-#if 0
-   task_load_content_resume(); /* TODO: Restore that */
-#endif
-}
-
-void gfx_widgets_cleanup_load_content_animation(void)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-   p_dispwidget->load_content_animation_running = false;
-   if (p_dispwidget->load_content_animation_content_name)
-      free(p_dispwidget->load_content_animation_content_name);
-   p_dispwidget->load_content_animation_content_name = NULL;
-}
-#endif
-
-void gfx_widgets_start_load_content_animation(
-      const char *content_name, bool remove_extension)
-{
-#ifdef HAVE_MENU
-   /* TODO: finish the animation based on design, correct all timings */
-   int i;
-   gfx_animation_ctx_entry_t entry;
-   gfx_timer_ctx_entry_t timer_entry;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
-   float icon_color[16]             = 
-      COLOR_HEX_TO_FLOAT(0x0473C9, 1.0f); /* TODO: random color */
-   unsigned timing                  = 0;
-
-   /* Prepare data */
-   p_dispwidget->load_content_animation_icon         = 0;
-
-   /* Abort animation if we don't have an icon */
-   if (!menu_driver_get_load_content_animation_data(
-            &p_dispwidget->load_content_animation_icon,
-      &p_dispwidget->load_content_animation_playlist_name) || 
-         !p_dispwidget->load_content_animation_icon)
-   {
-      gfx_widgets_end_load_content_animation(NULL);
-      return;
-   }
-
-   p_dispwidget->load_content_animation_content_name = strdup(content_name);
-
-   if (remove_extension)
-      path_remove_extension(p_dispwidget->load_content_animation_content_name);
-
-   /* Reset animation state */
-   p_dispwidget->load_content_animation_icon_size          = p_dispwidget->load_content_animation_icon_size_initial;
-   p_dispwidget->load_content_animation_icon_alpha         = 0.0f;
-   p_dispwidget->load_content_animation_fade_alpha         = 0.0f;
-   p_dispwidget->load_content_animation_final_fade_alpha   = 0.0f;
-
-   memcpy(p_dispwidget->load_content_animation_icon_color, icon_color, sizeof(p_dispwidget->load_content_animation_icon_color));
-
-   /* Setup the animation */
-   entry.cb             = NULL;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
-   entry.userdata       = NULL;
-
-   /* Stage one: icon animation */
-   /* Position */
-   entry.duration       = ANIMATION_LOAD_CONTENT_DURATION;
-   entry.subject        = &p_dispwidget->load_content_animation_icon_size;
-   entry.target_value   = p_dispwidget->load_content_animation_icon_size_target;
-
-   gfx_animation_push(&entry);
-
-   /* Alpha */
-   entry.subject        = &p_dispwidget->load_content_animation_icon_alpha;
-   entry.target_value   = 1.0f;
-
-   gfx_animation_push(&entry);
-   timing += entry.duration;
-
-   /* Stage two: backdrop + text */
-   entry.duration       = ANIMATION_LOAD_CONTENT_DURATION*1.5;
-   entry.subject        = &p_dispwidget->load_content_animation_fade_alpha;
-   entry.target_value   = 1.0f;
-
-   gfx_animation_push_delayed(timing, &entry);
-   timing += entry.duration;
-
-   /* Stage three: wait then color transition */
-   timing += ANIMATION_LOAD_CONTENT_DURATION*1.5;
-
-   entry.duration = ANIMATION_LOAD_CONTENT_DURATION*3;
-
-   for (i = 0; i < 16; i++)
-   {
-      if (i == 3 || i == 7 || i == 11 || i == 15)
-         continue;
-
-      entry.subject        = &p_dispwidget->load_content_animation_icon_color[i];
-      entry.target_value   = gfx_widgets_pure_white[i];
-
-      gfx_animation_push_delayed(timing, &entry);
-   }
-
-   timing += entry.duration;
-
-   /* Stage four: wait then make everything disappear */
-   timing += ANIMATION_LOAD_CONTENT_DURATION*2;
-
-   entry.duration       = ANIMATION_LOAD_CONTENT_DURATION*1.5;
-   entry.subject        = 
-      &p_dispwidget->load_content_animation_final_fade_alpha;
-   entry.target_value   = 1.0f;
-
-   gfx_animation_push_delayed(timing, &entry);
-   timing += entry.duration;
-
-   /* Setup end */
-   timer_entry.cb       = gfx_widgets_end_load_content_animation;
-   timer_entry.duration = timing;
-   timer_entry.userdata = NULL;
-
-   gfx_timer_start(
-         &p_dispwidget->load_content_animation_end_timer,
-         &timer_entry);
-
-   /* Draw all the things */
-   p_dispwidget->load_content_animation_running = true;
-#endif
-}

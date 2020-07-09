@@ -9811,6 +9811,5 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL, /* update_savestate_thumbnail_image */
    materialui_pointer_down,
    materialui_pointer_up,
-   NULL, /* get_load_content_animation_data */
    materialui_menu_entry_action
 };

@@ -1307,6 +1307,7 @@ MENU
 #ifdef HAVE_CHEEVOS
 #include "../gfx/widgets/gfx_widget_achievement_popup.c"
 #endif
+#include "../gfx/widgets/gfx_widget_load_content_animation.c"
 #endif
 
 #ifdef HAVE_MENU

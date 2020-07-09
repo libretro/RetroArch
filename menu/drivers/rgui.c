@@ -5495,6 +5495,5 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* update_savestate_thumbnail_image */
    NULL,                               /* pointer_down */
    rgui_pointer_up,
-   NULL,                               /* get_load_content_animation_data */
    rgui_menu_entry_action
 };

@@ -4301,6 +4301,10 @@ MSG_HASH(
    "menu_widgets_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "menu_show_load_content_animation"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
    "video_shader_enable"
    )

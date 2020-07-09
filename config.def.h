@@ -767,6 +767,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_MENU_ENABLE_WIDGETS false
 #endif
 
+/* Display an animation when loading content
+ * > Currently implemented only as a widget */
+#define DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION DEFAULT_MENU_ENABLE_WIDGETS
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000

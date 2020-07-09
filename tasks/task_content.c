@@ -551,7 +551,7 @@ static void content_load_init_wrap(
  * Returns: false (0) if retroarch_main_init failed,
  * otherwise true (1).
  **/
-static bool content_load(content_ctx_info_t *info, 
+static bool content_load(content_ctx_info_t *info,
       content_state_t *p_content)
 {
    unsigned i                        = 0;
@@ -609,6 +609,26 @@ static bool content_load(content_ctx_info_t *info,
       command_event(CMD_EVENT_CORE_INIT, NULL);
       content_clear_subsystem();
    }
+
+#ifdef HAVE_GFX_WIDGETS
+   /* If retroarch_main_init() returned true, we
+    * can safely trigger a load content animation */
+   if (gfx_widgets_ready())
+   {
+      /* Note: Have to read settings value here
+       * (It will be invalid if we try to read
+       *  it earlier...) */
+#ifdef HAVE_CONFIGFILE
+      settings_t *settings              = config_get_ptr();
+      bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
+#else
+      bool show_load_content_animation  = false;
+#endif
+
+      if (show_load_content_animation)
+         gfx_widget_start_load_content_animation();
+   }
+#endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
