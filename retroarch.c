@@ -647,14 +647,8 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    &gfx_ctx_gdi,
 #endif
 #endif
-#ifdef HAVE_SIXEL
-   &gfx_ctx_sixel,
-#endif
 #ifdef HAVE_NETWORK_VIDEO
    &gfx_ctx_network,
-#endif
-#if defined(HAVE_FPGA)
-   &gfx_ctx_fpga,
 #endif
    &gfx_ctx_null,
    NULL
