@@ -653,20 +653,38 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
+static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
+static void input_null_poll(void *data) { }
+static int16_t input_null_input_state(void *data,
+         rarch_joypad_info_t *joypad_info,
+         const struct retro_keybind **retro_keybinds,
+         unsigned port, unsigned device, unsigned index, unsigned id) { return 0; }
+static void input_null_free(void *data) { }
+static bool input_null_set_sensor_state(void *data, unsigned port,
+         enum retro_sensor_action action, unsigned rate) { return false; }
+static float input_null_get_sensor_input(void *data, unsigned port, unsigned id) { return 0.0; }
+static uint64_t input_null_get_capabilities(void *data) { return 0; }
+static void input_null_grab_mouse(void *data, bool state) { }
+static bool input_null_grab_stdin(void *data) { return false; }
+static bool input_null_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t state) { return false; }
+static const input_device_driver_t *input_null_get_joypad_driver(void *data) { return NULL; }
+static const input_device_driver_t *input_null_get_sec_joypad_driver(void *data) { return NULL; }
+
 static input_driver_t input_null = {
-   NULL, /* init */
-   NULL, /* poll */
-   NULL, /* input_state */
-   NULL, /* free */
-   NULL, /* set_sensor_state */
-   NULL,
-   NULL, /* get_capabilities */
+   input_null_init,
+   input_null_poll,
+   input_null_input_state,
+   input_null_free,
+   input_null_set_sensor_state,
+   input_null_get_sensor_input,
+   input_null_get_capabilities,
    "null",
-   NULL, /* grab_mouse */
-   NULL,
-   NULL, /* set_rumble */
-   NULL,
-   NULL,
+   input_null_grab_mouse,
+   input_null_grab_stdin,
+   input_null_set_rumble,
+   input_null_get_joypad_driver,
+   input_null_get_sec_joypad_driver,
    false,
 };
 
