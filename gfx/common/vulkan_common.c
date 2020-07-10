@@ -3434,7 +3434,10 @@ void vulkan_framebuffer_generate_mips(
    unsigned i;
    /* This is run every frame, so make sure
     * we aren't opting into the "lazy" way of doing this. :) */
-   VkImageMemoryBarrier barriers[2];
+   VkImageMemoryBarrier barriers[2] = {
+      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
+      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
+   };
 
    /* First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
     * This should allow the surface to stay compressed.
@@ -3443,8 +3446,6 @@ void vulkan_framebuffer_generate_mips(
     */
 
    /* Input */
-   barriers[0].sType                         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-   barriers[0].pNext                         = NULL;
    barriers[0].srcAccessMask                 = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
    barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
    barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -3458,8 +3459,6 @@ void vulkan_framebuffer_generate_mips(
    barriers[0].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
 
    /* The rest of the mip chain */
-   barriers[1].sType                         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-   barriers[1].pNext                         = NULL;
    barriers[1].srcAccessMask                 = 0;
    barriers[1].dstAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
    barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -3485,8 +3484,8 @@ void vulkan_framebuffer_generate_mips(
 
    for (i = 1; i < levels; i++)
    {
-      VkImageBlit blit_region;
       unsigned src_width, src_height, target_width, target_height;
+      VkImageBlit blit_region = {{0}};
 
       /* For subsequent passes, we have to transition
        * from DST_OPTIMAL to SRC_OPTIMAL,
@@ -3521,17 +3520,11 @@ void vulkan_framebuffer_generate_mips(
       blit_region.srcSubresource.mipLevel       = i - 1;
       blit_region.srcSubresource.baseArrayLayer = 0;
       blit_region.srcSubresource.layerCount     = 1;
-      blit_region.srcOffsets[0].x               = 0;
-      blit_region.srcOffsets[0].y               = 0;
-      blit_region.srcOffsets[0].z               = 0;
+      blit_region.dstSubresource                = blit_region.srcSubresource;
+      blit_region.dstSubresource.mipLevel       = i;
       blit_region.srcOffsets[1].x               = src_width;
       blit_region.srcOffsets[1].y               = src_height;
       blit_region.srcOffsets[1].z               = 1;
-      blit_region.dstSubresource                = blit_region.srcSubresource;
-      blit_region.dstSubresource.mipLevel       = i;
-      blit_region.dstOffsets[0].x               = 0;
-      blit_region.dstOffsets[0].y               = 0;
-      blit_region.dstOffsets[0].z               = 0;
       blit_region.dstOffsets[1].x               = target_width;
       blit_region.dstOffsets[1].y               = target_height;
       blit_region.dstOffsets[1].z               = 1;
