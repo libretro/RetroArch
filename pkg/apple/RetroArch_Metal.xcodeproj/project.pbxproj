@@ -15,7 +15,6 @@
 		053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25521433F1700D98D46 /* QtConcurrent.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		053FC275214341F000D98D46 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		208CD5292384D7940056E645 /* RetroArchRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchRelease.entitlements; sourceTree = "<group>"; };
 		05422E402140C8DB00F09961 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
 		05422E442140C8DB00F09961 /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
@@ -525,6 +524,7 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		509F0C9C1AA23AFC00619ECC /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
+		686201AB24B823A800EBDD95 /* RetroArch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArch.entitlements; sourceTree = "<group>"; };
 		840222FB1A889EE2009AB261 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		84DD5EA61A89E406007336C1 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = /System/Library/Frameworks/CoreLocation.framework; sourceTree = "<absolute>"; };
@@ -1417,7 +1417,7 @@
 		29B97314FDCFA39411CA2CEA /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
-				208CD5292384D7940056E645 /* RetroArchRelease.entitlements */
+				686201AB24B823A800EBDD95 /* RetroArch.entitlements */,
 				05D7753120A55D2700646447 /* BaseConfig.xcconfig */,
 				05422E5C2140CFC500F09961 /* Metal.xcconfig */,
 				A90207489289602F593626D5 /* QTConfig.xcconfig */,
@@ -1662,6 +1662,7 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1700,10 +1701,10 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CODE_SIGN_ENTITLEMENTS = RetroArchRelease.entitlements
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = ZE9XE938Z2;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1738,6 +1739,7 @@
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1774,6 +1776,7 @@
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
