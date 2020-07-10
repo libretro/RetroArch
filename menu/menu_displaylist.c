@@ -11664,6 +11664,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            float orig_value       = *setting->value.target.fraction;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM;
                            float step             = setting->step;
+                           float half_step        = step * 0.5f;
                            double min             = setting->enforce_minrange ? setting->min : 0.00;
                            double max             = setting->enforce_maxrange ? setting->max : 9999.00;
                            bool checked_found     = false;
@@ -11688,7 +11689,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                        setting_type, 0, 0))
                                     count++;
 
-                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
+                                 if (!checked_found && (fabs(i - orig_value) < half_step))
                                  {
                                     checked       = entry_index;
                                     checked_found = true;
@@ -11715,7 +11716,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                        setting_type, 0, 0))
                                     count++;
 
-                                 if (!checked_found && fabs(i - orig_value) <= 0.01f)
+                                 if (!checked_found && (fabs(i - orig_value) < half_step))
                                  {
                                     checked       = entry_index;
                                     checked_found = true;
@@ -12080,6 +12081,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         float orig_value       = *setting->value.target.fraction;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
                         float step             = setting->step;
+                        float half_step        = step * 0.5f;
                         double min             = setting->enforce_minrange ? setting->min : 0.00;
                         double max             = setting->enforce_maxrange ? setting->max : 9999.00;
                         bool checked_found     = false;
@@ -12104,7 +12106,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                     setting_type, 0, 0))
                                  count++;
 
-                              if (!checked_found && fabs(i - orig_value) <= 0.01f)
+                              if (!checked_found && (fabs(i - orig_value) < half_step))
                               {
                                  checked       = entry_index;
                                  checked_found = true;
@@ -12131,7 +12133,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                     setting_type, 0, 0))
                                  count++;
 
-                              if (!checked_found && fabs(i - orig_value) <= 0.01f)
+                              if (!checked_found && (fabs(i - orig_value) < half_step))
                               {
                                  checked       = entry_index;
                                  checked_found = true;
