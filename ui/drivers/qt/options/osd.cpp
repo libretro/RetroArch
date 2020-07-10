@@ -58,6 +58,7 @@ QWidget *NotificationsPage::widget()
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    notificationsGroup->add(MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED);
 #endif
+   notificationsGroup->add(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION);
 
    layout->addWidget(notificationsGroup);
 
