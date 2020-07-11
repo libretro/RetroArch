@@ -558,6 +558,7 @@ static bool content_load(content_ctx_info_t *info,
       content_state_t *p_content)
 {
    unsigned i                        = 0;
+   bool success                      = false;
    int rarch_argc                    = 0;
    char *rarch_argv[MAX_ARGS]        = {NULL};
    char *argv_copy [MAX_ARGS]        = {NULL};
@@ -600,13 +601,14 @@ static bool content_load(content_ctx_info_t *info,
    wrap_args->argc = *rarch_argc_ptr;
    wrap_args->argv = rarch_argv_ptr;
 
-   if (!retroarch_main_init(wrap_args->argc, wrap_args->argv))
-   {
-      for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-         free(argv_copy[i]);
-      free(wrap_args);
+   success         = retroarch_main_init(wrap_args->argc, wrap_args->argv);
+
+   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
+      free(argv_copy[i]);
+   free(wrap_args);
+
+   if (!success)
       return false;
-   }
 
    if (p_content->pending_subsystem_init)
    {
@@ -648,9 +650,6 @@ static bool content_load(content_ctx_info_t *info,
    frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
    frontend_driver_content_loaded();
 
-   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-      free(argv_copy[i]);
-   free(wrap_args);
    return true;
 }
 
