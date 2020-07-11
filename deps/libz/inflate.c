@@ -206,7 +206,7 @@ int inflateInit2_(z_streamp strm, int windowBits,
       malloc(sizeof(*state));
    if (state == Z_NULL)
       return Z_MEM_ERROR;
-   state->mode     = 0;
+   state->mode     = HEAD;
    state->last     = 0;
    state->wrap     = 0;
    state->havedict = 0;
@@ -1404,7 +1404,7 @@ int inflateCopy(z_streamp dest, z_streamp source)
    if (copy == Z_NULL)
       return Z_MEM_ERROR;
    window         = Z_NULL;
-   copy->mode     = 0;
+   copy->mode     = HEAD;
    copy->last     = 0;
    copy->wrap     = 0;
    copy->havedict = 0;
