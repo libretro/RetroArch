@@ -865,7 +865,7 @@ int generic_action_ok_displaylist_push(const char *path,
          {
             filebrowser_clear_type();
             strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
-            path_basedir(tmp);
+            path_basedir_size(tmp, STRLEN_CONST(tmp));
 
             info.type          = type;
             info.directory_ptr = idx;
@@ -881,7 +881,7 @@ int generic_action_ok_displaylist_push(const char *path,
                strlcpy(tmp, content_get_subsystem_rom(content_get_subsystem_rom_id() - 1), sizeof(tmp));
             else
                strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
-            path_basedir(tmp);
+            path_basedir_size(tmp, STRLEN_CONST(tmp));
 
             if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
                content_clear_subsystem();

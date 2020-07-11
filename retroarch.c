@@ -7900,7 +7900,7 @@ static bool menu_shader_manager_save_preset_internal(
                fullname, sizeof(buffer));
 
          strlcpy(basedir, buffer, sizeof(basedir));
-         path_basedir(basedir);
+         path_basedir_size(basedir, STRLEN_CONST(basedir));
 
          if (!path_is_directory(basedir))
          {
@@ -8810,7 +8810,7 @@ static void discord_init(
       strlcpy(command, args, sizeof(command));
    else
    {
-      path_basedir(full_path);
+      path_basedir_size(full_path, STRLEN_CONST(full_path));
       snprintf(command, sizeof(command), "%s%s", full_path, args);
    }
 #else
@@ -10876,7 +10876,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
    {
       strlcpy(new_savefile_dir, p_rarch->path_main_basename,
             path_size);
-      path_basedir(new_savefile_dir);
+      path_basedir_size(new_savefile_dir, STRLEN_CONST(new_savefile_dir));
    }
 
    /* Set savestate directory if empty based on content directory */
@@ -10884,7 +10884,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
    {
       strlcpy(new_savestate_dir, p_rarch->path_main_basename,
             path_size);
-      path_basedir(new_savestate_dir);
+      path_basedir_size(new_savestate_dir, STRLEN_CONST(new_savestate_dir));
    }
 
    if (global)
