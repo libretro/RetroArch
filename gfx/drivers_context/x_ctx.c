@@ -37,6 +37,7 @@
 #endif
 
 #include <string/stdstring.h>
+#include <compat/strcasestr.h>
 #include <X11/Xatom.h>
 
 #include "../../configuration.h"
