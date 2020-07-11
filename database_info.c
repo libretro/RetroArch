@@ -389,16 +389,6 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    db->list_ptr           = 0;
    db->list               = list;
 
-   db->state.type         = ARCHIVE_TRANSFER_NONE;
-   db->state.archive_size = 0;
-   db->state.start_delta  = 0;
-   db->state.handle       = NULL;
-   db->state.stream       = NULL;
-   db->state.footer       = NULL;
-   db->state.directory    = NULL;
-   db->state.data         = NULL;
-   db->state.backend      = NULL;
-
    return db;
 }
 
@@ -429,16 +419,6 @@ database_info_handle_t *database_info_file_init(const char *path,
    db->type               = type;
    db->list_ptr           = 0;
    db->list               = list;
-
-   db->state.type         = ARCHIVE_TRANSFER_NONE;
-   db->state.archive_size = 0;
-   db->state.start_delta  = 0;
-   db->state.handle       = NULL;
-   db->state.stream       = NULL;
-   db->state.footer       = NULL;
-   db->state.directory    = NULL;
-   db->state.data         = NULL;
-   db->state.backend      = NULL;
 
    return db;
 }

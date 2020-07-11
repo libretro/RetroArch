@@ -24,19 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifdef HAVE_MMAP
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
-
-#include <sys/mman.h>
-#include <sys/stat.h>
-#endif
-
 #include <compat/strl.h>
 #include <file/archive_file.h>
 #include <file/file_path.h>
@@ -44,119 +31,6 @@
 #include <retro_miscellaneous.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
-
-struct file_archive_file_data
-{
-#ifdef HAVE_MMAP
-   int fd;
-#endif
-   void *data;
-   size_t size;
-};
-
-static size_t file_archive_size(file_archive_file_data_t *data)
-{
-   if (!data)
-      return 0;
-   return data->size;
-}
-
-static const uint8_t *file_archive_data(file_archive_file_data_t *data)
-{
-   if (!data)
-      return NULL;
-   return (const uint8_t*)data->data;
-}
-
-#ifdef HAVE_MMAP
-/* Closes, unmaps and frees. */
-static void file_archive_free(file_archive_file_data_t *data)
-{
-   if (!data)
-      return;
-
-   if (data->data)
-      munmap(data->data, data->size);
-   if (data->fd >= 0)
-      close(data->fd);
-   free(data);
-}
-
-static file_archive_file_data_t* file_archive_open(const char *path)
-{
-   file_archive_file_data_t *data = (file_archive_file_data_t*)
-      malloc(sizeof(*data));
-
-   if (!data)
-      return NULL;
-
-   data->fd                       = open(path, O_RDONLY);
-   data->data                     = NULL;
-   data->size                     = 0;
-
-   /* Failed to open archive. */
-   if (data->fd < 0)
-      goto error;
-
-   data->size                     = path_get_size(path);
-   if (!data->size)
-      return data;
-
-   data->data                     = mmap(NULL,
-         data->size, PROT_READ, MAP_SHARED, data->fd, 0);
-   if (data->data == MAP_FAILED)
-   {
-      data->data                  = NULL;
-
-      /* Failed to mmap() file */
-      goto error;
-   }
-
-   return data;
-
-error:
-   file_archive_free(data);
-   return NULL;
-}
-#else
-
-/* Closes, unmaps and frees. */
-static void file_archive_free(file_archive_file_data_t *data)
-{
-   if (!data)
-      return;
-   if(data->data)
-      free(data->data);
-   free(data);
-}
-
-static file_archive_file_data_t* file_archive_open(const char *path)
-{
-   int64_t ret                    = -1;
-   bool read_from_file            = false;
-   file_archive_file_data_t *data = (file_archive_file_data_t*)
-      malloc(sizeof(*data));
-
-   if (!data)
-      return NULL;
-
-   data->data                     = NULL;
-   data->size                     = 0;
-   read_from_file                 = filestream_read_file(
-         path, &data->data, &ret);
-
-   /* Failed to open archive? */
-   if (!read_from_file || ret < 0)
-      goto error;
-
-   data->size                     = ret;
-   return data;
-
-error:
-   file_archive_free(data);
-   return NULL;
-}
-#endif
 
 static int file_archive_get_file_list_cb(
       const char *path,
@@ -252,7 +126,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
 
       if (file_archive_perform_mode(new_path,
                 valid_exts, cdata, cmode, csize, size,
-                0, userdata))
+                checksum, userdata))
          userdata->found_file = true;
 
       return 0;
@@ -280,14 +154,18 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    if (!state->backend)
       return -1;
 
-   state->handle = file_archive_open(path);
-   if (!state->handle)
+   state->archive_file = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   /* Failed to open archive. */
+   if (!state->archive_file)
       return -1;
 
-   state->archive_size = (int32_t)file_archive_size(state->handle);
-   state->data         = file_archive_data(state->handle);
-   state->footer       = 0;
-   state->directory    = 0;
+   state->archive_size = filestream_get_size(state->archive_file);
+
+   state->step_current = 0;
+   state->step_total   = 0;
 
    return state->backend->archive_parse_file_init(state, path);
 }
@@ -295,35 +173,25 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
 /**
  * file_archive_decompress_data_to_file:
  * @path                        : filename path of archive.
- * @valid_exts                  : Valid extensions of archive to be parsed.
- *                                If NULL, allow all.
- * @cdata                       : input data.
- * @csize                       : size of input data.
  * @size                        : output file size
  * @checksum                    : CRC32 checksum from input data.
  *
- * Decompress data to file.
+ * Write data to file.
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
 static int file_archive_decompress_data_to_file(
+      file_archive_transfer_t *transfer,
       file_archive_file_handle_t *handle,
-      int ret,
       const char *path,
-      const char *valid_exts,
-      const uint8_t *cdata,
-      uint32_t csize,
       uint32_t size,
       uint32_t checksum)
 {
-   if (!handle || ret == -1)
-   {
-      ret = 0;
-      goto end;
-   }
+   if (!handle)
+      return 0;
 
 #if 0
-   handle->real_checksum = handle->backend->stream_crc_calculate(
+   handle->real_checksum = transfer->backend->stream_crc_calculate(
          0, handle->data, size);
    if (handle->real_checksum != checksum)
    {
@@ -334,38 +202,14 @@ static int file_archive_decompress_data_to_file(
 #endif
 
    if (!filestream_write_file(path, handle->data, size))
-   {
-      ret = false;
-      goto end;
-   }
+      return 0;
 
-end:
-
-   if (handle)
-   {
-      if (handle->backend)
-      {
-         if (handle->backend->stream_free)
-         {
-#ifdef HAVE_7ZIP
-            if (handle->backend != &sevenzip_backend)
-#endif
-            {
-               handle->backend->stream_free(handle->stream);
-
-               if (handle->data)
-                  free(handle->data);
-            }
-         }
-      }
-   }
-
-   return ret;
+   return 1;
 }
 
 void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state)
 {
-   if (!state || !state->handle)
+   if (!state || !state->archive_file)
       return;
 
    state->type = ARCHIVE_TRANSFER_DEINIT;
@@ -392,7 +236,7 @@ int file_archive_parse_file_iterate(
          {
             if (userdata)
             {
-               userdata->context = state->stream;
+               userdata->transfer = state;
                strlcpy(userdata->archive_path, file,
                      sizeof(userdata->archive_path));
             }
@@ -402,14 +246,13 @@ int file_archive_parse_file_iterate(
             state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
          break;
       case ARCHIVE_TRANSFER_ITERATE:
-         if (file_archive_get_file_backend(file))
+         if (state->backend)
          {
-            const struct file_archive_file_backend *backend =
-               file_archive_get_file_backend(file);
-            int ret                                         =
-               backend->archive_parse_file_iterate_step(state,
-                  valid_exts, userdata, file_cb);
+            int ret = state->backend->archive_parse_file_iterate_step(
+                  state->context, valid_exts, userdata, file_cb);
 
+            if (ret == 1)
+               state->step_current++; /* found another file */
             if (ret != 1)
                state->type = ARCHIVE_TRANSFER_DEINIT;
             if (ret == -1)
@@ -422,25 +265,21 @@ int file_archive_parse_file_iterate(
       case ARCHIVE_TRANSFER_DEINIT_ERROR:
          *returnerr = false;
       case ARCHIVE_TRANSFER_DEINIT:
-         if (state->handle)
+         if (state->context)
          {
-            file_archive_free(state->handle);
-            state->handle = NULL;
+            if (state->backend->archive_parse_file_free)
+               state->backend->archive_parse_file_free(state->context);
+            state->context = NULL;
          }
 
-         if (state->stream && state->backend)
+         if (state->archive_file)
          {
-            if (state->backend->stream_free)
-               state->backend->stream_free(state->stream);
-
-            if (state->stream)
-               free(state->stream);
-
-            state->stream = NULL;
-
-            if (userdata)
-               userdata->context = NULL;
+            filestream_close(state->archive_file);
+            state->archive_file = NULL;
          }
+
+         if (userdata)
+            userdata->transfer = NULL;
          break;
    }
 
@@ -471,12 +310,11 @@ static bool file_archive_walk(const char *file, const char *valid_exts,
    bool returnerr                = true;
 
    state.type                    = ARCHIVE_TRANSFER_INIT;
+   state.archive_file            = NULL;
    state.archive_size            = 0;
-   state.handle                  = NULL;
-   state.stream                  = NULL;
-   state.footer                  = NULL;
-   state.directory               = NULL;
-   state.data                    = NULL;
+   state.context                 = NULL;
+   state.step_total              = 0;
+   state.step_current            = 0;
    state.backend                 = NULL;
 
    for (;;)
@@ -491,17 +329,10 @@ static bool file_archive_walk(const char *file, const char *valid_exts,
 
 int file_archive_parse_file_progress(file_archive_transfer_t *state)
 {
-   ptrdiff_t delta = 0;
-
-   if (!state || state->archive_size == 0)
+   if (!state || state->step_total == 0)
       return 0;
 
-   delta = state->directory - state->data;
-
-   if (!state->start_delta)
-      state->start_delta = delta;
-
-   return (int)(((delta - state->start_delta) * 100) / (state->archive_size - state->start_delta));
+   return (int)((state->step_current * 100) / (state->step_total));
 }
 
 /**
@@ -537,14 +368,9 @@ bool file_archive_extract_file(
    userdata.list                            = NULL;
    userdata.found_file                      = false;
    userdata.list_only                       = false;
-   userdata.context                         = NULL;
    userdata.crc                             = 0;
+   userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
-
-   userdata.decomp_state.opt_file           = NULL;
-   userdata.decomp_state.needle             = NULL;
-   userdata.decomp_state.size               = 0;
-   userdata.decomp_state.found              = false;
 
    if (!list)
    {
@@ -599,14 +425,9 @@ struct string_list *file_archive_get_file_list(const char *path,
    userdata.list                            = string_list_new();
    userdata.found_file                      = false;
    userdata.list_only                       = true;
-   userdata.context                         = NULL;
    userdata.crc                             = 0;
+   userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
-
-   userdata.decomp_state.opt_file           = NULL;
-   userdata.decomp_state.needle             = NULL;
-   userdata.decomp_state.size               = 0;
-   userdata.decomp_state.found              = false;
 
    if (!userdata.list)
       goto error;
@@ -627,45 +448,29 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   switch (cmode)
+   if (!userdata->transfer || !userdata->transfer->backend)
+      return false;
+
+   int ret = 0;
+   file_archive_file_handle_t handle;
+
+   handle.data          = NULL;
+   handle.real_checksum = 0;
+
+   if (!userdata->transfer->backend->stream_decompress_data_to_file_init(
+            userdata->transfer->context, &handle, cdata, cmode, csize, size))
+      return false;
+
+   do
    {
-      case ARCHIVE_MODE_UNCOMPRESSED:
-         if (!filestream_write_file(path, cdata, size))
-            return false;
-         break;
+      ret = userdata->transfer->backend->stream_decompress_data_to_file_iterate(
+               userdata->transfer->context, &handle);
+   }while (ret == 0);
 
-      case ARCHIVE_MODE_COMPRESSED:
-         {
-            int ret = 0;
-            file_archive_file_handle_t handle;
-
-            handle.stream        = userdata->context;
-            handle.data          = NULL;
-            handle.real_checksum = 0;
-            handle.backend       = file_archive_get_file_backend(userdata->archive_path);
-
-            if (!handle.backend)
-               return false;
-
-            if (!handle.backend->stream_decompress_data_to_file_init(&handle,
-                     cdata, csize, size))
-               return false;
-
-            do
-            {
-               ret = handle.backend->stream_decompress_data_to_file_iterate(
-                     handle.stream);
-            }while (ret == 0);
-
-            if (!file_archive_decompress_data_to_file(&handle,
-                     ret, path, valid_exts,
-                     cdata, csize, size, crc32))
-               return false;
-         }
-         break;
-      default:
-         return false;
-   }
+   if (ret == -1 || !file_archive_decompress_data_to_file(
+            userdata->transfer, &handle, path,
+            size, crc32))
+      return false;
 
    return true;
 }
@@ -841,12 +646,11 @@ uint32_t file_archive_get_file_crc32(const char *path)
    }
 
    state.type          = ARCHIVE_TRANSFER_INIT;
+   state.archive_file  = NULL;
    state.archive_size  = 0;
-   state.handle        = NULL;
-   state.stream        = NULL;
-   state.footer        = NULL;
-   state.directory     = NULL;
-   state.data          = NULL;
+   state.context       = NULL;
+   state.step_total    = 0;
+   state.step_current  = 0;
    state.backend       = NULL;
 
    /* Initialize and open archive first.
@@ -881,8 +685,5 @@ uint32_t file_archive_get_file_crc32(const char *path)
 
    file_archive_parse_file_iterate_stop(&state);
 
-   if (userdata.crc)
-      return userdata.crc;
-
-   return 0;
+   return userdata.crc;
 }
