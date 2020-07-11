@@ -4403,6 +4403,14 @@ MSG_HASH(
    "Use unofficial achievements and/or beta features for testing purposes."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Unlock Sound"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Plays a sound when an achievement is unlocked."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
    "Verbose Mode"
    )
