@@ -37605,8 +37605,7 @@ bool retroarch_main_quit(void)
       /* If any save states are in progress, wait
        * until all tasks are complete (otherwise
        * save state file may be truncated) */
-      if (content_save_state_in_progress())
-         task_queue_wait(NULL, NULL);
+      content_wait_for_save_state_task();
 
 #ifdef HAVE_CONFIGFILE
       if (p_rarch->runloop_overrides_active)
