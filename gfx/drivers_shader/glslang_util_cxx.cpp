@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
-#include <sstream>
 #include <algorithm>
 
 #include <retro_miscellaneous.h>
@@ -39,12 +38,8 @@
 static std::string build_stage_source(
       const struct string_list *lines, const char *stage)
 {
-   /* Note: since we have to return a std::string anyway,
-    * there is nothing to be gained from trying to replace
-    * this ostringstream with a C-based alternative
-    * (would require a rewrite of deps/glslang/glslang.cpp) */
    size_t i;
-   std::ostringstream str;
+   std::string str;
    bool active = true;
 
    if (!lines)
@@ -54,8 +49,8 @@ static std::string build_stage_source(
       return "";
 
    /* Version header. */
-   str << lines->elems[0].data;
-   str << '\n';
+   str += lines->elems[0].data;
+   str += '\n';
 
    for (i = 1; i < lines->size; i++)
    {
@@ -87,15 +82,15 @@ static std::string build_stage_source(
             /* Ignore */
          }
          else if (active)
-            str << line;
+            str += line;
       }
       else if (active)
-         str << line;
+         str += line;
 
-      str << '\n';
+      str += '\n';
    }
 
-   return str.str();
+   return str;
 }
 
 bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
