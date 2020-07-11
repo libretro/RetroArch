@@ -487,10 +487,9 @@ static int64_t content_file_read(const char *path, void **buf, int64_t *length)
  **/
 static void content_load_init_wrap(
       const struct rarch_main_wrap *args,
-      int *argc, char **argv)
+      int *argc, char **argv,
+      bool print_args)
 {
-   int i;
-
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 
@@ -537,8 +536,12 @@ static void content_load_init_wrap(
    if (args->verbose)
       argv[(*argc)++] = strdup("-v");
 
-   for (i = 0; i < *argc; i++)
-      RARCH_LOG("[CORE]: Arg #%d: %s\n", i, argv[i]);
+   if (print_args)
+   {
+      int i;
+      for (i = 0; i < *argc; i++)
+         RARCH_LOG("[CORE]: Arg #%d: %s\n", i, argv[i]);
+   }
 }
 
 /**
@@ -585,7 +588,8 @@ static bool content_load(content_ctx_info_t *info,
 
    if (wrap_args->touched)
    {
-      content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+      content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv,
+            false);
       memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
       rarch_argv_ptr = (char**)rarch_argv;
       rarch_argc_ptr = (int*)&rarch_argc;
