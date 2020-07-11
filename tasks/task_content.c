@@ -776,15 +776,13 @@ static bool load_content_from_compressed_archive(
    if (!file_archive_compressed_read(path,
          NULL, new_path, &new_path_len) || new_path_len < 0)
    {
-      size_t path_size = 1024 * sizeof(char);
-      char *str        = (char*)malloc(path_size);
-      snprintf(str,
-            path_size,
+      char str[1024];
+      str[0] = '\0';
+      snprintf(str, sizeof(str),
             "%s \"%s\".\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
             path);
       *error_string = strdup(str);
-      free(str);
       free(new_path);
       return false;
    }
@@ -840,9 +838,9 @@ static bool content_file_init_extract(
             special->roms[i].valid_extensions :
             content_ctx->valid_extensions;
 
-         new_path        = (char*)malloc(new_path_size);
+         new_path                 = (char*)malloc(new_path_size);
 
-         temp_content[0] = new_path[0] = '\0';
+         temp_content[0]          = new_path[0] = '\0';
 
          if (!string_is_empty(path))
             strlcpy(temp_content, path, temp_content_size);
@@ -857,17 +855,16 @@ static bool content_file_init_extract(
                   new_path_size
                   ))
          {
-            size_t path_size = 1024 * sizeof(char);
-            char *str        = (char*)malloc(path_size);
+            char str[1024];
+            str[0] = '\0';
 
-            snprintf(str, path_size,
+            snprintf(str, sizeof(str),
                   "%s: %s.\n",
                   msg_hash_to_str(
                      MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
                   temp_content);
             *error_string = strdup(str);
             free(temp_content);
-            free(str);
             free(new_path);
             return false;
          }
@@ -948,17 +945,14 @@ static bool content_file_load(
                   content_ctx, p_content,
                   i, path, (void**)&info[i].data, &len))
          {
-            size_t msg_size = 1024 * sizeof(char);
-            char *msg       = (char*)malloc(msg_size);
+            char msg[1024];
             msg[0]          = '\0';
 
-            snprintf(msg,
-                  msg_size,
+            snprintf(msg, sizeof(msg),
                   "%s \"%s\".\n",
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
             *error_string = strdup(msg);
-            free(msg);
             return false;
          }
 
@@ -1017,23 +1011,21 @@ static bool content_file_load(
              * but copying large files is not a good idea anyway */
             if (!filestream_read_file(path, &buf, &len))
             {
-               size_t msg_size = 1024 * sizeof(char);
-               char *msg       = (char*)malloc(msg_size);
+               char msg[1024];
                msg[0]          = '\0';
 
                snprintf(msg,
-                     msg_size,
+                     sizeof(msg),
                      "%s \"%s\". (during copy read)\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      path);
                *error_string = strdup(msg);
-               free(msg);
                return false;
             }
+
             if (!filestream_write_file(new_path, buf, len))
             {
-               size_t msg_size = 1024 * sizeof(char);
-               char *msg       = (char*)malloc(msg_size);
+               char msg[1024];
                msg[0]          = '\0';
 
                free(buf);
@@ -1043,9 +1035,9 @@ static bool content_file_load(
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      path);
                *error_string = strdup(msg);
-               free(msg);
                return false;
             }
+
             free(buf);
 
             string_list_append(additional_path_allocs, new_path, attributes);
@@ -1112,48 +1104,57 @@ retro_subsystem_info *content_file_init_subsystem(
       char **error_string,
       bool *ret)
 {
-   size_t path_size                           = 1024 * sizeof(char);
-   char *msg                                  = (char*)malloc(path_size);
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
             subsystem_data, (unsigned)subsystem_current_count,
             path_get(RARCH_PATH_SUBSYSTEM));
 
-   msg[0] = '\0';
-
    if (!special)
    {
-      snprintf(msg, path_size,
+      char msg[1024];
+      msg[0] = '\0';
+      snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
       *error_string = strdup(msg);
       goto error;
    }
 
-   if (special->num_roms && !subsystem)
+   if (special->num_roms)
    {
-      strlcpy(msg,
-            msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
-            path_size
-            );
-      *error_string = strdup(msg);
-      goto error;
+      if (!subsystem)
+      {
+         char msg[1024];
+         msg[0] = '\0';
+         strlcpy(msg,
+               msg_hash_to_str(
+                  MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
+               sizeof(msg) 
+               );
+         *error_string = strdup(msg);
+         goto error;
+      }
+
+      if (special->num_roms != subsystem->size)
+      {
+         char msg[1024];
+         msg[0] = '\0';
+         snprintf(msg,
+               sizeof(msg),
+               "Libretro core requires %u content files for "
+               "subsystem \"%s\", but %u content files were provided.\n",
+               special->num_roms, special->desc,
+               (unsigned)subsystem->size);
+         *error_string = strdup(msg);
+         goto error;
+      }
    }
-   else if (special->num_roms && (special->num_roms != subsystem->size))
+   else if (subsystem && subsystem->size)
    {
+      char msg[1024];
+      msg[0] = '\0';
       snprintf(msg,
-            path_size,
-            "Libretro core requires %u content files for "
-            "subsystem \"%s\", but %u content files were provided.\n",
-            special->num_roms, special->desc,
-            (unsigned)subsystem->size);
-      *error_string = strdup(msg);
-      goto error;
-   }
-   else if (!special->num_roms && subsystem && subsystem->size)
-   {
-      snprintf(msg,
-            path_size,
+            sizeof(msg),
             "Libretro core takes no content for subsystem \"%s\", "
             "but %u content files were provided.\n",
             special->desc,
@@ -1163,12 +1164,10 @@ retro_subsystem_info *content_file_init_subsystem(
    }
 
    *ret = true;
-   free(msg);
    return special;
 
 error:
    *ret = false;
-   free(msg);
    return NULL;
 }
 
