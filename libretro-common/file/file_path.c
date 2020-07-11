@@ -1293,14 +1293,14 @@ void fill_pathname_application_dir(char *s, size_t len)
 void fill_pathname_home_dir(char *s, size_t len)
 {
 #ifdef __WINRT__
-   strlcpy(s, uwp_dir_data, len);
+   const char *home = uwp_dir_data;
 #else
    const char *home = getenv("HOME");
+#endif
    if (home)
       strlcpy(s, home, len);
    else
       *s = 0;
-#endif
 }
 #endif
 
