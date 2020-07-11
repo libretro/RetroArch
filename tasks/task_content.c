@@ -1436,15 +1436,6 @@ static bool command_event_cmd_exec(
       bool launched_from_cli,
       char **error_string)
 {
-#if defined(HAVE_DYNAMIC)
-   content_ctx_info_t content_info;
-
-   content_info.argc        = 0;
-   content_info.argv        = NULL;
-   content_info.args        = NULL;
-   content_info.environ_get = menu_content_environment_get;
-#endif
-
    if (path_get(RARCH_PATH_CONTENT) != data)
    {
       path_clear(RARCH_PATH_CONTENT);
@@ -1453,10 +1444,19 @@ static bool command_event_cmd_exec(
    }
 
 #if defined(HAVE_DYNAMIC)
-   /* Loads content into currently selected core. */
-   if (!content_load(&content_info, p_content))
-      return false;
-   task_push_to_history_list(p_content, true, launched_from_cli, false);
+   {
+      content_ctx_info_t content_info;
+
+      content_info.argc        = 0;
+      content_info.argv        = NULL;
+      content_info.args        = NULL;
+      content_info.environ_get = menu_content_environment_get;
+
+      /* Loads content into currently selected core. */
+      if (!content_load(&content_info, p_content))
+         return false;
+      task_push_to_history_list(p_content, true, launched_from_cli, false);
+   }
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
