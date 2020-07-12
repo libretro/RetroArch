@@ -4,6 +4,7 @@
 - CHEEVOS: Upgrade to rcheevos 9.1
 - CHEEVOS: Restore display of unlocked achievements across hardcore modes
 - CHEEVOS: Hash buffered data when available
+- CHEEVOS: Fix 'Auto Save State freezes RetroArch while Cheevos is enabled'
 - CONFIG FILE: Optimise parsing of configuration files
 - D3D9/D3D11: Fix core-initiated D3D9/D3D11 driver switches
 - DRIVERS: Add 'Ignore null drivers' setting. When enabled, won't allow the user to set a driver to nothing. Can prevent the user from locking him/herself out of the program.
