@@ -224,8 +224,8 @@ void task_queue_check(void);
  * and the task will be ignored. */
 bool task_queue_push(retro_task_t *task);
 
-/* Blocks until all tasks have finished
- * will return early if cond is not NULL
+/* Blocks until all non-scheduled tasks have finished.
+ * Will return early if cond is not NULL
  * and cond(data) returns false.
  * This must only be called from the main thread. */
 void task_queue_wait(retro_task_condition_fn_t cond, void* data);
