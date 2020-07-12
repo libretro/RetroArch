@@ -2245,9 +2245,7 @@ bool task_push_load_content_with_core_from_menu(
    /* Load content */
    if (!task_load_content_internal(content_info, true, false, false))
    {
-#ifdef HAVE_MENU
       retroarch_menu_running();
-#endif
       return false;
    }
 
