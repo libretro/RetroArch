@@ -51,8 +51,8 @@ bool content_load_state(const char* path, bool load_to_backup_buffer, bool autol
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk, bool autosave);
 
-/* Returns true if a save state task is in progress */
-bool content_save_state_in_progress(void);
+/* Waits for any in-progress save state tasks to finish */
+void content_wait_for_save_state_task(void);
 
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);

@@ -235,7 +235,7 @@ static void retro_task_regular_gather(void)
 
 static void retro_task_regular_wait(retro_task_condition_fn_t cond, void* data)
 {
-   while (tasks_running.front && (!cond || cond(data)))
+   while ((tasks_running.front && !tasks_running.front->when) && (!cond || cond(data)))
       retro_task_regular_gather();
 }
 
@@ -420,10 +420,9 @@ static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
       retro_task_threaded_gather();
 
       slock_lock(running_lock);
-      wait = (tasks_running.front) &&
-             (!cond || cond(data));
+      wait = (tasks_running.front && !tasks_running.front->when);
       slock_unlock(running_lock);
-   } while (wait);
+   } while (wait && (!cond || cond(data)));
 }
 
 static void retro_task_threaded_reset(void)
