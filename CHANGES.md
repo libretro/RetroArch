@@ -1,5 +1,6 @@
 # Future
 - BLUETOOTH: Add a Bluetooth driver (Lakka-only for now)
+- CHEEVOS: Option to play sound on achievement unlock.
 - CHEEVOS: Upgrade to rcheevos 9.1
 - CHEEVOS: Restore display of unlocked achievements across hardcore modes
 - CHEEVOS: Hash buffered data when available
