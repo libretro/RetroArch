@@ -7008,7 +7008,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
 #ifdef HAVE_AUDIOMIXER
          if (settings->bools.audio_enable_menu)
-            audio_driver_load_menu_sounds();
+            audio_driver_load_system_sounds();
          else
             audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
@@ -7172,6 +7172,12 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
          /* when changing the password, clear out the token */
          settings->arrays.cheevos_token[0] = '\0';
+         break;
+      case MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE:
+#ifdef HAVE_AUDIOMIXER
+         if (settings->bools.cheevos_unlock_sound_enable)
+            audio_driver_load_system_sounds();
+#endif
          break;
       default:
          break;
@@ -16128,6 +16134,24 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
+
+#ifdef HAVE_AUDIOMIXER
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cheevos_unlock_sound_enable,
+               MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+            );
+#endif
 
          CONFIG_BOOL(
                list, list_info,

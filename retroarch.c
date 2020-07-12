@@ -1143,7 +1143,7 @@ static const camera_driver_t *camera_drivers[] = {
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 
-#define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac"
+#define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac|wav"
 
 #define MIDI_DRIVER_BUF_SIZE 4096
 
@@ -29672,38 +29672,45 @@ static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
       audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 }
 
-void audio_driver_load_menu_sounds(void)
+void audio_driver_load_system_sounds(void)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
-   settings_t *settings              = p_rarch->configuration_settings;
-   const char *dir_assets            = settings->paths.directory_assets;
-   bool audio_enable_menu_ok         = settings->bools.audio_enable_menu_ok;
-   bool audio_enable_menu_cancel     = settings->bools.audio_enable_menu_cancel;
-   bool audio_enable_menu_notice     = settings->bools.audio_enable_menu_notice;
-   bool audio_enable_menu_bgm        = settings->bools.audio_enable_menu_bgm;
-   const char *path_ok               = NULL;
-   const char *path_cancel           = NULL;
-   const char *path_notice           = NULL;
-   const char *path_bgm              = NULL;
-   struct string_list *list          = NULL;
-   struct string_list *list_fallback = NULL;
-   unsigned i                        = 0;
-   char *sounds_path                 = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *sounds_fallback_path        = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
+   struct rarch_state *p_rarch           = &rarch_st;
+   settings_t *settings                  = p_rarch->configuration_settings;
+   const char *dir_assets                = settings->paths.directory_assets;
+   const bool audio_enable_menu          = settings->bools.audio_enable_menu;
+   const bool audio_enable_menu_ok       = audio_enable_menu && settings->bools.audio_enable_menu_ok;
+   const bool audio_enable_menu_cancel   = audio_enable_menu && settings->bools.audio_enable_menu_cancel;
+   const bool audio_enable_menu_notice   = audio_enable_menu && settings->bools.audio_enable_menu_notice;
+   const bool audio_enable_menu_bgm      = audio_enable_menu && settings->bools.audio_enable_menu_bgm;
+   const bool audio_enable_cheevo_unlock = settings->bools.cheevos_unlock_sound_enable;
+   const char *path_ok                   = NULL;
+   const char *path_cancel               = NULL;
+   const char *path_notice               = NULL;
+   const char *path_bgm                  = NULL;
+   const char *path_cheevo_unlock        = NULL;
+   struct string_list *list              = NULL;
+   struct string_list *list_fallback     = NULL;
+   unsigned i                            = 0;
+   char *sounds_path                     = NULL;
+   char *sounds_fallback_path            = NULL;
+   char *basename_noext                  = NULL;
 
+   if (!audio_enable_menu && !audio_enable_cheevo_unlock)
+      goto end;
+
+   sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    sounds_path[0] = sounds_fallback_path[0] = '\0';
 
    fill_pathname_join(
          sounds_fallback_path,
          dir_assets,
          "sounds",
-         PATH_MAX_LENGTH * sizeof(char));
+         PATH_MAX_LENGTH);
 
    fill_pathname_application_special(
          sounds_path,
-         PATH_MAX_LENGTH * sizeof(char),
+         PATH_MAX_LENGTH,
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS);
 
    list = dir_list_new(sounds_path, MENU_SOUND_FORMATS, false, false, false, false);
@@ -29730,26 +29737,27 @@ void audio_driver_load_menu_sounds(void)
       }
    }
 
+   basename_noext = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    for (i = 0; i < list->size; i++)
    {
       const char *path = list->elems[i].data;
       const char *ext = path_get_extension(path);
-      char basename_noext[PATH_MAX_LENGTH];
-
-      basename_noext[0] = '\0';
-
-      fill_pathname_base_noext(basename_noext, path, sizeof(basename_noext));
 
       if (audio_driver_mixer_extension_supported(ext))
       {
+         basename_noext[0] = '\0';
+         fill_pathname_base_noext(basename_noext, path, PATH_MAX_LENGTH);
+
          if (string_is_equal_noncase(basename_noext, "ok"))
             path_ok = path;
-         if (string_is_equal_noncase(basename_noext, "cancel"))
+         else if (string_is_equal_noncase(basename_noext, "cancel"))
             path_cancel = path;
-         if (string_is_equal_noncase(basename_noext, "notice"))
+         else if (string_is_equal_noncase(basename_noext, "notice"))
             path_notice = path;
-         if (string_is_equal_noncase(basename_noext, "bgm"))
+         else if (string_is_equal_noncase(basename_noext, "bgm"))
             path_bgm = path;
+         else if (string_is_equal_noncase(basename_noext, "unlock"))
+            path_cheevo_unlock = path;
       }
    }
 
@@ -29761,6 +29769,8 @@ void audio_driver_load_menu_sounds(void)
       task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
    if (path_bgm && audio_enable_menu_bgm)
       task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
+   if (path_cheevo_unlock && audio_enable_cheevo_unlock)
+      task_push_audio_mixer_load(path_cheevo_unlock, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK);
 
 end:
    if (list)
@@ -29771,6 +29781,8 @@ end:
       free(sounds_path);
    if (sounds_fallback_path)
       free(sounds_fallback_path);
+   if (basename_noext)
+      free(basename_noext);
 }
 
 void audio_driver_mixer_play_stream(unsigned i)
@@ -36340,9 +36352,8 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
-   if (p_rarch->configuration_settings->bools.audio_enable_menu)
-      audio_driver_load_menu_sounds();
+#if defined(HAVE_AUDIOMIXER)
+   audio_driver_load_system_sounds();
 #endif
 
    return true;

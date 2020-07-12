@@ -821,6 +821,11 @@ static void rcheevos_async_award_achievement(rcheevos_async_io_request* request)
 
    rcheevos_log_url("rc_url_award_cheevo", buffer);
    task_push_http_transfer_with_user_agent(buffer, true, NULL, request->user_agent, rcheevos_async_task_callback, request);
+
+#ifdef HAVE_AUDIOMIXER
+   if (settings->bools.cheevos_unlock_sound_enable)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK);
+#endif
 }
 
 static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)

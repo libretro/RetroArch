@@ -365,6 +365,10 @@ MSG_HASH(
    "cheevos_username"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "cheevos_unlock_sound_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,
    "cheevos_verbose_enable"
    )
