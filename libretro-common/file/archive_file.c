@@ -97,11 +97,17 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
    if (ext && string_list_find_elem(userdata->ext, ext))
    {
       char new_path[PATH_MAX_LENGTH];
-      char wanted_file[PATH_MAX_LENGTH];
-      const char *delim                 = NULL;
+      const char *delim;
 
-      new_path[0] = wanted_file[0]      = '\0';
+      delim = path_get_archive_delim(userdata->archive_path);
 
+      if (delim)
+      {
+         if (!string_is_equal_noncase(userdata->current_file_path, delim + 1))
+           return 1; /* keep searching for the right file */
+      }
+
+      new_path[0] = '\0';
       if (userdata->extraction_directory)
          fill_pathname_join(new_path, userdata->extraction_directory,
                path_basename(name), sizeof(new_path));
@@ -109,25 +115,14 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
          fill_pathname_resolve_relative(new_path, userdata->archive_path,
                path_basename(name), sizeof(new_path));
 
-      userdata->first_extracted_file_path = strdup(new_path);
-
-      delim = path_get_archive_delim(userdata->archive_path);
-
-      if (delim)
-      {
-         strlcpy(wanted_file, delim + 1, sizeof(wanted_file));
-
-         if (!string_is_equal_noncase(userdata->current_file_path,
-                   wanted_file))
-           return 1; /* keep searching for the right file */
-      }
-      else
-         strlcpy(wanted_file, userdata->archive_path, sizeof(wanted_file));
 
       if (file_archive_perform_mode(new_path,
                 valid_exts, cdata, cmode, csize, size,
                 checksum, userdata))
+      {
          userdata->found_file = true;
+         userdata->first_extracted_file_path = strdup(new_path);
+      }
 
       return 0;
    }
