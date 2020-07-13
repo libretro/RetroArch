@@ -161,7 +161,7 @@
 #endif
 
 #if defined(_WIN32)
-#if !defined(_MSC_VER) || (defined(_MSC_VER) && _MSC_VER >= 1400)
+#if defined(_MSC_VER) && _MSC_VER >= 1400
 #define ATLEAST_VC2005
 #endif
 #endif
@@ -177,7 +177,7 @@
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
 
-#if (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0) >= 200112) || (defined(__POSIX_VISIBLE) && __POSIX_VISIBLE >= 200112) || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112) || __USE_LARGEFILE
+#if (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0) >= 200112) || (defined(__POSIX_VISIBLE) && __POSIX_VISIBLE >= 200112) || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112) || __USE_LARGEFILE || (defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64)
 #ifndef HAVE_64BIT_OFFSETS
 #define HAVE_64BIT_OFFSETS
 #endif
