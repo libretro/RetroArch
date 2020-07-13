@@ -58,10 +58,6 @@ typedef struct file_archive_transfer
 {
    enum file_archive_transfer_type type;
    struct RFILE *archive_file;
-#ifdef HAVE_MMAP
-   int archive_mmap_fd;
-   uint8_t *archive_mmap_data;
-#endif
    int64_t archive_size;
    void *context;
    unsigned step_total, step_current;

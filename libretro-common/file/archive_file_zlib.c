@@ -49,7 +49,7 @@ enum file_archive_compression_mode
 
 typedef struct
 {
-   struct file_archive_transfer *state;
+   RFILE   *file;
    uint8_t *directory;
    uint8_t *directory_entry;
    uint8_t *directory_end;
@@ -80,13 +80,8 @@ static void zip_context_free_stream(
    }
    if (zip_context->compressed_data)
    {
-#ifdef HAVE_MMAP
-      if (!zip_context->state->archive_mmap_data)
-#endif
-      {
-         free(zip_context->compressed_data);
-         zip_context->compressed_data = NULL;
-      }
+      free(zip_context->compressed_data);
+      zip_context->compressed_data = NULL;
    }
    if (zip_context->decompressed_data && !keep_decompressed)
    {
@@ -100,57 +95,38 @@ static bool zlib_stream_decompress_data_to_file_init(
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size)
 {
    zip_context_t *zip_context = (zip_context_t *)context;
-   struct file_archive_transfer *state = zip_context->state;
    uint8_t local_header_buf[4];
-   uint8_t *local_header;
    uint32_t offsetNL, offsetEL;
    int64_t offsetData;
 
-   /* free previous data and stream if left unfinished */
+   /* free previous stream if left unfinished */
    zip_context_free_stream(zip_context, false);
 
-   /* seek past most of the local directory header */
-#ifdef HAVE_MMAP
-   if (state->archive_mmap_data)
-   {
-      local_header = state->archive_mmap_data + (size_t)cdata + 26;
-   }
-   else
-#endif
-   {
-      filestream_seek(state->archive_file, (int64_t)(size_t)cdata + 26, RETRO_VFS_SEEK_POSITION_START);
-      if (filestream_read(state->archive_file, local_header_buf, 4) != 4)
-         goto error;
-      local_header = local_header_buf;
-   }
+   /* allocate memory for the compressed data */
+   zip_context->compressed_data = (uint8_t*)malloc(csize);
+   if (!zip_context->compressed_data)
+      goto error;
 
-   offsetNL = read_le(local_header,     2); /* file name length */
-   offsetEL = read_le(local_header + 2, 2); /* extra field length */
+   /* seek past most of the local directory header */
+   filestream_seek(zip_context->file, (int64_t)(size_t)cdata + 26, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_read(zip_context->file, local_header_buf, 4) != 4)
+      goto error;
+
+   offsetNL = read_le(local_header_buf,     2); /* file name length */
+   offsetEL = read_le(local_header_buf + 2, 2); /* extra field length */
    offsetData = (int64_t)(size_t)cdata + 26 + 4 + offsetNL + offsetEL;
 
-#ifdef HAVE_MMAP
-   if (state->archive_mmap_data)
-   {
-      zip_context->compressed_data = state->archive_mmap_data + (size_t)offsetData;
-   }
-   else
-#endif
-   {
-      /* allocate memory for the compressed data */
-      zip_context->compressed_data = (uint8_t*)malloc(csize);
-      if (!zip_context->compressed_data)
-         goto error;
-
-      /* skip over name and extra data */
-      filestream_seek(state->archive_file, offsetData, RETRO_VFS_SEEK_POSITION_START);
-      if (filestream_read(state->archive_file, zip_context->compressed_data, csize) != csize)
-         goto error;
-   }
+   /* skip over name and extra data */
+   filestream_seek(zip_context->file, offsetData, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_read(zip_context->file, zip_context->compressed_data, csize) != csize)
+      goto error;
 
    switch (cmode)
    {
       case ZIP_MODE_STORED:
-         handle->data = zip_context->compressed_data;
+         zip_context->decompressed_data = zip_context->compressed_data;
+         zip_context->compressed_data = NULL;
+         handle->data = zip_context->decompressed_data;
          return true;
 
      case ZIP_MODE_DEFLATED:
@@ -421,7 +397,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
     * context and the entire directory, then read the directory.
     */
    zip_context = (zip_context_t*)malloc(sizeof(zip_context_t) + (size_t)directory_size);
-   zip_context->state             = state;
+   zip_context->file              = state->archive_file;
    zip_context->directory         = (uint8_t*)(zip_context + 1);
    zip_context->directory_entry   = zip_context->directory;
    zip_context->directory_end     = zip_context->directory + (size_t)directory_size;

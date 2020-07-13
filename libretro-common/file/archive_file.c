@@ -32,14 +32,6 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
-#ifdef HAVE_MMAP
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#endif
-
 static int file_archive_get_file_list_cb(
       const char *path,
       const char *valid_exts,
@@ -167,25 +159,6 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
 
    state->archive_size = filestream_get_size(state->archive_file);
 
-#ifdef HAVE_MMAP
-   if (state->archive_size <= (256*1024*1024))
-   {
-      state->archive_mmap_fd = open(path, O_RDONLY);
-      if (state->archive_mmap_fd)
-      {
-         state->archive_mmap_data = (uint8_t*)mmap(NULL, (size_t)state->archive_size,
-               PROT_READ, MAP_SHARED, state->archive_mmap_fd, 0);
-
-         if (state->archive_mmap_data == (uint8_t*)MAP_FAILED)
-         {
-            close(state->archive_mmap_fd);
-            state->archive_mmap_fd = 0;
-            state->archive_mmap_data = NULL;
-         }
-      }
-   }
-#endif
-
    state->step_current = 0;
    state->step_total   = 0;
 
@@ -300,16 +273,6 @@ int file_archive_parse_file_iterate(
             state->archive_file = NULL;
          }
 
-#ifdef HAVE_MMAP
-         if (state->archive_mmap_data)
-         {
-            munmap(state->archive_mmap_data, (size_t)state->archive_size);
-            close(state->archive_mmap_fd);
-            state->archive_mmap_fd = 0;
-            state->archive_mmap_data = NULL;
-         }
-#endif
-
          if (userdata)
             userdata->transfer = NULL;
          break;
@@ -339,19 +302,15 @@ static bool file_archive_walk(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, struct archive_extract_userdata *userdata)
 {
    file_archive_transfer_t state;
-   bool returnerr          = true;
+   bool returnerr                = true;
 
-   state.type              = ARCHIVE_TRANSFER_INIT;
-   state.archive_file      = NULL;
-#ifdef HAVE_MMAP
-   state.archive_mmap_fd   = 0;
-   state.archive_mmap_data = NULL;
-#endif
-   state.archive_size      = 0;
-   state.context           = NULL;
-   state.step_total        = 0;
-   state.step_current      = 0;
-   state.backend           = NULL;
+   state.type                    = ARCHIVE_TRANSFER_INIT;
+   state.archive_file            = NULL;
+   state.archive_size            = 0;
+   state.context                 = NULL;
+   state.step_total              = 0;
+   state.step_current            = 0;
+   state.backend                 = NULL;
 
    for (;;)
    {
@@ -681,17 +640,13 @@ uint32_t file_archive_get_file_crc32(const char *path)
          archive_path += 1;
    }
 
-   state.type              = ARCHIVE_TRANSFER_INIT;
-   state.archive_file      = NULL;
-#ifdef HAVE_MMAP
-   state.archive_mmap_fd   = 0;
-   state.archive_mmap_data = NULL;
-#endif
-   state.archive_size      = 0;
-   state.context           = NULL;
-   state.step_total        = 0;
-   state.step_current      = 0;
-   state.backend           = NULL;
+   state.type          = ARCHIVE_TRANSFER_INIT;
+   state.archive_file  = NULL;
+   state.archive_size  = 0;
+   state.context       = NULL;
+   state.step_total    = 0;
+   state.step_current  = 0;
+   state.backend       = NULL;
 
    /* Initialize and open archive first.
       Sets next state type to ITERATE. */
