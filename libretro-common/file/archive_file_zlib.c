@@ -44,7 +44,7 @@
 enum file_archive_compression_mode
 {
    ZIP_MODE_STORED   = 0,
-   ZIP_MODE_DEFLATED = 8,
+   ZIP_MODE_DEFLATED = 8
 };
 
 typedef struct
@@ -345,7 +345,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
    uint8_t footer_buf[1024];
-   uint8_t* footer = footer_buf;
+   uint8_t *footer = footer_buf;
    int64_t read_pos = state->archive_size;
    int64_t read_block = MIN(read_pos, sizeof(footer_buf));
    int64_t directory_size, directory_offset;
@@ -424,14 +424,13 @@ static int zip_parse_file_iterate_step_internal(
       unsigned *cmode, uint32_t *size, uint32_t *csize,
       uint32_t *checksum, unsigned *payback)
 {
-   uint8_t* entry = zip_context->directory_entry;
-   uint32_t offset;
-   uint32_t namelength, extralength, commentlength;
+   uint8_t *entry = zip_context->directory_entry;
+   uint32_t signature, namelength, extralength, commentlength, offset;
 
    if (entry < zip_context->directory || entry >= zip_context->directory_end)
       return 0;
 
-   uint32_t signature = read_le(zip_context->directory_entry + 0, 4);
+   signature = read_le(zip_context->directory_entry + 0, 4);
 
    if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
       return 0;
@@ -453,7 +452,7 @@ static int zip_parse_file_iterate_step_internal(
 
    offset   = read_le(zip_context->directory_entry + 42, 4); /* relative offset of local file header */
 
-   *cdata   = (uint8_t *)(size_t)offset; /* store file offset in data pointer */
+   *cdata   = (uint8_t*)(size_t)offset; /* store file offset in data pointer */
 
    *payback = 46 + namelength + extralength + commentlength;
 

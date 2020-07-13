@@ -448,11 +448,11 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
+   file_archive_file_handle_t handle;
+   int ret;
+
    if (!userdata->transfer || !userdata->transfer->backend)
       return false;
-
-   int ret = 0;
-   file_archive_file_handle_t handle;
 
    handle.data          = NULL;
    handle.real_checksum = 0;
