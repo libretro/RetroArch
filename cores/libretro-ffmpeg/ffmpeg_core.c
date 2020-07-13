@@ -67,6 +67,8 @@ extern "C" {
    s ##_version() & 0xFF);
 
 static bool reset_triggered;
+static bool libretro_supports_bitmasks = false;
+
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
    va_list va;
@@ -240,10 +242,15 @@ void CORE_PREFIX(retro_init)(void)
    reset_triggered = false;
 
    av_register_all();
+
+   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
+      libretro_supports_bitmasks = true;
 }
 
 void CORE_PREFIX(retro_deinit)(void)
-{}
+{
+   libretro_supports_bitmasks = false;
+}
 
 unsigned CORE_PREFIX(retro_api_version)(void)
 {
@@ -561,6 +568,7 @@ void CORE_PREFIX(retro_run)(void)
    double min_pts;
    int16_t audio_buffer[2048];
    bool left, right, up, down, l, r;
+   int16_t ret                  = 0;
    size_t to_read_frames        = 0;
    int seek_frames              = 0;
    bool updated                 = false;
@@ -591,20 +599,28 @@ void CORE_PREFIX(retro_run)(void)
 
    CORE_PREFIX(input_poll_cb)();
 
-   left = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_LEFT);
-   right = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   up = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_UP) ||
-      CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   down = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_DOWN) ||
-      CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-   l = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_L);
-   r = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_R);
+   if (libretro_supports_bitmasks)
+      ret = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD,
+            0, RETRO_DEVICE_ID_JOYPAD_MASK);
+   else
+   {
+      unsigned i;
+      for (i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+         if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, i))
+            ret |= (1 << i);
+   }
+
+   if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP))
+      ret |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+   if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN))
+      ret |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+
+   left  = ret & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+   right = ret & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   up    = ret & (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+   down  = ret & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+   l     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_L);
+   r     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R);
 
    if (left && !last_left)
       seek_frames -= 10 * media.interpolate_fps;
