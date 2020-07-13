@@ -68,8 +68,6 @@
 #define EGL_PLATFORM_GBM_KHR 0x31D7
 #endif
 
-static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
-
 typedef struct gfx_ctx_go2_drm_data
 {
 #ifdef HAVE_EGL
@@ -85,8 +83,18 @@ typedef struct gfx_ctx_go2_drm_data
    bool core_hw_context_enable;
 } gfx_ctx_go2_drm_data_t;
 
-static unsigned native_width = 480;
+static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
+
+/* TODO/FIXME - global variable */
+int ss = 0;
+
+
+static unsigned native_width  = 480;
 static unsigned native_height = 320;
+
+/* Function callback */
+void (*swap_buffers)(void*);
+
 
 static void gfx_ctx_go2_drm_input_driver(void *data,
       const char *joypad_name,
@@ -157,10 +165,7 @@ static void gfx_ctx_go2_drm_destroy(void *data)
    drm->display = NULL;
 }
 
-static enum gfx_ctx_api gfx_ctx_go2_drm_get_api(void *data)
-{
-   return drm_api;
-}
+static enum gfx_ctx_api gfx_ctx_go2_drm_get_api(void *data) { return drm_api; }
 
 static bool gfx_ctx_go2_drm_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -274,16 +279,17 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
 static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   gfx_ctx_go2_drm_data_t *drm = (gfx_ctx_go2_drm_data_t*)data;
-   struct retro_system_av_info* av_info  = video_viewport_get_system_av_info();
+   unsigned w;
+   unsigned h;
+   gfx_ctx_go2_drm_data_t 
+      *drm              = (gfx_ctx_go2_drm_data_t*)data;
    settings_t *settings = config_get_ptr();
    bool use_ctx_scaling = settings->bools.video_ctx_scaling;
 
-   unsigned w;
-   unsigned h;
-
    if (use_ctx_scaling && !menu_driver_is_alive())
    {
+      struct retro_system_av_info* 
+         av_info  = video_viewport_get_system_av_info();
        w = av_info->geometry.base_width;
        h = av_info->geometry.base_height;
    }
@@ -303,21 +309,9 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
    *quit = (bool)frontend_driver_get_signal_handler_state();
 }
 
-static bool gfx_ctx_go2_drm_has_focus(void *data)
-{
-   return true;
-}
+static bool gfx_ctx_go2_drm_has_focus(void *data) { return true; }
+static bool gfx_ctx_go2_drm_suppress_screensaver(void *data, bool enable) { return false; }
 
-static bool gfx_ctx_go2_drm_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-int ss = 0;
-
-void (*swap_buffers)(void*);
 static void gfx_ctx_go2_drm_swap_buffers(void *data)
 {
    gfx_ctx_go2_drm_data_t *drm = (gfx_ctx_go2_drm_data_t*)data;

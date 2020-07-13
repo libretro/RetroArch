@@ -810,22 +810,11 @@ static void gfx_ctx_drm_input_driver(void *data,
    *input_data = NULL;
 }
 
-static bool gfx_ctx_drm_has_focus(void *data)
-{
-   return true;
-}
+static bool gfx_ctx_drm_has_focus(void *data) { return true; }
 
-static bool gfx_ctx_drm_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_drm_suppress_screensaver(void *data, bool enable) { return false; }
 
-static enum gfx_ctx_api gfx_ctx_drm_get_api(void *data)
-{
-   return drm_api;
-}
+static enum gfx_ctx_api gfx_ctx_drm_get_api(void *data) { return drm_api; }
 
 static bool gfx_ctx_drm_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
