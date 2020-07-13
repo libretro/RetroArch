@@ -55,6 +55,7 @@ typedef struct
    uint8_t *directory_end;
    void    *current_stream;
    uint8_t *compressed_data;
+   uint8_t *decompressed_data;
 } zip_context_t;
 
 static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
@@ -69,7 +70,8 @@ static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
-static void zip_context_free_stream(zip_context_t *zip_context)
+static void zip_context_free_stream(
+      zip_context_t *zip_context, bool keep_decompressed)
 {
    if (zip_context->current_stream)
    {
@@ -81,6 +83,11 @@ static void zip_context_free_stream(zip_context_t *zip_context)
       free(zip_context->compressed_data);
       zip_context->compressed_data = NULL;
    }
+   if (zip_context->decompressed_data && !keep_decompressed)
+   {
+      free(zip_context->decompressed_data);
+      zip_context->decompressed_data = NULL;
+   }
 }
 
 static bool zlib_stream_decompress_data_to_file_init(
@@ -90,9 +97,10 @@ static bool zlib_stream_decompress_data_to_file_init(
    zip_context_t *zip_context = (zip_context_t *)context;
    uint8_t local_header_buf[4];
    uint32_t offsetNL, offsetEL;
+   int64_t offsetData;
 
    /* free previous stream if left unfinished */
-   zip_context_free_stream(zip_context);
+   zip_context_free_stream(zip_context, false);
 
    /* allocate memory for the compressed data */
    zip_context->compressed_data = (uint8_t*)malloc(csize);
@@ -100,54 +108,50 @@ static bool zlib_stream_decompress_data_to_file_init(
       goto error;
 
    /* seek past most of the local directory header */
-   filestream_seek(zip_context->file, (int64_t)(size_t)cdata + 26, SEEK_SET);
+   filestream_seek(zip_context->file, (int64_t)(size_t)cdata + 26, RETRO_VFS_SEEK_POSITION_START);
    if (filestream_read(zip_context->file, local_header_buf, 4) != 4)
       goto error;
 
    offsetNL = read_le(local_header_buf,     2); /* file name length */
    offsetEL = read_le(local_header_buf + 2, 2); /* extra field length */
+   offsetData = (int64_t)(size_t)cdata + 26 + 4 + offsetNL + offsetEL;
 
    /* skip over name and extra data */
-   filestream_seek(zip_context->file, offsetNL + offsetEL, SEEK_CUR);
+   filestream_seek(zip_context->file, offsetData, RETRO_VFS_SEEK_POSITION_START);
    if (filestream_read(zip_context->file, zip_context->compressed_data, csize) != csize)
       goto error;
 
    switch (cmode)
    {
       case ZIP_MODE_STORED:
-         handle->data = zip_context->compressed_data;
+         zip_context->decompressed_data = zip_context->compressed_data;
          zip_context->compressed_data = NULL;
+         handle->data = zip_context->decompressed_data;
          return true;
 
      case ZIP_MODE_DEFLATED:
          zip_context->current_stream = zlib_inflate_backend.stream_new();
          if (!zip_context->current_stream)
             goto error;
-      
+
          if (zlib_inflate_backend.define)
             zlib_inflate_backend.define(zip_context->current_stream, "window_bits", (uint32_t)-MAX_WBITS);
-      
-         handle->data = (uint8_t*)malloc(size);
-      
-         if (!handle->data)
+
+         zip_context->decompressed_data = (uint8_t*)malloc(size);
+
+         if (!zip_context->decompressed_data)
             goto error;
-      
+
          zlib_inflate_backend.set_in(zip_context->current_stream,
                zip_context->compressed_data, csize);
          zlib_inflate_backend.set_out(zip_context->current_stream,
-               handle->data, size);
+               zip_context->decompressed_data, size);
 
          return true;
    }
 
 error:
-   if (handle->data)
-   {
-      free(handle->data);
-      handle->data = NULL;
-   }
-
-   zip_context_free_stream(zip_context);
+   zip_context_free_stream(zip_context, false);
    return false;
 }
 
@@ -170,14 +174,15 @@ static int zlib_stream_decompress_data_to_file_iterate(
    if (zstatus && !terror)
    {
       /* successfully decompressed entire file */
-      zip_context_free_stream(zip_context);
+      zip_context_free_stream(zip_context, true);
+      handle->data = zip_context->decompressed_data;
       return 1;
    }
 
    if (!zstatus && terror != TRANS_STREAM_ERROR_BUFFER_FULL)
    {
       /* error during stream processing */
-      zip_context_free_stream(zip_context);
+      zip_context_free_stream(zip_context, false);
       return -1;
    }
 
@@ -367,7 +372,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
             read_pos = MAX(read_pos - read_block + 21, 0);
 
          /* Seek to read_pos and read read_block bytes. */
-         filestream_seek(state->archive_file, read_pos, SEEK_SET);
+         filestream_seek(state->archive_file, read_pos, RETRO_VFS_SEEK_POSITION_START);
          if (filestream_read(state->archive_file, footer_buf, read_block) != read_block)
             return -1;
 
@@ -392,14 +397,15 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
     * context and the entire directory, then read the directory.
     */
    zip_context = (zip_context_t*)malloc(sizeof(zip_context_t) + (size_t)directory_size);
-   zip_context->file            = state->archive_file;
-   zip_context->directory       = (uint8_t*)(zip_context + 1);
-   zip_context->directory_entry = zip_context->directory;
-   zip_context->directory_end   = zip_context->directory + (size_t)directory_size;
-   zip_context->current_stream  = NULL;
-   zip_context->compressed_data = NULL;
+   zip_context->file              = state->archive_file;
+   zip_context->directory         = (uint8_t*)(zip_context + 1);
+   zip_context->directory_entry   = zip_context->directory;
+   zip_context->directory_end     = zip_context->directory + (size_t)directory_size;
+   zip_context->current_stream    = NULL;
+   zip_context->compressed_data   = NULL;
+   zip_context->decompressed_data = NULL;
 
-   filestream_seek(state->archive_file, directory_offset, SEEK_SET);
+   filestream_seek(state->archive_file, directory_offset, RETRO_VFS_SEEK_POSITION_START);
    if (filestream_read(state->archive_file, zip_context->directory, directory_size) != directory_size)
    {
       free(zip_context);
@@ -485,7 +491,7 @@ static int zip_parse_file_iterate_step(void *context,
 static void zip_parse_file_free(void *context)
 {
    zip_context_t *zip_context = (zip_context_t *)context;
-   zip_context_free_stream(zip_context);
+   zip_context_free_stream(zip_context, false);
    free(zip_context);
 }
 
