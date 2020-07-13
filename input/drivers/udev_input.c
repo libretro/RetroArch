@@ -995,34 +995,26 @@ static int16_t udev_input_state(void *data,
          {
             unsigned i;
             int16_t ret = 0;
-            if (input_udev.keyboard_mapping_blocked)
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               if (binds[port][i].valid)
                {
-                  if (binds[port][i].valid)
-                  {
-                     if (button_is_pressed(
-                              udev->joypad,
-                              joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
-                     else if (udev_mouse_button_pressed(udev, port, binds[port][i].mbutton))
-                        ret |= (1 << i);
-                  }
+                  if (button_is_pressed(
+                           udev->joypad,
+                           joypad_info, binds[port], port, i))
+                     ret |= (1 << i);
+                  else if (udev_mouse_button_pressed(udev, port, binds[port][i].mbutton))
+                     ret |= (1 << i);
                }
             }
-            else
+            if (!input_udev.keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
                   if (binds[port][i].valid)
                   {
-                     if (button_is_pressed(udev->joypad,
-                           joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
-                     else if ((binds[port][i].key < RETROK_LAST) &&
+                     if ((binds[port][i].key < RETROK_LAST) &&
                            udev_keyboard_pressed(udev, binds[port][i].key))
-                        ret |= (1 << i);
-                     else if (udev_mouse_button_pressed(udev, port, binds[port][i].mbutton))
                         ret |= (1 << i);
                   }
                }

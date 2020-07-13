@@ -789,30 +789,25 @@ static int16_t qnx_input_state(void *data,
          {
             unsigned i;
             int16_t ret = 0;
-            if (input_qnx.keyboard_mapping_blocked)
+
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               if (binds[port][i].valid)
                {
-                  if (binds[port][i].valid)
-                  {
-                     if (button_is_pressed(
-                              qnx->joypad,
-                              joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
-                  }
+                  if (button_is_pressed(
+                           qnx->joypad,
+                           joypad_info, binds[port], port, i))
+                     ret |= (1 << i);
                }
             }
-            else
+
+            if (!input_qnx.keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
                   if (binds[port][i].valid)
                   {
-                     if (button_is_pressed(
-                              qnx->joypad,
-                              joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
-                     else if (qnx_keyboard_pressed(qnx, key))
+                     if (qnx_keyboard_pressed(qnx, key))
                         ret |= (1 << i);
                   }
                }
