@@ -42,8 +42,8 @@
 #include "../common/gl_common.h"
 #endif
 
-#include "../common/wayland_common.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../input/common/wayland_common.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../../verbosity.h"

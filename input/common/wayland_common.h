@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WAYLAND_COMMON_H__
-#define WAYLAND_COMMON_H__
+#ifndef WAYLAND_INPUT_COMMON_H__
+#define WAYLAND_INPUT_COMMON_H__
 
 #include <stdint.h>
 #include <boolean.h>
@@ -23,7 +23,7 @@
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 
-#include "../../input/input_driver.h"
+#include "../input_driver.h"
 
 #define UDEV_KEY_MAX			0x2ff
 #define UDEV_MAX_KEYS (UDEV_KEY_MAX + 7) / 8
