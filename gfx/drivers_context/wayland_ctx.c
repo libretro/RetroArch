@@ -119,18 +119,6 @@ static void handle_toplevel_config(void *data,
    wl->configured = false;
 }
 
-static void handle_toplevel_close(void *data,
-      struct xdg_toplevel *xdg_toplevel)
-{
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	BIT_SET(wl->input.key_state, KEY_ESC);
-}
-
-static const struct xdg_toplevel_listener xdg_toplevel_listener = {
-    handle_toplevel_config,
-    handle_toplevel_close,
-};
-
 static void handle_zxdg_toplevel_config(
       void *data, struct zxdg_toplevel_v6 *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
@@ -162,10 +150,10 @@ static void handle_zxdg_toplevel_config(
 
    if (width > 0 && height > 0)
    {
-      wl->prev_width = width;
+      wl->prev_width  = width;
       wl->prev_height = height;
-      wl->width = width;
-      wl->height = height;
+      wl->width       = width;
+      wl->height      = height;
    }
 
 #ifdef HAVE_EGL
@@ -180,153 +168,14 @@ static void handle_zxdg_toplevel_config(
    wl->configured = false;
 }
 
-static void handle_zxdg_toplevel_close(void *data,
-      struct zxdg_toplevel_v6 *zxdg_toplevel)
-{
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	BIT_SET(wl->input.key_state, KEY_ESC);
-}
+static const struct xdg_toplevel_listener xdg_toplevel_listener = {
+    handle_toplevel_config,
+    handle_toplevel_close,
+};
 
 static const struct zxdg_toplevel_v6_listener zxdg_toplevel_v6_listener = {
     handle_zxdg_toplevel_config,
     handle_zxdg_toplevel_close,
-};
-
-static void display_handle_geometry(void *data,
-      struct wl_output *output,
-      int x, int y,
-      int physical_width, int physical_height,
-      int subpixel,
-      const char *make,
-      const char *model,
-      int transform)
-{
-   (void)data;
-   (void)output;
-   (void)x;
-   (void)y;
-   (void)subpixel;
-   (void)make;
-   (void)model;
-   (void)transform;
-
-   output_info_t *oi          = (output_info_t*)data;
-   oi->physical_width         = physical_width;
-   oi->physical_height        = physical_height;
-
-   RARCH_LOG("[Wayland]: Physical width: %d mm x %d mm.\n",
-         physical_width, physical_height);
-}
-
-static void display_handle_mode(void *data,
-      struct wl_output *output,
-      uint32_t flags,
-      int width,
-      int height,
-      int refresh)
-{
-   (void)output;
-   (void)flags;
-
-   output_info_t *oi          = (output_info_t*)data;
-   oi->width                  = width;
-   oi->height                 = height;
-   oi->refresh_rate           = refresh;
-
-   /* Certain older Wayland implementations report in Hz,
-    * but it should be mHz. */
-   RARCH_LOG("[Wayland]: Video mode: %d x %d @ %.4f Hz.\n",
-         width, height, refresh > 1000 ? refresh / 1000.0 : (double)refresh);
-}
-
-static void display_handle_done(void *data,
-      struct wl_output *output)
-{
-   (void)data;
-   (void)output;
-}
-
-static void display_handle_scale(void *data,
-      struct wl_output *output,
-      int32_t factor)
-{
-   output_info_t *oi = (output_info_t*)data;
-
-   RARCH_LOG("[Wayland]: Display scale factor %d.\n", factor);
-   oi->scale = factor;
-}
-
-static const struct wl_output_listener output_listener = {
-   display_handle_geometry,
-   display_handle_mode,
-   display_handle_done,
-   display_handle_scale,
-};
-
-/* Registry callbacks. */
-static void registry_handle_global(void *data, struct wl_registry *reg,
-      uint32_t id, const char *interface, uint32_t version)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   (void)version;
-
-   if (string_is_equal(interface, "wl_compositor"))
-      wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
-            id, &wl_compositor_interface, 3);
-   else if (string_is_equal(interface, "wl_output"))
-   {
-      output_info_t *oi = (output_info_t*)
-         calloc(1, sizeof(output_info_t));
-
-      oi->global_id     = id;
-      oi->output        = (struct wl_output*)wl_registry_bind(reg,
-            id, &wl_output_interface, 2);
-      wl_output_add_listener(oi->output, &output_listener, oi);
-      wl_list_insert(&wl->all_outputs, &oi->link);
-      wl_display_roundtrip(wl->input.dpy);
-   }
-   else if (string_is_equal(interface, "xdg_wm_base"))
-      wl->xdg_shell = (struct xdg_wm_base*)
-         wl_registry_bind(reg, id, &xdg_wm_base_interface, 1);
-   else if (string_is_equal(interface, "zxdg_shell_v6"))
-      wl->zxdg_shell = (struct zxdg_shell_v6*)
-         wl_registry_bind(reg, id, &zxdg_shell_v6_interface, 1);
-   else if (string_is_equal(interface, "wl_shm"))
-      wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
-   else if (string_is_equal(interface, "wl_seat"))
-   {
-      wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 2);
-      wl_seat_add_listener(wl->seat, &seat_listener, wl);
-   }
-   else if (string_is_equal(interface, "zwp_idle_inhibit_manager_v1"))
-      wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
-                                  reg, id, &zwp_idle_inhibit_manager_v1_interface, 1);
-   else if (string_is_equal(interface, "zxdg_decoration_manager_v1"))
-      wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
-                                  reg, id, &zxdg_decoration_manager_v1_interface, 1);
-}
-
-static void registry_handle_global_remove(void *data,
-      struct wl_registry *registry, uint32_t id)
-{
-   output_info_t *oi, *tmp;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
-   {
-      if (oi->global_id == id)
-      {
-         wl_list_remove(&oi->link);
-         free(oi);
-         break;
-      }
-   }
-}
-
-static const struct wl_registry_listener registry_listener = {
-   registry_handle_global,
-   registry_handle_global_remove,
 };
 
 static void gfx_ctx_wl_get_video_size(void *data,

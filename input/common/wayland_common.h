@@ -177,6 +177,12 @@ void handle_xkb_state_mask(uint32_t depressed,
 void free_xkb(void);
 #endif
 
+void handle_toplevel_close(void *data,
+      struct xdg_toplevel *xdg_toplevel);
+
+void handle_zxdg_toplevel_close(void *data,
+      struct zxdg_toplevel_v6 *zxdg_toplevel);
+
 extern const struct wl_keyboard_listener keyboard_listener;
 
 extern const struct wl_pointer_listener pointer_listener;
@@ -194,5 +200,9 @@ extern const struct xdg_surface_listener xdg_surface_listener;
 extern const struct zxdg_shell_v6_listener zxdg_shell_v6_listener;
 
 extern const struct zxdg_surface_v6_listener zxdg_surface_v6_listener;
+
+extern const struct wl_output_listener output_listener;
+
+extern const struct wl_registry_listener registry_listener;
 
 #endif
