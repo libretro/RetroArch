@@ -18,6 +18,8 @@
 
 #include <unistd.h>
 
+#include <string/stdstring.h>
+
 #include "wayland_common.h"
 
 #include "../input_keymaps.h"
