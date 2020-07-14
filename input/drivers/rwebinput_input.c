@@ -636,10 +636,12 @@ static void rwebinput_process_keyboard_events(rwebinput_input_t *rwebinput,
    else if (translated_keycode == RETROK_TAB)
       character = '\t';
 
-   input_keyboard_event(keydown, translated_keycode, character, mod,
-      RETRO_DEVICE_KEYBOARD);
-
-   if (translated_keycode < RETROK_LAST)
+   if (translated_keycode != RETROK_UNKNOWN) {
+      input_keyboard_event(keydown, translated_keycode, character, mod,
+         RETRO_DEVICE_KEYBOARD);
+   }
+   
+   if (translated_keycode < RETROK_LAST && translated_keycode != RETROK_UNKNOWN)
    {
       rwebinput->keys[translated_keycode] = keydown;
    }
