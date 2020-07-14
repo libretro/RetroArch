@@ -60,7 +60,6 @@ static void gfx_ctx_uwp_destroy(void *data);
 
 static egl_ctx_data_t uwp_egl;
 static int uwp_interval         = 0;
-static enum gfx_ctx_api uwp_api = GFX_CTX_OPENGL_ES_API;
 
 typedef struct gfx_ctx_cgl_data
 {
@@ -119,21 +118,10 @@ error:
 
 static void gfx_ctx_uwp_swap_interval(void *data, int interval)
 {
-   (void)data;
-
-   switch (uwp_api)
+   if (uwp_interval != interval)
    {
-      case GFX_CTX_OPENGL_ES_API:
-         if (uwp_interval != interval)
-         {
-            uwp_interval = interval;
-            egl_set_swap_interval(&uwp_egl, uwp_interval);
-         }
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
+      uwp_interval = interval;
+      egl_set_swap_interval(&uwp_egl, uwp_interval);
    }
 }
 
@@ -154,29 +142,10 @@ static gfx_ctx_proc_t gfx_ctx_uwp_get_proc_address(const char* symbol)
 }
 
 
-static void gfx_ctx_uwp_swap_buffers(void *data)
-{
-   switch (uwp_api)
-   {
-      case GFX_CTX_OPENGL_ES_API:
-         egl_swap_buffers(&uwp_egl);
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-}
+static void gfx_ctx_uwp_swap_buffers(void *data) { egl_swap_buffers(&uwp_egl); }
 
 static bool gfx_ctx_uwp_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-
-   return false;
-}
-
+      unsigned width, unsigned height) { return false; }
 
 static void gfx_ctx_uwp_get_video_size(void *data,
       unsigned *width, unsigned *height)
@@ -205,21 +174,11 @@ static void gfx_ctx_uwp_destroy(void *data)
 {
    gfx_ctx_uwp_data_t *wgl = (gfx_ctx_uwp_data_t*)data;
 
-   switch (uwp_api)
-   {
-   case GFX_CTX_OPENGL_ES_API:
-      egl_destroy(&uwp_egl);
-      break;
-
-   case GFX_CTX_NONE:
-   default:
-      break;
-   }
+   egl_destroy(&uwp_egl);
 
 #ifdef HAVE_DYNAMIC
    dylib_close(dll_handle);
 #endif
-
 }
 
 static bool gfx_ctx_uwp_set_video_mode(void *data,
@@ -255,20 +214,20 @@ static void gfx_ctx_uwp_input_driver(void *data,
    if (string_is_equal(settings->arrays.input_driver, "xinput"))
    {
       void* xinput = input_xinput.init(joypad_name);
-      *input = xinput ? (input_driver_t*)&input_xinput : NULL;
-      *input_data = xinput;
+      *input       = xinput ? (input_driver_t*)&input_xinput : NULL;
+      *input_data  = xinput;
    }
    else
    {
-      void* uwp = input_uwp.init(joypad_name);
-      *input = uwp ? (input_driver_t*)&input_uwp : NULL;
+      void* uwp   = input_uwp.init(joypad_name);
+      *input      = uwp ? (input_driver_t*)&input_uwp : NULL;
       *input_data = uwp;
    }
 }
 
 static enum gfx_ctx_api gfx_ctx_uwp_get_api(void *data)
 {
-   return uwp_api;
+   return GFX_CTX_OPENGL_ES_API;
 }
 
 static bool gfx_ctx_uwp_bind_api(void *data,
@@ -278,43 +237,24 @@ static bool gfx_ctx_uwp_bind_api(void *data,
 
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
-   else
-      return false;
+   return false;
 }
 
 static void gfx_ctx_uwp_bind_hw_render(void *data, bool enable)
 {
-   switch (uwp_api)
-   {
-      case GFX_CTX_OPENGL_ES_API:
-         egl_bind_hw_render(&uwp_egl, enable);
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
+   egl_bind_hw_render(&uwp_egl, enable);
 }
 
 static uint32_t gfx_ctx_uwp_get_flags(void *data)
 {
    uint32_t flags = 0;
 
-   switch (uwp_api)
-   {
-      case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
 #ifdef HAVE_GLSL
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    return flags;
 }
