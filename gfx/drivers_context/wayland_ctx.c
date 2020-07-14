@@ -251,32 +251,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 
 }
 
-void flush_wayland_fd(void *data)
-{
-   struct pollfd fd = {0};
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-
-   wl_display_dispatch_pending(wl->dpy);
-   wl_display_flush(wl->dpy);
-
-   fd.fd     = wl->fd;
-   fd.events = POLLIN | POLLOUT | POLLERR | POLLHUP;
-
-   if (poll(&fd, 1, 0) > 0)
-   {
-      if (fd.revents & (POLLERR | POLLHUP))
-      {
-         close(wl->fd);
-         frontend_driver_set_signal_handler_state(1);
-      }
-
-      if (fd.revents & POLLIN)
-         wl_display_dispatch(wl->dpy);
-      if (fd.revents & POLLOUT)
-         wl_display_flush(wl->dpy);
-   }
-}
-
 static void gfx_ctx_wl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
