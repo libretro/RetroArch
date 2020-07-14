@@ -1052,6 +1052,7 @@ endif
 
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
+        input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/xdg-shell-unstable-v6.o \

@@ -710,6 +710,7 @@ INPUT
 #endif
 
 #ifdef HAVE_WAYLAND
+#include "../input/common/wayland_common.c"
 #include "../input/drivers/wayland_input.c"
 #endif
 
