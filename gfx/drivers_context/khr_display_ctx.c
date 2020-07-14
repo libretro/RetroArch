@@ -204,10 +204,6 @@ static enum gfx_ctx_api gfx_ctx_khr_display_get_api(void *data)
 static bool gfx_ctx_khr_display_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-   (void)major;
-   (void)minor;
-
    khr_api     = api;
 
    if (api == GFX_CTX_VULKAN_API)
@@ -222,12 +218,7 @@ static bool gfx_ctx_khr_display_has_focus(void *data)
    return true;
 }
 
-static bool gfx_ctx_khr_display_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_khr_display_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void gfx_ctx_khr_display_set_swap_interval(void *data,
       int swap_interval)
@@ -249,10 +240,7 @@ static void gfx_ctx_khr_display_swap_buffers(void *data)
    vulkan_acquire_next_image(&khr->vk);
 }
 
-static gfx_ctx_proc_t gfx_ctx_khr_display_get_proc_address(const char *symbol)
-{
-   return NULL;
-}
+static gfx_ctx_proc_t gfx_ctx_khr_display_get_proc_address(const char *symbol) { return NULL; }
 
 static uint32_t gfx_ctx_khr_display_get_flags(void *data)
 {
@@ -265,10 +253,7 @@ static uint32_t gfx_ctx_khr_display_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_khr_display_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_khr_display_set_flags(void *data, uint32_t flags) { }
 
 static void *gfx_ctx_khr_display_get_context_data(void *data)
 {

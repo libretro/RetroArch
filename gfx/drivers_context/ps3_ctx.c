@@ -164,16 +164,10 @@ static bool gfx_ctx_ps3_has_focus(void *data)
    return true;
 }
 
-static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void gfx_ctx_ps3_swap_buffers(void *data)
 {
-   (void)data;
 #ifdef HAVE_PSGL
    psglSwap();
 #endif
