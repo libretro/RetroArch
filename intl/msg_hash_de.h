@@ -1804,6 +1804,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Überprüft, ob eventuell benötigte Firmware vorhanden ist, bevor versucht wird, Inhalte zu laden."
    )
+#ifndef HAVE_DYNAMIC
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "Erlaube Bildrotation"
@@ -5412,6 +5414,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
    "Zeige/verstecke die Option 'Neu starten'."
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,

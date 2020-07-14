@@ -1150,6 +1150,10 @@ MSG_HASH(
    "Pilote de caméra à utiliser."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Pilote Bluetooth à utiliser."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Wi-Fi "
    )
@@ -2648,6 +2652,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Vérifie que tous les firmwares requis sont présents avant de tenter le chargement du contenu sélectionné."
    )
+#ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Toujours recharger le cœur lors du lancement de contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Redémarrer RetroArch lors du lancement de contenu, même lorsque le cœur demandé est déjà chargé. Cela peut améliorer la stabilité du système, au détriment d'un temps de chargement accru."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "Autoriser la rotation"
@@ -3301,6 +3315,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    "Affiche la quantité de mémoire utilisée et totale sur le système."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Notification au démarrage de contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Afficher une brève notification animée lors du chargement de contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -4315,6 +4337,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    "Utiliser des succès non officiels et/ou fonctionnalités bêta à des fins de test."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Son de succès"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Jouer un son lorsqu'un succès est débloqué."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -6219,6 +6249,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
    "Aucun fichier de réglages trouvé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   "Aucun périphérique Bluetooth trouvé"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
@@ -8323,6 +8357,10 @@ MSG_HASH(
    "Aucune liste de lecture."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "Connecté"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
    "En ligne"
    )
@@ -9955,8 +9993,16 @@ MSG_HASH(
    "non configuré, utilisation de l'état de secours"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Recherche Bluetooth terminée."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Recherche Wi-Fi terminé."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Recherche de périphériques Bluetooth…"
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
@@ -10369,6 +10415,10 @@ MSG_HASH(
    "Filtre logiciel"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   "Rechercher des périphériques Bluetooth et les connecter."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    "Analyser les réseaux sans fil et établir la connexion."
    )
@@ -10472,6 +10522,7 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Lecture seule"
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,

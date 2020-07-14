@@ -572,6 +572,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
    "Tự động chạy Core"
    )
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
@@ -1440,6 +1442,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Kích hoạt Touch"
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

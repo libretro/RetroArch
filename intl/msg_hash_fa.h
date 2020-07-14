@@ -284,6 +284,8 @@ MSG_HASH(
 
 /* Settings > Core */
 
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
@@ -583,6 +585,7 @@ MSG_HASH(
 
 
 /* Environment Specific Settings */
+
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif

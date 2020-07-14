@@ -25,8 +25,16 @@ MSG_HASH(
    "Historia"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   "Obrazy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    "Muzyka"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   "Filmy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
@@ -68,6 +76,10 @@ MSG_HASH(
    "Załaduj dysk"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Załaduj fizyczny dysk. Najpierw wybierz rdzeń (Załaduj Rdzeń), aby użyć go z dyskiem."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    "Zrzut dysku"
    )
@@ -88,12 +100,24 @@ MSG_HASH(
    "Skanuj zawartość"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Zeskanuj zawartość i dodaj do bazy danych."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Pokaż menu pulpitu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Otwiera tradycyjne menu pulpitu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    "Wyłącz tryb kiosku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Wyłącza tryb kiosku. (Wymagany restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -175,6 +199,10 @@ MSG_HASH(
    "Zainstaluj lub przywróć rdzeń"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Zainstaluj lub przywróć rdzeń z katalogu \"Pobrane\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    "Uruchom procesor wideo"
    )
@@ -207,6 +235,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
    "Ulubione"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   "Zawartość dodana do \"Ulubionych\" pojawi się tutaj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
@@ -2156,6 +2188,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Przed próbą załadowania zawartości sprawdź, czy wszystkie wymagane oprogramowanie układowe jest obecne."
    )
+#ifndef HAVE_DYNAMIC
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "Pozwól na rotacje"
@@ -9272,6 +9306,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    "Pokaż/ukryj opcję 'Wyłącz'."
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,

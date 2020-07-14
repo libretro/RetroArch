@@ -1066,6 +1066,10 @@ MSG_HASH(
    "Οδηγός Κάμερας προς χρήση."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Οδηγός Bluetooth προς χρήση."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Οδηγός Wi-Fi"
    )
@@ -1976,6 +1980,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
    "Έλεγχος για απών Firmware Πριν την Φόρτωση"
    )
+#ifndef HAVE_DYNAMIC
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "Επίτρεψη περιστροφής"
@@ -3429,6 +3435,10 @@ MSG_HASH(
    "Δεν βρέθηκαν ρυθμίσεις."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   "Δεν βρέθηκαν συσκευές Bluetooth"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
    "Δεν βρέθηκαν δίκτυα."
    )
@@ -4355,6 +4365,10 @@ MSG_HASH(
    "Δεν βρέθηκαν λίστες αναπαραγωγής."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "Συνδέθηκε"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
    "Σε σύνδεση"
    )
@@ -5019,8 +5033,16 @@ MSG_HASH(
    "Έκδοση του libretro API"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Οκληρώθηκε η σάρωση Bluetooth."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Η σάρωση του Wi-Fi ολοκληρώθηκε."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Έλεγχος για συσκευές bluetooth..."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
@@ -5125,6 +5147,10 @@ MSG_HASH(
    "Ενεργοποίηση Απαλού Φίλτρου"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   "Σκανάρισμα και ζεύξη συσκευών bluetooth."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
    "Οδηγός Wi-Fi"
    )
@@ -5168,6 +5194,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
    "Εμφάνιση/απόκρυψη της επιλογής 'Επανεκκίνηση'."
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,

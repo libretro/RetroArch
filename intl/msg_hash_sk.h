@@ -320,6 +320,8 @@ MSG_HASH(
 
 /* Settings > Core */
 
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
@@ -1036,6 +1038,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Dotyk"
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
