@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <poll.h>
 #include <unistd.h>
 
 #include <wayland-client.h>

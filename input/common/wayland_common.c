@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <poll.h>
 #include <unistd.h>
 
 #include <string/stdstring.h>
@@ -23,6 +24,7 @@
 #include "wayland_common.h"
 
 #include "../input_keymaps.h"
+#include "../../frontend/frontend_driver.h"
 
 static void keyboard_handle_keymap(void* data,
       struct wl_keyboard* keyboard,

@@ -183,6 +183,8 @@ void handle_toplevel_close(void *data,
 void handle_zxdg_toplevel_close(void *data,
       struct zxdg_toplevel_v6 *zxdg_toplevel);
 
+void flush_wayland_fd(void *data);
+
 extern const struct wl_keyboard_listener keyboard_listener;
 
 extern const struct wl_pointer_listener pointer_listener;
