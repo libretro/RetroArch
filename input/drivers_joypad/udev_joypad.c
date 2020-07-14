@@ -161,8 +161,12 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
+   const char *device_name              = input_config_get_device_name(p);
 
-   strlcpy(pad->ident, input_device_names[p], sizeof(pad->ident));
+   if (string_is_empty(device_name))
+      pad->ident[0] = '\0';
+   else
+      strlcpy(pad->ident, device_name, sizeof(pad->ident));
 
    /* Failed to get pad name */
    if (ioctl(fd, EVIOCGNAME(sizeof(pad->ident)), pad->ident) < 0)

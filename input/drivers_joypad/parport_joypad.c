@@ -184,7 +184,7 @@ static bool parport_joypad_init_pad(
       if (!set_control)
          RARCH_WARN("[Joypad]: Failed to clear nStrobe and nIRQ bits on %s\n", path);
 
-      strlcpy(pad->ident, path, sizeof(input_device_names[0]));
+      strlcpy(pad->ident, path, input_config_get_device_name_size(0));
 
       for (i = 0; i < PARPORT_NUM_BUTTONS; i++)
          pad->button_enable[i] = true;
@@ -246,7 +246,7 @@ static bool parport_joypad_init(void *data)
       struct parport_joypad *pad = &parport_pads[i];
 
       pad->fd    = -1;
-      pad->ident = input_device_names[i];
+      pad->ident = input_config_get_device_name_ptr(i);
 
       snprintf(path, sizeof(path), "/dev/parport%u", i);
 

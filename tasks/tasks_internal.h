@@ -46,20 +46,6 @@ typedef struct nbio_buf
    char *path;
 } nbio_buf_t;
 
-typedef struct autoconfig_params     autoconfig_params_t;
-
-struct autoconfig_params
-{
-   int32_t vid;
-   int32_t pid;
-   unsigned idx;
-   uint32_t max_users;
-   char  *name;
-   char  *autoconfig_directory;
-   bool show_hidden_files;
-};
-
-
 #ifdef HAVE_NETWORKING
 typedef struct
 {
@@ -220,35 +206,25 @@ void *savefile_ptr_get(void);
 
 void path_init_savefile_new(void);
 
-bool input_is_autoconfigured(unsigned i);
-
-unsigned input_autoconfigure_get_device_name_index(unsigned i);
-
-void input_autoconfigure_reset(void);
-
-void input_autoconfigure_override_handler(void *data);
-
+/* Autoconfigure tasks */
+extern const char* const input_builtin_autoconfs[];
+void input_autoconfigure_blissbox_override_handler(
+      int vid, int pid, char *device_name, size_t len);
 void input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,
-      unsigned idx,
+      unsigned port,
       unsigned vid,
       unsigned pid);
-
-bool input_autoconfigure_disconnect(unsigned i, const char *ident);
-
-bool input_autoconfigure_get_swap_override(void);
-
-void input_autoconfigure_joypad_reindex_devices(void);
+bool input_autoconfigure_disconnect(
+      unsigned port, const char *name);
 
 void set_save_state_in_background(bool state);
 
 #ifdef HAVE_CDROM
 void task_push_cdrom_dump(const char *drive);
 #endif
-
-extern const char* const input_builtin_autoconfs[];
 
 RETRO_END_DECLS
 

@@ -2270,7 +2270,6 @@ void config_set_defaults(void *data)
 #ifdef HAVE_CONFIGFILE
    input_remapping_set_defaults(true);
 #endif
-   input_autoconfigure_reset();
 
    /* Verify that binds are in proper order. */
    for (i = 0; i < MAX_USERS; i++)
@@ -3898,8 +3897,8 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    config_set_string(conf, "input_device",
          input_config_get_device_name(user));
 
-   pid_user = input_config_get_pid(user);
-   vid_user = input_config_get_vid(user);
+   pid_user = input_config_get_device_pid(user);
+   vid_user = input_config_get_device_vid(user);
 
    if (pid_user && vid_user)
    {

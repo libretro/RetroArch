@@ -1020,13 +1020,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
    for (controller = 0; controller < MAX_USERS; controller++)
    {
-      if (input_is_autoconfigured(controller))
+      if (input_config_get_device_autoconfigured(controller))
       {
          snprintf(tmp, sizeof(tmp), "%s #%d device name: %s (#%d)",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
             controller,
             input_config_get_device_name(controller),
-            input_autoconfigure_get_device_name_index(controller));
+            input_config_get_device_name_index(controller));
 
          if (menu_entries_append_enum(list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
@@ -1053,8 +1053,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
-               input_config_get_vid(controller),
-               input_config_get_pid(controller));
+               input_config_get_device_vid(controller),
+               input_config_get_device_pid(controller));
             if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
