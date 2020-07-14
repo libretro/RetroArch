@@ -22,12 +22,6 @@
 
 #include "../input_keymaps.h"
 
-/* Generated from xdg-shell-unstable-v6.xml */
-#include "../../gfx/common/wayland/xdg-shell-unstable-v6.h"
-
-/* Generated from xdg-shell.xml */
-#include "../../gfx/common/wayland/xdg-shell.h"
-
 static void keyboard_handle_keymap(void* data,
       struct wl_keyboard* keyboard,
       uint32_t format,
@@ -421,6 +415,82 @@ static void seat_handle_name(void *data,
    (void)seat;
    RARCH_LOG("[Wayland]: Seat name: %s.\n", name);
 }
+
+/* Surface callbacks. */
+
+static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
+      struct wl_output *output)
+{
+    output_info_t *oi;
+    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+    /* TODO: track all outputs the surface is on, pick highest scale */
+
+    wl_list_for_each(oi, &wl->all_outputs, link)
+    {
+       if (oi->output == output)
+       {
+          RARCH_LOG("[Wayland]: Entering output #%d, scale %d\n", oi->global_id, oi->scale);
+          wl->current_output = oi;
+          wl->last_buffer_scale = wl->buffer_scale;
+          wl->buffer_scale = oi->scale;
+          break;
+       }
+    };
+}
+
+static void wl_nop(void *a, struct wl_surface *b, struct wl_output *c)
+{
+   (void)a;
+   (void)b;
+   (void)c;
+}
+
+/* Shell surface callbacks. */
+static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
+{
+    xdg_wm_base_pong(shell, serial);
+}
+
+static void handle_surface_config(void *data, struct xdg_surface *surface,
+                                  uint32_t serial)
+{
+    xdg_surface_ack_configure(surface, serial);
+}
+
+static void zxdg_shell_ping(void *data,
+      struct zxdg_shell_v6 *shell, uint32_t serial)
+{
+    zxdg_shell_v6_pong(shell, serial);
+}
+
+static void handle_zxdg_surface_config(void *data,
+      struct zxdg_surface_v6 *surface,
+      uint32_t serial)
+{
+    zxdg_surface_v6_ack_configure(surface, serial);
+}
+
+const struct zxdg_shell_v6_listener zxdg_shell_v6_listener = {
+    zxdg_shell_ping,
+};
+
+const struct zxdg_surface_v6_listener zxdg_surface_v6_listener = {
+    handle_zxdg_surface_config,
+};
+
+const struct xdg_wm_base_listener xdg_shell_listener = {
+    xdg_shell_ping,
+};
+
+const struct xdg_surface_listener xdg_surface_listener = {
+    handle_surface_config,
+};
+
+const struct wl_surface_listener wl_surface_listener = {
+    wl_surface_enter,
+    wl_nop,
+};
 
 const struct wl_seat_listener seat_listener = {
    seat_handle_capabilities,

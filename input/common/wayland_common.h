@@ -33,6 +33,18 @@
 #include "../../gfx/common/vulkan_common.h"
 #endif
 
+/* Generated from idle-inhibit-unstable-v1.xml */
+#include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
+
+/* Generated from xdg-shell-unstable-v6.xml */
+#include "../../gfx/common/wayland/xdg-shell-unstable-v6.h"
+
+/* Generated from xdg-shell.xml */
+#include "../../gfx/common/wayland/xdg-shell.h"
+
+/* Generated from xdg-decoration-unstable-v1.h */
+#include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
+
 #define UDEV_KEY_MAX			0x2ff
 #define UDEV_MAX_KEYS (UDEV_KEY_MAX + 7) / 8
 
@@ -172,5 +184,15 @@ extern const struct wl_pointer_listener pointer_listener;
 extern const struct wl_touch_listener touch_listener;
 
 extern const struct wl_seat_listener seat_listener;
+
+extern const struct wl_surface_listener wl_surface_listener;
+
+extern const struct xdg_wm_base_listener xdg_shell_listener;
+
+extern const struct xdg_surface_listener xdg_surface_listener;
+
+extern const struct zxdg_shell_v6_listener zxdg_shell_v6_listener;
+
+extern const struct zxdg_surface_v6_listener zxdg_surface_v6_listener;
 
 #endif
