@@ -70,9 +70,8 @@ static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #endif
 
-/* Shell surface callbacks. */
-static void handle_toplevel_config(void *data,
-      struct xdg_toplevel *toplevel,
+static void handle_toplevel_config_common(void *data,
+      void *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
 {
    const uint32_t *state;
@@ -119,53 +118,19 @@ static void handle_toplevel_config(void *data,
    wl->configured = false;
 }
 
+/* Shell surface callbacks. */
+static void handle_toplevel_config(void *data,
+      struct xdg_toplevel *toplevel,
+      int32_t width, int32_t height, struct wl_array *states)
+{
+   handle_toplevel_config_common(data, toplevel, width, height, states);
+}
+
 static void handle_zxdg_toplevel_config(
       void *data, struct zxdg_toplevel_v6 *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
 {
-   const uint32_t *state;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   wl->fullscreen             = false;
-   wl->maximized              = false;
-
-   WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
-   {
-      switch (*state)
-      {
-         case XDG_TOPLEVEL_STATE_FULLSCREEN:
-            wl->fullscreen = true;
-            break;
-         case XDG_TOPLEVEL_STATE_MAXIMIZED:
-            wl->maximized = true;
-            break;
-         case XDG_TOPLEVEL_STATE_RESIZING:
-            wl->resize = true;
-            break;
-         case XDG_TOPLEVEL_STATE_ACTIVATED:
-            wl->activated = true;
-            break;
-      }
-   }
-
-   if (width > 0 && height > 0)
-   {
-      wl->prev_width  = width;
-      wl->prev_height = height;
-      wl->width       = width;
-      wl->height      = height;
-   }
-
-#ifdef HAVE_EGL
-   if (wl->win)
-      wl_egl_window_resize(wl->win, width, height, 0, 0);
-   else
-      wl->win = wl_egl_window_create(wl->surface,
-            wl->width * wl->buffer_scale,
-            wl->height * wl->buffer_scale);
-#endif
-
-   wl->configured = false;
+   handle_toplevel_config_common(data, toplevel, width, height, states);
 }
 
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
