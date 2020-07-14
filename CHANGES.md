@@ -7,7 +7,7 @@
 - CHEEVOS: Fix 'Auto Save State freezes RetroArch while Cheevos is enabled'
 - CONFIG FILE: Optimise parsing of configuration files
 - D3D9/D3D11: Fix core-initiated D3D9/D3D11 driver switches
-- DRIVERS: Add 'Ignore null drivers' setting. When enabled, won't allow the user to set a driver to nothing. Can prevent the user from locking him/herself out of the program
+- DRIVERS: Implemented protection to avoid setting critical drivers to nothing thus preventing the user from locking him/herself out of the program
 - EMSCRIPTEN: Fix input code to ignore unknown keys
 - FILE I/O: VFS and NBIO interfaces will now use 64-bit fseek/ftell where possible, should allow for reading/writing to files bigger than 2GB
 - IOS: Fixed iOS 6 version
