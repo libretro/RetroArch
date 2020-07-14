@@ -1880,6 +1880,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Verifica se todo o firmware necessário está presentes antes de tentar carregar conteúdo."
    )
+#ifndef HAVE_DYNAMIC
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "Permitir rotação"
@@ -5400,6 +5402,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
    "Mostrar/esconder a opção 'Reiniciar'."
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

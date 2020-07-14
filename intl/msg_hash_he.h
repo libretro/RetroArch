@@ -488,6 +488,8 @@ MSG_HASH(
 
 /* Settings > Core */
 
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
@@ -724,6 +726,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
    "רשת אלחוטית"
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

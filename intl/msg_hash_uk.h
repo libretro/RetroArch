@@ -215,7 +215,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Улюблене"
+   "Початкова директорія"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
@@ -305,7 +305,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "Оновити ресурси"
+   "Оновити додатки"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
@@ -313,7 +313,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Оновити чит-коди"
+   "Оновити коди"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
@@ -423,15 +423,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   "Підтримувані розширення"
+   "Підтримка розширень"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   "Необхідні графічні інтерфейси"
+   "Необхідні графічні API"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   "Прошивка"
+   "Прошивка(и)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING,
@@ -439,15 +439,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Наявне"
+   "Присутнє"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Вибірково"
+   "Вибіркове"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Необхідно"
+   "Необхідне"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   "Блокувати встановлене ядро"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Запобігти внесенню змін до встановлених ядер. Може використовуватися для блокування оновлень, якщо вміст вимагає специфічної версії ядра для роботи (наприклад набори аркадних ROM)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -481,6 +489,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
    "Видалити файл зі списку архівованих резервних копій."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   "[Авто]"
+   )
 
 /* Main Menu > Information > System Information */
 
@@ -502,15 +514,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   "Можливості процесора"
+   "Можливості ЦП"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Архітектура процесора:"
+   "Архітектура ЦП:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Ядра процесора:"
+   "Ядра ЦП:"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CPU_CORES,
@@ -522,7 +534,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   "Зовнішній інтерфейс"
+   "Операційна система"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
@@ -538,15 +550,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Ширина дисплею (у міліметрах)"
+   "Ширина дисплею (мм)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Висота дисплею (у міліметрах)"
+   "Висота дисплею (мм)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   "Щільність пікселів дисплею"
+   "Точок на дюйм"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
@@ -554,7 +566,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Підтримка шарування зображення"
+   "Підтримка накладання"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
@@ -614,7 +626,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   "Підтримка багатопоточності"
+   "Підтримка багатопотоковості"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
@@ -680,22 +692,210 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
    "Підтримка CoreAudio"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "Підтримка CoreAudio V3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
+   "Підтримка DirectSound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+   "Підтримка WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
+   "Підтримка XAudio2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
+   "Підтримка zlib"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
+   "Підтримка 7zip"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
+   "Підтримка динамічних бібліотек"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
+   "Динамічне завантаження бібліотек на вимогу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
+   "Підтримка Cg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
+   "Підтримка GLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
+   "Підтримка HLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
+   "Підтримка SDL зображень"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
+   "Підтримка FFmpeg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
+   "Підтримка mpv"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
+   "Підтримка CoreText"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
+   "Підтримка FreeType"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+   "Підтримка STB TrueType"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
+   "Підтримка мережевої гри (однорангова)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
+   "Підтримка Python (підтримка скриптів у шейдерах)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
+   "Підтримка Video4Linux2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
+   "Підтримка libusb"
+   )
 
 /* Main Menu > Information > Database Manager */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
+   "Вибір бази даних"
+   )
 
 /* Main Menu > Information > Database Manager > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   "Ім'я"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   "Опис"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+   "Жанр"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   "Видавець"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   "Розробник"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   "Походження"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   "Франшиза"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   "Рейтинг TGDB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   "Рейтинг журналу Famitsu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   "Огляд журналу Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   "Рейтинг журналу Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   "Номер видання журналу Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Місяць виходу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Рік виходу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   "Рейтинг BBFC"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   "Рейтинг ESRB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   "Рейтинг ELSPA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   "Рейтинг PEGI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   "Додаткове обладнання"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   "Рейтинг CERO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   "Серійний номер"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   "Аналогова підтримка"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   "Підтримка вібрації"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   "Підтримка кооперативу"
+   )
 
 /* Main Menu > Configuration File */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   "Завантажити конфігурацію"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Відновити параметри за замовчуванням"
+   "Відновити стандартну конфігурацію"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Скидання поточної конфігурації до значень за замовчуванням."
+   "Скидання поточної конфігурації до стандартних значень."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -710,22 +910,22 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   "Основні елементи меню"
+   "Базове керування в меню"
    )
 
 /* Main Menu > Help > Basic Menu Controls */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   "Прокрутити вгору"
+   "Прокрутка вгору"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   "Прокрутити Вниз"
+   "Прокрутка вниз"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   "Підтвердити"
+   "Підтвердження"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
@@ -733,19 +933,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   "Розпочати"
+   "Старт"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   "Увімкнути меню"
+   "Перемикач меню"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   "Вийти"
+   "Вихід"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   "Увімкнути або вимкнути клавіатуру"
+   "Перемикач клавіатури"
    )
 
 /* Settings */
@@ -756,7 +956,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   "Змінити драйвери, вікористовувані системою."
+   "Зміна драйвера, що використовується системою."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -780,7 +980,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "Змінити налаштування контролера, клавіатури або миші."
+   "Зміна налаштувань контролера, клавіатури або миші."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -796,7 +996,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Змінити налаштування ядра."
+   "Зміна налаштувань ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -804,7 +1004,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "Змінити налаштування за замовчуванням для файлів конфігурації."
+   "Зміна стандартних налаштувань для файлів конфігурації."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
@@ -816,11 +1016,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   "Журнал"
+   "Журналювання"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Зміна налаштувань журналу."
+   "Зміна налаштувань журналювання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -828,15 +1028,111 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Змінити налаштування браузера файлів."
+   "Зміна налаштувань браузера файлів."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   "Пропуск кадрів"
+   "Керування кадрами"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   "Зміна налаштувань перемотки вперед/назад, сповільнення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   "Запис"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   "Зміна налаштувань запису."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   "Зображення на екрані"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   "Зміна налаштувань накладок екрану, клавіатури та екранних повідомлень."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   "Інтерфейс користувача"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   "Зміна налаштувань інтерфейсу користувача."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   "Служба AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   "Зміна налаштувань служби AI (Переклад/Читання)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   "Спеціальні можливості"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   "Зміна налаштувань диктора програми."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   "Керування живленням"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   "Зміна налаштувань керування живленням."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   "Досягнення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   "Зміна налаштувань досягнень."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   "Мережа"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "Налаштування параметрів сервера та мережі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   "Списки відтворення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   "Зміна налаштувань списків відтворення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   "Користувач"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Зміна налаштувань облікового запису, користувача або мови."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   "Директорії"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   "Зміна стандартних директорій, в яких розташовані файли."
    )
 
 /* Settings > Drivers */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   "Драйвер вводу"
+   )
 
 /* Settings > Video */
 
@@ -900,6 +1196,8 @@ MSG_HASH(
 
 /* Settings > Core */
 
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
@@ -1131,6 +1429,7 @@ MSG_HASH(
 
 
 /* Environment Specific Settings */
+
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif

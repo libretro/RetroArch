@@ -2396,6 +2396,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "تحقق مما إذا كانت جميع البرامج الثابتة المطلوبة موجودة قبل محاولة تحميل المحتوى."
    )
+#ifndef HAVE_DYNAMIC
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "السماح بالتدوير"
@@ -9728,6 +9730,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    "إظهار أو إخفاء خيار \"إيقاف التشغيل\"."
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,

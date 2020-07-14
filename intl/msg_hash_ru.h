@@ -108,6 +108,10 @@ MSG_HASH(
    "Показать меню рабочего стола"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Открывает традиционное меню для рабочего стола."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    "Отключить режим киоска"
    )
@@ -1166,6 +1170,10 @@ MSG_HASH(
    "Используемый драйвер камеры."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Использовать драйвер Bluetooth."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Драйвер Wi-Fi"
    )
@@ -1311,6 +1319,10 @@ MSG_HASH(
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "Настройка разрешения ЭЛТ"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    "Только для CRT-дисплеев. Пытаться использовать точное разрешение и частоту обновления ядра/игры."
@@ -1887,6 +1899,10 @@ MSG_HASH(
    "Максимальное количество пользователей, поддерживаемых RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   "Изменить управление для этого ядра"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Автоматическая настройка включена"
    )
@@ -1963,6 +1979,10 @@ MSG_HASH(
    "Настроить параметры горячих клавиш."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   "Раскладка порта %u"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    "Настройки элементов управления для этого порт."
    )
@@ -2024,6 +2044,14 @@ MSG_HASH(
    "Комбинация кнопок контроллера для вызова меню."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   "Перемотка (переключатель)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Перемотка (удержание)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    "Загрузить сохраненную игру"
    )
@@ -2064,12 +2092,52 @@ MSG_HASH(
    "Предыдущий шейдер"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
+   "Включить чит-коды"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Сделать скриншот"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Включить экранную клавиатуру"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+   "Показывать частоту кадров"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
+   "Включить индикатор частоты кадров в секунду"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Отправить Отладочную Информацию"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
+   "Отправляет диагностическую информацию о вашем устройстве и конфигурацию RetroArch на наши серверы для анализа."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+   "Включить хостинг NetPlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+   "Увеличить громкость"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   "Увеличивает громкость выходного сигнала"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   "Уменьшить громкость"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
+   "Следующий оверлей"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
@@ -2125,6 +2193,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
    "Кнопка START"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
+   "Крестовина вверх"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
+   "Крестовина вниз"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
+   "Крестовина влево"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
+   "Крестовина вправо"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
@@ -2312,6 +2396,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Перед загрузкой контента проверьте, все ли необходимые микропрограммы присутствуют."
    )
+#ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Всегда перезагружать ядро при запуске контента"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Перезапустите RetroArch при запуске контента, даже если запрошенное ядро уже загружено. Это может улучшить стабильность системы, за счет увеличения времени загрузки."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "Разрешить вращение"
@@ -2319,6 +2413,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
    "Разрешить ядрам поворот изображения. Если выкл., запросы на вращение игнорируются. Полезно для конфигураций с ручной установкой поворота экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   "Управление ядрами"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
+   "Выполнять задачи оффлайн обслуживания на установленных ядрах (резервное копирование, восстановление, удаление и т.д.) и просматривать информацию о ядре."
    )
 
 /* Settings > Configuration */
@@ -2572,8 +2674,16 @@ MSG_HASH(
    "Настройка параметров счётчика времени кадра (действует только при выкл. видео в отдельном потоке)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   "Частота перемотки"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    "Максимальная скорость перемотки контента (например, 5.0x для 60 FPS, т.е. ограничение 300 FPS). Если установлен на 0.0x - скорость не ограничена."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+   "Частота замедления"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
@@ -2804,6 +2914,10 @@ MSG_HASH(
    )
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_Y,
+   "Отсека оверлея по оси Y"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -2996,6 +3110,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    "Поддержка Touch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "Включить поддержку тач в меню" 
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
@@ -3735,6 +3853,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    "Включает тестирование неофициальных достижений и/или бета-функций."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Звук разблокировки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Воспроизвести звук, когда достижение разблокировано."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -4919,6 +5045,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
    "Настройки не найдены."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   "Не найдено устройств Bluetooth"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
@@ -6939,8 +7069,16 @@ MSG_HASH(
    "Не настроен, используется резервный"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Сканирование Bluetooth завершено."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Сканирование Wi-Fi успешно завершено."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Сканирование устройств Bluetooth..."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
@@ -7128,6 +7266,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
    "Показать/скрыть настройку 'Перезагрузить'."
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,

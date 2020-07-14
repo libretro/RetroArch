@@ -632,6 +632,10 @@ MSG_HASH(
 /* Settings > Audio > Menu Sounds */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   "Mecedor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    "Activar el soníu «OK»"
    )
@@ -665,6 +669,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Controles del puertu %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Configura los controles d'esti puertu."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -720,6 +728,8 @@ MSG_HASH(
 
 /* Settings > Core */
 
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
@@ -2232,6 +2242,7 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Namás llectura"
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

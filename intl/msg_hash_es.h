@@ -467,7 +467,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   "Crea una copia de seguridad archivada del núcleo instalado."
+   "Crea una copia de seguridad del núcleo instalado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
@@ -1164,6 +1164,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
    "Selecciona el controlador de cámara que se utilizará."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Selecciona el controlador de Bluetooth que se utilizará."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -2664,6 +2668,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Verifica que el firmware necesario esté disponible antes de cargar el contenido."
    )
+#ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Recargar siempre el núcleo al ejecutar contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Reinicia RetroArch al iniciar un contenido, incluso cuando ya se ha cargado el núcleo solicitado. Puede mejorar la estabilidad del sistema a costa de aumentar los tiempos de carga."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "Permitir rotación"
@@ -2701,7 +2715,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-   "Autocargar archivos de personalización"
+   "Cargar archivos de personalización automáticamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -2709,7 +2723,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-   "Autocargar archivos de reasignación"
+   "Cargar archivos de reasignación automáticamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
@@ -2717,7 +2731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   "Autocargar preajustes de shaders"
+   "Cargar preajustes de shaders automáticamente"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
@@ -2748,7 +2762,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "No sobrescribir SaveRAM al cargar un guardado rápido"
+   "No sobrescribir la SaveRAM al cargar un guardado rápido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
@@ -2800,7 +2814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Escribe los archivos SaveRAM en un formato para archivar. Reduce drásticamente el tamaño del archivo a costa de aumentar (escasamente) los tiempos de guardado y carga. Nota: Solo compatible con núcleos que utilicen la interfaz estándar para SaveRAM de libretro."
+   "Escribe los archivos SaveRAM en un archivo comprimido. Reduce drásticamente el tamaño del archivo a costa de aumentar (escasamente) los tiempos de guardado y carga. Nota: Solo compatible con núcleos que utilicen la interfaz estándar para SaveRAM de libretro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -2808,7 +2822,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Escribe los guardados rápidos en un formato para archivar. Reduce drásticamente el tamaño del archivo a costa de aumentar los tiempos de guardado y carga."
+   "Escribe los guardados rápidos en un archivo comprimido. Reduce drásticamente el tamaño del archivo a costa de aumentar los tiempos de guardado y carga."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -3319,6 +3333,14 @@ MSG_HASH(
    "Muestra la cantidad de memoria usada y total del sistema."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Notificación al empezar a cargar un contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Muestra una breve animación para indicar que se está cargando un contenido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Fuente de notificaciones"
    )
@@ -3431,7 +3453,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Manda la lista de vuelta al principio cuando se llegue al final horizontal o vertical."
+   "Cuando se llegue al final horizontal o vertical de una lista, volverá al otro extremo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
@@ -4333,6 +4355,14 @@ MSG_HASH(
    "Activa los logros no oficiales o beta para probarlos."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Sonido de desbloqueo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Reproduce un sonido al desbloquear un logro."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
    "Modo descriptivo"
    )
@@ -4572,7 +4602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
-   "Crea automáticamente una copia de seguridad de cualquier núcleo instalado al realizar una actualización en línea. Permite recuperar fácilmente un núcleo funcional en caso de que una actualización introduzca una regresión."
+   "Crea automáticamente una copia de seguridad de cualquier núcleo instalado al usar el actualizador en línea. Así se puede recuperar fácilmente un núcleo funcional en caso de que una actualización introduzca una regresión."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -4580,7 +4610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   "Especifica cuántas copias de seguridad automáticas se conservarán por núcleo instalado. Cuando se alcance este límite, la próxima vez que se cree una copia de seguridad nueva por actualización eliminará la copia más antigua. Nota: las copias de seguridad manuales de los núcleos no se verán afectadas por este ajuste."
+   "Especifica cuántas copias de seguridad automáticas se conservarán por núcleo instalado. Al llegar a este límite, la próxima copia de seguridad producida por una actualización eliminará la copia más antigua. Nota: las copias de seguridad manuales de los núcleos no se verán afectadas por este ajuste."
    )
 
 /* Settings > Playlists */
@@ -6245,6 +6275,10 @@ MSG_HASH(
    "No se ha encontrado una configuración"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   "No se han encontrado dispositivos con Bluetooth"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
    "No se han encontrado redes"
    )
@@ -7503,7 +7537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
-   "Muestra un menú de navegación en pantalla con accesos directos. Permite cambiar rápidamente entre categorías. Recomendado para dispositivos que utilicen pantallas táctiles."
+   "Muestra un menú permanente de navegación con accesos directos. Permite cambiar rápidamente entre categorías. Recomendado para dispositivos que utilicen pantallas táctiles."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
@@ -7527,7 +7561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Activa los efectos de animación al navegar entre las distintas opciones del menú."
+   "Permite navegar por las distintas opciones del menú con una animación fluida."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
@@ -7753,7 +7787,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
-   "Docks cerrados"
+   "Ventanas cerradas"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
@@ -7765,7 +7799,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
-   "Recordar las posiciones de dock:"
+   "Recordar las posiciones de las ventanas acopladas:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
@@ -7793,11 +7827,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   "Opciones"
+   "Ajustes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
-   "Herramien&tas"
+   "&Herramientas"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
@@ -7853,7 +7887,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   "Caja"
+   "Carátula"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
@@ -7949,7 +7983,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
-   "La ruta al archivo está en blanco."
+   "La ruta del archivo está en blanco."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
@@ -7957,11 +7991,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
-   "No se pudo leer el archivo."
+   "No se ha podido leer el archivo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
-   "No se pudo escribir el archivo."
+   "No se ha podido escribir el archivo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
@@ -8017,7 +8051,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
-   "Renombrar lista"
+   "Renombrar lista de reproducción"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
@@ -8033,11 +8067,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
-   "No se pudo renombrar el archivo."
+   "No se ha podido renombrar el archivo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
-   "Cargando lista de archivos..."
+   "Creando lista de archivos..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
@@ -8069,7 +8103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
-   "(separar con espacios; incluye a todas por defecto)"
+   "(separar con espacios; incluye todas por defecto)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
@@ -8129,11 +8163,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
-   "Actualizar RetroArch (nightly)"
+   "Actualizar RetroArch («nightly»)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
-   "RetroArch ha sido actualizado. Reinicie la aplicación para aplicar los cambios."
+   "RetroArch ha sido actualizado. Reinicia la aplicación para aplicar los cambios."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
@@ -8141,7 +8175,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
-   "Contribuyentes"
+   "Colaboradores"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
@@ -8221,7 +8255,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
-   "Límite del tamaño de miniaturas al arrastrar:"
+   "Límite del tamaño de miniaturas arrastradas:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
@@ -8229,11 +8263,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   "Sistema completo"
+   "Todo el sistema"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
-   "Esta lista"
+   "Esta lista de reproducción"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
@@ -8308,7 +8342,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
-   "Selecciona un contenido de la lista de contenidos recientes."
+   "Selecciona un contenido de la lista del historial."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
@@ -8325,6 +8359,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
    "No hay listas de reproducción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "Conectado"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
@@ -8459,7 +8497,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
-   "Selecciona una coincidencia."
+   "Selecciona la coincidencia que quieres ver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
@@ -8475,7 +8513,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME,
-   "Reanuda la ejecución del contenido y abandona el menú rápido."
+   "Reanuda el contenido actual y abandona el menú rápido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -8543,7 +8581,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "Buscando contenido"
+   "Buscando contenidos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
@@ -8789,7 +8827,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
-   "En el menú"
+   "Dentro del menú"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
@@ -8797,7 +8835,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-   "Dentro del juego (Pausado)"
+   "Dentro del juego (pausado)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
@@ -8852,7 +8890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-   "Vuelve a pulsar el botón dos veces para enviar la información de diagnóstico al equipo de RetroArch."
+   "Pulsa el botón otras dos veces más para enviar la información de diagnóstico al equipo de RetroArch."
    )
 MSG_HASH(
    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
@@ -9072,7 +9110,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_CORES,
-   "Escaneando núcleos..."
+   "Buscando núcleos..."
    )
 MSG_HASH(
    MSG_CHECKING_CORE,
@@ -9248,7 +9286,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
-   "El CRC32 del contenido no concuerda con el de la repetición. Es muy probable que la reproducción se desincronice."
+   "El CRC32 del contenido no concuerda con el de la cabecera de la repetición. Es muy probable que la reproducción se desincronice."
    )
 MSG_HASH(
    MSG_CUSTOM_TIMING_GIVEN,
@@ -9256,7 +9294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
-   "Descomprimiendo."
+   "El archivo ya está siendo descomprimido."
    )
 MSG_HASH(
    MSG_DECOMPRESSION_FAILED,
@@ -9296,11 +9334,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
-   "El núcleo Libretro necesita contenido, pero no fue provisto."
+   "Este núcleo Libretro necesita contenidos, pero no se ha suministrado ninguno."
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
-   "El núcleo Libretro necesita un contenido especial, pero no fue provisto."
+   "Este núcleo Libretro necesita contenidos especiales, pero no se ha suministrado ninguno."
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
@@ -9308,7 +9346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_PARSING_ARGUMENTS,
-   "Error al analizar argumentos."
+   "Error al analizar los argumentos."
    )
 MSG_HASH(
    MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
@@ -9372,7 +9410,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-   "Error al extraer el contenido del archivo comprimido"
+   "Error al extraer los contenidos del archivo comprimido"
    )
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
@@ -9468,7 +9506,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
-   "Error al iniciar clip de grabación."
+   "Error al iniciar la grabación."
    )
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
@@ -9544,7 +9582,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-   "El núcleo Libretro se renderiza por hardware. Las grabaciones deben tener shaders aplicados."
+   "Este núcleo Libretro se renderiza por hardware. Las grabaciones deben tener shaders aplicados."
    )
 MSG_HASH(
    MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
@@ -9596,7 +9634,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LIBRETRO_ABI_BREAK,
-   "está compilado para otra versión de Libretro"
+   "está compilado para una versión diferente de Libretro."
    )
 MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
@@ -9604,11 +9642,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
-   "Guardado rápido n.º %d cargado."
+   "Carga del guardado rápido n.º %d terminada."
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Guardado rápido #-1 (autom.) cargado."
+   "Carga del guardado rápido n.º -1 (automático) terminada."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -9708,15 +9746,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "Redirigiendo archivo de guardado rápido a"
+   "Redirigiendo guardado rápido a"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-   "La reasignación ha sido guardada."
+   "El archivo de reasignación ha sido guardado."
    )
 MSG_HASH(
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
-   "La reasignación ha sido eliminada."
+   "El archivo de reasignación ha sido eliminado."
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
@@ -9732,15 +9770,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-   "Reiniciando grabación por reinicio del controlador."
+   "Reanudando grabación por reinicio del controlador."
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "Restaurado antiguo guardado rápido."
+   "El antiguo guardado rápido ha sido restaurado."
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: restaurando el preajuste predeterminado de"
+   "Shaders: restaurando el preajuste predeterminado en"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -9760,7 +9798,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED,
-   "Error al iniciar el buffer. El rebobinado se desactivará."
+   "Error al iniciar el búfer de rebobinado. La función de rebobinado se desactivará."
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
@@ -9768,7 +9806,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_REACHED_END,
-   "Se ha alcanzado el final del buffer de rebobinado."
+   "Se ha alcanzado el final del búfer de rebobinado."
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
@@ -9776,11 +9814,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "Guardado rápido en la posición %d terminado."
+   "Guardado rápido n.º %d terminado."
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Guardado rápido en la posición #-1 (autom.) terminado."
+   "Guardado rápido n.º -1 (automático) terminado."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -9808,11 +9846,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
-   "Hay varios parches definidos explícitamente, ignorando todos..."
+   "Hay varios parches definidos explícitamente, ignorándolos todos..."
    )
 MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
-   "Se ha guardado el preajuste de shaders guardado."
+   "Se ha guardado el preajuste de shaders."
    )
 MSG_HASH(
    MSG_SKIPPING_SRAM_LOAD,
@@ -9844,15 +9882,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_STATE_SIZE,
-   "Tamaño del guardado"
+   "Tamaño del guardado rápido"
    )
 MSG_HASH(
    MSG_STATE_SLOT,
-   "Posición de guardado"
+   "Posición de guardado rápido"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
-   "Capturando pantalla"
+   "Capturando pantalla."
    )
 MSG_HASH(
    MSG_SCREENSHOT_SAVED,
@@ -9912,7 +9950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
-   "Usando núcleo vacío. Omitiendo grabación."
+   "Usando núcleo libretro vacío. Omitiendo grabación."
    )
 MSG_HASH(
    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -9967,8 +10005,16 @@ MSG_HASH(
    "no configurado, usando respaldo"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Búsqueda de Bluetooth finalizada."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Búsqueda de señales wifi finalizada."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Buscando dispositivos con Bluetooth..."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
@@ -10012,7 +10058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
-   "Archivo de reasignaciones de juego cargado."
+   "Se ha cargado el archivo de reasignaciones de juego."
    )
 MSG_HASH(
    MSG_DIRECTORY_REMAP_FILE_LOADED,
@@ -10020,7 +10066,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
-   "Archivo de reasignaciones de núcleo cargado."
+   "Se ha cargado el archivo de reasignaciones del núcleo."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -10124,7 +10170,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Error al establecer el último disco usado..."
+   "Error al asignar el último disco usado..."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
@@ -10148,11 +10194,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
-   "Ultra"
+   "Máxima"
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "ADVERTENCIA: Faltan recursos, utiliza el actualizador en línea si está disponible"
+   "Advertencia: Faltan recursos, utiliza el actualizador en línea si está disponible"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -10196,7 +10242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
-   "Ha habido un error al cargar el archivo DAT de arcade (¿el formato no es válido?)"
+   "Error al cargar el archivo DAT de arcade (¿el formato no es válido?)"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
@@ -10280,7 +10326,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
-   "Error al instalar la copia de seguridad del núcleo: "
+   "Error al instalar el núcleo: "
    )
 MSG_HASH(
    MSG_CORE_RESTORATION_DISABLED,
@@ -10366,7 +10412,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
-   "Filtro de parpadeo"
+   "Filtro antiparpadeo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
@@ -10375,6 +10421,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    "Filtro de suavizado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   "Busca dispositivos con Bluetooth para conectarse a ellos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
@@ -10484,6 +10534,7 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Solo lectura"
    )
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
@@ -10491,7 +10542,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "Ajusta la velocidad de la GPU."
+   "Aumenta o reduce la velocidad de la GPU de Switch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
@@ -10499,7 +10550,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "Ajusta el brillo de la pantalla."
+   "Aumenta o reduce el brillo de la pantalla de Switch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
@@ -10513,7 +10564,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-   "Acelera la CPU."
+   "Acelera la CPU de Switch."
    )
 #endif
 #ifdef HAVE_LAKKA
@@ -10534,16 +10585,8 @@ MSG_HASH(
    "Administra los servicios del sistema operativo."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
-   "Activar SAMBA"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
    "Permite compartir carpetas en red mediante el protocolo SMB."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
-   "Activar SSH"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SSH_ENABLE,
@@ -10603,7 +10646,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
-   "Escalado mediante RGA y filtrado bicúbico. Puede romper los widgets."
+   "Escalado de imagen que utiliza RGA y filtrado bicúbico. Puede romper los widgets."
    )
 #else
 MSG_HASH(
@@ -10622,28 +10665,28 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
-   "Mostrar información de estado en la pantalla inferior. Desactiva esta opción para mejorar la duración de la batería y el rendimiento."
+   "Muestra información de estado en la pantalla inferior. Desactiva esta opción para mejorar la duración de la batería y el rendimiento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
-   "Modo de pantalla de 3DS"
+   "Modo de vídeo de 3DS"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
-   "Selecciona el modo de pantalla 2D o 3D. En el modo 3D, los píxeles serán rectangulares y se aplicará un efecto de profundidad al usar el menú rápido. El modo 2D es el mejor para el rendimiento."
+   "Alterna entre los modos de vídeo 2D y 3D. En el modo 3D, los píxeles serán rectangulares y se aplicará un efecto de profundidad al usar el menú rápido. El modo 2D tiene un mejor rendimiento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
-   "2D (Efecto de cuadrícula de píxeles)"
+   "2D (efecto de cuadrícula de píxeles)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
-   "2D (Alta resolución)"
+   "2D (alta resolución)"
    )
 #endif
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Búsqueda finalizada.<br><br>\nPara que un contenido pueda ser identificado, es necesario lo siguiente:\n<ul><li>Un núcleo compatible ya descargado</li>\n<li>Los archivos de información de núcleos actualizados</li>\n<li>Las bases de datos actualizadas</li>\n<li>Reiniciar RetroArch si has usado el actualizador en línea para actualizar alguno de estos elementos</li></ul>\nPor último, el contenido debe coincidir con las bases de datos que se encuentran <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">aquí</a>. Si aún no consigues resultados, puedes <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar un informe de error</a>."
+   "Búsqueda finalizada.<br><br>\nPara que un contenido pueda ser identificado, es necesario lo siguiente:\n<ul><li>Un núcleo compatible ya descargado</li>\n<li>Tener los archivos de información de núcleos al día</li>\n<li>Haber actualizado las bases de datos mediante el actualizador en línea</li>\n<li>Reiniciar RetroArch si ya has hecho cualquiera de los pasos anteriores</li></ul>\nPor último, el contenido debe coincidir con las bases de datos que se encuentran <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">aquí</a>. Si aún no consigues resultados, puedes <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar un informe de error</a>."
    )
 #endif
