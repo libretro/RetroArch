@@ -104,7 +104,6 @@ static void *fpga_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    const gfx_ctx_driver_t *ctx_driver   = NULL;
-   settings_t *settings                 = config_get_ptr();
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    *input                               = NULL;

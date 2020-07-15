@@ -1228,8 +1228,7 @@ ifeq ($(HAVE_NETWORK_VIDEO), 1)
    endif
 
    DEFINES += -DHAVE_NETWORK_VIDEO
-   OBJ += gfx/drivers/network_gfx.o \
-          gfx/drivers_context/network_ctx.o
+   OBJ += gfx/drivers/network_gfx.o
 endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
