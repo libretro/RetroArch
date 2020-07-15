@@ -99,7 +99,7 @@ static bool linuxraw_joypad_init_pad(const char *path,
       struct epoll_event event;
 
       ioctl(pad->fd,
-               JSIOCGNAME(sizeof(input_device_names[0])), pad->ident);
+               JSIOCGNAME(input_config_get_device_name_size(0)), pad->ident);
 
       event.events             = EPOLLIN;
       event.data.ptr           = pad;
@@ -234,7 +234,7 @@ static bool linuxraw_joypad_init(void *data)
       path[0]                     = '\0';
 
       pad->fd                     = -1;
-      pad->ident                  = input_device_names[i];
+      pad->ident                  = input_config_get_device_name_ptr(i);
 
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 

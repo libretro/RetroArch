@@ -6627,7 +6627,7 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
 
       if (!string_is_empty(device_name))
       {
-         unsigned idx = input_autoconfigure_get_device_name_index(map);
+         unsigned idx = input_config_get_device_name_index(map);
 
          /*if idx is non-zero, it's part of a set*/
          if ( idx > 0)

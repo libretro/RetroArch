@@ -23,568 +23,847 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <file/config_file.h>
 
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
 #include "../retroarch.h"
+#include "../input/input_driver.h"
 
 #include "tasks_internal.h"
 #ifdef HAVE_BLISSBOX
 #include "../input/include/blissbox.h"
 #endif
 
-typedef struct autoconfig_disconnect autoconfig_disconnect_t;
-
-struct autoconfig_disconnect
+typedef struct
 {
-   unsigned idx;
-   char *msg;
-};
+   unsigned port;
+   input_device_info_t device_info;
+   bool autoconfig_enabled;
+   bool suppress_notifcations;
+   char *dir_autoconfig;
+   char *dir_driver_autoconfig;
+   config_file_t *autoconfig_file;
+} autoconfig_handle_t;
 
-/* TODO/FIXME - global state - perhaps move outside this file */
-static bool input_autoconfigured[MAX_USERS];
-static unsigned input_device_name_index[MAX_INPUT_DEVICES];
-static bool input_autoconfigure_swap_override;
+/*********************/
+/* Utility functions */
+/*********************/
 
-/* TODO/FIXME - Not thread safe to access this
- * on main thread as well in its current state -
- * menu_input.c - menu_event calls this function
- * right now, while the underlying variable can
- * be modified by a task thread. */
-bool input_autoconfigure_get_swap_override(void)
+static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
-   return input_autoconfigure_swap_override;
+   if (!autoconfig_handle)
+      return;
+
+   if (autoconfig_handle->dir_autoconfig)
+   {
+      free(autoconfig_handle->dir_autoconfig);
+      autoconfig_handle->dir_autoconfig = NULL;
+   }
+
+   if (autoconfig_handle->dir_driver_autoconfig)
+   {
+      free(autoconfig_handle->dir_driver_autoconfig);
+      autoconfig_handle->dir_driver_autoconfig = NULL;
+   }
+
+   if (autoconfig_handle->autoconfig_file)
+   {
+      config_file_free(autoconfig_handle->autoconfig_file);
+      autoconfig_handle->autoconfig_file = NULL;
+   }
+
+   free(autoconfig_handle);
+   autoconfig_handle = NULL;
 }
 
-/* Adds an index for devices with the same name,
- * so they can be identified in the GUI. */
-void input_autoconfigure_joypad_reindex_devices(void)
+static void input_autoconfigure_free(retro_task_t *task)
 {
-   unsigned i, j, k;
+   autoconfig_handle_t *autoconfig_handle = NULL;
 
-   for(i = 0; i < MAX_INPUT_DEVICES; i++)
-      input_device_name_index[i] = 0;
+   if (!task)
+      return;
 
-   for(i = 0; i < MAX_INPUT_DEVICES; i++)
+   autoconfig_handle = (autoconfig_handle_t*)task->state;
+
+   free_autoconfig_handle(autoconfig_handle);
+}
+
+/******************************/
+/* Autoconfig 'File' Handling */
+/******************************/
+
+/* Returns a value corresponding to the
+ * 'affinity' between the connected input
+ * device and the specified config file
+ * > 0: No match
+ * > 2: Device name matches
+ * > 3: VID+PID match
+ * > 5: Both device name and VID+PID match */
+static unsigned input_autoconfigure_get_config_file_affinity(
+      autoconfig_handle_t *autoconfig_handle,
+      config_file_t *config)
+{
+   int tmp_int         = 0;
+   uint16_t config_vid = 0;
+   uint16_t config_pid = 0;
+   bool pid_match      = false;
+   unsigned affinity   = 0;
+   char config_device_name[256];
+
+   config_device_name[0] = '\0';
+
+   if (!autoconfig_handle || !config)
+      return 0;
+
+   /* Parse config file */
+   config_get_array(config, "input_device", config_device_name,
+         sizeof(config_device_name));
+
+   if (config_get_int(config, "input_vendor_id", &tmp_int))
+      config_vid = (uint16_t)tmp_int;
+
+   if (config_get_int(config, "input_product_id", &tmp_int))
+      config_pid = (uint16_t)tmp_int;
+
+   /* > Bliss-Box shenanigans... */
+#ifdef HAVE_BLISSBOX
+   if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
+      config_pid = BLISSBOX_PID;
+#endif
+
+   /* Check for matching VID+PID */
+   pid_match = (autoconfig_handle->device_info.vid == config_vid) &&
+               (autoconfig_handle->device_info.pid == config_pid) &&
+               (autoconfig_handle->device_info.vid != 0) &&
+               (autoconfig_handle->device_info.pid != 0);
+
+   /* > More Bliss-Box shenanigans... */
+#ifdef HAVE_BLISSBOX
+   pid_match = pid_match &&
+               (autoconfig_handle->device_info.vid != BLISSBOX_VID) &&
+               (autoconfig_handle->device_info.pid != BLISSBOX_PID);
+#endif
+
+   if (pid_match)
+      affinity += 3;
+
+   /* Check for matching device name */
+   if (!string_is_empty(config_device_name) &&
+       string_is_equal(config_device_name,
+            autoconfig_handle->device_info.name))
+      affinity += 2;
+
+   return affinity;
+}
+
+/* 'Attaches' specified autoconfig file to autoconfig
+ * handle, parsing required device info metadata */
+static void input_autoconfigure_set_config_file(
+      autoconfig_handle_t *autoconfig_handle,
+      config_file_t *config)
+{
+   char device_display_name[256];
+
+   device_display_name[0] = '\0';
+
+   if (!autoconfig_handle || !config)
+      return;
+
+   /* Attach config file */
+   autoconfig_handle->autoconfig_file = config;
+
+   /* > Extract config file path + name */
+   if (!string_is_empty(config->path))
    {
-      const char *tmp = input_config_get_device_name(i);
-      if ( !tmp || input_device_name_index[i] )
+      const char *config_file_name = path_basename(config->path);
+
+      strlcpy(autoconfig_handle->device_info.config_path,
+            config->path,
+            sizeof(autoconfig_handle->device_info.config_path));
+
+      if (!string_is_empty(config_file_name))
+         strlcpy(autoconfig_handle->device_info.config_name,
+               config_file_name,
+               sizeof(autoconfig_handle->device_info.config_name));
+   }
+
+   /* Read device display name */
+   config_get_array(config, "input_device_display_name",
+         device_display_name, sizeof(device_display_name));
+
+   if (!string_is_empty(device_display_name))
+      strlcpy(autoconfig_handle->device_info.display_name,
+            device_display_name,
+            sizeof(autoconfig_handle->device_info.display_name));
+
+   /* Set auto-configured status to 'true' */
+   autoconfig_handle->device_info.autoconfigured = true;
+}
+
+/* Attempts to find an 'external' autoconfig file
+ * (in the autoconfig directory) matching the connected
+ * input device
+ * > Returns 'true' if successful */
+static bool input_autoconfigure_scan_config_files_external(
+      autoconfig_handle_t *autoconfig_handle)
+{
+   const char *dir_autoconfig           = autoconfig_handle->dir_autoconfig;
+   const char *dir_driver_autoconfig    = autoconfig_handle->dir_driver_autoconfig;
+   struct string_list *config_file_list = NULL;
+   config_file_t *best_config           = NULL;
+   unsigned max_affinity                = 0;
+   bool match_found                     = false;
+   size_t i;
+
+   /* Attempt to fetch file listing from driver-specific
+    * autoconfig directory */
+   if (!string_is_empty(dir_driver_autoconfig) &&
+       path_is_directory(dir_driver_autoconfig))
+      config_file_list = dir_list_new_special(
+            dir_driver_autoconfig, DIR_LIST_AUTOCONFIG,
+            "cfg", false);
+
+   if (!config_file_list || (config_file_list->size < 1))
+   {
+      /* No files found - attempt to fetch listing
+       * from autoconfig base directory */
+      if (config_file_list)
+      {
+         string_list_free(config_file_list);
+         config_file_list = NULL;
+      }
+
+      if (!string_is_empty(dir_autoconfig) &&
+          path_is_directory(dir_autoconfig))
+         config_file_list = dir_list_new_special(
+               dir_autoconfig, DIR_LIST_AUTOCONFIG,
+               "cfg", false);
+   }
+
+   if (!config_file_list || (config_file_list->size < 1))
+      goto end;
+
+   /* Loop through external config files */
+   for (i = 0; i < config_file_list->size; i++)
+   {
+      const char *config_file_path = config_file_list->elems[i].data;
+      config_file_t *config        = NULL;
+      unsigned affinity            = 0;
+
+      if (string_is_empty(config_file_path))
          continue;
 
-      k = 2; /*Additional devices start at two*/
+      /* Load autoconfig file */
+      config = config_file_new_from_path_to_string(config_file_path);
 
-      for(j = i+1; j < MAX_INPUT_DEVICES; j++)
+      if (!config)
+         continue;
+
+      /* Check for a match */
+      affinity = input_autoconfigure_get_config_file_affinity(
+            autoconfig_handle, config);
+
+      if (affinity > max_affinity)
       {
-         const char *other = input_config_get_device_name(j);
-
-         if (!other)
-            continue;
-
-         /*another device with the same name found, for the first time*/
-         if (string_is_equal(tmp, other) &&
-               input_device_name_index[j]==0 )
+         if (best_config)
          {
-            /*Mark the first device of the set*/
-            input_device_name_index[i] = 1;
-            /*count this additional device, from two up*/
-            input_device_name_index[j] = k++;
+            config_file_free(best_config);
+            best_config = NULL;
          }
+
+         /* 'Cache' config file for later processing */
+         best_config  = config;
+         config       = NULL;
+         max_affinity = affinity;
+
+         /* An affinity of 5 is a 'perfect' match,
+          * and means we can return immediately */
+         if (affinity == 5)
+            break;
       }
-   }
-}
-
-static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
-      autoconfig_params_t *params)
-{
-   char ident[256];
-   char input_driver[32];
-   int tmp_int                = 0;
-   int              input_vid = 0;
-   int              input_pid = 0;
-   int                  score = 0;
-   bool check_pid             = false;
-
-   ident[0] = input_driver[0] = '\0';
-
-   config_get_array(conf, "input_device", ident, sizeof(ident));
-   config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
-
-   if (config_get_int  (conf, "input_vendor_id", &tmp_int))
-      input_vid = tmp_int;
-
-   if (config_get_int  (conf, "input_product_id", &tmp_int))
-      input_pid = tmp_int;
-
-#ifdef HAVE_BLISSBOX
-   if (params->vid == BLISSBOX_VID)
-      input_pid = BLISSBOX_PID;
-#endif
-
-   check_pid = 
-         (params->vid == input_vid)
-      && (params->pid == input_pid)
-      && (params->vid != 0)
-      && (params->pid != 0);
-
-#ifdef HAVE_BLISSBOX
-   check_pid = check_pid
-         && (params->vid != BLISSBOX_VID)
-         && (params->pid != BLISSBOX_PID);
-#endif
-
-   /* Check for VID/PID */
-   if (check_pid)
-      score += 3;
-
-   /* Check for name match */
-   if (
-            !string_is_empty(params->name)
-         && !string_is_empty(ident)
-         && string_is_equal(ident, params->name))
-      score += 2;
-
-   return score;
-}
-
-static void input_autoconfigure_joypad_add(config_file_t *conf,
-      autoconfig_params_t *params, retro_task_t *task)
-{
-   char msg[128], display_name[128], device_type[128];
-   /* This will be the case if input driver is reinitialized.
-    * No reason to spam autoconfigure messages every time. */
-   bool block_osd_spam                =
-#if defined(HAVE_LIBNX) && defined(HAVE_GFX_WIDGETS)
-      true;
-#else
-      input_autoconfigured[params->idx]
-      && !string_is_empty(params->name);
-#endif
-
-   msg[0] = display_name[0] = device_type[0] = '\0';
-
-   config_get_array(conf, "input_device_display_name",
-         display_name, sizeof(display_name));
-   config_get_array(conf, "input_device_type", device_type,
-         sizeof(device_type));
-
-   input_autoconfigured[params->idx] = true;
-
-   input_autoconfigure_joypad_conf(conf,
-         input_autoconf_binds[params->idx]);
-
-   if (string_is_equal(device_type, "remote"))
-   {
-      static bool remote_is_bound        = false;
-      const char *autoconfig_str         = (string_is_empty(display_name) &&
-            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) 
-            ? display_name 
-            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-      strlcpy(msg, autoconfig_str, sizeof(msg));
-      strlcat(msg, " configured.", sizeof(msg));
-
-      if (!remote_is_bound)
-      {
-         task_free_title(task);
-         task_set_title(task, strdup(msg));
-      }
-      remote_is_bound = true;
-      if (params->idx == 0)
-         input_autoconfigure_swap_override = true;
-   }
-   else
-   {
-      bool tmp                    = false;
-      const char *autoconfig_str  = (string_is_empty(display_name) &&
-            !string_is_empty(params->name))
-            ? params->name : (!string_is_empty(display_name) 
-                  ? display_name 
-                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-
-      snprintf(msg, sizeof(msg), "%s %s #%u.",
-            autoconfig_str,
-            msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
-            params->idx + 1);
-
-      /* allow overriding the swap menu controls for player 1*/
-      if (params->idx == 0)
-      {
-         if (config_get_bool(conf, "input_swap_override", &tmp))
-            input_autoconfigure_swap_override = tmp;
-         else
-            input_autoconfigure_swap_override = false;
-      }
-
-      if (!block_osd_spam)
-      {
-         task_free_title(task);
-         task_set_title(task, strdup(msg));
-      }
-   }
-   if (!string_is_empty(display_name))
-      input_config_set_device_display_name(params->idx, display_name);
-   else
-      input_config_set_device_display_name(params->idx, params->name);
-   if (!string_is_empty(conf->path))
-   {
-      input_config_set_device_config_name(params->idx, path_basename(conf->path));
-      input_config_set_device_config_path(params->idx, conf->path);
-   }
-   else
-   {
-      input_config_set_device_config_name(params->idx, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-      input_config_set_device_config_path(params->idx, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-   }
-
-   input_autoconfigure_joypad_reindex_devices();
-}
-
-static int input_autoconfigure_joypad_from_conf(
-      config_file_t *conf, autoconfig_params_t *params, retro_task_t *task)
-{
-   int ret = input_autoconfigure_joypad_try_from_conf(conf,
-         params);
-
-   if (ret)
-      input_autoconfigure_joypad_add(conf, params, task);
-
-   config_file_free(conf);
-
-   return ret;
-}
-
-static bool input_autoconfigure_joypad_from_conf_dir(
-      autoconfig_params_t *params, retro_task_t *task)
-{
-   size_t i;
-   char path[PATH_MAX_LENGTH];
-   char best_path[PATH_MAX_LENGTH];
-   bool found                  = false;
-   int index                   = -1;
-   int current_best            = 0;
-   config_file_t *best_conf    = NULL;
-   struct string_list *list    = NULL;
-
-   best_path[0]                = '\0';
-   path[0]                     = '\0';
-
-   fill_pathname_application_special(path, sizeof(path),
-         APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG);
-
-   list = dir_list_new_special(path, DIR_LIST_AUTOCONFIG, "cfg",
-         params->show_hidden_files);
-
-   if (!list || !list->size)
-   {
-      if (list)
-      {
-         string_list_free(list);
-         list = NULL;
-      }
-      if (!string_is_empty(params->autoconfig_directory))
-         list = dir_list_new_special(params->autoconfig_directory,
-               DIR_LIST_AUTOCONFIG, "cfg", params->show_hidden_files);
-   }
-
-   if (!list)
-      return false;
-
-   for (i = 0; i < list->size; i++)
-   {
-      int res;
-      config_file_t *conf = config_file_new_from_path_to_string(list->elems[i].data);
-      
-      if (!conf)
-         continue;
-
-      res  = input_autoconfigure_joypad_try_from_conf(conf, params);
-
-      if (res >= current_best)
-      {
-         index        = (int)i;
-         current_best = res;
-         if (best_conf)
-            config_file_free(best_conf);
-         strlcpy(best_path, list->elems[i].data, sizeof(best_path));
-         best_conf    = NULL;
-         best_conf    = conf;
-      }
+      /* No match - just clean up config file */
       else
-         config_file_free(conf);
+      {
+         config_file_free(config);
+         config = NULL;
+      }
    }
 
-   if (index >= 0 && current_best > 0 && best_conf)
+   /* If we reach this point and a config file has
+    * been cached, then we have a match */
+   if (best_config)
    {
-      input_autoconfigure_joypad_add(best_conf, params, task);
-      found = true;
+      input_autoconfigure_set_config_file(
+            autoconfig_handle, best_config);
+      match_found = true;
    }
 
-   if (best_conf)
-      config_file_free(best_conf);
+end:
+   if (config_file_list)
+   {
+      string_list_free(config_file_list);
+      config_file_list = NULL;
+   }
 
-   string_list_free(list);
-
-   return found;
+   return match_found;
 }
 
-static bool input_autoconfigure_joypad_from_conf_internal(
-      autoconfig_params_t *params, retro_task_t *task)
+/* Attempts to find an internal autoconfig definition
+ * matching the connected input device
+ * > Returns 'true' if successful */
+static bool input_autoconfigure_scan_config_files_internal(
+      autoconfig_handle_t *autoconfig_handle)
 {
    size_t i;
 
-   /* Load internal autoconfig files  */
+   /* Loop through internal autoconfig files
+    * > input_builtin_autoconfs is a static const,
+    *   and may be read safely in any thread  */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
-      char *autoconf      = NULL;
-      config_file_t *conf = NULL;
+      char *autoconfig_str  = NULL;
+      config_file_t *config = NULL;
+      unsigned affinity     = 0;
 
       if (string_is_empty(input_builtin_autoconfs[i]))
          continue;
 
-      autoconf = strdup(input_builtin_autoconfs[i]);
-      conf     = config_file_new_from_string(autoconf, NULL);
-      free(autoconf);
+      /* Load autoconfig string */
+      autoconfig_str = strdup(input_builtin_autoconfs[i]);
+      config         = config_file_new_from_string(
+            autoconfig_str, NULL);
 
-      if (conf && input_autoconfigure_joypad_from_conf(conf, params, task))
-        return true;
+      /* > String no longer required - clean up */
+      free(autoconfig_str);
+      autoconfig_str = NULL;
+
+      /* Check for a match */
+      affinity = input_autoconfigure_get_config_file_affinity(
+            autoconfig_handle, config);
+
+      /* > In the case of internal autoconfigs, any kind
+       *   of match is considered to be a success */
+      if (affinity > 0)
+      {
+         input_autoconfigure_set_config_file(
+               autoconfig_handle, config);
+         return true;
+      }
+
+      /* No match - clean up */
+      if (config)
+      {
+         config_file_free(config);
+         config = NULL;
+      }
    }
 
-   return string_is_empty(params->autoconfig_directory);
+   return false;
 }
 
-static void input_autoconfigure_params_free(autoconfig_params_t *params)
+/*************************/
+/* Autoconfigure Connect */
+/*************************/
+
+static void cb_input_autoconfigure_connect(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
 {
-   if (!params)
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   unsigned port;
+
+   if (!task)
       return;
-   if (!string_is_empty(params->name))
-      free(params->name);
-   if (!string_is_empty(params->autoconfig_directory))
-      free(params->autoconfig_directory);
-   params->name                 = NULL;
-   params->autoconfig_directory = NULL;
+
+   autoconfig_handle = (autoconfig_handle_t*)task->state;
+
+   if (!autoconfig_handle)
+      return;
+
+   /* Use local copy of port index for brevity... */
+   port = autoconfig_handle->port;
+
+   /* We perform the actual 'connect' in this
+    * callback, to ensure it occurs on the main
+    * thread */
+
+   /* Copy task handle parameters into global
+    * state objects:
+    * > Name */
+   if (!string_is_empty(autoconfig_handle->device_info.name))
+      input_config_set_device_name(port,
+            autoconfig_handle->device_info.name);
+   else
+      input_config_clear_device_name(port);
+
+   /* > Display name */
+   if (!string_is_empty(autoconfig_handle->device_info.display_name))
+      input_config_set_device_display_name(port,
+            autoconfig_handle->device_info.display_name);
+   else if (!string_is_empty(autoconfig_handle->device_info.name))
+      input_config_set_device_display_name(port,
+            autoconfig_handle->device_info.name);
+   else
+      input_config_clear_device_display_name(port);
+
+   /* > VID/PID */
+   input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
+   input_config_set_device_pid(port, autoconfig_handle->device_info.pid);
+
+   /* > Config file path/name */
+   if (!string_is_empty(autoconfig_handle->device_info.config_path))
+      input_config_set_device_config_path(port,
+            autoconfig_handle->device_info.config_path);
+   else
+      input_config_set_device_config_path(port,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+
+   if (!string_is_empty(autoconfig_handle->device_info.config_name))
+      input_config_set_device_config_name(port,
+            autoconfig_handle->device_info.config_name);
+   else
+      input_config_set_device_config_name(port,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+
+   /* > Auto-configured state */
+   input_config_set_device_autoconfigured(port,
+         autoconfig_handle->device_info.autoconfigured);
+
+   /* Reset any existing binds */
+   input_config_reset_autoconfig_binds(port);
+
+   /* If an autoconfig file is available, load its
+    * bind mappings */
+   if (autoconfig_handle->device_info.autoconfigured)
+      input_config_set_autoconfig_binds(port,
+            autoconfig_handle->autoconfig_file);
 }
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
-   autoconfig_params_t *params = (autoconfig_params_t*)task->state;
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   bool match_found                       = false;
+   const char *device_display_name        = NULL;
+   char task_title[PATH_MAX_LENGTH];
 
-   if (!params || string_is_empty(params->name))
-      goto end;
-
-   if (     !input_autoconfigure_joypad_from_conf_dir(params, task)
-         && !input_autoconfigure_joypad_from_conf_internal(params, task))
-   {
-      char msg[255];
-
-      msg[0] = '\0';
-#ifdef ANDROID
-      if (!string_is_empty(params->name))
-         free(params->name);
-      params->name = strdup("Android Gamepad");
-
-      if (input_autoconfigure_joypad_from_conf_internal(params, task))
-      {
-         snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-               !string_is_empty(params->name) 
-               ? params->name 
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               (long)params->vid, (long)params->pid,
-               msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
-      }
-#else
-      snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-            !string_is_empty(params->name) 
-            ? params->name 
-            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-            (long)params->vid, (long)params->pid,
-            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
-#endif
-      task_free_title(task);
-      task_set_title(task, strdup(msg));
-   }
-
-end:
-   if (params)
-   {
-      input_autoconfigure_params_free(params);
-      free(params);
-   }
-   task_set_finished(task, true);
-}
-
-static void input_autoconfigure_disconnect_handler(retro_task_t *task)
-{
-   autoconfig_disconnect_t *params = (autoconfig_disconnect_t*)task->state;
-
-   task_set_title(task, strdup(params->msg));
-
-   task_set_finished(task, true);
-
-   if (!string_is_empty(params->msg))
-      free(params->msg);
-   free(params);
-}
-
-bool input_autoconfigure_disconnect(unsigned i, const char *ident)
-{
-   char msg[255];
-   autoconfig_disconnect_t 
-      *state     = NULL;
-   retro_task_t         
-      *task      = task_init();
+   task_title[0] = '\0';
 
    if (!task)
-      return false;
+      goto task_finished;
 
-   state         = (autoconfig_disconnect_t*)
-      malloc(sizeof(*state));
+   autoconfig_handle = (autoconfig_handle_t*)task->state;
 
-   if (!state)
+   if (!autoconfig_handle ||
+       string_is_empty(autoconfig_handle->device_info.name) ||
+       !autoconfig_handle->autoconfig_enabled)
+      goto task_finished;
+
+   /* Annoyingly, we have to scan all the autoconfig
+    * files (and in-built configs) in a single shot
+    * > Would prefer to scan one config per iteration
+    *   of the task, but this would render the gamepad
+    *   unusable for multiple frames after loading
+    *   content... */
+
+   /* Scan in order of preference:
+    * - External autoconfig files
+    * - Internal autoconfig definitions */
+   match_found = input_autoconfigure_scan_config_files_external(
+         autoconfig_handle);
+
+   if (!match_found)
+      match_found = input_autoconfigure_scan_config_files_internal(
+         autoconfig_handle);
+
+   /* If we reach this point on Android, attempt
+    * to search for the internal 'Android Gamepad'
+    * definition */
+#ifdef ANDROID
+   if (!match_found &&
+       !string_is_equal(autoconfig_handle->device_info.name,
+         "Android Gamepad"))
    {
-      free(task);
-      return false;
+      char *name_backup = strdup(autoconfig_handle->device_info.name);
+
+      strlcpy(autoconfig_handle->device_info.name,
+            "Android Gamepad",
+            sizeof(autoconfig_handle->device_info.name));
+
+      /* This is not a genuine match - leave
+       * match_found set to 'false' regardless
+       * of the outcome */
+      input_autoconfigure_scan_config_files_internal(
+            autoconfig_handle);
+
+      strlcpy(autoconfig_handle->device_info.name,
+            name_backup,
+            sizeof(autoconfig_handle->device_info.name));
+
+      free(name_backup);
+      name_backup = NULL;
    }
+#endif
 
-   state->idx    = i;
-   state->msg    = NULL;
-   msg[0]        = '\0';
+   /* Get display name for task status message */
+   device_display_name = autoconfig_handle->device_info.display_name;
+   if (string_is_empty(device_display_name))
+      device_display_name = autoconfig_handle->device_info.name;
+   if (string_is_empty(device_display_name))
+      device_display_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
-   snprintf(msg, sizeof(msg), "%s #%u (%s).",
-         msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-         i + 1, ident);
-
-   state->msg    = strdup(msg);
-
-   input_config_clear_device_name(state->idx);
-   input_config_clear_device_display_name(state->idx);
-   input_config_clear_device_config_name(state->idx);
-   input_config_clear_device_config_path(state->idx);
-
-   task->state   = state;
-   task->handler = input_autoconfigure_disconnect_handler;
-
-   task_queue_push(task);
-
-   return true;
-}
-
-void input_autoconfigure_reset(void)
-{
-   unsigned i, j;
-
-   for (i = 0; i < MAX_USERS; i++)
+   /* Generate task status message */
+   if (autoconfig_handle->device_info.autoconfigured)
    {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      if (match_found)
       {
-         input_autoconf_binds[i][j].joykey  = NO_BTN;
-         input_autoconf_binds[i][j].joyaxis = AXIS_NONE;
+         /* A valid autoconfig was applied */
+         if (!autoconfig_handle->suppress_notifcations)
+            snprintf(task_title, sizeof(task_title), "%s %s #%u",
+                  device_display_name,
+                  msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
+                  autoconfig_handle->port + 1);
       }
-      input_device_name_index[i] = 0;
-      input_autoconfigured[i]    = 0;
+      /* Device is autoconfigured, but a (most likely
+       * incorrect) fallback definition was used... */
+      else
+         snprintf(task_title, sizeof(task_title), "%s (%u/%u) %s",
+               device_display_name,
+               autoconfig_handle->device_info.vid,
+               autoconfig_handle->device_info.pid,
+               msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
    }
+   /* Autoconfig failed */
+   else
+      snprintf(task_title, sizeof(task_title), "%s (%u/%u) %s",
+            device_display_name,
+            autoconfig_handle->device_info.vid,
+            autoconfig_handle->device_info.pid,
+            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
 
-   input_autoconfigure_swap_override = false;
+   /* Update task title */
+   task_free_title(task);
+   if (!string_is_empty(task_title))
+      task_set_title(task, strdup(task_title));
+
+task_finished:
+
+   if (task)
+      task_set_finished(task, true);
 }
 
-bool input_is_autoconfigured(unsigned i)
+static bool autoconfigure_connect_finder(retro_task_t *task, void *user_data)
 {
-   return input_autoconfigured[i];
-}
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   unsigned *port                         = NULL;
 
-unsigned input_autoconfigure_get_device_name_index(unsigned i)
-{
-   return input_device_name_index[i];
+   if (!task || !user_data)
+      return false;
+
+   if (task->handler != input_autoconfigure_connect_handler)
+      return false;
+
+   autoconfig_handle = (autoconfig_handle_t*)task->state;
+   if (!autoconfig_handle)
+      return false;
+
+   port = (unsigned*)user_data;
+   return (*port == autoconfig_handle->port);
 }
 
 void input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,
-      unsigned idx,
+      unsigned port,
       unsigned vid,
       unsigned pid)
 {
-   unsigned i;
-   settings_t       *settings     = config_get_ptr();
-   const char *dir_autoconf       = 
-      settings ? settings->paths.directory_autoconfig : NULL;
-   bool autodetect_enable         = settings 
-      ? settings->bools.input_autodetect_enable : false;
-   autoconfig_params_t *state     = NULL;
-   retro_task_t         *task     = NULL;
+   retro_task_t *task                     = NULL;
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   settings_t *settings                   = config_get_ptr();
+   bool autoconfig_enabled                = settings ?
+         settings->bools.input_autodetect_enable : false;
+   const char *dir_autoconfig             = settings ?
+         settings->paths.directory_autoconfig : NULL;
+   task_finder_data_t find_data;
+   char dir_driver_autoconfig[PATH_MAX_LENGTH];
 
-   if (!autodetect_enable)
+   dir_driver_autoconfig[0] = '\0';
+
+   if (port >= MAX_INPUT_DEVICES)
       goto error;
-   
-   task                           = task_init();
+
+   /* Cannot connect a device that is currently
+    * being connected */
+   find_data.func     = autoconfigure_connect_finder;
+   find_data.userdata = (void*)&port;
+
+   if (task_queue_find(&find_data))
+      goto error;
+
+   /* Configure handle */
+   autoconfig_handle = (autoconfig_handle_t*)malloc(sizeof(autoconfig_handle_t));
+
+   if (!autoconfig_handle)
+      goto error;
+
+   autoconfig_handle->port                        = port;
+   autoconfig_handle->device_info.vid             = vid;
+   autoconfig_handle->device_info.pid             = pid;
+   autoconfig_handle->device_info.name[0]         = '\0';
+   autoconfig_handle->device_info.display_name[0] = '\0';
+   autoconfig_handle->device_info.config_path[0]  = '\0';
+   autoconfig_handle->device_info.config_name[0]  = '\0';
+   autoconfig_handle->device_info.autoconfigured  = false;
+   autoconfig_handle->device_info.name_index      = 0;
+   autoconfig_handle->autoconfig_enabled          = autoconfig_enabled;
+   autoconfig_handle->suppress_notifcations       = false;
+   autoconfig_handle->dir_autoconfig              = NULL;
+   autoconfig_handle->dir_driver_autoconfig       = NULL;
+   autoconfig_handle->autoconfig_file             = NULL;
+
+   if (!string_is_empty(name))
+      strlcpy(autoconfig_handle->device_info.name, name,
+            sizeof(autoconfig_handle->device_info.name));
+
+   if (!string_is_empty(display_name))
+      strlcpy(autoconfig_handle->device_info.display_name, display_name,
+            sizeof(autoconfig_handle->device_info.display_name));
+
+   /* > Have to cache both the base autoconfig directory
+    *   and the driver-specific autoconfig directory
+    *   - Driver-specific directory is scanned by
+    *     default, if available
+    *   - If driver-specific directory is unavailable,
+    *     we scan the base autoconfig directory as
+    *     a fallback
+    * Note: fill_pathname_application_special() accesses
+    * the settings struct internally, so have to call it
+    * here and not in the task thread */
+   if (!string_is_empty(dir_autoconfig))
+      autoconfig_handle->dir_autoconfig = strdup(dir_autoconfig);
+
+   fill_pathname_application_special(dir_driver_autoconfig,
+         sizeof(dir_driver_autoconfig),
+         APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG);
+   if (!string_is_empty(dir_driver_autoconfig))
+      autoconfig_handle->dir_driver_autoconfig =
+            strdup(dir_driver_autoconfig);
+
+   /* Bliss-Box shenanigans... */
+#ifdef HAVE_BLISSBOX
+   if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
+      input_autoconfigure_blissbox_override_handler(
+            (int)autoconfig_handle->device_info.vid,
+            (int)autoconfig_handle->device_info.pid,
+            autoconfig_handle->device_info.name,
+            sizeof(autoconfig_handle->device_info.name));
+#endif
+
+   /* If we are reconnecting a device that is already
+    * connect and autoconfigured, then there is no need
+    * to generate additional 'connection successful'
+    * task status messages */
+   if (!string_is_empty(autoconfig_handle->device_info.name))
+   {
+      const char *last_device_name = input_config_get_device_name(port);
+      uint16_t last_vid            = input_config_get_device_vid(port);
+      uint16_t last_pid            = input_config_get_device_pid(port);
+      bool last_autoconfigured     = input_config_get_device_autoconfigured(port);
+
+      if (!string_is_empty(last_device_name) &&
+          string_is_equal(autoconfig_handle->device_info.name,
+               last_device_name) &&
+          (autoconfig_handle->device_info.vid == last_vid) &&
+          (autoconfig_handle->device_info.pid == last_pid) &&
+          last_autoconfigured)
+         autoconfig_handle->suppress_notifcations = true;
+   }
+
+   /* Configure task */
+   task = task_init();
 
    if (!task)
       goto error;
-   
-   state                          = (autoconfig_params_t*)
-      malloc(sizeof(*state));
 
-   if (!state)
-   {
-      free(task);
-      goto error;
-   }
-
-   state->vid                     = 0;
-   state->pid                     = 0;
-   state->idx                     = 0;
-   state->max_users               = 0;
-   state->name                    = NULL;
-   state->autoconfig_directory    = NULL;
-   state->show_hidden_files       = false;
-
-   state->vid                     = vid;
-   state->pid                     = pid;
-   state->idx                     = idx;
-   state->max_users               = *(
-         input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-
-   if (!string_is_empty(name))
-      state->name                 = strdup(name);
-
-   if (!string_is_empty(dir_autoconf))
-      state->autoconfig_directory = strdup(dir_autoconf);
-
-   state->show_hidden_files       = settings->bools.show_hidden_files;
-
-#ifdef HAVE_BLISSBOX
-   if (state->vid == BLISSBOX_VID)
-      input_autoconfigure_override_handler(state);
-#endif
-
-   if (!string_is_empty(state->name))
-      input_config_set_device_name(state->idx, state->name);
-   input_config_set_pid(state->idx, state->pid);
-   input_config_set_vid(state->idx, state->vid);
-
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-   {
-      input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
-      input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
-      if (
-            !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
-         free(input_autoconf_binds[state->idx][i].joykey_label);
-      if (
-            !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
-         free(input_autoconf_binds[state->idx][i].joyaxis_label);
-      input_autoconf_binds[state->idx][i].joykey_label      = NULL;
-      input_autoconf_binds[state->idx][i].joyaxis_label     = NULL;
-   }
-
-   input_autoconfigured[state->idx] = false;
-
-   task->state                      = state;
-   task->handler                    = input_autoconfigure_connect_handler;
+   task->handler  = input_autoconfigure_connect_handler;
+   task->state    = autoconfig_handle;
+   task->mute     = false;
+   task->title    = NULL;
+   task->callback = cb_input_autoconfigure_connect;
+   task->cleanup  = input_autoconfigure_free;
 
    task_queue_push(task);
 
    return;
 
 error:
-   input_config_set_device_name(idx, name);
+
+   if (task)
+   {
+      free(task);
+      task = NULL;
+   }
+
+   free_autoconfig_handle(autoconfig_handle);
+   autoconfig_handle = NULL;
+
+   return;
+}
+
+/****************************/
+/* Autoconfigure Disconnect */
+/****************************/
+
+static void cb_input_autoconfigure_disconnect(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   unsigned port;
+
+   if (!task)
+      return;
+
+   autoconfig_handle = (autoconfig_handle_t*)task->state;
+
+   if (!autoconfig_handle)
+      return;
+
+   /* Use local copy of port index for brevity... */
+   port = autoconfig_handle->port;
+
+   /* We perform the actual 'disconnect' in this
+    * callback, to ensure it occurs on the main thread */
+   input_config_clear_device_name(port);
+   input_config_clear_device_display_name(port);
+   input_config_clear_device_config_path(port);
+   input_config_clear_device_config_name(port);
+   input_config_set_device_vid(port, 0);
+   input_config_set_device_pid(port, 0);
+   input_config_set_device_autoconfigured(port, false);
+   input_config_reset_autoconfig_binds(port);
+}
+
+static void input_autoconfigure_disconnect_handler(retro_task_t *task)
+{
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   char task_title[PATH_MAX_LENGTH];
+
+   task_title[0] = '\0';
+
+   if (!task)
+      goto task_finished;
+
+   autoconfig_handle = (autoconfig_handle_t*)task->state;
+
+   if (!autoconfig_handle)
+      goto task_finished;
+
+   /* Set task title */
+   if (!string_is_empty(autoconfig_handle->device_info.name))
+      snprintf(task_title, sizeof(task_title), "%s #%u (%s)",
+            msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
+            autoconfig_handle->port + 1,
+            autoconfig_handle->device_info.name);
+   else
+      snprintf(task_title, sizeof(task_title), "%s #%u",
+            msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
+            autoconfig_handle->port + 1);
+
+   task_free_title(task);
+   task_set_title(task, strdup(task_title));
+
+task_finished:
+
+   if (task)
+      task_set_finished(task, true);
+}
+
+static bool autoconfigure_disconnect_finder(retro_task_t *task, void *user_data)
+{
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   unsigned *port                         = NULL;
+
+   if (!task || !user_data)
+      return false;
+
+   if (task->handler != input_autoconfigure_disconnect_handler)
+      return false;
+
+   autoconfig_handle = (autoconfig_handle_t*)task->state;
+   if (!autoconfig_handle)
+      return false;
+
+   port = (unsigned*)user_data;
+   return (*port == autoconfig_handle->port);
+}
+
+/* Note: There is no real need for autoconfigure
+ * 'disconnect' to be a task - we are merely setting
+ * a handful of variables. However:
+ * - Making it a task means we can call
+ *   input_autoconfigure_disconnect() on any thread
+ *   thread, and defer the global state changes until
+ *   the task queue is handled on the *main* thread
+ * - By using a task for both 'connect' and 'disconnect',
+ *   we ensure uniformity of OSD status messages */
+bool input_autoconfigure_disconnect(unsigned port, const char *name)
+{
+   retro_task_t *task                     = NULL;
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   task_finder_data_t find_data;
+
+   if (port >= MAX_INPUT_DEVICES)
+      goto error;
+
+   /* Cannot disconnect a device that is currently
+    * being disconnected */
+   find_data.func     = autoconfigure_disconnect_finder;
+   find_data.userdata = (void*)&port;
+
+   if (task_queue_find(&find_data))
+      goto error;
+
+   /* Configure handle */
+   autoconfig_handle = (autoconfig_handle_t*)calloc(1, sizeof(autoconfig_handle_t));
+
+   if (!autoconfig_handle)
+      goto error;
+
+   autoconfig_handle->port = port;
+   if (!string_is_empty(name))
+      strlcpy(autoconfig_handle->device_info.name,
+            name, sizeof(autoconfig_handle->device_info.name));
+
+   /* Configure task */
+   task = task_init();
+
+   if (!task)
+      goto error;
+
+   task->handler  = input_autoconfigure_disconnect_handler;
+   task->state    = autoconfig_handle;
+   task->title    = NULL;
+   task->callback = cb_input_autoconfigure_disconnect;
+   task->cleanup  = input_autoconfigure_free;
+
+   task_queue_push(task);
+
+   return true;
+
+error:
+
+   if (task)
+   {
+      free(task);
+      task = NULL;
+   }
+
+   free_autoconfig_handle(autoconfig_handle);
+   autoconfig_handle = NULL;
+
+   return false;
 }

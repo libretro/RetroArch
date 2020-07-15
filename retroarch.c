@@ -2134,9 +2134,6 @@ struct rarch_state
    uint8_t *midi_drv_input_buffer;
    uint8_t *midi_drv_output_buffer;
 
-   uint16_t input_config_vid[MAX_USERS];
-   uint16_t input_config_pid[MAX_USERS];
-
    size_t runloop_msg_queue_size;
    size_t recording_gpu_width;
    size_t recording_gpu_height;
@@ -2283,9 +2280,7 @@ struct rarch_state
    char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
 
-   char input_device_display_names[MAX_INPUT_DEVICES][64];
-   char input_device_config_names [MAX_INPUT_DEVICES][64];
-   char input_device_config_paths [MAX_INPUT_DEVICES][64];
+   input_device_info_t input_device_info[MAX_INPUT_DEVICES];
 
    char *osk_grid[45];
 #if defined(HAVE_RUNAHEAD)
@@ -2709,7 +2704,6 @@ bool discord_is_inited                                          = false;
 #endif
 uint64_t lifecycle_state                                        = 0;
 unsigned subsystem_current_count                                = 0;
-char        input_device_names        [MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
@@ -24577,13 +24571,10 @@ static unsigned menu_event(
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
    bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
-   bool input_swap_override                        = input_autoconfigure_get_swap_override();
-   unsigned menu_ok_btn                            =
-         (!input_swap_override && swap_ok_cancel_btns) ?
-               RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
-   unsigned menu_cancel_btn                        =
-         (!input_swap_override && swap_ok_cancel_btns) ?
-               RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
+   unsigned menu_ok_btn                            = swap_ok_cancel_btns ?
+         RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
+   unsigned menu_cancel_btn                        = swap_ok_cancel_btns ?
+         RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
 #ifdef HAVE_RGUI
@@ -27342,58 +27333,172 @@ void input_config_get_bind_string(char *buf,
       strlcat(buf, "---", size);
 }
 
+/* input_device_info wrappers START */
+
 unsigned input_config_get_device_count(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    unsigned num_devices;
    for (num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices)
    {
-      if (string_is_empty(input_device_names[num_devices]))
+      if (string_is_empty(p_rarch->input_device_info[num_devices].name))
          break;
    }
    return num_devices;
 }
 
+/* Adds an index to devices with the same name,
+ * so they can be uniquely identified in the
+ * frontend */
+static void input_config_reindex_device_names(void)
+{
+   unsigned i;
+   unsigned j;
+   unsigned name_index;
+
+   /* Reset device name indices */
+   for(i = 0; i < MAX_INPUT_DEVICES; i++)
+      input_config_set_device_name_index(i, 0);
+
+   /* Scan device names */
+   for(i = 0; i < MAX_INPUT_DEVICES; i++)
+   {
+      const char *device_name = input_config_get_device_name(i);
+
+      /* If current device name is empty, or a non-zero
+       * name index has already been assigned, continue
+       * to the next device */
+      if (string_is_empty(device_name) ||
+          (input_config_get_device_name_index(i) != 0))
+         continue;
+
+      /* > Uniquely named devices have a name index
+       *   of 0
+       * > Devices with the same name have a name
+       *   index starting from 1 */
+      name_index = 1;
+
+      /* Loop over all devices following the current
+       * selection */
+      for(j = i + 1; j < MAX_INPUT_DEVICES; j++)
+      {
+         const char *next_device_name = input_config_get_device_name(j);
+
+         if (string_is_empty(next_device_name))
+            continue;
+
+         /* Check if names match */
+         if (string_is_equal(device_name, next_device_name))
+         {
+            /* If this is the first match, set a starting
+             * index for the current device selection */
+            if (input_config_get_device_name_index(i) == 0)
+               input_config_set_device_name_index(i, name_index++);
+
+            /* Set name index for the next device
+             * (will keep incrementing as more matches
+             *  are found) */
+            input_config_set_device_name_index(j, name_index++);
+         }
+      }
+   }
+}
+
+/* > Get input_device_info */
+
 const char *input_config_get_device_name(unsigned port)
 {
-   if (string_is_empty(input_device_names[port]))
+   struct rarch_state *p_rarch = &rarch_st;
+   if (string_is_empty(p_rarch->input_device_info[port].name))
       return NULL;
-   return input_device_names[port];
+   return p_rarch->input_device_info[port].name;
 }
 
 const char *input_config_get_device_display_name(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_device_display_names[port]))
+   if (string_is_empty(p_rarch->input_device_info[port].display_name))
       return NULL;
-   return p_rarch->input_device_display_names[port];
+   return p_rarch->input_device_info[port].display_name;
 }
 
 const char *input_config_get_device_config_path(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_device_config_paths[port]))
+   if (string_is_empty(p_rarch->input_device_info[port].config_path))
       return NULL;
-   return p_rarch->input_device_config_paths[port];
+   return p_rarch->input_device_info[port].config_path;
 }
 
 const char *input_config_get_device_config_name(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_device_config_names[port]))
+   if (string_is_empty(p_rarch->input_device_info[port].config_name))
       return NULL;
-   return p_rarch->input_device_config_names[port];
+   return p_rarch->input_device_info[port].config_name;
 }
+
+uint16_t input_config_get_device_vid(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->input_device_info[port].vid;
+}
+
+uint16_t input_config_get_device_pid(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->input_device_info[port].pid;
+}
+
+bool input_config_get_device_autoconfigured(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->input_device_info[port].autoconfigured;
+}
+
+unsigned input_config_get_device_name_index(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->input_device_info[port].name_index;
+}
+
+/* TODO/FIXME: This is required by linuxraw_joypad.c
+ * and parport_joypad.c. These input drivers should
+ * be refactored such that this dubious low-level
+ * access is not required */
+char *input_config_get_device_name_ptr(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->input_device_info[port].name;
+}
+
+size_t input_config_get_device_name_size(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return sizeof(p_rarch->input_device_info[port].name);
+}
+
+/* > Set input_device_info */
 
 void input_config_set_device_name(unsigned port, const char *name)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    if (string_is_empty(name))
       return;
 
-   strlcpy(input_device_names[port],
-         name,
-         sizeof(input_device_names[port]));
+   strlcpy(p_rarch->input_device_info[port].name, name,
+         sizeof(p_rarch->input_device_info[port].name));
 
-   input_autoconfigure_joypad_reindex_devices();
+   input_config_reindex_device_names();
+}
+
+void input_config_set_device_display_name(unsigned port, const char *name)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   if (!string_is_empty(name))
+      strlcpy(p_rarch->input_device_info[port].display_name, name,
+            sizeof(p_rarch->input_device_info[port].display_name));
 }
 
 void input_config_set_device_config_path(unsigned port, const char *path)
@@ -27407,9 +27512,9 @@ void input_config_set_device_config_path(unsigned port, const char *path)
 
       if (fill_pathname_parent_dir_name(parent_dir_name,
                path, sizeof(parent_dir_name)))
-         fill_pathname_join(p_rarch->input_device_config_paths[port],
+         fill_pathname_join(p_rarch->input_device_info[port].config_path,
                parent_dir_name, path_basename(path),
-               sizeof(p_rarch->input_device_config_paths[port]));
+               sizeof(p_rarch->input_device_info[port].config_path));
    }
 }
 
@@ -27417,43 +27522,62 @@ void input_config_set_device_config_name(unsigned port, const char *name)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (!string_is_empty(name))
-      strlcpy(p_rarch->input_device_config_names[port],
-            name,
-            sizeof(p_rarch->input_device_config_names[port]));
+      strlcpy(p_rarch->input_device_info[port].config_name, name,
+            sizeof(p_rarch->input_device_info[port].config_name));
 }
 
-void input_config_set_device_display_name(unsigned port, const char *name)
+void input_config_set_device_vid(unsigned port, uint16_t vid)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (!string_is_empty(name))
-      strlcpy(p_rarch->input_device_display_names[port],
-            name,
-            sizeof(p_rarch->input_device_display_names[port]));
+   p_rarch->input_device_info[port].vid = vid;
 }
+
+void input_config_set_device_pid(unsigned port, uint16_t pid)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_device_info[port].pid = pid;
+}
+
+void input_config_set_device_autoconfigured(unsigned port, bool autoconfigured)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_device_info[port].autoconfigured = autoconfigured;
+}
+
+void input_config_set_device_name_index(unsigned port, unsigned name_index)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_device_info[port].name_index = name_index;
+}
+
+/* > Clear input_device_info */
 
 void input_config_clear_device_name(unsigned port)
 {
-   input_device_names[port][0] = '\0';
-   input_autoconfigure_joypad_reindex_devices();
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_device_info[port].name[0] = '\0';
+   input_config_reindex_device_names();
 }
 
 void input_config_clear_device_display_name(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_display_names[port][0] = '\0';
+   p_rarch->input_device_info[port].display_name[0] = '\0';
 }
 
 void input_config_clear_device_config_path(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_config_paths[port][0] = '\0';
+   p_rarch->input_device_info[port].config_path[0] = '\0';
 }
 
 void input_config_clear_device_config_name(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_config_names[port][0] = '\0';
+   p_rarch->input_device_info[port].config_name[0] = '\0';
 }
+
+/* input_device_info wrappers END */
 
 unsigned *input_config_get_device_ptr(unsigned port)
 {
@@ -27479,7 +27603,6 @@ void input_config_set_device(unsigned port, unsigned id)
       settings->uints.input_libretro_device[port], id);
 }
 
-
 const struct retro_keybind *input_config_get_bind_auto(
       unsigned port, unsigned id)
 {
@@ -27492,33 +27615,35 @@ const struct retro_keybind *input_config_get_bind_auto(
    return NULL;
 }
 
-void input_config_set_pid(unsigned port, uint16_t pid)
+void input_config_reset_autoconfig_binds(unsigned port)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_config_pid[port] = pid;
-}
+   unsigned i;
 
-uint16_t input_config_get_pid(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->input_config_pid[port];
-}
+   if (port >= MAX_USERS)
+      return;
 
-void input_config_set_vid(unsigned port, uint16_t vid)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_config_vid[port] = vid;
-}
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      input_autoconf_binds[port][i].joykey  = NO_BTN;
+      input_autoconf_binds[port][i].joyaxis = AXIS_NONE;
 
-uint16_t input_config_get_vid(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->input_config_vid[port];
+      if (input_autoconf_binds[port][i].joykey_label)
+      {
+         free(input_autoconf_binds[port][i].joykey_label);
+         input_autoconf_binds[port][i].joykey_label = NULL;
+      }
+
+      if (input_autoconf_binds[port][i].joyaxis_label)
+      {
+         free(input_autoconf_binds[port][i].joyaxis_label);
+         input_autoconf_binds[port][i].joyaxis_label = NULL;
+      }
+   }
 }
 
 void input_config_reset(void)
 {
-   unsigned i, j;
+   unsigned i;
    struct rarch_state *p_rarch = &rarch_st;
 
    retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
@@ -27532,12 +27657,22 @@ void input_config_reset(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      p_rarch->input_config_vid[i]     = 0;
-      p_rarch->input_config_pid[i]     = 0;
-      p_rarch->libretro_input_binds[i] = input_config_binds[i];
+      /* Note: Don't use input_config_clear_device_name()
+       * here, since this will re-index devices each time
+       * (not required - we are setting all 'name indices'
+       * to zero manually) */
+      p_rarch->input_device_info[i].name[0] = '\0';
+      input_config_clear_device_display_name(i);
+      input_config_clear_device_config_path(i);
+      input_config_clear_device_config_name(i);
+      input_config_set_device_vid(i, 0);
+      input_config_set_device_pid(i, 0);
+      input_config_set_device_autoconfigured(i, false);
+      input_config_set_device_name_index(i, 0);
 
-      for (j = 0; j < 64; j++)
-         input_device_names[i][j]      = 0;
+      input_config_reset_autoconfig_binds(i);
+
+      p_rarch->libretro_input_binds[i] = input_config_binds[i];
    }
 }
 
@@ -27574,20 +27709,22 @@ void config_read_keybinds_conf(void *data)
    }
 }
 
-void input_autoconfigure_joypad_conf(void *data,
-      struct retro_keybind *binds)
+void input_config_set_autoconfig_binds(unsigned port, void *data)
 {
+   config_file_t *config       = (config_file_t*)data;
+   struct retro_keybind *binds = NULL;
    unsigned i;
-   config_file_t *conf = (config_file_t*)data;
 
-   if (!conf)
+   if ((port >= MAX_USERS) || !config)
       return;
+
+   binds = input_autoconf_binds[port];
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      input_config_parse_joy_button(conf, "input",
+      input_config_parse_joy_button(config, "input",
             input_config_bind_map_get_base(i), &binds[i]);
-      input_config_parse_joy_axis(conf, "input",
+      input_config_parse_joy_axis(config, "input",
             input_config_bind_map_get_base(i), &binds[i]);
    }
 }

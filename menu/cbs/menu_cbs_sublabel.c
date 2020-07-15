@@ -866,13 +866,13 @@ static int action_bind_sublabel_systeminfo_controller_entry(
 
    for(controller = 0; controller < MAX_USERS; controller++)
    {
-      if (input_is_autoconfigured(controller))
+      if (input_config_get_device_autoconfigured(controller))
       {
             snprintf(tmp, sizeof(tmp), "%s #%d device name: %s (#%d)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
                controller,
                input_config_get_device_name(controller),
-               input_autoconfigure_get_device_name_index(controller));
+               input_config_get_device_name_index(controller));
 
             if (string_is_equal(path, tmp))
                break;
@@ -881,7 +881,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice identifiers: %d/%d",
       input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-      input_config_get_vid(controller), input_config_get_pid(controller));
+      input_config_get_device_vid(controller), input_config_get_device_pid(controller));
    strlcpy(s, tmp, len);
 
    return 0;
