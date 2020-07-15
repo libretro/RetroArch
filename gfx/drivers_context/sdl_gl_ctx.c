@@ -95,13 +95,13 @@ static void *sdl_ctx_init(void *video_driver)
       goto error;
 
    RARCH_LOG("[SDL_GL] SDL %i.%i.%i gfx context driver initialized.\n",
-           SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+         SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
 
    return sdl;
 
 error:
    RARCH_WARN("[SDL_GL]: Failed to initialize SDL gfx context driver: %s\n",
-              SDL_GetError());
+         SDL_GetError());
 
    sdl_ctx_destroy_resources(sdl);
 
@@ -122,10 +122,7 @@ static void sdl_ctx_destroy(void *data)
    free(sdl);
 }
 
-static enum gfx_ctx_api sdl_ctx_get_api(void *data)
-{
-   return sdl_api;
-}
+static enum gfx_ctx_api sdl_ctx_get_api(void *data) { return sdl_api; }
 
 static bool sdl_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major,
@@ -159,7 +156,6 @@ static bool sdl_ctx_bind_api(void *data,
 
 static void sdl_ctx_swap_interval(void *data, int interval)
 {
-   (void)data;
 #ifdef HAVE_SDL2
    SDL_GL_SetSwapInterval(interval);
 #else
@@ -293,7 +289,8 @@ static void sdl_ctx_update_title(void *data)
    if (title[0])
    {
 #ifdef HAVE_SDL2
-      SDL_SetWindowTitle((SDL_Window*)video_driver_display_userdata_get(), title);
+      SDL_SetWindowTitle((SDL_Window*)
+            video_driver_display_userdata_get(), title);
 #else
       SDL_WM_SetCaption(title, NULL);
 #endif
@@ -310,9 +307,11 @@ static void sdl_ctx_check_window(void *data, bool *quit,
    SDL_PumpEvents();
 
 #ifdef HAVE_SDL2
-   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUIT, SDL_WINDOWEVENT) > 0)
+   while (SDL_PeepEvents(&event, 1,
+            SDL_GETEVENT, SDL_QUIT, SDL_WINDOWEVENT) > 0)
 #else
-   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUITMASK|SDL_VIDEORESIZEMASK) > 0)
+   while (SDL_PeepEvents(&event, 1,
+            SDL_GETEVENT, SDL_QUITMASK|SDL_VIDEORESIZEMASK) > 0)
 #endif
    {
       switch (event.type)
@@ -397,11 +396,7 @@ static gfx_ctx_proc_t sdl_ctx_get_proc_address(const char *name)
    return (gfx_ctx_proc_t)SDL_GL_GetProcAddress(name);
 }
 
-static void sdl_ctx_show_mouse(void *data, bool state)
-{
-   (void)data;
-   SDL_ShowCursor(state);
-}
+static void sdl_ctx_show_mouse(void *data, bool state) { SDL_ShowCursor(state); }
 
 static uint32_t sdl_ctx_get_flags(void *data)
 {
@@ -412,10 +407,7 @@ static uint32_t sdl_ctx_get_flags(void *data)
    return flags;
 }
 
-static void sdl_ctx_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void sdl_ctx_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_sdl_gl =
 {

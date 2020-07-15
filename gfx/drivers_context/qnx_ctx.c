@@ -78,6 +78,11 @@ static void *gfx_ctx_qnx_init(void *video_driver)
 {
    EGLint n;
    EGLint major, minor;
+   int usage, format;
+#ifndef HAVE_BB10
+   int angle, size[2];
+   screen_display_mode_t screen_mode;
+#endif
    EGLint context_attributes[] = {
 #ifdef HAVE_OPENGLES2
            EGL_CONTEXT_CLIENT_VERSION, 2,
@@ -150,7 +155,7 @@ static void *gfx_ctx_qnx_init(void *video_driver)
       }
    }
 
-   int format = SCREEN_FORMAT_RGBX8888;
+   format = SCREEN_FORMAT_RGBX8888;
    if (screen_set_window_property_iv(screen_win,
             SCREEN_PROPERTY_FORMAT, &format))
    {
@@ -158,7 +163,6 @@ static void *gfx_ctx_qnx_init(void *video_driver)
       goto error;
    }
 
-   int usage;
 #ifdef HAVE_OPENGLES2
    usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
 #elif HAVE_OPENGLES3
@@ -188,11 +192,8 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    }
 
 #ifndef HAVE_BB10
-   int angle, size[2];
-
    angle = atoi(getenv("ORIENTATION"));
 
-   screen_display_mode_t screen_mode;
    if (screen_get_display_property_pv(qnx->screen_disp,
             SCREEN_PROPERTY_MODE, (void**)&screen_mode))
    {
@@ -299,14 +300,7 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
 
 static bool gfx_ctx_qnx_set_video_mode(void *data,
       unsigned width, unsigned height,
-      bool fullscreen)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   (void)fullscreen;
-   return true;
-}
+      bool fullscreen) { return true; }
 
 static void gfx_ctx_qnx_input_driver(void *data,
       const char *joypad_name,
@@ -318,16 +312,11 @@ static void gfx_ctx_qnx_input_driver(void *data,
    *input_data          = qnxinput;
 }
 
-static enum gfx_ctx_api gfx_ctx_qnx_get_api(void *data)
-{
-   return qnx_api;
-}
+static enum gfx_ctx_api gfx_ctx_qnx_get_api(void *data) { return qnx_api; }
 
 static bool gfx_ctx_qnx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-
    qnx_api = api;
 
    if (api == GFX_CTX_OPENGL_ES_API)
@@ -336,18 +325,9 @@ static bool gfx_ctx_qnx_bind_api(void *data,
    return false;
 }
 
-static bool gfx_ctx_qnx_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool gfx_ctx_qnx_has_focus(void *data) { return true; }
 
-static bool gfx_ctx_qnx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_qnx_suppress_screensaver(void *data, bool enable) { return false; }
 
 static int dpi_get_density(qnx_ctx_data_t *qnx)
 {
@@ -446,10 +426,7 @@ static uint32_t gfx_ctx_qnx_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_qnx_set_flags(void *data, uint32_t flags)
-{
-   (void)flags;
-}
+static void gfx_ctx_qnx_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_qnx = {
    gfx_ctx_qnx_init,
