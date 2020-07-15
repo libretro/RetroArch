@@ -202,7 +202,6 @@ static bool zip_file_decompressed_handle(
       const uint8_t *cdata, unsigned cmode, uint32_t csize,
       uint32_t size, uint32_t crc32)
 {
-   zip_context_t *zip_context = (zip_context_t *)transfer->context;
    int ret   = 0;
 
    transfer->backend = &zlib_backend;

@@ -603,8 +603,6 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       int content_name_width;
       int system_name_width;
       int text_width;
-      int icon_x_end;
-      int text_x_end;
       gfx_animation_ctx_entry_t animation_entry;
 
       /* Load icon texture */
