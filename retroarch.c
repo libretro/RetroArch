@@ -32959,21 +32959,7 @@ static const gfx_ctx_driver_t *video_context_driver_init(
    return ctx;
 }
 
-/**
- * video_context_driver_init_first:
- * @data                    : Input data.
- * @ident                   : Identifier of graphics context driver to find.
- * @api                     : API of higher-level graphics API.
- * @major                   : Major version number of higher-level graphics API.
- * @minor                   : Minor version number of higher-level graphics API.
- * @hw_render_ctx           : Request a graphics context driver capable of
- *                            hardware rendering?
- *
- * Finds first suitable graphics context driver and initializes.
- *
- * Returns: graphics context driver if found, otherwise NULL.
- **/
-const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
+static const gfx_ctx_driver_t *gl_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx, void **ctx_data)
 {
@@ -32995,7 +32981,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(data, gfx_ctx_drivers[i], ident,
-            api, major, minor, hw_render_ctx, ctx_data);
+               api, major, minor, hw_render_ctx, ctx_data);
 
       if (ctx)
       {
@@ -33003,6 +32989,40 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
          return ctx;
       }
    }
+
+   return NULL;
+}
+
+/**
+ * video_context_driver_init_first:
+ * @data                    : Input data.
+ * @ident                   : Identifier of graphics context driver to find.
+ * @api                     : API of higher-level graphics API.
+ * @major                   : Major version number of higher-level graphics API.
+ * @minor                   : Minor version number of higher-level graphics API.
+ * @hw_render_ctx           : Request a graphics context driver capable of
+ *                            hardware rendering?
+ *
+ * Finds first suitable graphics context driver and initializes.
+ *
+ * Returns: graphics context driver if found, otherwise NULL.
+ **/
+const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
+      const char *ident, enum gfx_ctx_api api, unsigned major,
+      unsigned minor, bool hw_render_ctx, void **ctx_data)
+{
+   switch (api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
+      case GFX_CTX_VULKAN_API:
+         gl_context_driver_init_first(data, ident, api, major, minor, 
+               hw_render_ctx, ctx_data);
+      default:
+         break;
+   }
+
 
    return NULL;
 }
@@ -33263,8 +33283,6 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          return GFX_CTX_VULKAN_API;
       else if (string_is_equal(video_ident, "metal"))
          return GFX_CTX_METAL_API;
-      else if (string_is_equal(video_ident, "network"))
-         return GFX_CTX_NETWORK_VIDEO_API;
 
       return GFX_CTX_NONE;
    }
