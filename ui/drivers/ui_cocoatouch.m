@@ -125,10 +125,11 @@ static void handle_touch_event(NSArray* touches)
       CGPoint       coord;
       UITouch      *touch = [touches objectAtIndex:i];
 
-      if (touch.view != [CocoaView get].view)
-         continue;
+//      if (touch.view != [CocoaView get].view)
+//         continue;
 
       coord = [touch locationInView:[touch view]];
+       NSLog(@"yoshi debug: handle_touch_event: coord = %f,%f , scaled = %f,%f",coord.x,coord.y,coord.x*scale,coord.y*scale);
 
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
@@ -365,8 +366,15 @@ enum
    }
 
 //   _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    [_renderView setFrame:self.window.bounds];
-    [[CocoaView get].view addSubview:_renderView];
+//    [_renderView setFrame:self.window.bounds];
+    _renderView.translatesAutoresizingMaskIntoConstraints = NO;
+    UIView *rootView = [CocoaView get].view;
+    [rootView addSubview:_renderView];
+    [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
+    [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
+    [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
+    [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+    
 
 //    [self.window addSubview:_renderView];
 //   self.window.contentView.nextResponder = _listener;
@@ -377,7 +385,10 @@ enum
 }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
-    // no-op for iOS?
+    // hmm might need some scaling factor...
+    MetalView *metalView = (MetalView*) _renderView;
+    [metalView setDrawableSize:CGSizeMake(mode.width, mode.height)];
+    NSLog(@"setVideoMode set drawable size to %i x %i",mode.width,mode.height);
 }
 
 - (void)setCursorVisible:(bool)v {

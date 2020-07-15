@@ -500,6 +500,12 @@
 
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size
 {
+    NSLog(@"mtkView drawableSizeWillChange to: %f x %f",size.width,size.height);
+    // due to autolayout constraints?
+    if (size.width == INFINITY || size.height == INFINITY) {
+        NSLog(@"mtkView drawableSizeWillChange width or height is inifinity, skipping...");
+        return;
+    }
    [self setViewportWidth:(unsigned int)size.width height:(unsigned int)size.height forceFull:NO allowRotate:YES];
 }
 

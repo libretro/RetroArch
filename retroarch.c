@@ -31196,7 +31196,8 @@ bool video_driver_translate_coord_viewport(
    int norm_vp_height        = (int)vp->height;
    int norm_full_vp_width    = (int)vp->full_width;
    int norm_full_vp_height   = (int)vp->full_height;
-
+    printf("yoshi debug: video size: %i, %i full size: %i, %i \n",norm_vp_width,norm_vp_height,norm_full_vp_width,norm_full_vp_height);
+    printf("yoshi debug: video_driver_translate_coord_viewport: incoming mouse coord: %i,%i \n",mouse_x,mouse_y);
    if (norm_vp_width <= 0 ||
        norm_vp_height <= 0 ||
        norm_full_vp_width <= 0 ||
@@ -31234,7 +31235,7 @@ bool video_driver_translate_coord_viewport(
    *res_y             = scaled_y;
    *res_screen_x      = scaled_screen_x;
    *res_screen_y      = scaled_screen_y;
-
+    printf("yoshi debug: translated coordinates: res: (%i,%i) res_screen:(%i,%i) \n",scaled_x,scaled_y,scaled_screen_x,scaled_screen_y);
    return true;
 }
 
