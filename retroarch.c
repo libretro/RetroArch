@@ -33275,10 +33275,6 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          else if (string_is_equal(video_ident, "glcore"))
             return GFX_CTX_OPENGL_API;
       }
-      else if (string_is_equal(video_ident, "gx2"))
-         return GFX_CTX_GX2_API;
-      else if (string_is_equal(video_ident, "gx"))
-         return GFX_CTX_GX_API;
       else if (string_is_equal(video_ident, "vulkan"))
          return GFX_CTX_VULKAN_API;
       else if (string_is_equal(video_ident, "metal"))
