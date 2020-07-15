@@ -37,6 +37,10 @@
 
 #include <retro_common_api.h>
 
+#if defined(RARCH_INTERNAL) && defined(HAVE_CONFIG_H)
+#include "../../../config.h" /* for HAVE_MMAP */
+#endif
+
 RETRO_BEGIN_DECLS
 
 enum file_archive_transfer_type
@@ -62,6 +66,10 @@ typedef struct file_archive_transfer
    void *context;
    unsigned step_total, step_current;
    const struct file_archive_file_backend *backend;
+#ifdef HAVE_MMAP
+   int archive_mmap_fd;
+   uint8_t *archive_mmap_data;
+#endif
 } file_archive_transfer_t;
 
 typedef struct
