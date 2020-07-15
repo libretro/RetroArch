@@ -478,10 +478,7 @@ static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
    return true;
 }
 
-static enum gfx_ctx_api gfx_ctx_xegl_get_api(void *data)
-{
-   return xegl_api;
-}
+static enum gfx_ctx_api gfx_ctx_xegl_get_api(void *data) { return xegl_api; }
 
 static bool gfx_ctx_xegl_bind_api(void *video_driver,
    enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -543,19 +540,9 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
-   switch (xegl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_bind_hw_render(&xegl->egl, enable);
+   egl_bind_hw_render(&xegl->egl, enable);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static void gfx_ctx_xegl_set_swap_interval(void *data, int swap_interval)
@@ -615,10 +602,7 @@ static uint32_t gfx_ctx_xegl_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_xegl_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_xegl_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_x_egl =
 {
