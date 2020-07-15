@@ -190,7 +190,7 @@ static void render_msg(oga_video_t* vid,
 {
    const struct font_atlas* atlas = vid->font_driver->get_atlas(vid->font);
    int                  msg_width = get_message_width(vid, msg);
-   int                     dest_x = MAX(0, width - get_message_width(vid, msg));
+   int                     dest_x = MAX(0, width - msg_width);
    int                dest_stride = go2_surface_stride_get(surface);
    const char                 *c  = msg;
 
@@ -199,7 +199,7 @@ static void render_msg(oga_video_t* vid,
       const struct font_glyph* g = vid->font_driver->get_glyph(vid->font, *c);
       if (!g)
          continue;
-      if (dest_x + g->advance_x >= width)
+      if (dest_x >= width)
          break;
 
       const uint8_t* source = atlas->buffer + g->atlas_offset_y * atlas->width + g->atlas_offset_x;
