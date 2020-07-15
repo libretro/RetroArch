@@ -33017,7 +33017,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
       case GFX_CTX_VULKAN_API:
-         gl_context_driver_init_first(data, ident, api, major, minor, 
+         return gl_context_driver_init_first(data, ident, api, major, minor, 
                hw_render_ctx, ctx_data);
       default:
          break;
