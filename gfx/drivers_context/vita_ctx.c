@@ -18,10 +18,7 @@
 
 #include "../../retroarch.h"
 
-static void vita_swap_interval(void *data, int interval)
-{
-   vglWaitVblankStart(interval);
-}
+static void vita_swap_interval(void *data, int interval) { vglWaitVblankStart(interval); }
 
 static void vita_get_video_size(void *data, unsigned *width, unsigned *height)
 {
