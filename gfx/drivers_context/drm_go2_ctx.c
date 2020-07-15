@@ -117,20 +117,11 @@ static void gfx_ctx_go2_drm_input_driver(void *data,
 
 static gfx_ctx_proc_t gfx_ctx_go2_drm_get_proc_address(const char *symbol)
 {
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         return egl_get_proc_address(symbol);
-#endif
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
+   return egl_get_proc_address(symbol);
+#else
    return NULL;
+#endif
 }
 
 static void *gfx_ctx_go2_drm_init(void *video_driver)
@@ -227,8 +218,10 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   struct retro_system_av_info *av_info   = NULL;
-   gfx_ctx_go2_drm_data_t *drm     = (gfx_ctx_go2_drm_data_t*)data;
+   settings_t *settings                 = config_get_ptr();
+   struct retro_system_av_info *av_info = NULL;
+   gfx_ctx_go2_drm_data_t *drm          = (gfx_ctx_go2_drm_data_t*)data;
+   bool use_ctx_scaling                 = settings->bools.video_ctx_scaling;
 
    if (!drm)
       return false;
@@ -236,9 +229,6 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
    av_info  = video_viewport_get_system_av_info();
 
    frontend_driver_install_signal_handler();
-
-   settings_t *settings = config_get_ptr();
-   bool use_ctx_scaling = settings->bools.video_ctx_scaling;
 
    if (use_ctx_scaling && !menu_driver_is_alive())
    {
@@ -254,19 +244,20 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
    if (!drm->context)
    {
       go2_context_attributes_t attr;
-      attr.major = 3;
-      attr.minor = 2;
-      attr.red_bits = 8;
-      attr.green_bits = 8;
-      attr.blue_bits = 8;
-      attr.alpha_bits = 8;
-      attr.depth_bits = 0;
+      attr.major        = 3;
+      attr.minor        = 2;
+      attr.red_bits     = 8;
+      attr.green_bits   = 8;
+      attr.blue_bits    = 8;
+      attr.alpha_bits   = 8;
+      attr.depth_bits   = 0;
       attr.stencil_bits = 0;
 
-      drm->ctx_w = MAX(av_info->geometry.max_width, native_width);
-      drm->ctx_h = MAX(av_info->geometry.max_height, native_height);
+      drm->ctx_w        = MAX(av_info->geometry.max_width, native_width);
+      drm->ctx_h        = MAX(av_info->geometry.max_height, native_height);
 
-      drm->context = go2_context_create(drm->display, drm->ctx_w, drm->ctx_h, &attr);
+      drm->context      = go2_context_create(
+            drm->display, drm->ctx_w, drm->ctx_h, &attr);
    }
 
    go2_context_make_current(drm->context);
@@ -290,20 +281,20 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
    {
       struct retro_system_av_info* 
          av_info  = video_viewport_get_system_av_info();
-       w = av_info->geometry.base_width;
-       h = av_info->geometry.base_height;
+       w          = av_info->geometry.base_width;
+       h          = av_info->geometry.base_height;
    }
    else
    {
-       w = native_width;
-       h = native_height;
+       w          = native_width;
+       h          = native_height;
    }
 
    if (*width != w || *height != h)
    {
-       *width = drm->fb_width = w;
-       *height = drm->fb_height = h;
-       *resize = false;
+       *width     = drm->fb_width = w;
+       *height    = drm->fb_height = h;
+       *resize    = false;
    }
 
    *quit = (bool)frontend_driver_get_signal_handler_state();
@@ -314,7 +305,8 @@ static bool gfx_ctx_go2_drm_suppress_screensaver(void *data, bool enable) { retu
 
 static void gfx_ctx_go2_drm_swap_buffers(void *data)
 {
-   gfx_ctx_go2_drm_data_t *drm = (gfx_ctx_go2_drm_data_t*)data;
+   gfx_ctx_go2_drm_data_t 
+      *drm   = (gfx_ctx_go2_drm_data_t*)data;
 
    int out_w = native_width;
    int out_h = native_height;
@@ -335,27 +327,17 @@ static void gfx_ctx_go2_drm_swap_buffers(void *data)
            out_x = 0;
     }
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         go2_context_swap_buffers(drm->context);
+   go2_context_swap_buffers(drm->context);
 
-         go2_surface_t* surface = go2_context_surface_lock(drm->context);
-         go2_presenter_post(drm->presenter,
-                     surface,
-                     src_x, src_y, src_w, src_h,
-                     out_y, out_x, out_h, out_w,
-                     GO2_ROTATION_DEGREES_270, 2);
-         go2_context_surface_unlock(drm->context, surface);
+   go2_surface_t* surface = go2_context_surface_lock(drm->context);
+   go2_presenter_post(drm->presenter,
+         surface,
+         src_x, src_y, src_w, src_h,
+         out_y, out_x, out_h, out_w,
+         GO2_ROTATION_DEGREES_270, 2);
+   go2_context_surface_unlock(drm->context, surface);
 #endif
-         break;
-      default:
-         printf("unhandled gfx_ctx_go2_drm_swap_buffers\n");
-         break;
-   }
 }
 
 static uint32_t gfx_ctx_go2_drm_get_flags(void *data)
@@ -391,19 +373,9 @@ static void gfx_ctx_go2_drm_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_go2_drm_data_t *drm = (gfx_ctx_go2_drm_data_t*)data;
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_bind_hw_render(&drm->egl, enable);
+   egl_bind_hw_render(&drm->egl, enable);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 const gfx_ctx_driver_t gfx_ctx_go2_drm = {

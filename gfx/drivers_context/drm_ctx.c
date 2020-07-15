@@ -235,18 +235,9 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_swap_buffers(&drm->egl);
+   egl_swap_buffers(&drm->egl);
 #endif
-         break;
-      default:
-         break;
-   }
 
    /* I guess we have to wait for flip to have taken
     * place before another flip can be queued up.
@@ -316,19 +307,9 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
    /* Make sure we acknowledge all page-flips. */
    gfx_ctx_drm_wait_flip(true);
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_destroy(&drm->egl);
+   egl_destroy(&drm->egl);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    free_drm_resources(drm);
 
@@ -600,35 +581,25 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
          break;
    }
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
-                  (EGLNativeDisplayType)g_gbm_dev, &major,
-                  &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
-            goto error;
+   if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
+            (EGLNativeDisplayType)g_gbm_dev, &major,
+            &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
+      goto error;
 
-         attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
-         egl_attribs_ptr = &egl_attribs[0];
+   attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
+   egl_attribs_ptr = &egl_attribs[0];
 
-         if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr)
-                  ? egl_attribs_ptr : NULL))
-            goto error;
+   if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr)
+            ? egl_attribs_ptr : NULL))
+      goto error;
 
-         if (!egl_create_surface(&drm->egl, (EGLNativeWindowType)g_gbm_surface))
-            return false;
+   if (!egl_create_surface(&drm->egl, (EGLNativeWindowType)g_gbm_surface))
+      return false;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-         glClear(GL_COLOR_BUFFER_BIT);
+   glClear(GL_COLOR_BUFFER_BIT);
 #endif
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    egl_swap_buffers(drm);
 
@@ -720,20 +691,10 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
    }
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         if (!gfx_ctx_drm_egl_set_video_mode(drm))
-            goto error;
+   if (!gfx_ctx_drm_egl_set_video_mode(drm))
+      goto error;
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
 
@@ -865,39 +826,20 @@ static bool gfx_ctx_drm_bind_api(void *video_driver,
 
 static gfx_ctx_proc_t gfx_ctx_drm_get_proc_address(const char *symbol)
 {
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         return egl_get_proc_address(symbol);
-#endif
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
+   return egl_get_proc_address(symbol);
+#else
    return NULL;
+#endif
 }
 
 static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_bind_hw_render(&drm->egl, enable);
+   egl_bind_hw_render(&drm->egl, enable);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static uint32_t gfx_ctx_drm_get_flags(void *data)
