@@ -575,7 +575,7 @@ static const video_driver_t *video_drivers[] = {
    NULL,
 };
 
-static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
+static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(ORBIS)
    &orbis_ctx,
 #endif
@@ -32984,24 +32984,6 @@ void video_driver_get_window_title(char *buf, unsigned len)
 }
 
 /**
- * find_video_context_driver_driver_index:
- * @ident                      : Identifier of resampler driver to find.
- *
- * Finds graphics context driver index by @ident name.
- *
- * Returns: graphics context driver index if driver was found, otherwise
- * -1.
- **/
-static int find_video_context_driver_index(const char *ident)
-{
-   unsigned i;
-   for (i = 0; gfx_ctx_drivers[i]; i++)
-      if (string_is_equal_noncase(ident, gfx_ctx_drivers[i]->ident))
-         return i;
-   return -1;
-}
-
-/**
  * video_context_driver_init:
  * @data                    : Input data.
  * @ctx                     : Graphics context driver to initialize.
@@ -33052,12 +33034,23 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx, void **ctx_data)
 {
+   unsigned j;
    struct rarch_state *p_rarch = &rarch_st;
-   int                       i = find_video_context_driver_index(ident);
+   int                       i = -1;
+   
+   for (j = 0; gfx_ctx_gl_drivers[j]; j++)
+   {
+      if (string_is_equal_noncase(ident, gfx_ctx_gl_drivers[j]->ident))
+      {
+         i = j;
+         break;
+      }
+   }
 
    if (i >= 0)
    {
-      const gfx_ctx_driver_t *ctx = video_context_driver_init(data, gfx_ctx_drivers[i], ident,
+      const gfx_ctx_driver_t *ctx = video_context_driver_init(data,
+            gfx_ctx_gl_drivers[i], ident,
             api, major, minor, hw_render_ctx, ctx_data);
       if (ctx)
       {
@@ -33066,10 +33059,10 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(void *data,
       }
    }
 
-   for (i = 0; gfx_ctx_drivers[i]; i++)
+   for (i = 0; gfx_ctx_gl_drivers[i]; i++)
    {
       const gfx_ctx_driver_t *ctx =
-         video_context_driver_init(data, gfx_ctx_drivers[i], ident,
+         video_context_driver_init(data, gfx_ctx_gl_drivers[i], ident,
                api, major, minor, hw_render_ctx, ctx_data);
 
       if (ctx)
@@ -33106,8 +33099,10 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
       case GFX_CTX_VULKAN_API:
+      case GFX_CTX_METAL_API:
          return gl_context_driver_init_first(data, ident, api, major, minor, 
                hw_render_ctx, ctx_data);
+      case GFX_CTX_NONE:
       default:
          break;
    }
