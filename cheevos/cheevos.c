@@ -52,7 +52,7 @@
 
 #include "badges.h"
 #include "cheevos.h"
-#include "fixup.h"
+#include "memory.h"
 #include "parser.h"
 #include "hash.h"
 #include "util.h"
@@ -78,9 +78,6 @@
 
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
-
-/* Define this macro to dump all cheevos' addresses. */
-#undef CHEEVOS_DUMP_ADDRS
 
 /* Define this macro to load a JSON file from disk instead of downloading
  * from retroachievements.org. */
@@ -166,7 +163,7 @@ typedef struct
    rcheevos_lboard_t* lboards;
    rcheevos_richpresence_t richpresence;
 
-   rcheevos_fixups_t fixups;
+   rcheevos_memory_regions_t memory;
 
    char token[32];
    char hash[33];
@@ -185,7 +182,7 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* unofficial */
    NULL, /* lboards */
    {0},  /* rich presence */
-   {0},  /* fixups */
+   {{0}},/* memory */
    {0},  /* token */
    "N/A",/* hash */
 };
@@ -377,30 +374,28 @@ static void rcheevos_log_post_url(
 #endif
 }
 
+uint8_t* rcheevos_patch_address(unsigned address)
+{
+   return rcheevos_memory_find(&rcheevos_locals.memory, address);
+}
+
 static unsigned rcheevos_peek(unsigned address, unsigned num_bytes, void* ud)
 {
-   const uint8_t* data = rcheevos_fixup_find(&rcheevos_locals.fixups,
-      address, rcheevos_locals.patchdata.console_id);
-   unsigned      value = 0;
-
-   if (data)
+   uint8_t* data = rcheevos_memory_find(&rcheevos_locals.memory, address);
+   if (data != NULL)
    {
       switch (num_bytes)
       {
-         case 4:
-            value |= data[2] << 16 | data[3] << 24;
-         case 2:
-            value |= data[1] << 8;
-         case 1:
-            value |= data[0];
+      case 4: return (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | (data[0]);
+      case 3: return (data[2] << 16) | (data[1] << 8) | (data[0]);
+      case 2: return (data[1] << 8) | (data[0]);
+      case 1: return data[0];
       }
    }
-   else
-      rcheevos_locals.invalid_peek_address = true;
 
-   return value;
+   rcheevos_locals.invalid_peek_address = true;
+   return 0;
 }
-
 
 static void rcheevos_async_award_achievement(rcheevos_async_io_request* request);
 static void rcheevos_async_submit_lboard(rcheevos_async_io_request* request);
@@ -564,8 +559,6 @@ static int rcheevos_parse(const char* json)
    rcheevos_lboard_t* lboard = NULL;
    rcheevos_racheevo_t* rac  = NULL;
 
-   rcheevos_fixup_init(&rcheevos_locals.fixups);
-
    res = rcheevos_get_patchdata(json, &rcheevos_locals.patchdata);
 
    if (res != 0)
@@ -595,52 +588,18 @@ static int rcheevos_parse(const char* json)
       return 0;
    }
 
-   /* Achievement memory accesses are 0-based, regardless of 
-    * where the memory is accessed by the
-    * emulated code. As such, address 0 should always be 
-    * accessible and serves as an indicator that
-    * other addresses will also be accessible. 
-    * Individual achievements will be "Unsupported" if
-    * they contain addresses that cannot be resolved. 
-    * This check gives the user immediate feedback
-    * if the core they're trying to use will disable all 
-    * achievements as "Unsupported".
-    */
-   if (!rcheevos_patch_address(0, rcheevos_locals.patchdata.console_id))
+   if (!rcheevos_memory_init(&rcheevos_locals.memory, rcheevos_locals.patchdata.console_id))
    {
-      int delay_judgment          = 0;
-      rarch_system_info_t* system = runloop_get_system_info();
-
-      if (system->mmaps.num_descriptors == 0)
+      /* some cores (like Mupen64-Plus) don't expose the memory until the first call to retro_run.
+       * in that case, there will be a total_size of memory reported by the core, but init will return
+       * false, as all of the pointers were null.
+       */
+      if (rcheevos_locals.memory.total_size != 0)
       {
-         /* Special case: the mupen64plus-nx core doesn't 
-          * initialize the RAM immediately. To avoid a race
-          * condition - if the core says there's SYSTEM_RAM, 
-          * but the pointer is NULL, proceed. If the memory
-          * isn't exposed when the achievements start processing, 
-          * they'll be marked "Unsupported" individually.
-          */
-         retro_ctx_memory_info_t meminfo;
-         meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
-         core_get_memory(&meminfo);
-
-         delay_judgment |= (meminfo.size > 0);
+         /* reset the memory count and we'll re-evaluate in rcheevos_test() */
+         rcheevos_locals.memory.count = 0;
       }
       else
-      {
-         /* Special case: the sameboy core exposes the RAM 
-          * at $8000, but not the ROM at $0000. NES and
-          * Gameboy achievements do attempt to map the 
-          * entire bus, and it's unlikely that an achievement
-          * will reference the ROM data, so if the RAM is 
-          * still present, allow the core to load. If any
-          * achievements do reference the ROM data, they'll 
-          * be marked "Unsupported" individually.
-          */
-         delay_judgment |= (rcheevos_patch_address(0x8000, rcheevos_locals.patchdata.console_id) != NULL);
-      }
-
-      if (!delay_judgment)
       {
          CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
 
@@ -802,7 +761,7 @@ error:
    CHEEVOS_FREE(rcheevos_locals.unofficial);
    CHEEVOS_FREE(rcheevos_locals.lboards);
    rcheevos_free_patchdata(&rcheevos_locals.patchdata);
-   rcheevos_fixup_destroy(&rcheevos_locals.fixups);
+   rcheevos_memory_destroy(&rcheevos_locals.memory);
    return -1;
 }
 
@@ -1128,6 +1087,10 @@ void rcheevos_reset_game(void)
    }
 
    rcheevos_locals.richpresence.last_update = cpu_features_get_time_usec();
+
+   /* some cores reallocate memory on reset, make sure we update our pointers */
+   if (rcheevos_locals.memory.total_size > 0)
+      rcheevos_memory_init(&rcheevos_locals.memory, rcheevos_locals.patchdata.console_id);
 }
 
 #ifdef HAVE_MENU
@@ -1348,7 +1311,7 @@ bool rcheevos_unload(void)
       CHEEVOS_FREE(rcheevos_locals.lboards);
       CHEEVOS_FREE(rcheevos_locals.richpresence.richpresence);
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
-      rcheevos_fixup_destroy(&rcheevos_locals.fixups);
+      rcheevos_memory_destroy(&rcheevos_locals.memory);
 
       rcheevos_locals.core                      = NULL;
       rcheevos_locals.unofficial                = NULL;
@@ -1411,6 +1374,21 @@ void rcheevos_test(void)
 {
    settings_t *settings = config_get_ptr();
 
+   if (rcheevos_locals.memory.count == 0)
+   {
+      /* we were unable to initialize memory earlier, try now */
+      if (!rcheevos_memory_init(&rcheevos_locals.memory, rcheevos_locals.patchdata.console_id))
+      {
+         CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
+
+         if (settings->bools.cheevos_verbose_enable)
+            runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+
+         rcheevos_loaded = false;
+         return;
+      }
+   }
+
    rcheevos_test_cheevo_set(true);
 
    if (settings)
@@ -1433,11 +1411,6 @@ void rcheevos_set_support_cheevos(bool state)
 bool rcheevos_get_support_cheevos(void)
 {
    return rcheevos_locals.core_supports;
-}
-
-int rcheevos_get_console(void)
-{
-   return rcheevos_locals.patchdata.console_id;
 }
 
 const char* rcheevos_get_hash(void)

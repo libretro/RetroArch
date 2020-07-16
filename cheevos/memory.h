@@ -12,36 +12,31 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __RARCH_CHEEVOS_FIXUP_H
-#define __RARCH_CHEEVOS_FIXUP_H
+#ifndef __RARCH_CHEEVOS_MEMORY_H
+#define __RARCH_CHEEVOS_MEMORY_H
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <boolean.h>
 
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 
-typedef struct
-{
-   unsigned address;
-   const uint8_t* location;
-} rcheevos_fixup_t;
+#define MAX_MEMORY_REGIONS 32
 
 typedef struct
 {
-   rcheevos_fixup_t* elements;
-   unsigned capacity, count;
-   bool dirty;
-} rcheevos_fixups_t;
+   uint8_t* data[MAX_MEMORY_REGIONS];
+   size_t size[MAX_MEMORY_REGIONS];
+   unsigned count;
+   size_t total_size;
+} rcheevos_memory_regions_t;
 
-void rcheevos_fixup_init(rcheevos_fixups_t* fixups);
-void rcheevos_fixup_destroy(rcheevos_fixups_t* fixups);
+bool rcheevos_memory_init(rcheevos_memory_regions_t* regions, int console);
+void rcheevos_memory_destroy(rcheevos_memory_regions_t* regions);
 
-const uint8_t* rcheevos_fixup_find(rcheevos_fixups_t* fixups, unsigned address, int console);
-
-const uint8_t* rcheevos_patch_address(unsigned address, int console);
+uint8_t* rcheevos_memory_find(const rcheevos_memory_regions_t* regions, unsigned address);
 
 RETRO_END_DECLS
 

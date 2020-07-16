@@ -170,7 +170,6 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
-#include "cheevos/fixup.h"
 #endif
 
 #ifdef HAVE_TRANSLATE
@@ -12767,7 +12766,7 @@ static bool command_read_ram(const char *arg)
    reply_at                = reply + snprintf(
          reply, alloc_size - 1, "READ_CORE_RAM" " %x", addr);
 
-   if ((data = rcheevos_patch_address(addr, rcheevos_get_console())))
+   if ((data = rcheevos_patch_address(addr)))
    {
       for (i = 0; i < nbytes; i++)
          snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
@@ -12787,11 +12786,16 @@ static bool command_read_ram(const char *arg)
 static bool command_write_ram(const char *arg)
 {
    unsigned int addr    = strtoul(arg, (char**)&arg, 16);
-   uint8_t *data        = (uint8_t *)rcheevos_patch_address(
-         addr, rcheevos_get_console());
+   uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr);
 
    if (!data)
       return false;
+
+   if (rcheevos_hardcore_active && rcheevos_loaded && !rcheevos_hardcore_paused)
+   {
+      RARCH_LOG("Achievements hardcore mode disabled by WRITE_CORE_RAM\n");
+      rcheevos_pause_hardcore();
+   }
 
    while (*arg)
    {
