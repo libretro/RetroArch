@@ -76,7 +76,9 @@ convert_rumble.awk
 *~
 assets
 info
+content_history.lpl
 content_image_history.lpl
+content_music_history.lpl
 saves
 screenshots
 
