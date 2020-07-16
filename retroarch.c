@@ -33002,54 +33002,6 @@ static int find_video_context_driver_index(const char *ident)
 }
 
 /**
- * find_prev_context_driver:
- *
- * Finds previous driver in graphics context driver array.
- **/
-bool video_context_driver_find_prev_driver(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t        *settings = p_rarch->configuration_settings;
-   int                       i = find_video_context_driver_index(
-         settings->arrays.video_context_driver);
-
-   if (i > 0)
-   {
-      configuration_set_string(settings,
-      settings->arrays.video_context_driver,
-            gfx_ctx_drivers[i - 1]->ident);
-      return true;
-   }
-
-   RARCH_WARN("Couldn't find any previous video context driver.\n");
-   return false;
-}
-
-/**
- * find_next_context_driver:
- *
- * Finds next driver in graphics context driver array.
- **/
-bool video_context_driver_find_next_driver(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t        *settings = p_rarch->configuration_settings;
-   int                       i = find_video_context_driver_index(
-         settings->arrays.video_context_driver);
-
-   if (i >= 0 && gfx_ctx_drivers[i + 1])
-   {
-      configuration_set_string(settings,
-      settings->arrays.video_context_driver,
-            gfx_ctx_drivers[i + 1]->ident);
-      return true;
-   }
-
-   RARCH_WARN("Couldn't find any next video context driver.\n");
-   return false;
-}
-
-/**
  * video_context_driver_init:
  * @data                    : Input data.
  * @ctx                     : Graphics context driver to initialize.
