@@ -520,7 +520,6 @@ static void android_gfx_ctx_swap_buffers(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
          egl_swap_buffers(&and->egl);
 #endif
