@@ -1803,6 +1803,10 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 float video_driver_get_refresh_rate(void);
 
+#if defined(HAVE_GFX_WIDGETS)
+bool video_driver_has_widgets(void);
+#endif
+
 bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);

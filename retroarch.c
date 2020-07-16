@@ -13027,9 +13027,9 @@ static void handle_translation_cb(
    bool was_paused                   = p_rarch->runloop_paused;
    const enum retro_pixel_format
       video_driver_pix_fmt           = p_rarch->video_driver_pix_fmt;
+#ifdef HAVE_GFX_WIDGETS
    bool gfx_widgets_paused           = p_rarch->gfx_widgets_paused;
 
-#ifdef GFX_MENU_WIDGETS
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
    if (p_rarch->dispwidget_st.ai_service_overlay_state != 0
@@ -32358,8 +32358,8 @@ static void video_driver_frame(const void *data, unsigned width,
       if (video_info.memory_show)
       {
          char mem[128];
-         uint64_t mem_bytes_used  = frontend_driver_get_free_memory();
          uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+         uint64_t mem_bytes_used  = mem_bytes_total - frontend_driver_get_free_memory();
 
          mem[0] = '\0';
          snprintf(
@@ -33467,12 +33467,13 @@ float video_driver_get_refresh_rate(void)
 }
 
 #if defined(HAVE_GFX_WIDGETS)
-static bool video_driver_has_widgets(struct rarch_state *p_rarch)
+bool video_driver_has_widgets(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->current_video
-      && p_rarch->current_video->gfx_widgets_enabled
-      && p_rarch->current_video->gfx_widgets_enabled(
-            p_rarch->video_driver_data);
+         && p_rarch->current_video->gfx_widgets_enabled
+         && p_rarch->current_video->gfx_widgets_enabled(
+               p_rarch->video_driver_data);
 }
 #endif
 
@@ -34240,7 +34241,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    core_info_init_current_core();
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (menu_enable_widgets && video_driver_has_widgets(p_rarch))
+   if (menu_enable_widgets && video_driver_has_widgets())
    {
       bool rarch_force_fullscreen = p_rarch->rarch_force_fullscreen;
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
@@ -38050,21 +38051,6 @@ static void update_savestate_slot(int state_slot)
    RARCH_LOG("%s\n", msg);
 }
 
-#if defined(HAVE_GFX_WIDGETS)
-/* Display the fast forward state to the user, if needed. */
-static void update_fastforwarding_state(
-      struct rarch_state *p_rarch,
-      bool runloop_fastmotion,
-      bool frame_time_counter_reset_after_fastforwarding)
-{
-   p_rarch->gfx_widgets_fast_forward = runloop_fastmotion;
-
-   if (!runloop_fastmotion)
-      if (frame_time_counter_reset_after_fastforwarding)
-         p_rarch->video_driver_frame_time_count = 0;
-}
-#endif
-
 static enum runloop_state runloop_check_state(
       struct rarch_state *p_rarch,
       settings_t *settings,
@@ -38817,7 +38803,7 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the fast forward button */
-   /* To avoid continous switching if we hold the button down, we require
+   /* To avoid continuous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed
     * to be able to toggle between then.
     */
@@ -38850,27 +38836,32 @@ static enum runloop_state runloop_check_state(
             p_rarch->runloop_fastmotion          = true;
          }
          driver_set_nonblock_state();
-#if defined(HAVE_GFX_WIDGETS)
-         if (widgets_active)
-            update_fastforwarding_state(p_rarch,
-                  p_rarch->runloop_fastmotion,
-                  settings->bools.frame_time_counter_reset_after_fastforwarding);
-#endif
+
+         /* Reset frame time counter when toggling
+          * fast-forward off, if required */
+         if (!p_rarch->runloop_fastmotion &&
+             settings->bools.frame_time_counter_reset_after_fastforwarding)
+            p_rarch->video_driver_frame_time_count = 0;
       }
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
 
-      /* Show the fast-forward OSD for 1 frame every frame if
-       * display widgets are disabled */
-      if (
+      /* Display fast-forward notification
+       * > Use widgets, if enabled */
 #if defined(HAVE_GFX_WIDGETS)
-            !widgets_active &&
+      if (widgets_active)
+         p_rarch->gfx_widgets_fast_forward =
+               settings->bools.notification_show_fast_forward ?
+                     p_rarch->runloop_fastmotion : false;
+      else
 #endif
-            p_rarch->runloop_fastmotion
-         )
       {
-         runloop_msg_queue_push(
+         /* > If widgets are disabled, display fast-forward
+          *   status via OSD text for 1 frame every frame */
+         if (p_rarch->runloop_fastmotion &&
+             settings->bools.notification_show_fast_forward)
+            runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
