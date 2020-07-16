@@ -58,7 +58,7 @@ static void vita_input_driver(void *data,
       input_driver_t **input, void **input_data) { }
 static bool vita_has_focus(void *data) { return true; }
 static bool vita_suppress_screensaver(void *data, bool enable) { return false; }
-static enum gfx_ctx_api vita_get_api(void *data) { return GFX_CTX_NONE; }
+static enum gfx_ctx_api vita_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }
 static bool vita_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor) { return true; }
 static void vita_show_mouse(void *data, bool state) { }
 static void vita_bind_hw_render(void *data, bool enable) { }

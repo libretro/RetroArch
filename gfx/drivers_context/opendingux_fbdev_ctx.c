@@ -188,8 +188,6 @@ static enum gfx_ctx_api gfx_ctx_opendingux_get_api(void *data)
 static bool gfx_ctx_opendingux_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-
    opendingux_api = api;
 
    if (api == GFX_CTX_OPENGL_ES_API)
@@ -197,18 +195,9 @@ static bool gfx_ctx_opendingux_bind_api(void *data,
    return false;
 }
 
-static bool gfx_ctx_opendingux_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gfx_ctx_opendingux_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static void gfx_ctx_opendingux_set_flags(void *data, uint32_t flags) { }
+static bool gfx_ctx_opendingux_has_focus(void *data) { return true; }
+static bool gfx_ctx_opendingux_suppress_screensaver(void *data, bool enable) { return false; } 
 
 static void gfx_ctx_opendingux_swap_buffers(void *data)
 {
@@ -252,11 +241,6 @@ static uint32_t gfx_ctx_opendingux_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 
    return flags;
-}
-
-static void gfx_ctx_opendingux_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
 }
 
 const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
