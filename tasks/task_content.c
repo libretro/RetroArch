@@ -1029,7 +1029,7 @@ static bool content_file_load(
 
                free(buf);
                snprintf(msg,
-                     msg_size,
+                     sizeof(msg),
                      "%s \"%s\". (during copy write)\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      path);
