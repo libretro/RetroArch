@@ -1,0 +1,28 @@
+# Upload sources to Crowdin for translation
+
+name: Crowdin Workflow
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'intl/*_us.h'
+      - 'intl/*_us.json'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java JDK
+        uses: actions/setup-java@v1.3.0
+        with:
+          java-version: 1.8
+      - name: Setup Python
+        uses: actions/setup-python@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Crowdin Sync
+        run: |
+          cd intl
+          python3 crowdin_sync.py
