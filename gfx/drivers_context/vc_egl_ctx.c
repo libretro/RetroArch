@@ -487,23 +487,12 @@ static void gfx_ctx_vc_input_driver(void *data,
    *input_data = NULL;
 }
 
-static bool gfx_ctx_vc_has_focus(void *data)
-{
-   (void)data;
-   return g_egl_inited;
-}
-
-static bool gfx_ctx_vc_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_vc_has_focus(void *data) { return g_egl_inited; }
+static bool gfx_ctx_vc_suppress_screensaver(void *data, bool enable) { return false; }
 
 static float gfx_ctx_vc_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
-   (void)data;
    /* Check for SD televisions: they should always be 4:3. */
    if ((width == 640 || width == 720) && (height == 480 || height == 576))
       return 4.0f / 3.0f;
@@ -587,8 +576,9 @@ fail:
    return false;
 }
 
-static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
+static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame,
+      unsigned width, unsigned height,
+      unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
    bool ret = false;
    vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
@@ -602,7 +592,7 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
 
    if (!vc->eglBuffer[index] || !vc->vgimage[index])
    {
-      vc->vgimage[index] = vgCreateImage(
+      vc->vgimage[index]   = vgCreateImage(
             rgb32 ? VG_sXRGB_8888 : VG_sRGB_565,
             vc->res,
             vc->res,
@@ -698,10 +688,7 @@ static uint32_t gfx_ctx_vc_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_vc_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_vc_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_init,

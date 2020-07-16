@@ -635,10 +635,7 @@ static uint32_t android_gfx_ctx_get_flags(void *data)
    return flags;
 }
 
-static void android_gfx_ctx_set_flags(void *data, uint32_t flags)
-{
-   (void)flags;
-}
+static void android_gfx_ctx_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,

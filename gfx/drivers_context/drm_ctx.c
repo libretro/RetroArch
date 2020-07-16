@@ -146,10 +146,6 @@ static void gfx_ctx_drm_swap_interval(void *data, int interval)
 static void gfx_ctx_drm_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   (void)data;
-   (void)width;
-   (void)height;
-
    *resize = false;
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
@@ -157,10 +153,6 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
 static void drm_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
-   (void)fd;
-   (void)sec;
-   (void)usec;
-
 #if 0
    static unsigned first_page_flip;
    static unsigned last_page_flip;
