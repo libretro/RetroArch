@@ -213,18 +213,8 @@ static bool switch_ctx_bind_api(void *data,
     return false;
 }
 
-static bool switch_ctx_has_focus(void *data)
-{
-    (void)data;
-    return platform_switch_has_focus;
-}
-
-static bool switch_ctx_suppress_screensaver(void *data, bool enable)
-{
-    (void)data;
-    (void)enable;
-    return false;
-}
+static bool switch_ctx_has_focus(void *data) { return platform_switch_has_focus; }
+static bool switch_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void switch_ctx_set_swap_interval(void *data,
                                          int swap_interval)
@@ -281,10 +271,7 @@ static uint32_t switch_ctx_get_flags(void *data)
     return flags;
 }
 
-static void switch_ctx_set_flags(void *data, uint32_t flags)
-{
-    (void)data;
-}
+static void switch_ctx_set_flags(void *data, uint32_t flags) { }
 
 static float switch_ctx_get_refresh_rate(void *data)
 {

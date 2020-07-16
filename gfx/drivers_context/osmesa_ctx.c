@@ -223,18 +223,16 @@ static bool osmesa_ctx_bind_api(void *data,
    if (api != GFX_CTX_OPENGL_API)
       return false;
 
+   /* Use version 2.1 by default */
    osmesa_api       = api;
+   g_osmesa_major   = 2;
+   g_osmesa_minor   = 1;
    g_osmesa_profile = OSMESA_COMPAT_PROFILE;
 
    if (major)
    {
       g_osmesa_major = major;
       g_osmesa_minor = minor;
-   }
-   else
-   {
-      g_osmesa_major = 2;
-      g_osmesa_minor = 1;
    }
 
    return true;
@@ -326,18 +324,9 @@ static void osmesa_ctx_check_window(void *data, bool *quit,
    *quit               = false;
 }
 
-static bool osmesa_ctx_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool osmesa_ctx_has_focus(void *data) { return true; }
 
-static bool osmesa_ctx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool osmesa_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void osmesa_ctx_swap_buffers(void *data)
 {
@@ -363,12 +352,6 @@ static gfx_ctx_proc_t osmesa_ctx_get_proc_address(const char *name)
    return (gfx_ctx_proc_t)OSMesaGetProcAddress(name);
 }
 
-static void osmesa_ctx_show_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
 static uint32_t osmesa_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -378,10 +361,8 @@ static uint32_t osmesa_ctx_get_flags(void *data)
    return flags;
 }
 
-static void osmesa_ctx_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void osmesa_ctx_show_mouse(void *data, bool state) { }
+static void osmesa_ctx_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_osmesa =
 {

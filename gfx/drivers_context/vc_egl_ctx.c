@@ -146,7 +146,102 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
    slock_unlock(vc->vsync_condition_mutex);
 }
 
-static void gfx_ctx_vc_destroy(void *data);
+static void gfx_ctx_vc_destroy(void *data)
+{
+   vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
+   unsigned i;
+
+   if (!vc)
+   {
+       g_egl_inited = false;
+       return;
+   }
+
+   if (vc->egl.dpy)
+   {
+      for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
+      {
+         if (vc->eglBuffer[i] && peglDestroyImageKHR)
+         {
+            egl_bind_api(EGL_OPENVG_API);
+            eglMakeCurrent(vc->egl.dpy,
+                  vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
+            peglDestroyImageKHR(vc->egl.dpy, vc->eglBuffer[i]);
+         }
+
+         if (vc->vgimage[i])
+         {
+            egl_bind_api(EGL_OPENVG_API);
+            eglMakeCurrent(vc->egl.dpy,
+                  vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
+            vgDestroyImage(vc->vgimage[i]);
+         }
+      }
+
+      if (vc->egl.ctx)
+      {
+         gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
+         eglMakeCurrent(vc->egl.dpy,
+               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglDestroyContext(vc->egl.dpy, vc->egl.ctx);
+      }
+
+      if (vc->egl.hw_ctx)
+         eglDestroyContext(vc->egl.dpy, vc->egl.hw_ctx);
+
+      if (vc->eglimage_ctx)
+      {
+         egl_bind_api(EGL_OPENVG_API);
+         eglMakeCurrent(vc->egl.dpy,
+               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglDestroyContext(vc->egl.dpy, vc->eglimage_ctx);
+      }
+
+      if (vc->egl.surf)
+      {
+         gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
+         eglDestroySurface(vc->egl.dpy, vc->egl.surf);
+      }
+
+      if (vc->pbuff_surf)
+      {
+         egl_bind_api(EGL_OPENVG_API);
+         eglDestroySurface(vc->egl.dpy, vc->pbuff_surf);
+      }
+
+      egl_bind_api(EGL_OPENVG_API);
+      eglMakeCurrent(vc->egl.dpy,
+            EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
+      eglMakeCurrent(vc->egl.dpy,
+            EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      egl_terminate(vc->egl.dpy);
+   }
+
+   vc->egl.ctx      = NULL;
+   vc->egl.hw_ctx   = NULL;
+   vc->eglimage_ctx = NULL;
+   vc->egl.surf     = NULL;
+   vc->pbuff_surf   = NULL;
+   vc->egl.dpy      = NULL;
+   vc->egl.config   = 0;
+   g_egl_inited     = false;
+
+   for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
+   {
+      vc->eglBuffer[i] = NULL;
+      vc->vgimage[i]   = 0;
+   }
+
+   /* Stop generating vsync callbacks if we are doing so.
+    * Don't destroy the context while cbs are being generated! */
+   if (vc->vsync_callback_set)
+      vc_dispmanx_vsync_callback(vc->dispman_display, NULL, NULL);
+
+   /* Destroy mutexes and conditions. */
+   slock_free(vc->vsync_condition_mutex);
+   scond_free(vc->vsync_condition);
+}
 
 static void *gfx_ctx_vc_init(void *video_driver)
 {
@@ -380,103 +475,6 @@ static bool gfx_ctx_vc_bind_api(void *data,
    }
 
    return false;
-}
-
-static void gfx_ctx_vc_destroy(void *data)
-{
-   vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
-   unsigned i;
-
-   if (!vc)
-   {
-       g_egl_inited = false;
-       return;
-   }
-
-   if (vc->egl.dpy)
-   {
-      for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
-      {
-         if (vc->eglBuffer[i] && peglDestroyImageKHR)
-         {
-            egl_bind_api(EGL_OPENVG_API);
-            eglMakeCurrent(vc->egl.dpy,
-                  vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
-            peglDestroyImageKHR(vc->egl.dpy, vc->eglBuffer[i]);
-         }
-
-         if (vc->vgimage[i])
-         {
-            egl_bind_api(EGL_OPENVG_API);
-            eglMakeCurrent(vc->egl.dpy,
-                  vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
-            vgDestroyImage(vc->vgimage[i]);
-         }
-      }
-
-      if (vc->egl.ctx)
-      {
-         gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
-         eglMakeCurrent(vc->egl.dpy,
-               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(vc->egl.dpy, vc->egl.ctx);
-      }
-
-      if (vc->egl.hw_ctx)
-         eglDestroyContext(vc->egl.dpy, vc->egl.hw_ctx);
-
-      if (vc->eglimage_ctx)
-      {
-         egl_bind_api(EGL_OPENVG_API);
-         eglMakeCurrent(vc->egl.dpy,
-               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(vc->egl.dpy, vc->eglimage_ctx);
-      }
-
-      if (vc->egl.surf)
-      {
-         gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
-         eglDestroySurface(vc->egl.dpy, vc->egl.surf);
-      }
-
-      if (vc->pbuff_surf)
-      {
-         egl_bind_api(EGL_OPENVG_API);
-         eglDestroySurface(vc->egl.dpy, vc->pbuff_surf);
-      }
-
-      egl_bind_api(EGL_OPENVG_API);
-      eglMakeCurrent(vc->egl.dpy,
-            EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
-      eglMakeCurrent(vc->egl.dpy,
-            EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      egl_terminate(vc->egl.dpy);
-   }
-
-   vc->egl.ctx      = NULL;
-   vc->egl.hw_ctx   = NULL;
-   vc->eglimage_ctx = NULL;
-   vc->egl.surf     = NULL;
-   vc->pbuff_surf   = NULL;
-   vc->egl.dpy      = NULL;
-   vc->egl.config   = 0;
-   g_egl_inited     = false;
-
-   for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
-   {
-      vc->eglBuffer[i] = NULL;
-      vc->vgimage[i]   = 0;
-   }
-
-   /* Stop generating vsync callbacks if we are doing so.
-    * Don't destroy the context while cbs are being generated! */
-   if (vc->vsync_callback_set)
-      vc_dispmanx_vsync_callback(vc->dispman_display, NULL, NULL);
-
-   /* Destroy mutexes and conditions. */
-   slock_free(vc->vsync_condition_mutex);
-   scond_free(vc->vsync_condition);
 }
 
 static void gfx_ctx_vc_input_driver(void *data,

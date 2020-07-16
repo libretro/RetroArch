@@ -344,9 +344,9 @@ static void sdl_ctx_check_window(void *data, bool *quit,
 
    if (sdl->g_resized)
    {
-      *width    = sdl->g_new_width;
-      *height   = sdl->g_new_height;
-      *resize   = true;
+      *width         = sdl->g_new_width;
+      *height        = sdl->g_new_height;
+      *resize        = true;
       sdl->g_resized = false;
    }
 }
