@@ -55,8 +55,6 @@ static enum gfx_ctx_api emscripten_api = GFX_CTX_NONE;
 
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 {
-   (void)data;
-
    if (interval == 0)
       emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
    else
@@ -259,18 +257,11 @@ static bool gfx_ctx_emscripten_set_video_mode(void *data,
    return true;
 }
 
-static enum gfx_ctx_api gfx_ctx_emscripten_get_api(void *data)
-{
-   return emscripten_api;
-}
+static enum gfx_ctx_api gfx_ctx_emscripten_get_api(void *data) { return emscripten_api; }
 
 static bool gfx_ctx_emscripten_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-   (void)major;
-   (void)minor;
-
    emscripten_api = api;
 
    switch (api)
@@ -296,44 +287,19 @@ static void gfx_ctx_emscripten_input_driver(void *data,
    *input_data = rwebinput;
 }
 
-static bool gfx_ctx_emscripten_has_focus(void *data)
-{
-   (void)data;
+static bool gfx_ctx_emscripten_has_focus(void *data) { return g_egl_inited; }
 
-   return g_egl_inited;
-}
-
-static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
+static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable) { return false; }
 
 static float gfx_ctx_emscripten_translate_aspect(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-
-   return (float)width / height;
-}
+      unsigned width, unsigned height) { return (float)width / height; }
 
 static bool gfx_ctx_emscripten_init_egl_image_buffer(void *data,
-      const video_info_t *video)
-{
-   (void)data;
-
-   return false;
-}
+      const video_info_t *video) { return false; }
 
 static bool gfx_ctx_emscripten_write_egl_image(void *data,
       const void *frame, unsigned width, unsigned height, unsigned pitch,
-      bool rgb32, unsigned index, void **image_handle)
-{
-   (void)data;
-   return false;
-}
+      bool rgb32, unsigned index, void **image_handle) { return false; }
 
 static gfx_ctx_proc_t gfx_ctx_emscripten_get_proc_address(const char *symbol)
 {
@@ -360,10 +326,7 @@ static uint32_t gfx_ctx_emscripten_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_emscripten_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_emscripten_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_init,

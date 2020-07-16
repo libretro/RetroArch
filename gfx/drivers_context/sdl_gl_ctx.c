@@ -365,13 +365,6 @@ static bool sdl_ctx_has_focus(void *data)
 #endif
 }
 
-static bool sdl_ctx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
 static void sdl_ctx_swap_buffers(void *data)
 {
 #ifdef HAVE_SDL2
@@ -407,6 +400,7 @@ static uint32_t sdl_ctx_get_flags(void *data)
    return flags;
 }
 
+static bool sdl_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 static void sdl_ctx_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_sdl_gl =
