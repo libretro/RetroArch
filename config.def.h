@@ -657,6 +657,8 @@ static const unsigned input_backtouch_enable       = false;
 static const unsigned input_backtouch_toggle       = false;
 #endif
 
+#define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
+
 #define DEFAULT_SHOW_PHYSICAL_INPUTS true
 
 #define DEFAULT_ALL_USERS_CONTROL_MENU false
@@ -1301,5 +1303,19 @@ static const bool enable_device_vibration    = false;
 #define DEFAULT_AI_SERVICE_MODE 1
 
 #define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE true
+#else
+#define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE false
+#endif
+
+#if defined(HAVE_IMAGEVIEWER)
+#define DEFAULT_BUILTIN_IMAGEVIEWER_ENABLE true
+#else
+#define DEFAULT_BUILTIN_IMAGEVIEWER_ENABLE false
+#endif
+
+#define DEFAULT_FILTER_BY_CURRENT_CORE false
 
 #endif

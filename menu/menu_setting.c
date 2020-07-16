@@ -8662,6 +8662,7 @@ static bool setting_append_list(
                      general_read_handler,
                      general_write_handler);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
+               (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
                (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
                (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
                (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
@@ -8721,7 +8722,7 @@ static bool setting_append_list(
             bool_entries[listing].target         = &settings->bools.check_firmware_before_loading;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
-            bool_entries[listing].default_value  = true;
+            bool_entries[listing].default_value  = DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 
@@ -9185,7 +9186,7 @@ static bool setting_append_list(
                &settings->bools.frame_time_counter_reset_after_fastforwarding,
                MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
                MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-               true,
+               false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -9200,7 +9201,7 @@ static bool setting_append_list(
                &settings->bools.frame_time_counter_reset_after_load_state,
                MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-               true,
+               false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -9215,7 +9216,7 @@ static bool setting_append_list(
                &settings->bools.frame_time_counter_reset_after_save_state,
                MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
                MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-               true,
+               false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -9388,20 +9389,22 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
-         CONFIG_STRING(
-               list, list_info,
-               cheat_manager_state.working_code,
-               sizeof(cheat_manager_state.working_code),
-               MENU_ENUM_LABEL_CHEAT_CODE,
-               MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            CONFIG_STRING(
+                  list, list_info,
+                  cheat_manager_state.working_code,
+                  sizeof(cheat_manager_state.working_code),
+                  MENU_ENUM_LABEL_CHEAT_CODE,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.handler, CHEAT_HANDLER,
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
@@ -9422,6 +9425,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.memory_search_size, CHEAT_MEMORY_SEARCH_SIZE,
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
@@ -10854,7 +10858,7 @@ static bool setting_append_list(
                &settings->bools.crt_switch_custom_refresh_enable,
                MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
                MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-               DEFAULT_AUDIO_ENABLE,
+               false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -11215,6 +11219,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
          (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
          (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
 #endif
@@ -11894,6 +11899,7 @@ static bool setting_append_list(
                   general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
             CONFIG_UINT(
                list, list_info,
@@ -11972,6 +11978,7 @@ static bool setting_append_list(
                general_read_handler);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
             CONFIG_UINT(
                list, list_info,
@@ -12571,7 +12578,7 @@ static bool setting_append_list(
                &settings->bools.input_overlay_enable_autopreferred,
                MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,
                MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-               true,
+               DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -13445,6 +13452,7 @@ static bool setting_append_list(
                   general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
          }
 
 #ifdef HAVE_THREADS
@@ -13968,6 +13976,7 @@ static bool setting_append_list(
                general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
          }
 #endif
 
@@ -14688,7 +14697,7 @@ static bool setting_append_list(
                &settings->bools.multimedia_builtin_mediaplayer_enable,
                MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,
                MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-               true,
+               DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -14704,7 +14713,7 @@ static bool setting_append_list(
                &settings->bools.multimedia_builtin_imageviewer_enable,
                MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER,
                MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-               true,
+               DEFAULT_BUILTIN_IMAGEVIEWER_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -14720,7 +14729,7 @@ static bool setting_append_list(
                &settings->bools.filter_by_current_core,
                MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
                MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
-               true,
+               DEFAULT_FILTER_BY_CURRENT_CORE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -14844,6 +14853,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          CONFIG_BOOL(
                list, list_info,
@@ -16243,6 +16253,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          CONFIG_STRING(
                list, list_info,
@@ -16258,6 +16269,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          CONFIG_BOOL(
                list, list_info,
@@ -16386,6 +16398,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+         (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_netplay_mitm_server;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_netplay_mitm_server;
          (*list)[list_info->index - 1].get_string_representation =
@@ -16406,6 +16419,7 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
             CONFIG_UINT(
                   list, list_info,
@@ -16437,6 +16451,7 @@ static bool setting_append_list(
                   general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
             CONFIG_STRING(
                   list, list_info,
@@ -16452,6 +16467,7 @@ static bool setting_append_list(
                   general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
             CONFIG_BOOL(
                   list, list_info,
@@ -16585,7 +16601,7 @@ static bool setting_append_list(
                   &settings->uints.netplay_share_digital,
                   MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
-                  0,
+                  netplay_share_digital,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -16602,7 +16618,7 @@ static bool setting_append_list(
                   &settings->uints.netplay_share_analog,
                   MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
-                  0,
+                  netplay_share_analog,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -16892,6 +16908,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          CONFIG_STRING(
                list, list_info,
@@ -16906,6 +16923,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
 #ifdef HAVE_LANGEXTRA
          CONFIG_UINT(
@@ -16999,6 +17017,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -17026,6 +17045,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -17054,6 +17074,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          CONFIG_STRING(
                list, list_info,
@@ -17071,6 +17092,7 @@ static bool setting_append_list(
             &setting_get_string_representation_cheevos_password;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -17608,6 +17630,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_midi_input;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_midi_input;
 
@@ -17624,6 +17647,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_midi_output;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_midi_output;
 
@@ -17667,6 +17691,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          CONFIG_STRING(
                list, list_info,
@@ -17682,6 +17707,7 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          CONFIG_BOOL(
                list, list_info,

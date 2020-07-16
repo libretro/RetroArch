@@ -424,6 +424,7 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
 
@@ -436,11 +437,20 @@ static int action_start_video_resolution(
 
       msg[0] = '\0';
 
+#if defined(__CELLOS_LV2__) || defined(_WIN32)
+      generic_action_ok_command(CMD_EVENT_REINIT);
+#endif
       video_driver_set_video_mode(width, height, true);
-
-      strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
+#ifdef GEKKO
+      if (width == 0 || height == 0)
+         strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
+      else
+#endif
+         snprintf(msg, sizeof(msg),
+               "Resetting to: %dx%d", width, height);
       runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+#endif
 
    return 0;
 }
