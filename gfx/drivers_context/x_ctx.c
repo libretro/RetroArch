@@ -161,12 +161,7 @@ static int x_log_error_handler(Display *dpy, XErrorEvent *event)
    return 0;
 }
 
-static int x_nul_handler(Display *dpy, XErrorEvent *event)
-{
-   (void)dpy;
-   (void)event;
-   return 0;
-}
+static int x_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
 
 static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 {
