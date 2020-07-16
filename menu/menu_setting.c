@@ -261,7 +261,7 @@ enum settings_list_type
    SETTINGS_LIST_RECORDING,
    SETTINGS_LIST_FRAME_THROTTLING,
    SETTINGS_LIST_FRAME_TIME_COUNTER,
-   SETTINGS_LIST_FONT,
+   SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
    SETTINGS_LIST_OVERLAY,
 #ifdef HAVE_VIDEO_LAYOUT
    SETTINGS_LIST_VIDEO_LAYOUT,
@@ -8334,6 +8334,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_MENU_SETTINGS,
                MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
                &group_info,
@@ -9765,89 +9773,10 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_fps_show,
-                  MENU_ENUM_LABEL_FPS_SHOW,
-                  MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-                  DEFAULT_FPS_SHOW,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.fps_update_interval,
-                  MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,
-                  MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-                  DEFAULT_FPS_UPDATE_INTERVAL,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
-            menu_settings_list_current_add_range(list, list_info, 1, 512, 1, true, true);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_memory_show,
-                  MENU_ENUM_LABEL_MEMORY_SHOW,
-                  MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
-                  DEFAULT_MEMORY_SHOW,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_statistics_show,
-                  MENU_ENUM_LABEL_STATISTICS_SHOW,
-                  MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-                  DEFAULT_STATISTICS_SHOW,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_framecount_show,
-               MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
-               MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-               DEFAULT_FRAMECOUNT_SHOW,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Platform-specific", &group_info, &subgroup_info, parent_group);
 
             video_driver_menu_settings((void**)list, (void*)list_info, (void*)&group_info, (void*)&subgroup_info, parent_group);
-
-            END_SUB_GROUP(list, list_info, parent_group);
 
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Monitor", &group_info, &subgroup_info, parent_group);
@@ -12242,25 +12171,37 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
-      case SETTINGS_LIST_FONT:
+      case SETTINGS_LIST_ONSCREEN_NOTIFICATIONS:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),
                parent_group);
 
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS);
 
-         START_SUB_GROUP(list, list_info, "Messages",
+         START_SUB_GROUP(list, list_info, "Notifications",
                &group_info,
                &subgroup_info,
                parent_group);
 
-         /* This is the SETTINGS_LIST_FONT category, but the
-          * parent group is ONSCREEN_DISPLAY_SETTINGS.
-          * Menu widget settings don't belong in the SETTINGS_LIST_FONT
-          * category, but they *do* belong in the ONSCREEN_DISPLAY_SETTINGS
-          * group. I don't want to refactor these names, so we'll assume
-          * group trumps category, and just place the widget settings here */
 #ifdef HAVE_GFX_WIDGETS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_enable_widgets,
+               MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+               DEFAULT_MENU_ENABLE_WIDGETS,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_widget_scale_auto,
@@ -12307,7 +12248,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
 #endif
-
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 
@@ -12327,9 +12267,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 #endif
-
 #endif
-
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.video_font_enable,
@@ -12532,6 +12470,162 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         START_SUB_GROUP(list, list_info, "Notification Views", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.video_fps_show,
+               MENU_ENUM_LABEL_FPS_SHOW,
+               MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+               DEFAULT_FPS_SHOW,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.fps_update_interval,
+               MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,
+               MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+               DEFAULT_FPS_UPDATE_INTERVAL,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
+         menu_settings_list_current_add_range(list, list_info, 1, 512, 1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.video_memory_show,
+               MENU_ENUM_LABEL_MEMORY_SHOW,
+               MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+               DEFAULT_MEMORY_SHOW,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.video_statistics_show,
+               MENU_ENUM_LABEL_STATISTICS_SHOW,
+               MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+               DEFAULT_STATISTICS_SHOW,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.video_framecount_show,
+               MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
+               MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+               DEFAULT_FRAMECOUNT_SHOW,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+#ifdef HAVE_GFX_WIDGETS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_show_load_content_animation,
+               MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+               MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+               DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_autoconfig,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+               DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_remap_load,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
+               DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_config_override_load,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+               DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_fast_forward,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+               DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -13375,41 +13469,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-
-#ifdef HAVE_GFX_WIDGETS
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_enable_widgets,
-               MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,
-               MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-               DEFAULT_MENU_ENABLE_WIDGETS,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_show_load_content_animation,
-               MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-               MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-               DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-#endif
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
@@ -17878,7 +17937,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_RECORDING,
       SETTINGS_LIST_FRAME_THROTTLING,
       SETTINGS_LIST_FRAME_TIME_COUNTER,
-      SETTINGS_LIST_FONT,
+      SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
       SETTINGS_LIST_OVERLAY,
 #ifdef HAVE_VIDEO_LAYOUT
       SETTINGS_LIST_VIDEO_LAYOUT,

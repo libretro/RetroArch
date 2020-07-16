@@ -771,6 +771,28 @@ static const bool audio_enable_menu_bgm    = false;
  * > Currently implemented only as a widget */
 #define DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION DEFAULT_MENU_ENABLE_WIDGETS
 
+/* Display a notification when successfully
+ * connecting/disconnecting an autoconfigured
+ * controller
+ * > Disabled by default on the Switch */
+#if defined(HAVE_LIBNX) && defined(HAVE_GFX_WIDGETS)
+#define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG false
+#else
+#define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG true
+#endif
+
+/* Display a notification when loading an
+ * input remap file */
+#define DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD true
+
+/* Display a notification when loading a
+ * configuration override file */
+#define DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD true
+
+/* Display a notification when fast forwarding
+ * content */
+#define DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD true
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000

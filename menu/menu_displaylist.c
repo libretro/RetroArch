@@ -1141,18 +1141,18 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       {
          char tmp[PATH_MAX_LENGTH];
-         uint64_t memory_free       = frontend_driver_get_free_memory();
-         uint64_t memory_total      = frontend_driver_get_total_memory();
+         uint64_t memory_total = frontend_driver_get_total_memory();
+         uint64_t memory_used  = memory_total - frontend_driver_get_free_memory();
 
          tmp[0] = '\0';
 
-         if (memory_free != 0 && memory_total != 0)
+         if (memory_used != 0 && memory_total != 0)
          {
             snprintf(tmp, sizeof(tmp),
                   "%s %s: %" PRIu64 "/%" PRIu64 " MB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_MEGABYTES),
-                  BYTES_TO_MB(memory_free),
+                  BYTES_TO_MB(memory_used),
                   BYTES_TO_MB(memory_total)
                   );
 
@@ -7437,40 +7437,132 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
          {
-            settings_t      *settings     = config_get_ptr();
+            settings_t *settings          = config_get_ptr();
             bool video_font_enable        = settings->bools.video_font_enable;
-            bool video_fps_show           = settings->bools.video_fps_show;
             bool video_msg_bgcolor_enable = settings->bools.video_msg_bgcolor_enable;
 #ifdef HAVE_GFX_WIDGETS
+            bool widgets_supported        = video_driver_has_widgets();
             bool menu_enable_widgets      = settings->bools.menu_enable_widgets;
             bool menu_widget_scale_auto   = settings->bools.menu_widget_scale_auto;
+#else
+            bool widgets_supported        = false;
+            bool menu_enable_widgets      = false;
 #endif
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,            PARSE_ONLY_BOOL,   true  },
-               {MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,          PARSE_ONLY_BOOL,   true  },
-               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,       PARSE_ONLY_BOOL,   false },
-               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,     PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,                     PARSE_ONLY_BOOL,   true  },
+               {MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,                   PARSE_ONLY_BOOL,   false },
+               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,                PARSE_ONLY_BOOL,   false },
+               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,              PARSE_ONLY_FLOAT,  false },
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED, PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,     PARSE_ONLY_FLOAT,  false },
 #endif
-               {MENU_ENUM_LABEL_FPS_SHOW,                     PARSE_ONLY_BOOL,   false },
-               {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,          PARSE_ONLY_UINT,   false },
-               {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,              PARSE_ONLY_BOOL,   false },
-               {MENU_ENUM_LABEL_STATISTICS_SHOW,              PARSE_ONLY_BOOL,   false },
-               {MENU_ENUM_LABEL_MEMORY_SHOW,                  PARSE_ONLY_BOOL,   false },
-               {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION, PARSE_ONLY_BOOL,   false },
-               {MENU_ENUM_LABEL_VIDEO_FONT_PATH,              PARSE_ONLY_PATH,   false },
-               {MENU_ENUM_LABEL_VIDEO_FONT_SIZE,              PARSE_ONLY_FLOAT,  false },
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X,          PARSE_ONLY_FLOAT,  false },
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y,          PARSE_ONLY_FLOAT,  false },
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,      PARSE_ONLY_FLOAT,  false },
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,    PARSE_ONLY_FLOAT,  false },
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE,     PARSE_ONLY_FLOAT,  false },
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE, PARSE_ONLY_BOOL,   false },
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,    PARSE_ONLY_UINT,   false},
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,  PARSE_ONLY_UINT,   false},
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,   PARSE_ONLY_UINT,   false},
-               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_VIDEO_FONT_PATH,                       PARSE_ONLY_PATH,   false },
+               {MENU_ENUM_LABEL_VIDEO_FONT_SIZE,                       PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X,                   PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y,                   PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,               PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,             PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE,              PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,          PARSE_ONLY_BOOL,   false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,             PARSE_ONLY_UINT,   false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,           PARSE_ONLY_UINT,   false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,            PARSE_ONLY_UINT,   false },
+               {MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,         PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS, PARSE_ACTION,      false },
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+#ifdef HAVE_GFX_WIDGETS
+                  case MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE:
+                     if (widgets_supported)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO:
+                     if (widgets_supported &&
+                         menu_enable_widgets)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR:
+                     if (widgets_supported &&
+                         menu_enable_widgets &&
+                         !menu_widget_scale_auto)
+                        build_list[i].checked = true;
+                     break;
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED:
+                     if (widgets_supported &&
+                         menu_enable_widgets &&
+                         !menu_widget_scale_auto)
+                        build_list[i].checked = true;
+                     break;
+#endif
+#endif
+                  case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+                  case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+                     if ((!widgets_supported || !menu_enable_widgets) &&
+                         video_font_enable)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+                     if ((!widgets_supported || !menu_enable_widgets) &&
+                         video_font_enable &&
+                         video_msg_bgcolor_enable)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS:
+                     if (video_font_enable ||
+                         (widgets_supported && menu_enable_widgets))
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+      case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST:
+         {
+            settings_t *settings     = config_get_ptr();
+            bool video_font_enable   = settings->bools.video_font_enable;
+            bool video_fps_show      = settings->bools.video_fps_show;
+#ifdef HAVE_GFX_WIDGETS
+            bool widgets_supported   = video_driver_has_widgets();
+            bool menu_enable_widgets = settings->bools.menu_enable_widgets;
+#endif
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_FPS_SHOW,                                PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,                     PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,                         PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_STATISTICS_SHOW,                         PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_MEMORY_SHOW,                             PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,        PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG,            PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,            PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,  PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,          PARSE_ONLY_BOOL,  true },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7478,49 +7570,21 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL:
-                     if (video_font_enable)
-                        if (video_fps_show)
-                           build_list[i].checked = true;
-                     break;
-                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
-                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
-                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
-                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
-                     if (video_font_enable)
-                        if (video_msg_bgcolor_enable)
-                           build_list[i].checked = true;
-                     break;
-                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO:
-#ifdef HAVE_GFX_WIDGETS
-                     if (menu_enable_widgets)
+                     if (video_fps_show)
                         build_list[i].checked = true;
-#endif
                      break;
-                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR:
+                  case MENU_ENUM_LABEL_STATISTICS_SHOW:
+                     if (video_font_enable)
+                        build_list[i].checked = true;
+                     break;
 #ifdef HAVE_GFX_WIDGETS
-                     if (menu_enable_widgets)
-                        if (!menu_widget_scale_auto)
-                           build_list[i].checked = true;
-#endif
-                     break;
-#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED:
-#ifdef HAVE_GFX_WIDGETS
-                     if (menu_enable_widgets)
-                        if (!menu_widget_scale_auto)
-                           build_list[i].checked = true;
-#endif
-                     break;
-#endif
                   case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION:
-#ifdef HAVE_GFX_WIDGETS
-                     if (menu_enable_widgets)
+                     if (widgets_supported &&
+                         menu_enable_widgets)
                         build_list[i].checked = true;
-#endif
                      break;
+#endif
                   default:
-                     if (video_font_enable)
-                        build_list[i].checked = true;
                      break;
                }
             }
@@ -10397,6 +10461,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
       case DISPLAYLIST_CONFIGURATIONS_LIST:
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
+      case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST:
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
 #ifdef HAVE_VIDEO_LAYOUT

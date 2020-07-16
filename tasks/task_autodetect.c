@@ -513,7 +513,10 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    if (string_is_empty(device_display_name))
       device_display_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
-   /* Generate task status message */
+   /* Generate task status message
+    * > Note that 'connection successful' messages
+    *   may be suppressed, but error messages are
+    *   always shown */
    if (autoconfig_handle->device_info.autoconfigured)
    {
       if (match_found)
@@ -587,6 +590,8 @@ void input_autoconfigure_connect(
          settings->bools.input_autodetect_enable : false;
    const char *dir_autoconfig             = settings ?
          settings->paths.directory_autoconfig : NULL;
+   bool notification_show_autoconfig      = settings ?
+         settings->bools.notification_show_autoconfig : true;
    task_finder_data_t find_data;
    char dir_driver_autoconfig[PATH_MAX_LENGTH];
 
@@ -619,7 +624,7 @@ void input_autoconfigure_connect(
    autoconfig_handle->device_info.autoconfigured  = false;
    autoconfig_handle->device_info.name_index      = 0;
    autoconfig_handle->autoconfig_enabled          = autoconfig_enabled;
-   autoconfig_handle->suppress_notifcations       = false;
+   autoconfig_handle->suppress_notifcations       = !notification_show_autoconfig;
    autoconfig_handle->dir_autoconfig              = NULL;
    autoconfig_handle->dir_driver_autoconfig       = NULL;
    autoconfig_handle->autoconfig_file             = NULL;
@@ -663,10 +668,13 @@ void input_autoconfigure_connect(
 #endif
 
    /* If we are reconnecting a device that is already
-    * connect and autoconfigured, then there is no need
+    * connected and autoconfigured, then there is no need
     * to generate additional 'connection successful'
-    * task status messages */
-   if (!string_is_empty(autoconfig_handle->device_info.name))
+    * task status messages
+    * > Can skip this check if autoconfig notifications
+    *   have been disabled by the user */
+   if (!autoconfig_handle->suppress_notifcations &&
+       !string_is_empty(autoconfig_handle->device_info.name))
    {
       const char *last_device_name = input_config_get_device_name(port);
       uint16_t last_vid            = input_config_get_device_vid(port);
@@ -774,7 +782,8 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
             autoconfig_handle->port + 1);
 
    task_free_title(task);
-   task_set_title(task, strdup(task_title));
+   if (!autoconfig_handle->suppress_notifcations)
+      task_set_title(task, strdup(task_title));
 
 task_finished:
 
@@ -815,6 +824,9 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
    task_finder_data_t find_data;
+   settings_t *settings                   = config_get_ptr();
+   bool notification_show_autoconfig      = settings ?
+         settings->bools.notification_show_autoconfig : true;
 
    if (port >= MAX_INPUT_DEVICES)
       goto error;
@@ -833,7 +845,9 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    if (!autoconfig_handle)
       goto error;
 
-   autoconfig_handle->port = port;
+   autoconfig_handle->port                  = port;
+   autoconfig_handle->suppress_notifcations = !notification_show_autoconfig;
+
    if (!string_is_empty(name))
       strlcpy(autoconfig_handle->device_info.name,
             name, sizeof(autoconfig_handle->device_info.name));

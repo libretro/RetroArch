@@ -159,6 +159,10 @@ typedef struct settings
       bool filter_by_current_core;
       bool menu_enable_widgets;
       bool menu_show_load_content_animation;
+      bool notification_show_autoconfig;
+      bool notification_show_remap_load;
+      bool notification_show_config_override_load;
+      bool notification_show_fast_forward;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
