@@ -412,10 +412,10 @@ bool gfx_widget_start_load_content_animation(void)
                   sizeof(state->system_name));
 
             /* Exclude history and favourites playlists */
-            if (string_is_equal(state->system_name, "history")   ||
-                string_is_equal(state->system_name, "favorites") ||
-                string_ends_with_size(state->system_name, "_history",
-                     strlen(state->system_name), STRLEN_CONST("_history")))
+            if (string_ends_with_size(state->system_name, "_history",
+                     strlen(state->system_name), STRLEN_CONST("_history")) ||
+                string_ends_with_size(state->system_name, "_favorites",
+                     strlen(state->system_name), STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 
             /* Check whether a valid system name was found */
