@@ -575,6 +575,14 @@ static const video_driver_t *video_drivers[] = {
    NULL,
 };
 
+static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
+#if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_VULKAN))
+   &gfx_ctx_w_vk,
+#endif
+   &gfx_ctx_null,
+   NULL
+};
+
 static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(ORBIS)
    &orbis_ctx,
@@ -600,7 +608,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(HAVE_OPENDINGUX_FBDEV)
    &gfx_ctx_opendingux_fbdev,
 #endif
-#if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN))
+#if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
    &gfx_ctx_wgl,
 #endif
 #if defined(__WINRT__) && defined(HAVE_OPENGLES)
@@ -33031,6 +33039,51 @@ static const gfx_ctx_driver_t *video_context_driver_init(
    return ctx;
 }
 
+static const gfx_ctx_driver_t *vk_context_driver_init_first(void *data,
+      const char *ident, enum gfx_ctx_api api, unsigned major,
+      unsigned minor, bool hw_render_ctx, void **ctx_data)
+{
+   unsigned j;
+   struct rarch_state *p_rarch = &rarch_st;
+   int                       i = -1;
+   
+   for (j = 0; gfx_ctx_vk_drivers[j]; j++)
+   {
+      if (string_is_equal_noncase(ident, gfx_ctx_vk_drivers[j]->ident))
+      {
+         i = j;
+         break;
+      }
+   }
+
+   if (i >= 0)
+   {
+      const gfx_ctx_driver_t *ctx = video_context_driver_init(data,
+            gfx_ctx_vk_drivers[i], ident,
+            api, major, minor, hw_render_ctx, ctx_data);
+      if (ctx)
+      {
+         p_rarch->video_context_data = *ctx_data;
+         return ctx;
+      }
+   }
+
+   for (i = 0; gfx_ctx_vk_drivers[i]; i++)
+   {
+      const gfx_ctx_driver_t *ctx =
+         video_context_driver_init(data, gfx_ctx_vk_drivers[i], ident,
+               api, major, minor, hw_render_ctx, ctx_data);
+
+      if (ctx)
+      {
+         p_rarch->video_context_data = *ctx_data;
+         return ctx;
+      }
+   }
+
+   return NULL;
+}
+
 static const gfx_ctx_driver_t *gl_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx, void **ctx_data)
@@ -33096,10 +33149,17 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 {
    switch (api)
    {
+      case GFX_CTX_VULKAN_API:
+         {
+            const gfx_ctx_driver_t *ptr = vk_context_driver_init_first(
+                  data, ident, api, major, minor, hw_render_ctx, ctx_data);
+            if (ptr && !string_is_equal(ptr->ident, "null"))
+               return ptr;
+            /* fall-through if no valid driver was found */
+         }
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
-      case GFX_CTX_VULKAN_API:
       case GFX_CTX_METAL_API:
          return gl_context_driver_init_first(data, ident, api, major, minor, 
                hw_render_ctx, ctx_data);

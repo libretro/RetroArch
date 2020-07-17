@@ -62,11 +62,7 @@
 #include "../common/gl1_common.h"
 #endif
 
-#ifdef HAVE_VULKAN
-#include "../common/vulkan_common.h"
-#endif
-
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
 #endif
@@ -102,9 +98,6 @@ static bool  win32_use_hw_ctx             = false;
 static bool  win32_core_hw_context_enable = false;
 static bool  wgl_adaptive_vsync           = false;
 
-#ifdef HAVE_VULKAN
-static gfx_ctx_vulkan_data_t win32_vk;
-#endif
 #ifdef HAVE_EGL
 static egl_ctx_data_t win32_egl;
 #endif
@@ -450,29 +443,6 @@ void create_graphics_context(HWND hwnd, bool *quit)
    }
 }
 
-void create_vk_context(HWND hwnd, bool *quit)
-{
-#ifdef HAVE_VULKAN
-   RECT rect;
-   HINSTANCE instance;
-   unsigned width  = 0;
-   unsigned height = 0;
-
-   GetClientRect(hwnd, &rect);
-
-   instance = GetModuleHandle(NULL);
-   width    = rect.right - rect.left;
-   height   = rect.bottom - rect.top;
-
-   if (!vulkan_surface_create(&win32_vk, VULKAN_WSI_WIN32,
-            &instance, &hwnd,
-            width, height, win32_interval))
-      *quit = true;
-
-   g_win32_inited = true;
-#endif
-}
-
 static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 {
    (void)data;
@@ -501,17 +471,6 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 #endif
          break;
 
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         if (win32_interval != interval)
-         {
-            win32_interval = interval;
-            if (win32_vk.swapchain)
-               win32_vk.need_new_swapchain = true;
-         }
-#endif
-         break;
-
       case GFX_CTX_NONE:
       default:
          win32_interval = interval;
@@ -523,20 +482,6 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
    win32_check_window(quit, resize, width, height);
-
-   switch (win32_api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         if (win32_vk.need_new_swapchain)
-            *resize = true;
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static void gfx_ctx_wgl_swap_buffers(void *data)
@@ -547,12 +492,6 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    {
       case GFX_CTX_OPENGL_API:
          SwapBuffers(win32_hdc);
-         break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         vulkan_present(&win32_vk, win32_vk.context.current_swapchain_index);
-         vulkan_acquire_next_image(&win32_vk);
-#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_EGL)
@@ -566,36 +505,7 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
 }
 
 static bool gfx_ctx_wgl_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-
-   switch (win32_api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         if (!vulkan_create_swapchain(&win32_vk, width, height, win32_interval))
-         {
-            RARCH_ERR("[Win32/Vulkan]: Failed to update swapchain.\n");
-            return false;
-         }
-
-         if (win32_vk.created_new_swapchain)
-            vulkan_acquire_next_image(&win32_vk);
-         win32_vk.context.invalid_swapchain = true;
-         win32_vk.need_new_swapchain        = false;
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
-   return false;
-}
+      unsigned width, unsigned height) { return false; }
 
 static void gfx_ctx_wgl_update_title(void *data)
 {
@@ -666,15 +576,6 @@ static void gfx_ctx_wgl_destroy(void *data)
 #endif
          break;
 
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         vulkan_context_destroy(&win32_vk, win32_vk.vk_surface != VK_NULL_HANDLE);
-         if (win32_vk.context.queue_lock)
-            slock_free(win32_vk.context.queue_lock);
-         memset(&win32_vk, 0, sizeof(win32_vk));
-#endif
-         break;
-
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
          egl_destroy(&win32_egl);
@@ -742,31 +643,10 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    win32_window_reset();
    win32_monitor_init();
 
-   switch (win32_api)
-   {
-      case GFX_CTX_VULKAN_API:
-         wndclass.lpfnWndProc   = WndProcVK;
-         break;
-      default:
-         wndclass.lpfnWndProc   = WndProcWGL;
-         break;
-   }
+   wndclass.lpfnWndProc   = WndProcWGL;
 
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
-
-   switch (win32_api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         if (!vulkan_context_init(&win32_vk, VULKAN_WSI_WIN32))
-            goto error;
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    return wgl;
 
@@ -780,10 +660,6 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-#ifdef HAVE_VULKAN
-   win32_vk.fullscreen = fullscreen;
-#endif
-
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
       RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");
@@ -861,10 +737,6 @@ static bool gfx_ctx_wgl_bind_api(void *data,
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
 #endif
-#if defined(HAVE_VULKAN)
-   if (api == GFX_CTX_VULKAN_API)
-      return true;
-#endif
 
    return false;
 }
@@ -899,14 +771,6 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
    }
 }
 
-#ifdef HAVE_VULKAN
-static void *gfx_ctx_wgl_get_context_data(void *data)
-{
-   (void)data;
-   return &win32_vk.context;
-}
-#endif
-
 static uint32_t gfx_ctx_wgl_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -938,11 +802,6 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
 #endif
          }
 
-         break;
-      case GFX_CTX_VULKAN_API:
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
          break;
 
       case GFX_CTX_OPENGL_ES_API:
@@ -1026,10 +885,6 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_get_flags,
    gfx_ctx_wgl_set_flags,
    gfx_ctx_wgl_bind_hw_render,
-#ifdef HAVE_VULKAN
-   gfx_ctx_wgl_get_context_data,
-#else
    NULL,
-#endif
    NULL
 };
