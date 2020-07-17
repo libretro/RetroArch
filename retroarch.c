@@ -580,6 +580,9 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
 #if defined(_WIN32) && !defined(__WINRT__)
    &gfx_ctx_w_vk,
 #endif
+#if defined(ANDROID)
+   &gfx_ctx_vk_android,
+#endif
 #if defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
 #endif

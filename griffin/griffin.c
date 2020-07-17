@@ -248,6 +248,9 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/android_ctx.c"
+#if defined(HAVE_VULKAN)
+#include "../gfx/drivers_context/android_vk_ctx.c"
+#endif
 #include "../gfx/display_servers/dispserv_android.c"
 #elif defined(__QNX__)
 #include "../gfx/drivers_context/qnx_ctx.c"
