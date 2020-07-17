@@ -114,7 +114,7 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
 
    khr->vk.context.invalid_swapchain = true;
    khr->vk.need_new_swapchain = false;
-   return false;
+   return true;
 }
 
 static bool gfx_ctx_khr_display_set_video_mode(void *data,

@@ -122,7 +122,7 @@ static bool gfx_ctx_w_vk_set_resize(void *data,
    win32_vk.context.invalid_swapchain = true;
    win32_vk.need_new_swapchain        = false;
 
-   return false;
+   return true;
 }
 
 static void gfx_ctx_w_vk_update_title(void *data)
