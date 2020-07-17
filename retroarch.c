@@ -583,6 +583,9 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
 #if defined(ANDROID)
    &gfx_ctx_vk_android,
 #endif
+#if defined(HAVE_WAYLAND)
+   &gfx_ctx_vk_wayland,
+#endif
 #if defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
 #endif

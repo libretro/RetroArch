@@ -25,14 +25,7 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_EGL
-#include <wayland-egl.h>
-#include "../common/egl_common.h"
-#endif
-
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-#include "../common/gl_common.h"
-#endif
+#include "../common/vulkan_common.h"
 
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/wayland_common.h"
@@ -98,15 +91,6 @@ static void handle_toplevel_config_common(void *data,
       wl->height      = height;
    }
 
-#ifdef HAVE_EGL
-   if (wl->win)
-      wl_egl_window_resize(wl->win, width, height, 0, 0);
-   else
-      wl->win = wl_egl_window_create(wl->surface,
-            wl->width * wl->buffer_scale,
-            wl->height * wl->buffer_scale);
-#endif
-
    wl->configured = false;
 }
 
@@ -149,12 +133,10 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    if (!wl)
       return;
 
-#ifdef HAVE_EGL
-   egl_destroy(&wl->egl);
+   vulkan_context_destroy(&wl->vk, wl->surface);
 
-   if (wl->win)
-      wl_egl_window_destroy(wl->win);
-#endif
+   if (wl->input.dpy != NULL && wl->input.fd >= 0)
+      close(wl->input.fd);
 
 #ifdef HAVE_XKBCOMMON
    free_xkb();
@@ -207,9 +189,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_display_disconnect(wl->input.dpy);
    }
 
-#ifdef HAVE_EGL
-   wl->win              = NULL;
-#endif
    wl->xdg_shell        = NULL;
    wl->zxdg_shell       = NULL;
    wl->compositor       = NULL;
@@ -239,8 +218,11 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
    gfx_ctx_wl_get_video_size(data, &new_width, &new_height);
 
-   if (  new_width  != *width  * wl->last_buffer_scale || 
-         new_height != *height * wl->last_buffer_scale)
+   /* Swapchains are recreated in set_resize as a
+    * central place, so use that to trigger swapchain reinit. */
+   *resize = wl->vk.need_new_swapchain;
+
+   if (new_width != *width * wl->last_buffer_scale || new_height != *height * wl->last_buffer_scale)
    {
       *width  = new_width;
       *height = new_height;
@@ -256,9 +238,19 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-#ifdef HAVE_EGL
-   wl_egl_window_resize(wl->win, width, height, 0, 0);
-#endif
+   if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
+   {
+      wl->vk.context.invalid_swapchain = true;
+      if (wl->vk.created_new_swapchain)
+         vulkan_acquire_next_image(&wl->vk);
+   }
+   else
+   {
+      RARCH_ERR("[Wayland/Vulkan]: Failed to update swapchain.\n");
+      return false;
+   }
+
+   wl->vk.need_new_swapchain = false;
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    return true;
@@ -323,57 +315,9 @@ static bool gfx_ctx_wl_get_metrics(void *data,
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
-#ifdef HAVE_EGL
-#define WL_EGL_ATTRIBS_BASE \
-   EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
-   EGL_RED_SIZE,        1, \
-   EGL_GREEN_SIZE,      1, \
-   EGL_BLUE_SIZE,       1, \
-   EGL_ALPHA_SIZE,      0, \
-   EGL_DEPTH_SIZE,      0
-#endif
-
 static void *gfx_ctx_wl_init(void *video_driver)
 {
    int i;
-#ifdef HAVE_EGL
-   static const EGLint egl_attribs_gl[] = {
-      WL_EGL_ATTRIBS_BASE,
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-      EGL_NONE,
-   };
-
-#ifdef HAVE_OPENGLES
-#ifdef HAVE_OPENGLES2
-   static const EGLint egl_attribs_gles[] = {
-      WL_EGL_ATTRIBS_BASE,
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-      EGL_NONE,
-   };
-#endif
-
-#ifdef HAVE_OPENGLES3
-#ifdef EGL_KHR_create_context
-   static const EGLint egl_attribs_gles3[] = {
-      WL_EGL_ATTRIBS_BASE,
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
-      EGL_NONE,
-   };
-#endif
-#endif
-
-#endif
-
-   static const EGLint egl_attribs_vg[] = {
-      WL_EGL_ATTRIBS_BASE,
-      EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
-      EGL_NONE,
-   };
-
-   EGLint n;
-   EGLint major = 0, minor    = 0;
-   const EGLint *attrib_ptr   = NULL;
-#endif
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       calloc(1, sizeof(gfx_ctx_wayland_data_t));
 
@@ -383,39 +327,6 @@ static void *gfx_ctx_wl_init(void *video_driver)
    (void)video_driver;
 
    wl_list_init(&wl->all_outputs);
-
-#ifdef HAVE_EGL
-   switch (wl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-#ifdef HAVE_OPENGL
-         attrib_ptr = egl_attribs_gl;
-#endif
-         break;
-      case GFX_CTX_OPENGL_ES_API:
-#ifdef HAVE_OPENGLES
-#ifdef HAVE_OPENGLES3
-#ifdef EGL_KHR_create_context
-         if (g_egl_major >= 3)
-            attrib_ptr = egl_attribs_gles3;
-         else
-#endif
-#endif
-#ifdef HAVE_OPENGLES2
-            attrib_ptr = egl_attribs_gles;
-#endif
-#endif
-         break;
-      case GFX_CTX_OPENVG_API:
-#ifdef HAVE_VG
-         attrib_ptr = egl_attribs_vg;
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-#endif
 
    frontend_driver_destroy_signal_handler_state();
 
@@ -470,20 +381,8 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
-#ifdef HAVE_EGL
-   if (!egl_init_context(&wl->egl,
-            EGL_PLATFORM_WAYLAND_KHR,
-            (EGLNativeDisplayType)wl->input.dpy,
-            &major, &minor, &n, attrib_ptr,
-            egl_default_accept_config_cb))
-   {
-      egl_report_error();
+   if (!vulkan_context_init(&wl->vk, VULKAN_WSI_WAYLAND))
       goto error;
-   }
-
-   if (n == 0 || !egl_has_config(&wl->egl))
-      goto error;
-#endif
 
    wl->input.keyboard_focus = true;
    wl->input.mouse.focus = true;
@@ -515,79 +414,6 @@ error:
    return NULL;
 }
 
-#ifdef HAVE_EGL
-static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
-{
-   switch (wl_api)
-   {
-#ifdef EGL_KHR_create_context
-      case GFX_CTX_OPENGL_API:
-      {
-         bool debug       = false;
-#ifdef HAVE_OPENGL
-         unsigned version = wl->egl.major * 1000 + wl->egl.minor;
-         bool core        = version >= 3001;
-#ifndef GL_DEBUG
-         struct retro_hw_render_callback *hwr =
-            video_driver_get_hw_context();
-#endif
-
-#ifdef GL_DEBUG
-         debug            = true;
-#else
-         debug            = hwr->debug_context;
-#endif
-
-         if (core)
-         {
-            *attr++ = EGL_CONTEXT_MAJOR_VERSION_KHR;
-            *attr++ = wl->egl.major;
-            *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-            *attr++ = wl->egl.minor;
-            /* Technically, we don't have core/compat until 3.2.
-             * Version 3.1 is either compat or not depending on GL_ARB_compatibility. */
-            if (version >= 3002)
-            {
-               *attr++ = EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR;
-               *attr++ = EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR;
-            }
-         }
-
-         if (debug)
-         {
-            *attr++ = EGL_CONTEXT_FLAGS_KHR;
-            *attr++ = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
-         }
-#endif
-
-         break;
-      }
-#endif
-
-      case GFX_CTX_OPENGL_ES_API:
-#ifdef HAVE_OPENGLES
-         *attr++ = EGL_CONTEXT_CLIENT_VERSION; /* Same as EGL_CONTEXT_MAJOR_VERSION */
-         *attr++ = wl->egl.major ? (EGLint)wl->egl.major : 2;
-#ifdef EGL_KHR_create_context
-         if (wl->egl.minor > 0)
-         {
-            *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-            *attr++ = wl->egl.minor;
-         }
-#endif
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
-   *attr = EGL_NONE;
-   return attr;
-}
-#endif
-
 static void gfx_ctx_wl_destroy(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -597,6 +423,19 @@ static void gfx_ctx_wl_destroy(void *data)
 
    gfx_ctx_wl_destroy_resources(wl);
 
+   switch (wl_api)
+   {
+      case GFX_CTX_VULKAN_API:
+#if defined(HAVE_THREADS)
+         if (wl->vk.context.queue_lock)
+            slock_free(wl->vk.context.queue_lock);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
    free(wl);
 }
 
@@ -604,9 +443,12 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-#ifdef HAVE_EGL
-   egl_set_swap_interval(&wl->egl, swap_interval);
-#endif
+   if (wl->swap_interval != swap_interval)
+   {
+      wl->swap_interval = swap_interval;
+      if (wl->vk.swapchain)
+         wl->vk.need_new_swapchain = true;
+   }
 }
 
 /* Forward declaration */
@@ -616,11 +458,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-#ifdef HAVE_EGL
-   EGLint egl_attribs[16];
-   EGLint *attr              = egl_fill_attribs(
-         (gfx_ctx_wayland_data_t*)data, egl_attribs);
-#endif
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    wl->width                  = width  ? width  : DEFAULT_WINDOWED_WIDTH;
@@ -630,10 +467,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
-
-#ifdef HAVE_EGL
-   wl->win        = wl_egl_window_create(wl->surface, wl->width * wl->buffer_scale, wl->height * wl->buffer_scale);
-#endif
 
    if (wl->xdg_shell)
    {
@@ -688,19 +521,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       zxdg_shell_v6_add_listener(wl->zxdg_shell, &zxdg_shell_v6_listener, NULL);
    }
 
-#ifdef HAVE_EGL
-   if (!egl_create_context(&wl->egl, (attr != egl_attribs) 
-            ? egl_attribs : NULL))
-   {
-      egl_report_error();
-      goto error;
-   }
-
-   if (!egl_create_surface(&wl->egl, (EGLNativeWindowType)wl->win))
-      goto error;
-   egl_set_swap_interval(&wl->egl, wl->egl.interval);
-#endif
-
    if (fullscreen)
    {
 	   if (wl->xdg_toplevel)
@@ -710,6 +530,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 	}
 
    flush_wayland_fd(&wl->input);
+
+   wl_display_roundtrip(wl->input.dpy);
+
+   if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
+            wl->input.dpy, wl->surface,
+            wl->width * wl->buffer_scale, wl->height * wl->buffer_scale, wl->swap_interval))
+      goto error;
 
    if (fullscreen)
    {
@@ -721,11 +548,9 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    return true;
 
-#if defined(HAVE_EGL)
 error:
    gfx_ctx_wl_destroy(data);
    return false;
-#endif
 }
 
 bool input_wl_init(void *data, const char *joypad_name);
@@ -789,79 +614,34 @@ static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
 static bool gfx_ctx_wl_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-#ifdef HAVE_EGL
-   g_egl_major = major;
-   g_egl_minor = minor;
-#endif
    wl_api      = api;
 
-   switch (api)
-   {
-      case GFX_CTX_OPENGL_API:
-#ifdef HAVE_OPENGL
-#ifndef EGL_KHR_create_context
-         if ((major * 1000 + minor) >= 3001)
-            return false;
-#endif
-#ifdef HAVE_EGL
-         if (egl_bind_api(EGL_OPENGL_API))
-            return true;
-#endif
-#endif
-         break;
-      case GFX_CTX_OPENGL_ES_API:
-#ifdef HAVE_OPENGLES
-#ifndef EGL_KHR_create_context
-         if (major >= 3)
-            return false;
-#endif
-#ifdef HAVE_EGL
-         if (egl_bind_api(EGL_OPENGL_ES_API))
-            return true;
-#endif
-#endif
-         break;
-      case GFX_CTX_OPENVG_API:
-#ifdef HAVE_VG
-#ifdef HAVE_EGL
-         if (egl_bind_api(EGL_OPENVG_API))
-            return true;
-#endif
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
+   if (api == GFX_CTX_VULKAN_API)
+         return true;
    return false;
+}
+
+static void *gfx_ctx_wl_get_context_data(void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return &wl->vk.context;
 }
 
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-#ifdef HAVE_EGL
-   egl_swap_buffers(&wl->egl);
-#endif
+   vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
+   vulkan_acquire_next_image(&wl->vk);
+   flush_wayland_fd(&wl->input);
 }
 
 static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol)
 {
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#else
    return NULL;
-#endif
 }
 
-static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-#ifdef HAVE_EGL
-   egl_bind_hw_render(&wl->egl, enable);
-#endif
-}
+static void gfx_ctx_wl_bind_hw_render(void *data, bool enable) { }
 
 static uint32_t gfx_ctx_wl_get_flags(void *data)
 {
@@ -871,17 +651,31 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    if (wl->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-   if (string_is_equal(video_driver_get_ident(), "glcore"))
+   switch (wl_api)
    {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         if (string_is_equal(video_driver_get_ident(), "glcore"))
+         {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-   }
-   else if (string_is_equal(video_driver_get_ident(), "gl"))
-   {
+         }
+         else if (string_is_equal(video_driver_get_ident(), "gl"))
+         {
 #ifdef HAVE_GLSL
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
+         }
+         break;
+      case GFX_CTX_VULKAN_API:
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
 
    return flags;
@@ -924,7 +718,7 @@ static float gfx_ctx_wl_get_refresh_rate(void *data)
    return (float) wl->current_output->refresh_rate / 1000.0f;
 }
 
-const gfx_ctx_driver_t gfx_ctx_wayland = {
+const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
    gfx_ctx_wl_get_api,
@@ -954,6 +748,6 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_get_flags,
    gfx_ctx_wl_set_flags,
    gfx_ctx_wl_bind_hw_render,
-   NULL,
+   gfx_ctx_wl_get_context_data,
    NULL,
 };
