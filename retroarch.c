@@ -575,13 +575,18 @@ static const video_driver_t *video_drivers[] = {
    NULL,
 };
 
+#ifdef HAVE_VULKAN
 static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
-#if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_VULKAN))
+#if defined(_WIN32) && !defined(__WINRT__)
    &gfx_ctx_w_vk,
+#endif
+#if defined(HAVE_VULKAN_DISPLAY)
+   &gfx_ctx_khr_display,
 #endif
    &gfx_ctx_null,
    NULL
 };
+#endif
 
 static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(ORBIS)
@@ -652,9 +657,6 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #endif
 #ifdef EMSCRIPTEN
    &gfx_ctx_emscripten,
-#endif
-#if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_DISPLAY)
-   &gfx_ctx_khr_display,
 #endif
    &gfx_ctx_null,
    NULL
@@ -33039,6 +33041,7 @@ static const gfx_ctx_driver_t *video_context_driver_init(
    return ctx;
 }
 
+#ifdef HAVE_VULKAN
 static const gfx_ctx_driver_t *vk_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx, void **ctx_data)
@@ -33083,6 +33086,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(void *data,
 
    return NULL;
 }
+#endif
 
 static const gfx_ctx_driver_t *gl_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
@@ -33150,6 +33154,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    switch (api)
    {
       case GFX_CTX_VULKAN_API:
+#ifdef HAVE_VULKAN
          {
             const gfx_ctx_driver_t *ptr = vk_context_driver_init_first(
                   data, ident, api, major, minor, hw_render_ctx, ctx_data);
@@ -33157,6 +33162,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
                return ptr;
             /* fall-through if no valid driver was found */
          }
+#endif
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
