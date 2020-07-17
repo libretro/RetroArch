@@ -163,6 +163,7 @@ typedef struct settings
       bool notification_show_cheats_applied;
       bool notification_show_remap_load;
       bool notification_show_config_override_load;
+      bool notification_show_set_initial_disk;
       bool notification_show_fast_forward;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;

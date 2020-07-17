@@ -12636,6 +12636,21 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.notification_show_set_initial_disk,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+               DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.notification_show_fast_forward,
                MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
                MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
