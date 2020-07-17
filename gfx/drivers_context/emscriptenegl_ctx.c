@@ -42,16 +42,11 @@ typedef struct
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
+   int initial_width;
+   int initial_height;
    unsigned fb_width;
    unsigned fb_height;
 } emscripten_ctx_data_t;
-
-/* TODO/FIXME - would like to move these to emscripten_ctx_data_t - 
- * see the TODO/FIXME note down below */
-static int emscripten_initial_width;
-static int emscripten_initial_height;
-
-static enum gfx_ctx_api emscripten_api = GFX_CTX_NONE;
 
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 {
@@ -103,8 +98,8 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
    if (input_width == 0 || input_height == 0)
    {
-      input_width          = emscripten_initial_width;
-      input_height         = emscripten_initial_height;
+      input_width          = emscripten->initial_width;
+      input_height         = emscripten->initial_height;
       emscripten->fb_width = emscripten->fb_height = 0;
    }
 
@@ -205,9 +200,11 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 
    /* TODO/FIXME - why is this conditional here - shouldn't these always
     * be grabbed? */
-   if (emscripten_initial_width == 0 || emscripten_initial_height == 0)
+   if (  emscripten->initial_width  == 0 || 
+         emscripten->initial_height == 0)
       emscripten_get_canvas_element_size("#canvas",
-         &emscripten_initial_width, &emscripten_initial_height);
+         &emscripten->initial_width,
+         &emscripten->initial_height);
 
 #ifdef HAVE_EGL
    if (g_egl_inited)
@@ -257,22 +254,15 @@ static bool gfx_ctx_emscripten_set_video_mode(void *data,
    return true;
 }
 
-static enum gfx_ctx_api gfx_ctx_emscripten_get_api(void *data) { return emscripten_api; }
+static enum gfx_ctx_api gfx_ctx_emscripten_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }
 
 static bool gfx_ctx_emscripten_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   emscripten_api = api;
-
-   switch (api)
-   {
 #ifdef HAVE_EGL
-      case GFX_CTX_OPENGL_ES_API:
-         return egl_bind_api(EGL_OPENGL_ES_API);
+   if (api == GFX_CTX_OPENGL_ES_API)
+      return egl_bind_api(EGL_OPENGL_ES_API);
 #endif
-      default:
-         break;
-   }
 
    return false;
 }
