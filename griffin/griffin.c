@@ -270,6 +270,9 @@ VIDEO CONTEXT
 
 #ifdef HAVE_WAYLAND
 #include "../gfx/drivers_context/wayland_ctx.c"
+#ifdef HAVE_VULKAN
+#include "../gfx/drivers_context/wayland_vk_ctx.c"
+#endif
 #endif
 
 #ifdef HAVE_DRM
