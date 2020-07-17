@@ -380,6 +380,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_restart_retroarch,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_widgets,             MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content_animation, MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_autoconfig,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG)
+#ifdef HAVE_CHEATS
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_cheats_applied,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_remap_load,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_config_override_load, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_fast_forward, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD)
@@ -2985,6 +2988,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_autoconfig);
+            break;
+         case MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED:
+#ifdef HAVE_CHEATS
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_cheats_applied);
+#endif
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_remap_load);

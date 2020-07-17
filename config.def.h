@@ -783,6 +783,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG true
 #endif
 
+/* Display a notification when cheats are being
+ * applied */
+#define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
+
 /* Display a notification when loading an
  * input remap file */
 #define DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD true

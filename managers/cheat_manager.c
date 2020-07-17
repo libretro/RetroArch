@@ -43,6 +43,7 @@
 #include "cheat_manager.h"
 
 #include "../msg_hash.h"
+#include "../configuration.h"
 #include "../retroarch.h"
 #include "../dynamic.h"
 #include "../core.h"
@@ -75,7 +76,8 @@ static void cheat_manager_pause_cheevos(void)
 
 void cheat_manager_apply_cheats(void)
 {
-   unsigned i, idx = 0;
+   unsigned i, idx           = 0;
+   settings_t *settings      = config_get_ptr();
    cheat_manager_t *cheat_st = &cheat_manager_state;
 
    if (!cheat_st->cheats)
@@ -99,7 +101,7 @@ void cheat_manager_apply_cheats(void)
       }
    }
 
-   if (cheat_st->size > 0)
+   if (cheat_st->size > 0 && settings->bools.notification_show_cheats_applied)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_APPLYING_CHEAT));

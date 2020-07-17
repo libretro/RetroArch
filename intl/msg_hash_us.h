@@ -3401,6 +3401,14 @@ MSG_HASH(
    "Input (Autoconfig) Connection Notifications"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "Cheat Code Notifications"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "Display an on-screen message when cheat codes are applied"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "Display an on-screen message when connecting/disconnecting input devices."
    )

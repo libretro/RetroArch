@@ -3313,8 +3313,9 @@ static int menu_dialog_iterate(
          break;
       case MENU_DIALOG_HELP_EXTRACT:
          {
-            settings_t *settings      = config_get_ptr();
-            bool bundle_finished      = settings->bools.bundle_finished;
+            struct rarch_state *p_rarch = &rarch_st;
+            settings_t *settings        = p_rarch->configuration_settings;
+            bool bundle_finished        = settings->bools.bundle_finished;
 
             msg_hash_get_help_enum(
                   MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
