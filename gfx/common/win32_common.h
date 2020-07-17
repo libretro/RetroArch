@@ -60,6 +60,8 @@ int win32_change_display_settings(const char *str, void *devmode_data,
 
 void create_graphics_context(HWND hwnd, bool *quit);
 
+void create_vk_context(HWND hwnd, bool *quit);
+
 void create_gdi_context(HWND hwnd, bool *quit);
 
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
@@ -124,8 +126,13 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+#endif
+
+#if defined(HAVE_VULKAN)
+LRESULT CALLBACK WndProcVK(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 

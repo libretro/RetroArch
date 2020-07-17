@@ -444,34 +444,33 @@ void create_graphics_context(HWND hwnd, bool *quit)
 #endif
          break;
 
-      case GFX_CTX_VULKAN_API:
-      {
-#ifdef HAVE_VULKAN
-         RECT rect;
-         HINSTANCE instance;
-         unsigned width  = 0;
-         unsigned height = 0;
-
-         GetClientRect(hwnd, &rect);
-
-         instance = GetModuleHandle(NULL);
-         width    = rect.right - rect.left;
-         height   = rect.bottom - rect.top;
-
-         if (!vulkan_surface_create(&win32_vk, VULKAN_WSI_WIN32,
-                  &instance, &hwnd,
-                  width, height, win32_interval))
-            *quit = true;
-
-         g_win32_inited = true;
-#endif
-      }
-      break;
-
       case GFX_CTX_NONE:
       default:
          break;
    }
+}
+
+void create_vk_context(HWND hwnd, bool *quit)
+{
+#ifdef HAVE_VULKAN
+   RECT rect;
+   HINSTANCE instance;
+   unsigned width  = 0;
+   unsigned height = 0;
+
+   GetClientRect(hwnd, &rect);
+
+   instance = GetModuleHandle(NULL);
+   width    = rect.right - rect.left;
+   height   = rect.bottom - rect.top;
+
+   if (!vulkan_surface_create(&win32_vk, VULKAN_WSI_WIN32,
+            &instance, &hwnd,
+            width, height, win32_interval))
+      *quit = true;
+
+   g_win32_inited = true;
+#endif
 }
 
 static void gfx_ctx_wgl_swap_interval(void *data, int interval)
@@ -743,7 +742,16 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    win32_window_reset();
    win32_monitor_init();
 
-   wndclass.lpfnWndProc   = WndProcWGL;
+   switch (win32_api)
+   {
+      case GFX_CTX_VULKAN_API:
+         wndclass.lpfnWndProc   = WndProcVK;
+         break;
+      default:
+         wndclass.lpfnWndProc   = WndProcWGL;
+         break;
+   }
+
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
 
