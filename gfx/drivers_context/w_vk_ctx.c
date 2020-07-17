@@ -57,7 +57,7 @@ static void             *dinput_vk_wgl    = NULL;
 static int              win32_vk_interval = 0;
 static enum gfx_ctx_api win32_vk_api      = GFX_CTX_NONE;
 
-typedef struct gfx_ctx_cgl_data
+typedef struct gfx_ctx_w_vk_data
 {
    void *empty;
 } gfx_ctx_w_vk_data_t;
