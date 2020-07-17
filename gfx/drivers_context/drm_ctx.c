@@ -588,9 +588,19 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
 
    if (!egl_create_surface(&drm->egl, (EGLNativeWindowType)g_gbm_surface))
       return false;
+
+   switch (drm_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-   glClear(GL_COLOR_BUFFER_BIT);
+         glClear(GL_COLOR_BUFFER_BIT);
 #endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
 #endif
 
    egl_swap_buffers(drm);

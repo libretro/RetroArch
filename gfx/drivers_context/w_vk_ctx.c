@@ -49,18 +49,17 @@
 
 #include "../common/vulkan_common.h"
 
+typedef struct gfx_ctx_w_vk_data
+{
+   void *empty;
+} gfx_ctx_w_vk_data_t;
+
 /* TODO/FIXME - static globals */
 static gfx_ctx_vulkan_data_t win32_vk;
 
 static void             *dinput_vk_wgl    = NULL;
 
 static int              win32_vk_interval = 0;
-static enum gfx_ctx_api win32_vk_api      = GFX_CTX_NONE;
-
-typedef struct gfx_ctx_w_vk_data
-{
-   void *empty;
-} gfx_ctx_w_vk_data_t;
 
 void create_vk_context(HWND hwnd, bool *quit)
 {
@@ -276,13 +275,11 @@ static void gfx_ctx_w_vk_input_driver(void *data,
 #endif
 }
 
-static enum gfx_ctx_api gfx_ctx_w_vk_get_api(void *data) { return win32_vk_api; }
+static enum gfx_ctx_api gfx_ctx_w_vk_get_api(void *data) { return GFX_CTX_VULKAN_API; }
 
 static bool gfx_ctx_w_vk_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   win32_vk_api   = api;
-
    if (api == GFX_CTX_VULKAN_API)
       return true;
    return false;

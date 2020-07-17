@@ -27,8 +27,6 @@
 #include "../common/switch_common.h"
 #include "../../frontend/frontend_driver.h"
 
-static enum gfx_ctx_api ctx_nx_api = GFX_CTX_OPENGL_API;
-
 extern bool platform_switch_has_focus;
 
 void switch_ctx_destroy(void *data)
@@ -197,15 +195,12 @@ static void switch_ctx_input_driver(void *data,
 
 static enum gfx_ctx_api switch_ctx_get_api(void *data)
 {
-    return ctx_nx_api;
+    return GFX_CTX_OPENGL_API;
 }
 
 static bool switch_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-    (void)data;
-    ctx_nx_api = api;
-
     if (api == GFX_CTX_OPENGL_API)
         if (egl_bind_api(EGL_OPENGL_API))
             return true;

@@ -43,8 +43,6 @@ typedef struct
    unsigned width, height;
 } vivante_ctx_data_t;
 
-static enum gfx_ctx_api viv_api = GFX_CTX_NONE;
-
 static void gfx_ctx_vivante_destroy(void *data)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
@@ -188,14 +186,12 @@ static void gfx_ctx_vivante_input_driver(void *data,
 
 static enum gfx_ctx_api gfx_ctx_vivante_get_api(void *data)
 {
-   return viv_api;
+   return GFX_CTX_OPENGL_ES_API;
 }
 
 static bool gfx_ctx_vivante_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   viv_api = api;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
    return false;

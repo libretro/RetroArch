@@ -56,8 +56,6 @@ extern CGLError CGLSetSurface(CGLContextObj gl, CGSConnectionID cid, CGSWindowID
 }
 #endif
 
-static enum gfx_ctx_api cgl_api = GFX_CTX_NONE;
-
 typedef struct gfx_ctx_cgl_data
 {
    CGLContextObj glCtx;
@@ -150,16 +148,13 @@ static gfx_ctx_proc_t gfx_ctx_cgl_get_proc_address(const char *symbol_name)
 
 static bool gfx_ctx_cgl_has_focus(void *data) { return true; }
 static bool gfx_ctx_cgl_suppress_screensaver(void *data, bool enable) { return false; }
-static enum gfx_ctx_api gfx_ctx_cgl_get_api(void *data) { return cgl_api; }
+static enum gfx_ctx_api gfx_ctx_cgl_get_api(void *data) { return GFX_CTX_OPENGL_API; }
 
 static bool gfx_ctx_cgl_bind_api(void *data, enum gfx_ctx_api api,
    unsigned major, unsigned minor)
 {
    if (api == GFX_CTX_OPENGL_API)
-   {
-      cgl_api = api;
       return true;
-   }
 
    return false;
 }

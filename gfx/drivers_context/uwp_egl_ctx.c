@@ -52,14 +52,13 @@
 #include "../common/angle_common.h"
 #endif
 
+static egl_ctx_data_t uwp_egl;
+
 #ifdef HAVE_DYNAMIC
 static dylib_t          dll_handle = NULL; /* Handle to libGLESv2.dll */
 #endif
 
-static void gfx_ctx_uwp_destroy(void *data);
-
-static egl_ctx_data_t uwp_egl;
-static int uwp_interval         = 0;
+static int uwp_interval            = 0;
 
 typedef struct gfx_ctx_cgl_data
 {
@@ -131,7 +130,6 @@ static void gfx_ctx_uwp_check_window(void *data, bool *quit,
    win32_check_window(quit, resize, width, height);
 }
 
-
 static gfx_ctx_proc_t gfx_ctx_uwp_get_proc_address(const char* symbol)
 {
 #ifdef HAVE_DYNAMIC
@@ -161,7 +159,6 @@ static void *gfx_ctx_uwp_init(void *video_driver)
 
    if (!uwp)
       return NULL;
-
 
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("libGLESv2.dll");

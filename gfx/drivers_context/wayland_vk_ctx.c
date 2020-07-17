@@ -45,12 +45,6 @@
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../common/wayland/xdg-decoration-unstable-v1.h"
 
-static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
-
-#ifndef EGL_OPENGL_ES3_BIT_KHR
-#define EGL_OPENGL_ES3_BIT_KHR 0x0040
-#endif
-
 #ifndef EGL_PLATFORM_WAYLAND_KHR
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #endif
@@ -423,18 +417,10 @@ static void gfx_ctx_wl_destroy(void *data)
 
    gfx_ctx_wl_destroy_resources(wl);
 
-   switch (wl_api)
-   {
-      case GFX_CTX_VULKAN_API:
 #if defined(HAVE_THREADS)
-         if (wl->vk.context.queue_lock)
-            slock_free(wl->vk.context.queue_lock);
+   if (wl->vk.context.queue_lock)
+      slock_free(wl->vk.context.queue_lock);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    free(wl);
 }
@@ -603,16 +589,11 @@ static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
     return true;
 }
 
-static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
-{
-   return wl_api;
-}
+static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data) { return GFX_CTX_VULKAN_API; }
 
 static bool gfx_ctx_wl_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   wl_api      = api;
-
    if (api == GFX_CTX_VULKAN_API)
          return true;
    return false;
@@ -645,45 +626,14 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    uint32_t             flags = 0;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (wl->core_hw_context_enable)
-      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-
-   switch (wl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         if (string_is_equal(video_driver_get_ident(), "glcore"))
-         {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-         }
-         else if (string_is_equal(video_driver_get_ident(), "gl"))
-         {
-#ifdef HAVE_GLSL
-            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
-#endif
-         }
-         break;
-      case GFX_CTX_VULKAN_API:
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    return flags;
 }
 
-static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-      wl->core_hw_context_enable = true;
-}
+static void gfx_ctx_wl_set_flags(void *data, uint32_t flags) { }
 
 static float gfx_ctx_wl_get_refresh_rate(void *data)
 {
