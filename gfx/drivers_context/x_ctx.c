@@ -59,30 +59,30 @@ static void     (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
 
 typedef struct gfx_ctx_x_data
 {
-   bool g_use_hw_ctx;
-   bool g_core_es;
-   bool g_core_es_core;
-   bool g_debug;
-   bool g_should_reset_mode;
-   bool g_is_double;
+   bool use_hw_ctx;
+   bool core_es;
+   bool core_es_core;
+   bool debug;
+   bool should_reset_mode;
+   bool is_double;
    bool core_hw_context_enable;
    bool adaptive_vsync;
    bool msaa_enable;
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-   GLXWindow g_glx_win;
-   GLXContext g_ctx, g_hw_ctx;
-   GLXFBConfig g_fbc;
+   GLXWindow glx_win;
+   GLXContext ctx, hw_ctx;
+   GLXFBConfig fbc;
    unsigned swap_mode;
 #endif
 
-   int g_interval;
+   int interval;
 } gfx_ctx_x_data_t;
 
+/* TODO/FIXME - static globals */
 static unsigned g_major                       = 0;
 static unsigned g_minor                       = 0;
 static enum gfx_ctx_api x_api                 = GFX_CTX_NONE;
-
 static gfx_ctx_x_data_t *current_context_data = NULL;
 
 typedef struct Hints
@@ -166,29 +166,29 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-            if (x->g_ctx)
+            if (x->ctx)
             {
-               glXSwapBuffers(g_x11_dpy, x->g_glx_win);
+               glXSwapBuffers(g_x11_dpy, x->glx_win);
                glFinish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
                if (!video_driver_is_video_cache_context())
                {
-                  if (x->g_hw_ctx)
-                     glXDestroyContext(g_x11_dpy, x->g_hw_ctx);
-                  if (x->g_ctx)
-                     glXDestroyContext(g_x11_dpy, x->g_ctx);
+                  if (x->hw_ctx)
+                     glXDestroyContext(g_x11_dpy, x->hw_ctx);
+                  if (x->ctx)
+                     glXDestroyContext(g_x11_dpy, x->ctx);
 
-                  x->g_ctx    = NULL;
-                  x->g_hw_ctx = NULL;
+                  x->ctx    = NULL;
+                  x->hw_ctx = NULL;
                }
             }
 
             if (g_x11_win)
             {
-               if (x->g_glx_win)
-                  glXDestroyWindow(g_x11_dpy, x->g_glx_win);
-               x->g_glx_win = 0;
+               if (x->glx_win)
+                  glXDestroyWindow(g_x11_dpy, x->glx_win);
+               x->glx_win = 0;
             }
 #endif
             break;
@@ -211,10 +211,10 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    if (g_x11_dpy)
    {
-      if (x->g_should_reset_mode)
+      if (x->should_reset_mode)
       {
          x11_exit_fullscreen(g_x11_dpy);
-         x->g_should_reset_mode = false;
+         x->should_reset_mode = false;
       }
 
       if (!video_driver_is_video_cache_context())
@@ -231,7 +231,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 #endif
    g_major              = 0;
    g_minor              = 0;
-   x->g_core_es         = false;
+   x->core_es           = false;
 }
 
 static void gfx_ctx_x_destroy(void *data)
@@ -250,25 +250,25 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-   x->g_interval = interval;
+   x->interval = interval;
 
    if (x->swap_mode)
    {
       if (g_pglSwapInterval)
       {
-         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
-         if (g_pglSwapInterval(x->g_interval) != 0)
+         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->interval);
+         if (g_pglSwapInterval(x->interval) != 0)
             RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
       }
       else if (g_pglSwapIntervalEXT)
       {
-         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
-         g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->interval);
+         g_pglSwapIntervalEXT(g_x11_dpy, x->glx_win, x->interval);
       }
       else if (g_pglSwapIntervalSGI)
       {
-         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
-         if (g_pglSwapIntervalSGI(x->g_interval) != 0)
+         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->interval);
+         if (g_pglSwapIntervalSGI(x->interval) != 0)
             RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
       }
    }
@@ -276,19 +276,19 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
    {
       if (g_pglSwapIntervalEXT)
       {
-         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
-         g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->interval);
+         g_pglSwapIntervalEXT(g_x11_dpy, x->glx_win, x->interval);
       }
       else if (g_pglSwapInterval)
       {
-         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
-         if (g_pglSwapInterval(x->g_interval) != 0)
+         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->interval);
+         if (g_pglSwapInterval(x->interval) != 0)
             RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
       }
       else if (g_pglSwapIntervalSGI)
       {
-         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
-         if (g_pglSwapIntervalSGI(x->g_interval) != 0)
+         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->interval);
+         if (g_pglSwapIntervalSGI(x->interval) != 0)
             RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
       }
    }
@@ -300,8 +300,8 @@ static void gfx_ctx_x_swap_buffers(void *data)
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-   if (x->g_is_double)
-      glXSwapBuffers(g_x11_dpy, x->g_glx_win);
+   if (x->is_double)
+      glXSwapBuffers(g_x11_dpy, x->glx_win);
 #endif
 }
 
@@ -369,21 +369,21 @@ static void *gfx_ctx_x_init(void *data)
             glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
 
 #ifdef GL_DEBUG
-         x->g_debug = true;
+         x->debug          = true;
 #else
-         x->g_debug = hwr->debug_context;
+         x->debug          = hwr->debug_context;
 #endif
 
          /* Have to use ContextAttribs */
 #ifdef HAVE_OPENGLES2
-         x->g_core_es      = true;
-         x->g_core_es_core = true;
+         x->core_es        = true;
+         x->core_es_core   = true;
 #else
-         x->g_core_es      = (g_major * 1000 + g_minor) >= 3001;
-         x->g_core_es_core = (g_major * 1000 + g_minor) >= 3002;
+         x->core_es        = (g_major * 1000 + g_minor) >= 3001;
+         x->core_es_core   = (g_major * 1000 + g_minor) >= 3002;
 #endif
 
-         if ((x->g_core_es || x->g_debug) && !glx_create_context_attribs)
+         if ((x->core_es || x->debug) && !glx_create_context_attribs)
             goto error;
 
          fbcs = glXChooseFBConfig(g_x11_dpy, DefaultScreen(g_x11_dpy),
@@ -398,7 +398,7 @@ static void *gfx_ctx_x_init(void *data)
             goto error;
          }
 
-         x->g_fbc = fbcs[0];
+         x->fbc = fbcs[0];
          XFree(fbcs);
 #endif
          break;
@@ -475,7 +475,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         vi = glXGetVisualFromFBConfig(g_x11_dpy, x->g_fbc);
+         vi = glXGetVisualFromFBConfig(g_x11_dpy, x->fbc);
          if (!vi)
             goto error;
 #endif
@@ -508,7 +508,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    {
       if (x11_enter_fullscreen(g_x11_dpy, width, height))
       {
-         x->g_should_reset_mode = true;
+         x->should_reset_mode = true;
          true_full = true;
       }
       else
@@ -599,7 +599,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         x->g_glx_win = glXCreateWindow(g_x11_dpy, x->g_fbc, g_x11_win, 0);
+         x->glx_win = glXCreateWindow(g_x11_dpy, x->fbc, g_x11_win, 0);
 #endif
          break;
 
@@ -653,21 +653,21 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         if (!x->g_ctx)
+         if (!x->ctx)
          {
-            if (x->g_core_es || x->g_debug)
+            if (x->core_es || x->debug)
             {
                int attribs[16] = {0};
                int *aptr = attribs;
 
-               if (x->g_core_es)
+               if (x->core_es)
                {
                   *aptr++ = GLX_CONTEXT_MAJOR_VERSION_ARB;
                   *aptr++ = g_major;
                   *aptr++ = GLX_CONTEXT_MINOR_VERSION_ARB;
                   *aptr++ = g_minor;
 
-                  if (x->g_core_es_core)
+                  if (x->core_es_core)
                   {
                      /* Technically, we don't have core/compat until 3.2.
                       * Version 3.1 is either compat or not depending on
@@ -682,7 +682,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                   }
                }
 
-               if (x->g_debug)
+               if (x->debug)
                {
                   *aptr++ = GLX_CONTEXT_FLAGS_ARB;
                   *aptr++ = GLX_CONTEXT_DEBUG_BIT_ARB;
@@ -727,28 +727,28 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                    * The following code can hopefully be removed in the future:
                    */
                   RARCH_LOG("[GLX]: Creating context for requested version %u.%u.\n", g_major, g_minor);
-                  x->g_ctx = glx_create_context_attribs(g_x11_dpy,
-                        x->g_fbc, NULL, True, attribs);
+                  x->ctx = glx_create_context_attribs(g_x11_dpy,
+                        x->fbc, NULL, True, attribs);
 
-                  if (x->g_ctx)
+                  if (x->ctx)
                   {
                      const char *version;
 
-                     if (x->g_use_hw_ctx)
+                     if (x->use_hw_ctx)
                      {
                         RARCH_LOG("[GLX]: Creating shared HW context.\n");
-                        x->g_hw_ctx = glx_create_context_attribs(g_x11_dpy,
-                              x->g_fbc, x->g_ctx, True, attribs);
+                        x->hw_ctx = glx_create_context_attribs(g_x11_dpy,
+                              x->fbc, x->ctx, True, attribs);
 
-                        if (!x->g_hw_ctx)
+                        if (!x->hw_ctx)
                            RARCH_ERR("[GLX]: Failed to create new shared context.\n");
                      }
 
                      glXMakeContextCurrent(g_x11_dpy,
-                           x->g_glx_win, x->g_glx_win, x->g_ctx);
+                           x->glx_win, x->glx_win, x->ctx);
 
                      version = (const char*)glGetString(GL_VERSION);
-                     if (strstr(version, " Mesa ") || !x->g_core_es)
+                     if (strstr(version, " Mesa ") || !x->core_es)
                      {
                         /* we are done, break switch case */
                         XSetErrorHandler(old_handler);
@@ -756,7 +756,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                      }
 
                      glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
-                     glXDestroyContext(g_x11_dpy, x->g_ctx);
+                     glXDestroyContext(g_x11_dpy, x->ctx);
 
                      RARCH_LOG("[GLX]: Not running Mesa, trying higher versions...\n");
                   }
@@ -767,14 +767,14 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                   }
                   /* end of Mesa workaround / code to be removed */
 
-                  /* only try higher versions when x->g_core_es is true */
-                  if (!x->g_core_es)
+                  /* only try higher versions when x->core_es is true */
+                  if (!x->core_es)
                      version_rows = 1;
 
                   /* try versions from highest down to requested version */
                   for (i = 0; i < version_rows; i++)
                   {
-                     if (x->g_core_es)
+                     if (x->core_es)
                      {
                         attribs[1] = versions[i][0];
                         attribs[3] = versions[i][1];
@@ -783,18 +783,18 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                      else
                         RARCH_LOG("[GLX]: Creating context for version %u.%u.\n", g_major, g_minor);
 
-                     x->g_ctx = glx_create_context_attribs(g_x11_dpy,
-                           x->g_fbc, NULL, True, attribs);
+                     x->ctx = glx_create_context_attribs(g_x11_dpy,
+                           x->fbc, NULL, True, attribs);
 
-                     if (x->g_ctx)
+                     if (x->ctx)
                      {
-                        if (x->g_use_hw_ctx)
+                        if (x->use_hw_ctx)
                         {
                            RARCH_LOG("[GLX]: Creating shared HW context.\n");
-                           x->g_hw_ctx = glx_create_context_attribs(g_x11_dpy,
-                                 x->g_fbc, x->g_ctx, True, attribs);
+                           x->hw_ctx = glx_create_context_attribs(g_x11_dpy,
+                                 x->fbc, x->ctx, True, attribs);
 
-                           if (!x->g_hw_ctx)
+                           if (!x->hw_ctx)
                               RARCH_ERR("[GLX]: Failed to create new shared context.\n");
                         }
 
@@ -812,21 +812,21 @@ static bool gfx_ctx_x_set_video_mode(void *data,
             }
             else
             {
-               x->g_ctx = glXCreateNewContext(g_x11_dpy, x->g_fbc,
+               x->ctx = glXCreateNewContext(g_x11_dpy, x->fbc,
                      GLX_RGBA_TYPE, 0, True);
 
-               if (x->g_use_hw_ctx)
+               if (x->use_hw_ctx)
                {
                   RARCH_LOG("[GLX]: Creating shared HW context.\n");
-                  x->g_hw_ctx = glXCreateNewContext(g_x11_dpy, x->g_fbc,
-                        GLX_RGBA_TYPE, x->g_ctx, True);
+                  x->hw_ctx = glXCreateNewContext(g_x11_dpy, x->fbc,
+                        GLX_RGBA_TYPE, x->ctx, True);
 
-                  if (!x->g_hw_ctx)
+                  if (!x->hw_ctx)
                      RARCH_ERR("[GLX]: Failed to create new shared context.\n");
                }
             }
 
-            if (!x->g_ctx)
+            if (!x->ctx)
             {
                RARCH_ERR("[GLX]: Failed to create new context.\n");
                goto error;
@@ -839,7 +839,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          }
 
          glXMakeContextCurrent(g_x11_dpy,
-               x->g_glx_win, x->g_glx_win, x->g_ctx);
+               x->glx_win, x->glx_win, x->ctx);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -857,9 +857,9 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          glXGetConfig(g_x11_dpy, vi, GLX_DOUBLEBUFFER, &val);
-         x->g_is_double = val;
+         x->is_double = val;
 
-         if (x->g_is_double)
+         if (x->is_double)
          {
             const char *swap_func = NULL;
 
@@ -892,7 +892,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          break;
    }
 
-   gfx_ctx_x_swap_interval(data, x->g_interval);
+   gfx_ctx_x_swap_interval(data, x->interval);
 
    /* This can blow up on some drivers.
     * It's not fatal, so override errors for this call. */
@@ -1043,11 +1043,11 @@ static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         x->g_use_hw_ctx = enable;
-         if (!g_x11_dpy || !x->g_glx_win)
+         x->use_hw_ctx = enable;
+         if (!g_x11_dpy || !x->glx_win)
             return;
-         glXMakeContextCurrent(g_x11_dpy, x->g_glx_win,
-               x->g_glx_win, enable ? x->g_hw_ctx : x->g_ctx);
+         glXMakeContextCurrent(g_x11_dpy, x->glx_win,
+               x->glx_win, enable ? x->hw_ctx : x->ctx);
 #endif
          break;
 
@@ -1069,7 +1069,7 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
          if (x->adaptive_vsync)
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
-         if (x->core_hw_context_enable || x->g_core_es)
+         if (x->core_hw_context_enable || x->core_es)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
          if (x->msaa_enable)
@@ -1085,7 +1085,7 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
          else
          {
 #ifdef HAVE_CG
-            if (!(x->core_hw_context_enable || x->g_core_es))
+            if (!(x->core_hw_context_enable || x->core_es))
                BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
 #endif
 #ifdef HAVE_GLSL
@@ -1141,8 +1141,8 @@ static void gfx_ctx_x_make_current(bool release)
             glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
          else
             glXMakeContextCurrent(g_x11_dpy,
-                  current_context_data->g_glx_win,
-                  current_context_data->g_glx_win, current_context_data->g_ctx);
+                  current_context_data->glx_win,
+                  current_context_data->glx_win, current_context_data->ctx);
 #endif
          break;
 

@@ -56,9 +56,7 @@ typedef struct gfx_ctx_w_vk_data
 
 /* TODO/FIXME - static globals */
 static gfx_ctx_vulkan_data_t win32_vk;
-
 static void             *dinput_vk_wgl    = NULL;
-
 static int              win32_vk_interval = 0;
 
 void create_vk_context(HWND hwnd, bool *quit)

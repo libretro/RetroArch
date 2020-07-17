@@ -52,12 +52,11 @@
 #include "../common/angle_common.h"
 #endif
 
+/* TODO/FIXME - static globals */
 static egl_ctx_data_t uwp_egl;
-
 #ifdef HAVE_DYNAMIC
 static dylib_t          dll_handle = NULL; /* Handle to libGLESv2.dll */
 #endif
-
 static int uwp_interval            = 0;
 
 typedef struct gfx_ctx_cgl_data

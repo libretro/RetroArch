@@ -32,8 +32,6 @@
 #include "../common/sdl2_common.h"
 #endif
 
-static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
-
 typedef struct gfx_ctx_sdl_data
 {
    int  g_width;
@@ -51,6 +49,9 @@ typedef struct gfx_ctx_sdl_data
    SDL_Surface *g_win;
 #endif
 } gfx_ctx_sdl_data_t;
+
+/* TODO/FIXME - static global */
+static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
 
 static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
 {

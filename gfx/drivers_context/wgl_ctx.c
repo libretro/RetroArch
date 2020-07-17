@@ -97,18 +97,14 @@ static HDC   win32_hdc;
 static bool  win32_use_hw_ctx             = false;
 static bool  win32_core_hw_context_enable = false;
 static bool  wgl_adaptive_vsync           = false;
-
 #ifdef HAVE_EGL
 static egl_ctx_data_t win32_egl;
 #endif
-
 static void             *dinput_wgl       = NULL;
-
 static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
 static int              win32_interval    = 0;
 static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
-
 #ifdef HAVE_DYNAMIC
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll/libGLESv2.dll */
 #endif

@@ -54,6 +54,7 @@ typedef struct
    bool should_reset_mode;
 } xegl_ctx_data_t;
 
+/* TODO/FIXME - static globals */
 static enum gfx_ctx_api xegl_api = GFX_CTX_NONE;
 
 static int xegl_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }

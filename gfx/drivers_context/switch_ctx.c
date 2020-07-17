@@ -27,6 +27,7 @@
 #include "../common/switch_common.h"
 #include "../../frontend/frontend_driver.h"
 
+/* TODO/FIXME - global referenced */
 extern bool platform_switch_has_focus;
 
 void switch_ctx_destroy(void *data)

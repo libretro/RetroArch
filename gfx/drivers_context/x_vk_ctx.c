@@ -58,8 +58,6 @@ typedef struct Hints
    unsigned long status;
 } Hints;
 
-static enum gfx_ctx_api x_vk_api                 = GFX_CTX_NONE;
-
 /* We use long because X11 wants 32-bit pixels for 32-bit systems and 64 for 64... */
 /* ARGB*/
 static const unsigned long retroarch_icon_vk_data[] = {
@@ -128,18 +126,10 @@ static void gfx_ctx_x_vk_destroy(void *data)
 
    gfx_ctx_x_vk_destroy_resources(x);
 
-   switch (x_vk_api)
-   {
-      case GFX_CTX_VULKAN_API:
 #if defined(HAVE_THREADS)
-         if (x->vk.context.queue_lock)
-            slock_free(x->vk.context.queue_lock);
+   if (x->vk.context.queue_lock)
+      slock_free(x->vk.context.queue_lock);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    free(data);
 }
@@ -492,14 +482,12 @@ static bool gfx_ctx_x_vk_suppress_screensaver(void *data, bool enable)
 
 static enum gfx_ctx_api gfx_ctx_x_vk_get_api(void *data)
 {
-   return x_vk_api;
+   return GFX_CTX_VULKAN_API;
 }
 
 static bool gfx_ctx_x_vk_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor)
 {
-   x_vk_api   = api;
-
    if (api == GFX_CTX_VULKAN_API)
          return true;
 

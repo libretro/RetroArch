@@ -26,6 +26,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 
+/* TODO/FIXME - static globals */
 static enum gfx_ctx_api ctx_orbis_api = GFX_CTX_OPENGL_API;
 
 /* TODO/FIXME - global reference */

@@ -74,11 +74,12 @@ typedef struct
    EGLContext eglimage_ctx;
    EGLSurface pbuff_surf;
    VGImage vgimage[MAX_EGLIMAGE_TEXTURES];
+   PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
+   PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
 } vc_ctx_data_t;
 
+/* TODO/FIXME - static globals */
 static enum gfx_ctx_api vc_api = GFX_CTX_NONE;
-static PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
-static PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
 
 static INLINE bool gfx_ctx_vc_egl_query_extension(vc_ctx_data_t *vc, const char *ext)
 {
@@ -161,12 +162,12 @@ static void gfx_ctx_vc_destroy(void *data)
    {
       for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
       {
-         if (vc->eglBuffer[i] && peglDestroyImageKHR)
+         if (vc->eglBuffer[i] && vc->peglDestroyImageKHR)
          {
             egl_bind_api(EGL_OPENVG_API);
             eglMakeCurrent(vc->egl.dpy,
                   vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
-            peglDestroyImageKHR(vc->egl.dpy, vc->eglBuffer[i]);
+            vc->peglDestroyImageKHR(vc->egl.dpy, vc->eglBuffer[i]);
          }
 
          if (vc->vgimage[i])
@@ -513,11 +514,11 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
    if (vc_api == GFX_CTX_OPENVG_API)
       return false;
 
-   peglCreateImageKHR  = (PFNEGLCREATEIMAGEKHRPROC)egl_get_proc_address("eglCreateImageKHR");
-   peglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)egl_get_proc_address("eglDestroyImageKHR");
+   vc->peglCreateImageKHR  = (PFNEGLCREATEIMAGEKHRPROC)egl_get_proc_address("eglCreateImageKHR");
+   vc->peglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)egl_get_proc_address("eglDestroyImageKHR");
 
-   if (  !peglCreateImageKHR  ||
-         !peglDestroyImageKHR ||
+   if (  !vc->peglCreateImageKHR  ||
+         !vc->peglDestroyImageKHR ||
          !gfx_ctx_vc_egl_query_extension(vc, "KHR_image")
       )
       return false;
@@ -595,7 +596,7 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame,
             vc->res,
             vc->res,
             VG_IMAGE_QUALITY_NONANTIALIASED);
-      vc->eglBuffer[index] = peglCreateImageKHR(
+      vc->eglBuffer[index] = vc->peglCreateImageKHR(
             vc->egl.dpy,
             vc->eglimage_ctx,
             EGL_VG_PARENT_IMAGE_KHR,

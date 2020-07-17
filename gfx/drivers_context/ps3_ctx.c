@@ -41,6 +41,7 @@ typedef struct gfx_ctx_ps3_data
 #endif
 } gfx_ctx_ps3_data_t;
 
+/* TODO/FIXME - static global */
 static enum gfx_ctx_api ps3_api = GFX_CTX_NONE;
 
 static void gfx_ctx_ps3_get_resolution(unsigned idx,

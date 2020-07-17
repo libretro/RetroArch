@@ -49,9 +49,6 @@
 
 #define WINDOW_BUFFERS 2
 
-screen_context_t screen_ctx;
-screen_window_t screen_win;
-
 typedef struct
 {
 #ifdef HAVE_EGL
@@ -60,6 +57,11 @@ typedef struct
    screen_display_t screen_disp;
    bool resize;
 } qnx_ctx_data_t;
+
+/* TODO/FIXME - globals with public scope */
+screen_context_t screen_ctx;
+screen_window_t screen_win;
+
 
 static void gfx_ctx_qnx_destroy(void *data)
 {

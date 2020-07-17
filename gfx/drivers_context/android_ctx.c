@@ -51,7 +51,7 @@ typedef struct
 #endif
 } android_ctx_data_t;
 
-/* TODO/FIXME - static global */
+/* TODO/FIXME - static globals */
 static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
 #ifdef HAVE_OPENGLES
 static bool g_es3                             = false;

@@ -85,6 +85,7 @@ typedef struct gfx_ctx_go2_drm_data
    bool core_hw_context_enable;
 } gfx_ctx_go2_drm_data_t;
 
+/* TODO/FIXME - static global */
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
 /* Function callback */
