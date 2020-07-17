@@ -66,15 +66,6 @@
 #define EGL_PLATFORM_GBM_KHR 0x31D7
 #endif
 
-static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
-
-static struct gbm_bo *g_bo                = NULL;
-static struct gbm_bo *g_next_bo           = NULL;
-static struct gbm_surface *g_gbm_surface  = NULL;
-static struct gbm_device *g_gbm_dev       = NULL;
-
-static bool waiting_for_flip              = false;
-
 typedef struct gfx_ctx_drm_data
 {
 #ifdef HAVE_EGL
@@ -86,6 +77,11 @@ typedef struct gfx_ctx_drm_data
    unsigned fb_height;
 
    bool core_hw_context_enable;
+   bool waiting_for_flip;
+   struct gbm_bo *bo;
+   struct gbm_bo *next_bo;
+   struct gbm_surface *gbm_surface;
+   struct gbm_device  *gbm_dev;
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -93,6 +89,8 @@ struct drm_fb
    struct gbm_bo *bo;
    uint32_t fb_id;
 };
+
+static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
@@ -174,47 +172,47 @@ static void drm_flip_handler(int fd, unsigned frame,
    *(bool*)data = false;
 }
 
-static bool gfx_ctx_drm_wait_flip(bool block)
+static bool gfx_ctx_drm_wait_flip(gfx_ctx_drm_data_t *drm, bool block)
 {
    int timeout = 0;
 
-   if (!waiting_for_flip)
+   if (!drm->waiting_for_flip)
       return false;
 
    if (block)
       timeout = -1;
 
-   while (waiting_for_flip)
+   while (drm->waiting_for_flip)
    {
       if (!drm_wait_flip(timeout))
          break;
    }
 
-   if (waiting_for_flip)
+   if (drm->waiting_for_flip)
       return true;
 
    /* Page flip has taken place. */
 
    /* This buffer is not on-screen anymore. Release it to GBM. */
-   gbm_surface_release_buffer(g_gbm_surface, g_bo);
+   gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
    /* This buffer is being shown now. */
-   g_bo = g_next_bo;
+   drm->bo = drm->next_bo;
 
    return false;
 }
 
-static bool gfx_ctx_drm_queue_flip(void)
+static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
 {
    struct drm_fb *fb = NULL;
 
-   g_next_bo         = gbm_surface_lock_front_buffer(g_gbm_surface);
-   fb                = (struct drm_fb*)gbm_bo_get_user_data(g_next_bo);
+   drm->next_bo      = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   fb                = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
 
    if (!fb)
-      fb             = (struct drm_fb*)drm_fb_get_from_bo(g_next_bo);
+      fb             = (struct drm_fb*)drm_fb_get_from_bo(drm->next_bo);
 
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
-         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
+         DRM_MODE_PAGE_FLIP_EVENT, &drm->waiting_for_flip) == 0)
       return true;
 
    /* Failed to queue page flip. */
@@ -236,17 +234,17 @@ static void gfx_ctx_drm_swap_buffers(void *data)
     *
     * If true, we are still waiting for a flip
     * (nonblocking mode, so just drop the frame). */
-   if (gfx_ctx_drm_wait_flip(drm->interval))
+   if (gfx_ctx_drm_wait_flip(drm, drm->interval))
       return;
 
-   waiting_for_flip = gfx_ctx_drm_queue_flip();
+   drm->waiting_for_flip = gfx_ctx_drm_queue_flip(drm);
 
    /* Triple-buffered page flips */
    if (max_swapchain_images >= 3 &&
-         gbm_surface_has_free_buffers(g_gbm_surface))
+         gbm_surface_has_free_buffers(drm->gbm_surface))
       return;
 
-   gfx_ctx_drm_wait_flip(true);
+   gfx_ctx_drm_wait_flip(drm, true);
 }
 
 static void gfx_ctx_drm_get_video_size(void *data,
@@ -269,11 +267,11 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
    /* Restore original CRTC. */
    drm_restore_crtc();
 
-   if (g_gbm_surface)
-      gbm_surface_destroy(g_gbm_surface);
+   if (drm->gbm_surface)
+      gbm_surface_destroy(drm->gbm_surface);
 
-   if (g_gbm_dev)
-      gbm_device_destroy(g_gbm_dev);
+   if (drm->gbm_dev)
+      gbm_device_destroy(drm->gbm_dev);
 
    drm_free();
 
@@ -286,8 +284,8 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
       }
    }
 
-   g_gbm_surface      = NULL;
-   g_gbm_dev          = NULL;
+   drm->gbm_surface   = NULL;
+   drm->gbm_dev       = NULL;
    g_drm_fd           = -1;
 }
 
@@ -297,7 +295,7 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
       return;
 
    /* Make sure we acknowledge all page-flips. */
-   gfx_ctx_drm_wait_flip(true);
+   gfx_ctx_drm_wait_flip(drm, true);
 
 #ifdef HAVE_EGL
    egl_destroy(&drm->egl);
@@ -312,8 +310,8 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
    drm->fb_width       = 0;
    drm->fb_height      = 0;
 
-   g_bo                = NULL;
-   g_next_bo           = NULL;
+   drm->bo             = NULL;
+   drm->next_bo        = NULL;
 }
 
 static void *gfx_ctx_drm_init(void *video_driver)
@@ -380,9 +378,9 @@ nextgpu:
 
    drmSetMaster(g_drm_fd);
 
-   g_gbm_dev        = gbm_create_device(fd);
+   drm->gbm_dev      = gbm_create_device(fd);
 
-   if (!g_gbm_dev)
+   if (!drm->gbm_dev)
    {
       RARCH_WARN("[KMS]: Couldn't create GBM device.\n");
       goto nextgpu;
@@ -575,7 +573,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
-            (EGLNativeDisplayType)g_gbm_dev, &major,
+            (EGLNativeDisplayType)drm->gbm_dev, &major,
             &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
       goto error;
 
@@ -586,7 +584,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
             ? egl_attribs_ptr : NULL))
       goto error;
 
-   if (!egl_create_surface(&drm->egl, (EGLNativeWindowType)g_gbm_surface))
+   if (!egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface))
       return false;
 
    switch (drm_api)
@@ -680,14 +678,14 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    drm->fb_height   = g_drm_mode->vdisplay;
 
    /* Create GBM surface. */
-   g_gbm_surface = gbm_surface_create(
-         g_gbm_dev,
+   drm->gbm_surface = gbm_surface_create(
+         drm->gbm_dev,
          drm->fb_width,
          drm->fb_height,
          GBM_FORMAT_XRGB8888,
          GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
-   if (!g_gbm_surface)
+   if (!drm->gbm_surface)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
       goto error;
@@ -698,12 +696,12 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
 #endif
 
-   g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
+   drm->bo   = gbm_surface_lock_front_buffer(drm->gbm_surface);
 
-   fb = (struct drm_fb*)gbm_bo_get_user_data(g_bo);
+   fb        = (struct drm_fb*)gbm_bo_get_user_data(drm->bo);
 
    if (!fb)
-      fb   = drm_fb_get_from_bo(g_bo);
+      fb   = drm_fb_get_from_bo(drm->bo);
 
    ret     = drmModeSetCrtc(g_drm_fd,
          g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
