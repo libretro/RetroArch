@@ -42,8 +42,6 @@ typedef struct
    unsigned width, height;
 } opendingux_ctx_data_t;
 
-static enum gfx_ctx_api opendingux_api = GFX_CTX_NONE;
-
 static void gfx_ctx_opendingux_destroy(void *data)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
@@ -182,14 +180,12 @@ static void gfx_ctx_opendingux_input_driver(void *data,
 
 static enum gfx_ctx_api gfx_ctx_opendingux_get_api(void *data)
 {
-   return opendingux_api;
+   return GFX_CTX_OPENGL_ES_API;
 }
 
 static bool gfx_ctx_opendingux_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   opendingux_api = api;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
    return false;

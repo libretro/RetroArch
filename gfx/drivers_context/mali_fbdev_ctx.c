@@ -57,8 +57,6 @@ typedef struct
    float refresh_rate;
 } mali_ctx_data_t;
 
-static enum gfx_ctx_api mali_api           = GFX_CTX_NONE;
-
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
    int fd;
@@ -213,18 +211,14 @@ static void gfx_ctx_mali_fbdev_input_driver(void *data,
 
 static enum gfx_ctx_api gfx_ctx_mali_fbdev_get_api(void *data)
 {
-   return mali_api;
+   return GFX_CTX_OPENGL_ES_API;
 }
 
 static bool gfx_ctx_mali_fbdev_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-   mali_api = api;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
-
    return false;
 }
 

@@ -61,8 +61,6 @@ typedef struct
    bool resize;
 } qnx_ctx_data_t;
 
-static enum gfx_ctx_api qnx_api = GFX_CTX_NONE;
-
 static void gfx_ctx_qnx_destroy(void *data)
 {
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
@@ -312,16 +310,13 @@ static void gfx_ctx_qnx_input_driver(void *data,
    *input_data          = qnxinput;
 }
 
-static enum gfx_ctx_api gfx_ctx_qnx_get_api(void *data) { return qnx_api; }
+static enum gfx_ctx_api gfx_ctx_qnx_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }
 
 static bool gfx_ctx_qnx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   qnx_api = api;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
-
    return false;
 }
 
