@@ -41,14 +41,14 @@
 #define HAVE_OSMESA_CREATE_CONTEXT_EXT 1
 #endif
 
+/* TODO/FIXME - static globals */
 static bool           g_osmesa_profile = OSMESA_COMPAT_PROFILE;
 static int            g_osmesa_major   = 2;
 static int            g_osmesa_minor   = 1;
+
 static const int      g_osmesa_format  = OSMESA_RGBA;
 static const int      g_osmesa_bpp     = 4;
 static const char    *g_osmesa_fifo    = "/tmp/osmesa-retroarch.sock";
-
-static enum gfx_ctx_api osmesa_api     = GFX_CTX_NONE;
 
 typedef struct gfx_osmesa_ctx_data
 {
@@ -213,7 +213,7 @@ static void osmesa_ctx_destroy(void *data)
 
 static enum gfx_ctx_api osmesa_ctx_get_api(void *data)
 {
-   return osmesa_api;
+   return GFX_CTX_OPENGL_API;
 }
 
 static bool osmesa_ctx_bind_api(void *data,
@@ -224,10 +224,9 @@ static bool osmesa_ctx_bind_api(void *data,
       return false;
 
    /* Use version 2.1 by default */
-   osmesa_api       = api;
-   g_osmesa_major   = 2;
-   g_osmesa_minor   = 1;
-   g_osmesa_profile = OSMESA_COMPAT_PROFILE;
+   g_osmesa_major    = 2;
+   g_osmesa_minor    = 1;
+   g_osmesa_profile  = OSMESA_COMPAT_PROFILE;
 
    if (major)
    {
@@ -275,27 +274,7 @@ static bool osmesa_ctx_set_video_mode(void *data,
    osmesa->screen = screen;
 
    if (!osmesa->socket)
-   {
-#if 0
-      unlink(g_osmesa_fifo);
-      if (mkfifo(g_osmesa_fifo, 0666) == 0)
-      {
-         RARCH_WARN("[osmesa]: Please connect the sink to the fifo...\n");
-         RARCH_WARN("[osmesa]: Picture size is %ux%u\n", width, height);
-         osmesa->socket = open(g_osmesa_fifo, O_WRONLY);
-
-         if (osmesa->socket)
-            RARCH_WARN("[osmesa]: Initialized fifo at %s\n", g_osmesa_fifo);
-      }
-
-      if (!osmesa->socket || osmesa->socket < 0)
-      {
-         unlink(g_osmesa_fifo);
-         RARCH_WARN("[osmesa]: Failed to initialize fifo: %s\n", strerror(errno));
-      }
-#endif
       osmesa_fifo_open(osmesa);
-   }
 
    return true;
 }
