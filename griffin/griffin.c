@@ -322,6 +322,10 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/x_ctx.c"
 #endif
 
+#ifdef HAVE_VULKAN
+#include "../gfx/drivers_context/x_vk_ctx.c"
+#endif
+
 #ifdef HAVE_EGL
 #include "../gfx/drivers_context/xegl_ctx.c"
 #endif

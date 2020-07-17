@@ -51,10 +51,6 @@
 #include "../common/xinerama_common.h"
 #endif
 
-#ifdef HAVE_VULKAN
-#include "../common/vulkan_common.h"
-#endif
-
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 static int      (*g_pglSwapInterval)(int);
 static int      (*g_pglSwapIntervalSGI)(int);
@@ -81,10 +77,6 @@ typedef struct gfx_ctx_x_data
 #endif
 
    int g_interval;
-
-#ifdef HAVE_VULKAN
-   gfx_ctx_vulkan_data_t vk;
-#endif
 } gfx_ctx_x_data_t;
 
 static unsigned g_major                       = 0;
@@ -200,13 +192,6 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
             }
 #endif
             break;
-
-         case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-            vulkan_context_destroy(&x->vk, g_x11_win != 0);
-#endif
-            break;
-
          case GFX_CTX_NONE:
          default:
             break;
@@ -257,19 +242,6 @@ static void gfx_ctx_x_destroy(void *data)
 
    gfx_ctx_x_destroy_resources(x);
 
-   switch (x_api)
-   {
-      case GFX_CTX_VULKAN_API:
-#if defined(HAVE_VULKAN) && defined(HAVE_THREADS)
-         if (x->vk.context.queue_lock)
-            slock_free(x->vk.context.queue_lock);
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
    free(data);
 }
 
@@ -277,160 +249,70 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
-   switch (x_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         x->g_interval = interval;
+   x->g_interval = interval;
 
-         if (x->swap_mode)
-         {
-             if (g_pglSwapInterval)
-             {
-                RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
-                if (g_pglSwapInterval(x->g_interval) != 0)
-                   RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
-             }
-             else if (g_pglSwapIntervalEXT)
-             {
-                RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
-                g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
-             }
-             else if (g_pglSwapIntervalSGI)
-             {
-                RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
-                if (g_pglSwapIntervalSGI(x->g_interval) != 0)
-                   RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
-             }
-         }
-         else
-         {
-             if (g_pglSwapIntervalEXT)
-             {
-                RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
-                g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
-             }
-             else if (g_pglSwapInterval)
-             {
-                RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
-                if (g_pglSwapInterval(x->g_interval) != 0)
-                   RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
-             }
-             else if (g_pglSwapIntervalSGI)
-             {
-                RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
-                if (g_pglSwapIntervalSGI(x->g_interval) != 0)
-                   RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
-             }
-         }
-#endif
-         break;
-
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         if (x->g_interval != interval)
-         {
-            x->g_interval = interval;
-            if (x->vk.swapchain)
-               x->vk.need_new_swapchain = true;
-         }
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
+   if (x->swap_mode)
+   {
+      if (g_pglSwapInterval)
+      {
+         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
+         if (g_pglSwapInterval(x->g_interval) != 0)
+            RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+      }
+      else if (g_pglSwapIntervalEXT)
+      {
+         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
+         g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+      }
+      else if (g_pglSwapIntervalSGI)
+      {
+         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
+         if (g_pglSwapIntervalSGI(x->g_interval) != 0)
+            RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+      }
    }
+   else
+   {
+      if (g_pglSwapIntervalEXT)
+      {
+         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
+         g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+      }
+      else if (g_pglSwapInterval)
+      {
+         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
+         if (g_pglSwapInterval(x->g_interval) != 0)
+            RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+      }
+      else if (g_pglSwapIntervalSGI)
+      {
+         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
+         if (g_pglSwapIntervalSGI(x->g_interval) != 0)
+            RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+      }
+   }
+#endif
 }
 
 static void gfx_ctx_x_swap_buffers(void *data)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
-   switch (x_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         if (x->g_is_double)
-            glXSwapBuffers(g_x11_dpy, x->g_glx_win);
+   if (x->g_is_double)
+      glXSwapBuffers(g_x11_dpy, x->g_glx_win);
 #endif
-         break;
-
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         vulkan_present(&x->vk, x->vk.context.current_swapchain_index);
-         vulkan_acquire_next_image(&x->vk);
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static void gfx_ctx_x_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
    x11_check_window(data, quit, resize, width, height);
-
-   switch (x_api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         {
-            gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-            if (x->vk.need_new_swapchain)
-               *resize = true;
-         }
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static bool gfx_ctx_x_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-
-   switch (x_api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         {
-            gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-
-            /* FIXME/TODO - threading error here */
-
-            if (!vulkan_create_swapchain(&x->vk, width, height, x->g_interval))
-            {
-               RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
-               x->vk.swapchain = VK_NULL_HANDLE;
-               return false;
-            }
-
-            if (x->vk.created_new_swapchain)
-               vulkan_acquire_next_image(&x->vk);
-            x->vk.context.invalid_swapchain = true;
-            x->vk.need_new_swapchain        = false;
-         }
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-   return true;
-}
+      unsigned width, unsigned height) { return true; }
 
 static void *gfx_ctx_x_init(void *data)
 {
@@ -520,14 +402,6 @@ static void *gfx_ctx_x_init(void *data)
          XFree(fbcs);
 #endif
          break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         /* Use XCB WSI since it's the most supported WSI over legacy Xlib. */
-         if (!vulkan_context_init(&x->vk, VULKAN_WSI_XCB))
-            goto error;
-#endif
-         break;
-
       case GFX_CTX_NONE:
       default:
          break;
@@ -537,16 +411,16 @@ static void *gfx_ctx_x_init(void *data)
    {
       case GFX_CTX_OPENGL_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-	 if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
-	 {
+         if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
+         {
             RARCH_LOG("[GLX]: GLX_EXT_swap_control_tear supported.\n");
             x->adaptive_vsync = true;
-	 }
+         }
 
-     if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
-         GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
-        )
-        x->swap_mode         = 1;
+         if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
+               GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
+            )
+            x->swap_mode         = 1;
 #endif
          break;
       default:
@@ -968,26 +842,6 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                x->g_glx_win, x->g_glx_win, x->g_ctx);
 #endif
          break;
-
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         {
-            bool quit, resize;
-            unsigned width = 0, height = 0;
-            x11_check_window(x, &quit, &resize, &width, &height);
-
-            /* FIXME/TODO - threading error here */
-
-            /* Use XCB surface since it's the most supported WSI.
-             * We can obtain the XCB connection directly from X11. */
-            if (!vulkan_surface_create(&x->vk, VULKAN_WSI_XCB,
-                     g_x11_dpy, &g_x11_win,
-                     width, height, x->g_interval))
-               goto error;
-         }
-#endif
-         break;
-
       case GFX_CTX_NONE:
       default:
          break;
@@ -1164,12 +1018,6 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
 #else
          break;
 #endif
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         return true;
-#else
-         break;
-#endif
       case GFX_CTX_NONE:
       default:
          break;
@@ -1208,14 +1056,6 @@ static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
          break;
    }
 }
-
-#ifdef HAVE_VULKAN
-static void *gfx_ctx_x_get_context_data(void *data)
-{
-   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-   return &x->vk.context;
-}
-#endif
 
 static uint32_t gfx_ctx_x_get_flags(void *data)
 {
@@ -1343,10 +1183,6 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_set_flags,
 
    gfx_ctx_x_bind_hw_render,
-#ifdef HAVE_VULKAN
-   gfx_ctx_x_get_context_data,
-#else
    NULL,
-#endif
    gfx_ctx_x_make_current
 };

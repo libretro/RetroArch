@@ -1109,6 +1109,9 @@ ifeq ($(HAVE_X11), 1)
    ifneq ($(HAVE_OPENGLES), 1)
       OBJ += gfx/drivers_context/x_ctx.o
    endif
+   ifeq ($(HAVE_VULKAN), 1)
+      OBJ += gfx/drivers_context/x_vk_ctx.o
+   endif
 endif
 
 ifeq ($(HAVE_XCB),1)
