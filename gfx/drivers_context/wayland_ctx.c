@@ -609,9 +609,6 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 #endif
 }
 
-/* Forward declaration */
-void gfx_ctx_wl_show_mouse(void *data, bool state);
-
 static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
@@ -892,26 +889,6 @@ static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
       wl->core_hw_context_enable = true;
-}
-
-void gfx_ctx_wl_show_mouse(void *data, bool state)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (!wl->wl_pointer)
-      return;
-
-   if (state)
-   {
-      struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
-      wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, wl->cursor.surface, image->hotspot_x, image->hotspot_y);
-      wl_surface_attach(wl->cursor.surface, wl_cursor_image_get_buffer(image), 0, 0);
-      wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
-      wl_surface_commit(wl->cursor.surface);
-   }
-   else
-      wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, NULL, 0, 0);
-
-   wl->cursor.visible = state;
 }
 
 static float gfx_ctx_wl_get_refresh_rate(void *data)

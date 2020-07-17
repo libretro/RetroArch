@@ -177,6 +177,8 @@ void handle_xkb_state_mask(uint32_t depressed,
 void free_xkb(void);
 #endif
 
+void gfx_ctx_wl_show_mouse(void *data, bool state);
+
 void handle_toplevel_close(void *data,
       struct xdg_toplevel *xdg_toplevel);
 
