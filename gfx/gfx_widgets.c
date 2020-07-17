@@ -59,10 +59,6 @@ COLOR_HEX_TO_FLOAT(0x397869, 1.0f);
 static float msg_queue_task_progress_2[16]               = 
 COLOR_HEX_TO_FLOAT(0x317198, 1.0f);
 
-#if 0
-static float color_task_progress_bar[16]                 = 
-COLOR_HEX_TO_FLOAT(0x22B14C, 1.0f);
-#endif
 static float gfx_widgets_pure_white[16]                  = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
