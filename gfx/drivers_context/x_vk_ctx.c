@@ -82,15 +82,6 @@ static const unsigned long retroarch_icon_vk_data[] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
 };
 
-static int x_log_error_handler(Display *dpy, XErrorEvent *event)
-{
-   char buf[1024];
-   XGetErrorText(dpy, event->error_code, buf, sizeof buf);
-   RARCH_WARN("[GLX]: X error message: %s, request code: %d, minor code: %d\n",
-         buf, event->request_code, event->minor_code);
-   return 0;
-}
-
 static int x_vk_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
 
 static void gfx_ctx_x_vk_destroy_resources(gfx_ctx_x_vk_data_t *x)
