@@ -87,9 +87,6 @@ typedef struct gfx_ctx_go2_drm_data
 
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
-/* TODO/FIXME - global variable */
-int ss = 0;
-
 /* Function callback */
 void (*swap_buffers)(void*);
 
