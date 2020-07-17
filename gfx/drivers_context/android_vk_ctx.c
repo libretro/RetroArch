@@ -147,7 +147,7 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
    and->vk.context.invalid_swapchain = true;
    and->vk.need_new_swapchain        = false;
 
-   return false;
+   return true;
 }
 
 static bool android_gfx_ctx_vk_set_video_mode(void *data,
@@ -159,8 +159,10 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
 
    and->width  = ANativeWindow_getWidth(android_app->window);
    and->height = ANativeWindow_getHeight(android_app->window);
-   RARCH_LOG("[Android]: Native window size: %u x %u.\n", and->width, and->height);
-   if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID, NULL, android_app->window,
+   RARCH_LOG("[Android]: Native window size: %u x %u.\n",
+         and->width, and->height);
+   if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
+            NULL, android_app->window,
             and->width, and->height, and->swap_interval))
    {
       RARCH_ERR("[Android]: Failed to create surface.\n");
