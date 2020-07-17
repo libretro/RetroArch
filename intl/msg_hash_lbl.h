@@ -4333,6 +4333,10 @@ MSG_HASH(
    "notification_show_config_override_load"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "notification_show_set_initial_disk"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
    "notification_show_fast_forward"
    )

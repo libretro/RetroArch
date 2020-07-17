@@ -167,11 +167,14 @@ bool disk_control_set_initial_index(
  *   if functionality is supported by core
  * NOTE: Must be called immediately after
  * loading content */
-bool disk_control_verify_initial_index(disk_control_interface_t *disk_control);
+bool disk_control_verify_initial_index(
+      disk_control_interface_t *disk_control,
+      bool verbosity);
 
 /* Saves current disk index to file, if supported
  * by current core */
-bool disk_control_save_image_index(disk_control_interface_t *disk_control);
+bool disk_control_save_image_index(
+      disk_control_interface_t *disk_control);
 
 RETRO_END_DECLS
 

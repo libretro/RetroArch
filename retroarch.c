@@ -14743,6 +14743,7 @@ static bool command_event_init_core(
    bool auto_remaps_enable         = settings->bools.auto_remaps_enable;
    const char *dir_input_remapping = settings->paths.directory_input_remapping;
 #endif
+   bool show_set_initial_disk_msg  = settings->bools.notification_show_set_initial_disk;
    unsigned poll_type_behavior     = settings->uints.input_poll_type_behavior;
    float fastforward_ratio         = settings->floats.fastforward_ratio;
    rarch_system_info_t *sys_info   = &p_rarch->runloop_system;
@@ -14819,7 +14820,8 @@ static bool command_event_init_core(
       return false;
 
    /* Verify that initial disk index was set correctly */
-   disk_control_verify_initial_index(&sys_info->disk_control);
+   disk_control_verify_initial_index(&sys_info->disk_control,
+         show_set_initial_disk_msg);
 
    if (!core_load(p_rarch, poll_type_behavior))
       return false;

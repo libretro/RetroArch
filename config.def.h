@@ -795,6 +795,10 @@ static const bool audio_enable_menu_bgm    = false;
  * configuration override file */
 #define DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD true
 
+/* Display a notification when automatically restoring
+ * at launch the last used disk of multi-disk content */
+#define DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK true
+
 /* Display a notification when fast forwarding
  * content */
 #define DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD true
