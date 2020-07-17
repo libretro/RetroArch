@@ -201,7 +201,6 @@ static enum gfx_ctx_api orbis_ctx_get_api(void *data)
 static bool orbis_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-    (void)data;
     ctx_orbis_api = api;
 
 #ifdef HAVE_EGL

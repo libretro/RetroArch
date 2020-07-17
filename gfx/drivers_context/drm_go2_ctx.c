@@ -80,6 +80,8 @@ typedef struct gfx_ctx_go2_drm_data
    unsigned fb_height;
    unsigned ctx_w;
    unsigned ctx_h;
+   unsigned native_width;
+   unsigned native_height;
    bool core_hw_context_enable;
 } gfx_ctx_go2_drm_data_t;
 
@@ -88,13 +90,8 @@ static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 /* TODO/FIXME - global variable */
 int ss = 0;
 
-
-static unsigned native_width  = 480;
-static unsigned native_height = 320;
-
 /* Function callback */
 void (*swap_buffers)(void*);
-
 
 static void gfx_ctx_go2_drm_input_driver(void *data,
       const char *joypad_name,
@@ -132,8 +129,12 @@ static void *gfx_ctx_go2_drm_init(void *video_driver)
    if (!drm)
       return NULL;
 
-   drm->display = go2_display_create();
-   drm->presenter = go2_presenter_create(drm->display, DRM_FORMAT_RGB565, 0xff000000, true);
+   drm->native_width  = 480;
+   drm->native_height = 320;
+
+   drm->display       = go2_display_create();
+   drm->presenter     = go2_presenter_create(drm->display,
+         DRM_FORMAT_RGB565, 0xff000000, true);
 
    return drm;
 }
@@ -232,13 +233,13 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
 
    if (use_ctx_scaling && !menu_driver_is_alive())
    {
-       drm->fb_width = av_info->geometry.base_width;
+       drm->fb_width  = av_info->geometry.base_width;
        drm->fb_height = av_info->geometry.base_height;
    }
    else
    {
-       drm->fb_width = native_width;
-       drm->fb_height = native_height;
+       drm->fb_width  = drm->native_width;
+       drm->fb_height = drm->native_height;
    }
 
    if (!drm->context)
@@ -253,8 +254,8 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
       attr.depth_bits   = 0;
       attr.stencil_bits = 0;
 
-      drm->ctx_w        = MAX(av_info->geometry.max_width, native_width);
-      drm->ctx_h        = MAX(av_info->geometry.max_height, native_height);
+      drm->ctx_w        = MAX(av_info->geometry.max_width,  drm->native_width);
+      drm->ctx_h        = MAX(av_info->geometry.max_height, drm->native_height);
 
       drm->context      = go2_context_create(
             drm->display, drm->ctx_w, drm->ctx_h, &attr);
@@ -286,8 +287,8 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
    }
    else
    {
-       w          = native_width;
-       h          = native_height;
+       w          = drm->native_width;
+       h          = drm->native_height;
    }
 
    if (*width != w || *height != h)
@@ -308,8 +309,8 @@ static void gfx_ctx_go2_drm_swap_buffers(void *data)
    gfx_ctx_go2_drm_data_t 
       *drm   = (gfx_ctx_go2_drm_data_t*)data;
 
-   int out_w = native_width;
-   int out_h = native_height;
+   int out_w = drm->native_width;
+   int out_h = drm->native_height;
    int out_x = 0;
    int out_y = 0;
 
