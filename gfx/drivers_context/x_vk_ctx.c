@@ -42,9 +42,9 @@
 
 typedef struct gfx_ctx_x_vk_data
 {
-   bool g_should_reset_mode;
+   bool should_reset_mode;
 
-   int g_interval;
+   int interval;
 
    gfx_ctx_vulkan_data_t vk;
 } gfx_ctx_x_vk_data_t;
@@ -104,10 +104,10 @@ static void gfx_ctx_x_vk_destroy_resources(gfx_ctx_x_vk_data_t *x)
 
    if (g_x11_dpy)
    {
-      if (x->g_should_reset_mode)
+      if (x->should_reset_mode)
       {
          x11_exit_fullscreen(g_x11_dpy);
-         x->g_should_reset_mode = false;
+         x->should_reset_mode = false;
       }
 
       if (!video_driver_is_video_cache_context())
@@ -138,9 +138,9 @@ static void gfx_ctx_x_vk_swap_interval(void *data, int interval)
 {
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
 
-   if (x->g_interval != interval)
+   if (x->interval != interval)
    {
-      x->g_interval = interval;
+      x->interval = interval;
       if (x->vk.swapchain)
          x->vk.need_new_swapchain = true;
    }
@@ -171,7 +171,7 @@ static bool gfx_ctx_x_vk_set_resize(void *data,
 
    /* FIXME/TODO - threading error here */
 
-   if (!vulkan_create_swapchain(&x->vk, width, height, x->g_interval))
+   if (!vulkan_create_swapchain(&x->vk, width, height, x->interval))
    {
       RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
       x->vk.swapchain = VK_NULL_HANDLE;
@@ -270,7 +270,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
    {
       if (x11_enter_fullscreen(g_x11_dpy, width, height))
       {
-         x->g_should_reset_mode = true;
+         x->should_reset_mode = true;
          true_full = true;
       }
       else
@@ -407,7 +407,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
        * We can obtain the XCB connection directly from X11. */
       if (!vulkan_surface_create(&x->vk, VULKAN_WSI_XCB,
                g_x11_dpy, &g_x11_win,
-               width, height, x->g_interval))
+               width, height, x->interval))
          goto error;
    }
 
@@ -415,7 +415,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 
    x11_install_quit_atom();
 
-   gfx_ctx_x_vk_swap_interval(data, x->g_interval);
+   gfx_ctx_x_vk_swap_interval(data, x->interval);
 
    /* This can blow up on some drivers.
     * It's not fatal, so override errors for this call. */

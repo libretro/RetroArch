@@ -41,14 +41,14 @@
 #define HAVE_OSMESA_CREATE_CONTEXT_EXT 1
 #endif
 
+#define OSMESA_DEFAULT_FORMAT OSMESA_RGBA
+#define OSMESA_BPP            4
+#define OSMESA_FIFO_PATH      "/tmp/osmesa-retroarch.sock"
+
 /* TODO/FIXME - static globals */
 static bool           g_osmesa_profile = OSMESA_COMPAT_PROFILE;
 static int            g_osmesa_major   = 2;
 static int            g_osmesa_minor   = 1;
-
-static const int      g_osmesa_format  = OSMESA_RGBA;
-static const int      g_osmesa_bpp     = 4;
-static const char    *g_osmesa_fifo    = "/tmp/osmesa-retroarch.sock";
 
 typedef struct gfx_osmesa_ctx_data
 {
@@ -77,11 +77,12 @@ static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
 
    saun.sun_family = AF_UNIX;
 
-   strlcpy(saun.sun_path, g_osmesa_fifo, sizeof(saun.sun_path));
+   strlcpy(saun.sun_path, OSMESA_FIFO_PATH, sizeof(saun.sun_path));
 
-   unlink(g_osmesa_fifo);
+   unlink(OSMESA_FIFO_PATH);
 
-   if (bind(osmesa->socket, &saun, sizeof(saun.sun_family) + sizeof(saun.sun_path)) < 0)
+   if (bind(osmesa->socket,
+            &saun, sizeof(saun.sun_family) + sizeof(saun.sun_path)) < 0)
    {
       perror("[osmesa] bind()");
       close(osmesa->socket);
@@ -95,8 +96,10 @@ static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
       return;
    }
 
-   RARCH_ERR("[osmesa] Frame size is %ix%ix%i\n", osmesa->width, osmesa->height, osmesa->pixsize);
-   RARCH_ERR("[osmesa] Please connect to unix:%s\n", g_osmesa_fifo);
+   RARCH_ERR("[osmesa] Frame size is %ix%ix%i\n",
+         osmesa->width, osmesa->height, osmesa->pixsize);
+   RARCH_ERR("[osmesa] Please connect to unix:%s\n",
+         OSMESA_FIFO_PATH);
 }
 
 static void osmesa_fifo_accept(gfx_ctx_osmesa_data_t *osmesa)
@@ -146,7 +149,7 @@ static void *osmesa_ctx_init(void *video_driver)
 {
 #ifdef HAVE_OSMESA_CREATE_CONTEXT_ATTRIBS
    const int attribs[] = {
-      OSMESA_FORMAT, g_osmesa_format,
+      OSMESA_FORMAT, OSMESA_DEFAULT_FORMAT,
       OSMESA_DEPTH_BITS, 0,
       OSMESA_STENCIL_BITS, 0,
       OSMESA_ACCUM_BITS, 0,
@@ -168,7 +171,7 @@ static void *osmesa_ctx_init(void *video_driver)
 
 #ifdef HAVE_OSMESA_CREATE_CONTEXT_EXT
    if (!osmesa->ctx)
-      osmesa->ctx = OSMesaCreateContextExt(g_osmesa_format, 0, 0, 0, NULL);
+      osmesa->ctx = OSMesaCreateContextExt(OSMESA_DEFAULT_FORMAT, 0, 0, 0, NULL);
 #endif
 
    if (!osmesa->ctx)
@@ -176,13 +179,13 @@ static void *osmesa_ctx_init(void *video_driver)
 #if defined(HAVE_OSMESA_CREATE_CONTEXT_ATTRIBS) || defined(HAVE_OSMESA_CREATE_CONTEXT_EXT)
       RARCH_WARN("[osmesa]: Falling back to standard context creation.\n");
 #endif
-      osmesa->ctx = OSMesaCreateContext(g_osmesa_format, NULL);
+      osmesa->ctx = OSMesaCreateContext(OSMESA_DEFAULT_FORMAT, NULL);
    }
 
    if (!osmesa->ctx)
       goto error;
 
-   osmesa->pixsize = g_osmesa_bpp;
+   osmesa->pixsize = OSMESA_BPP;
 
    return osmesa;
 
