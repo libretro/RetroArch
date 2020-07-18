@@ -278,9 +278,12 @@ static void wpad_destroy(void)
 
 }
 
-static int16_t wpad_button(unsigned pad, uint16_t button_bit)
+static int16_t wpad_button(unsigned pad, uint16_t joykey)
 {
    VPADChan channel;
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
 
    if (!wpad_query_pad(pad))
       return 0;
@@ -289,7 +292,12 @@ static int16_t wpad_button(unsigned pad, uint16_t button_bit)
    if (channel < 0)
       return 0;
 
-   return gamepads[channel].button_state & (UINT64_C(1) << button_bit);
+   for (; i < end; i++)
+   {
+      if (gamepads[channel].button_state & (UINT64_C(1) << i))
+         ret |= (1 << i);
+   }
+   return ret;
 }
 
 static void wpad_get_buttons(unsigned pad, input_bits_t *state)

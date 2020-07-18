@@ -22,14 +22,8 @@
 
 #include "../../include/wiiu/input.h"
 
-static bool kpad_init(void *data);
-static bool kpad_query_pad(unsigned pad);
-static void kpad_destroy(void);
-static bool kpad_button(unsigned pad, uint16_t button);
-static void kpad_get_buttons(unsigned pad, input_bits_t *state);
-static int16_t kpad_axis(unsigned pad, uint32_t axis);
+/* Forward declarations */
 static void kpad_poll(void);
-static const char *kpad_name(unsigned pad);
 static void kpad_deregister(unsigned channel);
 
 typedef struct _wiimote_state wiimote_state;
@@ -98,18 +92,25 @@ static void kpad_destroy(void)
    kpad_ready = false;
 }
 
-static int16_t kpad_button(unsigned pad, uint16_t button_bit)
+static int16_t kpad_button(unsigned pad, uint16_t joykey)
 {
    int channel;
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
    if (!kpad_query_pad(pad))
       return 0;
 
    channel = to_wiimote_channel(pad);
    if(channel < 0)
       return 0;
-
-   return wiimotes[channel].button_state
-      & (UINT64_C(1) << button_bit);
+   for (; i < end; i++)
+   {
+      if (wiimotes[channel].button_state
+            & (UINT64_C(1) << i))
+         ret |= (1 << i);
+   }
+   return ret;
 }
 
 static void kpad_get_buttons(unsigned pad, input_bits_t *state)

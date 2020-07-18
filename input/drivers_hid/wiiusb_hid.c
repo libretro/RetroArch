@@ -542,16 +542,26 @@ static void wiiusb_hid_joypad_get_buttons(void *data,
 static int16_t wiiusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-  input_bits_t buttons;
+   input_bits_t buttons;
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
 
-  wiiusb_hid_joypad_get_buttons(data, port, &buttons);
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   wiiusb_hid_joypad_get_buttons(data, port, &buttons);
 
-  /* Check hat. */
-  if (GET_HAT_DIR(joykey))
-    return 0;
-  else if ((port < MAX_USERS) && (joykey < 32))
-    return (BIT256_GET(buttons, joykey) != 0);
-  return 0;
+   for (; i < end; i++)
+   {
+      /* Check hat. */
+      if (GET_HAT_DIR(i))
+         continue;
+      else if (i < 32)
+         if (BIT256_GET(buttons, i) != 0)
+            ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static bool wiiusb_hid_joypad_rumble(void *data, unsigned pad,

@@ -297,42 +297,58 @@ error:
 
 static int16_t sdl_joypad_button(unsigned port, uint16_t joykey)
 {
-   unsigned hat_dir  = 0;
-   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
+   sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad || !pad->joypad)
       return 0;
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
 
-   hat_dir = GET_HAT_DIR(joykey);
-   /* Check hat. */
-   if (hat_dir)
+   for (; i < end; i++)
    {
-      uint8_t  dir;
-      uint16_t hat = GET_HAT(joykey);
-
-      if (hat >= pad->num_hats)
-         return false;
-
-      dir = sdl_pad_get_hat(pad, hat);
-
-      switch (hat_dir)
+      unsigned hat_dir = GET_HAT_DIR(i);
+      /* Check hat. */
+      if (hat_dir)
       {
-         case HAT_UP_MASK:
-            return dir & SDL_HAT_UP;
-         case HAT_DOWN_MASK:
-            return dir & SDL_HAT_DOWN;
-         case HAT_LEFT_MASK:
-            return dir & SDL_HAT_LEFT;
-         case HAT_RIGHT_MASK:
-            return dir & SDL_HAT_RIGHT;
-         default:
-            break;
-      }
-      /* hat requested and no hat button down */
-   }
-   else if (joykey < pad->num_buttons)
-      return sdl_pad_get_button(pad, joykey);
+         uint8_t  dir;
+         uint16_t hat = GET_HAT(i);
 
-   return 0;
+         if (hat >= pad->num_hats)
+            continue;
+
+         dir = sdl_pad_get_hat(pad, hat);
+
+         switch (hat_dir)
+         {
+            case HAT_UP_MASK:
+               if (dir & SDL_HAT_UP)
+                  ret |= (1 << i);
+               break;
+            case HAT_DOWN_MASK:
+               if (dir & SDL_HAT_DOWN)
+                  ret |= (1 << i);
+               break;
+            case HAT_LEFT_MASK:
+               if (dir & SDL_HAT_LEFT)
+                  ret |= (1 << i);
+               break;
+            case HAT_RIGHT_MASK:
+               if (dir & SDL_HAT_RIGHT)
+                  ret |= (1 << i);
+               break;
+            default:
+               break;
+         }
+         /* hat requested and no hat button down */
+      }
+      else if (i < pad->num_buttons)
+         if (sdl_pad_get_button(pad, i))
+            ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)

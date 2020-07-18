@@ -32,38 +32,53 @@ static bool android_joypad_init(void *data)
 
 static int16_t android_joypad_button(unsigned port, uint16_t joykey)
 {
+   int16_t ret                     = 0;
    uint8_t *buf                    = android_keyboard_state_get(port);
    struct android_app *android_app = (struct android_app*)g_android;
    unsigned hat_dir                = GET_HAT_DIR(joykey);
+   uint16_t i                      = joykey;
+   uint16_t end                    = joykey + 1;
 
    if (port >= DEFAULT_MAX_PADS)
       return 0;
 
-   if (hat_dir)
+   for (; i < end; i++)
    {
-      unsigned h = GET_HAT(joykey);
-      if (h > 0)
-         return 0;
-
-      switch (hat_dir)
+      if (hat_dir)
       {
-         case HAT_LEFT_MASK:
-            return android_app->hat_state[port][0] == -1;
-         case HAT_RIGHT_MASK:
-            return android_app->hat_state[port][0] ==  1;
-         case HAT_UP_MASK:
-            return android_app->hat_state[port][1] == -1;
-         case HAT_DOWN_MASK:
-            return android_app->hat_state[port][1] ==  1;
-         default:
-            break;
-      }
-      /* hat requested and no hat button down */
-   }
-   else if (joykey < LAST_KEYCODE)
-      return BIT_GET(buf, joykey);
+         unsigned h = GET_HAT(i);
+         if (h > 0)
+            continue;
 
-   return 0;
+         switch (hat_dir)
+         {
+            case HAT_LEFT_MASK:
+               if (android_app->hat_state[port][0] == -1)
+                  ret |= (1 << i);
+               break;
+            case HAT_RIGHT_MASK:
+               if (android_app->hat_state[port][0] == 1)
+                  ret |= (1 << i);
+               break;
+            case HAT_UP_MASK:
+               if (android_app->hat_state[port][1] == -1)
+                  ret |= (1 << i);
+               break;
+            case HAT_DOWN_MASK:
+               if (android_app->hat_state[port][1] == 1)
+                  ret |= (1 << i);
+               break;
+            default:
+               break;
+         }
+         /* hat requested and no hat button down */
+      }
+      else if (i < LAST_KEYCODE)
+         if (BIT_GET(buf, i))
+            ret |= (1 << i):
+   }
+
+   return ret;
 }
 
 static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)

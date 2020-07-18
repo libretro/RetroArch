@@ -303,12 +303,20 @@ static void linuxraw_joypad_destroy(void)
 
 static int16_t linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
+   const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port];
-
-   if (joykey < NUM_BUTTONS)
-      return BIT32_GET(pad->buttons, joykey);
-   return 0;
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   for (; i < end; i++)
+   {
+      if (i < NUM_BUTTONS)
+         if (BIT32_GET(pad->buttons, i))
+            ret |= (1 << i);
+   }
+   return ret;
 }
 
 static void linuxraw_joypad_get_buttons(unsigned port, input_bits_t *state)

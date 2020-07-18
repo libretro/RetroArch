@@ -445,66 +445,88 @@ static bool dinput_joypad_init(void *data)
 static int16_t dinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    const struct dinput_joypad_data *pad = &g_pads[port_num];
+   int16_t ret                          = 0;
    unsigned hat_dir                     = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
 
    if (!pad || !pad->joypad)
       return 0;
-   
-   hat_dir                              = GET_HAT_DIR(joykey);
 
-   if (hat_dir)
+   for (; i < end; i++)
    {
-      unsigned h = GET_HAT(joykey);
-      if (h < NUM_HATS)
+      hat_dir                              = GET_HAT_DIR(i);
+
+      if (hat_dir)
       {
-         unsigned pov = pad->joy_state.rgdwPOV[h];
-         switch (hat_dir)
+         unsigned h = GET_HAT(i);
+         if (h < NUM_HATS)
          {
-            case HAT_UP_MASK:
-               {
-                  static const unsigned check1 = (JOY_POVRIGHT/2);
-                  static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
-                  return
-                     (pov == JOY_POVFORWARD) ||
-                     (pov == check1)         ||
-                     (pov == check2);
-               }
-            case HAT_RIGHT_MASK:
-               {
-                  static const unsigned check1 = (JOY_POVRIGHT/2);
-                  static const unsigned check2 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
-                  return
-                     (pov == JOY_POVRIGHT) ||
-                     (pov == check1)       ||
-                     (pov == check2);
-               }
-            case HAT_DOWN_MASK:
-               {
-                  static const unsigned check1 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
-                  static const unsigned check2 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
-                  return 
-                     (pov == JOY_POVBACKWARD) ||
-                     (pov == check1)          ||
-                     (pov == check2);
-               }
-            case HAT_LEFT_MASK:
-               {
-                  static const unsigned check1 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
-                  static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
-                  return 
-                     (pov == JOY_POVLEFT) || 
-                     (pov == check1)      || 
-                     (pov == check2);
-               }
-            default:
-               break;
+            unsigned pov = pad->joy_state.rgdwPOV[h];
+            switch (hat_dir)
+            {
+               case HAT_UP_MASK:
+                  {
+                     static const unsigned check1 = (JOY_POVRIGHT/2);
+                     static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
+                     if (
+                        (pov == JOY_POVFORWARD) ||
+                        (pov == check1)         ||
+                        (pov == check2)
+                        )
+                        ret |= (1 << i);
+                  }
+                  break;
+               case HAT_RIGHT_MASK:
+                  {
+                     static const unsigned check1 = (JOY_POVRIGHT/2);
+                     static const unsigned check2 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
+                     if (
+                        (pov == JOY_POVRIGHT) ||
+                        (pov == check1)       ||
+                        (pov == check2)
+                        )
+                        ret |= (1 << i);
+                  }
+                  break;
+               case HAT_DOWN_MASK:
+                  {
+                     static const unsigned check1 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
+                     static const unsigned check2 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
+                     if 
+                        (
+                        (pov == JOY_POVBACKWARD) ||
+                        (pov == check1)          ||
+                        (pov == check2)
+                        )
+                        ret |= (1 << i);
+                  }
+                  break;
+               case HAT_LEFT_MASK:
+                  {
+                     static const unsigned check1 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
+                     static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
+                     if
+                        (
+                        (pov == JOY_POVLEFT) || 
+                        (pov == check1)      || 
+                        (pov == check2)
+                        )
+                        ret |= (1 << i);
+                  }
+                  break;
+               default:
+                  break;
+            }
          }
+         /* hat requested and no hat button down */
       }
-      /* hat requested and no hat button down */
+      else if (i < ARRAY_SIZE_RGB_BUTTONS)
+         if (pad->joy_state.rgbButtons[i])
+            ret |= (1 << i);
    }
-   else if (joykey < ARRAY_SIZE_RGB_BUTTONS)
-      return pad->joy_state.rgbButtons[joykey];
-   return 0;
+
+   return ret;
 }
 
 static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)

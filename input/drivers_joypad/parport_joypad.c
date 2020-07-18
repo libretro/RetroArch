@@ -331,10 +331,20 @@ static void parport_joypad_destroy(void)
 
 static int16_t parport_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
-   if (joykey < PARPORT_NUM_BUTTONS)
-      return BIT32_GET(pad->buttons, joykey);
-   return 0;
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
+   const struct parport_joypad     *pad = (const struct parport_joypad*)
+      &parport_pads[port];
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   for (; i < end; i++)
+   {
+      if (i < PARPORT_NUM_BUTTONS)
+         if (BIT32_GET(pad->buttons, i))
+            ret |= (1 << i);
+   }
+   return ret;
 }
 
 static void parport_joypad_get_buttons(unsigned port, input_bits_t *state)

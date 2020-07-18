@@ -60,11 +60,21 @@ static void wiiu_joypad_destroy(void)
 #endif
 }
 
-static int16_t wiiu_joypad_button(unsigned pad, uint16_t key)
+static int16_t wiiu_joypad_button(unsigned pad, uint16_t joykey)
 {
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
    if (!wiiu_joypad_query_pad(pad))
       return 0;
-   return pad_drivers[pad]->button(pad, key);
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   for (; i < end; i++)
+   {
+      if (pad_drivers[pad]->button(pad, i))
+         ret |= (1 << i);
+   }
+   return ret;
 }
 
 static void wiiu_joypad_get_buttons(unsigned pad, input_bits_t *state)

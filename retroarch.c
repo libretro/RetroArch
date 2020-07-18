@@ -871,8 +871,8 @@ static const char *null_hid_joypad_name(
       void *data, unsigned pad) { return NULL; }
 static void null_hid_joypad_get_buttons(void *data,
       unsigned port, input_bits_t *state) { BIT256_CLEAR_ALL_PTR(state); }
-static bool null_hid_joypad_button(
-      void *data, unsigned port, uint16_t joykey) { return false; }
+static int16_t null_hid_joypad_button(
+      void *data, unsigned port, uint16_t joykey) { return 0; }
 static bool null_hid_joypad_rumble(void *data, unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength) { return false; }
 static int16_t null_hid_joypad_axis(

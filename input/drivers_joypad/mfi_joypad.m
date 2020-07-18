@@ -335,15 +335,24 @@ static void apple_gamecontroller_joypad_destroy(void)
 {
 }
 
-static int16_t apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
+static int16_t apple_gamecontroller_joypad_button(
+      unsigned port, uint16_t joykey)
 {
-    /* Check hat. */
-    if (GET_HAT_DIR(joykey))
-        return 0;
-    /* Check the button. */
-    if ((port < MAX_USERS) && (joykey < 32))
-        return ((mfi_buttons[port] & (1 << joykey)) != 0);
-    return 0;
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   for (; i < end; i++)
+   {
+      /* Check hat. */
+      if (GET_HAT_DIR(i))
+         continue;
+      else if (i < 32)
+         if ((mfi_buttons[port] & (1 << i)) != 0)
+            ret |= (1 << i);
+   }
+   return ret;
 }
 
 static void apple_gamecontroller_joypad_get_buttons(unsigned port,

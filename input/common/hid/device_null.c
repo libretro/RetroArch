@@ -200,9 +200,9 @@ static const char *hid_null_get_name(void *data)
 /**
  * Read the state of a single button.
  */
-static bool hid_null_button(void *data, uint16_t joykey)
+static int16_t hid_null_button(void *data, uint16_t joykey)
 {
-  return false;
+  return 0;
 }
 
 /**

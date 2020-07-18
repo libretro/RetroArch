@@ -592,33 +592,51 @@ error:
 
 static int16_t udev_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
-   unsigned hat_dir              = GET_HAT_DIR(joykey);
-
-   if (hat_dir)
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
+   const struct udev_joypad *pad        = (const struct udev_joypad*)
+      &udev_pads[port];
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   for (; i < end; i++)
    {
-      unsigned h = GET_HAT(joykey);
-      if (h < NUM_HATS)
+      unsigned hat_dir                  = GET_HAT_DIR(i);
+
+      if (hat_dir)
       {
-         switch (hat_dir)
+         unsigned h = GET_HAT(i);
+         if (h < NUM_HATS)
          {
-            case HAT_LEFT_MASK:
-               return pad->hats[h][0] < 0;
-            case HAT_RIGHT_MASK:
-               return pad->hats[h][0] > 0;
-            case HAT_UP_MASK:
-               return pad->hats[h][1] < 0;
-            case HAT_DOWN_MASK:
-               return pad->hats[h][1] > 0;
-            default:
-               break;
+            switch (hat_dir)
+            {
+               case HAT_LEFT_MASK:
+                  if (pad->hats[h][0] < 0)
+                     ret |= (1 << i);
+                  break;
+               case HAT_RIGHT_MASK:
+                  if (pad->hats[h][0] > 0)
+                     ret |= (1 << i):
+                  break;
+               case HAT_UP_MASK:
+                  if (pad->hats[h][1] < 0)
+                     ret |= (1 << i);
+                  break;
+               case HAT_DOWN_MASK:
+                  if (pad->hats[h][1] > 0)
+                     ret |= (1 << i);
+                  break;
+               default:
+                  break;
+            }
          }
+         /* hat requested and no hat button down */
       }
-      /* hat requested and no hat button down */
+      else if (i < UDEV_NUM_BUTTONS)
+         if (BIT64_GET(pad->buttons, i))
+            ret |= (1 << i);
    }
-   else if (joykey < UDEV_NUM_BUTTONS)
-      return BIT64_GET(pad->buttons, joykey);
-   return 0;
+   return ret;
 }
 
 static void udev_joypad_get_buttons(unsigned port, input_bits_t *state)

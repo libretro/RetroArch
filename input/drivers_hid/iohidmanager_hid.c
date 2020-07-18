@@ -149,39 +149,58 @@ static void iohidmanager_hid_joypad_get_buttons(void *data,
 static int16_t iohidmanager_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-  input_bits_t buttons;
-  iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
-  unsigned hat_dir          = GET_HAT_DIR(joykey);
+   input_bits_t buttons;
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
+   iohidmanager_hid_t *hid              = (iohidmanager_hid_t*)data;
 
-  iohidmanager_hid_joypad_get_buttons(data, port, &buttons);
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
 
-   /* Check hat. */
-   if (hat_dir)
+   iohidmanager_hid_joypad_get_buttons(data, port, &buttons);
+
+   for (; i < end; i++)
    {
-      unsigned h = GET_HAT(joykey);
-      if (h >= 1)
-         return 0;
+      unsigned hat_dir                  = GET_HAT_DIR(i);
 
-      switch(hat_dir)
+      /* Check hat. */
+      if (hat_dir)
       {
-         case HAT_LEFT_MASK:
-            return hid->hats[port][0] < 0;
-         case HAT_RIGHT_MASK:
-            return hid->hats[port][0] > 0;
-         case HAT_UP_MASK:
-            return hid->hats[port][1] < 0;
-         case HAT_DOWN_MASK:
-            return hid->hats[port][1] > 0;
-         default:
-            break;
-      }
-      /* hat requested and no hat button down */
-   }
-   else if ((port < MAX_USERS) && (joykey < 32))
-      return (BIT256_GET(buttons, joykey) != 0)
-         || ((hid->buttons[port] & (1 << joykey)) != 0);
+         unsigned h = GET_HAT(i);
+         if (h >= 1)
+            continue;
 
-   return 0;
+         switch (hat_dir)
+         {
+            case HAT_LEFT_MASK:
+               if (hid->hats[port][0] < 0)
+                  ret |= (1 << i);
+               break;
+            case HAT_RIGHT_MASK:
+               if (hid->hats[port][0] > 0)
+                  ret |= (1 << i);
+               break;
+            case HAT_UP_MASK:
+               if (hid->hats[port][1] < 0)
+                  ret |= (1 << i);
+               break;
+            case HAT_DOWN_MASK:
+               if (hid->hats[port][1] > 0)
+                  ret |= (1 << i);
+               break;
+            default:
+               break;
+         }
+         /* hat requested and no hat button down */
+      }
+      else if (i < 32)
+         if ((BIT256_GET(buttons, i) != 0)
+               || ((hid->buttons[port] & (1 << i)) != 0))
+            ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,

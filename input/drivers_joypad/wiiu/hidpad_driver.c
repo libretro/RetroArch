@@ -58,11 +58,19 @@ static void hidpad_destroy(void)
    hid_deinit(&hid_instance);
 }
 
-static int16_t hidpad_button(unsigned pad, uint16_t button)
+static int16_t hidpad_button(unsigned pad, uint16_t joykey)
 {
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
    if (!hidpad_query_pad(pad))
       return 0;
-   return HID_BUTTON(pad, button);
+   for (; i < end; i++)
+   {
+      if (HID_BUTTON(pad, i))
+         ret |= (1 << i);
+   }
+   return ret;
 }
 
 static void hidpad_get_buttons(unsigned pad, input_bits_t *state)

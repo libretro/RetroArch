@@ -164,38 +164,64 @@ static bool dos_joypad_init(void *data)
    return true;
 }
 
-static int16_t dos_joypad_button(unsigned port_num, uint16_t key)
+static int16_t dos_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   uint16_t *buf = dos_keyboard_state_get(port_num);
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
+   uint16_t *buf                        = dos_keyboard_state_get(port_num);
 
    if (port_num >= DEFAULT_MAX_PADS)
       return 0;
 
-   switch (key)
+   for (; i < end; i++)
    {
-      case RETRO_DEVICE_ID_JOYPAD_A:
-         return buf[DOSKEY_x];
-      case RETRO_DEVICE_ID_JOYPAD_B:
-         return buf[DOSKEY_z];
-      case RETRO_DEVICE_ID_JOYPAD_X:
-         return buf[DOSKEY_s];
-      case RETRO_DEVICE_ID_JOYPAD_Y:
-         return buf[DOSKEY_a];
-      case RETRO_DEVICE_ID_JOYPAD_SELECT:
-         return buf[DOSKEY_RSHIFT];
-      case RETRO_DEVICE_ID_JOYPAD_START:
-         return buf[DOSKEY_RETURN];
-      case RETRO_DEVICE_ID_JOYPAD_UP:
-         return buf[DOSKEY_UP];
-      case RETRO_DEVICE_ID_JOYPAD_DOWN:
-         return buf[DOSKEY_DOWN];
-      case RETRO_DEVICE_ID_JOYPAD_LEFT:
-         return buf[DOSKEY_LEFT];
-      case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-         return buf[DOSKEY_RIGHT];
+      switch (key)
+      {
+         case RETRO_DEVICE_ID_JOYPAD_A:
+            if (buf[DOSKEY_x])
+               ret |= (1 << i);
+            break;
+         case RETRO_DEVICE_ID_JOYPAD_B:
+            if (buf[DOSKEY_z])
+               ret |= (1 << i);
+            break;
+         case RETRO_DEVICE_ID_JOYPAD_X:
+            if (buf[DOSKEY_s])
+               ret |= (1 << i):
+                  break;
+         case RETRO_DEVICE_ID_JOYPAD_Y:
+            if (buf[DOSKEY_a])
+               ret |= (1 << i);
+            break;
+         case RETRO_DEVICE_ID_JOYPAD_SELECT:
+            if (buf[DOSKEY_RSHIFT])
+               ret |= (1 << i);
+            break;
+         case RETRO_DEVICE_ID_JOYPAD_START:
+            if (buf[DOSKEY_RETURN])
+               ret |= (1 << i);
+            break;
+         case RETRO_DEVICE_ID_JOYPAD_UP:
+            if (buf[DOSKEY_UP])
+               ret |= (1 << i):
+                  break;
+         case RETRO_DEVICE_ID_JOYPAD_DOWN:
+            if (buf[DOSKEY_DOWN])
+               ret |= (1 << i);
+            break;
+         case RETRO_DEVICE_ID_JOYPAD_LEFT:
+            if (buf[DOSKEY_LEFT])
+               ret |= (1 << i);
+            break;
+         case RETRO_DEVICE_ID_JOYPAD_RIGHT:
+            if (buf[DOSKEY_RIGHT])
+               ret |= (1 << i);
+            break;
+      }
    }
 
-   return 0;
+   return ret;
 }
 
 static void dos_joypad_poll(void)

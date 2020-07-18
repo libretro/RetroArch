@@ -102,14 +102,23 @@ static const char *rwebpad_joypad_name(unsigned pad)
 static int16_t rwebpad_joypad_button(unsigned port_num, uint16_t joykey)
 {
    EmscriptenGamepadEvent gamepad_state;
-   EMSCRIPTEN_RESULT r = emscripten_get_gamepad_status(
+   int16_t ret                          = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
+   EMSCRIPTEN_RESULT r                  = emscripten_get_gamepad_status(
          port_num, &gamepad_state);
 
-   if (r == EMSCRIPTEN_RESULT_SUCCESS)
-      if (joykey < gamepad_state.numButtons)
-         return gamepad_state.digitalButton[joykey];
-
-   return 0;
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   if (r != EMSCRIPTEN_RESULT_SUCCESS)
+      return 0;
+   for (; i < end; i++)
+   {
+      if (i < gamepad_state.numButtons)
+         if (gamepad_state.digitalButton[i])
+            ret |= (1 << i);
+   }
+   return ret;
 }
 
 static void rwebpad_joypad_get_buttons(unsigned port_num, input_bits_t *state)
