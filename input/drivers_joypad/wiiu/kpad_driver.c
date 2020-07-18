@@ -98,15 +98,15 @@ static void kpad_destroy(void)
    kpad_ready = false;
 }
 
-static bool kpad_button(unsigned pad, uint16_t button_bit)
+static int16_t kpad_button(unsigned pad, uint16_t button_bit)
 {
    int channel;
    if (!kpad_query_pad(pad))
-      return false;
+      return 0;
 
    channel = to_wiimote_channel(pad);
    if(channel < 0)
-      return false;
+      return 0;
 
    return wiimotes[channel].button_state
       & (UINT64_C(1) << button_bit);

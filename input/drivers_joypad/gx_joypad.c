@@ -243,10 +243,10 @@ static void check_port0_active(uint8_t pad_count)
    }
 }
 
-static bool gx_joypad_button(unsigned port, uint16_t key)
+static int16_t gx_joypad_button(unsigned port, uint16_t key)
 {
    if (port >= DEFAULT_MAX_PADS)
-      return false;
+      return 0;
    return (pad_state[port] & (UINT64_C(1) << key));
 }
 

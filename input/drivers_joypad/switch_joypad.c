@@ -83,10 +83,10 @@ static bool switch_joypad_init(void *data)
    return true;
 }
 
-static bool switch_joypad_button(unsigned port_num, uint16_t key)
+static int16_t switch_joypad_button(unsigned port_num, uint16_t key)
 {
    if (port_num >= DEFAULT_MAX_PADS)
-      return false;
+      return 0;
    return (pad_state[port_num] & (1 << key));
 }
 

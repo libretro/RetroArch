@@ -454,7 +454,7 @@ static void libusb_hid_joypad_get_buttons(void *data, unsigned port,
    BIT256_CLEAR_ALL_PTR(state);
 }
 
-static bool libusb_hid_joypad_button(void *data,
+static int16_t libusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
    input_bits_t buttons;
@@ -462,12 +462,10 @@ static bool libusb_hid_joypad_button(void *data,
 
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
-      return false;
-
-   /* Check the button. */
-   if ((port < MAX_USERS) && (joykey < 32))
+      return 0;
+   else if ((port < MAX_USERS) && (joykey < 32))
       return (BIT256_GET(buttons, joykey) != 0);
-   return false;
+   return 0;
 }
 
 static bool libusb_hid_joypad_rumble(void *data, unsigned pad,

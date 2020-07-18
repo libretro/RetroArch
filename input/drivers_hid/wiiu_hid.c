@@ -61,13 +61,12 @@ static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, input_bits_t 
       pad->iface->get_buttons(pad->data, state);
 }
 
-static bool wiiu_hid_joypad_button(void *data, unsigned slot, uint16_t joykey)
+static int16_t wiiu_hid_joypad_button(void *data, unsigned slot, uint16_t joykey)
 {
    joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
 
    if (!pad)
-      return false;
-
+      return 0;
    return pad->iface->button(pad->data, joykey);
 }
 

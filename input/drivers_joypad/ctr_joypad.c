@@ -52,17 +52,13 @@ static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
 static bool ctr_joypad_init(void *data)
 {
    ctr_joypad_autodetect_add(0);
-
-   (void)data;
-
    return true;
 }
 
-static bool ctr_joypad_button(unsigned port_num, uint16_t key)
+static int16_t ctr_joypad_button(unsigned port_num, uint16_t key)
 {
    if (port_num >= DEFAULT_MAX_PADS)
-      return false;
-
+      return 0;
    return (pad_state & (1 << key));
 }
 

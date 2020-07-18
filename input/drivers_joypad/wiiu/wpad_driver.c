@@ -278,16 +278,16 @@ static void wpad_destroy(void)
 
 }
 
-static bool wpad_button(unsigned pad, uint16_t button_bit)
+static int16_t wpad_button(unsigned pad, uint16_t button_bit)
 {
    VPADChan channel;
 
    if (!wpad_query_pad(pad))
-      return false;
+      return 0;
 
    channel = to_gamepad_channel(pad);
    if (channel < 0)
-      return false;
+      return 0;
 
    return gamepads[channel].button_state & (UINT64_C(1) << button_bit);
 }

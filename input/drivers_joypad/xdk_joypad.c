@@ -90,13 +90,13 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 };
 #endif
 
-static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
+static int16_t xdk_joypad_button(unsigned port_num, uint16_t joykey)
 {
    uint16_t btn_word  = 0;
    unsigned hat_dir   = 0;
 
    if (port_num >= DEFAULT_MAX_PADS)
-      return false;
+      return 0;
 
    btn_word = g_xinput_states[port_num].xstate.Gamepad.wButtons;
    hat_dir  = GET_HAT_DIR(joykey);
@@ -114,46 +114,47 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
          case HAT_RIGHT_MASK:
             return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
       }
-
-      return false; /* hat requested and no hat button down. */
+      /* hat requested and no hat button down */
    }
-
-#ifdef _XBOX1
-   switch (joykey)
+   else
    {
-      case RETRO_DEVICE_ID_JOYPAD_A:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_B:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_Y:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_X:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_START:
-         return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_START);
-      case RETRO_DEVICE_ID_JOYPAD_SELECT:
-         return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_BACK);
-      case RETRO_DEVICE_ID_JOYPAD_L3:
-         return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
-      case RETRO_DEVICE_ID_JOYPAD_R3:
-         return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
-      case RETRO_DEVICE_ID_JOYPAD_L2:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_R2:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_L:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_R:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      default:
-         break;
-   }
+#ifdef _XBOX1
+      switch (joykey)
+      {
+         case RETRO_DEVICE_ID_JOYPAD_A:
+            return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_B:
+            return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_Y:
+            return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_X:
+            return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_START:
+            return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_START);
+         case RETRO_DEVICE_ID_JOYPAD_SELECT:
+            return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_BACK);
+         case RETRO_DEVICE_ID_JOYPAD_L3:
+            return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
+         case RETRO_DEVICE_ID_JOYPAD_R3:
+            return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
+         case RETRO_DEVICE_ID_JOYPAD_L2:
+            return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_R2:
+            return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_L:
+            return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_R:
+            return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         default:
+            break;
+      }
 #else
-   if (joykey < 10)
-      return btn_word & button_index_to_bitmap_code[joykey];
+      if (joykey < 10)
+         return btn_word & button_index_to_bitmap_code[joykey];
 #endif
+   }
 
-   return false;
+   return 0;
 }
 
 static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)

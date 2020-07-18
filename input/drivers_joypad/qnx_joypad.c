@@ -44,7 +44,7 @@ static bool qnx_joypad_init(void *data)
    return true;
 }
 
-static bool qnx_joypad_button(unsigned port_num, uint16_t joykey)
+static int16_t qnx_joypad_button(unsigned port_num, uint16_t joykey)
 {
    qnx_input_device_t* controller = NULL;
    qnx_input_t *qnx              = (qnx_input_t*)input_driver_get_data();
@@ -56,8 +56,7 @@ static bool qnx_joypad_button(unsigned port_num, uint16_t joykey)
 
    if(port_num < MAX_USERS && joykey <= 19)
       return (controller->buttons & (1 << joykey)) != 0;
-
-   return false;
+   return 0;
 }
 
 static int16_t qnx_joypad_axis(unsigned port_num, uint32_t joyaxis)

@@ -146,12 +146,12 @@ static void iohidmanager_hid_joypad_get_buttons(void *data,
     BIT256_CLEAR_ALL_PTR(state);
 }
 
-static bool iohidmanager_hid_joypad_button(void *data,
+static int16_t iohidmanager_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
   input_bits_t buttons;
   iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
-  unsigned hat_dir = GET_HAT_DIR(joykey);
+  unsigned hat_dir          = GET_HAT_DIR(joykey);
 
   iohidmanager_hid_joypad_get_buttons(data, port, &buttons);
 
@@ -160,7 +160,7 @@ static bool iohidmanager_hid_joypad_button(void *data,
    {
       unsigned h = GET_HAT(joykey);
       if (h >= 1)
-         return false;
+         return 0;
 
       switch(hat_dir)
       {
@@ -172,17 +172,16 @@ static bool iohidmanager_hid_joypad_button(void *data,
             return hid->hats[port][1] < 0;
          case HAT_DOWN_MASK:
             return hid->hats[port][1] > 0;
+         default:
+            break;
       }
-
-      return 0;
+      /* hat requested and no hat button down */
    }
-
-   /* Check the button. */
-   if ((port < MAX_USERS) && (joykey < 32))
+   else if ((port < MAX_USERS) && (joykey < 32))
       return (BIT256_GET(buttons, joykey) != 0)
          || ((hid->buttons[port] & (1 << joykey)) != 0);
 
-   return false;
+   return 0;
 }
 
 static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,

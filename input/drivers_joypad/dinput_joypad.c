@@ -36,6 +36,13 @@
 #include "../../verbosity.h"
 #include "dinput_joypad.h"
 
+/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
+#define ARRAY_SIZE_RGB_BUTTONS 128
+
+#ifndef NUM_HATS
+#define NUM_HATS 4
+#endif
+
 struct dinput_joypad_data
 {
    LPDIRECTINPUTDEVICE8 joypad;
@@ -48,13 +55,7 @@ struct dinput_joypad_data
    DIEFFECT rumble_props;
 };
 
-/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
-#define ARRAY_SIZE_RGB_BUTTONS 128
-
-#ifndef NUM_HATS
-#define NUM_HATS 4
-#endif
-
+/* TODO/FIXME - static globals */
 static struct dinput_joypad_data g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
 static unsigned g_last_xinput_pad_idx;
@@ -73,7 +74,9 @@ extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
-bool dinput_joypad_get_vidpid_from_xinput_index(int32_t index, int32_t *vid, int32_t *pid, int32_t *dinput_index)
+bool dinput_joypad_get_vidpid_from_xinput_index(
+      int32_t index, int32_t *vid,
+      int32_t *pid, int32_t *dinput_index)
 {
    int i;
 
@@ -439,13 +442,13 @@ static bool dinput_joypad_init(void *data)
    return true;
 }
 
-static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
+static int16_t dinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    const struct dinput_joypad_data *pad = &g_pads[port_num];
    unsigned hat_dir                     = 0;
 
    if (!pad || !pad->joypad)
-      return false;
+      return 0;
    
    hat_dir                              = GET_HAT_DIR(joykey);
 
@@ -493,12 +496,15 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
                      (pov == check1)      || 
                      (pov == check2);
                }
+            default:
+               break;
          }
       }
-
-      return false;
+      /* hat requested and no hat button down */
    }
-   return (joykey < ARRAY_SIZE_RGB_BUTTONS) && pad->joy_state.rgbButtons[joykey];
+   else if (joykey < ARRAY_SIZE_RGB_BUTTONS)
+      return pad->joy_state.rgbButtons[joykey];
+   return 0;
 }
 
 static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)

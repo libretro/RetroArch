@@ -58,11 +58,10 @@ static void hidpad_destroy(void)
    hid_deinit(&hid_instance);
 }
 
-static bool hidpad_button(unsigned pad, uint16_t button)
+static int16_t hidpad_button(unsigned pad, uint16_t button)
 {
    if (!hidpad_query_pad(pad))
-      return false;
-
+      return 0;
    return HID_BUTTON(pad, button);
 }
 

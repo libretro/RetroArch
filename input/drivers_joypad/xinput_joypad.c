@@ -422,7 +422,7 @@ static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_GUIDE
 };
 
-static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
+static int16_t xinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    uint16_t btn_word    = 0;
    unsigned hat_dir     = 0;
@@ -434,7 +434,7 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 #endif
 
    if (!(g_xinput_states[xuser].connected))
-      return false;
+      return 0;
 
    btn_word = g_xinput_states[xuser].xstate.Gamepad.wButtons;
    hat_dir  = GET_HAT_DIR(joykey);
@@ -451,15 +451,15 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
             return btn_word & XINPUT_GAMEPAD_DPAD_LEFT;
          case HAT_RIGHT_MASK:
             return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
+         default:
+            break;
       }
-
-      return false; /* hat requested and no hat button down. */
+      /* hat requested and no hat button down */
    }
-
-   if (joykey < g_xinput_num_buttons)
+   else if (joykey < g_xinput_num_buttons)
       return btn_word & button_index_to_bitmap_code[joykey];
 
-   return false;
+   return 0;
 }
 
 static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)

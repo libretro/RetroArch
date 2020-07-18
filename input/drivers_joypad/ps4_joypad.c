@@ -130,10 +130,10 @@ static bool ps4_joypad_init(void *data)
    return true;
 }
 
-static bool ps4_joypad_button(unsigned port_num, uint16_t joykey)
+static int16_t ps4_joypad_button(unsigned port_num, uint16_t joykey)
 {
    if (port_num >= PS4_MAX_ORBISPADS)
-      return false;
+      return 0;
    return (pad_state[port_num] & (UINT64_C(1) << joykey));
 }
 

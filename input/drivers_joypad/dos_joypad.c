@@ -164,12 +164,12 @@ static bool dos_joypad_init(void *data)
    return true;
 }
 
-static bool dos_joypad_button(unsigned port_num, uint16_t key)
+static int16_t dos_joypad_button(unsigned port_num, uint16_t key)
 {
    uint16_t *buf = dos_keyboard_state_get(port_num);
 
    if (port_num >= DEFAULT_MAX_PADS)
-      return false;
+      return 0;
 
    switch (key)
    {
@@ -195,7 +195,7 @@ static bool dos_joypad_button(unsigned port_num, uint16_t key)
          return buf[DOSKEY_RIGHT];
    }
 
-   return false;
+   return 0;
 }
 
 static void dos_joypad_poll(void)

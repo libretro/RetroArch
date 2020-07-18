@@ -301,12 +301,14 @@ static void linuxraw_joypad_destroy(void)
    linuxraw_hotplug = false;
 }
 
-static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
+static int16_t linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port];
 
-   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
+   if (joykey < NUM_BUTTONS)
+      return BIT32_GET(pad->buttons, joykey);
+   return 0;
 }
 
 static void linuxraw_joypad_get_buttons(unsigned port, input_bits_t *state)

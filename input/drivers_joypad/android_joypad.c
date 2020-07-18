@@ -30,20 +30,20 @@ static bool android_joypad_init(void *data)
    return true;
 }
 
-static bool android_joypad_button(unsigned port, uint16_t joykey)
+static int16_t android_joypad_button(unsigned port, uint16_t joykey)
 {
    uint8_t *buf                    = android_keyboard_state_get(port);
    struct android_app *android_app = (struct android_app*)g_android;
    unsigned hat_dir                = GET_HAT_DIR(joykey);
 
    if (port >= DEFAULT_MAX_PADS)
-      return false;
+      return 0;
 
    if (hat_dir)
    {
       unsigned h = GET_HAT(joykey);
       if (h > 0)
-         return false;
+         return 0;
 
       switch (hat_dir)
       {
@@ -56,11 +56,14 @@ static bool android_joypad_button(unsigned port, uint16_t joykey)
          case HAT_DOWN_MASK:
             return android_app->hat_state[port][1] ==  1;
          default:
-            return false;
+            break;
       }
+      /* hat requested and no hat button down */
    }
+   else if (joykey < LAST_KEYCODE)
+      return BIT_GET(buf, joykey);
 
-   return joykey < LAST_KEYCODE && BIT_GET(buf, joykey);
+   return 0;
 }
 
 static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -87,9 +90,7 @@ static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
    return val;
 }
 
-static void android_joypad_poll(void)
-{
-}
+static void android_joypad_poll(void) { }
 
 static bool android_joypad_query_pad(unsigned pad)
 {

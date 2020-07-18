@@ -60,11 +60,10 @@ static void wiiu_joypad_destroy(void)
 #endif
 }
 
-static bool wiiu_joypad_button(unsigned pad, uint16_t key)
+static int16_t wiiu_joypad_button(unsigned pad, uint16_t key)
 {
    if (!wiiu_joypad_query_pad(pad))
-      return false;
-
+      return 0;
    return pad_drivers[pad]->button(pad, key);
 }
 

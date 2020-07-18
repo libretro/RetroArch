@@ -295,12 +295,12 @@ error:
 #endif
 }
 
-static bool sdl_joypad_button(unsigned port, uint16_t joykey)
+static int16_t sdl_joypad_button(unsigned port, uint16_t joykey)
 {
    unsigned hat_dir  = 0;
    sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad || !pad->joypad)
-      return false;
+      return 0;
 
    hat_dir = GET_HAT_DIR(joykey);
    /* Check hat. */
@@ -327,14 +327,12 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
          default:
             break;
       }
-      return false;
+      /* hat requested and no hat button down */
    }
+   else if (joykey < pad->num_buttons)
+      return sdl_pad_get_button(pad, joykey);
 
-   /* Check the button */
-   if (joykey < pad->num_buttons && sdl_pad_get_button(pad, joykey))
-      return true;
-
-   return false;
+   return 0;
 }
 
 static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
