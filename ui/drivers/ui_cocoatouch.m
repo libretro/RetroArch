@@ -389,6 +389,8 @@ enum
     MetalView *metalView = (MetalView*) _renderView;
     [metalView setDrawableSize:CGSizeMake(mode.width, mode.height)];
     NSLog(@"setVideoMode set drawable size to %i x %i",mode.width,mode.height);
+    // hardcoding test!
+    [metalView setDrawableSize:CGSizeMake(1242.0,2668.0)];
 }
 
 - (void)setCursorVisible:(bool)v {
