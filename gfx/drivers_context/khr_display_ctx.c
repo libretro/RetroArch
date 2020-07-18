@@ -58,7 +58,8 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
 
 static void *gfx_ctx_khr_display_init(void *video_driver)
 {
-   khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)calloc(1, sizeof(*khr));
+   khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)
+      calloc(1, sizeof(*khr));
    if (!khr)
        return NULL;
 
@@ -100,8 +101,9 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
-   khr->width = width;
-   khr->height = height;
+   khr->width                  = width;
+   khr->height                 = height;
+
    if (!vulkan_create_swapchain(&khr->vk, khr->width, khr->height,
             khr->swap_interval))
    {
@@ -113,7 +115,7 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
       vulkan_acquire_next_image(&khr->vk);
 
    khr->vk.context.invalid_swapchain = true;
-   khr->vk.need_new_swapchain = false;
+   khr->vk.need_new_swapchain        = false;
    return true;
 }
 
@@ -128,13 +130,13 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
 
    if (!fullscreen)
    {
-      width = 0;
-      height = 0;
+      width                       = 0;
+      height                      = 0;
    }
 
-   info.width         = width;
-   info.height        = height;
-   info.monitor_index = video_monitor_index;
+   info.width                     = width;
+   info.height                    = height;
+   info.monitor_index             = video_monitor_index;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))
@@ -143,8 +145,8 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
       goto error;
    }
 
-   khr->width = khr->vk.context.swapchain_width;
-   khr->height = khr->vk.context.swapchain_height;
+   khr->width                     = khr->vk.context.swapchain_width;
+   khr->height                    = khr->vk.context.swapchain_height;
 
    return true;
 
