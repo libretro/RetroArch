@@ -305,12 +305,6 @@ static void gfx_ctx_x_swap_buffers(void *data)
 #endif
 }
 
-static void gfx_ctx_x_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-   x11_check_window(data, quit, resize, width, height);
-}
-
 static bool gfx_ctx_x_set_resize(void *data,
       unsigned width, unsigned height) { return true; }
 
@@ -986,8 +980,6 @@ static enum gfx_ctx_api gfx_ctx_x_get_api(void *data)
 static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor)
 {
-   (void)data;
-
    g_major = major;
    g_minor = minor;
    x_api   = api;
@@ -1093,11 +1085,6 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
 #endif
          }
          break;
-      case GFX_CTX_VULKAN_API:
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-         break;
       case GFX_CTX_NONE:
       default:
          break;
@@ -1167,7 +1154,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    x11_get_metrics,
    NULL,
    x11_update_title,
-   gfx_ctx_x_check_window,
+   x11_check_window,
    gfx_ctx_x_set_resize,
    x11_has_focus,
    gfx_ctx_x_suppress_screensaver,
