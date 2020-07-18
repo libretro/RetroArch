@@ -128,7 +128,7 @@ static int16_t kpad_axis(unsigned pad, uint32_t axis)
    axis_data data;
    int channel = to_wiimote_channel(pad);
 
-   if (!kpad_query_pad(pad) || channel < 0 || axis == AXIS_NONE)
+   if (!kpad_query_pad(pad) || channel < 0)
       return 0;
 
    pad_functions.read_axis_data(axis, &data);

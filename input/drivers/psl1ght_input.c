@@ -450,41 +450,41 @@ static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS)
+   if (port_num >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      axis     = AXIS_NEG_GET(joyaxis);
+      is_neg   = true;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      axis     = AXIS_POS_GET(joyaxis);
+      is_pos   = true;
    }
 
    switch (axis)
    {
       case 0:
-         val = pad_state[port_num].ANA_L_H;
+         val   = pad_state[port_num].ANA_L_H;
          break;
       case 1:
-         val = pad_state[port_num].ANA_L_V;
+         val   = pad_state[port_num].ANA_L_V;
          break;
       case 2:
-         val = pad_state[port_num].ANA_R_H;
+         val   = pad_state[port_num].ANA_R_H;
          break;
       case 3:
-         val = pad_state[port_num].ANA_R_V;
+         val   = pad_state[port_num].ANA_R_V;
          break;
    }
 
-   val = (val - 0x7f) * 0xff;
+   val         = (val - 0x7f) * 0xff;
    if (is_neg && val > 0)
-      val = 0;
+      val      = 0;
    else if (is_pos && val < 0)
-      val = 0;
+      val      = 0;
 
    return val;
 }
