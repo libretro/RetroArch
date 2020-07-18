@@ -616,7 +616,7 @@ static int16_t udev_joypad_button(unsigned port, uint16_t joykey)
                   break;
                case HAT_RIGHT_MASK:
                   if (pad->hats[h][0] > 0)
-                     ret |= (1 << i):
+                     ret |= (1 << i);
                   break;
                case HAT_UP_MASK:
                   if (pad->hats[h][1] < 0)
