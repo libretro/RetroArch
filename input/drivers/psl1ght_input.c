@@ -402,7 +402,7 @@ static bool ps3_joypad_init(void *data)
    return true;
 }
 
-static u16 transform_buttons(const padData *data)
+static uint16_t transform_buttons(const padData *data)
 {
    return (
          (data->BTN_CROSS << RETRO_DEVICE_ID_JOYPAD_B)
@@ -424,19 +424,30 @@ static u16 transform_buttons(const padData *data)
          );
 }
 
-static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
+static int16_t ps3_joypad_button(unsigned port_num, uint16_t joykey)
 {
+   int16_t ret                          = 0;
+   uint16_t state                       = 0;
+   uint16_t i                           = joykey;
+   uint16_t end                         = joykey + 1;
    if (port_num >= MAX_PADS)
-      return false;
+      return 0;
 
-   return !!(transform_buttons(&pad_state[port_num]) & (UINT64_C(1) << joykey));
+   state                                = transform_buttons(
+         &pad_state[port_num]);
+   for (; i < end; i++)
+   {
+      if (state & (UINT64_C(1) << i))
+         ret |= (UINT64_C(1) << i);
+   }
+   return ret;
 }
 
 static void ps3_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
    if (port_num < MAX_PADS)
    {
-      u16 v = transform_buttons(&pad_state[port_num]);
+      uint16_t v = transform_buttons(&pad_state[port_num]);
       BITS_COPY16_PTR( state,  v);
    }
    else
