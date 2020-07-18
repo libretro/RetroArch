@@ -1450,7 +1450,8 @@ void win32_show_cursor(void *data, bool state)
 #endif
 }
 
-void win32_check_window(bool *quit, bool *resize,
+void win32_check_window(void *data,
+      bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #if !defined(_XBOX)

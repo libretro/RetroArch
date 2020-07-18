@@ -1619,7 +1619,11 @@ static bool d3d12_gfx_alive(void* data)
    bool           quit;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   win32_check_window(&quit, &d3d12->resize_chain, &d3d12->vp.full_width, &d3d12->vp.full_height);
+   win32_check_window(NULL,
+         &quit,
+         &d3d12->resize_chain,
+         &d3d12->vp.full_width,
+         &d3d12->vp.full_height);
 
    if (     d3d12->resize_chain 
          && d3d12->vp.full_width  != 0

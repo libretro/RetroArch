@@ -474,12 +474,6 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
    }
 }
 
-static void gfx_ctx_wgl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-   win32_check_window(quit, resize, width, height);
-}
-
 static void gfx_ctx_wgl_swap_buffers(void *data)
 {
    (void)data;
@@ -866,7 +860,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    win32_get_metrics,
    NULL,
    gfx_ctx_wgl_update_title,
-   gfx_ctx_wgl_check_window,
+   win32_check_window,
    gfx_ctx_wgl_set_resize,
    win32_has_focus,
    win32_suppress_screensaver,

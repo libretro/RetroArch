@@ -1626,9 +1626,15 @@ static bool d3d11_gfx_alive(void* data)
    bool           quit;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   win32_check_window(&quit, &d3d11->resize_chain, &d3d11->vp.full_width, &d3d11->vp.full_height);
+   win32_check_window(NULL,
+         &quit,
+         &d3d11->resize_chain,
+         &d3d11->vp.full_width,
+         &d3d11->vp.full_height);
 
-   if (d3d11->resize_chain && d3d11->vp.full_width != 0 && d3d11->vp.full_height != 0)
+   if (     d3d11->resize_chain 
+         && d3d11->vp.full_width  != 0
+         && d3d11->vp.full_height != 0)
       video_driver_set_size(d3d11->vp.full_width, d3d11->vp.full_height);
 
    return !quit;

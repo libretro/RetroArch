@@ -124,12 +124,6 @@ static void gfx_ctx_uwp_swap_interval(void *data, int interval)
    }
 }
 
-static void gfx_ctx_uwp_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-   win32_check_window(quit, resize, width, height);
-}
-
 static gfx_ctx_proc_t gfx_ctx_uwp_get_proc_address(const char* symbol)
 {
 #ifdef HAVE_DYNAMIC
@@ -150,7 +144,7 @@ static void gfx_ctx_uwp_get_video_size(void *data,
 {
    bool quit;
    bool resize;
-   win32_check_window(&quit, &resize, width, height);
+   win32_check_window(NULL, &quit, &resize, width, height);
 }
 
 static void *gfx_ctx_uwp_init(void *video_driver)
@@ -275,7 +269,7 @@ const gfx_ctx_driver_t gfx_ctx_uwp = {
    win32_get_metrics,
    NULL,
    NULL, /* update title */
-   gfx_ctx_uwp_check_window,
+   win32_check_window,
    gfx_ctx_uwp_set_resize,
    win32_has_focus,
    NULL, /* suppress screensaver */

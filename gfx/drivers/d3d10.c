@@ -1552,7 +1552,9 @@ static bool d3d10_gfx_alive(void* data)
    bool           quit;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   win32_check_window(&quit, &d3d10->resize_chain, &d3d10->vp.full_width, &d3d10->vp.full_height);
+   win32_check_window(NULL,
+         &quit, &d3d10->resize_chain, &d3d10->vp.full_width,
+         &d3d10->vp.full_height);
 
    if (     d3d10->resize_chain 
          && d3d10->vp.full_width != 0 

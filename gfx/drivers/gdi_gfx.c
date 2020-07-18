@@ -493,7 +493,7 @@ static bool gdi_gfx_alive(void *data)
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-   win32_check_window(
+   win32_check_window(NULL,
             &quit, &resize, &temp_width, &temp_height);
 
    ret = !quit;

@@ -93,7 +93,7 @@ static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
 static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   win32_check_window(quit, resize, width, height);
+   win32_check_window(NULL, quit, resize, width, height);
 
    if (win32_vk.need_new_swapchain)
       *resize = true;

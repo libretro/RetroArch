@@ -660,7 +660,8 @@ extern "C" {
 		return false;
 	}
 
-	void win32_check_window(bool *quit, bool *resize, unsigned *width, unsigned *height)
+	void win32_check_window(void *data,
+         bool *quit, bool *resize, unsigned *width, unsigned *height)
 	{
 		*quit   = App::GetInstance()->IsWindowClosed();
 		*resize = App::GetInstance()->CheckWindowResized();
