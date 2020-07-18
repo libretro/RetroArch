@@ -285,11 +285,7 @@ static bool gfx_ctx_w_vk_bind_api(void *data,
 
 static void gfx_ctx_w_vk_bind_hw_render(void *data, bool enable) { }
 
-static void *gfx_ctx_w_vk_get_context_data(void *data)
-{
-   (void)data;
-   return &win32_vk.context;
-}
+static void *gfx_ctx_w_vk_get_context_data(void *data) { return &win32_vk.context; }
 
 static uint32_t gfx_ctx_w_vk_get_flags(void *data)
 {
