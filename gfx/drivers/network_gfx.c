@@ -341,7 +341,6 @@ static bool network_gfx_alive(void *data)
    bool resize              = false;
    network_video_t *network = (network_video_t*)data;
 
-   /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
