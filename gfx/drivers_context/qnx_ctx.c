@@ -407,13 +407,6 @@ static void gfx_ctx_qnx_bind_hw_render(void *data, bool enable)
 #endif
 }
 
-static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#endif
-}
-
 static uint32_t gfx_ctx_qnx_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -447,7 +440,11 @@ const gfx_ctx_driver_t gfx_ctx_qnx = {
    false, /* has_windowed */
    gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,
-   gfx_ctx_qnx_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,

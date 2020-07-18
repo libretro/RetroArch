@@ -231,13 +231,6 @@ static void switch_ctx_swap_buffers(void *data)
 #endif
 }
 
-static gfx_ctx_proc_t switch_ctx_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-    return egl_get_proc_address(symbol);
-#endif
-}
-
 static void switch_ctx_bind_hw_render(void *data, bool enable)
 {
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
@@ -348,7 +341,11 @@ const gfx_ctx_driver_t switch_ctx = {
     false, /* has_windowed */
     switch_ctx_swap_buffers,
     switch_ctx_input_driver,
-    switch_ctx_get_proc_address,
+#ifdef HAVE_EGL
+    egl_get_proc_address,
+#else
+    NULL,
+#endif
     NULL,
     NULL,
     NULL,

@@ -214,13 +214,6 @@ static void gfx_ctx_opendingux_set_swap_interval(
 #endif
 }
 
-#ifdef HAVE_EGL
-static gfx_ctx_proc_t gfx_ctx_opendingux_get_proc_address(const char *symbol)
-{
-   return egl_get_proc_address(symbol);
-}
-#endif
-
 static void gfx_ctx_opendingux_bind_hw_render(void *data, bool enable)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
@@ -262,7 +255,7 @@ const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    gfx_ctx_opendingux_swap_buffers,
    gfx_ctx_opendingux_input_driver,
 #ifdef HAVE_EGL
-   gfx_ctx_opendingux_get_proc_address,
+   egl_get_proc_address,
 #else
    NULL,
 #endif

@@ -291,15 +291,6 @@ static bool gfx_ctx_emscripten_write_egl_image(void *data,
       const void *frame, unsigned width, unsigned height, unsigned pitch,
       bool rgb32, unsigned index, void **image_handle) { return false; }
 
-static gfx_ctx_proc_t gfx_ctx_emscripten_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#else
-   return NULL;
-#endif
-}
-
 static void gfx_ctx_emscripten_bind_hw_render(void *data, bool enable)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
@@ -340,7 +331,11 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    false,
    gfx_ctx_emscripten_swap_buffers,
    gfx_ctx_emscripten_input_driver,
-   gfx_ctx_emscripten_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    gfx_ctx_emscripten_init_egl_image_buffer,
    gfx_ctx_emscripten_write_egl_image,
    NULL,

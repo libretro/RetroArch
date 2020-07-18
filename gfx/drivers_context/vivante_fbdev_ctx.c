@@ -219,15 +219,6 @@ static void gfx_ctx_vivante_swap_buffers(void *data)
 #endif
 }
 
-static gfx_ctx_proc_t gfx_ctx_vivante_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#else
-   return NULL;
-#endif
-}
-
 static void gfx_ctx_vivante_bind_hw_render(void *data, bool enable)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
@@ -268,7 +259,11 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    false, /* has_windowed */
    gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
-   gfx_ctx_vivante_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,

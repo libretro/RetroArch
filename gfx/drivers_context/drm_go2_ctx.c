@@ -110,15 +110,6 @@ static void gfx_ctx_go2_drm_input_driver(void *data,
    *input_data = NULL;
 }
 
-static gfx_ctx_proc_t gfx_ctx_go2_drm_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#else
-   return NULL;
-#endif
-}
-
 static void *gfx_ctx_go2_drm_init(void *video_driver)
 {
    gfx_ctx_go2_drm_data_t *drm = (gfx_ctx_go2_drm_data_t*)
@@ -399,7 +390,11 @@ const gfx_ctx_driver_t gfx_ctx_go2_drm = {
    false, /* has_windowed */
    gfx_ctx_go2_drm_swap_buffers,
    gfx_ctx_go2_drm_input_driver,
-   gfx_ctx_go2_drm_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,

@@ -235,13 +235,6 @@ static void orbis_ctx_swap_buffers(void *data)
 #endif
 }
 
-static gfx_ctx_proc_t orbis_ctx_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#endif
-}
-
 static void orbis_ctx_bind_hw_render(void *data, bool enable)
 {
    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
@@ -300,7 +293,11 @@ const gfx_ctx_driver_t orbis_ctx = {
     false, /* has_windowed */
     orbis_ctx_swap_buffers,
     orbis_ctx_input_driver,
-    orbis_ctx_get_proc_address,
+#ifdef HAVE_EGL
+    egl_get_proc_address,
+#else
+    NULL,
+#endif
     NULL,
     NULL,
     NULL,

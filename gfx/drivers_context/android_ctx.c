@@ -329,15 +329,6 @@ static void android_gfx_ctx_set_swap_interval(void *data, int swap_interval)
 #endif
 }
 
-static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#else
-   return NULL;
-#endif
-}
-
 static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
@@ -381,7 +372,11 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    false, /* has_windowed */
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
-   android_gfx_ctx_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,

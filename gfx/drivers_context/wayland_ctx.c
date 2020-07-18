@@ -843,15 +843,6 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 #endif
 }
 
-static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#else
-   return NULL;
-#endif
-}
-
 static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -923,7 +914,11 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    true, /* has_windowed */
    gfx_ctx_wl_swap_buffers,
    gfx_ctx_wl_input_driver,
-   gfx_ctx_wl_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    gfx_ctx_wl_show_mouse,
