@@ -397,8 +397,8 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       unsigned max_width, unsigned max_height)
 {
    softfilter_simd_mask_t cpu_features = (softfilter_simd_mask_t)cpu_features_get();
-   char basedir[PATH_MAX_LENGTH];
 #ifdef HAVE_DYLIB
+   char basedir[PATH_MAX_LENGTH];
    char ext_name[PATH_MAX_LENGTH];
 #endif
    struct string_list *plugs     = NULL;

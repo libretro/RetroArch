@@ -57,11 +57,10 @@ static egl_ctx_data_t uwp_egl;
 #ifdef HAVE_DYNAMIC
 static dylib_t          dll_handle = NULL; /* Handle to libGLESv2.dll */
 #endif
-static int uwp_interval            = 0;
 
 typedef struct gfx_ctx_cgl_data
 {
-   void *empty;
+   int interval;
 } gfx_ctx_uwp_data_t;
 
 bool create_gles_context(void* corewindow)
@@ -116,10 +115,12 @@ error:
 
 static void gfx_ctx_uwp_swap_interval(void *data, int interval)
 {
-   if (uwp_interval != interval)
+   gfx_ctx_uwp_data_t *uwp = (gfx_ctx_uwp_data_t*)data;
+
+   if (uwp->interval != interval)
    {
-      uwp_interval = interval;
-      egl_set_swap_interval(&uwp_egl, uwp_interval);
+      uwp->interval = interval;
+      egl_set_swap_interval(&uwp_egl, uwp->interval);
    }
 }
 
@@ -169,6 +170,9 @@ static void *gfx_ctx_uwp_init(void *video_driver)
 static void gfx_ctx_uwp_destroy(void *data)
 {
    gfx_ctx_uwp_data_t *wgl = (gfx_ctx_uwp_data_t*)data;
+   
+   if (!wgl)
+      return;
 
    egl_destroy(&uwp_egl);
 
@@ -181,17 +185,20 @@ static bool gfx_ctx_uwp_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   gfx_ctx_uwp_data_t *uwp = (gfx_ctx_uwp_data_t*)data;
+
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
       RARCH_ERR("[UWP EGL]: win32_set_video_mode failed.\n");
    }
 
-   if (!create_gles_context(uwp_get_corewindow())) {
+   if (!create_gles_context(uwp_get_corewindow()))
+   {
       RARCH_ERR("[UWP EGL]: create_gles_context failed.\n");
       goto error;
    }
 
-   gfx_ctx_uwp_swap_interval(data, uwp_interval);
+   gfx_ctx_uwp_swap_interval(data, uwp->interval);
    return true;
 
 error:
@@ -229,8 +236,6 @@ static enum gfx_ctx_api gfx_ctx_uwp_get_api(void *data)
 static bool gfx_ctx_uwp_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
    return false;
