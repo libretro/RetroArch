@@ -624,7 +624,7 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 }
 
-static uint64_t frontend_win32_get_mem_total(void)
+static uint64_t frontend_win32_get_total_mem(void)
 {
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
@@ -641,7 +641,7 @@ static uint64_t frontend_win32_get_mem_total(void)
 #endif
 }
 
-static uint64_t frontend_win32_get_mem_used(void)
+static uint64_t frontend_win32_get_free_mem(void)
 {
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
@@ -649,12 +649,12 @@ static uint64_t frontend_win32_get_mem_used(void)
    MEMORYSTATUSEX mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUSEX);
    GlobalMemoryStatusEx(&mem_info);
-   return ((frontend_win32_get_mem_total() - mem_info.ullAvailPhys));
+   return mem_info.ullAvailPhys;
 #else
    MEMORYSTATUS mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUS);
    GlobalMemoryStatus(&mem_info);
-   return ((frontend_win32_get_mem_total() - mem_info.dwAvailPhys));
+   return mem_info.dwAvailPhys;
 #endif
 }
 
@@ -1128,8 +1128,8 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_get_architecture,
    frontend_win32_get_powerstate,
    frontend_win32_parse_drive_list,
-   frontend_win32_get_mem_total,
-   frontend_win32_get_mem_used,
+   frontend_win32_get_total_mem,
+   frontend_win32_get_free_mem,
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */
