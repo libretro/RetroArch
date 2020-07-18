@@ -188,7 +188,7 @@ static int16_t dos_joypad_button(unsigned port_num, uint16_t joykey)
             break;
          case RETRO_DEVICE_ID_JOYPAD_X:
             if (buf[DOSKEY_s])
-               ret |= (1 << i):
+               ret |= (1 << i);
                   break;
          case RETRO_DEVICE_ID_JOYPAD_Y:
             if (buf[DOSKEY_a])
@@ -204,7 +204,7 @@ static int16_t dos_joypad_button(unsigned port_num, uint16_t joykey)
             break;
          case RETRO_DEVICE_ID_JOYPAD_UP:
             if (buf[DOSKEY_UP])
-               ret |= (1 << i):
+               ret |= (1 << i);
                   break;
          case RETRO_DEVICE_ID_JOYPAD_DOWN:
             if (buf[DOSKEY_DOWN])

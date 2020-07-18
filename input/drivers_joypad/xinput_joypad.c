@@ -479,17 +479,12 @@ static int16_t xinput_joypad_button(unsigned port_num, uint16_t joykey)
 
 static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
 {
-   int xuser;
    int16_t val         = 0;
    int     axis        = -1;
    bool is_neg         = false;
    bool is_pos         = false;
    XINPUT_GAMEPAD* pad = NULL;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   xuser = pad_index_to_xuser_index(port_num);
+   int xuser           = pad_index_to_xuser_index(port_num);
 
 #ifdef HAVE_DINPUT
    if (xuser == -1)

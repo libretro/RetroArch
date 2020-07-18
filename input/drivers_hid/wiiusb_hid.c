@@ -581,9 +581,6 @@ static int16_t wiiusb_hid_joypad_axis(void *data,
    int16_t       val = 0;
    wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
 
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
       val = pad_connection_get_axis(&hid->connections[port],

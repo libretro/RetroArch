@@ -353,13 +353,8 @@ static int16_t sdl_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   sdl_joypad_t *pad;
    int16_t val       = 0;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   pad = (sdl_joypad_t*)&sdl_pads[port];
+   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad->joypad)
       return false;
 

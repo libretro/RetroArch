@@ -119,7 +119,7 @@ static int16_t switch_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 #if 0
    /* TODO/FIXME - implement */
-   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS) { }
+   if (port_num >= DEFAULT_MAX_PADS) { }
 #endif
 
    if (AXIS_NEG_GET(joyaxis) < 4)

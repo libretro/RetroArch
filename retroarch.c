@@ -3539,17 +3539,26 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
 
    /* poll only the relevant port */
    for (a = 0; a < MENU_MAX_AXES; a++)
-      state->axis_state[port].rested_axes[a] =
-         joypad->axis(port, AXIS_POS(a)) +
-         joypad->axis(port, AXIS_NEG(a));
+   {
+      if (AXIS_POS(a) != AXIS_NONE)
+         state->axis_state[port].rested_axes[a]  = 
+            joypad->axis(port, AXIS_POS(a));
+      if (AXIS_NEG(a) != AXIS_NONE)
+         state->axis_state[port].rested_axes[a] += 
+            joypad->axis(port, AXIS_NEG(a));
+   }
 
    if (sec_joypad)
    {
       /* poll only the relevant port */
       for (a = 0; a < MENU_MAX_AXES; a++)
-         state->axis_state[port].rested_axes[a] =
-            sec_joypad->axis(port, AXIS_POS(a)) +
-            sec_joypad->axis(port, AXIS_NEG(a));
+      {
+         if (AXIS_POS(a) != AXIS_NONE)
+            state->axis_state[port].rested_axes[a]  = sec_joypad->axis(port, AXIS_POS(a));
+
+         if (AXIS_NEG(a) != AXIS_NONE)
+            state->axis_state[port].rested_axes[a] += sec_joypad->axis(port, AXIS_NEG(a));
+      }
    }
 }
 
@@ -3571,9 +3580,13 @@ static void menu_input_key_bind_poll_bind_state_internal(
       state->state[port].buttons[b] = joypad->button(port, b);
 
    for (a = 0; a < MENU_MAX_AXES; a++)
-      state->state[port].axes[a] =
-         joypad->axis(port, AXIS_POS(a)) +
-         joypad->axis(port, AXIS_NEG(a));
+   {
+      if (AXIS_POS(a) != AXIS_NONE)
+         state->state[port].axes[a]  = joypad->axis(port, AXIS_POS(a));
+
+      if (AXIS_NEG(a) != AXIS_NONE)
+         state->state[port].axes[a] += joypad->axis(port, AXIS_NEG(a));
+   }
 
    for (h = 0; h < MENU_MAX_HATS; h++)
    {
@@ -24111,7 +24124,7 @@ static int16_t input_joypad_axis(
    settings_t *settings           = p_rarch->configuration_settings;
    float input_analog_deadzone    = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
-   int16_t val                    = drv->axis(port, joyaxis);
+   int16_t val                    = (joyaxis != AXIS_NONE) ? drv->axis(port, joyaxis) : 0;
 
    if (input_analog_deadzone)
    {
@@ -26117,8 +26130,9 @@ int16_t button_is_pressed(
     if ((uint16_t)joykey != NO_BTN && joypad->button(
             joypad_info->joy_idx, (uint16_t)joykey))
         return 1;
-    if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
-             / 0x8000) > joypad_info->axis_threshold)
+    if (joyaxis != AXIS_NONE &&
+          ((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
+           / 0x8000) > joypad_info->axis_threshold)
         return 1;
     return 0;
 }
@@ -26165,8 +26179,13 @@ static int16_t input_joypad_analog_button(
 
    /* Analog button. */
    if (input_analog_deadzone)
-      normal_mag = fabs((1.0f / 0x7fff) * drv->axis(
-               joypad_info->joy_idx, axis));
+   {
+      int16_t mult = 0;
+      if (axis != AXIS_NONE)
+         mult      = drv->axis(
+               joypad_info->joy_idx, axis);
+      normal_mag = fabs((1.0f / 0x7fff) * mult);
+   }
    res = abs(input_joypad_axis(p_rarch, drv,
             joypad_info->joy_idx, axis, normal_mag));
 
@@ -26251,6 +26270,8 @@ static int16_t input_joypad_analog_axis(
        * radial deadzone */
       if (input_analog_deadzone)
       {
+         float x                  = 0.0f;
+         float y                  = 0.0f;
          uint32_t x_axis_minus    = (bind_x_minus->joyaxis == AXIS_NONE)
             ? joypad_info->auto_binds[ident_x_minus].joyaxis
             : bind_x_minus->joyaxis;
@@ -26264,13 +26285,19 @@ static int16_t input_joypad_analog_axis(
             ? joypad_info->auto_binds[ident_y_plus].joyaxis
             : bind_y_plus->joyaxis;
          /* normalized magnitude for radial scaled analog deadzone */
-         float x                  = drv->axis(
-               joypad_info->joy_idx, x_axis_plus)
-            + drv->axis(joypad_info->joy_idx, x_axis_minus);
-         float y                  = drv->axis(
-               joypad_info->joy_idx, y_axis_plus)
-            + drv->axis(joypad_info->joy_idx, y_axis_minus);
-         normal_mag = (1.0f / 0x7fff) * sqrt(x * x + y * y);
+         if (x_axis_plus != AXIS_NONE)
+            x                     = drv->axis(
+                  joypad_info->joy_idx, x_axis_plus);
+         if (x_axis_minus != AXIS_NONE)
+            x                    += drv->axis(joypad_info->joy_idx,
+                  x_axis_minus);
+         if (y_axis_plus != AXIS_NONE)
+            y                     = drv->axis(
+               joypad_info->joy_idx, y_axis_plus);
+         if (y_axis_minus != AXIS_NONE)
+            y                    += drv->axis(
+                  joypad_info->joy_idx, y_axis_minus);
+         normal_mag               = (1.0f / 0x7fff) * sqrt(x * x + y * y);
       }
 
       pressed_minus = abs(

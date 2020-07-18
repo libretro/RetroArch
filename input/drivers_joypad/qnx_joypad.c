@@ -74,7 +74,7 @@ static int16_t qnx_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_pos         = false;
    qnx_input_t *qnx    = (qnx_input_t*)input_driver_get_data();
 
-   if (!qnx || joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS)
+   if (!qnx || port_num >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)

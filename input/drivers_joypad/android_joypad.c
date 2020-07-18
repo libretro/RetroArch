@@ -75,7 +75,7 @@ static int16_t android_joypad_button(unsigned port, uint16_t joykey)
       }
       else if (i < LAST_KEYCODE)
          if (BIT_GET(buf, i))
-            ret |= (1 << i):
+            ret |= (1 << i);
    }
 
    return ret;
@@ -85,9 +85,6 @@ static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    int val                  = 0;
    struct android_app *android_app = (struct android_app*)g_android;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
 
    if (AXIS_NEG_GET(joyaxis) < MAX_AXIS)
    {

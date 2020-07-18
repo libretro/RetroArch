@@ -531,16 +531,12 @@ static int16_t dinput_joypad_button(unsigned port_num, uint16_t joykey)
 
 static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   const struct dinput_joypad_data *pad = NULL;
    int val                              = 0;
    int axis                             = -1;
    bool is_neg                          = false;
    bool is_pos                          = false;
+   const struct dinput_joypad_data *pad = &g_pads[port_num];
 
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   pad = &g_pads[port_num];
    if (!pad->joypad)
       return 0;
 

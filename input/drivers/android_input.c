@@ -1315,8 +1315,6 @@ static void android_input_poll_memcpy(android_input_t *android)
 
 static bool android_input_key_pressed(android_input_t *android, int key)
 {
-   uint64_t joykey;
-   uint32_t joyaxis;
    rarch_joypad_info_t joypad_info;
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = input_autoconf_binds[0];
@@ -1327,21 +1325,12 @@ static bool android_input_key_pressed(android_input_t *android, int key)
          && android_keyboard_port_input_pressed(input_config_binds[0],
             key))
       return true;
-
-   joykey                     = 
-      (input_config_binds[0][key].joykey != NO_BTN)
-      ? input_config_binds[0][key].joykey 
-      : joypad_info.auto_binds[key].joykey;
-   joyaxis                    = 
-      (input_config_binds[0][key].joyaxis != AXIS_NONE)
-      ? input_config_binds[0][key].joyaxis 
-      : joypad_info.auto_binds[key].joyaxis;
-
-   if ((uint16_t)joykey != NO_BTN && android->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
-      return true;
-   if (((float)abs(android->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-      return true;
-   return false;
+   return button_is_pressed(
+         android->joypad,
+         &joypad_info,
+         &input_config_binds[0],
+         joypad_info.joy_idx,
+         key);
 }
 
 /* Handle all events. If our activity is in pause state,

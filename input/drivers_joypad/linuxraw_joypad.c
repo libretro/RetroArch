@@ -335,12 +335,8 @@ static void linuxraw_joypad_get_buttons(unsigned port, input_bits_t *state)
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    int16_t val = 0;
-   const struct linuxraw_joypad *pad = NULL;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
+   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
+      &linuxraw_pads[port];
 
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {

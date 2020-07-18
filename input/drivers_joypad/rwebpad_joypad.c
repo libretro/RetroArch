@@ -144,13 +144,8 @@ static void rwebpad_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 static int16_t rwebpad_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    EmscriptenGamepadEvent gamepad_state;
-   EMSCRIPTEN_RESULT r;
-   int16_t val = 0;
-
-   if (joyaxis == 0xFFFFFFFF)
-      return 0;
-
-   r = emscripten_get_gamepad_status(port_num, &gamepad_state);
+   int16_t         val = 0;
+   EMSCRIPTEN_RESULT r = emscripten_get_gamepad_status(port_num, &gamepad_state);
 
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
    {

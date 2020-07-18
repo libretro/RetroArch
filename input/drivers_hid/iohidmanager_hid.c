@@ -218,9 +218,6 @@ static int16_t iohidmanager_hid_joypad_axis(void *data,
    iohidmanager_hid_t   *hid = (iohidmanager_hid_t*)data;
    int16_t               val = 0;
 
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
    if (AXIS_NEG_GET(joyaxis) < 11)
    {
       val += hid->axes[port][AXIS_NEG_GET(joyaxis)];

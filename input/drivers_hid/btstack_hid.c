@@ -1399,9 +1399,6 @@ static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyax
    btstack_hid_t         *hid = (btstack_hid_t*)data;
    int16_t               val  = 0;
 
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
       val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));

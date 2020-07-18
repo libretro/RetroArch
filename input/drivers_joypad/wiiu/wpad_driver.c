@@ -325,7 +325,7 @@ static int16_t wpad_axis(unsigned pad, uint32_t axis)
    axis_data data;
    VPADChan channel;
 
-   if (!wpad_query_pad(pad) || axis == AXIS_NONE)
+   if (!wpad_query_pad(pad))
       return 0;
 
    channel = to_gamepad_channel(pad);

@@ -275,7 +275,7 @@ static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (joyaxis == AXIS_NONE || port >= DEFAULT_MAX_PADS)
+   if (port >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
