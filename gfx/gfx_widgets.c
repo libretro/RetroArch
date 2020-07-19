@@ -1407,29 +1407,29 @@ void gfx_widgets_frame(void *data)
    }
 #endif
 
-   /* FPS Counter */
-   if (     fps_show 
+   /* Status Text (fps, framecount, memory, core status message) */
+   if (     fps_show
          || framecount_show
          || memory_show
          || core_status_msg_show
          )
    {
-      const char *text      = *p_dispwidget->gfx_widgets_fps_text == '\0' 
-         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) 
-         : p_dispwidget->gfx_widgets_fps_text;
+      const char *text      = *p_dispwidget->gfx_widgets_status_text == '\0'
+         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         : p_dispwidget->gfx_widgets_status_text;
 
       int text_width        = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
             text,
             (unsigned)strlen(text), 1.0f);
-      int total_width       = text_width 
+      int total_width       = text_width
          + p_dispwidget->simple_widget_padding * 2;
 
-      int fps_text_x        = top_right_x_advance 
+      int status_text_x     = top_right_x_advance
          - p_dispwidget->simple_widget_padding - text_width;
       /* Ensure that left hand side of text does
        * not bleed off the edge of the screen */
-      fps_text_x            = (fps_text_x < 0) ? 0 : fps_text_x;
+      status_text_x         = (status_text_x < 0) ? 0 : status_text_x;
 
       gfx_display_set_alpha(gfx_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
@@ -1446,8 +1446,8 @@ void gfx_widgets_frame(void *data)
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
             text,
-            fps_text_x,
-            p_dispwidget->simple_widget_height / 2.0f 
+            status_text_x,
+            p_dispwidget->simple_widget_height / 2.0f
             + p_dispwidget->gfx_widget_fonts.regular.line_centre_offset,
             video_width, video_height,
             0xFFFFFFFF,
@@ -2018,14 +2018,14 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    font_driver_bind_block(NULL, NULL);
 }
 
-bool gfx_widgets_set_fps_text(
+bool gfx_widgets_set_status_text(
       void *data,
-      const char *new_fps_text)
+      const char *new_status_text)
 {
    dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)data;
 
-   strlcpy(p_dispwidget->gfx_widgets_fps_text,
-         new_fps_text, sizeof(p_dispwidget->gfx_widgets_fps_text));
+   strlcpy(p_dispwidget->gfx_widgets_status_text,
+         new_status_text, sizeof(p_dispwidget->gfx_widgets_status_text));
 
    return true;
 }
