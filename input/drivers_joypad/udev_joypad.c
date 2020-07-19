@@ -644,7 +644,7 @@ static void udev_joypad_get_buttons(unsigned port, input_bits_t *state)
       BIT256_CLEAR_ALL_PTR(state);
 }
 
-static int16_t udev_joypad_axis(
+static int16_t udev_joypad_axis_state(
       const struct udev_joypad *pad,
       unsigned port, uint32_t joyaxis)
 {

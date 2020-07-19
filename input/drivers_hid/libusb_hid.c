@@ -465,7 +465,7 @@ static int16_t libusb_hid_joypad_button(void *data,
 
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
-      continue;
+      return 0;
    else if (joykey < 32)
       return (BIT256_GET(buttons, joykey) != 0);
    return 0;
