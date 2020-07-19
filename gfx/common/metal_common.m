@@ -505,9 +505,6 @@
     NSLog(@"mtkView drawableSizeWillChange to: %f x %f",size.width,size.height);
 #ifdef HAVE_COCOATOUCH
     CGFloat scale = [[UIScreen mainScreen] scale];
-//    // due to autolayout constraints?
-////    if (size.width == INFINITY || size.height == INFINITY) {
-//        NSLog(@"mtkView drawableSizeWillChange width or height is infinity, flipping...");
     [self setViewportWidth:(unsigned int)view.bounds.size.width*scale height:(unsigned int)view.bounds.size.height*scale forceFull:NO allowRotate:YES];
 #else
    [self setViewportWidth:(unsigned int)size.width height:(unsigned int)size.height forceFull:NO allowRotate:YES];
@@ -1373,11 +1370,7 @@ typedef struct MTLALIGN(16)
                if (size == 0)
                   continue;
 
-#if defined(HAVE_COCOATOUCH)
-                id<MTLBuffer> buf = [_context.device newBufferWithLength:size options:MTLResourceStorageModeShared];
-#else
-               id<MTLBuffer> buf = [_context.device newBufferWithLength:size options:MTLResourceStorageModeManaged];
-#endif
+                id<MTLBuffer> buf = [_context.device newBufferWithLength:size options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
                STRUCT_ASSIGN(_engine.pass[i].buffers[j], buf);
             }
          } @finally
@@ -1493,11 +1486,7 @@ typedef struct MTLALIGN(16)
    NSUInteger needed = sizeof(SpriteVertex) * count * 4;
    if (!_vert || _vert.length < needed)
    {
-#if defined(HAVE_COCOATOUCH)
-      _vert = [_context.device newBufferWithLength:needed options:MTLResourceStorageModeShared];
-#else
-      _vert = [_context.device newBufferWithLength:needed options:MTLResourceStorageModeManaged];
-#endif
+      _vert = [_context.device newBufferWithLength:needed options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
    }
 
    for (NSUInteger i = 0; i < count; i++)

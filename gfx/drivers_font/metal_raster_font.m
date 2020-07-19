@@ -79,13 +79,7 @@
       {
          _buffer = [_context.device newBufferWithBytes:_atlas->buffer
                                                 length:(NSUInteger)(_stride * _atlas->height)
-                                               options:
-#if defined(HAVE_COCOATOUCH)
-                    MTLResourceStorageModeShared
-#else
-                    MTLResourceStorageModeManaged
-#endif
-                    ];
+                                               options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
 
          // Even though newBufferWithBytes will copy the initial contents
          // from our atlas, it doesn't seem to invalidate the buffer when
@@ -98,13 +92,7 @@
       else
       {
          _buffer = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
-                                                options:
-#if defined(HAVE_COCOATOUCH)
-                    MTLResourceStorageModeShared
-#else
-                    MTLResourceStorageModeManaged
-#endif
-                    ];
+                                                options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
          void *dst = _buffer.contents;
          void *src = _atlas->buffer;
          for (unsigned i = 0; i < _atlas->height; i++)
@@ -127,13 +115,7 @@
 
       _capacity = 12000;
       _vert = [_context.device newBufferWithLength:sizeof(SpriteVertex) *
-                                                   _capacity options:
-#if defined(HAVE_COCOATOUCH)
-               MTLResourceStorageModeShared
-#else
-               MTLResourceStorageModeManaged
-#endif
-               ];
+               _capacity options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
       if (![self _initializeState])
       {
          return nil;
