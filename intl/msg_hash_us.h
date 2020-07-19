@@ -3385,6 +3385,14 @@ MSG_HASH(
    "Display Memory Usage"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
+   "Memory Usage Update Interval (In Frames)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   "Memory usage display will be updated at the set interval (in frames)."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    "Displays the used and total amount of memory on the system."
    )

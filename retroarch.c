@@ -32336,6 +32336,7 @@ static void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
+   static uint64_t last_used_memory, last_total_memory;
    retro_time_t new_time;
    video_frame_info_t video_info;
    struct rarch_state *p_rarch  = &rarch_st;
@@ -32384,6 +32385,8 @@ static void video_driver_frame(const void *data, unsigned width,
    {
       unsigned fps_update_interval                 =
          settings->uints.fps_update_interval;
+      unsigned memory_update_interval              =
+         settings->uints.memory_update_interval;
       size_t buf_pos                               = 1;
       /* set this to 1 to avoid an offset issue */
       unsigned write_index                         =
@@ -32414,13 +32417,17 @@ static void video_driver_frame(const void *data, unsigned width,
       if (video_info.memory_show)
       {
          char mem[128];
-         uint64_t mem_bytes_total = frontend_driver_get_total_memory();
-         uint64_t mem_bytes_used  = mem_bytes_total - frontend_driver_get_free_memory();
+
+         if ((p_rarch->video_driver_frame_count % memory_update_interval) == 0)
+         {
+            last_total_memory = frontend_driver_get_total_memory();
+            last_used_memory  = last_total_memory - frontend_driver_get_free_memory();
+         }
 
          mem[0] = '\0';
          snprintf(
-               mem, sizeof(mem), "MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-               mem_bytes_total / (1024.0f * 1024.0f));
+               mem, sizeof(mem), "MEM: %.2f/%.2fMB", last_used_memory / (1024.0f * 1024.0f),
+               last_total_memory / (1024.0f * 1024.0f));
          if (status_text[buf_pos-1] != '\0')
             strlcat(status_text, " || ", sizeof(status_text));
          strlcat(status_text, mem, sizeof(status_text));

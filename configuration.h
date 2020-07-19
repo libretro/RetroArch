@@ -493,6 +493,7 @@ typedef struct settings
       unsigned audio_latency;
 
       unsigned fps_update_interval;
+      unsigned memory_update_interval;
 
       unsigned input_block_timeout;
 
