@@ -1377,6 +1377,31 @@ static int16_t btstack_hid_joypad_button(void *data,
    return 0;
 }
 
+static int16_t btstack_hid_joypad_axis(void *data,
+      unsigned port, uint32_t joyaxis)
+{
+   btstack_hid_t         *hid = (btstack_hid_t*)data;
+
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      int16_t val = pad_connection_get_axis(
+            &hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+
+      if (val < 0)
+         return val;
+   }
+   else if(AXIS_POS_GET(joyaxis) < 4)
+   {
+      int16_t val = pad_connection_get_axis(
+            &hid->slots[port], port, AXIS_POS_GET(joyaxis));
+
+      if (val > 0)
+         return val;
+   }
+   return 0;
+}
+
+
 static int16_t btstack_hid_joypad_state(
       void *data,
       rarch_joypad_info_t *joypad_info,
@@ -1419,29 +1444,6 @@ static bool btstack_hid_joypad_rumble(void *data, unsigned pad,
    if (!hid)
       return false;
    return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
-}
-
-static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
-{
-   btstack_hid_t         *hid = (btstack_hid_t*)data;
-   int16_t               val  = 0;
-
-   if (AXIS_NEG_GET(joyaxis) < 4)
-   {
-      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
-
-      if (val >= 0)
-         val = 0;
-   }
-   else if(AXIS_POS_GET(joyaxis) < 4)
-   {
-      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
-
-      if (val <= 0)
-         val = 0;
-   }
-
-   return val;
 }
 
 static void btstack_hid_free(const void *data)

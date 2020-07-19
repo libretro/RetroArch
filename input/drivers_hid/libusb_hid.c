@@ -484,26 +484,24 @@ static int16_t libusb_hid_joypad_axis(void *data,
       unsigned port, uint32_t joyaxis)
 {
    libusb_hid_t         *hid = (libusb_hid_t*)data;
-   int16_t               val = 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(&hid->slots[port],
+      int16_t val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_NEG_GET(joyaxis));
 
-      if (val >= 0)
-         val = 0;
+      if (val < 0)
+         return val;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(&hid->slots[port],
+      int16_t val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_POS_GET(joyaxis));
 
-      if (val <= 0)
-         val = 0;
+      if (val > 0)
+         return val;
    }
-
-   return val;
+   return 0;
 }
 
 static int16_t libusb_hid_joypad_state(
