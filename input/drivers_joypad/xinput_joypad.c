@@ -163,27 +163,15 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
    "XInput Controller (User 4)"
 };
 
-static const char* const XBOX_ONE_CONTROLLER_NAMES[4] =
-{
-   "XBOX One Controller (User 1)",
-   "XBOX One Controller (User 2)",
-   "XBOX One Controller (User 3)",
-   "XBOX One Controller (User 4)"
-};
-
 static const char *xinput_joypad_name(unsigned pad)
 {
-   int xuser = pad_index_to_xuser_index(pad);
 #ifdef HAVE_DINPUT
-   /* Use the real controller name for XBOX One controllers since
-      they are slightly different  */
-   if (xuser < 0)
+   /* If we have dinput, we are able to get a name from the device itself */
       return dinput_joypad.name(pad);
-
-   if (strstr(dinput_joypad.name(pad), "Xbox One For Windows"))
-      return XBOX_ONE_CONTROLLER_NAMES[xuser];
 #endif
 
+   /* Systems like the XBox 360 don't have dinput, so we use generic names instead */
+   int xuser = pad_index_to_xuser_index(pad);
    if (xuser < 0)
       return NULL;
 
