@@ -599,21 +599,22 @@ static int16_t winraw_input_state(void *d,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = wr->joypad->state(
+                  joypad_info, binds[port], port);
 
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (mouse)
             {
-               if (binds[port][i].valid)
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (button_is_pressed(
-                           wr->joypad,
-                           joypad_info, binds[port], port, i))
-                     ret |= (1 << i);
-                  else if (mouse && winraw_mouse_button_pressed(wr,
-                           mouse, port, binds[port][i].mbutton))
-                     ret |= (1 << i);
+                  if (binds[port][i].valid)
+                  {
+                     if (winraw_mouse_button_pressed(wr,
+                              mouse, port, binds[port][i].mbutton))
+                        ret |= (1 << i);
+                  }
                }
             }
+
             if (!input_winraw.keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)

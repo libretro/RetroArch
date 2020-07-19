@@ -543,22 +543,46 @@ static int16_t wiiusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
    input_bits_t buttons;
-   int16_t ret                          = 0;
-   uint16_t i                           = joykey;
-   uint16_t end                         = joykey + 1;
 
    if (port >= DEFAULT_MAX_PADS)
       return 0;
    wiiusb_hid_joypad_get_buttons(data, port, &buttons);
 
-   for (; i < end; i++)
+   /* Check hat. */
+   if (GET_HAT_DIR(joykey))
+      return 0;
+   else if (joykey < 32)
+      return (BIT256_GET(buttons, joykey) != 0);
+
+   return 0;
+}
+
+static int16_t wiiusb_hid_joypad_state(
+      void *data,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      /* Check hat. */
-      if (GET_HAT_DIR(i))
-         continue;
-      else if (i < 32)
-         if (BIT256_GET(buttons, i) != 0)
-            ret |= (1 << i);
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && wiiusb_hid_joypad_button(
+               data,
+               port, (uint16_t)joykey))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(wiiusb_hid_joypad_axis(data, port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
    }
 
    return ret;
@@ -679,6 +703,7 @@ hid_driver_t wiiusb_hid = {
    wiiusb_hid_joypad_query,
    wiiusb_hid_free,
    wiiusb_hid_joypad_button,
+   wiiusb_hid_joypad_state,
    wiiusb_hid_joypad_get_buttons,
    wiiusb_hid_joypad_axis,
    wiiusb_hid_poll,

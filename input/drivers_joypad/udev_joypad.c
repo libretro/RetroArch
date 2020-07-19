@@ -590,53 +590,45 @@ error:
    return false;
 }
 
+static int16_t udev_joypad_button_state(
+      const struct udev_joypad *pad,
+      unsigned port, uint16_t joykey)
+{
+   unsigned hat_dir = GET_HAT_DIR(joykey);
+
+   if (hat_dir)
+   {
+      unsigned h = GET_HAT(joykey);
+      if (h < NUM_HATS)
+      {
+         switch (hat_dir)
+         {
+            case HAT_LEFT_MASK:
+               return (pad->hats[h][0] < 0);
+            case HAT_RIGHT_MASK:
+               return (pad->hats[h][0] > 0);
+            case HAT_UP_MASK:
+               return (pad->hats[h][1] < 0);
+            case HAT_DOWN_MASK:
+               return (pad->hats[h][1] > 0);
+            default:
+               break;
+         }
+      }
+      /* hat requested and no hat button down */
+   }
+   else if (joykey < UDEV_NUM_BUTTONS)
+      return (BIT64_GET(pad->buttons, joykey));
+   return 0;
+}
+
 static int16_t udev_joypad_button(unsigned port, uint16_t joykey)
 {
-   int16_t ret                          = 0;
-   uint16_t i                           = joykey;
-   uint16_t end                         = joykey + 1;
    const struct udev_joypad *pad        = (const struct udev_joypad*)
       &udev_pads[port];
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   for (; i < end; i++)
-   {
-      unsigned hat_dir                  = GET_HAT_DIR(i);
-
-      if (hat_dir)
-      {
-         unsigned h = GET_HAT(i);
-         if (h < NUM_HATS)
-         {
-            switch (hat_dir)
-            {
-               case HAT_LEFT_MASK:
-                  if (pad->hats[h][0] < 0)
-                     ret |= (1 << i);
-                  break;
-               case HAT_RIGHT_MASK:
-                  if (pad->hats[h][0] > 0)
-                     ret |= (1 << i);
-                  break;
-               case HAT_UP_MASK:
-                  if (pad->hats[h][1] < 0)
-                     ret |= (1 << i);
-                  break;
-               case HAT_DOWN_MASK:
-                  if (pad->hats[h][1] > 0)
-                     ret |= (1 << i);
-                  break;
-               default:
-                  break;
-            }
-         }
-         /* hat requested and no hat button down */
-      }
-      else if (i < UDEV_NUM_BUTTONS)
-         if (BIT64_GET(pad->buttons, i))
-            ret |= (1 << i);
-   }
-   return ret;
+   return udev_joypad_button_state(pad, port, joykey);
 }
 
 static void udev_joypad_get_buttons(unsigned port, input_bits_t *state)
@@ -652,17 +644,18 @@ static void udev_joypad_get_buttons(unsigned port, input_bits_t *state)
       BIT256_CLEAR_ALL_PTR(state);
 }
 
-static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
+static int16_t udev_joypad_axis(
+      const struct udev_joypad *pad,
+      unsigned port, uint32_t joyaxis)
 {
    int16_t val = 0;
-   const struct udev_joypad *pad = (const struct udev_joypad*)
-      &udev_pads[port];
-
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {
       val = pad->axes[AXIS_NEG_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
-      if (((AXIS_NEG_GET(joyaxis) == ABS_Z) || (AXIS_NEG_GET(joyaxis) == ABS_RZ))
+      if ((
+               (AXIS_NEG_GET(joyaxis) == ABS_Z) || 
+               (AXIS_NEG_GET(joyaxis) == ABS_RZ))
             && (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
          val = (val + 0x7fff) / 2;
       if (val > 0)
@@ -672,7 +665,9 @@ static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
    {
       val = pad->axes[AXIS_POS_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
-      if (((AXIS_POS_GET(joyaxis) == ABS_Z) || (AXIS_POS_GET(joyaxis) == ABS_RZ))
+      if ((
+               (AXIS_POS_GET(joyaxis) == ABS_Z) || 
+               (AXIS_POS_GET(joyaxis) == ABS_RZ))
             && (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
          val = (val + 0x7fff) / 2;
       if (val < 0)
@@ -680,6 +675,47 @@ static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
    }
 
    return val;
+}
+
+static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
+{
+   const struct udev_joypad *pad = (const struct udev_joypad*)
+      &udev_pads[port];
+   return udev_joypad_axis_state(pad, port, joyaxis);
+}
+
+static int16_t udev_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   const struct udev_joypad *pad        = (const struct udev_joypad*)
+      &udev_pads[port];
+
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && udev_joypad_button_state(pad, port, (uint16_t)joykey)
+         )
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(udev_joypad_axis_state(pad, port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static bool udev_joypad_query_pad(unsigned pad)
@@ -700,6 +736,7 @@ input_device_driver_t udev_joypad = {
    udev_joypad_query_pad,
    udev_joypad_destroy,
    udev_joypad_button,
+   udev_joypad_state,
    udev_joypad_get_buttons,
    udev_joypad_axis,
    udev_joypad_poll,

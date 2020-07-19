@@ -785,6 +785,7 @@ static input_device_driver_t null_joypad = {
    NULL, /* query_pad */
    NULL, /* destroy */
    NULL, /* button */
+   NULL, /* state */
    NULL, /* get_buttons */
    NULL, /* axis */
    NULL, /* poll */

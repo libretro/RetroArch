@@ -1423,17 +1423,13 @@ static int16_t android_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = android->joypad->state(
+                  joypad_info, binds[port], port);
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
                {
-                  if (
-                        button_is_pressed(
-                           android->joypad, joypad_info, binds[port],
-                           port, i)
-                        || android_keyboard_port_input_pressed(binds[port], i)
-                     )
+                  if (android_keyboard_port_input_pressed(binds[port], i))
                      ret |= (1 << i);
                }
             }

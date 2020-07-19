@@ -17,10 +17,13 @@
 #include "../include/wiiu/hid.h"
 #include <wiiu/os/atomic.h>
 
+/* TODO/FIXME - static globals */
 static wiiu_event_list events;
 static wiiu_adapter_list adapters;
 
-static void report_hid_error(const char *msg, wiiu_adapter_t *adapter, int32_t error);
+/* Forward declaration */
+static void report_hid_error(const char *msg,
+      wiiu_adapter_t *adapter, int32_t error);
 
 static bool wiiu_hid_joypad_query(void *data, unsigned slot)
 {
@@ -64,18 +67,40 @@ static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, input_bits_t 
 static int16_t wiiu_hid_joypad_button(void *data,
       unsigned slot, uint16_t joykey)
 {
-   int16_t ret                          = 0;
-   uint16_t i                           = joykey;
-   uint16_t end                         = joykey + 1;
    joypad_connection_t *pad             = get_pad((wiiu_hid_t *)data, slot);
-
    if (!pad)
       return 0;
-   for (; i < end; i++)
+   return pad->iface->button(pad->data, joykey);
+}
+
+static int16_t wiiu_hid_joypad_state(
+      void *data,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      if (pad->iface->button(pad->data, i))
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && wiiu_hid_joypad_button(
+               data,
+               port, (uint16_t)joykey))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(wiiu_hid_joypad_axis(data, port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
+
    return ret;
 }
 
@@ -504,9 +529,7 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
    }
 
    if (error < 0)
-   {
       report_hid_error("async read failed", adapter, error);
-   }
 
    if (adapter->state == ADAPTER_STATE_READING)
    {
@@ -828,6 +851,7 @@ hid_driver_t wiiu_hid = {
    wiiu_hid_joypad_query,
    wiiu_hid_free,
    wiiu_hid_joypad_button,
+   wiiu_hid_joypad_state,
    wiiu_hid_joypad_get_buttons,
    wiiu_hid_joypad_axis,
    wiiu_hid_poll,

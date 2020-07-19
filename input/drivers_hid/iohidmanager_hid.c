@@ -149,10 +149,8 @@ static void iohidmanager_hid_joypad_get_buttons(void *data,
 static int16_t iohidmanager_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
+   unsigned hat_dir;
    input_bits_t buttons;
-   int16_t ret                          = 0;
-   uint16_t i                           = joykey;
-   uint16_t end                         = joykey + 1;
    iohidmanager_hid_t *hid              = (iohidmanager_hid_t*)data;
 
    if (port >= DEFAULT_MAX_PADS)
@@ -160,44 +158,60 @@ static int16_t iohidmanager_hid_joypad_button(void *data,
 
    iohidmanager_hid_joypad_get_buttons(data, port, &buttons);
 
-   for (; i < end; i++)
+   hat_dir                  = GET_HAT_DIR(joykey);
+
+   /* Check hat. */
+   if (hat_dir)
    {
-      unsigned hat_dir                  = GET_HAT_DIR(i);
+      unsigned h = GET_HAT(joykey);
+      if (h >= 1)
+         return 0;
 
-      /* Check hat. */
-      if (hat_dir)
+      switch (hat_dir)
       {
-         unsigned h = GET_HAT(i);
-         if (h >= 1)
-            continue;
-
-         switch (hat_dir)
-         {
-            case HAT_LEFT_MASK:
-               if (hid->hats[port][0] < 0)
-                  ret |= (1 << i);
-               break;
-            case HAT_RIGHT_MASK:
-               if (hid->hats[port][0] > 0)
-                  ret |= (1 << i);
-               break;
-            case HAT_UP_MASK:
-               if (hid->hats[port][1] < 0)
-                  ret |= (1 << i);
-               break;
-            case HAT_DOWN_MASK:
-               if (hid->hats[port][1] > 0)
-                  ret |= (1 << i);
-               break;
-            default:
-               break;
-         }
-         /* hat requested and no hat button down */
+         case HAT_LEFT_MASK:
+            return (hid->hats[port][0] < 0);
+         case HAT_RIGHT_MASK:
+            return (hid->hats[port][0] > 0);
+         case HAT_UP_MASK:
+            return (hid->hats[port][1] < 0);
+         case HAT_DOWN_MASK:
+            return (hid->hats[port][1] > 0);
+         default:
+            break;
       }
-      else if (i < 32)
-         if ((BIT256_GET(buttons, i) != 0)
-               || ((hid->buttons[port] & (1 << i)) != 0))
-            ret |= (1 << i);
+      /* hat requested and no hat button down */
+   }
+   else if (joykey < 32)
+      return ((BIT256_GET(buttons, joykey) != 0)
+            || ((hid->buttons[port] & (1 << joykey)) != 0));
+   return 0;
+}
+
+static int16_t iohidmanager_hid_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && iohidmanager_hid_joypad_button(data,
+               port, (uint16_t)joykey))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(iohidmanager_hid_joypad_axis(data, port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
    }
 
    return ret;
@@ -1146,6 +1160,7 @@ hid_driver_t iohidmanager_hid = {
    iohidmanager_hid_joypad_query,
    iohidmanager_hid_free,
    iohidmanager_hid_joypad_button,
+   iohidmanager_hid_joypad_state,
    iohidmanager_hid_joypad_get_buttons,
    iohidmanager_hid_joypad_axis,
    iohidmanager_hid_poll,

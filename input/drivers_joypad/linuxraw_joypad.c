@@ -303,20 +303,13 @@ static void linuxraw_joypad_destroy(void)
 
 static int16_t linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
-   int16_t ret                          = 0;
-   uint16_t i                           = joykey;
-   uint16_t end                         = joykey + 1;
    const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port];
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   for (; i < end; i++)
-   {
-      if (i < NUM_BUTTONS)
-         if (BIT32_GET(pad->buttons, i))
-            ret |= (1 << i);
-   }
-   return ret;
+   if (joykey < NUM_BUTTONS)
+      return (BIT32_GET(pad->buttons, joykey));
+   return 0;
 }
 
 static void linuxraw_joypad_get_buttons(unsigned port, input_bits_t *state)
@@ -332,12 +325,11 @@ static void linuxraw_joypad_get_buttons(unsigned port, input_bits_t *state)
 		BIT256_CLEAR_ALL_PTR(state);
 }
 
-static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
+static int16_t linuxraw_joypad_axis_state(
+      const struct linuxraw_joypad *pad,
+      unsigned port, uint32_t joyaxis)
 {
    int16_t val = 0;
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
-      &linuxraw_pads[port];
-
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {
       val = pad->axes[AXIS_NEG_GET(joyaxis)];
@@ -355,6 +347,46 @@ static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
    return val;
 }
 
+static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
+{
+   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
+      &linuxraw_pads[port];
+   return linuxraw_joypad_axis_state(pad, port, joyaxis);
+}
+
+static int16_t linuxraw_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
+      &linuxraw_pads[port];
+
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if ((uint16_t)joykey != NO_BTN && 
+            (joykey < NUM_BUTTONS)   &&
+            (BIT32_GET(pad->buttons, joykey)))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(linuxraw_joypad_axis_state(pad, port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
+}
+
 static bool linuxraw_joypad_query_pad(unsigned pad)
 {
    return pad < MAX_USERS && linuxraw_pads[pad].fd >= 0;
@@ -365,6 +397,7 @@ input_device_driver_t linuxraw_joypad = {
    linuxraw_joypad_query_pad,
    linuxraw_joypad_destroy,
    linuxraw_joypad_button,
+   linuxraw_joypad_state,
    linuxraw_joypad_get_buttons,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,

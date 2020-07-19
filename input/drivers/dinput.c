@@ -571,22 +571,20 @@ static int16_t dinput_input_state(void *data,
             if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
             {
                unsigned i;
-               int16_t ret = 0;
+               int16_t ret = di->joypad->state(
+                              joypad_info, binds[port], port);
 
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               if (settings->uints.input_mouse_index[port] == 0)
                {
-                  if (binds[port][i].valid)
+                  for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
-                     if (button_is_pressed(
-                              di->joypad, 
-                              joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
-                     else if (
-                           settings->uints.input_mouse_index[port] == 0
-                           && dinput_mouse_button_pressed(
-                              di, port, binds[port][i].mbutton)
+                     if (binds[port][i].valid)
+                     {
+                        if (dinput_mouse_button_pressed(
+                                 di, port, binds[port][i].mbutton)
                            )
-                        ret |= (1 << i);
+                           ret |= (1 << i);
+                     }
                   }
                }
 

@@ -788,18 +788,8 @@ static int16_t qnx_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
-
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (binds[port][i].valid)
-               {
-                  if (button_is_pressed(
-                           qnx->joypad,
-                           joypad_info, binds[port], port, i))
-                     ret |= (1 << i);
-               }
-            }
+            int16_t ret = qnx->joypad->state(
+                  joypad_info, binds[port], port);
 
             if (!input_qnx.keyboard_mapping_blocked)
             {

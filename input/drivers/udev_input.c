@@ -994,16 +994,14 @@ static int16_t udev_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = udev->joypad->state(
+                  joypad_info, binds[port], port);
+
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
                {
-                  if (button_is_pressed(
-                           udev->joypad,
-                           joypad_info, binds[port], port, i))
-                     ret |= (1 << i);
-                  else if (udev_mouse_button_pressed(udev, port, binds[port][i].mbutton))
+                  if (udev_mouse_button_pressed(udev, port, binds[port][i].mbutton))
                      ret |= (1 << i);
                }
             }

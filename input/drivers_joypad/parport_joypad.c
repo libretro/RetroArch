@@ -331,19 +331,46 @@ static void parport_joypad_destroy(void)
 
 static int16_t parport_joypad_button(unsigned port, uint16_t joykey)
 {
-   int16_t ret                          = 0;
-   uint16_t i                           = joykey;
-   uint16_t end                         = joykey + 1;
    const struct parport_joypad     *pad = (const struct parport_joypad*)
       &parport_pads[port];
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   for (; i < end; i++)
+   if (joykey < PARPORT_NUM_BUTTONS)
+      return (BIT32_GET(pad->buttons, joykey);
+   return 0;
+}
+
+static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)
+{
+   /* Parport does not support analog sticks */
+   return 0;
+}
+
+static int16_t parport_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   const struct parport_joypad     *pad = (const struct parport_joypad*)
+      &parport_pads[port];
+
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      if (i < PARPORT_NUM_BUTTONS)
-         if (BIT32_GET(pad->buttons, i))
-            ret |= (1 << i);
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      if (
+               (uint16_t)joykey != NO_BTN 
+               && (joykey < PARPORT_NUM_BUTTONS)
+               && (BIT32_GET(pad->buttons, (uint16_t)joykey)))
+         ret |= ( 1 << i);
    }
+
    return ret;
 }
 
@@ -358,12 +385,6 @@ static void parport_joypad_get_buttons(unsigned port, input_bits_t *state)
 	}
    else
 		BIT256_CLEAR_ALL_PTR(state);
-}
-
-static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)
-{
-   /* Parport does not support analog sticks */
-   return 0;
 }
 
 static bool parport_joypad_query_pad(unsigned pad)
@@ -384,6 +405,7 @@ input_device_driver_t parport_joypad = {
    parport_joypad_query_pad,
    parport_joypad_destroy,
    parport_joypad_button,
+   parport_joypad_state,
    parport_joypad_get_buttons,
    parport_joypad_axis,
    parport_joypad_poll,

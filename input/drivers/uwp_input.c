@@ -148,17 +148,16 @@ static int16_t uwp_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = uwp->joypad->state(
+                  joypad_info, binds[port], port);
+
             if (input_uwp.keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
                   if (binds[port][i].valid)
                   {
-                     if (button_is_pressed(
-                              uwp->joypad, joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
-                     else if (uwp_mouse_state(port,
+                     if (uwp_mouse_state(port,
                               binds[port][i].mbutton, false))
                         ret |= (1 << i);
                   }
@@ -170,9 +169,9 @@ static int16_t uwp_input_state(void *data,
                {
                   if (binds[port][i].valid)
                   {
-                     if (     button_is_pressed(
-                              uwp->joypad, joypad_info, binds[port], port, i)
-                           || ((binds[port][i].key < RETROK_LAST) && uwp_keyboard_pressed(binds[port][i].key))
+                     if (     
+                           ((binds[port][i].key < RETROK_LAST) 
+                            && uwp_keyboard_pressed(binds[port][i].key))
                         )
                         ret |= (1 << i);
                      else if (uwp_mouse_state(port,

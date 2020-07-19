@@ -206,6 +206,8 @@ struct rarch_joypad_driver
    bool (*query_pad)(unsigned);
    void (*destroy)(void);
    int16_t (*button)(unsigned, uint16_t);
+   int16_t (*state)(rarch_joypad_info_t *joypad_info,
+         const struct retro_keybind *binds, unsigned port);
    void (*get_buttons)(unsigned, input_bits_t *);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);

@@ -18,25 +18,32 @@
 
 hid_driver_instance_t hid_instance = {0};
 
-hid_device_t *hid_device_list[] = {
-  &wiiu_gca_hid_device,
-  &ds3_hid_device,
-/*  &ds4_hid_device, */
-  NULL /* must be last entry in list */
+hid_device_t *hid_device_list[]    = 
+{
+   &wiiu_gca_hid_device,
+   &ds3_hid_device,
+#if 0
+   &ds4_hid_device,
+#endif
+   NULL /* must be last entry in list */
 };
 
-hid_device_t *hid_device_driver_lookup(uint16_t vendor_id, uint16_t product_id) {
-  int i = 0;
+hid_device_t *hid_device_driver_lookup(
+      uint16_t vendor_id, uint16_t product_id)
+{
+   int i = 0;
 
-  for(i = 0; hid_device_list[i] != NULL; i++) {
-    if(hid_device_list[i]->detect(vendor_id, product_id))
-      return hid_device_list[i];
-  }
+   for (i = 0; hid_device_list[i] != NULL; i++)
+   {
+      if (hid_device_list[i]->detect(vendor_id, product_id))
+         return hid_device_list[i];
+   }
 
-  return NULL;
+   return NULL;
 }
 
-joypad_connection_t *hid_pad_register(void *pad_handle, pad_connection_interface_t *iface)
+joypad_connection_t *hid_pad_register(
+      void *pad_handle, pad_connection_interface_t *iface)
 {
    int slot;
    joypad_connection_t *result;
@@ -51,9 +58,9 @@ joypad_connection_t *hid_pad_register(void *pad_handle, pad_connection_interface
       return NULL;
    }
 
-   result = &(hid_instance.pad_list[slot]);
-   result->iface = iface;
-   result->data = iface->init(pad_handle, slot, hid_instance.os_driver);
+   result            = &(hid_instance.pad_list[slot]);
+   result->iface     = iface;
+   result->data      = iface->init(pad_handle, slot, hid_instance.os_driver);
    result->connected = true;
    input_pad_connect(slot, hid_instance.pad_driver);
 
@@ -65,12 +72,13 @@ void hid_pad_deregister(joypad_connection_t *pad)
    if(!pad)
       return;
 
-   if(pad->data) {
+   if(pad->data)
+   {
       pad->iface->deinit(pad->data);
       pad->data = NULL;
    }
 
-   pad->iface = NULL;
+   pad->iface     = NULL;
    pad->connected = false;
 }
 
@@ -97,7 +105,8 @@ static bool init_pad_list(hid_driver_instance_t *instance, unsigned slots)
  *
  * @argument instance the hid_driver_instance_t struct to fill in
  * @argument hid_driver the HID driver to initialize
- * @argument pad_driver the gamepad driver to handle HID pads detected by the HID driver.
+ * @argument pad_driver the gamepad driver to handle HID pads 
+ * detected by the HID driver.
  *
  * @returns true if init is successful, false otherwise.
  */

@@ -335,20 +335,14 @@ static const char *ds3_get_name(void *data)
 
 static int16_t ds3_button(void *data, uint16_t joykey)
 {
-   int16_t ret                          = 0;
-   uint16_t i                           = joykey;
-   uint16_t end                         = joykey + 1;
    ds3_instance_t *pad                  = (ds3_instance_t *)data;
 
-   if(!pad)
-      return false;
-   for (; i < end; i++)
-   {
-      if (i < 31)
-         if (pad->buttons & (1 << i))
-            ret |= (1 << i);
-   }
-   return ret;
+   if (!pad)
+      return 0;
+   if (joykey < 31)
+      if (pad->buttons & (1 << joykey))
+         ret |= (1 << joykey);
+   return 0;
 }
 
 pad_connection_interface_t ds3_pad_connection = {
