@@ -7571,6 +7571,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,  PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,      PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,          PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT,            PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,   PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,      PARSE_ONLY_BOOL,  false },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7591,6 +7594,16 @@ unsigned menu_displaylist_build_list(
                      break;
 #ifdef HAVE_GFX_WIDGETS
                   case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION:
+                     if (widgets_supported &&
+                         menu_enable_widgets)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION:
+                     if (widgets_supported &&
+                         menu_enable_widgets)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH:
                      if (widgets_supported &&
                          menu_enable_widgets)
                         build_list[i].checked = true;

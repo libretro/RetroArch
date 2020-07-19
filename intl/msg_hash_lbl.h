@@ -4345,6 +4345,18 @@ MSG_HASH(
    "notification_show_fast_forward"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   "notification_show_screenshot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "notification_show_screenshot_duration"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "notification_show_screenshot_flash"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
    "video_shader_enable"
    )
