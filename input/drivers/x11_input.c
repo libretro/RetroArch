@@ -333,7 +333,7 @@ static int16_t x_input_state(void *data,
                      return 1;
                   else if (settings->uints.input_mouse_index[port] == 0)
                   {
-                     else if (x_mouse_button_pressed(x11, port,
+                     if (x_mouse_button_pressed(x11, port,
                               binds[port][id].mbutton))
                         return 1;
                   }
@@ -384,7 +384,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -407,7 +407,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -430,7 +430,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -453,7 +453,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -476,7 +476,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -499,7 +499,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -522,7 +522,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -545,7 +545,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -568,7 +568,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -591,7 +591,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -614,7 +614,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
@@ -642,7 +642,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
-                        else if (x_mouse_button_pressed(x11, port,
+                        if (x_mouse_button_pressed(x11, port,
                                  binds[port][new_id].mbutton))
                            return 1;
                      }
