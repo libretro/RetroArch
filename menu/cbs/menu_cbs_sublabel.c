@@ -381,9 +381,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_restart_retroarch,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_widgets,             MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content_animation, MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_autoconfig,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG)
-#ifdef HAVE_SCREENSHOTS
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_screenshot_taken,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_TAKEN)
-#endif
 #ifdef HAVE_CHEATS
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_cheats_applied,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED)
 #endif
@@ -391,9 +388,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_remap_load,  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_config_override_load, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_set_initial_disk, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_fast_forward, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD)
+#ifdef HAVE_SCREENSHOTS
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_screenshot,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_screenshot_duration,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_screenshot_flash, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_width,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_height,           MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen_x,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X)
@@ -2997,11 +2996,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_autoconfig);
             break;
-         case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_TAKEN:
-#ifdef HAVE_SCREENSHOTS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_screenshot_taken);
-#endif
-            break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED:
 #ifdef HAVE_CHEATS
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_cheats_applied);
@@ -3019,6 +3013,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_fast_forward);
             break;
+#ifdef HAVE_SCREENSHOTS
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_screenshot);
             break;
@@ -3028,6 +3023,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_screenshot_flash);
             break;
+#endif
          case MENU_ENUM_LABEL_RESTART_RETROARCH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_restart_retroarch);
             break;

@@ -159,7 +159,6 @@ typedef struct settings
       bool filter_by_current_core;
       bool menu_enable_widgets;
       bool menu_show_load_content_animation;
-      bool notification_show_screenshot_taken;
       bool notification_show_autoconfig;
       bool notification_show_cheats_applied;
       bool notification_show_remap_load;
