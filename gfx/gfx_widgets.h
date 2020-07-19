@@ -196,7 +196,7 @@ typedef struct dispgfx_widget
    uintptr_t gfx_widgets_icons_textures[
    MENU_WIDGETS_ICON_LAST];
 
-   char gfx_widgets_fps_text[255];
+   char gfx_widgets_status_text[255];
    uintptr_t gfx_widgets_generic_tag;
    gfx_widget_fonts_t gfx_widget_fonts;
    fifo_buffer_t *msg_queue;
@@ -374,9 +374,9 @@ void gfx_widgets_frame(void *data);
 
 void *dispwidget_get_ptr(void);
 
-bool gfx_widgets_set_fps_text(
+bool gfx_widgets_set_status_text(
       void *data,
-      const char *new_fps_text);
+      const char *new_status_text);
 
 extern const gfx_widget_t gfx_widget_screenshot;
 extern const gfx_widget_t gfx_widget_volume;

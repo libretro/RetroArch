@@ -32331,7 +32331,7 @@ unsigned video_pixel_get_alignment(unsigned pitch)
 static void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
-   char fps_text[128];
+   char status_text[128];
    static char video_driver_msg[256];
    static retro_time_t curr_time;
    static retro_time_t fps_time;
@@ -32348,7 +32348,7 @@ static void video_driver_frame(const void *data, unsigned width,
    bool widgets_active          = p_rarch->widgets_active;
 #endif
 
-   fps_text[0]                  = '\0';
+   status_text[0]                  = '\0';
    video_driver_msg[0]          = '\0';
 
    if (!video_driver_active)
@@ -32396,19 +32396,19 @@ static void video_driver_frame(const void *data, unsigned width,
 
       if (video_info.fps_show)
          buf_pos = snprintf(
-               fps_text, sizeof(fps_text),
+               status_text, sizeof(status_text),
                "FPS: %6.2f", last_fps);
 
       if (video_info.framecount_show)
       {
          char frames_text[64];
-         if (fps_text[buf_pos-1] != '\0')
-            strlcat(fps_text, " || ", sizeof(fps_text));
+         if (status_text[buf_pos-1] != '\0')
+            strlcat(status_text, " || ", sizeof(status_text));
          snprintf(frames_text,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
                (uint64_t)p_rarch->video_driver_frame_count);
-         buf_pos = strlcat(fps_text, frames_text, sizeof(fps_text));
+         buf_pos = strlcat(status_text, frames_text, sizeof(status_text));
       }
 
       if (video_info.memory_show)
@@ -32421,9 +32421,9 @@ static void video_driver_frame(const void *data, unsigned width,
          snprintf(
                mem, sizeof(mem), "MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
                mem_bytes_total / (1024.0f * 1024.0f));
-         if (fps_text[buf_pos-1] != '\0')
-            strlcat(fps_text, " || ", sizeof(fps_text));
-         strlcat(fps_text, mem, sizeof(fps_text));
+         if (status_text[buf_pos-1] != '\0')
+            strlcat(status_text, " || ", sizeof(status_text));
+         strlcat(status_text, mem, sizeof(status_text));
       }
 
       if ((p_rarch->video_driver_frame_count % fps_update_interval) == 0)
@@ -32435,12 +32435,12 @@ static void video_driver_frame(const void *data, unsigned width,
                p_rarch->video_driver_title_buf,
                sizeof(p_rarch->video_driver_window_title));
 
-         if (!string_is_empty(fps_text))
+         if (!string_is_empty(status_text))
          {
             strlcat(p_rarch->video_driver_window_title,
                   " || ", sizeof(p_rarch->video_driver_window_title));
             strlcat(p_rarch->video_driver_window_title,
-                  fps_text, sizeof(p_rarch->video_driver_window_title));
+                  status_text, sizeof(p_rarch->video_driver_window_title));
          }
 
          curr_time                                 = new_time;
@@ -32456,17 +32456,14 @@ static void video_driver_frame(const void *data, unsigned width,
             sizeof(p_rarch->video_driver_window_title));
 
       if (video_info.fps_show)
-         strlcpy(fps_text,
+         strlcpy(status_text,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               sizeof(fps_text));
+               sizeof(status_text));
 
       p_rarch->video_driver_window_title_update = true;
    }
 
-   /* Add core status message to 'fps_text' string
-    * TODO/FIXME: fps_text is used for several status
-    * parameters, not just FPS. It should probably be
-    * renamed to reflect this... */
+   /* Add core status message to status text */
    if (video_info.core_status_msg_show)
    {
       /* Note: We need to lock a mutex here. Strictly
@@ -32492,18 +32489,18 @@ static void video_driver_frame(const void *data, unsigned width,
       }
       else
       {
-         /* If 'fps_text' is already set, add status
+         /* If status text is already set, add status
           * message at the end */
-         if (!string_is_empty(fps_text))
+         if (!string_is_empty(status_text))
          {
-            strlcat(fps_text,
-                  " || ", sizeof(fps_text));
-            strlcat(fps_text,
-                  runloop_core_status_msg.str, sizeof(fps_text));
+            strlcat(status_text,
+                  " || ", sizeof(status_text));
+            strlcat(status_text,
+                  runloop_core_status_msg.str, sizeof(status_text));
          }
          else
-            strlcpy(fps_text, runloop_core_status_msg.str,
-                  sizeof(fps_text));
+            strlcpy(status_text, runloop_core_status_msg.str,
+                  sizeof(status_text));
       }
 
       RUNLOOP_MSG_QUEUE_UNLOCK();
@@ -32678,7 +32675,7 @@ static void video_driver_frame(const void *data, unsigned width,
 
    p_rarch->video_driver_frame_count++;
 
-   /* Display the FPS, with a higher priority. */
+   /* Display the status text, with a higher priority. */
    if (     video_info.fps_show
          || video_info.framecount_show
          || video_info.memory_show
@@ -32687,13 +32684,13 @@ static void video_driver_frame(const void *data, unsigned width,
    {
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
-         gfx_widgets_set_fps_text(
+         gfx_widgets_set_status_text(
                &p_rarch->dispwidget_st,
-               fps_text);
+               status_text);
       else
 #endif
       {
-         runloop_msg_queue_push(fps_text, 2, 1, true, NULL,
+         runloop_msg_queue_push(status_text, 2, 1, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
