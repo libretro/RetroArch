@@ -334,10 +334,7 @@ enum
    _vt = vt;
    if (_renderView != nil)
    {
-//      _renderView.wantsLayer = NO;
-//      _renderView.layer = nil;
       [_renderView removeFromSuperview];
-//      self.window.contentView = nil;
       _renderView = nil;
    }
 
