@@ -509,11 +509,12 @@ static int16_t libusb_hid_joypad_axis(void *data,
 static int16_t libusb_hid_joypad_state(
       void *data,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
+      const void *binds_data,
       unsigned port)
 {
    unsigned i;
    int16_t ret                          = 0;
+   const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
