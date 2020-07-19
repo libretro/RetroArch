@@ -1101,8 +1101,7 @@ ifeq ($(HAVE_OPENDINGUX_FBDEV), 1)
 endif
 
 ifeq ($(HAVE_X11), 1)
-   OBJ += input/common/input_x11_common.o \
-          input/drivers/x11_input.o \
+   OBJ += input/drivers/x11_input.o \
           gfx/common/x11_common.o \
           gfx/common/xinerama_common.o \
           gfx/display_servers/dispserv_x11.o
