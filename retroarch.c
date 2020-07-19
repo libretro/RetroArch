@@ -881,12 +881,18 @@ static int16_t null_hid_joypad_axis(
 static void *null_hid_init(void) { return (void*)-1; }
 static void null_hid_free(const void *data) { }
 static void null_hid_poll(void *data) { }
+static int16_t null_hid_joypad_state(
+      void *data,
+      rarch_joypad_info_t *joypad_info,
+      const void *binds_data,
+      unsigned port) { return 0; }
 
 static hid_driver_t null_hid = {
    null_hid_init,               /* init */
    null_hid_joypad_query,       /* joypad_query */
    null_hid_free,               /* free */
    null_hid_joypad_button,      /* button */
+   null_hid_joypad_state,       /* state */
    null_hid_joypad_get_buttons, /* get_buttons */
    null_hid_joypad_axis,        /* axis */
    null_hid_poll,               /* poll */
