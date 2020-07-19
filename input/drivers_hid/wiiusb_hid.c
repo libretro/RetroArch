@@ -553,9 +553,33 @@ static int16_t wiiusb_hid_joypad_button(void *data,
       return 0;
    else if (joykey < 32)
       return (BIT256_GET(buttons, joykey) != 0);
-
    return 0;
 }
+
+static int16_t wiiusb_hid_joypad_axis(void *data,
+      unsigned port, uint32_t joyaxis)
+{
+   wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
+
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      int16_t val = pad_connection_get_axis(&hid->connections[port],
+            port, AXIS_NEG_GET(joyaxis));
+
+      if (val < 0)
+         return val;
+   }
+   else if (AXIS_POS_GET(joyaxis) < 4)
+   {
+      int16_t val = pad_connection_get_axis(&hid->connections[port],
+            port, AXIS_POS_GET(joyaxis));
+
+      if (val > 0)
+         return val;
+   }
+   return 0;
+}
+
 
 static int16_t wiiusb_hid_joypad_state(
       void *data,
@@ -598,32 +622,6 @@ static bool wiiusb_hid_joypad_rumble(void *data, unsigned pad,
       return false;
 
    return pad_connection_rumble(&hid->connections[pad], pad, effect, strength);
-}
-
-static int16_t wiiusb_hid_joypad_axis(void *data,
-      unsigned port, uint32_t joyaxis)
-{
-   int16_t       val = 0;
-   wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
-
-   if (AXIS_NEG_GET(joyaxis) < 4)
-   {
-      val = pad_connection_get_axis(&hid->connections[port],
-            port, AXIS_NEG_GET(joyaxis));
-
-      if (val >= 0)
-         val = 0;
-   }
-   else if (AXIS_POS_GET(joyaxis) < 4)
-   {
-      val = pad_connection_get_axis(&hid->connections[port],
-            port, AXIS_POS_GET(joyaxis));
-
-      if (val <= 0)
-         val = 0;
-   }
-
-   return val;
 }
 
 static void wiiusb_hid_free(const void *data)
