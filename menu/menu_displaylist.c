@@ -7549,6 +7549,7 @@ unsigned menu_displaylist_build_list(
             settings_t *settings     = config_get_ptr();
             bool video_font_enable   = settings->bools.video_font_enable;
             bool video_fps_show      = settings->bools.video_fps_show;
+            bool video_memory_show   = settings->bools.video_memory_show;
 #ifdef HAVE_GFX_WIDGETS
             bool widgets_supported   = video_driver_has_widgets();
             bool menu_enable_widgets = settings->bools.menu_enable_widgets;
@@ -7559,6 +7560,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,                         PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_STATISTICS_SHOW,                         PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_MEMORY_SHOW,                             PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL,                  PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,        PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG,            PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,        PARSE_ONLY_BOOL,  true },
@@ -7574,6 +7576,10 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL:
                      if (video_fps_show)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL:
+                     if (video_memory_show)
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_STATISTICS_SHOW:

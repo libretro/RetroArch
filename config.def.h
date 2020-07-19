@@ -826,6 +826,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* FPS display will be updated at the set interval (in frames) */
 #define DEFAULT_FPS_UPDATE_INTERVAL 256
 
+/* Memory status display will be updated at the set interval (in frames) */
+#define DEFAULT_MEMORY_UPDATE_INTERVAL 256
+
 /* Enables displaying the current frame count. */
 #define DEFAULT_FRAMECOUNT_SHOW false
 

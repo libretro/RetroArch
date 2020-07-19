@@ -4373,6 +4373,10 @@ MSG_HASH(
    "fps_update_interval"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL,
+   "memory_update_interval"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
    "quick_menu_show_resume_content"
    )
