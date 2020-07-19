@@ -176,6 +176,8 @@ void *glkitview_init(void);
 #elif TARGET_OS_IOS
 -(void) showNativeMenu {
     dispatch_async(dispatch_get_main_queue(), ^{
+        // disabling this for now - the UIKit menu is becoming less useful
+        // TODO: maybe show the RA menu instead
 //        [[RetroArch_iOS get] toggleUI];
     });
 }
