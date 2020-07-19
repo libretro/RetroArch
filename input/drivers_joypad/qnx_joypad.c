@@ -66,38 +66,34 @@ static int16_t qnx_joypad_axis_state(
    int axis            = -1;
    bool is_neg         = false;
    bool is_pos         = false;
+
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis = AXIS_NEG_GET(joyaxis);
+      axis   = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis = AXIS_POS_GET(joyaxis);
+      axis   = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
 
    switch (axis)
    {
       case 0:
-         val = controller->analog0[0];
-         break;
       case 1:
-          val = controller->analog0[1];
+         val = controller->analog0[axis];
          break;
       case 2:
-          val = controller->analog1[0];
-         break;
       case 3:
-          val = controller->analog1[1];
+         val = controller->analog1[axis-2];
          break;
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    return val;
 }
 

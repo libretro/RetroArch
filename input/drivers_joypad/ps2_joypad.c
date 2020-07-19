@@ -100,36 +100,33 @@ static int16_t ps2_joypad_axis_state(unsigned port_num, uint32_t joyaxis)
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis = AXIS_NEG_GET(joyaxis);
+      axis   = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis = AXIS_POS_GET(joyaxis);
+      axis   = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
+   else
+      return 0;
 
    switch (axis)
    {
       case 0:
-         val = analog_state[port_num][0][0];
-         break;
       case 1:
-         val = analog_state[port_num][0][1];
+         val = analog_state[port_num][0][axis];
          break;
       case 2:
-         val = analog_state[port_num][1][0];
-         break;
       case 3:
-         val = analog_state[port_num][1][1];
+         val = analog_state[port_num][1][axis-2];
          break;
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    return val;
 }
 

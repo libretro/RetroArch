@@ -113,36 +113,31 @@ static int16_t switch_joypad_axis_state(unsigned port, uint32_t joyaxis)
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis = AXIS_NEG_GET(joyaxis);
+      axis   = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis = AXIS_POS_GET(joyaxis);
+      axis   = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
 
    switch(axis)
    {
       case 0:
-         val = analog_state[port][0][0];
-         break;
       case 1:
-         val = analog_state[port][0][1];
+         val = analog_state[port][0][axis];
          break;
       case 2:
-         val = analog_state[port][1][0];
-         break;
       case 3:
-         val = analog_state[port][1][1];
+         val = analog_state[port][1][axis - 2];
          break;
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    return val;
 }
 

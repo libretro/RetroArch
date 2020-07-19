@@ -168,17 +168,19 @@ static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
    int axis            = -1;
    bool is_neg         = false;
    bool is_pos         = false;
+
    if (AXIS_NEG_GET(joyaxis) <= 3)
    {
-      axis = AXIS_NEG_GET(joyaxis);
+      axis   = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
    else if (AXIS_POS_GET(joyaxis) <= 5)
    {
-      axis = AXIS_POS_GET(joyaxis);
+      axis   = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
-
+   else
+      return 0;
 
    switch (axis)
    {
@@ -207,14 +209,12 @@ static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    /* Clamp to avoid warnings */
-   if (val == -32768)
-      val = -32767;
-
+   else if (val == -32768)
+      return -32767;
    return val;
 }
 

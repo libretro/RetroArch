@@ -75,22 +75,20 @@ static int16_t android_joypad_axis_state(
       struct android_app *android_app,
       unsigned port, uint32_t joyaxis)
 {
-   int val                  = 0;
-
    if (AXIS_NEG_GET(joyaxis) < MAX_AXIS)
    {
-      val = android_app->analog_state[port][AXIS_NEG_GET(joyaxis)];
-      if (val > 0)
-         val = 0;
+      int val = android_app->analog_state[port][AXIS_NEG_GET(joyaxis)];
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < MAX_AXIS)
    {
-      val = android_app->analog_state[port][AXIS_POS_GET(joyaxis)];
-      if (val < 0)
-         val = 0;
+      int val = android_app->analog_state[port][AXIS_POS_GET(joyaxis)];
+      if (val > 0)
+         return val;
    }
 
-   return val;
+   return 0;
 }
 
 static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)

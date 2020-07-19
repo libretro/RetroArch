@@ -522,14 +522,16 @@ static int16_t dinput_joypad_axis_state(
 
    if (AXIS_NEG_GET(joyaxis) <= 7)
    {
-      axis = AXIS_NEG_GET(joyaxis);
+      axis   = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
    else if (AXIS_POS_GET(joyaxis) <= 7)
    {
-      axis = AXIS_POS_GET(joyaxis);
+      axis   = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
+   else
+      return 0;
 
    switch (axis)
    {
@@ -552,10 +554,8 @@ static int16_t dinput_joypad_axis_state(
          val = pad->joy_state.lRz;
          break;
       case 6:
-         val = pad->joy_state.rglSlider[0];
-         break;
       case 7:
-         val = pad->joy_state.rglSlider[1];
+         val = pad->joy_state.rglSlider[axis - 6];
          break;
    }
 
@@ -563,7 +563,6 @@ static int16_t dinput_joypad_axis_state(
       return 0;
    else if (is_pos && val < 0)
       return 0;
-
    return val;
 }
 

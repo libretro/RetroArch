@@ -648,33 +648,31 @@ static int16_t udev_joypad_axis_state(
       const struct udev_joypad *pad,
       unsigned port, uint32_t joyaxis)
 {
-   int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {
-      val = pad->axes[AXIS_NEG_GET(joyaxis)];
+      int16_t val = pad->axes[AXIS_NEG_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
       if ((
                (AXIS_NEG_GET(joyaxis) == ABS_Z) || 
                (AXIS_NEG_GET(joyaxis) == ABS_RZ))
             && (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
          val = (val + 0x7fff) / 2;
-      if (val > 0)
-         val = 0;
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < NUM_AXES)
    {
-      val = pad->axes[AXIS_POS_GET(joyaxis)];
+      int16_t val = pad->axes[AXIS_POS_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
       if ((
                (AXIS_POS_GET(joyaxis) == ABS_Z) || 
                (AXIS_POS_GET(joyaxis) == ABS_RZ))
             && (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
          val = (val + 0x7fff) / 2;
-      if (val < 0)
-         val = 0;
+      if (val > 0)
+         return val;
    }
-
-   return val;
+   return 0;
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)

@@ -72,49 +72,50 @@ static void ctr_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 		BIT256_CLEAR_ALL_PTR(state);
 }
 
-static int16_t ctr_joypad_axis(unsigned port_num, uint32_t joyaxis)
+static int16_t ctr_joypad_axis_state(unsigned port_num, uint32_t joyaxis)
 {
    int    val  = 0;
    int    axis = -1;
    bool is_neg = false;
    bool is_pos = false;
 
-   if (port_num >= DEFAULT_MAX_PADS)
-      return 0;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis = AXIS_NEG_GET(joyaxis);
+      axis   = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis = AXIS_POS_GET(joyaxis);
+      axis   = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
+   else
+      return 0;
 
    switch (axis)
    {
       case 0:
-         val = analog_state[port_num][0][0];
-         break;
       case 1:
-         val = analog_state[port_num][0][1];
+         val = analog_state[port_num][0][axis];
          break;
       case 2:
-         val = analog_state[port_num][1][0];
-         break;
       case 3:
-         val = analog_state[port_num][1][1];
+         val = analog_state[port_num][1][axis - 2];
          break;
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    return val;
+}
+
+static int16_t ctr_joypad_axis(unsigned port_num, uint32_t joyaxis)
+{
+   if (port_num >= DEFAULT_MAX_PADS)
+      return 0;
+   return ctr_joypad_axis_state(port_num, joyaxis);
 }
 
 static int16_t ctr_joypad_state(
@@ -140,7 +141,7 @@ static int16_t ctr_joypad_state(
             (pad_state & (1 << (uint16_t)joykey)))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(ctr_joypad_axis(port, joyaxis)) 
+            ((float)abs(ctr_joypad_axis_state(port, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

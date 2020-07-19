@@ -138,21 +138,21 @@ static int16_t rwebpad_joypad_axis_state(
       EmscriptenGamepadEvent *gamepad_state,
       unsigned port, uint32_t joyaxis)
 {
-   int16_t         val = 0;
    if (AXIS_NEG_GET(joyaxis) < gamepad_state->numAxes)
    {
-      val = CLAMPDOUBLE(gamepad_state->axis[AXIS_NEG_GET(joyaxis)]) * 0x7FFF;
-      if (val > 0)
-         val = 0;
+      int16_t val = CLAMPDOUBLE(
+            gamepad_state->axis[AXIS_NEG_GET(joyaxis)]) * 0x7FFF;
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < gamepad_state->numAxes)
    {
-      val = CLAMPDOUBLE(gamepad_state->axis[AXIS_POS_GET(joyaxis)]) * 0x7FFF;
-      if (val < 0)
-         val = 0;
+      int16_t val = CLAMPDOUBLE(
+            gamepad_state->axis[AXIS_POS_GET(joyaxis)]) * 0x7FFF;
+      if (val > 0)
+         return val;
    }
-
-   return val;
+   return 0;
 }
 
 static int16_t rwebpad_joypad_axis(unsigned port, uint32_t joyaxis)

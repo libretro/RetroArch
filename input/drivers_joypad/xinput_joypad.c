@@ -473,14 +473,16 @@ static int16_t xinput_joypad_axis_state(
    /* triggers (axes 4,5) cannot be negative */
    if (AXIS_NEG_GET(joyaxis) <= 3)
    {
-      axis = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      axis             = AXIS_NEG_GET(joyaxis);
+      is_neg           = true;
    }
    else if (AXIS_POS_GET(joyaxis) <= 5)
    {
-      axis = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      axis             = AXIS_POS_GET(joyaxis);
+      is_pos           = true;
    }
+   else
+      return 0;
 
    switch (axis)
    {
@@ -505,14 +507,12 @@ static int16_t xinput_joypad_axis_state(
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    /* Clamp to avoid overflow error. */
-   if (val == -32768)
-      val = -32767;
-
+   else if (val == -32768)
+      return -32767;
    return val;
 }
 

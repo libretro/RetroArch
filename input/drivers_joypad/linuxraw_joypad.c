@@ -329,22 +329,20 @@ static int16_t linuxraw_joypad_axis_state(
       const struct linuxraw_joypad *pad,
       unsigned port, uint32_t joyaxis)
 {
-   int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {
-      val = pad->axes[AXIS_NEG_GET(joyaxis)];
-      if (val > 0)
-         val = 0;
       /* Kernel returns values in range [-0x7fff, 0x7fff]. */
+      int16_t val = pad->axes[AXIS_NEG_GET(joyaxis)];
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < NUM_AXES)
    {
-      val = pad->axes[AXIS_POS_GET(joyaxis)];
-      if (val < 0)
-         val = 0;
+      int16_t val = pad->axes[AXIS_POS_GET(joyaxis)];
+      if (val > 0)
+         return val;
    }
-
-   return val;
+   return 0;
 }
 
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
