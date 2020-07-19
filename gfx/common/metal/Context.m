@@ -175,6 +175,8 @@
 {
 #if TARGET_OS_OSX
    return _layer.displaySyncEnabled;
+#else
+    return NO;
 #endif
 }
 

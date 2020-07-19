@@ -672,6 +672,7 @@
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				MARKETING_VERSION = 1.8.9;
+				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DDONT_WANT_ARM_OPTIMIZATIONS",
@@ -784,6 +785,7 @@
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				MARKETING_VERSION = 1.8.9;
+				MTL_FAST_MATH = YES;
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -896,6 +898,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1.8.9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -913,6 +916,12 @@
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
+					"$(DEPS_DIR)/glslang",
+					"$(DEPS_DIR)/SPIRV-Cross",
+					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
+					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
+					"$(DEPS_DIR)/glslang/glslang/SPIRV",
+					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -988,6 +997,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = appletvos;
+				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 12.1;
 			};
@@ -1026,6 +1036,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1.8.9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1043,6 +1054,12 @@
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
+					"$(DEPS_DIR)/glslang",
+					"$(DEPS_DIR)/SPIRV-Cross",
+					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
+					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
+					"$(DEPS_DIR)/glslang/glslang/SPIRV",
+					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -1120,6 +1137,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = appletvos;
+				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 12.1;
 			};

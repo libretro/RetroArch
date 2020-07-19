@@ -345,7 +345,9 @@ enum
          MetalView *v = [MetalView new];
          v.paused = YES;
          v.enableSetNeedsDisplay = NO;
+#if TARGET_OS_IOS
          v.multipleTouchEnabled = YES;
+#endif
          _renderView = v;
       }
       break;
@@ -390,6 +392,7 @@ enum
 
 - (bool)setDisableDisplaySleep:(bool)disable {
     // no-op for iOS
+    return NO;
 }
 #endif
 
