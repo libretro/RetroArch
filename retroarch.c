@@ -2917,8 +2917,10 @@ static void input_keyboard_line_append(
       struct rarch_state *p_rarch,
       const char *word);
 static const char **input_keyboard_start_line(void *userdata,
+      struct rarch_state *p_rarch,
       input_keyboard_line_complete_t cb);
 static bool input_keyboard_ctl(
+      struct rarch_state *p_rarch,
       enum rarch_input_keyboard_ctl_state state, void *data);
 
 #ifdef HAVE_MENU
@@ -3928,7 +3930,8 @@ bool menu_input_key_bind_set_mode(
    keys.userdata = menu;
    keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
 
-   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
+   input_keyboard_ctl(p_rarch,
+         RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
 
    /* Upon triggering an input bind operation,
     * pointer input must be inhibited - otherwise
@@ -4006,7 +4009,8 @@ static bool menu_input_key_bind_iterate(
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
-         input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
+         input_keyboard_ctl(p_rarch,
+               RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
 
       return true;
    }
@@ -4074,7 +4078,9 @@ static bool menu_input_key_bind_iterate(
 
          if (new_binds.begin > new_binds.last)
          {
-            input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
+            input_keyboard_ctl(
+                  p_rarch,
+                  RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
             return true;
          }
 
@@ -11947,7 +11953,8 @@ bool menu_input_dialog_start_search(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(p_rarch->menu_input_dialog_keyboard_label));
 
-   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+   input_keyboard_ctl(p_rarch,
+         RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
@@ -11956,7 +11963,8 @@ bool menu_input_dialog_start_search(void)
 #endif
 
    p_rarch->menu_input_dialog_keyboard_buffer   =
-      input_keyboard_start_line(menu, menu_input_search_cb);
+      input_keyboard_start_line(menu, p_rarch,
+            menu_input_search_cb);
 
    return true;
 }
@@ -11983,7 +11991,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    p_rarch->menu_input_dialog_keyboard_type   = line->type;
    p_rarch->menu_input_dialog_keyboard_idx    = line->idx;
 
-   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+   input_keyboard_ctl(p_rarch,
+         RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
@@ -11991,7 +12000,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 #endif
 
    p_rarch->menu_input_dialog_keyboard_buffer =
-      input_keyboard_start_line(menu, line->cb);
+      input_keyboard_start_line(menu, p_rarch, line->cb);
 
    return true;
 }
@@ -24206,12 +24215,13 @@ static void menu_input_driver_toggle(
    }
 }
 
-static int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
+static int16_t menu_input_read_mouse_hw(
+      struct rarch_state *p_rarch,
+      enum menu_input_mouse_hw_id id)
 {
    rarch_joypad_info_t joypad_info;
    unsigned type                   = 0;
    unsigned device                 = RETRO_DEVICE_MOUSE;
-   struct rarch_state *p_rarch     = &rarch_st;
 
    joypad_info.joy_idx             = 0;
    joypad_info.auto_binds          = NULL;
@@ -24221,29 +24231,29 @@ static int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
    {
       case MENU_MOUSE_X_AXIS:
          device = RARCH_DEVICE_MOUSE_SCREEN;
-         type = RETRO_DEVICE_ID_MOUSE_X;
+         type   = RETRO_DEVICE_ID_MOUSE_X;
          break;
       case MENU_MOUSE_Y_AXIS:
          device = RARCH_DEVICE_MOUSE_SCREEN;
-         type = RETRO_DEVICE_ID_MOUSE_Y;
+         type   = RETRO_DEVICE_ID_MOUSE_Y;
          break;
       case MENU_MOUSE_LEFT_BUTTON:
-         type = RETRO_DEVICE_ID_MOUSE_LEFT;
+         type   = RETRO_DEVICE_ID_MOUSE_LEFT;
          break;
       case MENU_MOUSE_RIGHT_BUTTON:
-         type = RETRO_DEVICE_ID_MOUSE_RIGHT;
+         type   = RETRO_DEVICE_ID_MOUSE_RIGHT;
          break;
       case MENU_MOUSE_WHEEL_UP:
-         type = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+         type   = RETRO_DEVICE_ID_MOUSE_WHEELUP;
          break;
       case MENU_MOUSE_WHEEL_DOWN:
-         type = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+         type   = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
          break;
       case MENU_MOUSE_HORIZ_WHEEL_UP:
-         type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+         type   = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
          break;
       case MENU_MOUSE_HORIZ_WHEEL_DOWN:
-         type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
+         type   = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
          break;
    }
 
@@ -24295,13 +24305,13 @@ static void menu_input_get_mouse_hw_state(
    }
 
    /* X pos */
-   hw_state->x = menu_input_read_mouse_hw(MENU_MOUSE_X_AXIS);
+   hw_state->x = menu_input_read_mouse_hw(p_rarch, MENU_MOUSE_X_AXIS);
    if (hw_state->x != last_x)
       hw_state->active = true;
    last_x = hw_state->x;
 
    /* Y pos */
-   hw_state->y = menu_input_read_mouse_hw(MENU_MOUSE_Y_AXIS);
+   hw_state->y = menu_input_read_mouse_hw(p_rarch, MENU_MOUSE_Y_AXIS);
    if (hw_state->y != last_y)
       hw_state->active = true;
    last_y = hw_state->y;
@@ -24333,48 +24343,55 @@ static void menu_input_get_mouse_hw_state(
 
    /* Select (LMB)
     * Note that releasing select also counts as activity */
-   hw_state->select_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_LEFT_BUTTON);
+   hw_state->select_pressed = (bool)
+      menu_input_read_mouse_hw(p_rarch, MENU_MOUSE_LEFT_BUTTON);
    if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
       hw_state->active = true;
    last_select_pressed = hw_state->select_pressed;
 
    /* Cancel (RMB)
     * Note that releasing cancel also counts as activity */
-   hw_state->cancel_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_RIGHT_BUTTON);
+   hw_state->cancel_pressed = (bool)
+      menu_input_read_mouse_hw(p_rarch, MENU_MOUSE_RIGHT_BUTTON);
    if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
       hw_state->active = true;
    last_cancel_pressed = hw_state->cancel_pressed;
 
    /* Up (mouse wheel up) */
-   hw_state->up_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_WHEEL_UP);
+   hw_state->up_pressed = (bool)
+      menu_input_read_mouse_hw(p_rarch, MENU_MOUSE_WHEEL_UP);
    if (hw_state->up_pressed)
       hw_state->active = true;
 
    /* Down (mouse wheel down) */
-   hw_state->down_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_WHEEL_DOWN);
+   hw_state->down_pressed = (bool)
+      menu_input_read_mouse_hw(p_rarch, MENU_MOUSE_WHEEL_DOWN);
    if (hw_state->down_pressed)
       hw_state->active = true;
 
    /* Left (mouse wheel horizontal left) */
-   hw_state->left_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_HORIZ_WHEEL_DOWN);
+   hw_state->left_pressed = (bool)
+      menu_input_read_mouse_hw(p_rarch, MENU_MOUSE_HORIZ_WHEEL_DOWN);
    if (hw_state->left_pressed)
       hw_state->active = true;
 
    /* Right (mouse wheel horizontal right) */
-   hw_state->right_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_HORIZ_WHEEL_UP);
+   hw_state->right_pressed = (bool)
+      menu_input_read_mouse_hw(p_rarch, MENU_MOUSE_HORIZ_WHEEL_UP);
    if (hw_state->right_pressed)
       hw_state->active = true;
 }
 
 static void menu_input_get_touchscreen_hw_state(
+      struct rarch_state *p_rarch,
       menu_input_pointer_hw_state_t *hw_state)
 {
    rarch_joypad_info_t joypad_info;
    int pointer_x, pointer_y;
    size_t fb_pitch;
    unsigned fb_width, fb_height;
-   struct rarch_state *p_rarch                  = &rarch_st;
-   settings_t *settings                         = p_rarch->configuration_settings;
+   settings_t *settings                         = 
+      p_rarch->configuration_settings;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_handle_t             *menu              = p_rarch->menu_driver_data;
    /* Is a background texture set for the current menu driver?
@@ -24804,7 +24821,8 @@ static unsigned menu_event(
        * concern - and it isn't - user can just disable touch
        * screen support) */
       if (menu_pointer_enable)
-         menu_input_get_touchscreen_hw_state(&touchscreen_hw_state);
+         menu_input_get_touchscreen_hw_state(
+               p_rarch, &touchscreen_hw_state);
 
       /* Mouse takes precedence */
       if (mouse_hw_state.active)
@@ -26605,9 +26623,9 @@ static void input_keyboard_line_append(
  * Returns: underlying buffer of the keyboard line.
  **/
 static const char **input_keyboard_start_line(void *userdata,
+      struct rarch_state *p_rarch,
       input_keyboard_line_complete_t cb)
 {
-   struct rarch_state  *p_rarch = &rarch_st;
    input_keyboard_line_t *state = (input_keyboard_line_t*)
       malloc(sizeof(*state));
    if (!state)
@@ -26794,10 +26812,10 @@ void input_keyboard_event(bool down, unsigned code,
 }
 
 static bool input_keyboard_ctl(
-      enum rarch_input_keyboard_ctl_state state, void *data)
+      struct rarch_state *p_rarch,
+      enum rarch_input_keyboard_ctl_state state,
+      void *data)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    switch (state)
    {
       case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
