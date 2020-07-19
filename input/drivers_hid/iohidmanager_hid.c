@@ -189,6 +189,7 @@ static int16_t iohidmanager_hid_joypad_button(void *data,
 }
 
 static int16_t iohidmanager_hid_joypad_state(
+      void *data,
       rarch_joypad_info_t *joypad_info,
       const void *binds_data,
       unsigned port)
