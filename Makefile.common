@@ -157,10 +157,17 @@ ifeq ($(TARGET), retroarch_3ds)
    OBJ += frontend/drivers/platform_ctr.o
 endif
 
-# Git
+# Git Version
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
+   LAST_GIT_VERSION := $(shell cat "$(OBJDIR)"/last-git-version 2>/dev/null)
+   ifneq ($(GIT_VERSION), $(LAST_GIT_VERSION))
+      $(shell \
+         mkdir -p "$(OBJDIR)"; \
+         echo "$(GIT_VERSION)" > "$(OBJDIR)"/last-git-version; \
+         touch version_git.c)
+   endif
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
    OBJ += version_git.o
 endif
