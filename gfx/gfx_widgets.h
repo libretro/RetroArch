@@ -68,6 +68,15 @@ enum gfx_widgets_icon
    MENU_WIDGETS_ICON_LAST
 };
 
+enum notification_show_screenshot_duration
+{
+   NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL = 0,
+   NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   NOTIFICATION_SHOW_SCREENSHOT_DURATION_LAST
+};
+
 /* This structure holds all objects + metadata
  * corresponding to a particular font */
 typedef struct

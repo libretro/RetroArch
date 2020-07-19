@@ -17,6 +17,7 @@
 
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
