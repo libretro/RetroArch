@@ -18,11 +18,11 @@
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
+#include "../../configuration.h"
 #include "../../retroarch.h"
 
 #define SCREENSHOT_DURATION_IN            66
 #define SCREENSHOT_DURATION_OUT           SCREENSHOT_DURATION_IN*10
-#define SCREENSHOT_NOTIFICATION_DURATION  6000
 
 struct gfx_widget_screenshot_state
 {
@@ -110,12 +110,18 @@ void gfx_widget_screenshot_taken(
       void *data,
       const char *shotname, const char *filename)
 {
+   settings_t *settings = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
 
-   gfx_widgets_play_screenshot_flash(p_dispwidget);
-   strlcpy(state->filename, filename, sizeof(state->filename));
-   strlcpy(state->shotname, shotname, sizeof(state->shotname));
+   if (settings->bools.notification_show_screenshot_flash)
+      gfx_widgets_play_screenshot_flash(p_dispwidget);
+
+   if (settings->bools.notification_show_screenshot)
+   {
+      strlcpy(state->filename, filename, sizeof(state->filename));
+      strlcpy(state->shotname, shotname, sizeof(state->shotname));
+   }
 }
 
 static void gfx_widget_screenshot_dispose(void *userdata)
@@ -241,6 +247,7 @@ static void gfx_widget_screenshot_iterate(
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
+   settings_t *settings = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    unsigned padding                     = gfx_widgets_get_padding(p_dispwidget);
@@ -275,7 +282,23 @@ static void gfx_widget_screenshot_iterate(
       state->y = 0.0f;
 
       timer.cb       = gfx_widget_screenshot_end;
-      timer.duration = SCREENSHOT_NOTIFICATION_DURATION;
+
+      switch (settings->uints.notification_show_screenshot_duration)
+      {
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL:
+            timer.duration = 6000;
+            break;
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST:
+            timer.duration = 2000;
+            break;
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST:
+            timer.duration = 500;
+            break;
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT:
+            timer.duration = 1;
+            break;
+      }
+
       timer.userdata = p_dispwidget;
 
       gfx_timer_start(&state->timer, &timer);

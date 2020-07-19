@@ -165,6 +165,8 @@ typedef struct settings
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
       bool notification_show_fast_forward;
+      bool notification_show_screenshot;
+      bool notification_show_screenshot_flash;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
@@ -559,6 +561,7 @@ typedef struct settings
       unsigned video_overscan_correction_bottom;
 #endif
       unsigned video_shader_delay;
+      unsigned notification_show_screenshot_duration;
 
       /* Accessibility */
       unsigned accessibility_narrator_speech_speed;

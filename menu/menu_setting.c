@@ -4506,6 +4506,30 @@ static void setting_get_string_representation_uint_xmb_shader_pipeline(
 #endif
 #endif
 
+static void setting_get_string_representation_uint_notification_show_screenshot_duration(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL), len);
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST), len);
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST), len);
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -12655,6 +12679,53 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
                MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
                DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_screenshot,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
+               DEFAULT_NOTIFICATION_SHOW_SCREENSHOT,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.notification_show_screenshot_duration,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+               notification_show_screenshot_duration,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_notification_show_screenshot_duration;
+         menu_settings_list_current_add_range(list, list_info, 0, NOTIFICATION_SHOW_SCREENSHOT_DURATION_LAST-1, 1, true, true);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_screenshot_flash,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+               DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

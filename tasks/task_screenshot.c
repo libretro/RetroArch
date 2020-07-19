@@ -379,7 +379,7 @@ static bool screenshot_dump(
       else
 #endif
       {
-         if (!savestate)
+         if (!savestate & settings->bools.notification_show_screenshot)
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
       }
 
