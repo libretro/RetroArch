@@ -114,7 +114,7 @@ typedef struct
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
 
-#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
+#if TARGET_OS_OSX
 #include <AppKit/AppKit.h>
 
 @interface CocoaView : NSView

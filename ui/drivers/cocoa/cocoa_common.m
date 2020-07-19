@@ -55,7 +55,7 @@ void *glkitview_init(void);
 }
 #endif
 
-#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
+#if TARGET_OS_OSX
 - (void)scrollWheel:(NSEvent *)theEvent {
     cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
     (void)apple;
@@ -77,7 +77,7 @@ void *glkitview_init(void);
 {
    self = [super init];
 
-#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
+#if TARGET_OS_OSX
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 #endif
 
@@ -115,7 +115,7 @@ void *glkitview_init(void);
    return self;
 }
 
-#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
+#if TARGET_OS_OSX
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
