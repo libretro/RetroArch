@@ -336,7 +336,7 @@ static int16_t parport_joypad_button(unsigned port, uint16_t joykey)
    if (port >= DEFAULT_MAX_PADS)
       return 0;
    if (joykey < PARPORT_NUM_BUTTONS)
-      return (BIT32_GET(pad->buttons, joykey);
+      return BIT32_GET(pad->buttons, joykey);
    return 0;
 }
 
