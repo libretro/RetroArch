@@ -499,7 +499,6 @@ static int16_t dinput_joypad_button_state(
                       (pov == check2)
                      );
                }
-               break;
             default:
                break;
          }
