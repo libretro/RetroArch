@@ -67,6 +67,7 @@ struct screenshot_task_state
    bool is_paused;
    bool history_list_enable;
    bool widgets_ready;
+   bool widgets_take_screenshot;
 
    int pitch;
    unsigned width;
@@ -236,7 +237,8 @@ static void task_screenshot_callback(retro_task_t *task,
    if (!state)
       return;
 
-   if (!state->silence && state->widgets_ready)
+   if (!state->silence && state->widgets_ready
+         && state->widgets_take_screenshot)
       gfx_widget_screenshot_taken(dispwidget_get_ptr(),
             state->shotname, state->filename);
 
@@ -288,8 +290,10 @@ static bool screenshot_dump(
    state->userbuf                = userbuf;
 #if defined(HAVE_GFX_WIDGETS)
    state->widgets_ready          = gfx_widgets_ready();
+   state->widgets_take_screenshot= settings->bools.notification_show_screenshot_taken;
 #else
    state->widgets_ready          = false;
+   state->widgets_take_screenshot= false;
 #endif
    state->silence                = savestate;
    state->history_list_enable    = settings->bools.history_list_enable;

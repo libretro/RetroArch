@@ -741,6 +741,12 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG true
 #endif
 
+#if defined(HAVE_SCREENSHOTS)
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN true
+#else
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN false
+#endif
+
 /* Display a notification when cheats are being
  * applied */
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
