@@ -71,9 +71,11 @@ struct ad_packet
    char subsystem_name[NETPLAY_HOST_STR_LEN];
 };
 
+/* TODO/FIXME - global referenced outside */
+struct netplay_room *netplay_room_list = NULL;
+
 /* TODO/FIXME - globals - remove to make code thread-safe */
 int netplay_room_count                 = 0;
-struct netplay_room *netplay_room_list = NULL;
 
 /* LAN discovery sockets */
 static int lan_ad_server_fd            = -1;
@@ -86,15 +88,8 @@ static struct ad_packet ad_packet_buffer;
 static struct netplay_host_list discovered_hosts;
 static size_t discovered_hosts_allocated;
 
-static struct netplay_room netplay_host_room = {0};
-
 /* Forward declarations */
 static bool netplay_lan_ad_client(void);
-
-struct netplay_room* netplay_get_host_room(void)
-{
-   return &netplay_host_room;
-}
 
 /** Initialize Netplay discovery (client) */
 bool init_netplay_discovery(void)
@@ -243,21 +238,29 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 #ifdef HAVE_NETPLAYDISCOVERY
    fd_set fds;
    int ret;
-   struct timeval tmp_tv = {0};
-   struct sockaddr their_addr;
+   unsigned i;
+   char buf[4096];
+   net_ifinfo_t interfaces;
    socklen_t addr_size;
-   unsigned k = 0;
    char reply_addr[NETPLAY_HOST_STR_LEN], port_str[6];
+   struct sockaddr their_addr;
+   struct timeval tmp_tv            = {0};
+   unsigned k                       = 0;
    struct addrinfo *our_addr, hints = {0};
    struct string_list *subsystem    = path_get_subsystem_list();
-   char buf[4096];
 
-   net_ifinfo_t interfaces;
+   interfaces.entries               = NULL;
+   interfaces.size                  = 0;
+
+   their_addr.sa_family             = 0;
+   for (i = 0; i < 14; i++)
+      their_addr.sa_data[i]         = 0;
 
    if (!net_ifinfo_new(&interfaces))
       return false;
 
-   if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
+   if (     (lan_ad_server_fd < 0)
+         && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
       return false;
 
    /* Check for any ad queries */
@@ -323,7 +326,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                      reply_addr, interfaces.entries[k].host);
 
                   /* Now build our response */
-                  buf[0] = '\0';
+                  buf[0]      = '\0';
                   content_crc = content_get_crc();
 
                   memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
@@ -418,13 +421,18 @@ static int16_t htons_for_morons(int16_t value)
 
 static bool netplay_lan_ad_client(void)
 {
+   unsigned i;
    fd_set fds;
    socklen_t addr_size;
    struct sockaddr their_addr;
-   struct timeval tmp_tv = {0};
+   struct timeval tmp_tv    = {0};
 
    if (lan_ad_client_fd < 0)
       return false;
+
+   their_addr.sa_family     = 0;
+   for (i = 0; i < 14; i++)
+      their_addr.sa_data[i] = 0;
 
    /* Check for any ad queries */
    for (;;)

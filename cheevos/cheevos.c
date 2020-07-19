@@ -145,8 +145,8 @@ typedef struct rcheevos_async_io_request
    int attempt_count;
    char type;
    char hardcore;
-   char* success_message;
-   char* failure_message;
+   const char* success_message;
+   const char* failure_message;
    char user_agent[256];
 } rcheevos_async_io_request;
 
@@ -443,7 +443,7 @@ static retro_time_t rcheevos_async_send_rich_presence(
    {
       if (settings->bools.discord_enable
             && discord_is_ready())
-         discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS, false);
+         discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS);
    }
 #endif
 
@@ -521,7 +521,8 @@ static void rcheevos_async_task_callback(
 
             case CHEEVOS_ASYNC_AWARD_ACHIEVEMENT:
                /* ignore already unlocked */
-               if (string_starts_with(buffer, "User already has "))
+               if (string_starts_with_size(buffer, "User already has ",
+                        STRLEN_CONST("User already has ")))
                   break;
                /* fallthrough to default */
 
@@ -820,12 +821,16 @@ static void rcheevos_async_award_achievement(rcheevos_async_io_request* request)
 
    rcheevos_log_url("rc_url_award_cheevo", buffer);
    task_push_http_transfer_with_user_agent(buffer, true, NULL, request->user_agent, rcheevos_async_task_callback, request);
+
+#ifdef HAVE_AUDIOMIXER
+   if (settings->bools.cheevos_unlock_sound_enable)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK);
+#endif
 }
 
 static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
 {
    char buffer[256];
-   settings_t *settings = config_get_ptr();
    buffer[0] = 0;
 
    CHEEVOS_LOG(RCHEEVOS_TAG "awarding cheevo %u: %s (%s)\n",
@@ -865,24 +870,29 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
       rcheevos_async_award_achievement(request);
    }
 
-   /* Take a screenshot of the achievement. */
-   if (settings && settings->bools.cheevos_auto_screenshot)
+#ifdef HAVE_SCREENSHOTS
    {
-      char shotname[8192];
+      settings_t *settings = config_get_ptr();
+      /* Take a screenshot of the achievement. */
+      if (settings && settings->bools.cheevos_auto_screenshot)
+      {
+         char shotname[8192];
 
-      snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
-      settings->paths.directory_screenshot,
-      path_basename(path_get(RARCH_PATH_BASENAME)),
-      cheevo->info->id);
-      shotname[sizeof(shotname) - 1] = '\0';
+         snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
+               settings->paths.directory_screenshot,
+               path_basename(path_get(RARCH_PATH_BASENAME)),
+               cheevo->info->id);
+         shotname[sizeof(shotname) - 1] = '\0';
 
-      if (take_screenshot(settings->paths.directory_screenshot,
-               shotname, true,
-               video_driver_cached_frame_has_valid_framebuffer(), false, true))
-         CHEEVOS_LOG(RCHEEVOS_TAG "got a screenshot for cheevo %u\n", cheevo->info->id);
-      else
-         CHEEVOS_LOG(RCHEEVOS_TAG "failed to get screenshot for cheevo %u\n", cheevo->info->id);
+         if (take_screenshot(settings->paths.directory_screenshot,
+                  shotname, true,
+                  video_driver_cached_frame_has_valid_framebuffer(), false, true))
+            CHEEVOS_LOG(RCHEEVOS_TAG "got a screenshot for cheevo %u\n", cheevo->info->id);
+         else
+            CHEEVOS_LOG(RCHEEVOS_TAG "failed to get screenshot for cheevo %u\n", cheevo->info->id);
+      }
    }
+#endif
 }
 
 static int rcheevos_has_indirect_memref(const rc_memref_value_t* memrefs)
@@ -993,14 +1003,6 @@ static void rcheevos_lboard_submit(rcheevos_lboard_t* lboard)
 
    /* Deactivate the leaderboard. */
    lboard->active = 0;
-
-   /* Failsafe for improper leaderboards. */
-   if (lboard->last_value == 0)
-   {
-      CHEEVOS_ERR(RCHEEVOS_TAG "Leaderboard %s tried to submit 0\n", lboard->info->title);
-      runloop_msg_queue_push("Leaderboard attempt cancelled!", 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      return;
-   }
 
    /* Show the OSD message. */
    rc_format_value(value, sizeof(value), lboard->last_value, lboard->format);
@@ -1150,16 +1152,23 @@ void rcheevos_get_achievement_state(unsigned index, char *buffer, size_t buffer_
    {
       enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY;
    }
+   else if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
+   {
+      enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
+   }
+   else if (!(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
+   {
+      /* if in hardcore mode, track progress towards hardcore unlock */
+      const settings_t* settings = config_get_ptr();
+      const bool hardcore = settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused;
+      check_measured = hardcore;
+
+      enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
+   }
    else
    {
-      settings_t* settings = config_get_ptr();
-      bool hardcore        = settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused;
-      if (hardcore && !(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
-         enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
-      else if (!hardcore && !(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
-         enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
-      else /* Use either "Locked" for core or "Unofficial" for unofficial as set above */
-         check_measured = true;
+      /* Use either "Locked" for core or "Unofficial" for unofficial as set above and track progress */
+      check_measured = true;
    }
 
    strlcpy(buffer, msg_hash_to_str(enum_idx), buffer_size);
@@ -1548,7 +1557,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          CORO_STOP();
 
       /* iterate over the possible hashes for the file being loaded */
-      rc_hash_initialize_iterator(&coro->iterator, coro->path, NULL, 0);
+      rc_hash_initialize_iterator(&coro->iterator, coro->path, (uint8_t*)coro->data, coro->len);
 #ifdef CHEEVOS_TIME_HASH
       start = cpu_features_get_time_usec();
 #endif

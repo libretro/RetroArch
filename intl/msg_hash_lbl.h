@@ -205,6 +205,10 @@ MSG_HASH(
    "camera_driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_DRIVER,
+   "bluetooth_driver"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST,
    "cb_core_content_dirs_list"
    )
@@ -359,6 +363,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_USERNAME,
    "cheevos_username"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "cheevos_unlock_sound_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,
@@ -885,6 +893,10 @@ MSG_HASH(
    "deferred_onscreen_notifications_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST,
+   "deferred_onscreen_notifications_views_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST,
    "deferred_playlist_settings"
    )
@@ -989,6 +1001,10 @@ MSG_HASH(
    "deferred_crt_switchres_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST,
+   "deferred_bluetooth_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,
    "deferred_wifi_settings_list"
    )
@@ -1080,6 +1096,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
    "dummy_on_core_shutdown"
    )
+#ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "always_reload_core_on_run_content"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,
    "menu_dynamic_wallpaper_enable"
@@ -1855,6 +1877,10 @@ MSG_HASH(
    "no_netplay_hosts_found"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
+   "no_bt_devices_found"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
    "no_networks_found"
    )
@@ -1905,6 +1931,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "onscreen_notifications_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "onscreen_notifications_views_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OPEN_ARCHIVE,
@@ -3215,6 +3245,10 @@ MSG_HASH(
    "wifi_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,
+   "bluetooth_settings"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,
    "xmb_alpha_factor"
    )
@@ -4277,6 +4311,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,
    "menu_widgets_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "menu_show_load_content_animation"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   "notification_show_autoconfig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "notification_show_cheats_applied"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+   "notification_show_remap_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "notification_show_config_override_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "notification_show_set_initial_disk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "notification_show_fast_forward"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,

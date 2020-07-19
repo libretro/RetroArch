@@ -81,14 +81,6 @@ static bool x_mouse_button_pressed(
       x11_input_t *x11, unsigned port, unsigned key)
 {
    bool result;
-   settings_t *settings = config_get_ptr();
-
-   if (port >= MAX_USERS)
-      return false;
-
-   /* the driver only supports one mouse */
-   if ( settings->uints.input_mouse_index[ port ] != 0 )
-      return false;
 
    switch ( key )
    {
@@ -281,7 +273,11 @@ static int16_t x_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   x11_input_t *x11           = (x11_input_t*)data;
+   x11_input_t *x11     = (x11_input_t*)data;
+   settings_t *settings = config_get_ptr();
+
+   if (port >= MAX_USERS)
+      return 0;
 
    switch (device)
    {
@@ -289,37 +285,29 @@ static int16_t x_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
-            if (input_x.keyboard_mapping_blocked)
+            int16_t ret = x11->joypad->state(
+                  joypad_info, binds[port], port);
+
+            if (settings->uints.input_mouse_index[port] == 0)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
                   if (binds[port][i].valid)
                   {
-                     if (button_is_pressed(
-                              x11->joypad,
-                              joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
-                     else if (x_mouse_button_pressed(x11, port,
+                     if (x_mouse_button_pressed(x11, port,
                               binds[port][i].mbutton))
                         ret |= (1 << i);
                   }
                }
             }
-            else
+            if (!input_x.keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
                   if (binds[port][i].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
-                           joypad_info, binds[port], port, i))
-                        ret |= (1 << i);
-                     else if ((binds[port][i].key < RETROK_LAST) &&
+                     if ((binds[port][i].key < RETROK_LAST) &&
                            x_keyboard_pressed(x11, binds[port][i].key))
-                        ret |= (1 << i);
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][i].mbutton))
                         ret |= (1 << i);
                   }
                }
@@ -343,23 +331,20 @@ static int16_t x_input_state(void *data,
                            || !input_x.keyboard_mapping_blocked)
                      )
                      return 1;
-                  else if (x_mouse_button_pressed(x11, port,
-                           binds[port][id].mbutton))
-                     return 1;
+                  else if (settings->uints.input_mouse_index[port] == 0)
+                  {
+                     if (x_mouse_button_pressed(x11, port,
+                              binds[port][id].mbutton))
+                        return 1;
+                  }
                }
             }
          }
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = input_joypad_analog(x11->joypad, joypad_info,
-                  port, idx,
-                  id, binds[port]);
-            if (!ret)
-               ret = x_pressed_analog(x11, binds[port], idx, id);
-            return ret;
-         }
+            return x_pressed_analog(x11, binds[port], idx, id);
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
       case RETRO_DEVICE_MOUSE:
@@ -397,9 +382,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -417,9 +405,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -437,9 +428,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -457,9 +451,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -477,9 +474,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -497,9 +497,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -517,9 +520,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -537,9 +543,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -557,9 +566,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -577,9 +589,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -597,9 +612,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;
@@ -622,9 +640,12 @@ static int16_t x_input_state(void *data,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
-                     else if (x_mouse_button_pressed(x11, port,
-                              binds[port][new_id].mbutton))
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (x_mouse_button_pressed(x11, port,
+                                 binds[port][new_id].mbutton))
+                           return 1;
+                     }
                   }
                }
                break;

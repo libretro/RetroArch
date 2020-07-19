@@ -165,7 +165,6 @@ static void refreshScreen(ps2_video_t *ps2)
       gsKit_sync_flip(ps2->gsGlobal);
    gsKit_queue_exec(ps2->gsGlobal);
    gsKit_TexManager_nextFrame(ps2->gsGlobal);
-
 }
 
 static void *ps2_gfx_init(const video_info_t *video,

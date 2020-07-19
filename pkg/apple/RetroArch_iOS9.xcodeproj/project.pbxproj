@@ -23,12 +23,12 @@
 		040A5A5622953F3300BD075F /* WebServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 040A5A4422953F3300BD075F /* WebServer.m */; };
 		040A5A5722953F3300BD075F /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 040A5A4622953F3300BD075F /* GCDWebUploader.bundle */; };
 		040A5A5822953F3300BD075F /* GCDWebUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 040A5A4822953F3300BD075F /* GCDWebUploader.m */; };
+		04306A8724A2C600002CAEFE /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 04306A8624A2C600002CAEFE /* libz.tbd */; };
 		0FDA2A721BE1AFA800F2B5DA /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
 		0FDA2A731BE1AFA800F2B5DA /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		0FDA2A741BE1AFA800F2B5DA /* s16_to_float_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* s16_to_float_neon.S */; };
 		0FDA2A751BE1AFA800F2B5DA /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
 		0FDA2A761BE1AFA800F2B5DA /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
-		0FDA2A781BE1AFA800F2B5DA /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		0FDA2A791BE1AFA800F2B5DA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
 		0FDA2A7A1BE1AFA800F2B5DA /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		0FDA2A7B1BE1AFA800F2B5DA /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
@@ -45,7 +45,6 @@
 		0FDA2A861BE1AFA800F2B5DA /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		0FDA2A891BE1AFA800F2B5DA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
-		0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
 		507E056D1CE9C69400E023D3 /* float_to_s16_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */; };
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
 		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
@@ -85,15 +84,15 @@
 		040A5A4622953F3300BD075F /* GCDWebUploader.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = GCDWebUploader.bundle; sourceTree = "<group>"; };
 		040A5A4722953F3300BD075F /* GCDWebUploader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebUploader.h; sourceTree = "<group>"; };
 		040A5A4822953F3300BD075F /* GCDWebUploader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebUploader.m; sourceTree = "<group>"; };
-		0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch_iOS9-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch_iOS9-Info.plist"; sourceTree = "<absolute>"; };
+		04306A8624A2C600002CAEFE /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch iOS9.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch_iOS9-Info.plist"; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = "../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S"; sourceTree = SOURCE_ROOT; };
 		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		503700AE1ACA18E400A51A37 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = iOS/Info.plist; sourceTree = SOURCE_ROOT; };
-		5040F04F1AE47ED4006F6972 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
 		507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = float_to_s16_neon.S; path = "../../libretro-common/audio/conversion/float_to_s16_neon.S"; sourceTree = SOURCE_ROOT; };
 		50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
@@ -102,7 +101,6 @@
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
-		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
@@ -126,7 +124,7 @@
 			files = (
 				92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */,
 				92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */,
-				0FDA2A781BE1AFA800F2B5DA /* libz.dylib in Frameworks */,
+				04306A8724A2C600002CAEFE /* libz.tbd in Frameworks */,
 				0FDA2A791BE1AFA800F2B5DA /* QuartzCore.framework in Frameworks */,
 				0FDA2A7A1BE1AFA800F2B5DA /* GameController.framework in Frameworks */,
 				0FDA2A7B1BE1AFA800F2B5DA /* CoreText.framework in Frameworks */,
@@ -238,7 +236,6 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				83EB675F19EEAF050096F441 /* iOS/modules */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
 			);
 			name = Assets;
@@ -267,7 +264,7 @@
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */,
+				0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -277,7 +274,7 @@
 			children = (
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
 				92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */,
-				5040F04F1AE47ED4006F6972 /* libz.dylib */,
+				04306A8624A2C600002CAEFE /* libz.tbd */,
 				50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */,
 				696012F119F3389A006A1088 /* CoreText.framework */,
 				963C3C33186E3DED00A6EB1E /* GameController.framework */,
@@ -328,19 +325,19 @@
 		96AFAF3116C1E00A009DE44C /* gfx */ = {
 			isa = PBXGroup;
 			children = (
-				96AFAF4416C1E00A009DE44C /* fonts */,
+				96AFAF4416C1E00A009DE44C /* drivers_font_renderer */,
 			);
 			name = gfx;
-			path = ../gfx;
+			path = ../../gfx;
 			sourceTree = "<group>";
 		};
-		96AFAF4416C1E00A009DE44C /* fonts */ = {
+		96AFAF4416C1E00A009DE44C /* drivers_font_renderer */ = {
 			isa = PBXGroup;
 			children = (
 				96AFAF4516C1E00A009DE44C /* bitmap.bin */,
 				96AFAF4616C1E00A009DE44C /* bitmap.bmp */,
 			);
-			path = fonts;
+			path = drivers_font_renderer;
 			sourceTree = "<group>";
 		};
 		D48581DC16F823E2004BEB17 /* griffin */ = {
@@ -370,7 +367,7 @@
 			);
 			name = "RetroArch iOS9";
 			productName = RetroArch;
-			productReference = 0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */;
+			productReference = 0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -392,6 +389,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 96AFAE1A16C1D4EA009DE44C;
@@ -412,7 +410,6 @@
 				0FDA2A891BE1AFA800F2B5DA /* InfoPlist.strings in Resources */,
 				0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */,
 				040A5A5722953F3300BD075F /* GCDWebUploader.bundle in Resources */,
-				0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -493,8 +490,8 @@
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					../../libretro-common/include,
-					../../libretro-common/include/compat/zlib,
+					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -509,8 +506,8 @@
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_STB_FONT",
 					"-DHAVE_NETWORKING",
-               "-DHAVE_NETPLAYDISCOVERY",
-               "-DHAVE_RUNAHEAD",
+					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -525,10 +522,17 @@
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
+					"-DHAVE_PATCH",
+					"-DHAVE_DSP_FILTER",
+					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_REWIND",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
@@ -562,7 +566,7 @@
 					"-DHAVE_KEYMAPPER",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_NAME = "RetroArch iOS9";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -586,8 +590,8 @@
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					../../libretro-common/include,
-					../../libretro-common/include/compat/zlib,
+					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -603,8 +607,8 @@
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_STB_FONT",
 					"-DHAVE_NETWORKING",
-               "-DHAVE_NETPLAYDISCOVERY",
-               "-DHAVE_RUNAHEAD",
+					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -619,10 +623,17 @@
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
+					"-DHAVE_PATCH",
+					"-DHAVE_DSP_FILTER",
+					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_REWIND",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
@@ -662,8 +673,8 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
-               "-DHAVE_NETPLAYDISCOVERY",
-               "-DHAVE_RUNAHEAD",
+					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -678,10 +689,17 @@
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
+					"-DHAVE_PATCH",
+					"-DHAVE_DSP_FILTER",
+					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_REWIND",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
@@ -716,7 +734,7 @@
 					"-DHAVE_KEYMAPPER",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_NAME = "RetroArch iOS9";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -756,8 +774,8 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
-               "-DHAVE_NETPLAYDISCOVERY",
-               "-DHAVE_RUNAHEAD",
+					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -772,10 +790,17 @@
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
+					"-DHAVE_PATCH",
+					"-DHAVE_DSP_FILTER",
+					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_REWIND",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
@@ -833,8 +858,8 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
-               "-DHAVE_NETPLAYDISCOVERY",
-               "-DHAVE_RUNAHEAD",
+					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
@@ -849,10 +874,17 @@
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
+					"-DHAVE_PATCH",
+					"-DHAVE_DSP_FILTER",
+					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_REWIND",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",

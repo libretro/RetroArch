@@ -632,7 +632,7 @@ static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t siz
 {
    ssize_t written    = -1;
    UINT32 padding     = 0;
-   size_t write_avail = fifo_write_avail(w->buffer);
+   size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
 
    if (!write_avail)
    {
@@ -643,7 +643,7 @@ static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t siz
       if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
          return -1;
 
-      read_avail  = fifo_read_avail(w->buffer);
+      read_avail  = FIFO_READ_AVAIL(w->buffer);
       write_avail = w->engine_buffer_size - padding * w->frame_size;
       written     = read_avail < write_avail ? read_avail : write_avail;
       if (written)
@@ -651,7 +651,7 @@ static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t siz
             return -1;
    }
 
-   write_avail = fifo_write_avail(w->buffer);
+   write_avail = FIFO_WRITE_AVAIL(w->buffer);
    written     = size < write_avail ? size : write_avail;
    if (written)
       fifo_write(w->buffer, data, written);
@@ -685,20 +685,20 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 
 static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void * data, size_t size)
 {
-   size_t write_avail = 0;
-   ssize_t written    = -1;
-   UINT32 padding     = 0;
+   size_t write_avail       = 0;
+   ssize_t written          = -1;
+   UINT32 padding           = 0;
 
    if (w->buffer)
    {
-      write_avail = fifo_write_avail(w->buffer);
+      write_avail           = FIFO_WRITE_AVAIL(w->buffer);
       if (!write_avail)
       {
          size_t read_avail  = 0;
          if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
             return -1;
 
-         read_avail  = fifo_read_avail(w->buffer);
+         read_avail  = FIFO_READ_AVAIL(w->buffer);
          write_avail = w->engine_buffer_size - padding * w->frame_size;
          written     = read_avail < write_avail ? read_avail : write_avail;
          if (written)
@@ -706,7 +706,7 @@ static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void * data, size_t s
                return -1;
       }
 
-      write_avail = fifo_write_avail(w->buffer);
+      write_avail = FIFO_WRITE_AVAIL(w->buffer);
       written     = size < write_avail ? size : write_avail;
       if (written)
          fifo_write(w->buffer, data, written);
@@ -731,7 +731,7 @@ static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void * data, size_t s
 static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size, DWORD ms)
 {
    ssize_t written    = 0;
-   size_t write_avail = fifo_write_avail(w->buffer);
+   size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
 
    if (!write_avail)
    {
@@ -890,7 +890,7 @@ static size_t wasapi_write_avail(void *wh)
    UINT32 padding = 0;
 
    if (w->buffer)
-      return fifo_write_avail(w->buffer);
+      return FIFO_WRITE_AVAIL(w->buffer);
 
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;

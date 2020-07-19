@@ -45,25 +45,32 @@ static INLINE bool string_is_equal(const char *a, const char *b)
    return (a && b) ? !strcmp(a, b) : false;
 }
 
+static INLINE bool string_starts_with_size(const char *str, const char *prefix,
+      size_t size)
+{
+   return (str && prefix) ? !strncmp(prefix, str, size) : false;
+}
+
 static INLINE bool string_starts_with(const char *str, const char *prefix)
 {
    return (str && prefix) ? !strncmp(prefix, str, strlen(prefix)) : false;
 }
 
-static INLINE bool string_ends_with(const char *str, const char *suffix)
+static INLINE bool string_ends_with_size(const char *str, const char *suffix,
+      size_t str_len, size_t suffix_len)
 {
-   size_t str_len;
-   size_t suffix_len;
-
-   if (!str || !suffix)
-      return false;
-
-   str_len    = strlen(str);
-   suffix_len = strlen(suffix);
-
    return (str_len < suffix_len) ? false :
          !memcmp(suffix, str + (str_len - suffix_len), suffix_len);
 }
+
+static INLINE bool string_ends_with(const char *str, const char *suffix)
+{
+   if (!str || !suffix)
+      return false;
+   return string_ends_with_size(str, suffix, strlen(str), strlen(suffix));
+}
+
+
 
 #define STRLEN_CONST(x)                   ((sizeof((x))-1))
 
@@ -141,7 +148,7 @@ char *word_wrap(char *buffer, const char *string,
  *    char *str      = "1,2,3,4,5,6,7,,,10,";
  *    char **str_ptr = &str;
  *    char *token    = NULL;
- *    while((token = string_tokenize(str_ptr, ",")))
+ *    while ((token = string_tokenize(str_ptr, ",")))
  *    {
  *        printf("%s\n", token);
  *        free(token);

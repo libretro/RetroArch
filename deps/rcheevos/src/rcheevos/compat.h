@@ -41,6 +41,11 @@ extern "C" {
  #define strncasecmp rc_strncasecmp
 #endif
 
+#ifndef strcasecmp
+ extern int rc_strcasecmp(const char* left, const char* right);
+ #define strcasecmp rc_strcasecmp
+#endif
+
 #ifndef strdup
  extern char* rc_strdup(const char* str);
  #define strdup rc_strdup

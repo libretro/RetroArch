@@ -739,6 +739,7 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_render_messagebox,
    NULL, /* get_main_window */
    NULL, /* log_msg */
+   NULL, /* is_active */
    NULL, /* ui_browser_window_null */
    NULL, /* ui_msg_window_null */
    NULL, /* ui_window_null */

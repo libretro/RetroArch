@@ -108,36 +108,16 @@ static int16_t ps3_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (binds[port][i].valid)
-               {
-                  if (
-                        button_is_pressed(ps3->joypad, joypad_info, binds[port],
-                           port, i))
-                     ret |= (1 << i);
-               }
-            }
+            return ps3->joypad->state(
+                  joypad_info, binds[port], port);
 
-            return ret;
-         }
-         else
-         {
-            if (binds[port][id].valid)
-            {
-               if (button_is_pressed(ps3->joypad, joypad_info, binds[port],
-                        port, id))
-                  return 1;
-            }
-         }
+         if (binds[port][id].valid)
+            if (button_is_pressed(ps3->joypad, joypad_info, binds[port],
+                     port, id))
+               return 1;
+
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(
-                  ps3->joypad, joypad_info, port, idx, id, binds[port]);
          break;
 #if 0
       case RETRO_DEVICE_SENSOR_ACCELEROMETER:

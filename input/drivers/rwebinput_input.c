@@ -566,16 +566,10 @@ static int16_t rwebinput_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = input_joypad_analog(
-                  rwebinput->joypad, joypad_info, port,
-                     idx, id, binds[port]);
-            if (!ret)
-               ret      = rwebinput_analog_pressed(
+            return rwebinput_analog_pressed(
                   rwebinput, joypad_info, binds[port],
                   idx, id);
-            return ret;
-         }
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return rwebinput_key_pressed(rwebinput, id);
       case RETRO_DEVICE_MOUSE:
@@ -642,10 +636,12 @@ static void rwebinput_process_keyboard_events(rwebinput_input_t *rwebinput,
    else if (translated_keycode == RETROK_TAB)
       character = '\t';
 
-   input_keyboard_event(keydown, translated_keycode, character, mod,
-      RETRO_DEVICE_KEYBOARD);
-
-   if (translated_keycode < RETROK_LAST)
+   if (translated_keycode != RETROK_UNKNOWN) {
+      input_keyboard_event(keydown, translated_keycode, character, mod,
+         RETRO_DEVICE_KEYBOARD);
+   }
+   
+   if (translated_keycode < RETROK_LAST && translated_keycode != RETROK_UNKNOWN)
    {
       rwebinput->keys[translated_keycode] = keydown;
    }

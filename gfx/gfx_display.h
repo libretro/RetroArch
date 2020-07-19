@@ -26,6 +26,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <string/stdstring.h>
+#include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
 
 #include "../retroarch.h"
@@ -380,7 +381,8 @@ bool gfx_display_reset_textures_list(
 
 bool gfx_display_reset_textures_list_buffer(
         uintptr_t *item, enum texture_filter_type filter_type,
-        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
+        void* buffer, unsigned buffer_len,
+        enum image_type_enum image_type,
         unsigned *width, unsigned *height);
 
 /* Returns the OSK key at a given position */

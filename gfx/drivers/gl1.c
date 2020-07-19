@@ -708,9 +708,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    video_info->xmb_shadows_enable   = false;
    video_info->menu_shader_pipeline = 0;
 
-   if (!frame || !frame_width || !frame_height)
-      return true;
-
    if (gl1->should_resize)
    {
       gfx_ctx_mode_t mode;
@@ -720,8 +717,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       mode.width        = width;
       mode.height       = height;
 
-      video_info->cb_set_resize(video_info->context_data,
-            mode.width, mode.height);
+      if (gl1->ctx_driver->set_resize)
+         gl1->ctx_driver->set_resize(gl1->ctx_data,
+               mode.width, mode.height);
 
       gl1_gfx_set_viewport(gl1,
             video_width, video_height, false, true);
@@ -756,7 +754,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    pot_width = get_pot(width);
    pot_height = get_pot(height);
 
-   if (  frame == RETRO_HW_FRAME_BUFFER_VALID || (
+   if (  !frame || frame == RETRO_HW_FRAME_BUFFER_VALID || (
          frame_width  == 4 &&
          frame_height == 4 &&
          (frame_width < width && frame_height < height))
@@ -791,9 +789,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (draw)
    {
-      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    
@@ -880,7 +875,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    if (gl1->ctx_driver->update_window_title)
       gl1->ctx_driver->update_window_title(
-            video_info->context_data);
+            gl1->ctx_data);
 
    /* Screenshots. */
    if (gl1->readback_buffer_screenshot)
@@ -898,12 +893,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
    {
-      gl1->ctx_driver->swap_buffers(video_info->context_data);
+      gl1->ctx_driver->swap_buffers(gl1->ctx_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
-   gl1->ctx_driver->swap_buffers(video_info->context_data);
+   gl1->ctx_driver->swap_buffers(gl1->ctx_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (video_info->hard_sync
@@ -913,6 +908,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
+
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
  
    gl1_context_bind_hw_render(gl1, true);
 

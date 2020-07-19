@@ -59,7 +59,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_LOG(...) do { \
    logger_send("RetroArch Salamander: " __VA_ARGS__); \
-} while(0)
+} while (0)
 
 #define RARCH_LOG_V(tag, fmt, vp) do { \
    logger_send("RetroArch Salamander: " tag); \
@@ -68,7 +68,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_LOG_OUTPUT(...) do { \
    logger_send("[OUTPUT] " __VA_ARGS__); \
-} while(0)
+} while (0)
 
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
    logger_send("[OUTPUT] " tag); \
@@ -77,7 +77,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_ERR(...) do { \
    logger_send("[ERROR] " __VA_ARGS__); \
-} while(0)
+} while (0)
 
 #define RARCH_ERR_V(tag, fmt, vp) do { \
    logger_send("[ERROR] " tag); \
@@ -86,7 +86,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_WARN(...) do { \
    logger_send("[WARN] " __VA_ARGS__); \
-} while(0)
+} while (0)
 
 #define RARCH_WARN_V(tag, fmt, vp) do { \
    logger_send("[WARN] " tag); \
@@ -97,7 +97,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_LOG(...) do { \
    logger_send("" __VA_ARGS__); \
-} while(0)
+} while (0)
 
 #define RARCH_LOG_V(tag, fmt, vp) do { \
    logger_send("" tag); \
@@ -106,7 +106,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_ERR(...) do { \
    logger_send("[ERROR] " __VA_ARGS__); \
-} while(0)
+} while (0)
 
 #define RARCH_ERR_V(tag, fmt, vp) do { \
    logger_send("[ERROR] " tag); \
@@ -115,7 +115,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_WARN(...) do { \
    logger_send("[WARN] " __VA_ARGS__); \
-} while(0)
+} while (0)
 
 #define RARCH_WARN_V(tag, fmt, vp) do { \
    logger_send("[WARN] :: " tag); \
@@ -124,7 +124,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_LOG_OUTPUT(...) do { \
    logger_send("[OUTPUT] " __VA_ARGS__); \
-} while(0)
+} while (0)
 
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
    logger_send("[OUTPUT] " tag); \
@@ -132,7 +132,7 @@ void logger_send_v(const char *__format, va_list args);
 } while (0)
 #endif
 
-#define RARCH_LOG_BUFFER(...) do { } while(0)
+#define RARCH_LOG_BUFFER(...) do { } while (0)
 
 #else /* HAVE_LOGGER */
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap);

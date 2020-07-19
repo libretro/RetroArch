@@ -137,9 +137,9 @@ static const char *ds4_get_name(void *data)
    return "Sony DualShock 4";
 }
 
-static bool ds4_button(void *data, uint16_t joykey)
+static int16_t ds4_button(void *data, uint16_t joykey)
 {
-  return false;
+   return 0;
 }
 
 pad_connection_interface_t ds4_pad_connection = {

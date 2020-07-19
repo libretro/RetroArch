@@ -59,9 +59,9 @@ void netplay_update_unread_ptr(netplay_t *netplay)
 
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<client)))
+         if (!(netplay->connected_players & (1 << client)))
             continue;
-         if ((netplay->connected_slaves & (1<<client)))
+         if ((netplay->connected_slaves   & (1 << client)))
             continue;
 
          if (netplay->read_frame_count[client] < new_unread_frame_count)
@@ -142,7 +142,7 @@ static void netplay_merge_digital(netplay_t *netplay,
    {
       if (!simstate->used || simstate->size != resstate->size)
          continue;
-      clients |= 1<<simstate->client_num;
+      clients |= 1 << simstate->client_num;
    }
 
    if (share_mode == NETPLAY_SHARE_DIGITAL_VOTE)
@@ -160,7 +160,7 @@ static void netplay_merge_digital(netplay_t *netplay,
 
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(clients & (1<<client)))
+         if (!(clients & (1 << client)))
             continue;
 
          simstate = netplay_device_client_state(
@@ -176,9 +176,9 @@ static void netplay_merge_digital(netplay_t *netplay,
                continue;
             for (bit = 0; bit < 32; bit++)
             {
-               if (!(digital[word] & (1<<bit)))
+               if (!(digital[word] & (1 << bit)))
                   continue;
-               if (simstate->data[word] & (1<<bit))
+               if (simstate->data[word] & (1 << bit))
                   votes[word].votes[bit]++;
             }
          }
@@ -191,7 +191,7 @@ static void netplay_merge_digital(netplay_t *netplay,
          for (bit = 0; bit < 32; bit++)
          {
             if (votes[word].votes[bit] > client_count)
-               resstate->data[word] |= (1<<bit);
+               resstate->data[word] |= (1 << bit);
          }
       }
    }
@@ -199,7 +199,7 @@ static void netplay_merge_digital(netplay_t *netplay,
    {
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(clients & (1<<client)))
+         if (!(clients & (1 << client)))
             continue;
          simstate = netplay_device_client_state(
                netplay, simframe, device, client);
@@ -230,15 +230,15 @@ static void netplay_merge_digital(netplay_t *netplay,
             {
                for (bit = 0; bit < 32; bit++)
                {
-                  if (!(digital[word] & (1<<bit)))
+                  if (!(digital[word] & (1 << bit)))
                      continue;
                   switch (share_mode)
                   {
                      case NETPLAY_SHARE_DIGITAL_XOR:
-                        resstate->data[word] ^= part & (1<<bit);
+                        resstate->data[word] ^= part & (1 << bit);
                         break;
                      default:
-                        resstate->data[word] |= part & (1<<bit);
+                        resstate->data[word] |= part & (1 << bit);
                   }
                }
             }
@@ -273,12 +273,12 @@ static void merge_analog_part(netplay_t *netplay,
    {
       if (!simstate->used || simstate->size != resstate->size)
          continue;
-      clients |= 1<<simstate->client_num;
+      clients |= 1 << simstate->client_num;
    }
 
    for (client = 0; client < MAX_CLIENTS; client++)
    {
-      if (!(clients & (1<<client)))
+      if (!(clients & (1 << client)))
          continue;
       simstate = netplay_device_client_state(
             netplay, simframe, device, client);
@@ -368,12 +368,12 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
       {
          if (!simstate->used || simstate->size != dsize)
             continue;
-         clients |= 1<<simstate->client_num;
+         clients |= 1 << simstate->client_num;
       }
 
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(clients & (1<<client)))
+         if (!(clients & (1 << client)))
             continue;
 
          /* Resolve this client-device */
@@ -413,10 +413,10 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
                 * wavefronts.
                 */
                const uint32_t keep =
-                  (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
-                  (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
-                  (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
-                  (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  (1U << RETRO_DEVICE_ID_JOYPAD_UP) |
+                  (1U << RETRO_DEVICE_ID_JOYPAD_DOWN) |
+                  (1U << RETRO_DEVICE_ID_JOYPAD_LEFT) |
+                  (1U << RETRO_DEVICE_ID_JOYPAD_RIGHT);
                simstate->data[0] &= keep;
                simstate->data[0] |= pstate->data[0] & ~keep;
             }
@@ -477,12 +477,10 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
          /* Most devices have all the digital parts in the first word. */
          static const uint32_t digital_common[3]   = {~0u, 0u, 0u};
          static const uint32_t digital_keyboard[5] = {~0u, ~0u, ~0u, ~0u, ~0u};
-         const uint32_t *digital                   = NULL;
+         const uint32_t *digital                   = digital_common;
 
          if (dtype == RETRO_DEVICE_KEYBOARD)
             digital = digital_keyboard;
-         else
-            digital = digital_common;
 
          oldresstate = netplay_input_state_for(
                &simframe->resolved_input[device], 1, dsize, false, false);
@@ -955,7 +953,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       /* Look for players that are ahead of us */
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<client)))
+         if (!(netplay->connected_players & (1 << client)))
             continue;
          if (netplay->read_frame_count[client] > hi_frame_count)
             hi_frame_count = netplay->read_frame_count[client];
@@ -998,7 +996,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             if (netplay->catch_up_behind <= cur_behind)
             {
                /* We're definitely falling behind! */
-               netplay->catch_up = true;
+               netplay->catch_up      = true;
                netplay->catch_up_time = 0;
                input_driver_set_nonblock_state();
                driver_set_nonblock_state();
@@ -1006,7 +1004,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             else
             {
                /* Check again in another period */
-               netplay->catch_up_time = cur_time;
+               netplay->catch_up_time   = cur_time;
                netplay->catch_up_behind = cur_behind;
             }
          }

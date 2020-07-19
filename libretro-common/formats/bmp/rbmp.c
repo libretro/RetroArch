@@ -735,7 +735,7 @@ static void rbmp_convert_frame(uint32_t *frame, unsigned width, unsigned height)
 {
    uint32_t *end = frame + (width * height * sizeof(uint32_t))/4;
 
-   while(frame < end)
+   while (frame < end)
    {
       uint32_t pixel = *frame;
       *frame = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);

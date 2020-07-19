@@ -61,23 +61,14 @@
 #include "mbedtls/ccm.h"
 #endif
 
-#if defined(MBEDTLS_CIPHER_NULL_CIPHER)
-#include <string.h>
-#endif
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
+#include <string.h>
 
 #if defined(MBEDTLS_GCM_C)
 /* shared by all GCM ciphers */
 static void *gcm_ctx_alloc( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_gcm_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_gcm_context ) );
 
     if( ctx != NULL )
         mbedtls_gcm_init( (mbedtls_gcm_context *) ctx );
@@ -88,7 +79,7 @@ static void *gcm_ctx_alloc( void )
 static void gcm_ctx_free( void *ctx )
 {
     mbedtls_gcm_free((mbedtls_gcm_context*)ctx);
-    mbedtls_free(ctx);
+    free(ctx);
 }
 #endif /* MBEDTLS_GCM_C */
 
@@ -96,7 +87,7 @@ static void gcm_ctx_free( void *ctx )
 /* shared by all CCM ciphers */
 static void *ccm_ctx_alloc( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_ccm_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_ccm_context ) );
 
     if( ctx != NULL )
         mbedtls_ccm_init( (mbedtls_ccm_context *) ctx );
@@ -107,7 +98,7 @@ static void *ccm_ctx_alloc( void )
 static void ccm_ctx_free( void *ctx )
 {
     mbedtls_ccm_free((mbedtls_ccm_context*)ctx);
-    mbedtls_free( ctx );
+    free( ctx );
 }
 #endif /* MBEDTLS_CCM_C */
 
@@ -162,7 +153,7 @@ static int aes_setkey_enc_wrap( void *ctx, const unsigned char *key,
 
 static void * aes_ctx_alloc( void )
 {
-    mbedtls_aes_context *aes = (mbedtls_aes_context*)mbedtls_calloc( 1, sizeof( mbedtls_aes_context ) );
+    mbedtls_aes_context *aes = (mbedtls_aes_context*)calloc( 1, sizeof( mbedtls_aes_context ) );
 
     if( aes == NULL )
         return( NULL );
@@ -175,7 +166,7 @@ static void * aes_ctx_alloc( void )
 static void aes_ctx_free( void *ctx )
 {
     mbedtls_aes_free( (mbedtls_aes_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static const mbedtls_cipher_base_t aes_info = {
@@ -519,7 +510,7 @@ static int camellia_setkey_enc_wrap( void *ctx, const unsigned char *key,
 static void * camellia_ctx_alloc( void )
 {
     mbedtls_camellia_context *ctx = (mbedtls_camellia_context*)
-       mbedtls_calloc( 1, sizeof( mbedtls_camellia_context ) );
+       calloc( 1, sizeof( mbedtls_camellia_context ) );
 
     if( ctx == NULL )
         return( NULL );
@@ -532,7 +523,7 @@ static void * camellia_ctx_alloc( void )
 static void camellia_ctx_free( void *ctx )
 {
     mbedtls_camellia_free( (mbedtls_camellia_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static const mbedtls_cipher_base_t camellia_info = {
@@ -907,7 +898,7 @@ static int des3_set3key_enc_wrap( void *ctx, const unsigned char *key,
 static void * des_ctx_alloc( void )
 {
     mbedtls_des_context *des = (mbedtls_des_context*)
-       mbedtls_calloc( 1, sizeof( mbedtls_des_context ) );
+       calloc( 1, sizeof( mbedtls_des_context ) );
 
     if( des == NULL )
         return( NULL );
@@ -920,12 +911,12 @@ static void * des_ctx_alloc( void )
 static void des_ctx_free( void *ctx )
 {
     mbedtls_des_free( (mbedtls_des_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static void * des3_ctx_alloc( void )
 {
-    mbedtls_des3_context *des3 = (mbedtls_des3_context*)mbedtls_calloc( 1, sizeof( mbedtls_des3_context ) );
+    mbedtls_des3_context *des3 = (mbedtls_des3_context*)calloc( 1, sizeof( mbedtls_des3_context ) );
 
     if( des3 == NULL )
         return( NULL );
@@ -938,7 +929,7 @@ static void * des3_ctx_alloc( void )
 static void des3_ctx_free( void *ctx )
 {
     mbedtls_des3_free( (mbedtls_des3_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static const mbedtls_cipher_base_t des_info = {
@@ -1123,7 +1114,7 @@ static int blowfish_setkey_wrap( void *ctx, const unsigned char *key,
 
 static void * blowfish_ctx_alloc( void )
 {
-    mbedtls_blowfish_context *ctx = (mbedtls_blowfish_context*)mbedtls_calloc( 1, sizeof( mbedtls_blowfish_context ) );
+    mbedtls_blowfish_context *ctx = (mbedtls_blowfish_context*)calloc( 1, sizeof( mbedtls_blowfish_context ) );
 
     if( ctx == NULL )
         return( NULL );
@@ -1136,7 +1127,7 @@ static void * blowfish_ctx_alloc( void )
 static void blowfish_ctx_free( void *ctx )
 {
     mbedtls_blowfish_free( (mbedtls_blowfish_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static const mbedtls_cipher_base_t blowfish_info = {
@@ -1232,7 +1223,7 @@ static int arc4_setkey_wrap( void *ctx, const unsigned char *key,
 
 static void * arc4_ctx_alloc( void )
 {
-    mbedtls_arc4_context *ctx = (mbedtls_arc4_context*)mbedtls_calloc( 1, sizeof( mbedtls_arc4_context ) );
+    mbedtls_arc4_context *ctx = (mbedtls_arc4_context*)calloc( 1, sizeof( mbedtls_arc4_context ) );
 
     if( ctx == NULL )
         return( NULL );
@@ -1245,7 +1236,7 @@ static void * arc4_ctx_alloc( void )
 static void arc4_ctx_free( void *ctx )
 {
     mbedtls_arc4_free( (mbedtls_arc4_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static const mbedtls_cipher_base_t arc4_base_info = {

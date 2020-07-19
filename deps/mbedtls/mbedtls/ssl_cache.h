@@ -59,9 +59,7 @@ typedef struct mbedtls_ssl_cache_entry mbedtls_ssl_cache_entry;
  */
 struct mbedtls_ssl_cache_entry
 {
-#if defined(MBEDTLS_HAVE_TIME)
-    mbedtls_time_t timestamp;           /*!< entry timestamp    */
-#endif
+    time_t timestamp;                   /*!< entry timestamp    */
     mbedtls_ssl_session session;        /*!< entry session      */
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
     mbedtls_x509_buf peer_cert;         /*!< entry peer_cert    */
@@ -107,7 +105,6 @@ int mbedtls_ssl_cache_get( void *data, mbedtls_ssl_session *session );
  */
 int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session );
 
-#if defined(MBEDTLS_HAVE_TIME)
 /**
  * \brief          Set the cache timeout
  *                 (Default: MBEDTLS_SSL_CACHE_DEFAULT_TIMEOUT (1 day))
@@ -118,7 +115,6 @@ int mbedtls_ssl_cache_set( void *data, const mbedtls_ssl_session *session );
  * \param timeout  cache entry timeout in seconds
  */
 void mbedtls_ssl_cache_set_timeout( mbedtls_ssl_cache_context *cache, int timeout );
-#endif /* MBEDTLS_HAVE_TIME */
 
 /**
  * \brief          Set the maximum number of cache entries

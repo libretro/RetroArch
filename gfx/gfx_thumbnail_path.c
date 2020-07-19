@@ -52,27 +52,6 @@ struct gfx_thumbnail_path_data
    enum playlist_thumbnail_mode playlist_left_mode;
 };
 
-/* Initialisation */
-
-/* Creates new thumbnail path data container.
- * Returns handle to new gfx_thumbnail_path_data_t object.
- * on success, otherwise NULL.
- * Note: Returned object must be free()d */
-gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
-{
-   gfx_thumbnail_path_data_t *path_data = (gfx_thumbnail_path_data_t*)
-      calloc(1, sizeof(*path_data));
-   if (!path_data)
-      return NULL;
-   
-   /* Set these manually, since the default enum
-    * may not necessarily have a value of zero */
-   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   
-   return path_data;
-}
-
 /* Resets thumbnail path data
  * (blanks all internal string containers) */
 void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
@@ -92,6 +71,25 @@ void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
    path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
 }
+
+/* Initialisation */
+
+/* Creates new thumbnail path data container.
+ * Returns handle to new gfx_thumbnail_path_data_t object.
+ * on success, otherwise NULL.
+ * Note: Returned object must be free()d */
+gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
+{
+   gfx_thumbnail_path_data_t *path_data = (gfx_thumbnail_path_data_t*)
+      malloc(sizeof(*path_data));
+   if (!path_data)
+      return NULL;
+
+   gfx_thumbnail_path_reset(path_data);
+   
+   return path_data;
+}
+
 
 /* Utility Functions */
 
@@ -217,7 +215,8 @@ static void fill_content_img(gfx_thumbnail_path_data_t *path_data)
     * No-Intro filename standard:
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters in the entry name with underscores */
-   while((scrub_char_pointer = strpbrk(path_data->content_img, "&*/:`\"<>?\\|")))
+   while ((scrub_char_pointer = 
+            strpbrk(path_data->content_img, "&*/:`\"<>?\\|")))
       *scrub_char_pointer = '_';
    
    /* Add PNG extension */

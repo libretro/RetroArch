@@ -59,6 +59,7 @@
 
 #define V_DBLSCAN 0x20
 
+/* TODO/FIXME - globals */
 static XF86VidModeModeInfo desktop_mode;
 static bool xdg_screensaver_available       = true;
 bool g_x11_entered                          = false;
@@ -81,11 +82,11 @@ static XIC g_x11_xic;
 
 static void x11_hide_mouse(Display *dpy, Window win)
 {
-   static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
    Cursor no_ptr;
    Pixmap bm_no;
    XColor black, dummy;
-   Colormap colormap = DefaultColormap(dpy, DefaultScreen(dpy));
+   static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
+   Colormap colormap        = DefaultColormap(dpy, DefaultScreen(dpy));
 
    if (!XAllocNamedColor(dpy, colormap, "black", &black, &dummy))
       return;

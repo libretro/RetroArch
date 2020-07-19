@@ -32,6 +32,7 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 #include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
@@ -176,6 +177,16 @@ enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
    return RETRO_LANGUAGE_ENGLISH;
 }
 #endif
+#else
+unsigned short win32_get_langid_from_retro_lang(enum retro_language lang)
+{
+   return 0x409; /* fallback to US English */
+}
+
+enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
+{
+   return RETRO_LANGUAGE_ENGLISH;
+}
 #endif
 
 static void gfx_dwm_shutdown(void)
@@ -613,7 +624,7 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 }
 
-static uint64_t frontend_win32_get_mem_total(void)
+static uint64_t frontend_win32_get_total_mem(void)
 {
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
@@ -630,7 +641,7 @@ static uint64_t frontend_win32_get_mem_total(void)
 #endif
 }
 
-static uint64_t frontend_win32_get_mem_used(void)
+static uint64_t frontend_win32_get_free_mem(void)
 {
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
@@ -638,12 +649,12 @@ static uint64_t frontend_win32_get_mem_used(void)
    MEMORYSTATUSEX mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUSEX);
    GlobalMemoryStatusEx(&mem_info);
-   return ((frontend_win32_get_mem_total() - mem_info.ullAvailPhys));
+   return mem_info.ullAvailPhys;
 #else
    MEMORYSTATUS mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUS);
    GlobalMemoryStatus(&mem_info);
-   return ((frontend_win32_get_mem_total() - mem_info.dwAvailPhys));
+   return mem_info.dwAvailPhys;
 #endif
 }
 
@@ -1034,16 +1045,14 @@ static bool accessibility_speak_windows(int speed,
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long           res;
-      const size_t cSize = strlen(speak_text)+1;
-      wchar_t        *wc;
-      res = nvdaController_testIfRunning_func();
-      wc = malloc(sizeof(wchar_t) * cSize);
-      mbstowcs(wc, speak_text, cSize);
+      wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
+      long res           = nvdaController_testIfRunning_func();
 
-      if (res != 0) 
+      if (!wc || res != 0) 
       {
          RARCH_LOG("Error communicating with NVDA\n");
+         if (wc)
+            free(wc);
          return false;
       }
 
@@ -1053,6 +1062,7 @@ static bool accessibility_speak_windows(int speed,
          nvdaController_brailleMessage_func(wc);
       else
          nvdaController_speakText_func(wc);
+      free(wc);
    }
 #endif
 #ifdef HAVE_SAPI
@@ -1076,12 +1086,16 @@ static bool accessibility_speak_windows(int speed,
 
       if (SUCCEEDED(hr))
       {
-         wchar_t wtext[1200];
+         wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
+
          snprintf(cmd, sizeof(cmd),
                "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
-         mbstowcs(wtext, speak_text, sizeof(wtext));
 
-         hr = ISpVoice_Speak(pVoice, wtext, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
+         if (!wc)
+            return false;
+
+         hr = ISpVoice_Speak(pVoice, wc, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
+         free(wc);
       }
    }
 #endif
@@ -1114,8 +1128,8 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_get_architecture,
    frontend_win32_get_powerstate,
    frontend_win32_parse_drive_list,
-   frontend_win32_get_mem_total,
-   frontend_win32_get_mem_used,
+   frontend_win32_get_total_mem,
+   frontend_win32_get_free_mem,
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */

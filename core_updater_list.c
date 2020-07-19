@@ -109,7 +109,7 @@ core_updater_list_t *core_updater_list_init(size_t max_size)
       return NULL;
 
    /* Create core updater list */
-   core_list = (core_updater_list_t*)calloc(1, sizeof(*core_list));
+   core_list = (core_updater_list_t*)malloc(sizeof(*core_list));
 
    if (!core_list)
       return NULL;

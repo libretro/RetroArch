@@ -1,0 +1,103 @@
+BUILD_FOR_PCSX2   = 0
+DEBUG             = 0
+HAVE_FILE_LOGGER  = 0
+MUTE_WARNINGS     = 1
+PS2_IP = 192.168.1.150
+
+TARGET = raboot-debug.elf
+TARGET_RELEASE = raboot.elf
+
+# Compile the IRXs first
+IRX_DIR = ps2/irx
+
+ifeq ($(DEBUG), 1)
+   OPTIMIZE_LV	:= -O0 -g
+	RARCH_DEFINES += -DDEBUG
+else
+   OPTIMIZE_LV	:= -O3
+	LDFLAGS :=  -s
+endif
+
+ifeq ($(MUTE_WARNINGS), 1)
+   DISABLE_WARNINGS := -Wno-sign-compare -Wno-unused -Wno-parentheses
+endif
+
+INCDIR = -Ilibretro-common/include
+INCDIR += -Ips2/include
+CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
+ASFLAGS = $(CFLAGS)
+
+RARCH_DEFINES += -DPS2 -DIS_SALAMANDER -DRARCH_CONSOLE
+
+LIBDIR =
+LDFLAGS =
+LIBS = -lm -lelf-loader -lpatches -lpoweroff
+
+ifeq ($(BUILD_FOR_PCSX2), 1)
+RARCH_DEFINES += -DBUILD_FOR_PCSX2
+endif
+
+ifeq ($(HAVE_FILE_LOGGER), 1)
+CFLAGS		+= -DHAVE_FILE_LOGGER
+endif
+
+CFLAGS += $(RARCH_DEFINES)
+
+EE_OBJS = frontend/frontend_salamander.o \
+		 frontend/frontend_driver.o \
+		 frontend/drivers/platform_ps2.o \
+		 libretro-common/file/file_path.o \
+		 libretro-common/file/file_path_io.o \
+		 libretro-common/string/stdstring.o \
+		 libretro-common/lists/string_list.o \
+		 libretro-common/lists/dir_list.o \
+		 libretro-common/file/retro_dirent.o \
+		 libretro-common/encodings/encoding_utf.o \
+		 libretro-common/compat/fopen_utf8.o \
+		 libretro-common/compat/compat_strl.o \
+		 libretro-common/compat/compat_strcasestr.o \
+		 libretro-common/file/config_file.o \
+		 libretro-common/streams/file_stream.o \
+		 libretro-common/vfs/vfs_implementation.o \
+		 libretro-common/hash/rhash.o \
+		 libretro-common/time/rtime.o \
+		 file_path_str.o \
+		 verbosity.o \
+		 ps2/compat_files/ps2_devices.o 
+
+# Needed IRX objects
+EE_OBJS += $(IRX_DIR)/freesio2_irx.o $(IRX_DIR)/iomanX_irx.o $(IRX_DIR)/cdfs_irx.o
+EE_OBJS += $(IRX_DIR)/fileXio_irx.o $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o $(IRX_DIR)/usbd_irx.o
+EE_OBJS += $(IRX_DIR)/usbhdfsd_irx.o $(IRX_DIR)/freesd_irx.o $(IRX_DIR)/poweroff_irx.o
+
+EE_CFLAGS = $(CFLAGS)
+EE_CXXFLAGS = $(CFLAGS)
+EE_LDFLAGS = $(LDFLAGS)
+EE_LIBS = $(LIBS)
+EE_ASFLAGS = $(ASFLAGS)
+EE_INCS = $(INCDIR)
+EE_BIN = $(TARGET)
+EE_GPVAL = $(GPVAL)
+
+all: irxdir $(EE_BIN)
+
+irxdir:
+	$(MAKE) -C $(IRX_DIR)
+
+clean:
+	rm -f $(EE_BIN) $(EE_OBJS)
+	$(MAKE) -C $(IRX_DIR) clean
+
+debug: clean all run
+
+run:
+	ps2client -h $(PS2_IP) execee host:$(EE_BIN)
+
+package:
+	ps2-packer $(EE_BIN) $(TARGET_RELEASE)
+
+release: clean all package
+
+#Include preferences
+include $(PS2SDK)/samples/Makefile.pref
+include $(PS2SDK)/samples/Makefile.eeglobal_cpp

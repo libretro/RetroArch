@@ -47,15 +47,8 @@
 #include "mbedtls/asn1.h"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
 #include <stdio.h>
-#define mbedtls_printf     printf
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
 
 #include "arc4_alt.h"
 
@@ -530,7 +523,7 @@ static int load_file( const char *path, unsigned char **buf, size_t *n )
     *n = (size_t) size;
 
     if( *n + 1 == 0 ||
-        ( *buf = (unsigned char*)mbedtls_calloc( 1, *n + 1 ) ) == NULL )
+        ( *buf = (unsigned char*)calloc( 1, *n + 1 ) ) == NULL )
     {
         fclose( f );
         return( MBEDTLS_ERR_DHM_ALLOC_FAILED );
@@ -539,7 +532,7 @@ static int load_file( const char *path, unsigned char **buf, size_t *n )
     if( fread( *buf, 1, *n, f ) != *n )
     {
         fclose( f );
-        mbedtls_free( *buf );
+        free( *buf );
         return( MBEDTLS_ERR_DHM_FILE_IO_ERROR );
     }
 
@@ -568,57 +561,11 @@ int mbedtls_dhm_parse_dhmfile( mbedtls_dhm_context *dhm, const char *path )
     ret = mbedtls_dhm_parse_dhm( dhm, buf, n );
 
     mbedtls_zeroize( buf, n );
-    mbedtls_free( buf );
+    free( buf );
 
     return( ret );
 }
 #endif /* MBEDTLS_FS_IO */
 #endif /* MBEDTLS_ASN1_PARSE_C */
-
-#if defined(MBEDTLS_SELF_TEST)
-
-static const char mbedtls_test_dhm_params[] =
-"-----BEGIN DH PARAMETERS-----\r\n"
-"MIGHAoGBAJ419DBEOgmQTzo5qXl5fQcN9TN455wkOL7052HzxxRVMyhYmwQcgJvh\r\n"
-"1sa18fyfR9OiVEMYglOpkqVoGLN7qd5aQNNi5W7/C+VBdHTBJcGZJyyP5B3qcz32\r\n"
-"9mLJKudlVudV0Qxk5qUJaPZ/xupz0NyoVpviuiBOI1gNi8ovSXWzAgEC\r\n"
-"-----END DH PARAMETERS-----\r\n";
-
-static const size_t mbedtls_test_dhm_params_len = sizeof( mbedtls_test_dhm_params );
-
-/*
- * Checkup routine
- */
-int mbedtls_dhm_self_test( int verbose )
-{
-    int ret;
-    mbedtls_dhm_context dhm;
-
-    mbedtls_dhm_init( &dhm );
-
-    if( verbose != 0 )
-        mbedtls_printf( "  DHM parameter load: " );
-
-    if( ( ret = mbedtls_dhm_parse_dhm( &dhm,
-                    (const unsigned char *) mbedtls_test_dhm_params,
-                    mbedtls_test_dhm_params_len ) ) != 0 )
-    {
-        if( verbose != 0 )
-            mbedtls_printf( "failed\n" );
-
-        ret = 1;
-        goto exit;
-    }
-
-    if( verbose != 0 )
-        mbedtls_printf( "passed\n\n" );
-
-exit:
-    mbedtls_dhm_free( &dhm );
-
-    return( ret );
-}
-
-#endif /* MBEDTLS_SELF_TEST */
 
 #endif /* MBEDTLS_DHM_C */

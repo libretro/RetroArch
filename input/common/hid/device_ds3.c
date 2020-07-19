@@ -333,13 +333,16 @@ static const char *ds3_get_name(void *data)
    return "Sony DualShock 3";
 }
 
-static bool ds3_button(void *data, uint16_t joykey)
+static int16_t ds3_button(void *data, uint16_t joykey)
 {
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-   if(!pad || joykey > 31)
-      return false;
+   ds3_instance_t *pad                  = (ds3_instance_t *)data;
 
-   return pad->buttons & (1 << joykey);
+   if (!pad)
+      return 0;
+   if (joykey < 31)
+      if (pad->buttons & (1 << joykey))
+         ret |= (1 << joykey);
+   return 0;
 }
 
 pad_connection_interface_t ds3_pad_connection = {

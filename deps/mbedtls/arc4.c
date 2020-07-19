@@ -36,15 +36,6 @@
 
 #include <string.h>
 
-#if defined(MBEDTLS_SELF_TEST)
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
-#include <stdio.h>
-#define mbedtls_printf printf
-#endif /* MBEDTLS_PLATFORM_C */
-#endif /* MBEDTLS_SELF_TEST */
-
 #if !defined(MBEDTLS_ARC4_ALT)
 
 #include "arc4_alt.h"
@@ -125,78 +116,5 @@ int mbedtls_arc4_crypt( mbedtls_arc4_context *ctx, size_t length, const unsigned
 }
 
 #endif /* !MBEDTLS_ARC4_ALT */
-
-#if defined(MBEDTLS_SELF_TEST)
-/*
- * ARC4 tests vectors as posted by Eric Rescorla in sep. 1994:
- *
- * http://groups.google.com/group/comp.security.misc/msg/10a300c9d21afca0
- */
-static const unsigned char arc4_test_key[3][8] =
-{
-    { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF },
-    { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF },
-    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-};
-
-static const unsigned char arc4_test_pt[3][8] =
-{
-    { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF },
-    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-};
-
-static const unsigned char arc4_test_ct[3][8] =
-{
-    { 0x75, 0xB7, 0x87, 0x80, 0x99, 0xE0, 0xC5, 0x96 },
-    { 0x74, 0x94, 0xC2, 0xE7, 0x10, 0x4B, 0x08, 0x79 },
-    { 0xDE, 0x18, 0x89, 0x41, 0xA3, 0x37, 0x5D, 0x3A }
-};
-
-/*
- * Checkup routine
- */
-int mbedtls_arc4_self_test( int verbose )
-{
-    int i, ret = 0;
-    unsigned char ibuf[8];
-    unsigned char obuf[8];
-    mbedtls_arc4_context ctx;
-
-    mbedtls_arc4_init( &ctx );
-
-    for( i = 0; i < 3; i++ )
-    {
-        if( verbose != 0 )
-            mbedtls_printf( "  ARC4 test #%d: ", i + 1 );
-
-        memcpy( ibuf, arc4_test_pt[i], 8 );
-
-        mbedtls_arc4_setup( &ctx, arc4_test_key[i], 8 );
-        mbedtls_arc4_crypt( &ctx, 8, ibuf, obuf );
-
-        if( memcmp( obuf, arc4_test_ct[i], 8 ) != 0 )
-        {
-            if( verbose != 0 )
-                mbedtls_printf( "failed\n" );
-
-            ret = 1;
-            goto exit;
-        }
-
-        if( verbose != 0 )
-            mbedtls_printf( "passed\n" );
-    }
-
-    if( verbose != 0 )
-        mbedtls_printf( "\n" );
-
-exit:
-    mbedtls_arc4_free( &ctx );
-
-    return( ret );
-}
-
-#endif /* MBEDTLS_SELF_TEST */
 
 #endif /* MBEDTLS_ARC4_C */

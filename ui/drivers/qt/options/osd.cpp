@@ -58,6 +58,13 @@ QWidget *NotificationsPage::widget()
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    notificationsGroup->add(MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED);
 #endif
+   notificationsGroup->add(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED);
 
    layout->addWidget(notificationsGroup);
 

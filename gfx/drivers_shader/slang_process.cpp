@@ -22,6 +22,7 @@
 #include <string>
 #include <stdint.h>
 #include <algorithm>
+#include <string/stdstring.h>
 
 #include "glslang_util.h"
 #include "slang_reflection.h"
@@ -216,13 +217,17 @@ static bool slang_process_reflection(
       slang_semantic_meta& src = sl_reflection.semantics[semantic];
       if (src.push_constant || src.uniform)
       {
-         uniform_sem_t uniform  = { map->uniforms[semantic],
-                                   src.num_components
-                                      * (unsigned)sizeof(float) };
+         uniform_sem_t uniform;
          const char *uniform_id = get_semantic_name(
                sl_reflection, (slang_semantic)semantic, 0).c_str();
 
-         strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
+         uniform.data           = map->uniforms[semantic];
+         uniform.size           = src.num_components * (unsigned)sizeof(float);
+         uniform.offset         = 0;
+         uniform.id[0]          = '\0';
+
+         if (!string_is_empty(uniform_id))
+            strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
 
          if (src.push_constant)
          {
@@ -243,11 +248,15 @@ static bool slang_process_reflection(
 
       if (src.push_constant || src.uniform)
       {
-         uniform_sem_t uniform = {
-            &shader_info->parameters[i].current, sizeof(float) };
-
+         uniform_sem_t uniform;
          const char *uniform_id = get_semantic_name(
                sl_reflection, SLANG_SEMANTIC_FLOAT_PARAMETER, i).c_str();
+
+         uniform.data           = &shader_info->parameters[i].current;
+         uniform.size           = sizeof(float);
+         uniform.offset         = 0;
+         uniform.id[0]          = '\0';
+
          strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
 
          if (src.push_constant)
@@ -275,9 +284,11 @@ static bool slang_process_reflection(
 
          if (src.stage_mask)
          {
-            texture_sem_t texture = {
-               (void*)((uintptr_t)map->textures[semantic].image + index * map->textures[semantic].image_stride)
-            };
+            texture_sem_t texture;
+            string id            = get_semantic_name(
+                  sl_reflection, (slang_texture_semantic)semantic, index);
+            texture.texture_data =
+               (void*)((uintptr_t)map->textures[semantic].image + index * map->textures[semantic].image_stride);
 
             if (semantic == SLANG_TEXTURE_SEMANTIC_USER)
             {
@@ -291,8 +302,7 @@ static bool slang_process_reflection(
             }
             texture.stage_mask = src.stage_mask;
             texture.binding    = src.binding;
-            string id          = get_semantic_name(
-                  sl_reflection, (slang_texture_semantic)semantic, index);
+            texture.id[0]      = '\0';
 
             strlcpy(texture.id, id.c_str(), sizeof(texture.id));
 
@@ -308,16 +318,18 @@ static bool slang_process_reflection(
 
          if (src.push_constant || src.uniform)
          {
-            uniform_sem_t uniform = {
-               (void*)((uintptr_t)map->textures[semantic].size
-                     + index * map->textures[semantic].size_stride),
-               4 * sizeof(float)
-            };
-
+            uniform_sem_t uniform;
             const char *uniform_id =
                   get_size_semantic_name(
                         sl_reflection,
                         (slang_texture_semantic)semantic, index).c_str();
+
+            uniform.data           = (void*)((uintptr_t)
+                  map->textures[semantic].size
+                  + index * map->textures[semantic].size_stride);
+            uniform.size           = 4 * sizeof(float);
+            uniform.offset         = 0;
+            uniform.id[0]          = '\0';
 
             strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
 
@@ -518,8 +530,10 @@ bool slang_process(
             break;
       }
 
-      vs_resources = vs_compiler->get_shader_resources();
-      ps_resources = ps_compiler->get_shader_resources();
+      if (vs_compiler)
+         vs_resources   = vs_compiler->get_shader_resources();
+      if (ps_compiler)
+         ps_resources   = ps_compiler->get_shader_resources();
 
       if (!vs_resources.uniform_buffers.empty())
          vs_compiler->set_decoration(
@@ -565,13 +579,14 @@ bool slang_process(
                      const ShaderResources &resources) {
                   for (const Resource& resource : resources.push_constant_buffers)
                   {
-                     // Explicit 1:1 mapping for bindings.
+                     /* Explicit 1:1 mapping for bindings. */
                      MSLResourceBinding binding = {};
-                     binding.stage = comp->get_execution_model();
-                     binding.desc_set = kPushConstDescSet;
-                     binding.binding = kPushConstBinding;
-                     // Use earlier decoration override.
-                     binding.msl_buffer = comp->get_decoration(resource.id, spv::DecorationBinding);
+                     binding.stage              = comp->get_execution_model();
+                     binding.desc_set           = kPushConstDescSet;
+                     binding.binding            = kPushConstBinding;
+                     /* Use earlier decoration override. */
+                     binding.msl_buffer         = comp->get_decoration(
+                           resource.id, spv::DecorationBinding);
                      comp->add_msl_resource_binding(binding);
                   }
                };
@@ -580,17 +595,19 @@ bool slang_process(
                      const SmallVector<Resource> &resources) {
                   for (const Resource& resource : resources)
                   {
-                     // Explicit 1:1 mapping for bindings.
+                     /* Explicit 1:1 mapping for bindings. */
                      MSLResourceBinding binding = {};
-                     binding.stage = comp->get_execution_model();
-                     binding.desc_set = comp->get_decoration(resource.id, spv::DecorationDescriptorSet);
+                     binding.stage              = comp->get_execution_model();
+                     binding.desc_set           = comp->get_decoration(
+                           resource.id, spv::DecorationDescriptorSet);
 
-                     // Use existing decoration override.
-                     uint32_t msl_binding = comp->get_decoration(resource.id, spv::DecorationBinding);
-                     binding.binding      = msl_binding;
-                     binding.msl_buffer   = msl_binding;
-                     binding.msl_texture  = msl_binding;
-                     binding.msl_sampler  = msl_binding;
+                     /* Use existing decoration override. */
+                     uint32_t msl_binding       = comp->get_decoration(
+                           resource.id, spv::DecorationBinding);
+                     binding.binding            = msl_binding;
+                     binding.msl_buffer         = msl_binding;
+                     binding.msl_texture        = msl_binding;
+                     binding.msl_sampler        = msl_binding;
                      comp->add_msl_resource_binding(binding);
                   }
                };

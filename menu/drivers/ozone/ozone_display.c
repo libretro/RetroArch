@@ -94,35 +94,6 @@ static void ozone_cursor_animation_cb(void *userdata)
    ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, target);
 }
 
-void ozone_restart_cursor_animation(ozone_handle_t *ozone)
-{
-   uintptr_t tag = (uintptr_t) &ozone_default_theme;
-
-   if (!ozone->has_all_assets)
-      return;
-
-   ozone->theme_dynamic.cursor_state = 1;
-   memcpy(ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_0, sizeof(ozone->theme_dynamic.cursor_border));
-   gfx_animation_kill_by_tag(&tag);
-
-   ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_1);
-}
-
-void ozone_draw_text(
-      ozone_handle_t *ozone,
-      const char *str, float x,
-      float y,
-      enum text_alignment text_align,
-      unsigned width, unsigned height, ozone_font_data_t *font_data,
-      uint32_t color,
-      bool draw_outside)
-{
-   gfx_display_draw_text(font_data->font, str, x, y,
-         width, height, color, text_align, 1.0f,
-         false,
-         1.0, draw_outside);
-}
-
 static void ozone_draw_cursor_slice(
       ozone_handle_t *ozone,
       void *userdata,
@@ -256,6 +227,37 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          ozone->theme_dynamic.selection_border);
+}
+
+
+
+void ozone_restart_cursor_animation(ozone_handle_t *ozone)
+{
+   uintptr_t tag = (uintptr_t) &ozone_default_theme;
+
+   if (!ozone->has_all_assets)
+      return;
+
+   ozone->theme_dynamic.cursor_state = 1;
+   memcpy(ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_0, sizeof(ozone->theme_dynamic.cursor_border));
+   gfx_animation_kill_by_tag(&tag);
+
+   ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_1);
+}
+
+void ozone_draw_text(
+      ozone_handle_t *ozone,
+      const char *str, float x,
+      float y,
+      enum text_alignment text_align,
+      unsigned width, unsigned height, ozone_font_data_t *font_data,
+      uint32_t color,
+      bool draw_outside)
+{
+   gfx_display_draw_text(font_data->font, str, x, y,
+         width, height, color, text_align, 1.0f,
+         false,
+         1.0f, draw_outside);
 }
 
 void ozone_draw_cursor(

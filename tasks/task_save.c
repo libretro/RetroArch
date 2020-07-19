@@ -54,7 +54,9 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
+#ifdef HAVE_CHEATS
 #include "../managers/cheat_manager.h"
+#endif
 
 #ifdef HAVE_LIBNX
 #define SAVE_STATE_CHUNK 4096 * 10
@@ -1092,6 +1094,7 @@ static void save_state_cb(retro_task_t *task,
       void *user_data, const char *error)
 {
    save_task_state_t *state   = (save_task_state_t*)task_data;
+#ifdef HAVE_SCREENSHOTS
    char               *path   = strdup(state->path);
    settings_t     *settings   = config_get_ptr();
    const char *dir_screenshot = settings->paths.directory_screenshot; 
@@ -1099,8 +1102,9 @@ static void save_state_cb(retro_task_t *task,
    if (state->thumbnail_enable)
       take_screenshot(dir_screenshot,
             path, true, state->has_valid_framebuffer, false, true);
-
    free(path);
+#endif
+
    free(state);
 }
 
@@ -1368,7 +1372,7 @@ static bool task_save_state_finder(retro_task_t *task, void *user_data)
 }
 
 /* Returns true if a save state task is in progress */
-bool content_save_state_in_progress(void)
+static bool content_save_state_in_progress(void* data)
 {
    task_finder_data_t find_data;
 
@@ -1379,6 +1383,11 @@ bool content_save_state_in_progress(void)
       return true;
 
    return false;
+}
+
+void content_wait_for_save_state_task(void)
+{
+   task_queue_wait(content_save_state_in_progress, NULL);
 }
 
 /**
@@ -1686,15 +1695,19 @@ bool event_save_files(bool is_sram_used)
 {
    unsigned i;
    settings_t *settings            = config_get_ptr();
+#ifdef HAVE_CHEATS
    const char *path_cheat_database = settings->paths.path_cheat_database;
+#endif
 #if defined(HAVE_ZLIB)
    bool compress_files             = settings->bools.save_file_compression;
 #else
    bool compress_files             = false;
 #endif
 
+#ifdef HAVE_CHEATS
    cheat_manager_save_game_specific_cheats(
          path_cheat_database);
+#endif
    if (!task_save_files || !is_sram_used)
       return false;
 

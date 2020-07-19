@@ -684,7 +684,7 @@ void stb_compress_dxt_block(unsigned char *dest, const unsigned char *src, int a
       dest += 8;
       // make a new copy of the data in which alpha is opaque,
       // because code uses a fast test for color constancy
-      memcpy(data, src, 4*16);
+      memcpy_neon(data, src, 4*16);
       for (i=0; i < 16; ++i)
          data[i][3] = 255;
       src = &data[0][0];

@@ -1046,9 +1046,7 @@ static bool d3d8_alive(void *data)
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-#ifndef _XBOX
-   win32_check_window(&quit, &resize, &temp_width, &temp_height);
-#endif
+   win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
 
    if (quit)
       d3d->quitting = quit;

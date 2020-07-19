@@ -46,7 +46,9 @@
 #include "../../menu/menu_driver.h"
 #include "../video_shader_parse.h"
 #include "../drivers_shader/slang_process.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #include "../common/d3d_common.h"
 #include "../common/d3d11_common.h"
@@ -1419,7 +1421,11 @@ static bool d3d11_gfx_frame(
          else
             d3d11->pass[i].frame_count = frame_count;
 
+#ifdef HAVE_REWIND
          d3d11->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+         d3d11->pass[i].frame_direction = 1;
+#endif
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
@@ -1620,9 +1626,15 @@ static bool d3d11_gfx_alive(void* data)
    bool           quit;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   win32_check_window(&quit, &d3d11->resize_chain, &d3d11->vp.full_width, &d3d11->vp.full_height);
+   win32_check_window(NULL,
+         &quit,
+         &d3d11->resize_chain,
+         &d3d11->vp.full_width,
+         &d3d11->vp.full_height);
 
-   if (d3d11->resize_chain && d3d11->vp.full_width != 0 && d3d11->vp.full_height != 0)
+   if (     d3d11->resize_chain 
+         && d3d11->vp.full_width  != 0
+         && d3d11->vp.full_height != 0)
       video_driver_set_size(d3d11->vp.full_width, d3d11->vp.full_height);
 
    return !quit;

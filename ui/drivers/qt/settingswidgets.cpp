@@ -1037,7 +1037,7 @@ void BindButton::onClicked(bool checked)
 {
    Q_UNUSED(checked);
 
-   m_setting->action_ok(m_setting, false);
+   m_setting->action_ok(m_setting, 0, false);
 }
 
 ColorButton::ColorButton(rarch_setting_t *red, rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent) :

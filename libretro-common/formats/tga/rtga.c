@@ -357,18 +357,21 @@ static uint8_t *rtga_tga_load(rtga_context *s,
       /*   do I need to invert the image? */
       if (tga_inverted)
       {
-         for (j = 0; j*2 < tga_height; ++j)
+         if (tga_data)
          {
-            int index1 = j * tga_width * tga_comp;
-            int index2 = (tga_height - 1 - j) * tga_width * tga_comp;
-
-            for (i = tga_width * tga_comp; i > 0; --i)
+            for (j = 0; j*2 < tga_height; ++j)
             {
-               unsigned char temp = tga_data[index1];
-               tga_data[index1] = tga_data[index2];
-               tga_data[index2] = temp;
-               ++index1;
-               ++index2;
+               int index1 = j * tga_width * tga_comp;
+               int index2 = (tga_height - 1 - j) * tga_width * tga_comp;
+
+               for (i = tga_width * tga_comp; i > 0; --i)
+               {
+                  unsigned char temp = tga_data[index1];
+                  tga_data[index1]   = tga_data[index2];
+                  tga_data[index2]   = temp;
+                  ++index1;
+                  ++index2;
+               }
             }
          }
       }
@@ -431,7 +434,7 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
    size_tex              = (*width) * (*height);
 
    /* Convert RGBA to ARGB */
-   while(size_tex--)
+   while (size_tex--)
    {
       unsigned int texel = rtga->output_image[size_tex];
       unsigned int A     = texel & 0xFF000000;

@@ -391,34 +391,24 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
+      const char *delim  = strchr(msg, '\n');
+      NSUInteger msg_len = delim ?
+         (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if (delim)
-      {
-         NSUInteger msg_len = delim - msg;
-         [self _renderLine:msg
-                    length:msg_len
-                     scale:scale
-                     color:color
-                      posX:posX
-                      posY:posY - (float)lines * line_height
-                   aligned:aligned];
-         msg += msg_len + 1;
-         lines++;
-      }
-      else
-      {
-         NSUInteger msg_len = strlen(msg);
-         [self _renderLine:msg
-                    length:msg_len
-                     scale:scale
-                     color:color
-                      posX:posX
-                      posY:posY - (float)lines * line_height
-                   aligned:aligned];
+      [self _renderLine:msg
+                 length:msg_len
+                  scale:scale
+                  color:color
+                   posX:posX
+                   posY:posY - (float)lines * line_height
+                aligned:aligned];
+
+      if (!delim)
          break;
-      }
+
+      msg += msg_len + 1;
+      lines++;
    }
 }
 

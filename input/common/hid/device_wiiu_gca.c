@@ -341,14 +341,15 @@ static const char *wiiu_gca_get_name(void *data)
  * 0x0008 - Y   0x0080 - up      0x0800 - L
  */
 
-static bool wiiu_gca_button(void *data, uint16_t joykey)
+static int16_t wiiu_gca_button(void *data, uint16_t joykey)
 {
-  gca_pad_t *pad = (gca_pad_t *)data;
-
-  if(!pad || joykey > 31)
-    return false;
-
-  return pad->buttons & (1 << joykey);
+   gca_pad_t *pad = (gca_pad_t *)data;
+   if (!pad)
+      return 0;
+   if (joykey < 31)
+      if (pad->buttons & (1 << joykey))
+         ret |= (1 << joykey);
+   return 0;
 }
 
 pad_connection_interface_t wiiu_gca_pad_connection = {

@@ -4,15 +4,7 @@
 #ifndef __7Z_FILE_H
 #define __7Z_FILE_H
 
-#ifdef _WIN32
-#define USE_WINDOWS_FILE
-#endif
-
-#ifdef USE_WINDOWS_FILE
-#include <windows.h>
-#else
 #include <stdio.h>
-#endif
 
 #include "7zTypes.h"
 
@@ -24,22 +16,12 @@ extern "C" {
 
 typedef struct
 {
-  #ifdef USE_WINDOWS_FILE
-  HANDLE handle;
-  #else
-  FILE *file;
-  #endif
+  void *file;
 } CSzFile;
 
 void File_Construct(CSzFile *p);
-#if !defined(UNDER_CE) || !defined(USE_WINDOWS_FILE)
 WRes InFile_Open(CSzFile *p, const char *name);
 WRes OutFile_Open(CSzFile *p, const char *name);
-#endif
-#ifdef USE_WINDOWS_FILE
-WRes InFile_OpenW(CSzFile *p, const WCHAR *name);
-WRes OutFile_OpenW(CSzFile *p, const WCHAR *name);
-#endif
 WRes File_Close(CSzFile *p);
 
 /* reads max(*size, remain file's size) bytes */

@@ -89,36 +89,30 @@ struct http_connection_t
    struct http_socket_state_t sock_state;
 };
 
-static char urlencode_lut[256];
-static bool urlencode_lut_inited = false;
-
-void urlencode_lut_init(void)
-{
-   unsigned i;
-
-   urlencode_lut_inited = true;
-
-   for (i = 0; i < 256; i++)
-   {
-      urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' || i == '/' ? i : 0;
-   }
-}
-
 /* URL Encode a string
    caller is responsible for deleting the destination buffer */
 void net_http_urlencode(char **dest, const char *source)
 {
-   char *enc    = NULL;
+   /* TODO/FIXME - static local globals */
+   static char urlencode_lut[256];
+   static bool urlencode_lut_inited = false;
+
+   char *enc                        = NULL;
    /* Assume every character will be encoded, so we need 3 times the space. */
-   size_t len   = strlen(source) * 3 + 1;
-   size_t count = len;
+   size_t len                       = strlen(source) * 3 + 1;
+   size_t count                     = len;
 
    if (!urlencode_lut_inited)
-      urlencode_lut_init();
+   {
+      unsigned i;
 
-   enc   = (char*)calloc(1, len);
+      for (i = 0; i < 256; i++)
+         urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' || i == '/' ? i : 0;
+      urlencode_lut_inited = true;
+   }
 
-   *dest = enc;
+   enc          = (char*)calloc(1, len);
+   *dest        = enc;
 
    for (; *source; source++)
    {
@@ -252,7 +246,7 @@ static void net_http_send_str(
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
-   struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
+   struct http_connection_t *conn = (struct http_connection_t*)malloc(
          sizeof(*conn));
 
    if (!conn)
@@ -263,6 +257,19 @@ struct http_connection_t *net_http_connection_new(const char *url,
       free(conn);
       return NULL;
    }
+
+   conn->domain            = NULL;
+   conn->location          = NULL;
+   conn->urlcopy           = NULL;
+   conn->scan              = NULL;
+   conn->methodcopy        = NULL;
+   conn->contenttypecopy   = NULL;
+   conn->postdatacopy      = NULL;
+   conn->useragentcopy     = NULL;
+   conn->port              = 0;
+   conn->sock_state.fd     = 0;
+   conn->sock_state.ssl    = false;
+   conn->sock_state.ssl_ctx= NULL;
 
    if (method)
       conn->methodcopy     = strdup(method);

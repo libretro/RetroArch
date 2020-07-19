@@ -590,10 +590,16 @@ clean:
 libretrodb_cursor_t *libretrodb_cursor_new(void)
 {
    libretrodb_cursor_t *dbc = (libretrodb_cursor_t*)
-      calloc(1, sizeof(*dbc));
+      malloc(sizeof(*dbc));
 
    if (!dbc)
       return NULL;
+
+   dbc->is_valid            = 0;
+   dbc->fd                  = NULL;
+   dbc->eof                 = 0;
+   dbc->query               = NULL;
+   dbc->db                  = NULL;
 
    return dbc;
 }
@@ -608,10 +614,16 @@ void libretrodb_cursor_free(libretrodb_cursor_t *dbc)
 
 libretrodb_t *libretrodb_new(void)
 {
-   libretrodb_t *db = (libretrodb_t*)calloc(1, sizeof(*db));
+   libretrodb_t *db = (libretrodb_t*)malloc(sizeof(*db));
 
    if (!db)
       return NULL;
+
+   db->fd                 = NULL;
+   db->root               = 0;
+   db->count              = 0;
+   db->first_index_offset = 0;
+   db->path               = NULL;
 
    return db;
 }

@@ -2178,16 +2178,17 @@ void MainWindow::setCoreActions()
 
                   for (i = 0; i < m_launchWithComboBox->count(); i++)
                   {
-                     QByteArray CorePathArray;
-                     const char *core_path_data = NULL;
-                     QVariantMap map            = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
+                     QVariantMap map            = 
+                        m_launchWithComboBox->itemData(
+                              i, Qt::UserRole).toMap();
+                     QByteArray CorePathArray   = 
+                        map.value("core_path").toString().toUtf8();
+                     const char *core_path_data = CorePathArray.constData();
 
-                     CorePathArray  = map.value("core_path").toString().toUtf8();
-                     core_path_data = CorePathArray.constData();
-
-                     if (string_starts_with(path_basename(core_path_data), info->core_file_id.str) ||
-                         map.value("core_name").toString() == info->core_name ||
-                         map.value("core_name").toString() == info->display_name)
+                     if (string_starts_with(path_basename(core_path_data),
+                              info->core_file_id.str) ||
+                           map.value("core_name").toString() == info->core_name ||
+                           map.value("core_name").toString() == info->display_name)
                      {
                         found_existing = true;
                         break;

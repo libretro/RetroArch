@@ -11,9 +11,10 @@
 extern "C" {
 #endif
 
-/*
-MY_CPU_LE_UNALIGN means that CPU is LITTLE ENDIAN and CPU supports unaligned memory accesses.
-If MY_CPU_LE_UNALIGN is not defined, we don't know about these properties of platform.
+/* MY_CPU_LE_UNALIGN means that CPU is LITTLE ENDIAN and 
+   CPU supports unaligned memory accesses.
+   If MY_CPU_LE_UNALIGN is not defined, we don't know 
+   about these properties of platform.
 */
 
 #if defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__)
@@ -46,23 +47,6 @@ If MY_CPU_LE_UNALIGN is not defined, we don't know about these properties of pla
 
 #if defined(MY_CPU_X86_OR_AMD64)
 #define MY_CPU_LE_UNALIGN
-#endif
-
-#ifdef MY_CPU_LE_UNALIGN
-
-#define GetUi16(p) (*(const uint16_t *)(p))
-#define GetUi32(p) (*(const uint32_t *)(p))
-#define GetUi64(p) (*(const uint64_t *)(p))
-#else
-#define GetUi16(p) (((const uint8_t *)(p))[0] | ((uint16_t)((const uint8_t *)(p))[1] << 8))
-
-#define GetUi32(p) ( \
-             ((const uint8_t *)(p))[0]        | \
-    ((uint32_t)((const uint8_t *)(p))[1] <<  8) | \
-    ((uint32_t)((const uint8_t *)(p))[2] << 16) | \
-    ((uint32_t)((const uint8_t *)(p))[3] << 24))
-
-#define GetUi64(p) (GetUi32(p) | ((uint64_t)GetUi32(((const uint8_t *)(p)) + 4) << 32))
 #endif
 
 #ifdef __cplusplus

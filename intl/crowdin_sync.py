@@ -42,7 +42,7 @@ subprocess.run(['java', '-jar', 'crowdin-cli.jar', 'download', 'translations'])
 
 print('convert *.json to *.h')
 for file in os.listdir(dir_path):
-    if file.endswith('.json'):
+    if file.startswith('msg_hash_') and file.endswith('.json'):
         print(file)
         subprocess.run(['python3', 'json2h.py', file])
 

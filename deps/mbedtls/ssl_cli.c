@@ -27,25 +27,15 @@
 
 #if defined(MBEDTLS_SSL_CLI_C)
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
+#include <stdint.h>
 #include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free      free
-#endif
+#include <string.h>
 
 #include "mbedtls/debug.h"
 #include "mbedtls/ssl.h"
 #include "mbedtls/ssl_internal.h"
 
-#include <string.h>
-
-#include <stdint.h>
-
-#if defined(MBEDTLS_HAVE_TIME)
-#include "mbedtls/platform_time.h"
-#endif
+#include <time.h>
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
 #include "arc4_alt.h"
@@ -390,7 +380,7 @@ static void ssl_write_ecjpake_kkpp_ext( mbedtls_ssl_context *ssl,
             return;
         }
 
-        ssl->handshake->ecjpake_cache = mbedtls_calloc( 1, kkpp_len );
+        ssl->handshake->ecjpake_cache = calloc( 1, kkpp_len );
         if( ssl->handshake->ecjpake_cache == NULL )
         {
             MBEDTLS_SSL_DEBUG_MSG( 1, ( "allocation failed" ) );
@@ -667,9 +657,7 @@ static int ssl_generate_random( mbedtls_ssl_context *ssl )
 {
     int ret;
     unsigned char *p = ssl->handshake->randbytes;
-#if defined(MBEDTLS_HAVE_TIME)
-    mbedtls_time_t t;
-#endif
+    time_t t;
 
     /*
      * When responding to a verify request, MUST reuse random (RFC 6347 4.2.1)
@@ -677,25 +665,16 @@ static int ssl_generate_random( mbedtls_ssl_context *ssl )
 #if defined(MBEDTLS_SSL_PROTO_DTLS)
     if( ssl->conf->transport == MBEDTLS_SSL_TRANSPORT_DATAGRAM &&
         ssl->handshake->verify_cookie != NULL )
-    {
         return( 0 );
-    }
 #endif
 
-#if defined(MBEDTLS_HAVE_TIME)
-    t = mbedtls_time( NULL );
+    t    = time( NULL );
     *p++ = (unsigned char)( t >> 24 );
     *p++ = (unsigned char)( t >> 16 );
     *p++ = (unsigned char)( t >>  8 );
     *p++ = (unsigned char)( t       );
 
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello, current time: %lu", t ) );
-#else
-    if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 4 ) ) != 0 )
-        return( ret );
-
-    p += 4;
-#endif /* MBEDTLS_HAVE_TIME */
 
     if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 28 ) ) != 0 )
         return( ret );
@@ -916,11 +895,7 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
 
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello, got %d ciphersuites", n ) );
 
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    offer_compress = 1;
-#else
     offer_compress = 0;
-#endif
 
     /*
      * We don't support compression with DTLS right now: is many records come
@@ -953,8 +928,7 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
         *p++ = MBEDTLS_SSL_COMPRESS_NULL;
     }
 
-    // First write extensions, then the total length
-    //
+    /* First write extensions, then the total length */
 #if defined(MBEDTLS_SSL_SERVER_NAME_INDICATION)
     ssl_write_hostname_ext( ssl, p + 2 + ext_len, &olen );
     ext_len += olen;
@@ -1207,7 +1181,7 @@ static int ssl_parse_ecjpake_kkpp( mbedtls_ssl_context *ssl,
     }
 
     /* If we got here, we no longer need our cached extension */
-    mbedtls_free( ssl->handshake->ecjpake_cache );
+    free( ssl->handshake->ecjpake_cache );
     ssl->handshake->ecjpake_cache = NULL;
     ssl->handshake->ecjpake_cache_len = 0;
 
@@ -1343,9 +1317,9 @@ static int ssl_parse_hello_verify_request( mbedtls_ssl_context *ssl )
         return( MBEDTLS_ERR_SSL_BAD_HS_SERVER_HELLO );
     }
 
-    mbedtls_free( ssl->handshake->verify_cookie );
+    free( ssl->handshake->verify_cookie );
 
-    ssl->handshake->verify_cookie = mbedtls_calloc( 1, cookie_len );
+    ssl->handshake->verify_cookie = (unsigned char*)calloc( 1, cookie_len );
     if( ssl->handshake->verify_cookie  == NULL )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "alloc failed (%d bytes)", cookie_len ) );
@@ -1374,17 +1348,11 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
     size_t ext_len;
     unsigned char *buf, *ext;
     unsigned char comp;
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    int accept_comp;
-#endif
 #if defined(MBEDTLS_SSL_RENEGOTIATION)
     int renegotiation_info_seen = 0;
 #endif
     int handshake_failure = 0;
     const mbedtls_ssl_ciphersuite_t *suite_info;
-#if defined(MBEDTLS_DEBUG_C)
-    uint32_t t;
-#endif
 
     MBEDTLS_SSL_DEBUG_MSG( 2, ( "=> parse server hello" ) );
 
@@ -1437,7 +1405,7 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
         else
         {
             /* We made it through the verification process */
-            mbedtls_free( ssl->handshake->verify_cookie );
+            free( ssl->handshake->verify_cookie );
             ssl->handshake->verify_cookie = NULL;
             ssl->handshake->verify_cookie_len = 0;
         }
@@ -1487,14 +1455,6 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
         return( MBEDTLS_ERR_SSL_BAD_HS_PROTOCOL_VERSION );
     }
 
-#if defined(MBEDTLS_DEBUG_C)
-    t = ( (uint32_t) buf[2] << 24 )
-      | ( (uint32_t) buf[3] << 16 )
-      | ( (uint32_t) buf[4] <<  8 )
-      | ( (uint32_t) buf[5]       );
-    MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, current time: %lu", t ) );
-#endif
-
     memcpy( ssl->handshake->randbytes + 32, buf + 2, 32 );
 
     n = buf[34];
@@ -1543,20 +1503,7 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
      */
     comp = buf[37 + n];
 
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    /* See comments in ssl_write_client_hello() */
-#if defined(MBEDTLS_SSL_PROTO_DTLS)
-    if( ssl->conf->transport == MBEDTLS_SSL_TRANSPORT_DATAGRAM )
-        accept_comp = 0;
-    else
-#endif
-        accept_comp = 1;
-
-    if( comp != MBEDTLS_SSL_COMPRESS_NULL &&
-        ( comp != MBEDTLS_SSL_COMPRESS_DEFLATE || accept_comp == 0 ) )
-#else /* MBEDTLS_ZLIB_SUPPORT */
     if( comp != MBEDTLS_SSL_COMPRESS_NULL )
-#endif/* MBEDTLS_ZLIB_SUPPORT */
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "server hello, bad compression: %d", comp ) );
         mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
@@ -1589,19 +1536,17 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
 #if defined(MBEDTLS_SSL_RENEGOTIATION)
         ssl->renego_status != MBEDTLS_SSL_INITIAL_HANDSHAKE ||
 #endif
-        ssl->session_negotiate->ciphersuite != i ||
+        ssl->session_negotiate->ciphersuite != i    ||
         ssl->session_negotiate->compression != comp ||
-        ssl->session_negotiate->id_len != n ||
+        ssl->session_negotiate->id_len      != n    ||
         memcmp( ssl->session_negotiate->id, buf + 35, n ) != 0 )
     {
         ssl->state++;
-        ssl->handshake->resume = 0;
-#if defined(MBEDTLS_HAVE_TIME)
-        ssl->session_negotiate->start = mbedtls_time( NULL );
-#endif
+        ssl->handshake->resume              = 0;
+        ssl->session_negotiate->start       = time( NULL );
         ssl->session_negotiate->ciphersuite = i;
         ssl->session_negotiate->compression = comp;
-        ssl->session_negotiate->id_len = n;
+        ssl->session_negotiate->id_len      = n;
         memcpy( ssl->session_negotiate->id, buf + 35, n );
     }
     else
@@ -1658,9 +1603,6 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
     }
 
     if( comp != MBEDTLS_SSL_COMPRESS_NULL
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-        && comp != MBEDTLS_SSL_COMPRESS_DEFLATE
-#endif
       )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad server hello message" ) );
@@ -2659,16 +2601,6 @@ static int ssl_parse_certificate_request( mbedtls_ssl_context *ssl )
     {
         size_t sig_alg_len = ( ( buf[mbedtls_ssl_hs_hdr_len( ssl ) + 1 + n] <<  8 )
                              | ( buf[mbedtls_ssl_hs_hdr_len( ssl ) + 2 + n]       ) );
-#if defined(MBEDTLS_DEBUG_C)
-        unsigned char* sig_alg = buf + mbedtls_ssl_hs_hdr_len( ssl ) + 3 + n;
-        size_t i;
-
-        for( i = 0; i < sig_alg_len; i += 2 )
-        {
-            MBEDTLS_SSL_DEBUG_MSG( 3, ( "Supported Signature Algorithm found: %d"
-                                        ",%d", sig_alg[i], sig_alg[i + 1]  ) );
-        }
-#endif
 
         n += 2 + sig_alg_len;
 
@@ -3260,11 +3192,11 @@ static int ssl_parse_new_session_ticket( mbedtls_ssl_context *ssl )
 
     mbedtls_zeroize( ssl->session_negotiate->ticket,
                       ssl->session_negotiate->ticket_len );
-    mbedtls_free( ssl->session_negotiate->ticket );
+    free( ssl->session_negotiate->ticket );
     ssl->session_negotiate->ticket = NULL;
     ssl->session_negotiate->ticket_len = 0;
 
-    if( ( ticket = mbedtls_calloc( 1, ticket_len ) ) == NULL )
+    if( ( ticket = (unsigned char*)calloc( 1, ticket_len ) ) == NULL )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "ticket alloc failed" ) );
         mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,

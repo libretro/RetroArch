@@ -263,25 +263,19 @@ static void wiiu_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
+      unsigned msg_len  = delim ? 
+         (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if (delim)
-      {
-         unsigned msg_len = delim - msg;
-         wiiu_font_render_line(wiiu, font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               width, height, text_align);
-         msg += msg_len + 1;
-         lines++;
-      }
-      else
-      {
-         unsigned msg_len = strlen(msg);
-         wiiu_font_render_line(wiiu, font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               width, height, text_align);
+      wiiu_font_render_line(wiiu, font, msg, msg_len,
+            scale, color, pos_x, pos_y - (float)lines * line_height,
+            width, height, text_align);
+
+      if (!delim)
          break;
-      }
+
+      msg += msg_len + 1;
+      lines++;
    }
 }
 

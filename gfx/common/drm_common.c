@@ -21,6 +21,7 @@
 
 #include "drm_common.h"
 
+/* TODO/FIXME - globals */
 struct pollfd g_drm_fds;
 
 uint32_t g_connector_id               = 0;

@@ -90,83 +90,84 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 };
 #endif
 
-static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
+static int16_t xdk_joypad_button_state(XINPUT_GAMEPAD *pad,
+      unsigned port, uint16_t joykey)
 {
-   uint16_t btn_word  = 0;
-   unsigned hat_dir   = 0;
-
-   if (port_num >= DEFAULT_MAX_PADS)
-      return false;
-
-   btn_word = g_xinput_states[port_num].xstate.Gamepad.wButtons;
-   hat_dir  = GET_HAT_DIR(joykey);
+   uint16_t btn_word = pad->wButtons;
+   unsigned hat_dir  = GET_HAT_DIR(joykey);
 
    if (hat_dir)
    {
       switch (hat_dir)
       {
          case HAT_UP_MASK:
-            return btn_word & XINPUT_GAMEPAD_DPAD_UP;
+            return (btn_word & XINPUT_GAMEPAD_DPAD_UP);
          case HAT_DOWN_MASK:
-            return btn_word & XINPUT_GAMEPAD_DPAD_DOWN;
+            return (btn_word & XINPUT_GAMEPAD_DPAD_DOWN);
          case HAT_LEFT_MASK:
-            return btn_word & XINPUT_GAMEPAD_DPAD_LEFT;
+            return (btn_word & XINPUT_GAMEPAD_DPAD_LEFT);
          case HAT_RIGHT_MASK:
-            return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
+            return (btn_word & XINPUT_GAMEPAD_DPAD_RIGHT);
+         default:
+            break;
       }
-
-      return false; /* hat requested and no hat button down. */
+      /* hat requested and no hat button down */
    }
-
-#ifdef _XBOX1
-   switch (joykey)
+   else
    {
-      case RETRO_DEVICE_ID_JOYPAD_A:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_B:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_Y:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_X:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_START:
-         return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_START);
-      case RETRO_DEVICE_ID_JOYPAD_SELECT:
-         return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_BACK);
-      case RETRO_DEVICE_ID_JOYPAD_L3:
-         return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
-      case RETRO_DEVICE_ID_JOYPAD_R3:
-         return (g_xinput_states[port_num].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
-      case RETRO_DEVICE_ID_JOYPAD_L2:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_R2:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_BLACK] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_L:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      case RETRO_DEVICE_ID_JOYPAD_R:
-         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-      default:
-         break;
-   }
+#ifdef _XBOX1
+      switch (joykey)
+      {
+         case RETRO_DEVICE_ID_JOYPAD_A:
+            return (pad->bAnalogButtons[XINPUT_GAMEPAD_B] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_B:
+            return (pad->bAnalogButtons[XINPUT_GAMEPAD_A] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_Y:
+            return (pad->bAnalogButtons[XINPUT_GAMEPAD_X] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_X:
+            return (pad->bAnalogButtons[XINPUT_GAMEPAD_Y] > XINPUT_GAMEPAD_MAX_CROSSTALK)
+         case RETRO_DEVICE_ID_JOYPAD_START:
+               return (pad->wButtons & XINPUT_GAMEPAD_START);
+         case RETRO_DEVICE_ID_JOYPAD_SELECT:
+               return (pad->wButtons & XINPUT_GAMEPAD_BACK);
+         case RETRO_DEVICE_ID_JOYPAD_L3:
+               return (pad->wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
+         case RETRO_DEVICE_ID_JOYPAD_R3:
+               return (pad->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
+         case RETRO_DEVICE_ID_JOYPAD_L2:
+               return (pad->bAnalogButtons[XINPUT_GAMEPAD_WHITE] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_R2:
+               return (pad->bAnalogButtons[XINPUT_GAMEPAD_BLACK] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_L:
+               return (pad->bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         case RETRO_DEVICE_ID_JOYPAD_R:
+               return (pad->bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+         default:
+               break;
+      }
 #else
-   if (joykey < 10)
-      return btn_word & button_index_to_bitmap_code[joykey];
+      if (joykey < 10)
+         return (btn_word & button_index_to_bitmap_code[joykey]);
 #endif
-
-   return false;
+   }
+   return 0;
 }
 
-static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
+static int16_t xdk_joypad_button(unsigned port, uint16_t joykey)
+{
+   XINPUT_GAMEPAD *pad = &(g_xinput_states[port].xstate.Gamepad);
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   return xdk_joypad_button_state(pad, port, joykey);
+}
+
+static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
+      unsigned port, uint32_t joyaxis)
 {
    int val             = 0;
    int axis            = -1;
    bool is_neg         = false;
    bool is_pos         = false;
-   XINPUT_GAMEPAD *pad = NULL;
-
-   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS)
-      return 0;
-
    if (AXIS_NEG_GET(joyaxis) <= 3)
    {
       axis = AXIS_NEG_GET(joyaxis);
@@ -178,7 +179,6 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
       is_pos = true;
    }
 
-   pad = &(g_xinput_states[port_num].xstate.Gamepad);
 
    switch (axis)
    {
@@ -216,6 +216,47 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
       val = -32767;
 
    return val;
+}
+
+static int16_t xdk_joypad_axis(unsigned port, uint32_t joyaxis)
+{
+   XINPUT_GAMEPAD *pad = &(g_xinput_states[port].xstate.Gamepad);
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   return xdk_joypad_axis_state(pad, port, joyaxis);
+}
+
+static int16_t xdk_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret         = 0;
+   XINPUT_GAMEPAD *pad = &(g_xinput_states[port].xstate.Gamepad);
+
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && xdk_joypad_button_state(
+               pad, port, (uint16_t)joykey))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(xdk_joypad_axis_state(pad, port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static void xdk_joypad_poll(void)
@@ -325,6 +366,7 @@ input_device_driver_t xdk_joypad = {
    xdk_joypad_query_pad,
    xdk_joypad_destroy,
    xdk_joypad_button,
+   xdk_joypad_state,
    NULL,
    xdk_joypad_axis,
    xdk_joypad_poll,

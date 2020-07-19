@@ -189,13 +189,14 @@ static void scroll_on_demand(int pixelheight)
 static void *sixel_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   gfx_ctx_input_t inp;
    void *ctx_data                       = NULL;
+   const char *scale_str                = NULL;
    settings_t *settings                 = config_get_ptr();
    bool video_font_enable               = settings->bools.video_font_enable;
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
-   const gfx_ctx_driver_t *ctx_driver   = NULL;
-   const char *scale_str                = NULL;
+
+   if (!sixel)
+      return NULL;
 
    *input                               = NULL;
    *input_data                          = NULL;
@@ -219,25 +220,17 @@ static void *sixel_gfx_init(const video_info_t *video,
          sixel_video_scale = 1.0;
    }
 
-   ctx_driver = video_context_driver_init_first(sixel,
-         settings->arrays.video_context_driver,
-         GFX_CTX_SIXEL_API, 1, 0, false, &ctx_data);
+#ifdef HAVE_UDEV
+   *input_data    = input_udev.init(settings->arrays.input_driver);
 
-   if (!ctx_driver)
-      goto error;
-
-   if (ctx_data)
-      sixel->ctx_data = ctx_data;
-
-   sixel->ctx_driver = ctx_driver;
-   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
-
-   RARCH_LOG("[SIXEL]: Found SIXEL context: %s\n", ctx_driver->ident);
-
-   inp.input      = input;
-   inp.input_data = input_data;
-
-   video_context_driver_input_driver(&inp);
+   if (*input_data)
+      *input      = &input_udev;
+   else
+#endif
+   {
+      *input      = NULL;
+      *input_data = NULL;
+   }
 
    if (video_font_enable)
       font_driver_init_osd(sixel,
@@ -246,15 +239,7 @@ static void *sixel_gfx_init(const video_info_t *video,
             video->is_threaded,
             FONT_DRIVER_RENDER_SIXEL);
 
-   RARCH_LOG("[SIXEL]: Init complete.\n");
-
    return sixel;
-
-error:
-   video_context_driver_destroy();
-   if (sixel)
-      free(sixel);
-   return NULL;
 }
 
 static bool sixel_gfx_frame(void *data, const void *frame,
@@ -435,7 +420,6 @@ static void sixel_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { 
 
 static bool sixel_gfx_alive(void *data)
 {
-   gfx_ctx_size_t size_data;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    bool quit            = false;
@@ -444,9 +428,6 @@ static bool sixel_gfx_alive(void *data)
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
-
-   sixel->ctx_driver->check_window(sixel->ctx_data,
-            &quit, &resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(temp_width, temp_height);
@@ -544,35 +525,11 @@ static void sixel_set_texture_frame(void *data,
 }
 
 static void sixel_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   gfx_ctx_size_t size_data;
-   size_data.width  = width;
-   size_data.height = height;
-   video_context_driver_get_video_output_size(&size_data);
-}
-
-static void sixel_get_video_output_prev(void *data)
-{
-   video_context_driver_get_video_output_prev();
-}
-
-static void sixel_get_video_output_next(void *data)
-{
-   video_context_driver_get_video_output_next();
-}
-
+      unsigned *width, unsigned *height) { }
+static void sixel_get_video_output_prev(void *data) { }
+static void sixel_get_video_output_next(void *data) { }
 static void sixel_set_video_mode(void *data, unsigned width, unsigned height,
-      bool fullscreen)
-{
-   gfx_ctx_mode_t mode;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
-}
+      bool fullscreen) { }
 
 static const video_poke_interface_t sixel_poke_interface = {
    NULL,

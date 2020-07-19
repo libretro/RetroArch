@@ -246,13 +246,14 @@ static void vita2d_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = (delim) ? (delim - msg) : strlen(msg);
+      unsigned msg_len  = (delim) ? 
+         (unsigned)(delim - msg) : strlen(msg);
 
+      /* Draw the line */
       vita2d_font_render_line(font, msg, msg_len,
             scale, color, pos_x, pos_y - (float)lines * line_height,
             width, height, text_align);
 
-      /* Draw the line */
       if (!delim)
          break;
 

@@ -45,17 +45,6 @@
 #include "mbedtls/ccm.h"
 #endif
 
-#if defined(MBEDTLS_CMAC_C)
-#include "mbedtls/cmac.h"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
-#define mbedtls_calloc calloc
-#define mbedtls_free   free
-#endif
-
 #if defined(MBEDTLS_ARC4_C) || defined(MBEDTLS_CIPHER_NULL_CIPHER)
 #define MBEDTLS_CIPHER_MODE_STREAM
 #endif
@@ -134,14 +123,6 @@ void mbedtls_cipher_free( mbedtls_cipher_context_t *ctx )
 {
     if( ctx == NULL )
         return;
-
-#if defined(MBEDTLS_CMAC_C)
-    if( ctx->cmac_ctx )
-    {
-       mbedtls_zeroize( ctx->cmac_ctx, sizeof( mbedtls_cmac_context_t ) );
-       mbedtls_free( ctx->cmac_ctx );
-    }
-#endif
 
     if( ctx->cipher_ctx )
         ctx->cipher_info->base->ctx_free_func( ctx->cipher_ctx );
@@ -846,17 +827,20 @@ int mbedtls_cipher_auth_encrypt( mbedtls_cipher_context_t *ctx,
     if( MBEDTLS_MODE_GCM == ctx->cipher_info->mode )
     {
         *olen = ilen;
-        return( mbedtls_gcm_crypt_and_tag( ctx->cipher_ctx, MBEDTLS_GCM_ENCRYPT, ilen,
-                                   iv, iv_len, ad, ad_len, input, output,
-                                   tag_len, tag ) );
+        return( mbedtls_gcm_crypt_and_tag(
+                 (mbedtls_gcm_context*)ctx->cipher_ctx,
+                 MBEDTLS_GCM_ENCRYPT, ilen,
+                 iv, iv_len, ad, ad_len, input, output,
+                 tag_len, tag ) );
     }
 #endif /* MBEDTLS_GCM_C */
 #if defined(MBEDTLS_CCM_C)
     if( MBEDTLS_MODE_CCM == ctx->cipher_info->mode )
     {
         *olen = ilen;
-        return( mbedtls_ccm_encrypt_and_tag( ctx->cipher_ctx, ilen,
-                                     iv, iv_len, ad, ad_len, input, output,
+        return( mbedtls_ccm_encrypt_and_tag(
+                 (mbedtls_ccm_context*)ctx->cipher_ctx, ilen,
+                 iv, iv_len, ad, ad_len, input, output,
                                      tag, tag_len ) );
     }
 #endif /* MBEDTLS_CCM_C */
@@ -880,9 +864,10 @@ int mbedtls_cipher_auth_decrypt( mbedtls_cipher_context_t *ctx,
         int ret;
 
         *olen = ilen;
-        ret = mbedtls_gcm_auth_decrypt( ctx->cipher_ctx, ilen,
-                                iv, iv_len, ad, ad_len,
-                                tag, tag_len, input, output );
+        ret = mbedtls_gcm_auth_decrypt(
+              (mbedtls_gcm_context*)ctx->cipher_ctx, ilen,
+              iv, iv_len, ad, ad_len,
+              tag, tag_len, input, output );
 
         if( ret == MBEDTLS_ERR_GCM_AUTH_FAILED )
             ret = MBEDTLS_ERR_CIPHER_AUTH_FAILED;
@@ -896,7 +881,8 @@ int mbedtls_cipher_auth_decrypt( mbedtls_cipher_context_t *ctx,
         int ret;
 
         *olen = ilen;
-        ret = mbedtls_ccm_auth_decrypt( ctx->cipher_ctx, ilen,
+        ret = mbedtls_ccm_auth_decrypt(
+              (mbedtls_ccm_context*)ctx->cipher_ctx, ilen,
                                 iv, iv_len, ad, ad_len,
                                 input, output, tag, tag_len );
 

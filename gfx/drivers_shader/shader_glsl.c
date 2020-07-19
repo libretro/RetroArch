@@ -34,7 +34,9 @@
 #endif
 
 #include "shader_glsl.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 #include "../../core.h"
 #include "../../verbosity.h"
 
@@ -1191,7 +1193,14 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    }
 
    if (uni->frame_direction >= 0)
-      glUniform1i(uni->frame_direction, state_manager_frame_is_reversed() ? -1 : 1);
+   {
+#ifdef HAVE_REWIND
+      if (state_manager_frame_is_reversed())
+         glUniform1i(uni->frame_direction, -1);
+      else
+#endif
+         glUniform1i(uni->frame_direction, 1);
+   }
 
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
@@ -1591,6 +1600,11 @@ static struct video_shader *gl_glsl_get_current_shader(void *data)
    return glsl->shader;
 }
 
+static void gl_glsl_get_flags(uint32_t *flags)
+{
+   BIT32_SET(*flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+}
+
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
 {
    glsl_get_proc_address = proc;
@@ -1604,10 +1618,6 @@ void gl_glsl_set_context_type(bool core_profile,
    glsl_minor = minor;
 }
 
-static void gl_glsl_get_flags(uint32_t *flags)
-{
-   BIT32_SET(*flags, GFX_CTX_FLAGS_SHADERS_GLSL);
-}
 
 const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,

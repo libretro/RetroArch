@@ -385,7 +385,8 @@ static ssize_t sd_fat_read_r (struct _reent *r, void* fd, char *ptr, size_t len)
 static int sd_fat_fstat_r (struct _reent *r, void* fd, struct stat *st)
 {
     sd_fat_file_state_t *file = (sd_fat_file_state_t *)fd;
-    if(!file->dev) {
+    if(!file->dev)
+    {
         r->_errno = ENODEV;
         return -1;
     }

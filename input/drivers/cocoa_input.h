@@ -20,6 +20,10 @@
 #include <stdint.h>
 #include <boolean.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.def.h"
+#endif
+
 #include "../input_driver.h"
 
 /* Input responder */
@@ -49,7 +53,9 @@ typedef struct
    int16_t mouse_wl;
    int16_t mouse_wr;
 
+#ifdef HAVE_MFI
    const input_device_driver_t *sec_joypad;
+#endif
    const input_device_driver_t *joypad;
 } cocoa_input_data_t;
 

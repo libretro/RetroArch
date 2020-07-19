@@ -52,18 +52,14 @@ static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
 static bool ctr_joypad_init(void *data)
 {
    ctr_joypad_autodetect_add(0);
-
-   (void)data;
-
    return true;
 }
 
-static bool ctr_joypad_button(unsigned port_num, uint16_t key)
+static int16_t ctr_joypad_button(unsigned port_num, uint16_t joykey)
 {
    if (port_num >= DEFAULT_MAX_PADS)
-      return false;
-
-   return (pad_state & (1 << key));
+      return 0;
+   return (pad_state & (1 << joykey));
 }
 
 static void ctr_joypad_get_buttons(unsigned port_num, input_bits_t *state)
@@ -83,7 +79,7 @@ static int16_t ctr_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS)
+   if (port_num >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
@@ -119,6 +115,37 @@ static int16_t ctr_joypad_axis(unsigned port_num, uint32_t joyaxis)
       val = 0;
 
    return val;
+}
+
+static int16_t ctr_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      
+      if ((uint16_t)joykey != NO_BTN && 
+            (pad_state & (1 << (uint16_t)joykey)))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(ctr_joypad_axis(port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static int16_t ctr_joypad_fix_range(int16_t val)
@@ -190,6 +217,7 @@ input_device_driver_t ctr_joypad = {
    ctr_joypad_query_pad,
    ctr_joypad_destroy,
    ctr_joypad_button,
+   ctr_joypad_state,
    ctr_joypad_get_buttons,
    ctr_joypad_axis,
    ctr_joypad_poll,

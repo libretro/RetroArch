@@ -15,14 +15,6 @@
 #endif
 #endif
 
-/* Forward declarations */
-z_off_t gzoffset(gzFile file);
-int gzbuffer(gzFile file, unsigned size);
-
-/* Local functions */
-static void gz_reset OF((gz_statep));
-static gzFile gz_open OF((const void *, int, const char *));
-
 #if defined UNDER_CE
 
 /* Map the Windows error number in ERROR to a locale-dependent error message
@@ -34,8 +26,7 @@ static gzFile gz_open OF((const void *, int, const char *));
 
    The gz_strwinerror function does not change the current setting of
    GetLastError. */
-char ZLIB_INTERNAL *gz_strwinerror (error)
-   DWORD error;
+char ZLIB_INTERNAL *gz_strwinerror (DWORD error)
 {
    static char buf[1024];
 
@@ -78,24 +69,25 @@ char ZLIB_INTERNAL *gz_strwinerror (error)
 /* Reset gzip file state */
 static void gz_reset(gz_statep state)
 {
-   state->x.have = 0;              /* no output data available */
-   if (state->mode == GZ_READ) {   /* for reading ... */
-      state->eof = 0;             /* not at end of file */
-      state->past = 0;            /* have not read past end yet */
-      state->how = LOOK;          /* look for gzip header */
+   state->x.have        = 0;       /* no output data available */
+   if (state->mode == GZ_READ)     /* for reading ... */
+   {
+      state->eof        = 0;       /* not at end of file */
+      state->past       = 0;       /* have not read past end yet */
+      state->how        = LOOK;    /* look for gzip header */
    }
-   state->seek = 0;                /* no seek request pending */
+   state->seek          = 0;       /* no seek request pending */
    gz_error(state, Z_OK, NULL);    /* clear error */
-   state->x.pos = 0;               /* no uncompressed data yet */
+   state->x.pos         = 0;       /* no uncompressed data yet */
    state->strm.avail_in = 0;       /* no input data yet */
 }
 
 /* Open a gzip file either by name or file descriptor. */
 static gzFile gz_open(const void *path, int fd, const char *mode)
 {
+   int oflag;
    gz_statep state;
    size_t len;
-   int oflag;
 #ifdef O_CLOEXEC
    int cloexec = 0;
 #endif
@@ -108,23 +100,25 @@ static gzFile gz_open(const void *path, int fd, const char *mode)
       return NULL;
 
    /* allocate gzFile structure to return */
-   state = (gz_statep)malloc(sizeof(gz_state));
+   state       = (gz_statep)malloc(sizeof(gz_state));
    if (state == NULL)
       return NULL;
    state->size = 0;            /* no buffers allocated yet */
    state->want = GZBUFSIZE;    /* requested buffer size */
-   state->msg = NULL;          /* no error message yet */
+   state->msg  = NULL;         /* no error message yet */
 
    /* interpret mode */
-   state->mode = GZ_NONE;
-   state->level = Z_DEFAULT_COMPRESSION;
+   state->mode     = GZ_NONE;
+   state->level    = Z_DEFAULT_COMPRESSION;
    state->strategy = Z_DEFAULT_STRATEGY;
-   state->direct = 0;
-   while (*mode) {
+   state->direct   = 0;
+   while (*mode)
+   {
       if (*mode >= '0' && *mode <= '9')
          state->level = *mode - '0';
       else
-         switch (*mode) {
+         switch (*mode)
+         {
             case 'r':
                state->mode = GZ_READ;
                break;
@@ -173,14 +167,17 @@ static gzFile gz_open(const void *path, int fd, const char *mode)
    }
 
    /* must provide an "r", "w", or "a" */
-   if (state->mode == GZ_NONE) {
+   if (state->mode == GZ_NONE)
+   {
       free(state);
       return NULL;
    }
 
    /* can't force transparent read */
-   if (state->mode == GZ_READ) {
-      if (state->direct) {
+   if (state->mode == GZ_READ)
+   {
+      if (state->direct)
+      {
          free(state);
          return NULL;
       }
@@ -189,7 +186,8 @@ static gzFile gz_open(const void *path, int fd, const char *mode)
 
    /* save the path name for error messages */
 #ifdef _WIN32
-   if (fd == -2) {
+   if (fd == -2)
+   {
       len = wcstombs(NULL, (const wchar_t*)path, 0);
       if (len == (size_t)-1)
          len = 0;
@@ -198,7 +196,8 @@ static gzFile gz_open(const void *path, int fd, const char *mode)
 #endif
       len = strlen((const char *)path);
    state->path = (char *)malloc(len + 1);
-   if (state->path == NULL) {
+   if (state->path == NULL)
+   {
       free(state);
       return NULL;
    }
@@ -252,7 +251,8 @@ static gzFile gz_open(const void *path, int fd, const char *mode)
       state->mode = GZ_WRITE;         /* simplify later checks */
 
    /* save the current position for rewinding (only if reading) */
-   if (state->mode == GZ_READ) {
+   if (state->mode == GZ_READ)
+   {
       state->start = LSEEK(state->fd, 0, SEEK_CUR);
       if (state->start == -1) state->start = 0;
    }
@@ -330,8 +330,10 @@ int gzrewind(gzFile file)
    state = (gz_statep)file;
 
    /* check that we're reading and that there's no error */
-   if (state->mode != GZ_READ ||
-         (state->err != Z_OK && state->err != Z_BUF_ERROR))
+   if (
+             state->mode != GZ_READ ||
+         (   state->err  != Z_OK 
+          && state->err  != Z_BUF_ERROR))
       return -1;
 
    /* back up and start over */
@@ -344,22 +346,24 @@ int gzrewind(gzFile file)
 z_off64_t gzseek64(gzFile file, z_off64_t offset, int whence)
 {
    unsigned n;
-   z_off64_t ret;
    gz_statep state;
 
    /* get internal structure and check integrity */
    if (file == NULL)
       return -1;
    state = (gz_statep)file;
-   if (state->mode != GZ_READ && state->mode != GZ_WRITE)
+   if (  state->mode != GZ_READ && 
+         state->mode != GZ_WRITE)
       return -1;
 
    /* check that there's no error */
-   if (state->err != Z_OK && state->err != Z_BUF_ERROR)
+   if (  state->err != Z_OK && 
+         state->err != Z_BUF_ERROR)
       return -1;
 
    /* can only seek from start or relative to current position */
-   if (whence != SEEK_SET && whence != SEEK_CUR)
+   if (  whence != SEEK_SET && 
+         whence != SEEK_CUR)
       return -1;
 
    /* normalize offset to a SEEK_CUR specification */
@@ -370,23 +374,28 @@ z_off64_t gzseek64(gzFile file, z_off64_t offset, int whence)
    state->seek = 0;
 
    /* if within raw area while reading, just go there */
-   if (state->mode == GZ_READ && state->how == MODE_COPY &&
-         state->x.pos + offset >= 0) {
-      ret = LSEEK(state->fd, offset - state->x.have, SEEK_CUR);
+   if (  state->mode == GZ_READ   && 
+         state->how  == MODE_COPY &&
+         state->x.pos + offset >= 0)
+   {
+      z_off64_t ret         = LSEEK(
+            state->fd, offset - state->x.have, SEEK_CUR);
       if (ret == -1)
          return -1;
-      state->x.have = 0;
-      state->eof = 0;
-      state->past = 0;
-      state->seek = 0;
+      state->x.have         = 0;
+      state->eof            = 0;
+      state->past           = 0;
+      state->seek           = 0;
       gz_error(state, Z_OK, NULL);
-      state->strm.avail_in = 0;
-      state->x.pos += offset;
+      state->strm.avail_in  = 0;
+      state->x.pos         += offset;
       return state->x.pos;
    }
 
-   /* calculate skip amount, rewinding if needed for back seek when reading */
-   if (offset < 0) {
+   /* calculate skip amount, rewinding if 
+    * needed for back seek when reading */
+   if (offset < 0)
+   {
       if (state->mode != GZ_READ)         /* writing -- can't go backwards */
          return -1;
       offset += state->x.pos;
@@ -397,17 +406,19 @@ z_off64_t gzseek64(gzFile file, z_off64_t offset, int whence)
    }
 
    /* if reading, skip what's in output buffer (one less gzgetc() check) */
-   if (state->mode == GZ_READ) {
+   if (state->mode == GZ_READ)
+   {
       n = GT_OFF(state->x.have) || (z_off64_t)state->x.have > offset ?
          (unsigned)offset : state->x.have;
       state->x.have -= n;
       state->x.next += n;
-      state->x.pos += n;
-      offset -= n;
+      state->x.pos  += n;
+      offset        -= n;
    }
 
    /* request skip (if not zero) */
-   if (offset) {
+   if (offset)
+   {
       state->seek = 1;
       state->skip = offset;
    }
@@ -416,9 +427,7 @@ z_off64_t gzseek64(gzFile file, z_off64_t offset, int whence)
 
 z_off_t gzseek(gzFile file, z_off_t offset, int whence)
 {
-   z_off64_t ret;
-
-   ret = gzseek64(file, (z_off64_t)offset, whence);
+   z_off64_t ret = gzseek64(file, (z_off64_t)offset, whence);
    return ret == (z_off_t)ret ? (z_off_t)ret : -1;
 }
 
@@ -430,7 +439,8 @@ z_off64_t gztell64(gzFile file)
    if (file == NULL)
       return -1;
    state = (gz_statep)file;
-   if (state->mode != GZ_READ && state->mode != GZ_WRITE)
+   if (  state->mode != GZ_READ && 
+         state->mode != GZ_WRITE)
       return -1;
 
    /* return position */
@@ -439,9 +449,7 @@ z_off64_t gztell64(gzFile file)
 
 z_off_t gztell(gzFile file)
 {
-   z_off64_t ret;
-
-   ret = gztell64(file);
+   z_off64_t ret = gztell64(file);
    return ret == (z_off_t)ret ? (z_off_t)ret : -1;
 }
 
@@ -480,7 +488,8 @@ int gzeof(gzFile file)
    if (file == NULL)
       return 0;
    state = (gz_statep)file;
-   if (state->mode != GZ_READ && state->mode != GZ_WRITE)
+   if (  state->mode != GZ_READ && 
+         state->mode != GZ_WRITE)
       return 0;
 
    /* return end-of-file state */
@@ -495,7 +504,9 @@ const char * gzerror(gzFile file, int *errnum)
    if (file == NULL)
       return NULL;
    state = (gz_statep)file;
-   if (state->mode != GZ_READ && state->mode != GZ_WRITE)
+
+   if (  state->mode != GZ_READ && 
+         state->mode != GZ_WRITE)
       return NULL;
 
    /* return error information */
@@ -513,12 +524,15 @@ void gzclearerr(gzFile file)
    if (file == NULL)
       return;
    state = (gz_statep)file;
-   if (state->mode != GZ_READ && state->mode != GZ_WRITE)
+
+   if (  state->mode != GZ_READ && 
+         state->mode != GZ_WRITE)
       return;
 
    /* clear error and end-of-file */
-   if (state->mode == GZ_READ) {
-      state->eof = 0;
+   if (state->mode == GZ_READ)
+   {
+      state->eof  = 0;
       state->past = 0;
    }
    gz_error(state, Z_OK, NULL);
@@ -533,7 +547,8 @@ void gzclearerr(gzFile file)
 void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
 {
    /* free previously allocated message and clear */
-   if (state->msg != NULL) {
+   if (state->msg != NULL)
+   {
       if (state->err != Z_MEM_ERROR)
          free(state->msg);
       state->msg = NULL;
@@ -554,7 +569,8 @@ void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
 
    /* construct error message with path */
    if ((state->msg = (char *)malloc(strlen(state->path) + strlen(msg) + 3)) ==
-         NULL) {
+         NULL)
+   {
       state->err = Z_MEM_ERROR;
       return;
    }
@@ -566,7 +582,6 @@ void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
    strlcat(state->msg, ": ", sizeof(state->msg));
    strlcat(state->msg, msg, sizeof(state->msg));
 #endif
-   return;
 }
 
 #ifndef INT_MAX
@@ -574,7 +589,7 @@ void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
    available) -- we need to do this to cover cases where 2's complement not
    used, since C standard permits 1's complement and sign-bit representations,
    otherwise we could just use ((unsigned)-1) >> 1 */
-unsigned ZLIB_INTERNAL gz_intmax()
+unsigned ZLIB_INTERNAL gz_intmax(void)
 {
    unsigned p, q;
 

@@ -230,39 +230,6 @@ typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM
 typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
 typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 
-bool g_win32_restore_desktop        = false;
-static bool taskbar_is_created      = false;
-bool g_win32_inited                 = false;
-
-typedef struct win32_common_state
-{
-   int pos_x;
-   int pos_y;
-   unsigned pos_width;
-   unsigned pos_height;
-   unsigned taskbar_message;
-   bool quit;
-   unsigned monitor_count;
-   bool resized;
-} win32_common_state_t;
-
-static win32_common_state_t win32_st =
-{
-   CW_USEDEFAULT,       /* pos_x */
-   CW_USEDEFAULT,       /* pos_y */
-   0,                   /* pos_width */
-   0,                   /* pos_height */
-   0,                   /* taskbar_message */
-   false,               /* quit */
-   0,                   /* monitor_count */
-   false                /* resized */
-};
-
-unsigned g_win32_resize_width       = 0;
-unsigned g_win32_resize_height      = 0;
-
-ui_window_win32_t main_window;
-
 /* Power Request APIs */
 
 #if !defined(_XBOX) && (_MSC_VER == 1310)
@@ -310,8 +277,44 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #define INT_PTR_COMPAT INT_PTR
 #endif
 
+
+/* TODO/FIXME - globals */
+bool g_win32_restore_desktop        = false;
+static bool taskbar_is_created      = false;
+bool g_win32_inited                 = false;
+
+unsigned g_win32_resize_width       = 0;
+unsigned g_win32_resize_height      = 0;
+
+ui_window_win32_t main_window;
+
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
+
+typedef struct win32_common_state
+{
+   int pos_x;
+   int pos_y;
+   unsigned pos_width;
+   unsigned pos_height;
+   unsigned taskbar_message;
+   bool quit;
+   unsigned monitor_count;
+   bool resized;
+} win32_common_state_t;
+
+static win32_common_state_t win32_st =
+{
+   CW_USEDEFAULT,       /* pos_x */
+   CW_USEDEFAULT,       /* pos_y */
+   0,                   /* pos_width */
+   0,                   /* pos_height */
+   0,                   /* taskbar_message */
+   false,               /* quit */
+   0,                   /* monitor_count */
+   false                /* resized */
+};
+
 
 bool win32_taskbar_is_created(void)
 {
@@ -915,9 +918,6 @@ static LRESULT CALLBACK wnd_proc_common(
             uint16_t mod          = 0;
             unsigned keycode      = 0;
             unsigned keysym       = (lparam >> 16) & 0xff;
-#if _WIN32_WINNT >= 0x0501 /* XP */
-            settings_t *settings  = config_get_ptr();
-#endif
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
@@ -932,17 +932,20 @@ static LRESULT CALLBACK wnd_proc_common(
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
-#if _WIN32_WINNT >= 0x0501 /* XP */
-            if (settings && 
-                  string_is_equal(settings->arrays.input_driver, "raw"))
-               keysym             = (unsigned)wparam;
-            else
-#endif
             {
+               input_driver_t *driver = input_get_ptr();
+
+#if _WIN32_WINNT >= 0x0501 /* XP */
+#ifdef HAVE_WINRAWINPUT
+               if (driver == &input_winraw)
+                  keysym             = (unsigned)wparam;
+               else
+#endif
+#endif
 #ifdef HAVE_DINPUT
-               /* extended keys will map to dinput if the high bit is set */
-               if (input_get_ptr() == &input_dinput && (lparam >> 24 & 0x1))
-                  keysym |= 0x80;
+                  /* extended keys will map to dinput if the high bit is set */
+                  if (driver == &input_dinput && (lparam >> 24 & 0x1))
+                     keysym |= 0x80;
 #else
                /* fix key binding issues on winraw when DirectInput is not available */
 #endif
@@ -1066,7 +1069,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 }
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -1089,6 +1092,7 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
             taskbar_is_created = true;
 #endif
 #ifdef HAVE_DINPUT
+         if (input_get_ptr() == &input_dinput)
          {
             void* input_data = input_get_data();
             if (input_data && dinput_handle_message(input_data,
@@ -1129,6 +1133,70 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
 }
 #endif
 
+#ifdef HAVE_VULKAN
+LRESULT CALLBACK WndProcVK(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   bool quit = false;
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   switch (message)
+   {
+      case WM_MOUSEMOVE:
+      case WM_POINTERDOWN:
+      case WM_POINTERUP:
+      case WM_POINTERUPDATE:
+      case WM_DEVICECHANGE:
+      case WM_MOUSEWHEEL:
+      case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
+            taskbar_is_created = true;
+#endif
+#ifdef HAVE_DINPUT
+         if (input_get_ptr() == &input_dinput)
+         {
+            void* input_data = input_get_data();
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
+         break;
+      case WM_DROPFILES:
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYUP:
+      case WM_SYSKEYDOWN:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_MOVE:
+      case WM_SIZE:
+      case WM_COMMAND:
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
+            taskbar_is_created = true;
+#endif
+         break;
+      case WM_CREATE:
+         create_vk_context(hwnd, &g_win32->quit);
+         if (DragAcceptFiles_func)
+            DragAcceptFiles_func(hwnd, true);
+         return 0;
+   }
+
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+#endif
+
 #ifdef HAVE_GDI
 LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -1152,6 +1220,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
             taskbar_is_created = true;
 #endif
 #ifdef HAVE_DINPUT
+         if (input_get_ptr() == &input_dinput)
          {
             void* input_data = input_get_data();
             if (input_data && dinput_handle_message(input_data,
@@ -1381,7 +1450,8 @@ void win32_show_cursor(void *data, bool state)
 #endif
 }
 
-void win32_check_window(bool *quit, bool *resize,
+void win32_check_window(void *data,
+      bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #if !defined(_XBOX)

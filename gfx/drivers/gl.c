@@ -2064,6 +2064,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    init_data.gl.core_context_enabled = gl->core_context_in_use;
    init_data.shader_type             = type;
    init_data.shader                  = NULL;
+   init_data.shader_data             = NULL;
    init_data.data                    = gl;
    init_data.path                    = shader_path;
 
@@ -2076,13 +2077,14 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
 
    RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
 
-   init_data.shader = NULL;
-   init_data.path   = NULL;
+   init_data.shader                  = NULL;
+   init_data.shader_data             = NULL;
+   init_data.path                    = NULL;
 
-   ret              = gl_shader_driver_init(&init_data);
+   ret                               = gl_shader_driver_init(&init_data);
 
-   gl->shader       = init_data.shader;
-   gl->shader_data  = init_data.shader_data;
+   gl->shader                        = init_data.shader;
+   gl->shader_data                   = init_data.shader_data;
 
    return ret;
 }
@@ -2666,7 +2668,9 @@ static void gl2_video_layout_layer_begin(const video_layout_render_info_t *info)
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-static void gl2_video_layout_image(const video_layout_render_info_t *info, void *image_handle, void *alpha_handle)
+static void gl2_video_layout_image(
+      const video_layout_render_info_t *info,
+      void *image_handle, void *alpha_handle)
 {
    /* TODO alpha_handle */
    int i;
@@ -2690,7 +2694,7 @@ static void gl2_video_layout_image(const video_layout_render_info_t *info, void 
    coord[7] = 1.f - (b.y + b.h);
 
    i = 0;
-   while(i < 16)
+   while (i < 16)
    {
       color[i++] = info->color.r;
       color[i++] = info->color.g;
@@ -2698,10 +2702,10 @@ static void gl2_video_layout_image(const video_layout_render_info_t *info, void 
       color[i++] = info->color.a;
    }
 
-   gl->coords.vertex = coord;
+   gl->coords.vertex    = coord;
    gl->coords.tex_coord = tex_coords;
-   gl->coords.color = color;
-   gl->coords.vertices = 4;
+   gl->coords.color     = color;
+   gl->coords.vertices  = 4;
 
    gl->shader->set_coords(gl->shader_data, &gl->coords);
    gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
@@ -2825,7 +2829,6 @@ static bool gl2_frame(void *data, const void *frame,
    bool runloop_is_paused              = video_info->runloop_is_paused;
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
-   void *context_data                  = video_info->context_data;
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
@@ -2861,7 +2864,8 @@ static bool gl2_frame(void *data, const void *frame,
 
    if (gl->should_resize)
    {
-      video_info->cb_set_resize(context_data,
+      if (gl->ctx_driver->set_resize)
+         gl->ctx_driver->set_resize(gl->ctx_data,
             width, height);
       gl->should_resize = false;
 
@@ -3068,7 +3072,7 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
    if (gl->ctx_driver->update_window_title)
-      gl->ctx_driver->update_window_title(context_data);
+      gl->ctx_driver->update_window_title(gl->ctx_data);
 
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
@@ -3103,12 +3107,13 @@ static bool gl2_frame(void *data, const void *frame,
          && !runloop_is_paused)
    {
       if (gl->ctx_driver->swap_buffers)
-         gl->ctx_driver->swap_buffers(context_data);
+         gl->ctx_driver->swap_buffers(gl->ctx_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
-   gl->ctx_driver->swap_buffers(context_data);
+   if (gl->ctx_driver->swap_buffers)
+      gl->ctx_driver->swap_buffers(gl->ctx_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (  gl->have_sync
@@ -4080,14 +4085,16 @@ static bool gl2_set_shader(void *data,
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
 
-   init_data.shader_type = fallback;
-   init_data.shader      = NULL;
-   init_data.data        = gl;
-   init_data.path        = path;
+   init_data.shader_type             = fallback;
+   init_data.path                    = path;
+   init_data.shader                  = NULL;
+   init_data.data                    = gl;
+   init_data.shader_data             = NULL;
+   init_data.gl.core_context_enabled = false;
 
    if (!gl_shader_driver_init(&init_data))
    {
-      init_data.path = NULL;
+      init_data.path   = NULL;
 
       gl_shader_driver_init(&init_data);
 

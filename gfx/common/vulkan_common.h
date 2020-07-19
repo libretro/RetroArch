@@ -261,12 +261,6 @@ struct vk_buffer_chain vulkan_buffer_chain_init(
       VkDeviceSize alignment,
       VkBufferUsageFlags usage);
 
-#define VK_BUFFER_CHAIN_DISCARD(chain) \
-{ \
-   chain->current = chain->head; \
-   chain->offset = 0; \
-}
-
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       struct vk_buffer_chain *chain, size_t size,
       struct vk_buffer_range *range);
@@ -450,6 +444,89 @@ typedef struct vk
    void *filter_chain;
 } vk_t;
 
+#define VK_BUFFER_CHAIN_DISCARD(chain) \
+{ \
+   chain->current = chain->head; \
+   chain->offset  = 0; \
+}
+
+#define VULKAN_SYNC_TEXTURE_TO_GPU(device, tex_memory) \
+{ \
+   VkMappedMemoryRange range; \
+   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
+   range.pNext  = NULL; \
+   range.memory = tex_memory; \
+   range.offset = 0; \
+   range.size   = VK_WHOLE_SIZE; \
+   vkFlushMappedMemoryRanges(device, 1, &range); \
+}
+
+#define VULKAN_SYNC_TEXTURE_TO_CPU(device, tex_memory) \
+{ \
+   VkMappedMemoryRange range; \
+   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
+   range.pNext  = NULL; \
+   range.memory = tex_memory; \
+   range.offset = 0; \
+   range.size   = VK_WHOLE_SIZE; \
+   vkInvalidateMappedMemoryRanges(device, 1, &range); \
+}
+
+#define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, src_queue_family_idx, dst_queue_family_idx) \
+{ \
+   VkImageMemoryBarrier barrier; \
+   barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; \
+   barrier.pNext                           = NULL; \
+   barrier.srcAccessMask                   = src_access; \
+   barrier.dstAccessMask                   = dst_access; \
+   barrier.oldLayout                       = old_layout; \
+   barrier.newLayout                       = new_layout; \
+   barrier.srcQueueFamilyIndex             = src_queue_family_idx; \
+   barrier.dstQueueFamilyIndex             = dst_queue_family_idx; \
+   barrier.image                           = img; \
+   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT; \
+   barrier.subresourceRange.baseMipLevel   = 0; \
+   barrier.subresourceRange.levelCount     = levels; \
+   barrier.subresourceRange.baseArrayLayer = 0; \
+   barrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS; \
+   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
+}
+
+#define VULKAN_TRANSFER_IMAGE_OWNERSHIP(cmd, img, layout, src_stages, dst_stages, src_queue_family, dst_queue_family) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, layout, layout, 0, 0, src_stages, dst_stages, src_queue_family, dst_queue_family)
+
+#define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED)
+
+#define VK_DESCRIPTOR_MANAGER_RESTART(manager) \
+{ \
+   manager->current = manager->head; \
+   manager->count = 0; \
+}
+
+#define VK_MAP_PERSISTENT_TEXTURE(device, texture) \
+{ \
+   vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped); \
+}
+
+#define VULKAN_PASS_SET_TEXTURE(device, set, _sampler, binding, image_view, image_layout) \
+{ \
+   VkDescriptorImageInfo image_info; \
+   VkWriteDescriptorSet write; \
+   image_info.sampler         = _sampler; \
+   image_info.imageView       = image_view; \
+   image_info.imageLayout     = image_layout; \
+   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
+   write.pNext                = NULL; \
+   write.dstSet               = set; \
+   write.dstBinding           = binding; \
+   write.dstArrayElement      = 0; \
+   write.descriptorCount      = 1; \
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; \
+   write.pImageInfo           = &image_info; \
+   write.pBufferInfo          = NULL; \
+   write.pTexelBufferView     = NULL; \
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
+}
+
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs);
@@ -466,17 +543,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       const void *initial, const VkComponentMapping *swizzle,
       enum vk_texture_type type);
 
-void vulkan_sync_texture_to_gpu(vk_t *vk, const struct vk_texture *tex);
-void vulkan_sync_texture_to_cpu(vk_t *vk, const struct vk_texture *tex);
-
 void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture);
-
-void vulkan_transfer_image_ownership(VkCommandBuffer cmd,
-      VkImage image, VkImageLayout layout,
-      VkPipelineStageFlags src_stages,
-      VkPipelineStageFlags dst_stages,
-      uint32_t src_queue_family,
-      uint32_t dst_queue_family);
 
 void vulkan_destroy_texture(
       VkDevice device,
@@ -493,18 +560,6 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad);
  * Use vulkan_buffer_chain_alloc.
  */
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call);
-
-void vulkan_image_layout_transition(vk_t *vk,
-      VkCommandBuffer cmd, VkImage image,
-      VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-      VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
-
-void vulkan_image_layout_transition_levels(
-      VkCommandBuffer cmd, VkImage image, uint32_t levels,
-      VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags src_access, VkAccessFlags dst_access,
-      VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages);
 
 static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
 {
@@ -564,17 +619,6 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device,
       struct vk_descriptor_manager *manager);
 
-#define VK_DESCRIPTOR_MANAGER_RESTART(manager) \
-{ \
-   manager->current = manager->head; \
-   manager->count = 0; \
-}
-
-#define VK_MAP_PERSISTENT_TEXTURE(device, texture) \
-{ \
-   vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped); \
-}
-
 struct vk_descriptor_manager vulkan_create_descriptor_manager(
       VkDevice device,
       const VkDescriptorPoolSize *sizes, unsigned num_sizes,
@@ -629,12 +673,6 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
 
 void vulkan_initialize_render_pass(VkDevice device,
       VkFormat format, VkRenderPass *render_pass);
-
-void vulkan_pass_set_texture(
-      VkDevice device,
-      VkDescriptorSet set, VkSampler sampler,
-      unsigned binding,
-      VkImageView imageView, VkImageLayout imageLayout);
 
 RETRO_END_DECLS
 

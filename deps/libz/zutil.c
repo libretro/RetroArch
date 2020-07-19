@@ -30,36 +30,63 @@ const char * zlibVersion(void)
 
 uLong zlibCompileFlags(void)
 {
-   uLong flags;
+   uLong flags = 0;
 
-   flags = 0;
-   switch ((int)(sizeof(uInt))) {
-      case 2:     break;
-      case 4:     flags += 1;     break;
-      case 8:     flags += 2;     break;
-      default:    flags += 3;
+   switch ((int)(sizeof(uInt)))
+   {
+      case 2:
+         break;
+      case 4:
+         flags += 1;
+         break;
+      case 8:
+         flags += 2;
+         break;
+      default:
+         flags += 3;
    }
-   switch ((int)(sizeof(uLong))) {
-      case 2:     break;
-      case 4:     flags += 1 << 2;        break;
-      case 8:     flags += 2 << 2;        break;
-      default:    flags += 3 << 2;
+
+   switch ((int)(sizeof(uLong)))
+   {
+      case 2:
+         break;
+      case 4:
+         flags += 1 << 2;
+         break;
+      case 8:
+         flags += 2 << 2;
+         break;
+      default:
+         flags += 3 << 2;
    }
-   switch ((int)(sizeof(voidpf))) {
-      case 2:     break;
-      case 4:     flags += 1 << 4;        break;
-      case 8:     flags += 2 << 4;        break;
-      default:    flags += 3 << 4;
+
+   switch ((int)(sizeof(voidpf)))
+   {
+      case 2:
+         break;
+      case 4:
+         flags += 1 << 4;
+         break;
+      case 8:
+         flags += 2 << 4;
+         break;
+      default:
+         flags += 3 << 4;
    }
-   switch ((int)(sizeof(z_off_t))) {
-      case 2:     break;
-      case 4:     flags += 1 << 6;        break;
-      case 8:     flags += 2 << 6;        break;
-      default:    flags += 3 << 6;
+   
+   switch ((int)(sizeof(z_off_t)))
+   {
+      case 2:
+         break;
+      case 4:
+         flags += 1 << 6;
+         break;
+      case 8:
+         flags += 2 << 6;
+         break;
+      default:
+         flags += 3 << 6;
    }
-#ifdef DEBUG
-   flags += 1 << 8;
-#endif
 #if defined(ASMV) || defined(ASMINF)
    flags += 1 << 9;
 #endif
@@ -111,20 +138,6 @@ uLong zlibCompileFlags(void)
    return flags;
 }
 
-#ifdef DEBUG
-
-#  ifndef verbose
-#    define verbose 0
-#  endif
-int ZLIB_INTERNAL z_verbose = verbose;
-
-void ZLIB_INTERNAL z_error (char *m)
-{
-   fprintf(stderr, "%s\n", m);
-   exit(1);
-}
-#endif
-
 /* exported to allow conversion of error code to string for compress() and
  * uncompress()
  */
@@ -151,5 +164,4 @@ voidpf ZLIB_INTERNAL zcalloc (voidpf opaque, unsigned items, unsigned size)
 void ZLIB_INTERNAL zcfree (voidpf opaque, voidpf ptr)
 {
    free(ptr);
-   if (opaque) return; /* make compiler happy */
 }

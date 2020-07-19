@@ -1,10 +1,12 @@
 #include "packet_buffer.h"
 
-struct AVPacketNode {
+struct AVPacketNode
+{
    AVPacket *data;
    struct AVPacketNode *next;
    struct AVPacketNode *previous;
 };
+
 typedef struct AVPacketNode AVPacketNode_t;
 
 struct packet_buffer
@@ -14,7 +16,7 @@ struct packet_buffer
    size_t size;
 };
 
-packet_buffer_t *packet_buffer_create()
+packet_buffer_t *packet_buffer_create(void)
 {
    packet_buffer_t *b = (packet_buffer_t*)malloc(sizeof(packet_buffer_t));
    if (!b)

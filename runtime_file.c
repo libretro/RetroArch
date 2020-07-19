@@ -402,7 +402,7 @@ runtime_log_t *runtime_log_init(
 
    /* Phew... If we get this far then all is well.
     * > Create 'runtime_log' object */
-   runtime_log                     = (runtime_log_t*)calloc(1, sizeof(*runtime_log));
+   runtime_log                     = (runtime_log_t*)malloc(sizeof(*runtime_log));
    if (!runtime_log)
       return NULL;
 
@@ -417,6 +417,8 @@ runtime_log_t *runtime_log_init(
    runtime_log->last_played.hour   = 0;
    runtime_log->last_played.minute = 0;
    runtime_log->last_played.second = 0;
+
+   runtime_log->path[0]            = '\0';
 
    strlcpy(runtime_log->path, log_file_path, sizeof(runtime_log->path));
 

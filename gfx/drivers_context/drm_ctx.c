@@ -66,15 +66,6 @@
 #define EGL_PLATFORM_GBM_KHR 0x31D7
 #endif
 
-static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
-
-static struct gbm_bo *g_bo                = NULL;
-static struct gbm_bo *g_next_bo           = NULL;
-static struct gbm_surface *g_gbm_surface  = NULL;
-static struct gbm_device *g_gbm_dev       = NULL;
-
-static bool waiting_for_flip              = false;
-
 typedef struct gfx_ctx_drm_data
 {
 #ifdef HAVE_EGL
@@ -86,6 +77,11 @@ typedef struct gfx_ctx_drm_data
    unsigned fb_height;
 
    bool core_hw_context_enable;
+   bool waiting_for_flip;
+   struct gbm_bo *bo;
+   struct gbm_bo *next_bo;
+   struct gbm_surface *gbm_surface;
+   struct gbm_device  *gbm_dev;
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -93,6 +89,8 @@ struct drm_fb
    struct gbm_bo *bo;
    uint32_t fb_id;
 };
+
+static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
@@ -146,10 +144,6 @@ static void gfx_ctx_drm_swap_interval(void *data, int interval)
 static void gfx_ctx_drm_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   (void)data;
-   (void)width;
-   (void)height;
-
    *resize = false;
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
@@ -157,10 +151,6 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
 static void drm_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
-   (void)fd;
-   (void)sec;
-   (void)usec;
-
 #if 0
    static unsigned first_page_flip;
    static unsigned last_page_flip;
@@ -182,47 +172,47 @@ static void drm_flip_handler(int fd, unsigned frame,
    *(bool*)data = false;
 }
 
-static bool gfx_ctx_drm_wait_flip(bool block)
+static bool gfx_ctx_drm_wait_flip(gfx_ctx_drm_data_t *drm, bool block)
 {
    int timeout = 0;
 
-   if (!waiting_for_flip)
+   if (!drm->waiting_for_flip)
       return false;
 
    if (block)
       timeout = -1;
 
-   while (waiting_for_flip)
+   while (drm->waiting_for_flip)
    {
       if (!drm_wait_flip(timeout))
          break;
    }
 
-   if (waiting_for_flip)
+   if (drm->waiting_for_flip)
       return true;
 
    /* Page flip has taken place. */
 
    /* This buffer is not on-screen anymore. Release it to GBM. */
-   gbm_surface_release_buffer(g_gbm_surface, g_bo);
+   gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
    /* This buffer is being shown now. */
-   g_bo = g_next_bo;
+   drm->bo = drm->next_bo;
 
    return false;
 }
 
-static bool gfx_ctx_drm_queue_flip(void)
+static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
 {
    struct drm_fb *fb = NULL;
 
-   g_next_bo         = gbm_surface_lock_front_buffer(g_gbm_surface);
-   fb                = (struct drm_fb*)gbm_bo_get_user_data(g_next_bo);
+   drm->next_bo      = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   fb                = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
 
    if (!fb)
-      fb             = (struct drm_fb*)drm_fb_get_from_bo(g_next_bo);
+      fb             = (struct drm_fb*)drm_fb_get_from_bo(drm->next_bo);
 
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
-         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
+         DRM_MODE_PAGE_FLIP_EVENT, &drm->waiting_for_flip) == 0)
       return true;
 
    /* Failed to queue page flip. */
@@ -235,35 +225,26 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_swap_buffers(&drm->egl);
+   egl_swap_buffers(&drm->egl);
 #endif
-         break;
-      default:
-         break;
-   }
 
    /* I guess we have to wait for flip to have taken
     * place before another flip can be queued up.
     *
     * If true, we are still waiting for a flip
     * (nonblocking mode, so just drop the frame). */
-   if (gfx_ctx_drm_wait_flip(drm->interval))
+   if (gfx_ctx_drm_wait_flip(drm, drm->interval))
       return;
 
-   waiting_for_flip = gfx_ctx_drm_queue_flip();
+   drm->waiting_for_flip = gfx_ctx_drm_queue_flip(drm);
 
    /* Triple-buffered page flips */
    if (max_swapchain_images >= 3 &&
-         gbm_surface_has_free_buffers(g_gbm_surface))
+         gbm_surface_has_free_buffers(drm->gbm_surface))
       return;
 
-   gfx_ctx_drm_wait_flip(true);
+   gfx_ctx_drm_wait_flip(drm, true);
 }
 
 static void gfx_ctx_drm_get_video_size(void *data,
@@ -286,11 +267,11 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
    /* Restore original CRTC. */
    drm_restore_crtc();
 
-   if (g_gbm_surface)
-      gbm_surface_destroy(g_gbm_surface);
+   if (drm->gbm_surface)
+      gbm_surface_destroy(drm->gbm_surface);
 
-   if (g_gbm_dev)
-      gbm_device_destroy(g_gbm_dev);
+   if (drm->gbm_dev)
+      gbm_device_destroy(drm->gbm_dev);
 
    drm_free();
 
@@ -303,8 +284,8 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
       }
    }
 
-   g_gbm_surface      = NULL;
-   g_gbm_dev          = NULL;
+   drm->gbm_surface   = NULL;
+   drm->gbm_dev       = NULL;
    g_drm_fd           = -1;
 }
 
@@ -314,21 +295,11 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
       return;
 
    /* Make sure we acknowledge all page-flips. */
-   gfx_ctx_drm_wait_flip(true);
+   gfx_ctx_drm_wait_flip(drm, true);
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_destroy(&drm->egl);
+   egl_destroy(&drm->egl);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    free_drm_resources(drm);
 
@@ -339,8 +310,8 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
    drm->fb_width       = 0;
    drm->fb_height      = 0;
 
-   g_bo                = NULL;
-   g_next_bo           = NULL;
+   drm->bo             = NULL;
+   drm->next_bo        = NULL;
 }
 
 static void *gfx_ctx_drm_init(void *video_driver)
@@ -407,9 +378,9 @@ nextgpu:
 
    drmSetMaster(g_drm_fd);
 
-   g_gbm_dev        = gbm_create_device(fd);
+   drm->gbm_dev      = gbm_create_device(fd);
 
-   if (!g_gbm_dev)
+   if (!drm->gbm_dev)
    {
       RARCH_WARN("[KMS]: Couldn't create GBM device.\n");
       goto nextgpu;
@@ -600,35 +571,35 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
          break;
    }
 
+#ifdef HAVE_EGL
+   if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
+            (EGLNativeDisplayType)drm->gbm_dev, &major,
+            &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
+      goto error;
+
+   attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
+   egl_attribs_ptr = &egl_attribs[0];
+
+   if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr)
+            ? egl_attribs_ptr : NULL))
+      goto error;
+
+   if (!egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface))
+      return false;
+
    switch (drm_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
-#ifdef HAVE_EGL
-         if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
-                  (EGLNativeDisplayType)g_gbm_dev, &major,
-                  &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
-            goto error;
-
-         attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
-         egl_attribs_ptr = &egl_attribs[0];
-
-         if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr)
-                  ? egl_attribs_ptr : NULL))
-            goto error;
-
-         if (!egl_create_surface(&drm->egl, (EGLNativeWindowType)g_gbm_surface))
-            return false;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
          glClear(GL_COLOR_BUFFER_BIT);
-#endif
 #endif
          break;
       case GFX_CTX_NONE:
       default:
          break;
    }
+#endif
 
    egl_swap_buffers(drm);
 
@@ -707,40 +678,30 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    drm->fb_height   = g_drm_mode->vdisplay;
 
    /* Create GBM surface. */
-   g_gbm_surface = gbm_surface_create(
-         g_gbm_dev,
+   drm->gbm_surface = gbm_surface_create(
+         drm->gbm_dev,
          drm->fb_width,
          drm->fb_height,
          GBM_FORMAT_XRGB8888,
          GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
-   if (!g_gbm_surface)
+   if (!drm->gbm_surface)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
       goto error;
    }
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         if (!gfx_ctx_drm_egl_set_video_mode(drm))
-            goto error;
+   if (!gfx_ctx_drm_egl_set_video_mode(drm))
+      goto error;
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
-   g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
+   drm->bo   = gbm_surface_lock_front_buffer(drm->gbm_surface);
 
-   fb = (struct drm_fb*)gbm_bo_get_user_data(g_bo);
+   fb        = (struct drm_fb*)gbm_bo_get_user_data(drm->bo);
 
    if (!fb)
-      fb   = drm_fb_get_from_bo(g_bo);
+      fb   = drm_fb_get_from_bo(drm->bo);
 
    ret     = drmModeSetCrtc(g_drm_fd,
          g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
@@ -810,28 +771,15 @@ static void gfx_ctx_drm_input_driver(void *data,
    *input_data = NULL;
 }
 
-static bool gfx_ctx_drm_has_focus(void *data)
-{
-   return true;
-}
+static bool gfx_ctx_drm_has_focus(void *data) { return true; }
 
-static bool gfx_ctx_drm_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_drm_suppress_screensaver(void *data, bool enable) { return false; }
 
-static enum gfx_ctx_api gfx_ctx_drm_get_api(void *data)
-{
-   return drm_api;
-}
+static enum gfx_ctx_api gfx_ctx_drm_get_api(void *data) { return drm_api; }
 
 static bool gfx_ctx_drm_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)video_driver;
-
    drm_api     = api;
 #ifdef HAVE_EGL
    g_egl_major = major;
@@ -874,41 +822,13 @@ static bool gfx_ctx_drm_bind_api(void *video_driver,
    return false;
 }
 
-static gfx_ctx_proc_t gfx_ctx_drm_get_proc_address(const char *symbol)
-{
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
-#ifdef HAVE_EGL
-         return egl_get_proc_address(symbol);
-#endif
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
-   return NULL;
-}
-
 static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
 
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_bind_hw_render(&drm->egl, enable);
+   egl_bind_hw_render(&drm->egl, enable);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static uint32_t gfx_ctx_drm_get_flags(void *data)
@@ -962,7 +882,11 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    false, /* has_windowed */
    gfx_ctx_drm_swap_buffers,
    gfx_ctx_drm_input_driver,
-   gfx_ctx_drm_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,

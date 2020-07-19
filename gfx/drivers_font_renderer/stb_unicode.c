@@ -87,18 +87,18 @@ static stb_unicode_atlas_slot_t* font_renderer_stb_unicode_get_slot(stb_unicode_
    unsigned oldest = 0;
 
    for (i = 1; i < STB_UNICODE_ATLAS_SIZE; i++)
-      if((handle->usage_counter - handle->atlas_slots[i].last_used) >
+      if ((handle->usage_counter - handle->atlas_slots[i].last_used) >
          (handle->usage_counter - handle->atlas_slots[oldest].last_used))
          oldest = i;
 
    /* remove from map */
    map_id = handle->atlas_slots[oldest].charcode & 0xFF;
-   if(handle->uc_map[map_id] == &handle->atlas_slots[oldest])
+   if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
       handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
    else if (handle->uc_map[map_id])
    {
       stb_unicode_atlas_slot_t* ptr = handle->uc_map[map_id];
-      while(ptr->next && ptr->next != &handle->atlas_slots[oldest])
+      while (ptr->next && ptr->next != &handle->atlas_slots[oldest])
          ptr = ptr->next;
       ptr->next = handle->atlas_slots[oldest].next;
    }
@@ -121,15 +121,15 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    float glyph_advance_x                = 0.0f;
    float glyph_draw_offset_y            = 0.0f;
 
-   if(!self)
+   if (!self)
       return NULL;
 
    map_id                               = charcode & 0xFF;
    atlas_slot                           = self->uc_map[map_id];
 
-   while(atlas_slot)
+   while (atlas_slot)
    {
-      if(atlas_slot->charcode == charcode)
+      if (atlas_slot->charcode == charcode)
       {
          atlas_slot->last_used = self->usage_counter++;
          return &atlas_slot->glyph;
@@ -222,7 +222,7 @@ static bool font_renderer_stb_unicode_create_atlas(
 
    for (i = 0; i < 256; i++)
    {
-      if(isalnum(i))
+      if (isalnum(i))
          font_renderer_stb_unicode_get_glyph(self, i);
    }
 
@@ -242,7 +242,7 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    font_size = STBTT_POINT_SIZE(font_size);
 
 #ifdef WIIU
-   if(!*font_path)
+   if (!*font_path)
    {
       uint32_t size = 0;
       if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, (void**)&self->font_data, &size))

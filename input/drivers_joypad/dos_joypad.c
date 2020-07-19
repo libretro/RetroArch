@@ -159,18 +159,12 @@ static bool dos_joypad_init(void *data)
 
    dos_joypad_autodetect_add(0);
 
-   (void)data;
-
    return true;
 }
 
-static bool dos_joypad_button(unsigned port_num, uint16_t key)
+static int16_t dos_joypad_button_state(
+      uint16_t *buf, uint16_t joykey)
 {
-   uint16_t *buf = dos_keyboard_state_get(port_num);
-
-   if (port_num >= DEFAULT_MAX_PADS)
-      return false;
-
    switch (key)
    {
       case RETRO_DEVICE_ID_JOYPAD_A:
@@ -195,8 +189,45 @@ static bool dos_joypad_button(unsigned port_num, uint16_t key)
          return buf[DOSKEY_RIGHT];
    }
 
-   return false;
+   return 0;
 }
+
+static int16_t dos_joypad_button(unsigned port_num, uint16_t joykey)
+{
+   uint16_t *buf = dos_keyboard_state_get(port_num);
+
+   if (port_num >= DEFAULT_MAX_PADS)
+      return 0;
+   return dos_joypad_button_state(buf, joykey);
+}
+
+static int16_t dos_joypad_axis(unsigned port_num, uint32_t joyaxis) { return 0; }
+
+static int16_t dos_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret   = 0;
+   uint16_t *buf = dos_keyboard_state_get(port);
+
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      if ((uint16_t)joykey != NO_BTN && dos_joypad_button_state(
+               buf, (uint16_t)joykey))
+         ret |= ( 1 << i);
+   }
+
+   return ret;
+}
+
 
 static void dos_joypad_poll(void)
 {
@@ -226,11 +257,6 @@ static bool dos_joypad_query_pad(unsigned pad)
    return (pad < MAX_USERS);
 }
 
-static int16_t dos_joypad_axis(unsigned port_num, uint32_t joyaxis)
-{
-   return 0;
-}
-
 static void dos_joypad_destroy(void)
 {
    unhook_keyb_int();
@@ -241,6 +267,7 @@ input_device_driver_t dos_joypad = {
    dos_joypad_query_pad,
    dos_joypad_destroy,
    dos_joypad_button,
+   dos_joypad_state,
    NULL,
    dos_joypad_axis,
    dos_joypad_poll,

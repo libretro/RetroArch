@@ -33,7 +33,9 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -1316,7 +1318,11 @@ static bool d3d12_gfx_frame(
          else
             d3d12->pass[i].frame_count = frame_count;
 
+#ifdef HAVE_REWIND
          d3d12->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+         d3d12->pass[i].frame_direction = 1;
+#endif
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
@@ -1613,7 +1619,11 @@ static bool d3d12_gfx_alive(void* data)
    bool           quit;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   win32_check_window(&quit, &d3d12->resize_chain, &d3d12->vp.full_width, &d3d12->vp.full_height);
+   win32_check_window(NULL,
+         &quit,
+         &d3d12->resize_chain,
+         &d3d12->vp.full_width,
+         &d3d12->vp.full_height);
 
    if (     d3d12->resize_chain 
          && d3d12->vp.full_width  != 0

@@ -41,6 +41,7 @@ typedef struct gfx_ctx_ps3_data
 #endif
 } gfx_ctx_ps3_data_t;
 
+/* TODO/FIXME - static global */
 static enum gfx_ctx_api ps3_api = GFX_CTX_NONE;
 
 static void gfx_ctx_ps3_get_resolution(unsigned idx,
@@ -158,22 +159,11 @@ static void gfx_ctx_ps3_check_window(void *data, bool *quit,
       *resize = true;
 }
 
-static bool gfx_ctx_ps3_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_ps3_has_focus(void *data) { return true; }
+static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void gfx_ctx_ps3_swap_buffers(void *data)
 {
-   (void)data;
 #ifdef HAVE_PSGL
    psglSwap();
 #endif
@@ -202,9 +192,6 @@ static void *gfx_ctx_ps3_init(void *video_driver)
    global_t *global = global_get_ptr();
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));
-
-   (void)video_driver;
-   (void)global;
 
    if (!ps3)
       return NULL;
@@ -271,10 +258,7 @@ static void *gfx_ctx_ps3_init(void *video_driver)
 
 static bool gfx_ctx_ps3_set_video_mode(void *data,
       unsigned width, unsigned height,
-      bool fullscreen)
-{
-   return true;
-}
+      bool fullscreen) { return true; }
 
 static void gfx_ctx_ps3_destroy_resources(gfx_ctx_ps3_data_t *ps3)
 {
@@ -310,18 +294,11 @@ static void gfx_ctx_ps3_input_driver(void *data,
    *input_data          = ps3input;
 }
 
-static enum gfx_ctx_api gfx_ctx_ps3_get_api(void *data)
-{
-   return ps3_api;
-}
+static enum gfx_ctx_api gfx_ctx_ps3_get_api(void *data) { return ps3_api; }
 
 static bool gfx_ctx_ps3_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-   (void)major;
-   (void)minor;
-
    ps3_api = api;
 
    if (
@@ -400,10 +377,7 @@ static uint32_t gfx_ctx_ps3_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_ps3_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_ps3_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_init,

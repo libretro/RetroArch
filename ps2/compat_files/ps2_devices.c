@@ -19,6 +19,7 @@
 #include <kernel.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #define DEVICE_SLASH "/"
 
@@ -161,14 +162,14 @@ enum BootDeviceIDs getBootDeviceID(char *path)
 
 bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
 {
-   DIR *dir;
-   int ret = 0;
-   int retries      = 3; 
+   struct stat buffer;   
+   int ret = -1;
+   int retries = 10;
    char *rootDevice = rootDevicePath(device_id);
 
-   while(dir == NULL && retries > 0)
+   while(ret != 0 && retries > 0)
    {
-      dir = opendir(rootDevice);
+      ret = stat(rootDevice, &buffer);
       /* Wait untill the device is ready */
       nopdelay();
       nopdelay();
@@ -181,10 +182,6 @@ bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
 
       retries--;
    }
-   if (dir) {
-      ret = 1;
-      closedir(dir);
-   }
-   
-   return ret;
+
+   return ret == 0;
 }

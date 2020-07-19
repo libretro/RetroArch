@@ -28,24 +28,20 @@
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
-#define gl1_raster_font_emit(c, vx, vy) do { \
-   font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
-   font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
-   font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]; \
+#define GL1_RASTER_FONT_EMIT(c, vx, vy) \
+   font_vertex[     2 * (6 * i + c) + 0]       = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
+   font_vertex[     2 * (6 * i + c) + 1]       = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
+   font_tex_coords[ 2 * (6 * i + c) + 0]       = (tex_x + vx * width) * inv_tex_size_x; \
+   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y; \
+   font_color[      4 * (6 * i + c) + 0]       = color[0]; \
+   font_color[      4 * (6 * i + c) + 1]       = color[1]; \
+   font_color[      4 * (6 * i + c) + 2]       = color[2]; \
+   font_color[      4 * (6 * i + c) + 3]       = color[3]; \
    font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]; \
-} while(0)
+   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
 
 #define MAX_MSG_LEN_CHUNK 64
 
-#ifdef VITA
-static float *vertices3 = NULL;
-#endif
 
 typedef struct
 {
@@ -248,6 +244,10 @@ static int gl1_get_message_width(void *data, const char *msg,
 static void gl1_raster_font_draw_vertices(gl1_raster_t *font,
       const video_coords_t *coords)
 {
+#ifdef VITA
+   static float *vertices3 = NULL;
+#endif
+
    if (font->atlas->dirty)
    {
       gl1_raster_font_upload_atlas(font);
@@ -270,10 +270,13 @@ static void gl1_raster_font_draw_vertices(gl1_raster_t *font,
    if (vertices3)
       free(vertices3);
    vertices3 = (float*)malloc(sizeof(float) * 3 * coords->vertices);
-   int i;
-   for (i = 0; i < coords->vertices; i++) {
-      memcpy(&vertices3[i*3], &coords->vertex[i*2], sizeof(float) * 2);
-      vertices3[i*3+2] = 0.0f;
+   {
+      int i;
+      for (i = 0; i < coords->vertices; i++)
+      {
+         memcpy(&vertices3[i*3], &coords->vertex[i*2], sizeof(float) * 2);
+         vertices3[i*3+2] = 0.0f;
+      }
    }
    glVertexPointer(3, GL_FLOAT, 0, vertices3);   
 #else
@@ -350,13 +353,13 @@ static void gl1_raster_font_render_line(
          width  = glyph->width;
          height = glyph->height;
 
-         gl1_raster_font_emit(0, 0, 1); /* Bottom-left */
-         gl1_raster_font_emit(1, 1, 1); /* Bottom-right */
-         gl1_raster_font_emit(2, 0, 0); /* Top-left */
+         GL1_RASTER_FONT_EMIT(0, 0, 1); /* Bottom-left */
+         GL1_RASTER_FONT_EMIT(1, 1, 1); /* Bottom-right */
+         GL1_RASTER_FONT_EMIT(2, 0, 0); /* Top-left */
 
-         gl1_raster_font_emit(3, 1, 0); /* Top-right */
-         gl1_raster_font_emit(4, 0, 0); /* Top-left */
-         gl1_raster_font_emit(5, 1, 1); /* Bottom-right */
+         GL1_RASTER_FONT_EMIT(3, 1, 0); /* Top-right */
+         GL1_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
+         GL1_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
 
          i++;
 
@@ -498,37 +501,38 @@ static void gl1_raster_font_render_msg(
    else
       gl1_raster_font_setup_viewport(width, height, font, full_screen);
 
-   if (!string_is_empty(msg) && font->gl
-         && font->font_data  && font->font_driver)
+   if (font->gl)
    {
-      if (drop_x || drop_y)
+      if (!string_is_empty(msg)
+            && font->font_data  && font->font_driver)
       {
-         GLfloat color_dark[4];
+         if (drop_x || drop_y)
+         {
+            GLfloat color_dark[4];
 
-         color_dark[0] = color[0] * drop_mod;
-         color_dark[1] = color[1] * drop_mod;
-         color_dark[2] = color[2] * drop_mod;
-         color_dark[3] = color[3] * drop_alpha;
+            color_dark[0] = color[0] * drop_mod;
+            color_dark[1] = color[1] * drop_mod;
+            color_dark[2] = color[2] * drop_mod;
+            color_dark[3] = color[3] * drop_alpha;
 
-         if (font->gl)
             gl1_raster_font_render_message(font, msg, scale, color_dark,
                   x + scale * drop_x / font->gl->vp.width, y +
-                  scale * drop_y / font->gl->vp.height, text_align);
-      }
+                      scale * drop_y / font->gl->vp.height, text_align);
+         }
 
-      if (font->gl)
          gl1_raster_font_render_message(font, msg, scale, color,
                x, y, text_align);
-   }
+      }
 
-   if (!font->block && font->gl)
-   {
-      /* restore viewport */
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+      if (!font->block)
+      {
+         /* restore viewport */
+         glEnable(GL_TEXTURE_2D);
+         glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
-      glDisable(GL_BLEND);
-      video_driver_set_viewport(width, height, false, true);
+         glDisable(GL_BLEND);
+         video_driver_set_viewport(width, height, false, true);
+      }
    }
 }
 

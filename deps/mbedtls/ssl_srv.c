@@ -27,27 +27,18 @@
 
 #if defined(MBEDTLS_SSL_SRV_C)
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free      free
-#endif
+#include <string.h>
 
 #include "mbedtls/debug.h"
 #include "mbedtls/ssl.h"
 #include "mbedtls/ssl_internal.h"
 
-#include <string.h>
-
 #if defined(MBEDTLS_ECP_C)
 #include "mbedtls/ecp.h"
 #endif
 
-#if defined(MBEDTLS_HAVE_TIME)
-#include "mbedtls/platform_time.h"
-#endif
+#include <time.h>
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
 #include "arc4_alt.h"
@@ -61,9 +52,9 @@ int mbedtls_ssl_set_client_transport_id( mbedtls_ssl_context *ssl,
     if( ssl->conf->endpoint != MBEDTLS_SSL_IS_SERVER )
         return( MBEDTLS_ERR_SSL_BAD_INPUT_DATA );
 
-    mbedtls_free( ssl->cli_id );
+    free( ssl->cli_id );
 
-    if( ( ssl->cli_id = mbedtls_calloc( 1, ilen ) ) == NULL )
+    if( ( ssl->cli_id = (unsigned char*)calloc( 1, ilen ) ) == NULL )
         return( MBEDTLS_ERR_SSL_ALLOC_FAILED );
 
     memcpy( ssl->cli_id, info, ilen );
@@ -267,7 +258,8 @@ static int ssl_parse_supported_elliptic_curves( mbedtls_ssl_context *ssl,
     if( our_size > MBEDTLS_ECP_DP_MAX )
         our_size = MBEDTLS_ECP_DP_MAX;
 
-    if( ( curves = mbedtls_calloc( our_size, sizeof( *curves ) ) ) == NULL )
+    if( ( curves = (const mbedtls_ecp_curve_info**)
+             calloc( our_size, sizeof( *curves ) ) ) == NULL )
     {
         mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
                                         MBEDTLS_SSL_ALERT_MSG_INTERNAL_ERROR );
@@ -1546,16 +1538,6 @@ read_record_header:
                       buf + comp_offset + 1, comp_len );
 
     ssl->session_negotiate->compression = MBEDTLS_SSL_COMPRESS_NULL;
-#if defined(MBEDTLS_ZLIB_SUPPORT)
-    for( i = 0; i < comp_len; ++i )
-    {
-        if( buf[comp_offset + 1 + i] == MBEDTLS_SSL_COMPRESS_DEFLATE )
-        {
-            ssl->session_negotiate->compression = MBEDTLS_SSL_COMPRESS_DEFLATE;
-            break;
-        }
-    }
-#endif
 
     /* See comments in ssl_write_client_hello() */
 #if defined(MBEDTLS_SSL_PROTO_DTLS)
@@ -1932,28 +1914,6 @@ have_ciphersuite:
         mbedtls_ssl_recv_flight_completed( ssl );
 #endif
 
-    /* Debugging-only output for testsuite */
-#if defined(MBEDTLS_DEBUG_C)                         && \
-    defined(MBEDTLS_SSL_PROTO_TLS1_2)                && \
-    defined(MBEDTLS_KEY_EXCHANGE__WITH_CERT__ENABLED)
-    if( ssl->minor_ver == MBEDTLS_SSL_MINOR_VERSION_3 )
-    {
-        mbedtls_pk_type_t sig_alg = mbedtls_ssl_get_ciphersuite_sig_alg( ciphersuite_info );
-        if( sig_alg != MBEDTLS_PK_NONE )
-        {
-            mbedtls_md_type_t md_alg = mbedtls_ssl_sig_hash_set_find( &ssl->handshake->hash_algs,
-                                                                  sig_alg );
-            MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello v3, signature_algorithm ext: %d",
-                                        mbedtls_ssl_hash_from_md_alg( md_alg ) ) );
-        }
-        else
-        {
-            MBEDTLS_SSL_DEBUG_MSG( 3, ( "no hash algorithm for signature algorithm "
-                                        "%d - should not happen", sig_alg ) );
-        }
-    }
-#endif
-
     MBEDTLS_SSL_DEBUG_MSG( 2, ( "<= parse client hello" ) );
 
     return( 0 );
@@ -2322,10 +2282,8 @@ static int ssl_write_hello_verify_request( mbedtls_ssl_context *ssl )
 
 static int ssl_write_server_hello( mbedtls_ssl_context *ssl )
 {
-#if defined(MBEDTLS_HAVE_TIME)
-    mbedtls_time_t t;
-#endif
     int ret;
+    time_t t;
     size_t olen, ext_len = 0, n;
     unsigned char *buf, *p;
 
@@ -2365,20 +2323,13 @@ static int ssl_write_server_hello( mbedtls_ssl_context *ssl )
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, chosen version: [%d:%d]",
                         buf[4], buf[5] ) );
 
-#if defined(MBEDTLS_HAVE_TIME)
-    t = mbedtls_time( NULL );
+    t    = time( NULL );
     *p++ = (unsigned char)( t >> 24 );
     *p++ = (unsigned char)( t >> 16 );
     *p++ = (unsigned char)( t >>  8 );
     *p++ = (unsigned char)( t       );
 
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, current time: %lu", t ) );
-#else
-    if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 4 ) ) != 0 )
-        return( ret );
-
-    p += 4;
-#endif /* MBEDTLS_HAVE_TIME */
 
     if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 28 ) ) != 0 )
         return( ret );
@@ -2414,9 +2365,7 @@ static int ssl_write_server_hello( mbedtls_ssl_context *ssl )
          */
         ssl->state++;
 
-#if defined(MBEDTLS_HAVE_TIME)
-        ssl->session_negotiate->start = mbedtls_time( NULL );
-#endif
+        ssl->session_negotiate->start = time( NULL );
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
         if( ssl->handshake->new_session_ticket != 0 )

@@ -272,25 +272,31 @@ int vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	if (mempool_addr[0] != NULL)
 		vgl_mem_term();
 
-	mempool_size[0] = ALIGN(size_cdram, 256 * 1024);
-	mempool_size[1] = ALIGN(size_ram, 4 * 1024);
-	mempool_size[2] = ALIGN(size_phycont, 256 * 1024);
-	mempool_id[0] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[0], NULL);
-	mempool_id[1] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[1], NULL);
-	mempool_id[2] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[2], NULL);
+	mempool_size[VGL_MEM_VRAM - 1] = ALIGN(size_cdram, 256 * 1024);
+	mempool_size[VGL_MEM_RAM - 1] = ALIGN(size_ram, 4 * 1024);
+	mempool_size[VGL_MEM_SLOW - 1] = ALIGN(size_phycont, 256 * 1024);
+	if (size_cdram)
+		mempool_id[VGL_MEM_VRAM - 1] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[VGL_MEM_VRAM - 1], NULL);
+	mempool_id[VGL_MEM_RAM - 1] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[VGL_MEM_RAM - 1], NULL);
+	if (size_phycont)
+		mempool_id[VGL_MEM_SLOW - 1] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[VGL_MEM_SLOW - 1], NULL);
 
 	for (int i = 0; i < VGL_MEM_TYPE_COUNT - 2; i++) {
-		sceKernelGetMemBlockBase(mempool_id[i], &mempool_addr[i]);
-		sceGxmMapMemory(mempool_addr[i], mempool_size[i], SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+		if (mempool_size[i]) {
+			sceKernelGetMemBlockBase(mempool_id[i], &mempool_addr[i]);
+			sceGxmMapMemory(mempool_addr[i], mempool_size[i], SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+		}
 	}
 
 	// Initialize heap
 	heap_init();
 
 	// Add memblocks to heap
-	heap_extend(VGL_MEM_VRAM, mempool_addr[0], mempool_size[0]);
+	if (size_cdram)
+		heap_extend(VGL_MEM_VRAM, mempool_addr[0], mempool_size[0]);
 	heap_extend(VGL_MEM_RAM, mempool_addr[1], mempool_size[1]);
-	heap_extend(VGL_MEM_SLOW, mempool_addr[2], mempool_size[2]);
+	if (size_phycont)
+		heap_extend(VGL_MEM_SLOW, mempool_addr[2], mempool_size[2]);
 
 	return 1;
 }

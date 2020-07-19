@@ -197,7 +197,7 @@ task_finished:
       }
       else
       {
-         data = (http_transfer_data_t*)calloc(1, sizeof(*data));
+         data       = (http_transfer_data_t*)malloc(sizeof(*data));
          data->data = tmp;
          data->len  = len;
 
@@ -275,13 +275,19 @@ static void* task_push_http_transfer_generic(
    if (!conn)
       return NULL;
 
-   http                    = (http_handle_t*)calloc(1, sizeof(*http));
+   http                    = (http_handle_t*)malloc(sizeof(*http));
 
    if (!http)
       goto error;
 
-   http->connection.handle = conn;
-   http->connection.cb     = &cb_http_conn_default;
+   http->connection.handle   = conn;
+   http->connection.cb       = &cb_http_conn_default;
+   http->connection.elem1[0] = '\0';
+   http->connection.url[0]   = '\0';
+   http->handle              = NULL;
+   http->cb                  = NULL;
+   http->status              = 0;
+   http->error               = false;
 
    if (type)
       strlcpy(http->connection.elem1, type, sizeof(http->connection.elem1));
@@ -353,7 +359,8 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
    strlcat(tmp, " ", sizeof(tmp));
 
-   if (string_ends_with(s, ".index"))
+   if (string_ends_with_size(s, ".index",
+            strlen(s), STRLEN_CONST(".index")))
       strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));
    else
       strlcat(tmp, s, sizeof(tmp));

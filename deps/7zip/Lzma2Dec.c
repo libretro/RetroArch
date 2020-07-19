@@ -66,14 +66,18 @@ static SRes Lzma2Dec_GetOldProps(uint8_t prop, uint8_t *props)
 SRes Lzma2Dec_AllocateProbs(CLzma2Dec *p, uint8_t prop, ISzAlloc *alloc)
 {
    uint8_t props[LZMA_PROPS_SIZE];
-   RINOK(Lzma2Dec_GetOldProps(prop, props));
+   int result = Lzma2Dec_GetOldProps(prop, props);
+   if (result != 0)
+      return result;
    return LzmaDec_AllocateProbs(&p->decoder, props, LZMA_PROPS_SIZE, alloc);
 }
 
 SRes Lzma2Dec_Allocate(CLzma2Dec *p, uint8_t prop, ISzAlloc *alloc)
 {
    uint8_t props[LZMA_PROPS_SIZE];
-   RINOK(Lzma2Dec_GetOldProps(prop, props));
+   int result = Lzma2Dec_GetOldProps(prop, props);
+   if (result != 0)
+      return result;
    return LzmaDec_Allocate(&p->decoder, props, LZMA_PROPS_SIZE, alloc);
 }
 
@@ -259,7 +263,8 @@ SRes Lzma2Dec_DecodeToDic(CLzma2Dec *p, size_t dicLimit,
             outSizeProcessed = p->decoder.dicPos - dicPos;
             p->unpackSize -= (uint32_t)outSizeProcessed;
 
-            RINOK(res);
+            if (res != 0)
+               return res;
             if (*status == LZMA_STATUS_NEEDS_MORE_INPUT)
                return res;
 
@@ -321,8 +326,9 @@ SRes Lzma2Dec_DecodeToBuf(CLzma2Dec *p, uint8_t *dest, size_t *destLen, const ui
 SRes Lzma2Decode(uint8_t *dest, size_t *destLen, const uint8_t *src, size_t *srcLen,
       uint8_t prop, ELzmaFinishMode finishMode, ELzmaStatus *status, ISzAlloc *alloc)
 {
-   CLzma2Dec decoder;
    SRes res;
+   int result;
+   CLzma2Dec decoder;
    size_t outSize = *destLen, inSize = *srcLen;
    uint8_t props[LZMA_PROPS_SIZE];
 
@@ -333,8 +339,12 @@ SRes Lzma2Decode(uint8_t *dest, size_t *destLen, const uint8_t *src, size_t *src
    decoder.decoder.dic = dest;
    decoder.decoder.dicBufSize = outSize;
 
-   RINOK(Lzma2Dec_GetOldProps(prop, props));
-   RINOK(LzmaDec_AllocateProbs(&decoder.decoder, props, LZMA_PROPS_SIZE, alloc));
+   result = Lzma2Dec_GetOldProps(prop, props);
+   if (result != 0)
+      return result;
+   result = LzmaDec_AllocateProbs(&decoder.decoder, props, LZMA_PROPS_SIZE, alloc);
+   if (result != 0)
+      return result;
 
    *srcLen = inSize;
    res = Lzma2Dec_DecodeToDic(&decoder, outSize, src, srcLen, finishMode, status);

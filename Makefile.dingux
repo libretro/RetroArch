@@ -4,10 +4,14 @@ PACKAGE_NAME = retroarch
 
 DEBUG ?= 0
 
+HAVE_SCREENSHOTS = 1
+HAVE_REWIND = 1
 HAVE_7ZIP = 1
 HAVE_AL = 1
 # this freezes when switching back from menu
 HAVE_ALSA = 0
+HAVE_DSP_FILTER = 1
+HAVE_VIDEO_FILTER = 1
 HAVE_BUILTINMBEDTLS = 1
 HAVE_BUILTINZLIB = 1
 HAVE_C99 = 1
@@ -62,6 +66,8 @@ HAVE_VIDEO_LAYOUT = 1
 HAVE_XMB = 1
 HAVE_ZLIB = 1
 HAVE_CONFIGFILE = 1
+HAVE_PATCH = 1
+HAVE_CHEATS = 1
 
 OS = Linux
 TARGET = retroarch
@@ -160,7 +166,7 @@ $(OBJDIR)/%.o: %.m
 
 .FORCE:
 
-$(OBJDIR)/git_version.o: git_version.c .FORCE
+$(OBJDIR)/version_git.o: version_git.c .FORCE
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<

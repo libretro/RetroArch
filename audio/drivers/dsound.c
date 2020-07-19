@@ -155,7 +155,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
 
       EnterCriticalSection(&ds->crit);
-      fifo_avail = fifo_read_avail(ds->buffer);
+      fifo_avail = FIFO_READ_AVAIL(ds->buffer);
       LeaveCriticalSection(&ds->crit);
 
       if (avail < CHUNK_SIZE || ((fifo_avail < CHUNK_SIZE) && (avail < ds->buffer_size / 2)))
@@ -511,7 +511,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
          size_t avail;
 
          EnterCriticalSection(&ds->crit);
-         avail = fifo_write_avail(ds->buffer);
+         avail = FIFO_WRITE_AVAIL(ds->buffer);
          if (avail > size)
             avail = size;
 
@@ -530,7 +530,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
          size_t avail;
 
          EnterCriticalSection(&ds->crit);
-         avail = fifo_write_avail(ds->buffer);
+         avail = FIFO_WRITE_AVAIL(ds->buffer);
          if (avail > size)
             avail = size;
 
@@ -558,7 +558,7 @@ static size_t dsound_write_avail(void *data)
    dsound_t *ds = (dsound_t*)data;
 
    EnterCriticalSection(&ds->crit);
-   avail = fifo_write_avail(ds->buffer);
+   avail = FIFO_WRITE_AVAIL(ds->buffer);
    LeaveCriticalSection(&ds->crit);
    return avail;
 }

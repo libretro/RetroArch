@@ -65,6 +65,7 @@ typedef struct pl_thumb_handle
    char *playlist_path;
    char *dir_thumbnails;
    playlist_t *playlist;
+   playlist_config_t playlist_config;
    gfx_thumbnail_path_data_t *thumbnail_path_data;
    retro_task_t *http_task;
 } pl_thumb_handle_t;
@@ -256,15 +257,17 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
       /* Only download missing thumbnails */
       if (!path_is_valid(path) || pl_thumb->overwrite)
       {
-         file_transfer_t *transf = (file_transfer_t*)calloc(1, sizeof(file_transfer_t));
+         file_transfer_t *transf = (file_transfer_t*)malloc(sizeof(file_transfer_t));
          if (!transf)
             return; /* If this happens then everything is broken anyway... */
 
          /* Initialise http task status */
          pl_thumb->http_task_complete = false;
 
+         transf->enum_idx             = MSG_UNKNOWN;
+         transf->path[0]              = '\0';
          /* Initialise file transfer */
-         transf->user_data = (void*)pl_thumb;
+         transf->user_data            = (void*)pl_thumb;
          strlcpy(transf->path, path, sizeof(transf->path));
 
          /* Note: We don't actually care if this fails since that
@@ -344,10 +347,10 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
       case PL_THUMB_BEGIN:
          {
             /* Load playlist */
-            if (!path_is_valid(pl_thumb->playlist_path))
+            if (!path_is_valid(pl_thumb->playlist_config.path))
                goto task_finished;
             
-            pl_thumb->playlist = playlist_init(pl_thumb->playlist_path, COLLECTION_SIZE);
+            pl_thumb->playlist = playlist_init(&pl_thumb->playlist_config);
             
             if (!pl_thumb->playlist)
                goto task_finished;
@@ -468,31 +471,39 @@ static bool task_pl_thumbnail_finder(retro_task_t *task, void *user_data)
    if (!pl_thumb)
       return false;
    
-   return string_is_equal((const char*)user_data, pl_thumb->playlist_path);
+   return string_is_equal((const char*)user_data, pl_thumb->playlist_config.path);
 }
 
 bool task_push_pl_thumbnail_download(
-      const char *system, const char *playlist_path,
+      const char *system,
+      const playlist_config_t *playlist_config,
       const char *dir_thumbnails)
 {
    task_finder_data_t find_data;
+   const char *playlist_file     = NULL;
    retro_task_t *task            = task_init();
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
-   const char *playlist_file     = path_basename(playlist_path);
    
    /* Sanity check */
-   if (!task || !pl_thumb)
+   if (!playlist_config || !task || !pl_thumb)
       goto error;
    
    if (string_is_empty(system) ||
-       string_is_empty(playlist_path) ||
-       string_is_empty(playlist_file) ||
+       string_is_empty(playlist_config->path) ||
        string_is_empty(dir_thumbnails))
+      goto error;
+   
+   playlist_file                 = path_basename(playlist_config->path);
+   
+   if (string_is_empty(playlist_file))
       goto error;
    
    /* Only parse supported playlist types */
    if (
-            string_ends_with(playlist_path, "_history.lpl") 
+            string_ends_with_size(playlist_file, "_history.lpl",
+               strlen(playlist_file),
+               STRLEN_CONST("_history.lpl")
+               ) 
          || string_is_equal(playlist_file,
             file_path_str(FILE_PATH_CONTENT_FAVORITES))
          || string_is_equal(system, "history")
@@ -502,21 +513,17 @@ bool task_push_pl_thumbnail_download(
    /* Concurrent download of thumbnails for the same
     * playlist is not allowed */
    find_data.func                = task_pl_thumbnail_finder;
-   find_data.userdata            = (void*)playlist_path;
+   find_data.userdata            = (void*)playlist_config->path;
    
    if (task_queue_find(&find_data))
       goto error;
    
-   /* Configure task */
-   task->handler                 = task_pl_thumbnail_download_handler;
-   task->state                   = pl_thumb;
-   task->title                   = strdup(system);
-   task->alternative_look        = true;
-   task->progress                = 0;
-   
    /* Configure handle */
+   if (!playlist_config_copy(playlist_config, &pl_thumb->playlist_config))
+      goto error;
+   
    pl_thumb->system              = strdup(system);
-   pl_thumb->playlist_path       = strdup(playlist_path);
+   pl_thumb->playlist_path       = NULL;
    pl_thumb->dir_thumbnails      = strdup(dir_thumbnails);
    pl_thumb->playlist            = NULL;
    pl_thumb->thumbnail_path_data = NULL;
@@ -527,6 +534,13 @@ bool task_push_pl_thumbnail_download(
    pl_thumb->type_idx            = 1;
    pl_thumb->overwrite           = false;
    pl_thumb->status              = PL_THUMB_BEGIN;
+   
+   /* Configure task */
+   task->handler                 = task_pl_thumbnail_download_handler;
+   task->state                   = pl_thumb;
+   task->title                   = strdup(system);
+   task->alternative_look        = true;
+   task->progress                = 0;
    
    task_queue_push(task);
    
@@ -761,7 +775,7 @@ static bool task_pl_entry_thumbnail_finder(retro_task_t *task, void *user_data)
       return false;
    
    return (entry_id->idx == pl_thumb->list_index) &&
-          string_is_equal(entry_id->playlist_path, pl_thumb->playlist_path);
+         string_is_equal(entry_id->playlist_path, pl_thumb->playlist_path);
 }
 
 bool task_push_pl_entry_thumbnail_download(
@@ -775,7 +789,7 @@ bool task_push_pl_entry_thumbnail_download(
    settings_t *settings          = config_get_ptr();
    retro_task_t *task            = task_init();
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
-   pl_entry_id_t *entry_id       = (pl_entry_id_t*)calloc(1, sizeof(pl_entry_id_t));
+   pl_entry_id_t *entry_id       = (pl_entry_id_t*)malloc(sizeof(pl_entry_id_t));
    char *playlist_path           = NULL;
    gfx_thumbnail_path_data_t *
          thumbnail_path_data     = NULL;
@@ -796,7 +810,10 @@ bool task_push_pl_entry_thumbnail_download(
       goto error;
    
    /* Only parse supported playlist types */
-   if (string_ends_with(system, "_history"))
+   if (string_ends_with_size(system, "_history",
+            strlen(system),
+            STRLEN_CONST("_history")
+            ))
       goto error;
    
    /* Copy playlist path
@@ -833,17 +850,8 @@ bool task_push_pl_entry_thumbnail_download(
          thumbnail_path_data, playlist, idx))
       goto error;
    
-   /* Configure task */
-   task->handler                 = task_pl_entry_thumbnail_download_handler;
-   task->state                   = pl_thumb;
-   task->title                   = strdup(system);
-   task->alternative_look        = true;
-   task->mute                    = mute;
-   task->progress                = 0;
-   task->callback                = cb_task_pl_entry_thumbnail_refresh_menu;
-   task->cleanup                 = task_pl_entry_thumbnail_free;
-   
-   /* Configure handle */
+   /* Configure handle
+    * > Note: playlist_config is unused by this task */
    pl_thumb->system              = NULL;
    pl_thumb->playlist_path       = playlist_path;
    pl_thumb->dir_thumbnails      = strdup(dir_thumbnails);
@@ -856,6 +864,16 @@ bool task_push_pl_entry_thumbnail_download(
    pl_thumb->type_idx            = 1;
    pl_thumb->overwrite           = overwrite;
    pl_thumb->status              = PL_THUMB_BEGIN;
+   
+   /* Configure task */
+   task->handler                 = task_pl_entry_thumbnail_download_handler;
+   task->state                   = pl_thumb;
+   task->title                   = strdup(system);
+   task->alternative_look        = true;
+   task->mute                    = mute;
+   task->progress                = 0;
+   task->callback                = cb_task_pl_entry_thumbnail_refresh_menu;
+   task->cleanup                 = task_pl_entry_thumbnail_free;
    
    task_queue_push(task);
    

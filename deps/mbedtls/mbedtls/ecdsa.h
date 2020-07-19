@@ -162,48 +162,6 @@ int mbedtls_ecdsa_write_signature( mbedtls_ecdsa_context *ctx, mbedtls_md_type_t
                            int (*f_rng)(void *, unsigned char *, size_t),
                            void *p_rng );
 
-#if defined(MBEDTLS_ECDSA_DETERMINISTIC)
-#if ! defined(MBEDTLS_DEPRECATED_REMOVED)
-#if defined(MBEDTLS_DEPRECATED_WARNING)
-#define MBEDTLS_DEPRECATED    __attribute__((deprecated))
-#else
-#define MBEDTLS_DEPRECATED
-#endif
-/**
- * \brief           Compute ECDSA signature and write it to buffer,
- *                  serialized as defined in RFC 4492 page 20.
- *                  Deterministic version, RFC 6979.
- *                  (Not thread-safe to use same context in multiple threads)
- *
- * \deprecated      Superseded by mbedtls_ecdsa_write_signature() in 2.0.0
- *
- * \param ctx       ECDSA context
- * \param hash      Message hash
- * \param hlen      Length of hash
- * \param sig       Buffer that will hold the signature
- * \param slen      Length of the signature written
- * \param md_alg    MD algorithm used to hash the message
- *
- * \note            The "sig" buffer must be at least as large as twice the
- *                  size of the curve used, plus 9 (eg. 73 bytes if a 256-bit
- *                  curve is used). MBEDTLS_ECDSA_MAX_LEN is always safe.
- *
- * \note            If the bitlength of the message hash is larger than the
- *                  bitlength of the group order, then the hash is truncated as
- *                  prescribed by SEC1 4.1.3 step 5.
- *
- * \return          0 if successful,
- *                  or a MBEDTLS_ERR_ECP_XXX, MBEDTLS_ERR_MPI_XXX or
- *                  MBEDTLS_ERR_ASN1_XXX error code
- */
-int mbedtls_ecdsa_write_signature_det( mbedtls_ecdsa_context *ctx,
-                               const unsigned char *hash, size_t hlen,
-                               unsigned char *sig, size_t *slen,
-                               mbedtls_md_type_t md_alg ) MBEDTLS_DEPRECATED;
-#undef MBEDTLS_DEPRECATED
-#endif /* MBEDTLS_DEPRECATED_REMOVED */
-#endif /* MBEDTLS_ECDSA_DETERMINISTIC */
-
 /**
  * \brief           Read and verify an ECDSA signature
  *

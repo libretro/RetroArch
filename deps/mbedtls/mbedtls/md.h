@@ -118,30 +118,6 @@ void mbedtls_md_init( mbedtls_md_context_t *ctx );
  */
 void mbedtls_md_free( mbedtls_md_context_t *ctx );
 
-#if ! defined(MBEDTLS_DEPRECATED_REMOVED)
-#if defined(MBEDTLS_DEPRECATED_WARNING)
-#define MBEDTLS_DEPRECATED    __attribute__((deprecated))
-#else
-#define MBEDTLS_DEPRECATED
-#endif
-/**
- * \brief           Select MD to use and allocate internal structures.
- *                  Should be called after mbedtls_md_init() or mbedtls_md_free().
- *                  Makes it necessary to call mbedtls_md_free() later.
- *
- * \deprecated      Superseded by mbedtls_md_setup() in 2.0.0
- *
- * \param ctx       Context to set up.
- * \param md_info   Message digest to use.
- *
- * \returns         \c 0 on success,
- *                  \c MBEDTLS_ERR_MD_BAD_INPUT_DATA on parameter failure,
- *                  \c MBEDTLS_ERR_MD_ALLOC_FAILED memory allocation failure.
- */
-int mbedtls_md_init_ctx( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_info ) MBEDTLS_DEPRECATED;
-#undef MBEDTLS_DEPRECATED
-#endif /* MBEDTLS_DEPRECATED_REMOVED */
-
 /**
  * \brief           Select MD to use and allocate internal structures.
  *                  Should be called after mbedtls_md_init() or mbedtls_md_free().

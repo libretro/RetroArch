@@ -7,7 +7,13 @@
     {
       "source": "/msg_hash_us.json",
       "translation": "/msg_hash_%two_letters_code%.json",
-      "translation_replace": { "_us": "" },
-      "languages_mapping": { "zh-CN": "zhs", "zh-TW": "zht" },
     },
+    {
+      "source": "/steam_us.json",
+      "translation": "/steam_%two_letters_code%.json",
+    },
+    {
+      "source": "/googleplay_us.json",
+      "translation": "/googleplay_%two_letters_code%.json",
+    },    
   ]

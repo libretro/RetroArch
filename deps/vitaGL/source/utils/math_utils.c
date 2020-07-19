@@ -36,7 +36,7 @@ void matrix4x4_identity(matrix4x4 m) {
 }
 
 void matrix4x4_copy(matrix4x4 dst, const matrix4x4 src) {
-	memcpy(dst, src, sizeof(matrix4x4));
+	memcpy_neon(dst, src, sizeof(matrix4x4));
 }
 
 void matrix4x4_multiply(matrix4x4 dst, const matrix4x4 src1, const matrix4x4 src2) {

@@ -36,7 +36,7 @@
    fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
    ret = false; \
    goto end; \
-} while(0)
+} while (0)
 
 double DEFLATE_PADDING = 1.1;
 int PNG_ROUGH_HEADER = 100;

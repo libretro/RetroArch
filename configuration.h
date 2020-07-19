@@ -158,6 +158,13 @@ typedef struct settings
       /* Menu */
       bool filter_by_current_core;
       bool menu_enable_widgets;
+      bool menu_show_load_content_animation;
+      bool notification_show_autoconfig;
+      bool notification_show_cheats_applied;
+      bool notification_show_remap_load;
+      bool notification_show_config_override_load;
+      bool notification_show_set_initial_disk;
+      bool notification_show_fast_forward;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
@@ -306,9 +313,13 @@ typedef struct settings
       bool cheevos_verbose_enable;
       bool cheevos_auto_screenshot;
       bool cheevos_start_active;
+      bool cheevos_unlock_sound_enable;
 
       /* Camera */
       bool camera_allow;
+
+      /* Bluetooth */
+      bool bluetooth_allow;
 
       /* WiFi */
       bool wifi_allow;
@@ -356,6 +367,9 @@ typedef struct settings
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
       bool check_firmware_before_loading;
+#ifndef HAVE_DYNAMIC
+      bool always_reload_core_on_run_content;
+#endif
 
       bool game_specific_options;
       bool auto_overrides_enable;
@@ -639,6 +653,7 @@ typedef struct settings
       char video_driver[32];
       char record_driver[32];
       char camera_driver[32];
+      char bluetooth_driver[32];
       char wifi_driver[32];
       char led_driver[32];
       char location_driver[32];
@@ -758,6 +773,15 @@ typedef struct settings
  * Returns: Default camera driver.
  **/
 const char *config_get_default_camera(void);
+
+/**
+ * config_get_default_bluetooth:
+ *
+ * Gets default bluetooth driver.
+ *
+ * Returns: Default bluetooth driver.
+ **/
+const char *config_get_default_bluetooth(void);
 
 /**
  * config_get_default_wifi:

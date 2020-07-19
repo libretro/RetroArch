@@ -34,7 +34,17 @@ struct pipe_trans_stream
 
 static void *pipe_stream_new(void)
 {
-   return (struct pipe_trans_stream*)calloc(1, sizeof(struct pipe_trans_stream));
+   struct pipe_trans_stream *stream = 
+      (struct pipe_trans_stream*)malloc(sizeof(*stream));
+   if (!stream)
+      return NULL;
+
+   stream->in                       = NULL;
+   stream->out                      = NULL;
+   stream->in_size                  = 0;
+   stream->out_size                 = 0;
+
+   return stream;
 }
 
 static void pipe_stream_free(void *data)
@@ -45,15 +55,23 @@ static void pipe_stream_free(void *data)
 static void pipe_set_in(void *data, const uint8_t *in, uint32_t in_size)
 {
    struct pipe_trans_stream *p = (struct pipe_trans_stream *) data;
-   p->in = in;
-   p->in_size = in_size;
+
+   if (!p)
+      return;
+         
+   p->in                       = in;
+   p->in_size                  = in_size;
 }
 
 static void pipe_set_out(void *data, uint8_t *out, uint32_t out_size)
 {
    struct pipe_trans_stream *p = (struct pipe_trans_stream *) data;
-   p->out = out;
-   p->out_size = out_size;
+   
+   if (!p)
+      return;
+
+   p->out                      = out;
+   p->out_size                 = out_size;
 }
 
 static bool pipe_trans(
@@ -66,21 +84,19 @@ static bool pipe_trans(
    if (p->out_size < p->in_size)
    {
       memcpy(p->out, p->in, p->out_size);
-      *rd = *wn = p->out_size;
-      p->in += p->out_size;
+      *rd     = *wn = p->out_size;
+      p->in  += p->out_size;
       p->out += p->out_size;
-      *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+      *error  = TRANS_STREAM_ERROR_BUFFER_FULL;
       return false;
    }
-   else
-   {
-      memcpy(p->out, p->in, p->in_size);
-      *rd = *wn = p->in_size;
-      p->in += p->in_size;
-      p->out += p->in_size;
-      *error = TRANS_STREAM_ERROR_NONE;
-      return true;
-   }
+
+   memcpy(p->out, p->in, p->in_size);
+   *rd     = *wn = p->in_size;
+   p->in  += p->in_size;
+   p->out += p->in_size;
+   *error  = TRANS_STREAM_ERROR_NONE;
+   return true;
 }
 
 const struct trans_stream_backend pipe_backend = {

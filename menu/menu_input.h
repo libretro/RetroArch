@@ -198,10 +198,6 @@ void menu_input_set_pointer_selection(unsigned selection);
  * calling populate entries) */
 void menu_input_set_pointer_y_accel(float y_accel);
 
-/* Inhibits pointer 'select' and 'cancel' actions
- * (until the next time 'select'/'cancel' are released) */
-void menu_input_set_pointer_inhibit(bool inhibit);
-
 RETRO_END_DECLS
 
 #endif

@@ -41,7 +41,7 @@
    { \
       char *pos = NULL; \
       strlcpy(s, label, len); \
-      while((pos = strchr(s, '_'))) \
+      while ((pos = strchr(s, '_'))) \
          *pos = ' '; \
    }
 
@@ -169,7 +169,7 @@ static int action_get_title_dropdown_item(
    if (string_is_empty(path))
       return 0;
 
-   if (string_starts_with(path, "core_option_"))
+   if (string_starts_with_size(path, "core_option_", STRLEN_CONST("core_option_")))
    {
       /* This is a core options item */
       struct string_list *tmp_str_list = string_split(path, "_");
@@ -470,6 +470,7 @@ DEFAULT_TITLE_MACRO(action_get_cheat_details_settings_list,     MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_cheat_search_settings_list,      MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_display_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_views_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS)
 #ifdef HAVE_VIDEO_LAYOUT
 DEFAULT_TITLE_MACRO(action_get_onscreen_video_layout_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS)
@@ -485,6 +486,7 @@ DEFAULT_TITLE_MACRO(action_get_power_management_settings_list,  MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_menu_sounds_list,                MENU_ENUM_LABEL_VALUE_MENU_SOUNDS)
 DEFAULT_TITLE_MACRO(action_get_menu_file_browser_settings_list, MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_retro_achievements_settings_list,MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_bluetooth_settings_list,         MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_wifi_settings_list,              MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_network_hosting_settings_list,           MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_subsystem_settings_list,           MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS)
@@ -768,6 +770,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST,           action_get_cheat_search_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST,       action_get_onscreen_display_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST, action_get_onscreen_notifications_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST, action_get_onscreen_notifications_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST,       action_get_onscreen_overlay_settings_list},
 #ifdef HAVE_VIDEO_LAYOUT
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,  action_get_onscreen_video_layout_settings_list},
@@ -783,6 +786,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST,                     action_get_menu_sounds_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST,      action_get_menu_file_browser_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST,     action_get_retro_achievements_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST,              action_get_bluetooth_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,                   action_get_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST,                action_get_updater_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST,                action_get_network_hosting_settings_list},
@@ -1041,7 +1045,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *parent_group   = cbs->setting->parent_group;
 
       if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
-            && setting_get_type(cbs->setting) == ST_GROUP)
+            && cbs->setting->type == ST_GROUP)
       {
          BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
          return 0;

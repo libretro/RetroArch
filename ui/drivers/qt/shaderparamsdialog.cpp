@@ -657,6 +657,12 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    if (path.isEmpty())
       return;
 
+   /* Qt uses '/' as a directory separator regardless
+    * of host platform. Have to convert to native separators,
+    * or video_shader_resolve_parameters() will fail on
+    * non-Linux platforms */
+   path = QDir::toNativeSeparators(path);
+
    pathArray = path.toUtf8();
    pathData  = pathArray.constData();
 

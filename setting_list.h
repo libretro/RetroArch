@@ -95,15 +95,15 @@ typedef struct rarch_setting rarch_setting_t;
 typedef struct rarch_setting_info rarch_setting_info_t;
 typedef struct rarch_setting_group_info rarch_setting_group_info_t;
 
-typedef void (*change_handler_t               )(rarch_setting_t *data);
-typedef int  (*action_left_handler_t          )(rarch_setting_t *data, bool wraparound);
-typedef int  (*action_right_handler_t         )(rarch_setting_t *setting, bool wraparound);
+typedef void (*change_handler_t               )(rarch_setting_t *setting);
+typedef int  (*action_left_handler_t          )(rarch_setting_t *setting, size_t idx, bool wraparound);
+typedef int  (*action_right_handler_t         )(rarch_setting_t *setting, size_t idx, bool wraparound);
 typedef int  (*action_up_handler_t            )(rarch_setting_t *setting);
 typedef int  (*action_down_handler_t          )(rarch_setting_t *setting);
 typedef int  (*action_start_handler_t         )(rarch_setting_t *setting);
 typedef int  (*action_cancel_handler_t        )(rarch_setting_t *setting);
-typedef int  (*action_ok_handler_t            )(rarch_setting_t *setting, bool wraparound);
-typedef int  (*action_select_handler_t        )(rarch_setting_t *setting, bool wraparound);
+typedef int  (*action_ok_handler_t            )(rarch_setting_t *setting, size_t idx, bool wraparound);
+typedef int  (*action_select_handler_t        )(rarch_setting_t *setting, size_t idx, bool wraparound);
 typedef void (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
 
 struct rarch_setting_group_info
@@ -237,7 +237,7 @@ unsigned setting_get_bind_type(rarch_setting_t *setting);
 
 int setting_string_action_start_generic(rarch_setting_t *setting);
 
-int setting_generic_action_ok_default(rarch_setting_t *setting, bool wraparound);
+int setting_generic_action_ok_default(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int setting_generic_action_start_default(rarch_setting_t *setting);
 
@@ -254,15 +254,13 @@ void settings_data_list_current_add_free_flags(
 void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
       char *s, size_t len);
 
-int setting_uint_action_right_with_refresh(rarch_setting_t *setting, bool wraparound);
+int setting_uint_action_left_with_refresh(rarch_setting_t *setting, size_t idx, bool wraparound);
+int setting_uint_action_right_with_refresh(rarch_setting_t *setting, size_t idx, bool wraparound);
+int setting_uint_action_left_default(rarch_setting_t *setting, size_t idx, bool wraparound);
+int setting_uint_action_right_default(rarch_setting_t *setting, size_t idx, bool wraparound);
 
-int setting_uint_action_left_with_refresh(rarch_setting_t *setting, bool wraparound) ;
-
-int setting_uint_action_left_default(rarch_setting_t *setting, bool wraparound);
-int setting_uint_action_right_default(rarch_setting_t *setting, bool wraparound);
 void setting_get_string_representation_uint(rarch_setting_t *setting, char *s, size_t len);
 void setting_get_string_representation_hex_and_uint(rarch_setting_t *setting, char *s, size_t len);
-#define setting_get_type(setting) ((setting) ? setting->type : ST_NONE)
 
 RETRO_END_DECLS
 

@@ -25,7 +25,10 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../retroarch.h"
+
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -1142,7 +1145,11 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    if (wiiu->shader_preset)
    {
       unsigned i;
+#ifdef HAVE_REWIND
       int32_t frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+      int32_t frame_direction = 1;
+#endif
 
       for (i = 0; i < wiiu->shader_preset->passes; i++)
       {

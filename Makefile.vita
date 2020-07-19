@@ -18,18 +18,22 @@ INCDIRS :=
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1
-	DEFINES += -DHAVE_NEON -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB DEFINES -DHAVE_KEYMAPPER
+	DEFINES += -DHAVE_REWIND
+	DEFINES += -DHAVE_NEON -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB DEFINES -DHAVE_KEYMAPPER
 	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
 	ifeq ($(DEBUG), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
 	INCDIRS += -I. -Ideps/7zip -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb
 else
-
+   HAVE_REWIND := 1
    HAVE_UPDATE_ASSETS      := 1
    HAVE_ONLINE_UPDATER     := 1
 	HAVE_NEON		:= 1
    HAVE_MATH_NEON := 1
+   HAVE_DSP_FILTER := 1
+   HAVE_VIDEO_FILTER := 1
+   HAVE_SCREENSHOTS := 1
 	HAVE_FILTERS_BUILTIN	:= 1
 	HAVE_LANGEXTRA		:= 1
 	HAVE_RPNG		:= 1
@@ -46,6 +50,8 @@ else
 	HAVE_MENU_COMMON	:= 1
 	HAVE_GFX_WIDGETS := 1
 	HAVE_CONFIGFILE := 1
+	HAVE_PATCH      := 1
+	HAVE_CHEATS     := 1
 	HAVE_OVERLAY		:= 1
 	HAVE_VIDEO_LAYOUT := 0
 	HAVE_MATERIALUI		:= 1
@@ -61,6 +67,7 @@ else
 	HAVE_STATIC_VIDEO_FILTERS = 1
 	HAVE_STATIC_AUDIO_FILTERS = 1
 	HAVE_AUDIOMIXER 	:= 1
+	HAVE_RWAV       	:= 1
 
 	ifeq ($(DEBUG), 1)
 		HAVE_NETLOGGER = 1
@@ -103,7 +110,9 @@ ASFLAGS := $(CFLAGS)
 LDFLAGS := -Wl,-q
 
 CFLAGS += -Wall -ffast-math -g
-CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
+CFLAGS += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DRARCH_CONSOLE
+CFLAGS += -DHAVE_DSP_FILTER
+CFLAGS += -DHAVE_VIDEO_FILTER
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
 
 ifneq ($(PC_DEVELOPMENT_IP_ADDRESS),)
@@ -123,7 +132,7 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lstdc++ -lpthread -lpng -lz
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lstdc++ -lpthread -lpng -lz -lSceShaccCg_stub
 
 LIBS	:= $(WHOLE_START) -lretro_vita $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
@@ -156,7 +165,13 @@ all: $(TARGETS)
 
 %.depend: ;
 
-$(TARGET).elf: $(OBJ) libretro_vita.a
+libSceShaccCg_stub.a: 
+	mkdir -p deps/vitaShaRK/SceShaccCg
+	vita-libs-gen deps/vitaShaRK/SceShaccCg.yml deps/vitaShaRK/SceShaccCg
+	make -C deps/vitaShaRK/SceShaccCg ARCH=arm-vita-eabi 
+	cp deps/vitaShaRK/SceShaccCg/libSceShaccCg_stub.a .
+
+$(TARGET).elf: $(OBJ) libretro_vita.a libSceShaccCg_stub.a
 	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.velf: %.elf
@@ -172,7 +187,8 @@ $(TARGET).elf: $(OBJ) libretro_vita.a
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk
+	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk libSceShaccCg_stub.a
+	rm -rf  deps/vitaShaRK/SceShaccCg
 	rm -f $(OBJ:.o=.depend)
 
 # Useful for developers

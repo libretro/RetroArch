@@ -134,7 +134,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          /* Icon */
          if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
          {
-            gfx_display_blend_begin(userdata);
+            gfx_display_blend_begin(video_info->userdata);
             gfx_widgets_draw_icon(
                video_info->userdata,
                video_width,
@@ -144,8 +144,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT],
                0,
                state->y,
-               video_width, video_height, 0, 1, gfx_widgets_get_pure_white());
-            gfx_display_blend_end(userdata);
+               0, 1, gfx_widgets_get_pure_white());
+            gfx_display_blend_end(video_info->userdata);
          }
       }
       /* Badge */
@@ -160,8 +160,6 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             state->queue[state->queue_read_index].badge,
             0,
             state->y,
-            video_width,
-            video_height,
             0,
             1,
             gfx_widgets_get_pure_white());
@@ -220,7 +218,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       {
          gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.regular);
-         gfx_display_scissor_end(userdata,
+         gfx_display_scissor_end(video_info->userdata,
             video_width, video_height);
       }
    }

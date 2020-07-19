@@ -291,7 +291,7 @@ typedef struct
 static char* rcheevos_unescape_string(const char* string, size_t length)
 {
    const char* end = string + length;
-   char* buffer = (char*)malloc(length + 1);
+   char* buffer    = (char*)malloc(length + 1);
    char* buffer_it = buffer;
 
    if (buffer == NULL)
@@ -329,18 +329,19 @@ static char* rcheevos_unescape_string(const char* string, size_t length)
                {
                   char temp[5];
 
-                  string += 2;
+                  string   += 2;
                   memcpy(temp, string, 4);
-                  temp[4] = '\0';
-                  utf16[j] = string_hex_to_unsigned(temp);
-                  string += 4;
+                  temp[4]   = '\0';
+                  utf16[j]  = string_hex_to_unsigned(temp);
+                  string   += 4;
                }
                utf16[j] = 0;
 
                if (utf16_to_char_string(utf16, utf8, sizeof(utf8)))
                {
-                  memcpy(buffer_it, utf8, strlen(utf8));
-                  buffer_it += strlen(utf8);
+                  size_t utf8_len = strlen(utf8);
+                  memcpy(buffer_it, utf8, utf8_len);
+                  buffer_it += utf8_len;
                }
             }
             break;

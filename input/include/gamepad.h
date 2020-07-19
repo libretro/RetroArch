@@ -20,11 +20,13 @@
 
 #include "../input_driver.h"
 
-struct pad_connection_listener_interface {
+struct pad_connection_listener_interface
+{
    void (*connected)(unsigned port, input_device_driver_t *driver);
 };
 
-typedef struct _axis_data {
+typedef struct _axis_data
+{
    int32_t axis;
    bool is_negative;
 } axis_data;

@@ -18,15 +18,10 @@
 
 #include "../../retroarch.h"
 
-static void vita_swap_interval(void *data, int interval)
-{
-   (void)data;
-   vglWaitVblankStart(interval);
-}
+static void vita_swap_interval(void *data, int interval) { vglWaitVblankStart(interval); }
 
 static void vita_get_video_size(void *data, unsigned *width, unsigned *height)
 {
-   (void)data;
    *width  = 960;
    *height = 544;
 }
@@ -50,95 +45,26 @@ static void vita_check_window(void *data, bool *quit,
 
 static void vita_swap_buffers(void *data)
 {
-   (void)data;
    vglStopRendering();
    vglStartRendering();
 }
 
 static bool vita_set_video_mode(void *data,
       unsigned width, unsigned height,
-      bool fullscreen)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   (void)fullscreen;
-
-   return true;
-}
-
-static void vita_destroy(void *data)
-{
-   (void)data;
-}
-
+      bool fullscreen) { return true; }
+static void vita_destroy(void *data) { }
 static void vita_input_driver(void *data,
       const char *name,
-      input_driver_t **input, void **input_data)
-{
-   (void)data;
-   (void)input;
-   (void)input_data;
-}
-
-static bool vita_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool vita_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static enum gfx_ctx_api vita_get_api(void *data)
-{
-   return GFX_CTX_NONE;
-}
-
-static bool vita_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   (void)data;
-   (void)api;
-   (void)major;
-   (void)minor;
-
-   return true;
-}
-
-static void vita_show_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
-static void vita_bind_hw_render(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-}
-
-static void *vita_init(void *video_driver)
-{
-   (void)video_driver;
-
-   return (void*)"vita";
-}
-
-static uint32_t vita_get_flags(void *data)
-{
-   uint32_t flags = 0;
-
-   return flags;
-}
-
-static void vita_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+      input_driver_t **input, void **input_data) { }
+static bool vita_has_focus(void *data) { return true; }
+static bool vita_suppress_screensaver(void *data, bool enable) { return false; }
+static enum gfx_ctx_api vita_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }
+static bool vita_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor) { return true; }
+static void vita_show_mouse(void *data, bool state) { }
+static void vita_bind_hw_render(void *data, bool enable) { }
+static void *vita_init(void *video_driver) { return (void*)"vita"; }
+static uint32_t vita_get_flags(void *data) { return 0; }
+static void vita_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t vita_ctx = {
    vita_init,

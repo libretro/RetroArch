@@ -45,9 +45,7 @@ bool trans_stream_trans_full(
    uint32_t rd, wn;
 
    if (data && *data)
-   {
       rdata = *data;
-   }
    else
    {
       rdata = backend->stream_new();

@@ -21,13 +21,6 @@ uint16_t indices[] = {
 	20,21,22,21,22,23  // Bottom
 };
 
-void init_perspective(float fov, float aspect, float near, float far){
-	float half_height = near * tanf(((fov * M_PI) / 180.0f) * 0.5f);
-	float half_width = half_height * aspect;
-	
-	glFrustum(-half_width, half_width, -half_height, half_height, near, far);
-}
-
 int main(){
 	
 	// Initializing graphics device
@@ -53,7 +46,7 @@ int main(){
 	glClearColor (0.0f, 0.0f, 0.0f, 0.0f);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	init_perspective(90.0f, 960.f/544.0f, 0.01f, 100.0f);
+	gluPerspective(90.0f, 960.f/544.0f, 0.01f, 100.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glTranslatef(0.0f, 0.0f, -3.0f); // Centering the cube

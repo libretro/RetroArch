@@ -305,22 +305,23 @@ static void gfx_display_vk_clear_color(
 {
    VkClearRect rect;
    VkClearAttachment attachment;
-   vk_t *vk = (vk_t*)data;
+   vk_t *vk                               = (vk_t*)data;
    if (!vk || !clearcolor)
       return;
 
-   memset(&attachment, 0, sizeof(attachment));
-   memset(&rect, 0, sizeof(rect));
-
    attachment.aspectMask                  = VK_IMAGE_ASPECT_COLOR_BIT;
+   attachment.colorAttachment             = 0;
    attachment.clearValue.color.float32[0] = clearcolor->r;
    attachment.clearValue.color.float32[1] = clearcolor->g;
    attachment.clearValue.color.float32[2] = clearcolor->b;
    attachment.clearValue.color.float32[3] = clearcolor->a;
 
-   rect.rect.extent.width  = vk->context->swapchain_width;
-   rect.rect.extent.height = vk->context->swapchain_height;
-   rect.layerCount         = 1;
+   rect.rect.offset.x                     = 0;
+   rect.rect.offset.y                     = 0;
+   rect.rect.extent.width                 = vk->context->swapchain_width;
+   rect.rect.extent.height                = vk->context->swapchain_height;
+   rect.baseArrayLayer                    = 0;
+   rect.layerCount                        = 1;
 
    vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
 }

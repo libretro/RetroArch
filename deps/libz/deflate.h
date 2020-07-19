@@ -249,11 +249,6 @@ typedef struct internal_state_deflate {
     uInt matches;       /* number of string matches in current block */
     uInt insert;        /* bytes at end of window left to insert */
 
-#ifdef DEBUG
-    ulg compressed_len; /* total bit length of compressed file mod 2^32 */
-    ulg bits_sent;      /* bit length of compressed data sent mod 2^32 */
-#endif
-
     ush bi_buf;
     /* Output buffer. bits are inserted starting at the bottom (least
      * significant bits).
@@ -309,16 +304,10 @@ void ZLIB_INTERNAL _tr_stored_block OF((deflate_state *s, charf *buf,
  * used.
  */
 
-#ifndef DEBUG
 /* Inline versions of _tr_tally for speed: */
 
-#if defined(GEN_TREES_H) || !defined(STDC)
-  extern uch ZLIB_INTERNAL _length_code[];
-  extern uch ZLIB_INTERNAL _dist_code[];
-#else
-  extern const uch ZLIB_INTERNAL _length_code[];
-  extern const uch ZLIB_INTERNAL _dist_code[];
-#endif
+extern const uch ZLIB_INTERNAL _length_code[];
+extern const uch ZLIB_INTERNAL _dist_code[];
 
 # define _tr_tally_lit(s, c, flush) \
   { uch cc = (c); \
@@ -337,10 +326,5 @@ void ZLIB_INTERNAL _tr_stored_block OF((deflate_state *s, charf *buf,
     s->dyn_dtree[d_code(dist)].Freq++; \
     flush = (s->last_lit == s->lit_bufsize-1); \
   }
-#else
-# define _tr_tally_lit(s, c, flush) flush = _tr_tally(s, 0, c)
-# define _tr_tally_dist(s, distance, length, flush) \
-              flush = _tr_tally(s, distance, length)
-#endif
 
 #endif /* DEFLATE_H */

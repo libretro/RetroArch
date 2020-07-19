@@ -220,7 +220,7 @@ static bool image_texture_load_internal(
       ret = image_transfer_process(img, type,
             (uint32_t**)&out_img->pixels, len, &out_img->width,
             &out_img->height);
-   }while(ret == IMAGE_PROCESS_NEXT);
+   } while (ret == IMAGE_PROCESS_NEXT);
 
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
       goto end;

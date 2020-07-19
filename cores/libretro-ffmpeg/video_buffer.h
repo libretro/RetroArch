@@ -10,8 +10,16 @@
 #include <ass/ass.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <libavutil/frame.h>
 #include <libswscale/swscale.h>
+
+#ifdef __cplusplus
+}
+#endif
 
 #include <retro_miscellaneous.h>
 

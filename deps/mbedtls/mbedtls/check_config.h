@@ -38,31 +38,9 @@
 #error "mbed TLS requires a platform with 8-bit chars"
 #endif
 
-#if defined(_WIN32)
-#if !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_C is required on Windows"
-#endif
-
-/* Fix the config here. Not convenient to put an #ifdef _WIN32 in config.h as
- * it would confuse config.pl. */
-#if !defined(MBEDTLS_PLATFORM_SNPRINTF_ALT) && \
-    !defined(MBEDTLS_PLATFORM_SNPRINTF_MACRO)
-#define MBEDTLS_PLATFORM_SNPRINTF_ALT
-#endif
-#endif /* _WIN32 */
-
 #if defined(TARGET_LIKE_MBED) && \
     ( defined(MBEDTLS_NET_C) || defined(MBEDTLS_TIMING_C) )
 #error "The NET and TIMING modules are not available for mbed OS - please use the network and timing functions provided by mbed OS"
-#endif
-
-#if defined(MBEDTLS_DEPRECATED_WARNING) && \
-    !defined(__GNUC__) && !defined(__clang__)
-#error "MBEDTLS_DEPRECATED_WARNING only works with GCC and Clang"
-#endif
-
-#if defined(MBEDTLS_HAVE_TIME_DATE) && !defined(MBEDTLS_HAVE_TIME)
-#error "MBEDTLS_HAVE_TIME_DATE without MBEDTLS_HAVE_TIME does not make sense"
 #endif
 
 #if defined(MBEDTLS_AESNI_C) && !defined(MBEDTLS_HAVE_ASM)
@@ -77,11 +55,6 @@
 #error "MBEDTLS_DHM_C defined, but not all prerequisites"
 #endif
 
-#if defined(MBEDTLS_CMAC_C) && \
-    !defined(MBEDTLS_AES_C) && !defined(MBEDTLS_DES_C)
-#error "MBEDTLS_CMAC_C defined, but not all prerequisites"
-#endif
-
 #if defined(MBEDTLS_ECDH_C) && !defined(MBEDTLS_ECP_C)
 #error "MBEDTLS_ECDH_C defined, but not all prerequisites"
 #endif
@@ -91,11 +64,6 @@
       !defined(MBEDTLS_ASN1_PARSE_C) ||    \
       !defined(MBEDTLS_ASN1_WRITE_C) )
 #error "MBEDTLS_ECDSA_C defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_ECJPAKE_C) &&           \
-    ( !defined(MBEDTLS_ECP_C) || !defined(MBEDTLS_MD_C) )
-#error "MBEDTLS_ECJPAKE_C defined, but not all prerequisites"
 #endif
 
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC) && !defined(MBEDTLS_HMAC_DRBG_C)
@@ -135,16 +103,6 @@
 #error "MBEDTLS_ENTROPY_FORCE_SHA256 defined, but not all prerequisites"
 #endif
 
-#if defined(MBEDTLS_TEST_NULL_ENTROPY) && \
-    ( !defined(MBEDTLS_ENTROPY_C) || !defined(MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES) )
-#error "MBEDTLS_TEST_NULL_ENTROPY defined, but not all prerequisites"
-#endif
-#if defined(MBEDTLS_TEST_NULL_ENTROPY) && \
-     ( defined(MBEDTLS_ENTROPY_NV_SEED) || defined(MBEDTLS_ENTROPY_HARDWARE_ALT) || \
-    defined(MBEDTLS_HAVEGE_C) )
-#error "MBEDTLS_TEST_NULL_ENTROPY defined, but entropy sources too"
-#endif
-
 #if defined(MBEDTLS_GCM_C) && (                                        \
         !defined(MBEDTLS_AES_C) && !defined(MBEDTLS_CAMELLIA_C) )
 #error "MBEDTLS_GCM_C defined, but not all prerequisites"
@@ -180,10 +138,6 @@
 
 #if defined(MBEDTLS_ECP_NORMALIZE_MXZ_ALT) && !defined(MBEDTLS_ECP_INTERNAL_ALT)
 #error "MBEDTLS_ECP_NORMALIZE_MXZ_ALT defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_HAVEGE_C) && !defined(MBEDTLS_TIMING_C)
-#error "MBEDTLS_HAVEGE_C defined, but not all prerequisites"
 #endif
 
 #if defined(MBEDTLS_HMAC_DRBG_C) && !defined(MBEDTLS_MD_C)
@@ -239,17 +193,6 @@
 #error "MBEDTLS_KEY_EXCHANGE_RSA_ENABLED defined, but not all prerequisites"
 #endif
 
-#if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED) &&                    \
-    ( !defined(MBEDTLS_ECJPAKE_C) || !defined(MBEDTLS_SHA256_C) ||      \
-      !defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED) )
-#error "MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C) &&                          \
-    ( !defined(MBEDTLS_PLATFORM_C) || !defined(MBEDTLS_PLATFORM_MEMORY) )
-#error "MBEDTLS_MEMORY_BUFFER_ALLOC_C defined, but not all prerequisites"
-#endif
-
 #if defined(MBEDTLS_PADLOCK_C) && !defined(MBEDTLS_HAVE_ASM)
 #error "MBEDTLS_PADLOCK_C defined, but not all prerequisites"
 #endif
@@ -273,203 +216,6 @@
 
 #if defined(MBEDTLS_PK_WRITE_C) && !defined(MBEDTLS_PK_C)
 #error "MBEDTLS_PK_WRITE_C defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PKCS11_C) && !defined(MBEDTLS_PK_C)
-#error "MBEDTLS_PKCS11_C defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_EXIT_ALT) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_EXIT_ALT defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_EXIT_MACRO) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_EXIT_MACRO defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_EXIT_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_EXIT) ||\
-        defined(MBEDTLS_PLATFORM_EXIT_ALT) )
-#error "MBEDTLS_PLATFORM_EXIT_MACRO and MBEDTLS_PLATFORM_STD_EXIT/MBEDTLS_PLATFORM_EXIT_ALT cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_TIME_ALT) &&\
-    ( !defined(MBEDTLS_PLATFORM_C) ||\
-        !defined(MBEDTLS_HAVE_TIME) )
-#error "MBEDTLS_PLATFORM_TIME_ALT defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_TIME_MACRO) &&\
-    ( !defined(MBEDTLS_PLATFORM_C) ||\
-        !defined(MBEDTLS_HAVE_TIME) )
-#error "MBEDTLS_PLATFORM_TIME_MACRO defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_TIME_TYPE_MACRO) &&\
-    ( !defined(MBEDTLS_PLATFORM_C) ||\
-        !defined(MBEDTLS_HAVE_TIME) )
-#error "MBEDTLS_PLATFORM_TIME_TYPE_MACRO defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_TIME_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_TIME) ||\
-        defined(MBEDTLS_PLATFORM_TIME_ALT) )
-#error "MBEDTLS_PLATFORM_TIME_MACRO and MBEDTLS_PLATFORM_STD_TIME/MBEDTLS_PLATFORM_TIME_ALT cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_TIME_TYPE_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_TIME) ||\
-        defined(MBEDTLS_PLATFORM_TIME_ALT) )
-#error "MBEDTLS_PLATFORM_TIME_TYPE_MACRO and MBEDTLS_PLATFORM_STD_TIME/MBEDTLS_PLATFORM_TIME_ALT cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_FPRINTF_ALT) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_FPRINTF_ALT defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_FPRINTF_MACRO) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_FPRINTF_MACRO defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_FPRINTF_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_FPRINTF) ||\
-        defined(MBEDTLS_PLATFORM_FPRINTF_ALT) )
-#error "MBEDTLS_PLATFORM_FPRINTF_MACRO and MBEDTLS_PLATFORM_STD_FPRINTF/MBEDTLS_PLATFORM_FPRINTF_ALT cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_FREE_MACRO) &&\
-    ( !defined(MBEDTLS_PLATFORM_C) || !defined(MBEDTLS_PLATFORM_MEMORY) )
-#error "MBEDTLS_PLATFORM_FREE_MACRO defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_FREE_MACRO) &&\
-    defined(MBEDTLS_PLATFORM_STD_FREE)
-#error "MBEDTLS_PLATFORM_FREE_MACRO and MBEDTLS_PLATFORM_STD_FREE cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_FREE_MACRO) && !defined(MBEDTLS_PLATFORM_CALLOC_MACRO)
-#error "MBEDTLS_PLATFORM_CALLOC_MACRO must be defined if MBEDTLS_PLATFORM_FREE_MACRO is"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_CALLOC_MACRO) &&\
-    ( !defined(MBEDTLS_PLATFORM_C) || !defined(MBEDTLS_PLATFORM_MEMORY) )
-#error "MBEDTLS_PLATFORM_CALLOC_MACRO defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_CALLOC_MACRO) &&\
-    defined(MBEDTLS_PLATFORM_STD_CALLOC)
-#error "MBEDTLS_PLATFORM_CALLOC_MACRO and MBEDTLS_PLATFORM_STD_CALLOC cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_CALLOC_MACRO) && !defined(MBEDTLS_PLATFORM_FREE_MACRO)
-#error "MBEDTLS_PLATFORM_FREE_MACRO must be defined if MBEDTLS_PLATFORM_CALLOC_MACRO is"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_MEMORY) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_MEMORY defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_PRINTF_ALT) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_PRINTF_ALT defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_PRINTF_MACRO) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_PRINTF_MACRO defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_PRINTF_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_PRINTF) ||\
-        defined(MBEDTLS_PLATFORM_PRINTF_ALT) )
-#error "MBEDTLS_PLATFORM_PRINTF_MACRO and MBEDTLS_PLATFORM_STD_PRINTF/MBEDTLS_PLATFORM_PRINTF_ALT cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_SNPRINTF_ALT) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_SNPRINTF_ALT defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_SNPRINTF_MACRO) && !defined(MBEDTLS_PLATFORM_C)
-#error "MBEDTLS_PLATFORM_SNPRINTF_MACRO defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_SNPRINTF_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_SNPRINTF) ||\
-        defined(MBEDTLS_PLATFORM_SNPRINTF_ALT) )
-#error "MBEDTLS_PLATFORM_SNPRINTF_MACRO and MBEDTLS_PLATFORM_STD_SNPRINTF/MBEDTLS_PLATFORM_SNPRINTF_ALT cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_MEM_HDR) &&\
-    !defined(MBEDTLS_PLATFORM_NO_STD_FUNCTIONS)
-#error "MBEDTLS_PLATFORM_STD_MEM_HDR defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_CALLOC) && !defined(MBEDTLS_PLATFORM_MEMORY)
-#error "MBEDTLS_PLATFORM_STD_CALLOC defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_CALLOC) && !defined(MBEDTLS_PLATFORM_MEMORY)
-#error "MBEDTLS_PLATFORM_STD_CALLOC defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_FREE) && !defined(MBEDTLS_PLATFORM_MEMORY)
-#error "MBEDTLS_PLATFORM_STD_FREE defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_EXIT) &&\
-    !defined(MBEDTLS_PLATFORM_EXIT_ALT)
-#error "MBEDTLS_PLATFORM_STD_EXIT defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_TIME) &&\
-    ( !defined(MBEDTLS_PLATFORM_TIME_ALT) ||\
-        !defined(MBEDTLS_HAVE_TIME) )
-#error "MBEDTLS_PLATFORM_STD_TIME defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_FPRINTF) &&\
-    !defined(MBEDTLS_PLATFORM_FPRINTF_ALT)
-#error "MBEDTLS_PLATFORM_STD_FPRINTF defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_PRINTF) &&\
-    !defined(MBEDTLS_PLATFORM_PRINTF_ALT)
-#error "MBEDTLS_PLATFORM_STD_PRINTF defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_SNPRINTF) &&\
-    !defined(MBEDTLS_PLATFORM_SNPRINTF_ALT)
-#error "MBEDTLS_PLATFORM_STD_SNPRINTF defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_ENTROPY_NV_SEED) &&\
-    ( !defined(MBEDTLS_PLATFORM_C) || !defined(MBEDTLS_ENTROPY_C) )
-#error "MBEDTLS_ENTROPY_NV_SEED defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_NV_SEED_ALT) &&\
-    !defined(MBEDTLS_ENTROPY_NV_SEED)
-#error "MBEDTLS_PLATFORM_NV_SEED_ALT defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_NV_SEED_READ) &&\
-    !defined(MBEDTLS_PLATFORM_NV_SEED_ALT)
-#error "MBEDTLS_PLATFORM_STD_NV_SEED_READ defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_STD_NV_SEED_WRITE) &&\
-    !defined(MBEDTLS_PLATFORM_NV_SEED_ALT)
-#error "MBEDTLS_PLATFORM_STD_NV_SEED_WRITE defined, but not all prerequisites"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_NV_SEED_READ_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_NV_SEED_READ) ||\
-      defined(MBEDTLS_PLATFORM_NV_SEED_ALT) )
-#error "MBEDTLS_PLATFORM_NV_SEED_READ_MACRO and MBEDTLS_PLATFORM_STD_NV_SEED_READ cannot be defined simultaneously"
-#endif
-
-#if defined(MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO) &&\
-    ( defined(MBEDTLS_PLATFORM_STD_NV_SEED_WRITE) ||\
-      defined(MBEDTLS_PLATFORM_NV_SEED_ALT) )
-#error "MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO and MBEDTLS_PLATFORM_STD_NV_SEED_WRITE cannot be defined simultaneously"
 #endif
 
 #if defined(MBEDTLS_RSA_C) && ( !defined(MBEDTLS_BIGNUM_C) ||         \
@@ -613,10 +359,6 @@
 #error "MBEDTLS_THREADING_C defined, single threading implementation required"
 #endif
 #undef MBEDTLS_THREADING_IMPL
-
-#if defined(MBEDTLS_VERSION_FEATURES) && !defined(MBEDTLS_VERSION_C)
-#error "MBEDTLS_VERSION_FEATURES defined, but not all prerequisites"
-#endif
 
 #if defined(MBEDTLS_X509_USE_C) && ( !defined(MBEDTLS_BIGNUM_C) ||  \
     !defined(MBEDTLS_OID_C) || !defined(MBEDTLS_ASN1_PARSE_C) ||      \

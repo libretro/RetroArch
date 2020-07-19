@@ -737,7 +737,9 @@ bool state_manager_check_rewind(bool pressed,
 
          core_unserialize(&serial_info);
 
+#ifdef HAVE_BSV_MOVIE
          bsv_movie_frame_rewind();
+#endif
       }
       else
       {

@@ -30,7 +30,8 @@
 
 #include "../../verbosity.h"
 
-static XineramaScreenInfo *xinerama_query_screens(Display *dpy, int *num_screens)
+static XineramaScreenInfo *xinerama_query_screens(
+      Display *dpy, int *num_screens)
 {
    int major, minor;
 

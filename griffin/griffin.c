@@ -152,8 +152,10 @@ CONFIG FILE
 #undef strcasecmp
 #endif
 
+#ifdef HAVE_CONFIGFILE
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/config_file_userdata.c"
+#endif
 
 /*============================================================
 CONTENT METADATA RECORDS
@@ -206,7 +208,9 @@ MD5
 /*============================================================
 CHEATS
 ============================================================ */
+#ifdef HAVE_CHEATS
 #include "../managers/cheat_manager.c"
+#endif
 #include "../libretro-common/hash/rhash.c"
 
 /*============================================================
@@ -226,11 +230,8 @@ VIDEO CONTEXT
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-#ifdef HAVE_GDI
-#include "../gfx/drivers_context/gdi_ctx.c"
-#endif
+#if defined(HAVE_VULKAN)
+#include "../gfx/drivers_context/w_vk_ctx.c"
 #endif
 
 #include "../gfx/display_servers/dispserv_win32.c"
@@ -247,6 +248,9 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/android_ctx.c"
+#if defined(HAVE_VULKAN)
+#include "../gfx/drivers_context/android_vk_ctx.c"
+#endif
 #include "../gfx/display_servers/dispserv_android.c"
 #elif defined(__QNX__)
 #include "../gfx/drivers_context/qnx_ctx.c"
@@ -266,6 +270,9 @@ VIDEO CONTEXT
 
 #ifdef HAVE_WAYLAND
 #include "../gfx/drivers_context/wayland_ctx.c"
+#ifdef HAVE_VULKAN
+#include "../gfx/drivers_context/wayland_vk_ctx.c"
+#endif
 #endif
 
 #ifdef HAVE_DRM
@@ -313,6 +320,10 @@ VIDEO CONTEXT
 
 #ifndef HAVE_OPENGLES
 #include "../gfx/drivers_context/x_ctx.c"
+#endif
+
+#ifdef HAVE_VULKAN
+#include "../gfx/drivers_context/x_vk_ctx.c"
 #endif
 
 #ifdef HAVE_EGL
@@ -369,7 +380,9 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
+#ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
+#endif
 
 /*============================================================
 VIDEO DRIVER
@@ -632,9 +645,6 @@ INPUT
 #include "../tasks/task_audio_mixer.c"
 #endif
 #include "../input/input_keymaps.c"
-#ifdef HAVE_CONFIGFILE
-#include "../input/input_remapping.c"
-#endif
 
 #ifdef HAVE_OVERLAY
 #include "../led/drivers/led_overlay.c"
@@ -646,8 +656,10 @@ INPUT
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+#ifdef HAVE_WINRAWINPUT
 /* winraw only available since XP */
 #include "../input/drivers/winraw_input.c"
+#endif
 #endif
 
 #include "../input/input_autodetect_builtin.c"
@@ -711,6 +723,7 @@ INPUT
 #endif
 
 #ifdef HAVE_WAYLAND
+#include "../input/common/wayland_common.c"
 #include "../input/drivers/wayland_input.c"
 #endif
 
@@ -796,7 +809,9 @@ AUDIO RESAMPLER
 ============================================================ */
 #include "../libretro-common/audio/resampler/audio_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
+#ifdef HAVE_NEAREST_RESAMPLER
 #include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
+#endif
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
 #endif
@@ -945,8 +960,8 @@ SCALERS
 /*============================================================
 FILTERS
 ============================================================ */
-
 #ifdef HAVE_FILTERS_BUILTIN
+#ifdef HAVE_VIDEO_FILTER
 #include "../gfx/video_filters/2xsai.c"
 #include "../gfx/video_filters/super2xsai.c"
 #include "../gfx/video_filters/supereagle.c"
@@ -959,7 +974,9 @@ FILTERS
 #include "../gfx/video_filters/phosphor2x.c"
 #include "../gfx/video_filters/normal2x.c"
 #include "../gfx/video_filters/scanline2x.c"
+#endif
 
+#ifdef HAVE_DSP_FILTER
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
 #include "../libretro-common/audio/dsp_filters/chorus.c"
@@ -969,13 +986,18 @@ FILTERS
 #include "../libretro-common/audio/dsp_filters/reverb.c"
 #include "../libretro-common/audio/dsp_filters/wahwah.c"
 #endif
+#endif
 
 /*============================================================
 DYNAMIC
 ============================================================ */
 #include "../libretro-common/dynamic/dylib.c"
+#ifdef HAVE_VIDEO_FILTER
 #include "../gfx/video_filter.c"
+#endif
+#ifdef HAVE_DSP_FILTER
 #include "../libretro-common/audio/dsp_filter.c"
+#endif
 
 /*============================================================
 CORES
@@ -1046,7 +1068,9 @@ CONFIGURATION
 /*============================================================
 STATE MANAGER
 ============================================================ */
+#ifdef HAVE_REWIND
 #include "../managers/state_manager.c"
+#endif
 
 /*============================================================
 FRONTEND
@@ -1156,6 +1180,16 @@ RETROARCH
 #include "../intl/msg_hash_us.c"
 
 /*============================================================
+BLUETOOTH
+============================================================ */
+#ifdef HAVE_BLUETOOTH
+#include "../bluetooth/drivers/bluetoothctl.c"
+#ifdef HAVE_DBUS
+#include "../bluetooth/drivers/bluez.c"
+#endif
+#endif
+
+/*============================================================
 WIFI
 ============================================================ */
 #ifdef HAVE_LAKKA
@@ -1229,6 +1263,7 @@ NETPLAY
 #include "../tasks/task_http.c"
 #include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_netplay_nat_traversal.c"
+#include "../tasks/task_bluetooth.c"
 #include "../tasks/task_wifi.c"
 #include "../tasks/task_netplay_find_content.c"
 #include "../tasks/task_pl_thumbnail_download.c"
@@ -1239,7 +1274,9 @@ DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_powerstate.c"
 #include "../tasks/task_content.c"
+#ifdef HAVE_PATCH
 #include "../tasks/task_patch.c"
+#endif
 #include "../tasks/task_save.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
@@ -1260,7 +1297,9 @@ DATA RUNLOOP
 /*============================================================
 SCREENSHOTS
 ============================================================ */
+#ifdef HAVE_SCREENSHOTS
 #include "../tasks/task_screenshot.c"
+#endif
 
 /*============================================================
 PLAYLISTS
@@ -1272,13 +1311,17 @@ MENU
 ============================================================ */
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.c"
+#ifdef HAVE_SCREENSHOTS
 #include "../gfx/widgets/gfx_widget_screenshot.c"
+#endif
 #include "../gfx/widgets/gfx_widget_volume.c"
 #include "../gfx/widgets/gfx_widget_generic_message.c"
 #include "../gfx/widgets/gfx_widget_libretro_message.c"
+#include "../gfx/widgets/gfx_widget_progress_message.c"
 #ifdef HAVE_CHEEVOS
 #include "../gfx/widgets/gfx_widget_achievement_popup.c"
 #endif
+#include "../gfx/widgets/gfx_widget_load_content_animation.c"
 #endif
 
 #ifdef HAVE_MENU
@@ -1288,9 +1331,6 @@ MENU
 #include "../menu/menu_networking.c"
 #endif
 
-#include "../menu/widgets/menu_filebrowser.c"
-#include "../menu/widgets/menu_dialog.c"
-#include "../menu/widgets/menu_input_bind_dialog.c"
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
 #include "../menu/cbs/menu_cbs_select.c"
@@ -1518,27 +1558,20 @@ SSL
 #include "../deps/mbedtls/ccm.c"
 #include "../deps/mbedtls/cipher.c"
 #include "../deps/mbedtls/cipher_wrap.c"
-#include "../deps/mbedtls/cmac.c"
 #include "../deps/mbedtls/ctr_drbg.c"
 #include "../deps/mbedtls/des.c"
 #include "../deps/mbedtls/dhm.c"
 #include "../deps/mbedtls/ecdh.c"
 #include "../deps/mbedtls/ecdsa.c"
-#include "../deps/mbedtls/ecjpake.c"
 #include "../deps/mbedtls/ecp.c"
 #include "../deps/mbedtls/ecp_curves.c"
 #include "../deps/mbedtls/entropy.c"
 #include "../deps/mbedtls/entropy_poll.c"
-#include "../deps/mbedtls/error.c"
 #include "../deps/mbedtls/gcm.c"
-#include "../deps/mbedtls/havege.c"
 #include "../deps/mbedtls/hmac_drbg.c"
 #include "../deps/mbedtls/md.c"
-#include "../deps/mbedtls/md2.c"
-#include "../deps/mbedtls/md4.c"
 #include "../deps/mbedtls/md5.c"
 #include "../deps/mbedtls/md_wrap.c"
-#include "../deps/mbedtls/memory_buffer_alloc.c"
 #include "../deps/mbedtls/oid.c"
 #include "../deps/mbedtls/padlock.c"
 #include "../deps/mbedtls/pem.c"
@@ -1548,7 +1581,6 @@ SSL
 #include "../deps/mbedtls/pkcs5.c"
 #include "../deps/mbedtls/pkparse.c"
 #include "../deps/mbedtls/pkwrite.c"
-#include "../deps/mbedtls/platform.c"
 #include "../deps/mbedtls/ripemd160.c"
 #include "../deps/mbedtls/rsa.c"
 #include "../deps/mbedtls/sha1.c"
@@ -1556,12 +1588,9 @@ SSL
 #include "../deps/mbedtls/sha512.c"
 #include "../deps/mbedtls/threading.c"
 #include "../deps/mbedtls/timing.c"
-#include "../deps/mbedtls/version.c"
-#include "../deps/mbedtls/version_features.c"
 #include "../deps/mbedtls/xtea.c"
 
 #include "../deps/mbedtls/certs.c"
-#include "../deps/mbedtls/pkcs11.c"
 #include "../deps/mbedtls/x509.c"
 #include "../deps/mbedtls/x509_create.c"
 #include "../deps/mbedtls/x509_crl.c"

@@ -29,6 +29,7 @@
 
 #define MOD_MAP_SIZE 5
 
+/* TODO/FIXME - static globals */
 static struct xkb_context *xkb_ctx     = NULL;
 static struct xkb_keymap  *xkb_map     = NULL;
 static struct xkb_state   *xkb_state   = NULL;

@@ -202,18 +202,14 @@ static int16_t sdl_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = sdl->joypad->state(
+                  joypad_info, binds[port], port);
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
-               {
-                  if (button_is_pressed(
-                           sdl->joypad, joypad_info, binds[port], port, i))
+                  if (sdl_key_pressed(binds[port][i].key))
                      ret |= (1 << i);
-                  else if (sdl_key_pressed(binds[port][i].key))
-                     ret |= (1 << i);
-               }
             }
 
             return ret;
@@ -235,13 +231,7 @@ static int16_t sdl_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = input_joypad_analog(sdl->joypad,
-                        joypad_info, port, idx, id, binds[port]);
-            if (!ret)
-               ret      = sdl_analog_pressed(sdl, binds[port], idx, id);
-            return ret;
-         }
+            return sdl_analog_pressed(sdl, binds[port], idx, id);
          break;
       case RETRO_DEVICE_MOUSE:
          if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)

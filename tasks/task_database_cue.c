@@ -191,14 +191,14 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    buffer[256] = '\0';
 
    tmp = buffer;
-   while(*tmp && strncasecmp((const char*)tmp, "boot", 4))
+   while (*tmp && strncasecmp((const char*)tmp, "boot", 4))
       tmp++;
 
    if (!*tmp)
       return 0;
 
    boot_file = tmp;
-   while(*tmp && *tmp != '\n')
+   while (*tmp && *tmp != '\n')
    {
       if ((*tmp == '\\') || (*tmp == ':'))
          boot_file = tmp + 1;
@@ -216,7 +216,7 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    if (!isalnum(*tmp))
       tmp++;
 
-   while(isalnum(*tmp))
+   while (isalnum(*tmp))
    {
       *game_id++ = *tmp++;
       if (*tmp == '.')
@@ -250,7 +250,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
          bool found = false;
          game_id[5] = '\0';
 
-         if (string_starts_with(game_id, "UL"))
+         if (string_starts_with_size(game_id, "UL", STRLEN_CONST("UL")))
          {
             if (
                    (string_is_equal(game_id, "ULES-"))
@@ -263,7 +263,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
                )
                found = true;
          }
-         if (!found && string_starts_with(game_id, "UC"))
+         if (!found && string_starts_with_size(game_id, "UC", STRLEN_CONST("UC")))
          {
             if (
                    (string_is_equal(game_id, "UCES-"))
@@ -276,7 +276,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
                found = true;
          }
 
-         if (!found && string_starts_with(game_id, "NP"))
+         if (!found && string_starts_with_size(game_id, "NP", STRLEN_CONST("NP")))
          {
             if (
                      (string_is_equal(game_id, "NPEH-"))

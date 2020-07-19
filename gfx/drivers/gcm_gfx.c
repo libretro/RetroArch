@@ -261,7 +261,7 @@ waitFinish(gcmContextData *context, u32 sLabelVal)
 
   rsxFlushBuffer (context);
 
-  while(*(vu32 *) gcmGetLabelAddress (GCM_LABEL_INDEX) != sLabelVal)
+  while (*(vu32 *) gcmGetLabelAddress (GCM_LABEL_INDEX) != sLabelVal)
     usleep(30);
 
   sLabelVal++;

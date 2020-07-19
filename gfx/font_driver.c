@@ -1200,7 +1200,7 @@ font_data_t *font_driver_init_first(
 
    if (ok)
    {
-      font_data_t *font   = (font_data_t*)calloc(1, sizeof(*font));
+      font_data_t *font   = (font_data_t*)malloc(sizeof(*font));
       font->renderer      = (const font_renderer_t*)font_driver;
       font->renderer_data = font_handle;
       font->size          = font_size;

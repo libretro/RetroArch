@@ -46,48 +46,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 
-void RWebAudioRecalibrateTime(void);
 void dummyErrnoCodes(void);
-
-static unsigned emscripten_frame_count = 0;
-
-static void emscripten_mainloop(void)
-{
-   int ret;
-   video_frame_info_t video_info;
-
-   RWebAudioRecalibrateTime();
-
-   emscripten_frame_count++;
-
-   video_driver_build_info(&video_info);
-
-   /* Disable BFI during fast forward, slow-motion,
-    * and pause to prevent flicker. */
-   if (
-         video_info.black_frame_insertion
-         && !video_info.input_driver_nonblock_state
-         && !video_info.runloop_is_slowmotion
-         && !video_info.runloop_is_paused)
-   {
-      if ((emscripten_frame_count & 1) == 0)
-      {
-         glClear(GL_COLOR_BUFFER_BIT);
-         video_info.cb_swap_buffers(video_info.context_data);
-         return;
-      }
-   }
-
-   ret = runloop_iterate();
-
-   task_queue_check();
-
-   if (ret != -1)
-      return;
-
-   main_exit(NULL);
-   emscripten_force_exit(0);
-}
+void emscripten_mainloop(void);
 
 void cmd_savefiles(void)
 {

@@ -539,22 +539,54 @@ static void wiiusb_hid_joypad_get_buttons(void *data,
   BIT256_CLEAR_ALL_PTR(state);
 }
 
-static bool wiiusb_hid_joypad_button(void *data,
+static int16_t wiiusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-  input_bits_t buttons;
+   input_bits_t buttons;
 
-  wiiusb_hid_joypad_get_buttons(data, port, &buttons);
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   wiiusb_hid_joypad_get_buttons(data, port, &buttons);
 
-  /* Check hat. */
-  if (GET_HAT_DIR(joykey))
-    return false;
+   /* Check hat. */
+   if (GET_HAT_DIR(joykey))
+      return 0;
+   else if (joykey < 32)
+      return (BIT256_GET(buttons, joykey) != 0);
 
-  /* Check the button. */
-  if ((port < MAX_USERS) && (joykey < 32))
-    return (BIT256_GET(buttons, joykey) != 0);
+   return 0;
+}
 
-  return false;
+static int16_t wiiusb_hid_joypad_state(
+      void *data,
+      rarch_joypad_info_t *joypad_info,
+      const void *binds_data,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && wiiusb_hid_joypad_button(
+               data,
+               port, (uint16_t)joykey))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(wiiusb_hid_joypad_axis(data, port, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static bool wiiusb_hid_joypad_rumble(void *data, unsigned pad,
@@ -573,9 +605,6 @@ static int16_t wiiusb_hid_joypad_axis(void *data,
 {
    int16_t       val = 0;
    wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
@@ -675,6 +704,7 @@ hid_driver_t wiiusb_hid = {
    wiiusb_hid_joypad_query,
    wiiusb_hid_free,
    wiiusb_hid_joypad_button,
+   wiiusb_hid_joypad_state,
    wiiusb_hid_joypad_get_buttons,
    wiiusb_hid_joypad_axis,
    wiiusb_hid_poll,

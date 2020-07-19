@@ -33,29 +33,7 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct
-{
-   unsigned hours;
-   unsigned minutes;
-   unsigned seconds;
-} rtl_runtime_t;
-
-typedef struct
-{
-   unsigned year;
-   unsigned month;
-   unsigned day;
-   unsigned hour;
-   unsigned minute;
-   unsigned second;
-} rtl_last_played_t;
-
-typedef struct
-{
-   rtl_runtime_t runtime;
-   rtl_last_played_t last_played;
-   char path[PATH_MAX_LENGTH];
-} runtime_log_t;
+/* Enums */
 
 enum playlist_sublabel_last_played_style_type
 {
@@ -101,6 +79,32 @@ enum playlist_sublabel_runtime
    PLAYLIST_RUNTIME_AGGREGATE,
    PLAYLIST_RUNTIME_LAST
 };
+
+/* Structs */
+
+typedef struct
+{
+   unsigned hours;
+   unsigned minutes;
+   unsigned seconds;
+} rtl_runtime_t;
+
+typedef struct
+{
+   unsigned year;
+   unsigned month;
+   unsigned day;
+   unsigned hour;
+   unsigned minute;
+   unsigned second;
+} rtl_last_played_t;
+
+typedef struct
+{
+   rtl_runtime_t runtime;
+   rtl_last_played_t last_played;
+   char path[PATH_MAX_LENGTH];
+} runtime_log_t;
 
 /* Initialisation */
 

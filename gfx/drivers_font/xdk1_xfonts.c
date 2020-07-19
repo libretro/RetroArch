@@ -80,7 +80,7 @@ static void xfonts_render_msg(
       const struct font_params *params)
 {
    float x, y;
-   wchar_t str[PATH_MAX_LENGTH];
+   wchar_t *wc           = NULL;
    xfonts_t     *xfonts  = (xfonts_t*)data;
    settings_t *settings  = config_get_ptr();
    float video_msg_pos_x = settings->floats.video_msg_pos_x;
@@ -100,13 +100,19 @@ static void xfonts_render_msg(
    d3d8_device_get_backbuffer(xfonts->d3d->dev,
          -1, 0, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
 
-   mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
+   wc = utf8_to_utf16_string_alloc(msg);
 
+   if (wc)
+   {
 #ifdef __cplusplus
-   xfonts->debug_font->TextOut(xfonts->surf, str, (unsigned)-1, x, y);
+      xfonts->debug_font->TextOut(xfonts->surf,
+            wc, (unsigned)-1, x, y);
 #else
-   XFONT_TextOut(xfonts->debug_font, xfonts->surf, str, (unsigned)-1, x, y);
+      XFONT_TextOut(xfonts->debug_font, xfonts->surf,
+            wc, (unsigned)-1, x, y);
 #endif
+      free(wc);
+   }
    d3d8_surface_free(xfonts->surf);
 }
 

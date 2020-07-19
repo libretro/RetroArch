@@ -193,12 +193,14 @@ static void *dinput_init(const char *joypad_driver)
 
 static void dinput_poll(void *data)
 {
+   unsigned i;
    struct dinput_input *di = (struct dinput_input*)data;
 
    if (!di)
       return;
 
-   memset(di->state, 0, sizeof(di->state));
+   for (i = 0; i < 256; i++)
+      di->state[i] = 0;
    if (di->keyboard)
    {
       if (FAILED(IDirectInputDevice8_GetDeviceState(
@@ -207,7 +209,10 @@ static void dinput_poll(void *data)
          IDirectInputDevice8_Acquire(di->keyboard);
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->keyboard, sizeof(di->state), di->state)))
-            memset(di->state, 0, sizeof(di->state));
+         {
+            for (i = 0; i < 256; i++)
+               di->state[i] = 0;
+         }
       }
    }
 
@@ -219,7 +224,11 @@ static void dinput_poll(void *data)
       point.x = 0;
       point.y = 0;
 
-      memset(&mouse_state, 0, sizeof(mouse_state));
+      mouse_state.lX = 0;
+      mouse_state.lY = 0;
+      mouse_state.lZ = 0;
+      for (i = 0; i < 8; i++)
+         mouse_state.rgbButtons[i] = 0;
 
       if (FAILED(IDirectInputDevice8_GetDeviceState(
                   di->mouse, sizeof(mouse_state), &mouse_state)))
@@ -227,7 +236,13 @@ static void dinput_poll(void *data)
          IDirectInputDevice8_Acquire(di->mouse);
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->mouse, sizeof(mouse_state), &mouse_state)))
-            memset(&mouse_state, 0, sizeof(mouse_state));
+         {
+            mouse_state.lX = 0;
+            mouse_state.lY = 0;
+            mouse_state.lZ = 0;
+            for (i = 0; i < 8; i++)
+               mouse_state.rgbButtons[i] = 0;
+         }
       }
 
       di->mouse_rel_x = mouse_state.lX;
@@ -556,45 +571,32 @@ static int16_t dinput_input_state(void *data,
             if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
             {
                unsigned i;
-               int16_t ret = 0;
-               if (input_dinput.keyboard_mapping_blocked)
+               int16_t ret = di->joypad->state(
+                              joypad_info, binds[port], port);
+
+               if (settings->uints.input_mouse_index[port] == 0)
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
                      if (binds[port][i].valid)
                      {
-                        if (button_is_pressed(
-                                 di->joypad, 
-                                 joypad_info, binds[port], port, i))
-                           ret |= (1 << i);
-                        else if (
-                              settings->uints.input_mouse_index[port] == 0
-                              && dinput_mouse_button_pressed(
+                        if (dinput_mouse_button_pressed(
                                  di, port, binds[port][i].mbutton)
                            )
                            ret |= (1 << i);
                      }
                   }
                }
-               else
+
+               if (!input_dinput.keyboard_mapping_blocked)
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
                      if (binds[port][i].valid)
                      {
-                        if (button_is_pressed(
-                                 di->joypad, joypad_info,
-                                 binds[port], port, i))
-                           ret |= (1 << i);
-                        else if ((binds[port][i].key < RETROK_LAST) &&
+                        if ((binds[port][i].key < RETROK_LAST) &&
                               di->state[rarch_keysym_lut
                               [(enum retro_key)binds[port][i].key]] & 0x80)
-                           ret |= (1 << i);
-                        else if (
-                              settings->uints.input_mouse_index[port] == 0
-                              && dinput_mouse_button_pressed(
-                                 di, port, binds[port][i].mbutton)
-                              )
                            ret |= (1 << i);
                      }
                   }
@@ -634,15 +636,8 @@ static int16_t dinput_input_state(void *data,
             di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = input_joypad_analog(di->joypad, joypad_info,
-                     port, idx, id, binds[port]);
-            if (!ret)
-               ret = dinput_pressed_analog(di, binds[port], idx, id);
-            return ret;
-         }
+            return dinput_pressed_analog(di, binds[port], idx, id);
          break;
-
       case RETRO_DEVICE_MOUSE:
          {
             settings                   = config_get_ptr();
