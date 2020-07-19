@@ -343,7 +343,7 @@ static int16_t wpad_state(
                port, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(wpad_axis_state(port, joyaxis)) 
+            ((float)abs(wpad_axis(port, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
