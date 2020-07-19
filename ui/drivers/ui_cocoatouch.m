@@ -129,8 +129,6 @@ static void handle_touch_event(NSArray* touches)
 //         continue;
 
       coord = [touch locationInView:[touch view]];
-       NSLog(@"yoshi debug: handle_touch_event: coord = %f,%f , scaled = %f,%f",coord.x,coord.y,coord.x*scale,coord.y*scale);
-
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
          apple->touches[apple->touch_count   ].screen_x = coord.x * scale;
@@ -350,6 +348,7 @@ enum
          MetalView *v = [MetalView new];
          v.paused = YES;
          v.enableSetNeedsDisplay = NO;
+         v.multipleTouchEnabled = YES;
          _renderView = v;
       }
       break;
@@ -365,8 +364,6 @@ enum
          return;
    }
 
-//   _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-//    [_renderView setFrame:self.window.bounds];
     _renderView.translatesAutoresizingMaskIntoConstraints = NO;
     UIView *rootView = [CocoaView get].view;
     [rootView addSubview:_renderView];
@@ -374,10 +371,6 @@ enum
     [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
     [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
     [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
-    
-
-//    [self.window addSubview:_renderView];
-//   self.window.contentView.nextResponder = _listener;
 }
 
 - (apple_view_type_t)viewType {
@@ -385,12 +378,13 @@ enum
 }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
-    // hmm might need some scaling factor...
     MetalView *metalView = (MetalView*) _renderView;
-    [metalView setDrawableSize:CGSizeMake(mode.width, mode.height)];
-    NSLog(@"setVideoMode set drawable size to %i x %i",mode.width,mode.height);
-    // hardcoding test!
-    [metalView setDrawableSize:CGSizeMake(1242.0,2668.0)];
+    CGFloat scale = [[UIScreen mainScreen] scale];
+    [metalView setDrawableSize:CGSizeMake(
+                                          _renderView.bounds.size.width * scale,
+                                          _renderView.bounds.size.height * scale
+                                          )
+    ];
 }
 
 - (void)setCursorVisible:(bool)v {

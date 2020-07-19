@@ -501,12 +501,15 @@
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size
 {
     NSLog(@"mtkView drawableSizeWillChange to: %f x %f",size.width,size.height);
-    // due to autolayout constraints?
-    if (size.width == INFINITY || size.height == INFINITY) {
-        NSLog(@"mtkView drawableSizeWillChange width or height is inifinity, skipping...");
-        return;
-    }
+#ifdef HAVE_COCOATOUCH
+    CGFloat scale = [[UIScreen mainScreen] scale];
+//    // due to autolayout constraints?
+////    if (size.width == INFINITY || size.height == INFINITY) {
+//        NSLog(@"mtkView drawableSizeWillChange width or height is infinity, flipping...");
+    [self setViewportWidth:(unsigned int)view.bounds.size.width*scale height:(unsigned int)view.bounds.size.height*scale forceFull:NO allowRotate:YES];
+#else
    [self setViewportWidth:(unsigned int)size.width height:(unsigned int)size.height forceFull:NO allowRotate:YES];
+#endif
 }
 
 - (void)drawInMTKView:(MTKView *)view
