@@ -7554,6 +7554,9 @@ unsigned menu_displaylist_build_list(
             bool widgets_supported   = video_driver_has_widgets();
             bool menu_enable_widgets = settings->bools.menu_enable_widgets;
 #endif
+#ifdef HAVE_SCREENSHOTS
+            bool notification_show_screenshot = settings->bools.notification_show_screenshot;
+#endif
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_FPS_SHOW,                                PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,                     PARSE_ONLY_UINT,  false },
@@ -7599,15 +7602,19 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION:
 #ifdef HAVE_SCREENSHOTS
-                     if (widgets_supported &&
-                           menu_enable_widgets)
+                     if (  widgets_supported            &&
+                           menu_enable_widgets          &&
+                           notification_show_screenshot
+                        )
                         build_list[i].checked = true;
 #endif
                      break;
                   case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH:
 #ifdef HAVE_SCREENSHOTS
-                     if (widgets_supported &&
-                           menu_enable_widgets)
+                     if (  widgets_supported            &&
+                           menu_enable_widgets          &&
+                           notification_show_screenshot
+                           )
                         build_list[i].checked = true;
 #endif
                      break;
