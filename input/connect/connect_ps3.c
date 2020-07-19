@@ -154,7 +154,9 @@ static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
    val = device->data[7 + axis];
    val = (val << 8) - 0x8000;
 
-   return (abs(val) > 0x1000) ? val : 0;
+   if (abs(val) > 0x1000)
+      return val;
+   return 0;
 }
 
 static void hidpad_ps3_packet_handler(void *data,

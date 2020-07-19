@@ -98,7 +98,9 @@ static int16_t hidpad_ps2adapter_get_axis(void *data, unsigned axis)
 
    val = (val << 8) - 0x8000;
 
-   return (abs(val) > 0x1000) ? val : 0;
+   if (abs(val) > 0x1000)
+      return val;
+   return 0;
 }
 
 #define PS2_H_GET(a) (a & 0x0F) /*HAT MASK = 0x0F */
