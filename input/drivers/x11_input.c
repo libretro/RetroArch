@@ -40,10 +40,6 @@ typedef struct x11_input
    Window win;
 
    char state[32];
-   bool mouse_wu;
-   bool mouse_wd;
-   bool mouse_hwu;
-   bool mouse_hwd;
    bool mouse_l, mouse_r, mouse_m;
    int mouse_x, mouse_y;
    int mouse_last_x, mouse_last_y;
@@ -81,33 +77,6 @@ static bool x_keyboard_pressed(x11_input_t *x11, unsigned key)
    return x11->state[keycode >> 3] & (1 << (keycode & 7));
 }
 
-static int16_t x_mouse_state_wheel(x11_input_t *x11, unsigned id)
-{
-   int16_t ret = 0;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         ret            = x11->mouse_wu;
-         x11->mouse_wu  = 0;
-         return ret;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         ret            = x11->mouse_wd;
-         x11->mouse_wd  = 0;
-         return ret;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         ret            = x11->mouse_hwu;
-         x11->mouse_hwu = 0;
-         return ret;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         ret            = x11->mouse_hwd;
-         x11->mouse_hwd = 0;
-         return ret;
-   }
-
-   return 0;
-}
-
 static bool x_mouse_button_pressed(
       x11_input_t *x11, unsigned port, unsigned key)
 {
@@ -131,7 +100,7 @@ static bool x_mouse_button_pressed(
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return x_mouse_state_wheel(x11, key);
+         return x_mouse_state_wheel(key);
    }
 
    return false;
@@ -230,7 +199,7 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return x_mouse_state_wheel(x11, id);
+         return x_mouse_state_wheel(id);
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return x11->mouse_m;
    }
