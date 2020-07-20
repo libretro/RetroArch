@@ -88,7 +88,7 @@ static int16_t ps2_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return pad_state[port] & (UINT64_C(1) << i);
+   return pad_state[port] & (UINT64_C(1) << joykey);
 }
 
 static int16_t ps2_joypad_axis_state(unsigned port_num, uint32_t joyaxis)
