@@ -12729,7 +12729,7 @@ static bool setting_append_list(
                &settings->uints.notification_show_screenshot_duration,
                MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
                MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-               notification_show_screenshot_duration,
+               DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
                &group_info,
                &subgroup_info,
                parent_group,
