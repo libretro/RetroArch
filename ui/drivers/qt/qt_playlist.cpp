@@ -1336,12 +1336,11 @@ bool MainWindow::currentPlaylistIsSpecial()
 bool MainWindow::currentPlaylistIsAll()
 {
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
-   if (!currentPlaylistItem)
-      return false;
-   if (currentPlaylistItem->data(Qt::UserRole).toString() 
+   if (
+            currentPlaylistItem 
+         && currentPlaylistItem->data(Qt::UserRole).toString() 
          == ALL_PLAYLISTS_TOKEN)
       return true;
-
    return false;
 }
 
@@ -1425,9 +1424,10 @@ QString MainWindow::getPlaylistDefaultCore(QString dbName)
    /* Load playlist, if required */
    if (cachedPlaylist)
    {
-      if (string_is_equal(playlistPath, playlist_get_conf_path(cachedPlaylist)))
+      if (string_is_equal(playlistPath,
+               playlist_get_conf_path(cachedPlaylist)))
       {
-         playlist = cachedPlaylist;
+         playlist     = cachedPlaylist;
          loadPlaylist = false;
       }
    }
@@ -1460,7 +1460,8 @@ void MainWindow::getPlaylistFiles()
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
 
-   m_playlistFiles = playlistDir.entryList(QDir::NoDotAndDotDot | QDir::Readable | QDir::Files, QDir::Name);
+   m_playlistFiles = playlistDir.entryList(
+         QDir::NoDotAndDotDot | QDir::Readable | QDir::Files, QDir::Name);
 }
 
 void PlaylistModel::getPlaylistItems(QString path)
