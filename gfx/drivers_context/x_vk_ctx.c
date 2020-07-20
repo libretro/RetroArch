@@ -25,6 +25,7 @@
 
 #include <string/stdstring.h>
 #include <compat/strcasestr.h>
+#include <retro_timers.h>
 #include <X11/Xatom.h>
 
 #include "../../configuration.h"
@@ -150,7 +151,14 @@ static void gfx_ctx_x_vk_swap_buffers(void *data)
 {
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
 
-   vulkan_present(&x->vk, x->vk.context.current_swapchain_index);
+   if (x->vk.context.has_acquired_swapchain)
+   {
+      x->vk.context.has_acquired_swapchain = false;
+      if (x->vk.swapchain == VK_NULL_HANDLE)
+         retro_sleep(10);
+      else
+         vulkan_present(&x->vk, x->vk.context.current_swapchain_index);
+   }
    vulkan_acquire_next_image(&x->vk);
 }
 

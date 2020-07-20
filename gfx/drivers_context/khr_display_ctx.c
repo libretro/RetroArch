@@ -15,6 +15,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -230,7 +231,14 @@ static void gfx_ctx_khr_display_set_swap_interval(void *data,
 static void gfx_ctx_khr_display_swap_buffers(void *data)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-   vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
+   if (khr->vk.context.has_acquired_swapchain)
+   {
+      khr->vk.context.has_acquired_swapchain = false;
+      if (khr->vk.swapchain == VK_NULL_HANDLE)
+         retro_sleep(10);
+      else
+         vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
+   }
    vulkan_acquire_next_image(&khr->vk);
 }
 

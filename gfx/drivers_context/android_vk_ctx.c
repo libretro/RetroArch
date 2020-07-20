@@ -20,6 +20,7 @@
 #include <formats/image.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
+#include <retro_timers.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -257,7 +258,14 @@ static void android_gfx_ctx_vk_swap_buffers(void *data)
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
 
-   vulkan_present(&and->vk, and->vk.context.current_swapchain_index);
+   if (and->vk.context.has_acquired_swapchain)
+   {
+      and->vk.context.has_acquired_swapchain = false;
+      if (and->vk.swapchain == VK_NULL_HANDLE)
+         retro_sleep(10);
+      else
+         vulkan_present(&and->vk, and->vk.context.current_swapchain_index);
+   }
    vulkan_acquire_next_image(&and->vk);
 }
 

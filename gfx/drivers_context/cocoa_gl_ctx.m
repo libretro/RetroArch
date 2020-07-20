@@ -33,6 +33,7 @@
 #endif
 
 #include <retro_assert.h>
+#include <retro_timers.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
@@ -641,7 +642,14 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         vulkan_present(&cocoa_ctx->vk, cocoa_ctx->vk.context.current_swapchain_index);
+         if (cocoa_ctx->vk.context.has_acquired_swapchain)
+         {
+            cocoa_ctx->vk.context.has_acquired_swapchain = false;
+            if (cocoa_ctx->vk.swapchain == VK_NULL_HANDLE)
+               retro_sleep(10);
+            else
+               vulkan_present(&cocoa_ctx->vk, cocoa_ctx->vk.context.current_swapchain_index);
+         }
          vulkan_acquire_next_image(&cocoa_ctx->vk);
 #endif
          break;

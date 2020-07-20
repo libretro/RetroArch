@@ -34,6 +34,7 @@
 
 #include <dynamic/dylib.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -101,7 +102,15 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
 
 static void gfx_ctx_w_vk_swap_buffers(void *data)
 {
-   vulkan_present(&win32_vk, win32_vk.context.current_swapchain_index);
+   if (win32_vk.context.has_acquired_swapchain)
+   {
+      win32_vk.context.has_acquired_swapchain = false;
+      /* We're still waiting for a proper swapchain, so just fake it. */
+      if (win32_vk.swapchain == VK_NULL_HANDLE)
+         retro_sleep(10);
+      else
+         vulkan_present(&win32_vk, win32_vk.context.current_swapchain_index);
+   }
    vulkan_acquire_next_image(&win32_vk);
 }
 

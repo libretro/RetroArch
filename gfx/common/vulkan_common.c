@@ -2561,19 +2561,8 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
    VkPresentInfoKHR present;
-   VkResult result                    = VK_SUCCESS;
-   VkResult err                       = VK_SUCCESS;
-
-   if (!vk->context.has_acquired_swapchain)
-      return;
-   vk->context.has_acquired_swapchain = false;
-
-   /* We're still waiting for a proper swapchain, so just fake it. */
-   if (vk->swapchain == VK_NULL_HANDLE)
-   {
-      retro_sleep(10);
-      return;
-   }
+   VkResult result                 = VK_SUCCESS;
+   VkResult err                    = VK_SUCCESS;
 
    present.sType                   = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
    present.pNext                   = NULL;
@@ -2590,8 +2579,10 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #endif
    err = vkQueuePresentKHR(vk->context.queue, &present);
 
-   /* VK_SUBOPTIMAL_KHR can be returned on Android 10 when prerotate is not dealt with.
-    * This is not an error we need to care about, and we'll treat it as SUCCESS. */
+   /* VK_SUBOPTIMAL_KHR can be returned on 
+    * Android 10 when prerotate is not dealt with.
+    * This is not an error we need to care about, 
+    * and we'll treat it as SUCCESS. */
    if (result == VK_SUBOPTIMAL_KHR)
       result = VK_SUCCESS;
    if (err == VK_SUBOPTIMAL_KHR)

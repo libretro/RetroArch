@@ -45,6 +45,8 @@
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../common/wayland/xdg-decoration-unstable-v1.h"
 
+#include <retro_timers.h>
+
 #ifndef EGL_PLATFORM_WAYLAND_KHR
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #endif
@@ -609,7 +611,14 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
+   if (wl->vk.context.has_acquired_swapchain)
+   {
+      wl->vk.context.has_acquired_swapchain = false;
+      if (wl->vk.swapchain == VK_NULL_HANDLE)
+         retro_sleep(10);
+      else
+         vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
+   }
    vulkan_acquire_next_image(&wl->vk);
    flush_wayland_fd(&wl->input);
 }
