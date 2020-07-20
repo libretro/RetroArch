@@ -40,8 +40,6 @@
 #define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" device "\"\ninput_driver = \"" driver "\"\n" binds
 #define DECL_AUTOCONF_PID(pid, vid, driver, binds) "input_product_id = " #pid "\ninput_vendor_id = " #vid "\ninput_driver = \"" driver "\"\n" binds
 
-/* TODO/FIXME - Missing L2/R2 */
-
 #define SDL2_DEFAULT_BINDS \
 DECL_BTN(a, 1) \
 DECL_BTN(b, 0) \
@@ -55,6 +53,8 @@ DECL_BTN(left, 13) \
 DECL_BTN(right, 14) \
 DECL_BTN(l, 9) \
 DECL_BTN(r, 10) \
+DECL_AXIS(l2, +4) \
+DECL_AXIS(r2, +5) \
 DECL_BTN(l3, 7) \
 DECL_BTN(r3, 8) \
 DECL_AXIS(l_x_plus,  +0) \
@@ -665,14 +665,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("XInput Controller (User 4)", "xdk", XINPUT_DEFAULT_BINDS),
 #elif defined(_WIN32)
 #if !defined(__STDC_C89__) && !defined(__STDC_C89_AMENDMENT_1__)
-   DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "xinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XInput Controller (User 2)", "xinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XInput Controller (User 3)", "xinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XInput Controller (User 4)", "xinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XBOX One Controller (User 1)", "xinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XBOX One Controller (User 2)", "xinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XBOX One Controller (User 3)", "xinput", XINPUT_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("XBOX One Controller (User 4)", "xinput", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller", "xinput", XINPUT_DEFAULT_BINDS),
 #endif
 #endif
 #ifdef HAVE_SDL2
