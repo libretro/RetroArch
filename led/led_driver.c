@@ -16,7 +16,6 @@
 #include <string/stdstring.h>
 
 #include "led_driver.h"
-#include "../verbosity.h"
 
 static const led_driver_t *current_led_driver = NULL;
 
@@ -49,9 +48,6 @@ void led_driver_init(const char *led_driver)
    if (string_is_equal("rpi", drivername))
       current_led_driver  = &rpi_led_driver;
 #endif
-
-   RARCH_LOG("[LED]: LED driver = '%s' %p\n",
-         drivername, current_led_driver);
 
    if (current_led_driver)
       (*current_led_driver->init)();
