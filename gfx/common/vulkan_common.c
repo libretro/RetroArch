@@ -123,7 +123,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
 }
 #endif
 
-void vulkan_emulated_mailbox_deinit(struct vulkan_emulated_mailbox *mailbox)
+static void vulkan_emulated_mailbox_deinit(
+      struct vulkan_emulated_mailbox *mailbox)
 {
    if (mailbox->thread)
    {
@@ -142,51 +143,45 @@ void vulkan_emulated_mailbox_deinit(struct vulkan_emulated_mailbox *mailbox)
    memset(mailbox, 0, sizeof(*mailbox));
 }
 
-VkResult vulkan_emulated_mailbox_acquire_next_image(
+static VkResult vulkan_emulated_mailbox_acquire_next_image(
       struct vulkan_emulated_mailbox *mailbox,
       unsigned *index)
 {
-   VkResult res;
-   if (mailbox->swapchain == VK_NULL_HANDLE)
-      return VK_ERROR_OUT_OF_DATE_KHR;
+   VkResult res                    = VK_TIMEOUT;
 
    slock_lock(mailbox->lock);
 
    if (!mailbox->has_pending_request)
    {
-      mailbox->request_acquire = true;
+      mailbox->request_acquire     = true;
       scond_signal(mailbox->cond);
    }
 
-   mailbox->has_pending_request = true;
+   mailbox->has_pending_request    = true;
 
    if (mailbox->acquired)
    {
-      res = mailbox->result;
-      *index = mailbox->index;
+      res                          = mailbox->result;
+      *index                       = mailbox->index;
       mailbox->has_pending_request = false;
-      mailbox->acquired = false;
+      mailbox->acquired            = false;
    }
-   else
-      res = VK_TIMEOUT;
 
    slock_unlock(mailbox->lock);
    return res;
 }
 
-VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
+static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
       struct vulkan_emulated_mailbox *mailbox,
       unsigned *index)
 {
    VkResult res;
-   if (mailbox->swapchain == VK_NULL_HANDLE)
-      return VK_ERROR_OUT_OF_DATE_KHR;
 
    slock_lock(mailbox->lock);
 
    if (!mailbox->has_pending_request)
    {
-      mailbox->request_acquire = true;
+      mailbox->request_acquire  = true;
       scond_signal(mailbox->cond);
    }
 
@@ -197,9 +192,9 @@ VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 
    res = mailbox->result;
    if (res == VK_SUCCESS)
-      *index = mailbox->index;
+      *index                    = mailbox->index;
    mailbox->has_pending_request = false;
-   mailbox->acquired = false;
+   mailbox->acquired            = false;
 
    slock_unlock(mailbox->lock);
    return res;
@@ -264,7 +259,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
    vkDestroyFence(mailbox->device, fence, NULL);
 }
 
-bool vulkan_emulated_mailbox_init(
+static bool vulkan_emulated_mailbox_init(
       struct vulkan_emulated_mailbox *mailbox,
       VkDevice device,
       VkSwapchainKHR swapchain)
@@ -2809,8 +2804,11 @@ retry:
       /* Non-blocking acquire. If we don't get a swapchain frame right away,
        * just skip rendering to the swapchain this frame, similar to what
        * MAILBOX would do. */
-      err   = vulkan_emulated_mailbox_acquire_next_image(
-            &vk->mailbox, &vk->context.current_swapchain_index);
+      if (vk->mailbox.swapchain == VK_NULL_HANDLE)
+         err   = VK_ERROR_OUT_OF_DATE_KHR;
+      else
+         err   = vulkan_emulated_mailbox_acquire_next_image(
+               &vk->mailbox, &vk->context.current_swapchain_index);
    }
    else
    {
@@ -2953,22 +2951,32 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       RARCH_LOG("[Vulkan]: Do not need to re-create swapchain.\n");
       vulkan_create_wait_fences(vk);
 
-      if (vk->emulating_mailbox && vk->mailbox.swapchain == VK_NULL_HANDLE)
+      if (     vk->emulating_mailbox 
+            && vk->mailbox.swapchain == VK_NULL_HANDLE)
       {
-         vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
+         vulkan_emulated_mailbox_init(
+               &vk->mailbox, vk->context.device, vk->swapchain);
          vk->created_new_swapchain = false;
          return true;
       }
-      else if (!vk->emulating_mailbox && vk->mailbox.swapchain != VK_NULL_HANDLE)
+      else if (
+               !vk->emulating_mailbox 
+            &&  vk->mailbox.swapchain != VK_NULL_HANDLE)
       {
-         /* We are tearing down, and entering a state where we are supposed to have
+         /* We are tearing down, and entering a state 
+          * where we are supposed to have
           * acquired an image, so block until we have acquired. */
          if (!vk->context.has_acquired_swapchain)
-            res = vulkan_emulated_mailbox_acquire_next_image_blocking(
-                  &vk->mailbox,
-                  &vk->context.current_swapchain_index);
+         {
+            if (vk->mailbox.swapchain == VK_NULL_HANDLE)
+               res = VK_ERROR_OUT_OF_DATE_KHR;
+            else
+               res = vulkan_emulated_mailbox_acquire_next_image_blocking(
+                     &vk->mailbox,
+                     &vk->context.current_swapchain_index);
+         }
          else
-            res = VK_SUCCESS;
+            res    = VK_SUCCESS;
 
          vulkan_emulated_mailbox_deinit(&vk->mailbox);
 
