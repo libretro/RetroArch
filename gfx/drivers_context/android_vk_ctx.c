@@ -330,7 +330,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    NULL,
    NULL,
    NULL,
-   "android_vk",
+   "vk_android",
    android_gfx_ctx_vk_get_flags,
    android_gfx_ctx_vk_set_flags,
    android_gfx_ctx_vk_bind_hw_render,

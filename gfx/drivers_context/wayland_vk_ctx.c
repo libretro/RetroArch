@@ -680,7 +680,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    NULL,
    NULL,
    gfx_ctx_wl_show_mouse,
-   "wayland",
+   "vk_wayland",
    gfx_ctx_wl_get_flags,
    gfx_ctx_wl_set_flags,
    gfx_ctx_wl_bind_hw_render,

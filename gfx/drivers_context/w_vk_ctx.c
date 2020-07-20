@@ -343,7 +343,7 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    NULL,
    NULL,
    win32_show_cursor,
-   "w_vk",
+   "vk_w",
    gfx_ctx_w_vk_get_flags,
    gfx_ctx_w_vk_set_flags,
    gfx_ctx_w_vk_bind_hw_render,
