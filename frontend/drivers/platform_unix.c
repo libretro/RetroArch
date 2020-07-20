@@ -119,6 +119,14 @@ static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
 static char unix_cpu_model_name[64] = {0};
 #endif
 
+/* /proc/meminfo parameters */
+#define PROC_MEMINFO_PATH              "/proc/meminfo"
+#define PROC_MEMINFO_MEM_AVAILABLE_TAG "MemAvailable:"
+#define PROC_MEMINFO_MEM_FREE_TAG      "MemFree:"
+#define PROC_MEMINFO_BUFFERS_TAG       "Buffers:"
+#define PROC_MEMINFO_CACHED_TAG        "Cached:"
+#define PROC_MEMINFO_SHMEM_TAG         "Shmem:"
+
 #if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
 static int speak_pid                            = 0;
 #endif
@@ -2131,35 +2139,85 @@ static uint64_t frontend_unix_get_mem_total(void)
 
 static uint64_t frontend_unix_get_mem_free(void)
 {
-#if defined(ANDROID) || (!defined(__linux__) && !defined(__OpenBSD__))
    char line[256];
-   uint64_t total    = 0;
-   uint64_t freemem  = 0;
-   uint64_t buffers  = 0;
-   uint64_t cached   = 0;
-   FILE* data = fopen("/proc/meminfo", "r");
-   if (!data)
+   unsigned long mem_available = 0;
+   unsigned long mem_free      = 0;
+   unsigned long buffers       = 0;
+   unsigned long cached        = 0;
+   unsigned long shmem         = 0;
+   bool mem_available_found    = false;
+   bool mem_free_found         = false;
+   bool buffers_found          = false;
+   bool cached_found           = false;
+   bool shmem_found            = false;
+   FILE* meminfo_file          = NULL;
+
+   line[0] = '\0';
+
+   /* Open /proc/meminfo */
+   meminfo_file = fopen(PROC_MEMINFO_PATH, "r");
+
+   if (!meminfo_file)
       return 0;
 
-   while (fgets(line, sizeof(line), data))
+   /* Parse lines
+    * (Note: virtual filesystem, so don't have to
+    *  worry about buffering file reads) */
+   while (fgets(line, sizeof(line), meminfo_file))
    {
-      if (sscanf(line, "MemTotal: " STRING_REP_USIZE " kB", (size_t*)&total)  == 1)
-         total   *= 1024;
-      if (sscanf(line, "MemFree: " STRING_REP_USIZE " kB", (size_t*)&freemem) == 1)
-         freemem *= 1024;
-      if (sscanf(line, "Buffers: " STRING_REP_USIZE " kB", (size_t*)&buffers) == 1)
-         buffers *= 1024;
-      if (sscanf(line, "Cached: " STRING_REP_USIZE " kB", (size_t*)&cached)   == 1)
-         cached  *= 1024;
+      /* If 'MemAvailable' is found, we can return immediately */
+      if (!mem_available_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_MEM_AVAILABLE_TAG,
+               STRLEN_CONST(PROC_MEMINFO_MEM_AVAILABLE_TAG)))
+         {
+            mem_available_found = true;
+            sscanf(line, PROC_MEMINFO_MEM_AVAILABLE_TAG " %lu kB", &mem_available);
+            break;
+         }
+
+      if (!mem_free_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_MEM_FREE_TAG,
+               STRLEN_CONST(PROC_MEMINFO_MEM_FREE_TAG)))
+         {
+            mem_free_found = true;
+            sscanf(line, PROC_MEMINFO_MEM_FREE_TAG " %lu kB", &mem_free);
+         }
+
+      if (!buffers_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_BUFFERS_TAG,
+               STRLEN_CONST(PROC_MEMINFO_BUFFERS_TAG)))
+         {
+            buffers_found = true;
+            sscanf(line, PROC_MEMINFO_BUFFERS_TAG " %lu kB", &buffers);
+         }
+
+      if (!cached_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_CACHED_TAG,
+               STRLEN_CONST(PROC_MEMINFO_CACHED_TAG)))
+         {
+            cached_found = true;
+            sscanf(line, PROC_MEMINFO_CACHED_TAG " %lu kB", &cached);
+         }
+
+      if (!shmem_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_SHMEM_TAG,
+               STRLEN_CONST(PROC_MEMINFO_SHMEM_TAG)))
+         {
+            shmem_found = true;
+            sscanf(line, PROC_MEMINFO_SHMEM_TAG " %lu kB", &shmem);
+         }
    }
 
-   fclose(data);
-   return freemem - buffers - cached;
-#else
-   unsigned long long ps = sysconf(_SC_PAGESIZE);
-   unsigned long long pn = sysconf(_SC_AVPHYS_PAGES);
-   return ps * pn;
-#endif
+   /* Close /proc/meminfo */
+   fclose(meminfo_file);
+   meminfo_file = NULL;
+
+   /* Use 'accurate' free memory value, if available */
+   if (mem_available_found)
+      return (uint64_t)mem_available * 1024;
+
+   /* ...Otherwise, use estimate */
+   return (uint64_t)((mem_free + buffers + cached) - shmem) * 1024;
 }
 
 /*#include <valgrind/valgrind.h>*/
