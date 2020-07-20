@@ -315,24 +315,6 @@ static const char *dinput_joypad_name(unsigned port)
    return NULL;
 }
 
-static int32_t dinput_joypad_vid(unsigned port)
-{
-    return g_pads[port].vid;
-}
-
-static int32_t dinput_joypad_pid(unsigned port)
-{
-    return g_pads[port].pid;
-}
-
-static const char *dinput_joypad_friendly_name(unsigned port)
-{
-   if (port < MAX_USERS)
-      return g_pads[port].joy_friendly_name;
-
-   return NULL;
-}
-
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
 #ifdef HAVE_XINPUT
@@ -406,12 +388,12 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
    {
       input_autoconfigure_connect(
-            dinput_joypad_name(g_joypad_cnt),
-            dinput_joypad_friendly_name(g_joypad_cnt),
+            g_pads[g_joypad_cnt].joy_name,
+            g_pads[g_joypad_cnt].joy_friendly_name,
             dinput_joypad.ident,
             g_joypad_cnt,
-            dinput_joypad_vid(g_joypad_cnt),
-            dinput_joypad_pid(g_joypad_cnt));
+            g_pads[g_joypad_cnt].vid,
+            g_pads[g_joypad_cnt].pid);
    }
 
 #ifdef HAVE_XINPUT
@@ -693,17 +675,17 @@ static bool dinput_joypad_query_pad(unsigned port)
 }
 
 bool dinput_joypad_set_rumble(unsigned port,
-      enum retro_rumble_effect type, uint16_t strenght)
+      enum retro_rumble_effect type, uint16_t strength)
 {
    int i = type == RETRO_RUMBLE_STRONG ? 1 : 0;
 
    if (port >= g_joypad_cnt || !g_pads[port].rumble_iface[i])
       return false;
 
-   if (strenght)
+   if (strength)
    {
       g_pads[port].rumble_props.dwGain =
-            (DWORD)((double)strenght / 65535.0 * (double)DI_FFNOMINALMAX);
+            (DWORD)((double)strength / 65535.0 * (double)DI_FFNOMINALMAX);
       IDirectInputEffect_SetParameters(g_pads[port].rumble_iface[i],
             &g_pads[port].rumble_props, DIEP_GAIN | DIEP_START);
    }
