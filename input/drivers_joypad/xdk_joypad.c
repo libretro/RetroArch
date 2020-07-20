@@ -90,10 +90,11 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 };
 #endif
 
-static int16_t xdk_joypad_button_state(XINPUT_GAMEPAD *pad,
+static int16_t xdk_joypad_button_state(
+      XINPUT_GAMEPAD *pad,
+      uint16_t btn_word,
       unsigned port, uint16_t joykey)
 {
-   uint16_t btn_word = pad->wButtons;
    unsigned hat_dir  = GET_HAT_DIR(joykey);
 
    if (hat_dir)
@@ -155,10 +156,13 @@ static int16_t xdk_joypad_button_state(XINPUT_GAMEPAD *pad,
 
 static int16_t xdk_joypad_button(unsigned port, uint16_t joykey)
 {
-   XINPUT_GAMEPAD *pad = &(g_xinput_states[port].xstate.Gamepad);
+   uint16_t btn_word   = 0;
+   XINPUT_GAMEPAD *pad = NULL;
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return xdk_joypad_button_state(pad, port, joykey);
+   pad                 = &(g_xinput_states[port].xstate.Gamepad);
+   btn_word            = pad->wButtons;
+   return xdk_joypad_button_state(pad, btn_word, port, joykey);
 }
 
 static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
@@ -233,10 +237,14 @@ static int16_t xdk_joypad_state(
 {
    unsigned i;
    int16_t ret         = 0;
-   XINPUT_GAMEPAD *pad = &(g_xinput_states[port].xstate.Gamepad);
+   XINPUT_GAMEPAD *pad = NULL;
+   uint16_t btn_word   = 0;
 
    if (port >= DEFAULT_MAX_PADS)
       return 0;
+
+   pad                 = &(g_xinput_states[port].xstate.Gamepad);
+   btn_word            = pad->wButtons;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -248,7 +256,7 @@ static int16_t xdk_joypad_state(
       if (
                (uint16_t)joykey != NO_BTN 
             && xdk_joypad_button_state(
-               pad, port, (uint16_t)joykey))
+               pad, btn_word, port, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
             ((float)abs(xdk_joypad_axis_state(pad, port, joyaxis)) 
