@@ -20,6 +20,8 @@ snes_ntsc_setup_t const retroarch_snes_ntsc_composite  = { 0, 0, 0, 0, 0,  0, 0,
 snes_ntsc_setup_t const retroarch_snes_ntsc_svideo     = { 0, 0, 0, 0,.2,  0,.2, -1, -1, 0,  1, 0, 0 };
 snes_ntsc_setup_t const retroarch_snes_ntsc_rgb        = { 0, 0, 0, 0,.2,  0,.7, -1, -1,-1,  1, 0, 0 };
 
+int hires_blit = 1;
+
 #define alignment_count 3
 #define burst_count     3
 #define rescale_in      8
