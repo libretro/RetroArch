@@ -156,6 +156,7 @@ typedef struct glsl_shader_data
    struct video_shader *shader;
 } glsl_shader_data_t;
 
+/* TODO/FIXME - static globals */
 static bool glsl_core;
 static unsigned glsl_major;
 static unsigned glsl_minor;
