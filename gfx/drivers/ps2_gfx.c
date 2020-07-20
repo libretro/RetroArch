@@ -39,6 +39,7 @@ typedef struct ps2_video
    bool menuVisible;
    bool fullscreen;
    bool vsync;
+   int vsync_callback_id;
    bool force_aspect;
 
    int PSM;
@@ -53,9 +54,25 @@ typedef struct ps2_video
    GSTEXTURE *coreTexture;
 } ps2_video_t;
 
+static int vsync_sema_id;
+
 /* PRIVATE METHODS */
+static int vsync_handler()
+{
+   iSignalSema(vsync_sema_id);
+
+   ExitHandler();
+   return 0;
+}
+
 static GSGLOBAL *init_GSGlobal(void)
 {
+   ee_sema_t sema;
+   sema.init_count = 0;
+   sema.max_count = 1;
+   sema.option = 0;
+   vsync_sema_id = CreateSema(&sema);
+
    GSGLOBAL *gsGlobal        = gsKit_init_global();
 
    gsGlobal->Mode            = GS_MODE_NTSC;
@@ -83,6 +100,41 @@ static GSGLOBAL *init_GSGlobal(void)
    return gsGlobal;
 }
 
+static void deinit_GSGlobal(GSGLOBAL *gsGlobal)
+{
+   gsKit_clear(gsGlobal, GS_BLACK);
+   gsKit_vram_clear(gsGlobal);
+   gsKit_deinit_global(gsGlobal);
+}
+
+// Copy of gsKit_sync_flip, but without the 'flip'
+static void gsKit_sync(GSGLOBAL *gsGlobal)
+{
+   if(!gsGlobal->FirstFrame)
+      WaitSema(vsync_sema_id);
+      
+      while (PollSema(vsync_sema_id) >= 0)
+         ;
+}
+
+// Copy of gsKit_sync_flip, but without the 'sync'
+   static void gsKit_flip(GSGLOBAL *gsGlobal)
+   {
+   if(!gsGlobal->FirstFrame)
+   {
+      if(gsGlobal->DoubleBuffering == GS_SETTING_ON)
+      {
+         GS_SET_DISPFB2( gsGlobal->ScreenBuffer[gsGlobal->ActiveBuffer & 1] / 8192,
+            gsGlobal->Width / 64, gsGlobal->PSM, 0, 0 );
+
+         gsGlobal->ActiveBuffer ^= 1;
+      }
+
+   }
+
+   gsKit_setactive(gsGlobal);
+}
+
 static GSTEXTURE *prepare_new_texture(void)
 {
    GSTEXTURE *texture = (GSTEXTURE*)calloc(1, sizeof(*texture));
@@ -94,6 +146,7 @@ static void init_ps2_video(ps2_video_t *ps2)
    ps2->gsGlobal    = init_GSGlobal();
    gsKit_TexManager_init(ps2->gsGlobal);
    
+   ps2->vsync_callback_id = gsKit_add_vsync_handler(vsync_handler);
    ps2->menuTexture = prepare_new_texture();
    ps2->coreTexture = prepare_new_texture();
 
@@ -162,7 +215,10 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
 static void refreshScreen(ps2_video_t *ps2)
 {
    if (ps2->vsync)
-      gsKit_sync_flip(ps2->gsGlobal);
+   {
+      gsKit_sync(ps2->gsGlobal);
+      gsKit_flip(ps2->gsGlobal);
+   }
    gsKit_queue_exec(ps2->gsGlobal);
    gsKit_TexManager_nextFrame(ps2->gsGlobal);
 }
@@ -296,7 +352,11 @@ static void ps2_gfx_free(void *data)
    free(ps2->menuTexture);
    free(ps2->coreTexture);
 
-   gsKit_deinit_global(ps2->gsGlobal);
+   gsKit_remove_vsync_handler(ps2->vsync_callback_id);
+   deinit_GSGlobal(ps2->gsGlobal);
+
+   if (vsync_sema_id >= 0)
+      DeleteSema(vsync_sema_id);
 
    free(data);
 }
