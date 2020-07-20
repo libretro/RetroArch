@@ -72,9 +72,10 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
+#endif
+
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.h"
-#endif
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
