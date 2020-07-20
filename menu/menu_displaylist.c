@@ -7574,7 +7574,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_SCREENSHOTS
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT,            PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,   PARSE_ONLY_UINT,  false },
-               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,      PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,      PARSE_ONLY_UINT,  false },
 #endif
             };
 
@@ -7600,15 +7600,20 @@ unsigned menu_displaylist_build_list(
                            menu_enable_widgets)
                         build_list[i].checked = true;
                      break;
-                  case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION:
 #ifdef HAVE_SCREENSHOTS
+                  case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION:
                      if (  widgets_supported            &&
                            menu_enable_widgets          &&
                            notification_show_screenshot
                         )
                         build_list[i].checked = true;
-#endif
                      break;
+                  case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH:
+                     if (  widgets_supported            &&
+                           menu_enable_widgets)
+                        build_list[i].checked = true;
+                     break;
+#endif
 #endif
                   default:
                      break;

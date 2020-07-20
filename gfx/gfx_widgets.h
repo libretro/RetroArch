@@ -77,6 +77,14 @@ enum notification_show_screenshot_duration
    NOTIFICATION_SHOW_SCREENSHOT_DURATION_LAST
 };
 
+enum notification_show_screenshot_flash
+{
+   NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL = 0,
+   NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF,
+   NOTIFICATION_SHOW_SCREENSHOT_FLASH_LAST
+};
+
 /* This structure holds all objects + metadata
  * corresponding to a particular font */
 typedef struct
