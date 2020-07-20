@@ -95,7 +95,7 @@
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
-		9204BE2B1D319EF300BD49DB /* RADEBUG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RADEBUG.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9204BE2B1D319EF300BD49DB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9210C2F024B3A19100E6FE7C /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		9210C2F124B3A19100E6FE7C /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
@@ -363,7 +363,7 @@
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9204BE2B1D319EF300BD49DB /* RADEBUG.app */,
+				9204BE2B1D319EF300BD49DB /* RetroArch.app */,
 				926C77D721FD1E6500103EDE /* RetroArchTV.app */,
 			);
 			name = Products;
@@ -444,7 +444,7 @@
 			);
 			name = RetroArchiOS11;
 			productName = RetroArch;
-			productReference = 9204BE2B1D319EF300BD49DB /* RADEBUG.app */;
+			productReference = 9204BE2B1D319EF300BD49DB /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
 		};
 		926C77D621FD1E6500103EDE /* RetroArchTV */ = {
@@ -740,8 +740,8 @@
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchDBUG;
-				PRODUCT_NAME = RADEBUG;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.iosRetroArch;
+				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
 				VALID_ARCHS = "armv7 arm64";
@@ -855,8 +855,8 @@
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchDBUG;
-				PRODUCT_NAME = RADEBUG;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.iosRetroArch;
+				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
 				VALID_ARCHS = "armv7 arm64";
