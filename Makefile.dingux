@@ -164,13 +164,6 @@ $(OBJDIR)/%.o: %.m
 	@$(if $(Q), $(shell echo echo OBJC $<),)
 	$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-.FORCE:
-
-$(OBJDIR)/version_git.o: version_git.c .FORCE
-	@mkdir -p $(dir $@)
-	@$(if $(Q), $(shell echo echo CC $<),)
-	$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
-
 $(OBJDIR)/%.o: %.S $(HEADERS)
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo AS $<),)

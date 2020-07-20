@@ -167,13 +167,6 @@ $(OBJDIR)/%.o: %.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-.FORCE:
-
-$(OBJDIR)/version_git.o: version_git.c .FORCE
-	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
-	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
-
 $(OBJDIR)/%.o: %.cpp | $(dir $@)
 	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo CXX $<),)

@@ -202,8 +202,6 @@ endif
 DEFINES += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_REWIND -DHAVE_DYNAMIC -DJSON_STATIC
 INCLUDE_DIRS += -I. -Igfx/include
 
-#OBJ := version_git.o
-
 OBJ := $(patsubst %rarch.o,%rarch.res,$(OBJ))
 OBJ := $(addprefix $(BUILD_DIR)/,$(OBJ))
 OBJ := $(OBJ:.o=.obj)

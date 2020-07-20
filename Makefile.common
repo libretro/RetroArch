@@ -161,11 +161,12 @@ endif
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
-   LAST_GIT_VERSION := $(shell cat "$(OBJDIR)"/last-git-version 2>/dev/null)
-   ifneq ($(GIT_VERSION), $(LAST_GIT_VERSION))
+   _CACHEDIR = $(if $(OBJDIR), $(OBJDIR), $(CURDIR))
+   _LAST_GIT_VERSION := $(shell cat "$(_CACHEDIR)"/last-git-version 2>/dev/null)
+   ifneq ($(GIT_VERSION), $(_LAST_GIT_VERSION))
       $(shell \
-         mkdir -p "$(OBJDIR)"; \
-         echo "$(GIT_VERSION)" > "$(OBJDIR)"/last-git-version; \
+         mkdir -p "$(_CACHEDIR)"; \
+         echo "$(GIT_VERSION)" > "$(_CACHEDIR)"/last-git-version; \
          touch version_git.c)
    endif
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
