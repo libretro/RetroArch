@@ -1314,7 +1314,6 @@ bool MainWindow::currentPlaylistIsSpecial()
    QFileInfo currentPlaylistFileInfo;
    QString currentPlaylistPath;
    QString currentPlaylistDirPath;
-   bool specialPlaylist                 = false;
    settings_t *settings                 = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
    QString playlistDirAbsPath           = playlistDir.absolutePath();
@@ -1330,24 +1329,20 @@ bool MainWindow::currentPlaylistIsSpecial()
    /* Don't just compare strings in case there are 
     * case differences on Windows that should be ignored. */
    if (QDir(currentPlaylistDirPath) != QDir(playlistDirAbsPath))
-      specialPlaylist = true;
-
-   return specialPlaylist;
+      return true;
+   return false;
 }
 
 bool MainWindow::currentPlaylistIsAll()
 {
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
-   bool all = false;
-
    if (!currentPlaylistItem)
       return false;
-
    if (currentPlaylistItem->data(Qt::UserRole).toString() 
          == ALL_PLAYLISTS_TOKEN)
-      all = true;
+      return true;
 
-   return all;
+   return false;
 }
 
 void MainWindow::deleteCurrentPlaylistItem()
@@ -1472,11 +1467,11 @@ void PlaylistModel::getPlaylistItems(QString path)
 {
    QByteArray pathArray;
    playlist_config_t playlist_config;
-   const char *pathData  = NULL;
-   playlist_t *playlist  = NULL;
-   unsigned playlistSize = 0;
-   unsigned            i = 0;
-   settings_t *settings  = config_get_ptr();
+   const char *pathData                = NULL;
+   playlist_t *playlist                = NULL;
+   unsigned playlistSize               = 0;
+   unsigned            i               = 0;
+   settings_t *settings                = config_get_ptr();
 
    playlist_config.capacity            = COLLECTION_SIZE;
    playlist_config.old_format          = settings->bools.playlist_use_old_format;
@@ -1500,8 +1495,8 @@ void PlaylistModel::getPlaylistItems(QString path)
       if (string_is_empty(entry->path))
          continue;
 
-      hash["path"]  = entry->path;
-      hash["index"] = QString::number(i);
+      hash["path"]           = entry->path;
+      hash["index"]          = QString::number(i);
 
       if (string_is_empty(entry->label))
       {
@@ -1515,17 +1510,17 @@ void PlaylistModel::getPlaylistItems(QString path)
       }
 
       if (!string_is_empty(entry->core_path))
-         hash["core_path"] = entry->core_path;
+         hash["core_path"]   = entry->core_path;
 
       if (!string_is_empty(entry->core_name))
-         hash["core_name"] = entry->core_name;
+         hash["core_name"]   = entry->core_name;
 
       if (!string_is_empty(entry->crc32))
-         hash["crc32"] = entry->crc32;
+         hash["crc32"]       = entry->crc32;
 
       if (!string_is_empty(entry->db_name))
       {
-         hash["db_name"] = entry->db_name;
+         hash["db_name"]     = entry->db_name;
          hash["db_name"].remove(".lpl");
       }
 
@@ -1574,7 +1569,7 @@ void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
    for (i = 0; i < dirList.count(); i++)
    {
       QHash<QString, QString> hash;
-      QString fileName = dirList.at(i);
+      QString fileName    = dirList.at(i);
       QString filePath(
             QDir::toNativeSeparators(dir.absoluteFilePath(fileName)));
       QFileInfo fileInfo(filePath);

@@ -40,8 +40,8 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
    if (!opt.text.isEmpty())
    {
       QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
-      QRect textRect = QRect(rect.x() + padding, rect.y() + adjusted.height() - text_top_margin + padding, rect.width() - 2 * padding, text_height);
-      QString elidedText = painter->fontMetrics().elidedText(opt.text, opt.textElideMode, textRect.width(), Qt::TextShowMnemonic);
+      QRect textRect          = QRect(rect.x() + padding, rect.y() + adjusted.height() - text_top_margin + padding, rect.width() - 2 * padding, text_height);
+      QString elidedText      = painter->fontMetrics().elidedText(opt.text, opt.textElideMode, textRect.width(), Qt::TextShowMnemonic);
 
       if (cg == QPalette::Normal && !(opt.state & QStyle::State_Active))
          cg = QPalette::Inactive;
@@ -84,13 +84,13 @@ void GridView::setviewMode(ViewMode mode)
 
 void GridView::calculateRectsIfNecessary() const
 {
-   int row;
-   int nextX;
+   int x, y;
+   int row, nextX;
    if (!m_hashIsDirty)
       return;
 
-   int              x = m_spacing;
-   int              y = m_spacing;
+   x                  = m_spacing;
+   y                  = m_spacing;
    const int maxWidth = viewport()->width();
 
    if (m_size + m_spacing * 2 > maxWidth)
@@ -99,8 +99,8 @@ void GridView::calculateRectsIfNecessary() const
 
       for (row = 1; row < model()->rowCount(); ++row)
       {
-         y += m_size + m_spacing;
-         m_rectForRow[row] = QRectF(x, y, m_size, m_size);
+         y                 += m_size + m_spacing;
+         m_rectForRow[row]  = QRectF(x, y, m_size, m_size);
       }
    }
    else
@@ -323,13 +323,15 @@ void GridView::setSelection(const QRect &rect, QFlags<QItemSelectionModel::Selec
    QRect rectangle;
    QHash<int, QRectF>::const_iterator i;
    int firstRow = model()->rowCount();
-   int lastRow = -1;
+   int lastRow  = -1;
 
    calculateRectsIfNecessary();
 
-   rectangle = rect.translated(horizontalScrollBar()->value(), verticalScrollBar()->value()).normalized();
+   rectangle    = rect.translated(horizontalScrollBar()->value(),
+         verticalScrollBar()->value()).normalized();
 
-   i = m_rectForRow.constBegin();
+   i            = m_rectForRow.constBegin();
+
    while (i != m_rectForRow.constEnd())
    {
       if (i.value().intersects(rectangle))
@@ -341,7 +343,9 @@ void GridView::setSelection(const QRect &rect, QFlags<QItemSelectionModel::Selec
    }
    if (firstRow != model()->rowCount() && lastRow != -1)
    {
-      QItemSelection selection(model()->index(firstRow, 0, rootIndex()), model()->index(lastRow, 0, rootIndex()));
+      QItemSelection selection(model()->index(
+               firstRow, 0, rootIndex()),
+            model()->index(lastRow, 0, rootIndex()));
       selectionModel()->select(selection, flags);
    }
    else
@@ -354,9 +358,9 @@ void GridView::setSelection(const QRect &rect, QFlags<QItemSelectionModel::Selec
 
 QRegion GridView::visualRegionForSelection(const QItemSelection &selection) const
 {
+   int i;
    QRegion region;
    QItemSelectionRange range;
-   int i;
 
    for (i = 0; i < selection.size(); i++)
    {

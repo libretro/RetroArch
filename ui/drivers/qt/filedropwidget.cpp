@@ -156,7 +156,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
       {
          QHash<QString, QString> hash = getCurrentContentHash();
          QString system = QFileInfo(getCurrentPlaylistPath()).completeBaseName();
-         QString title = hash.value("label");
+         QString title  = hash.value("label");
 
          if (!title.isEmpty())
          {

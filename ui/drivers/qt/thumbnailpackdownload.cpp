@@ -52,8 +52,8 @@ static void extractThumbnailPackCB(retro_task_t *task,
 
 void MainWindow::onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError code)
 {
-   QNetworkReply *reply = m_thumbnailPackDownloadReply.data();
    QByteArray errorStringArray;
+   QNetworkReply *reply        = m_thumbnailPackDownloadReply.data();
    const char *errorStringData = NULL;
 
    m_thumbnailPackDownloadProgressDialog->cancel();
@@ -66,12 +66,13 @@ void MainWindow::onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError
 
    RARCH_ERR("[Qt]: Network error code %d received: %s\n", code, errorStringData);
 
-   /* Deleting the reply here seems to cause a strange heap-use-after-free crash. */
-   /*
+#if 0
+   /* Deleting the reply here seems to cause a strange 
+    * heap-use-after-free crash. */
    reply->disconnect();
    reply->abort();
    reply->deleteLater();
-   */
+#endif
 }
 
 void MainWindow::onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> &errors)
@@ -85,7 +86,11 @@ void MainWindow::onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> 
    for (i = 0; i < errors.count(); i++)
    {
       const QSslError &error = errors.at(i);
-      QString string = QString("Ignoring SSL error code ") + QString::number(error.error()) + ": " + error.errorString();
+      QString string         = 
+           QString("Ignoring SSL error code ") 
+         + QString::number(error.error()) 
+         + ": " 
+         + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
       RARCH_ERR("[Qt]: %s\n", stringData);
@@ -109,7 +114,11 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
    m_thumbnailPackDownloadProgressDialog->cancel();
 
-   /* At least on Linux, the progress dialog will refuse to hide itself and will stay on screen in a corrupted way if we happen to show an error message in this function. processEvents() will sometimes fix it, other times not... seems random. */
+   /* At least on Linux, the progress dialog will refuse 
+    * to hide itself and will stay on screen in a corrupted 
+    * way if we happen to show an error message in this function. 
+    * processEvents() will sometimes fix it, other times not... 
+    * seems random. */
    qApp->processEvents();
 
    if (!reply)
@@ -117,8 +126,8 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
    system = reply->property("system").toString();
 
-   error = reply->error();
-   code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+   error  = reply->error();
+   code   = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
    if (m_thumbnailPackDownloadFile.isOpen())
       m_thumbnailPackDownloadFile.close();
@@ -142,20 +151,18 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
          return;
       }
-      else
-      {
-         emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code));
 
-         m_thumbnailPackDownloadFile.remove();
+      emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code));
 
-         RARCH_ERR("[Qt]: Thumbnail pack download failed with HTTP status code: %d\n", code);
+      m_thumbnailPackDownloadFile.remove();
 
-         reply->disconnect();
-         reply->abort();
-         reply->deleteLater();
+      RARCH_ERR("[Qt]: Thumbnail pack download failed with HTTP status code: %d\n", code);
 
-         return;
-      }
+      reply->disconnect();
+      reply->abort();
+      reply->deleteLater();
+
+      return;
    }
 
    if (error == QNetworkReply::NoError)
@@ -234,18 +241,18 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
    if (!settings)
       return;
 
-   urlString = 
+   urlString            = 
       QString(THUMBNAILPACK_URL_HEADER) 
       + system 
       + THUMBNAILPACK_EXTENSION;
 
    if (url.isEmpty())
-      url = urlString;
+      url               = urlString;
 
    request.setUrl(url);
 
-   urlArray = url.toString().toUtf8();
-   urlData  = urlArray.constData();
+   urlArray             = url.toString().toUtf8();
+   urlData              = urlArray.constData();
 
    if (m_thumbnailPackDownloadFile.isOpen())
    {
