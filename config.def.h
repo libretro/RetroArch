@@ -773,9 +773,9 @@ static const bool audio_enable_menu_bgm    = false;
 /*Desired duration of the screenshot notification*/
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION 0
 
-/* Display a white flashing effect when 
- * taking a screenshot*/
-#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH true
+/* Display a white flashing effect with the desired 
+ * duration when taking a screenshot*/
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH 0
 
 /* Output samplerate. */
 #ifdef GEKKO

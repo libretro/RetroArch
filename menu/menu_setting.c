@@ -4537,6 +4537,31 @@ static void setting_get_string_representation_uint_notification_show_screenshot_
 #endif
 #endif
 
+#ifdef HAVE_SCREENSHOTS
+#ifdef HAVE_GFX_WIDGETS
+static void setting_get_string_representation_uint_notification_show_screenshot_flash(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL), len);
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST), len);
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         break;
+   }
+}
+#endif
+#endif
+
 static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -12749,20 +12774,22 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, NOTIFICATION_SHOW_SCREENSHOT_DURATION_LAST-1, 1, true, true);
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
-         CONFIG_BOOL(
+         CONFIG_UINT(
                list, list_info,
-               &settings->bools.notification_show_screenshot_flash,
+               &settings->uints.notification_show_screenshot_flash,
                MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
                MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
                DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_notification_show_screenshot_flash;
+         menu_settings_list_current_add_range(list, list_info, 0, NOTIFICATION_SHOW_SCREENSHOT_FLASH_LAST-1, 1, true, true);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
 #endif
 

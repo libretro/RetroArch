@@ -74,34 +74,56 @@ static gfx_widget_screenshot_state_t* gfx_widget_screenshot_get_ptr(void)
 
 static void gfx_widget_screenshot_fadeout(void *userdata)
 {
+   settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)userdata;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_animation_ctx_entry_t entry;
 
    entry.cb             = NULL;
-   entry.duration       = SCREENSHOT_DURATION_OUT;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &state->alpha;
    entry.tag            = gfx_widgets_get_generic_tag(p_dispwidget);
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
+   switch (settings->uints.notification_show_screenshot_flash)
+   {
+      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST:
+         entry.duration = SCREENSHOT_DURATION_OUT/2;
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL:
+      default:
+         entry.duration = SCREENSHOT_DURATION_OUT;
+         break;
+   }
+
    gfx_animation_push(&entry);
 }
 
 static void gfx_widgets_play_screenshot_flash(void *data)
 {
+   settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_animation_ctx_entry_t entry;
 
    entry.cb             = gfx_widget_screenshot_fadeout;
-   entry.duration       = SCREENSHOT_DURATION_IN;
    entry.easing_enum    = EASING_IN_QUAD;
    entry.subject        = &state->alpha;
    entry.tag            = gfx_widgets_get_generic_tag(p_dispwidget);
    entry.target_value   = 1.0f;
    entry.userdata       = p_dispwidget;
+
+   switch (settings->uints.notification_show_screenshot_flash)
+   {
+      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST:
+         entry.duration = SCREENSHOT_DURATION_IN/2;
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL:
+      default:
+         entry.duration = SCREENSHOT_DURATION_IN;
+         break;
+   }
 
    gfx_animation_push(&entry);
 }
@@ -110,11 +132,11 @@ void gfx_widget_screenshot_taken(
       void *data,
       const char *shotname, const char *filename)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
 
-   if (settings->bools.notification_show_screenshot_flash)
+   if (settings->uints.notification_show_screenshot_flash != NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF)
       gfx_widgets_play_screenshot_flash(p_dispwidget);
 
    if (settings->bools.notification_show_screenshot)
@@ -135,17 +157,32 @@ static void gfx_widget_screenshot_dispose(void *userdata)
 
 static void gfx_widget_screenshot_end(void *userdata)
 {
-   gfx_animation_ctx_entry_t entry;
+   settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)userdata;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
+   gfx_animation_ctx_entry_t entry;
 
    entry.cb             = gfx_widget_screenshot_dispose;
-   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &state->y;
    entry.tag            = gfx_widgets_get_generic_tag(p_dispwidget);
    entry.target_value   = -((float)state->height);
    entry.userdata       = NULL;
+
+   switch (settings->uints.notification_show_screenshot_duration)
+   {
+      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST:
+         entry.duration = MSG_QUEUE_ANIMATION_DURATION/1.25;
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST:
+      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT:
+         entry.duration = MSG_QUEUE_ANIMATION_DURATION/1.5;
+         break;
+      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL:
+      default:
+         entry.duration = MSG_QUEUE_ANIMATION_DURATION;
+         break;
+   }
 
    gfx_animation_push(&entry);
 }
@@ -285,9 +322,6 @@ static void gfx_widget_screenshot_iterate(
 
       switch (settings->uints.notification_show_screenshot_duration)
       {
-         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL:
-            timer.duration = 6000;
-            break;
          case NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST:
             timer.duration = 2000;
             break;
@@ -296,6 +330,10 @@ static void gfx_widget_screenshot_iterate(
             break;
          case NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT:
             timer.duration = 1;
+            break;
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL:
+         default:
+            timer.duration = 6000;
             break;
       }
 
