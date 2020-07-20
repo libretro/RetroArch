@@ -408,10 +408,10 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOIO;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
-#elif defined(HAVE_COREAUDIO) && !defined(HAVE_COCOA_METAL)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_COREAUDIO3)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
+#elif defined(HAVE_COREAUDIO)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_XAUDIO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XAUDIO;
 #elif defined(HAVE_DSOUND)
