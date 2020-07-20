@@ -668,7 +668,9 @@ void input_autoconfigure_connect(
    {
       autoconfig_handle->dir_autoconfig = strdup(dir_autoconfig);
 
-      if (!string_is_empty(autoconfig_handle->driver))
+      /* 'autoconfig_handle->driver' will only be
+       * non-NULL if 'driver' is a non-empty string */
+      if (autoconfig_handle->driver)
       {
          char dir_driver_autoconfig[PATH_MAX_LENGTH];
          dir_driver_autoconfig[0] = '\0';

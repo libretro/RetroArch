@@ -183,9 +183,7 @@ static const char *xinput_joypad_name(unsigned pad)
     * to get a name from the device itself */
    return dinput_joypad.name(pad);
 #else
-   int xuser = pad_index_to_xuser_index(pad);
-
-   if (xuser < 0)
+   if (pad_index_to_xuser_index(pad) < 0)
       return NULL;
 
    /* On platforms without dinput support, no
