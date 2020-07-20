@@ -151,19 +151,7 @@ static int16_t uwp_input_state(void *data,
             int16_t ret = uwp->joypad->state(
                   joypad_info, binds[port], port);
 
-            if (input_uwp.keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (binds[port][i].valid)
-                  {
-                     if (uwp_mouse_state(port,
-                              binds[port][i].mbutton, false))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-            else
+            if (!input_uwp.keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
@@ -174,10 +162,17 @@ static int16_t uwp_input_state(void *data,
                             && uwp_keyboard_pressed(binds[port][i].key))
                         )
                         ret |= (1 << i);
-                     else if (uwp_mouse_state(port,
-                              binds[port][i].mbutton, false))
-                        ret |= (1 << i);
                   }
+               }
+            }
+
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (binds[port][i].valid)
+               {
+                  if (uwp_mouse_state(port,
+                           binds[port][i].mbutton, false))
+                     ret |= (1 << i);
                }
             }
 
