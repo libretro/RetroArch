@@ -78,6 +78,21 @@ static void blargg_ntsc_snes_initialize(void *data,
    snes_ntsc_setup_t setup;
    struct filter_data *filt = (struct filter_data*)data;
 
+   float custom_hue, custom_saturation, custom_contrast, custom_brightness, custom_sharpness,
+      custom_gamma, custom_resolution, custom_artifacts, custom_fringing, custom_bleed, custom_merge_fields;
+
+   config->get_float(userdata, "hue", &custom_hue, 0.0f);
+   config->get_float(userdata, "saturation", &custom_saturation, 0.0f);
+   config->get_float(userdata, "contrast", &custom_contrast, 0.0f);
+   config->get_float(userdata, "brightness", &custom_brightness, 0.0f);
+   config->get_float(userdata, "sharpness", &custom_sharpness, 0.0f);
+   config->get_float(userdata, "gamma", &custom_gamma, 0.0f);
+   config->get_float(userdata, "resolution", &custom_resolution, 0.0f);
+   config->get_float(userdata, "artifacts", &custom_artifacts, 0.0f);
+   config->get_float(userdata, "fringing", &custom_fringing, 0.0f);
+   config->get_float(userdata, "bleed", &custom_bleed, 0.0f);
+   config->get_float(userdata, "merge_fields", &custom_merge_fields, 1.0f);
+   
    filt->ntsc = (snes_ntsc_t*)calloc(1, sizeof(*filt->ntsc));
 
    if (config->get_string(userdata, "tvtype", &tvtype, "composite"))
@@ -101,6 +116,22 @@ static void blargg_ntsc_snes_initialize(void *data,
       {
          setup = retroarch_snes_ntsc_svideo;
          setup.merge_fields = 1;
+      }
+      else if (memcmp(tvtype, "custom", 6) == 0)
+      {
+         setup = retroarch_snes_ntsc_composite;
+         setup.hue = custom_hue;
+         setup.saturation = custom_saturation;
+         setup.contrast = custom_contrast;
+         setup.brightness = custom_brightness;
+         setup.sharpness = custom_sharpness;
+         setup.gamma = custom_gamma;
+         setup.resolution = custom_resolution;
+         setup.artifacts = custom_artifacts;
+         setup.fringing = custom_fringing;
+         setup.bleed = custom_bleed;
+         setup.merge_fields = custom_merge_fields;
+         config->get_int(userdata, "hires_blit", &hires_blit, 1);
       }
    }
    else
@@ -169,7 +200,7 @@ static void blargg_ntsc_snes_render_rgb565(void *data, int width, int height,
       uint16_t *input, int pitch, uint16_t *output, int outpitch)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   if(width <= 256)
+   if(width <= 256 || !hires_blit)
       retroarch_snes_ntsc_blit(filt->ntsc, input, pitch, filt->burst,
             width, height, output, outpitch * 2, first, last);
    else
