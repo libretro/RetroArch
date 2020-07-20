@@ -740,7 +740,7 @@
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.iosRetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
@@ -855,7 +855,7 @@
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.iosRetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
