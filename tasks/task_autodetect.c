@@ -42,6 +42,7 @@ typedef struct
    input_device_info_t device_info;
    bool autoconfig_enabled;
    bool suppress_notifcations;
+   char *driver;
    char *dir_autoconfig;
    char *dir_driver_autoconfig;
    config_file_t *autoconfig_file;
@@ -55,6 +56,12 @@ static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
    if (!autoconfig_handle)
       return;
+
+   if (autoconfig_handle->driver)
+   {
+      free(autoconfig_handle->driver);
+      autoconfig_handle->driver = NULL;
+   }
 
    if (autoconfig_handle->dir_autoconfig)
    {
@@ -477,34 +484,46 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       match_found = input_autoconfigure_scan_config_files_internal(
          autoconfig_handle);
 
-   /* If we reach this point on Android, attempt
-    * to search for the internal 'Android Gamepad'
-    * definition */
-#ifdef ANDROID
-   if (!match_found &&
-       !string_is_equal(autoconfig_handle->device_info.name,
-         "Android Gamepad"))
+   /* If no match was found, attempt to use
+    * fallback mapping
+    * > Only enabled for certain drivers */
+   if (!match_found)
    {
-      char *name_backup = strdup(autoconfig_handle->device_info.name);
+      const char *fallback_device_name = NULL;
 
-      strlcpy(autoconfig_handle->device_info.name,
-            "Android Gamepad",
-            sizeof(autoconfig_handle->device_info.name));
+      /* Preset fallback device names - must match
+       * those set in 'input_autodetect_builtin.c' */
+      if (string_is_equal(autoconfig_handle->driver, "android"))
+         fallback_device_name = "Android Gamepad";
+      else if (string_is_equal(autoconfig_handle->driver, "xinput"))
+         fallback_device_name = "XInput Controller";
+      else if (string_is_equal(autoconfig_handle->driver, "sdl2"))
+         fallback_device_name = "Standard Gamepad";
 
-      /* This is not a genuine match - leave
-       * match_found set to 'false' regardless
-       * of the outcome */
-      input_autoconfigure_scan_config_files_internal(
-            autoconfig_handle);
+      if (!string_is_empty(fallback_device_name) &&
+          !string_is_equal(autoconfig_handle->device_info.name,
+               fallback_device_name))
+      {
+         char *name_backup = strdup(autoconfig_handle->device_info.name);
 
-      strlcpy(autoconfig_handle->device_info.name,
-            name_backup,
-            sizeof(autoconfig_handle->device_info.name));
+         strlcpy(autoconfig_handle->device_info.name,
+               fallback_device_name,
+               sizeof(autoconfig_handle->device_info.name));
 
-      free(name_backup);
-      name_backup = NULL;
+         /* This is not a genuine match - leave
+          * match_found set to 'false' regardless
+          * of the outcome */
+         input_autoconfigure_scan_config_files_internal(
+               autoconfig_handle);
+
+         strlcpy(autoconfig_handle->device_info.name,
+               name_backup,
+               sizeof(autoconfig_handle->device_info.name));
+
+         free(name_backup);
+         name_backup = NULL;
+      }
    }
-#endif
 
    /* Get display name for task status message */
    device_display_name = autoconfig_handle->device_info.display_name;
@@ -593,9 +612,6 @@ void input_autoconfigure_connect(
    bool notification_show_autoconfig      = settings ?
          settings->bools.notification_show_autoconfig : true;
    task_finder_data_t find_data;
-   char dir_driver_autoconfig[PATH_MAX_LENGTH];
-
-   dir_driver_autoconfig[0] = '\0';
 
    if (port >= MAX_INPUT_DEVICES)
       goto error;
@@ -625,6 +641,7 @@ void input_autoconfigure_connect(
    autoconfig_handle->device_info.name_index      = 0;
    autoconfig_handle->autoconfig_enabled          = autoconfig_enabled;
    autoconfig_handle->suppress_notifcations       = !notification_show_autoconfig;
+   autoconfig_handle->driver                      = NULL;
    autoconfig_handle->dir_autoconfig              = NULL;
    autoconfig_handle->dir_driver_autoconfig       = NULL;
    autoconfig_handle->autoconfig_file             = NULL;
@@ -637,25 +654,37 @@ void input_autoconfigure_connect(
       strlcpy(autoconfig_handle->device_info.display_name, display_name,
             sizeof(autoconfig_handle->device_info.display_name));
 
+   if (!string_is_empty(driver))
+      autoconfig_handle->driver = strdup(driver);
+
    /* > Have to cache both the base autoconfig directory
     *   and the driver-specific autoconfig directory
     *   - Driver-specific directory is scanned by
     *     default, if available
     *   - If driver-specific directory is unavailable,
     *     we scan the base autoconfig directory as
-    *     a fallback
-    * Note: fill_pathname_application_special() accesses
-    * the settings struct internally, so have to call it
-    * here and not in the task thread */
+    *     a fallback */
    if (!string_is_empty(dir_autoconfig))
+   {
       autoconfig_handle->dir_autoconfig = strdup(dir_autoconfig);
 
-   fill_pathname_application_special(dir_driver_autoconfig,
-         sizeof(dir_driver_autoconfig),
-         APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG);
-   if (!string_is_empty(dir_driver_autoconfig))
-      autoconfig_handle->dir_driver_autoconfig =
-            strdup(dir_driver_autoconfig);
+      /* 'autoconfig_handle->driver' will only be
+       * non-NULL if 'driver' is a non-empty string */
+      if (autoconfig_handle->driver)
+      {
+         char dir_driver_autoconfig[PATH_MAX_LENGTH];
+         dir_driver_autoconfig[0] = '\0';
+
+         /* Generate driver-specific autoconfig directory */
+         fill_pathname_join(dir_driver_autoconfig,
+               dir_autoconfig, autoconfig_handle->driver,
+               sizeof(dir_driver_autoconfig));
+
+         if (!string_is_empty(dir_driver_autoconfig))
+            autoconfig_handle->dir_driver_autoconfig =
+                  strdup(dir_driver_autoconfig);
+      }
+   }
 
    /* Bliss-Box shenanigans... */
 #ifdef HAVE_BLISSBOX
