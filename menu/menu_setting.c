@@ -68,6 +68,9 @@
 #include "menu_cbs.h"
 #include "menu_driver.h"
 #include "../gfx/gfx_animation.h"
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx/gfx_widgets.h"
+#endif
 #include "menu_input.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
@@ -4506,6 +4509,8 @@ static void setting_get_string_representation_uint_xmb_shader_pipeline(
 #endif
 #endif
 
+#ifdef HAVE_SCREENSHOTS
+#ifdef HAVE_GFX_WIDGETS
 static void setting_get_string_representation_uint_notification_show_screenshot_duration(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -4529,6 +4534,8 @@ static void setting_get_string_representation_uint_notification_show_screenshot_
          break;
    }
 }
+#endif
+#endif
 
 static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
       char *s, size_t len)
@@ -12706,6 +12713,7 @@ static bool setting_append_list(
                SD_FLAG_NONE);
 
 #ifdef HAVE_SCREENSHOTS
+#ifdef HAVE_GFX_WIDGETS
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.notification_show_screenshot,
@@ -12755,6 +12763,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+#endif
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
