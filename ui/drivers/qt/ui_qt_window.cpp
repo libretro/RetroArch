@@ -92,16 +92,16 @@ extern "C" {
 #include "shaderparamsdialog.h"
 #include "../../../AUTHORS.h"
 
-#define TIMER_MSEC 1000 /* periodic timer for gathering statistics */
-#define STATUS_MSG_THROTTLE_MSEC 250
+#define TIMER_MSEC                  1000 /* periodic timer for gathering statistics */
+#define STATUS_MSG_THROTTLE_MSEC    250
 
-#define GENERIC_FOLDER_ICON "/xmb/dot-art/png/folder.png"
-#define HIRAGANA_START 0x3041U
-#define HIRAGANA_END 0x3096U
-#define KATAKANA_START 0x30A1U
-#define KATAKANA_END 0x30F6U
-#define HIRA_KATA_OFFSET (KATAKANA_START - HIRAGANA_START)
-#define DOCS_URL "http://docs.libretro.com/"
+#define GENERIC_FOLDER_ICON         "/xmb/dot-art/png/folder.png"
+#define HIRAGANA_START              0x3041U
+#define HIRAGANA_END                0x3096U
+#define KATAKANA_START              0x30A1U
+#define KATAKANA_END                0x30F6U
+#define HIRA_KATA_OFFSET            (KATAKANA_START - HIRAGANA_START)
+#define DOCS_URL                    "http://docs.libretro.com/"
 
 static ui_window_qt_t ui_window = {0};
 
@@ -126,8 +126,8 @@ static const QPixmap getInvader(void)
 static void scan_finished_handler(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   bool dontAsk = false;
-   bool answer  = false;
+   bool dontAsk      = false;
+   bool answer       = false;
 #ifdef HAVE_MENU
    menu_ctx_environment_t menu_environ;
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
@@ -759,8 +759,9 @@ void MainWindow::updateVisibleItems()
    {
       unsigned i;
       QVector<QModelIndex> indexes = m_gridView->visibleIndexes();
+      size_t size                  = indexes.size();
 
-      for (i = 0; i < indexes.size(); i++)
+      for (i = 0; i < size; i++)
          m_playlistModel->loadThumbnail(m_proxyModel->mapToSource(indexes.at(i)));
    }
 }
@@ -799,8 +800,9 @@ QVector<QPair<QString, QString> > MainWindow::getPlaylists()
 {
    unsigned i;
    QVector<QPair<QString, QString> > playlists;
+   size_t size  = m_listWidget->count();
 
-   for (i = 0; i < m_listWidget->count(); i++)
+   for (i = 0; i < size; i++)
    {
       QString label, path;
       QPair<QString, QString> pair;
@@ -943,10 +945,15 @@ bool MainWindow::setCustomThemeFile(QString filePath)
    {
       bool opened = file.open(QIODevice::ReadOnly);
 
-      if (opened)
+      if (!opened)
+      {
+         QMessageBox::critical(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED));
+         return false;
+      }
+
       {
          QByteArray fileArray = file.readAll();
-         QString fileStr = QString::fromUtf8(fileArray);
+         QString fileStr      = QString::fromUtf8(fileArray);
 
          file.close();
 
@@ -955,13 +962,8 @@ bool MainWindow::setCustomThemeFile(QString filePath)
             QMessageBox::critical(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY));
             return false;
          }
-         else
-            setCustomThemeString(fileStr);
-      }
-      else
-      {
-         QMessageBox::critical(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED));
-         return false;
+
+         setCustomThemeString(fileStr);
       }
    }
    else
@@ -1060,7 +1062,7 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    if (currentDirString.isEmpty())
       return;
 
-   dir = currentDirString;
+   dir                           = currentDirString;
 
    if (!dir.exists())
       return;
@@ -1071,13 +1073,13 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 
    actions.append(scanAction.data());
 
-   action = QMenu::exec(actions, QCursor::pos(), NULL, m_dirTree);
+   action                        = QMenu::exec(actions, QCursor::pos(), NULL, m_dirTree);
 
    if (!action)
       return;
 
-   dirArray = currentDirString.toUtf8();
-   fullpath = dirArray.constData();
+   dirArray                      = currentDirString.toUtf8();
+   fullpath                      = dirArray.constData();
 
    task_push_dbscan(
          path_dir_playlist,
@@ -1110,10 +1112,10 @@ void MainWindow::onGotStatusMessage(
       return;
 
    if (screen)
-      msecDuration = (duration / screen->refreshRate()) * 1000;
+      msecDuration    = (duration / screen->refreshRate()) * 1000;
 
    if (msecDuration <= 0)
-      msecDuration = 1000;
+      msecDuration    = 1000;
 
    if (status->currentMessage().isEmpty() || flush)
    {
