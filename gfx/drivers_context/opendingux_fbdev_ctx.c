@@ -186,9 +186,7 @@ static enum gfx_ctx_api gfx_ctx_opendingux_get_api(void *data)
 static bool gfx_ctx_opendingux_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   if (api == GFX_CTX_OPENGL_ES_API)
-      return true;
-   return false;
+   return (api == GFX_CTX_OPENGL_ES_API);
 }
 
 static void gfx_ctx_opendingux_set_flags(void *data, uint32_t flags) { }
@@ -262,7 +260,7 @@ const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    NULL,
    NULL,
    NULL,
-   "opendingux-fbdev",
+   "fbdev_opendingux",
    gfx_ctx_opendingux_get_flags,
    gfx_ctx_opendingux_set_flags,
    gfx_ctx_opendingux_bind_hw_render,

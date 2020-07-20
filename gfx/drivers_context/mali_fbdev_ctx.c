@@ -222,18 +222,9 @@ static bool gfx_ctx_mali_fbdev_bind_api(void *data,
    return false;
 }
 
-static bool gfx_ctx_mali_fbdev_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool gfx_ctx_mali_fbdev_has_focus(void *data) { return true; }
 
-static bool gfx_ctx_mali_fbdev_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_mali_fbdev_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void gfx_ctx_mali_fbdev_set_swap_interval(void *data,
       int swap_interval)
@@ -272,10 +263,7 @@ static uint32_t gfx_ctx_mali_fbdev_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_mali_fbdev_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_mali_fbdev_set_flags(void *data, uint32_t flags) { }
 
 static float gfx_ctx_mali_fbdev_get_refresh_rate(void *data)
 {
@@ -314,7 +302,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    NULL,
    NULL,
    NULL,
-   "mali-fbdev",
+   "fbdev_mali",
    gfx_ctx_mali_fbdev_get_flags,
    gfx_ctx_mali_fbdev_set_flags,
    gfx_ctx_mali_fbdev_bind_hw_render,

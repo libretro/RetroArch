@@ -710,7 +710,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_image_buffer_init,
    gfx_ctx_vc_image_buffer_write,
    NULL,
-   "videocore",
+   "egl_videocore",
    gfx_ctx_vc_get_flags,
    gfx_ctx_vc_set_flags,
    gfx_ctx_vc_bind_hw_render,

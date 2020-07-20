@@ -267,7 +267,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    NULL,
    NULL,
    NULL,
-   "vivante-fbdev",
+   "fbdev_vivante",
    gfx_ctx_vivante_get_flags,
    gfx_ctx_vivante_set_flags,
    gfx_ctx_vivante_bind_hw_render,

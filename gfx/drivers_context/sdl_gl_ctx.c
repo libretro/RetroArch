@@ -431,7 +431,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    NULL,
    NULL,
    sdl_ctx_show_mouse,
-   "sdl_gl",
+   "gl_sdl",
    sdl_ctx_get_flags,
    sdl_ctx_set_flags,
    NULL, /* bind_hw_render */

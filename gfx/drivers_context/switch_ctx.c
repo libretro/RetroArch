@@ -349,9 +349,10 @@ const gfx_ctx_driver_t switch_ctx = {
     NULL,
     NULL,
     NULL,
-    "switch",
+    "egl_switch",
     switch_ctx_get_flags,
     switch_ctx_set_flags,
     switch_ctx_bind_hw_render,
     NULL,
-    NULL};
+    NULL
+};

@@ -22,6 +22,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_EGL
+#include "../common/egl_common.h"
+#endif
+
 #include "../common/orbis_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
@@ -301,7 +305,7 @@ const gfx_ctx_driver_t orbis_ctx = {
     NULL,
     NULL,
     NULL,
-    "orbis",
+    "egl_orbis",
     orbis_ctx_get_flags,
     orbis_ctx_set_flags,
     orbis_ctx_bind_hw_render,

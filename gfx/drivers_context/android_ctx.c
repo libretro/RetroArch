@@ -380,7 +380,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    NULL,
    NULL,
-   "android",
+   "egl_android",
    android_gfx_ctx_get_flags,
    android_gfx_ctx_set_flags,
    android_gfx_ctx_bind_hw_render,

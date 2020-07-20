@@ -45,7 +45,10 @@
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 
+#ifdef HAVE_EGL
 #include "../common/egl_common.h"
+#endif
+
 #include "../common/gl_common.h"
 
 #ifdef HAVE_ANGLE
@@ -280,7 +283,7 @@ const gfx_ctx_driver_t gfx_ctx_uwp = {
    NULL,
    NULL,
    win32_show_cursor,
-   "uwp",
+   "egl_uwp",
    gfx_ctx_uwp_get_flags, /* get flags */
    NULL, /* set flags */
    gfx_ctx_uwp_bind_hw_render,
