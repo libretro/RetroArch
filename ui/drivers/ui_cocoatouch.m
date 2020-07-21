@@ -352,9 +352,9 @@ enum
       }
       break;
 
-      case APPLE_VIEW_TYPE_OPENGL:
+      case APPLE_VIEW_TYPE_OPENGL_ES:
       {
-         _renderView = [CocoaView get];
+         _renderView = (BRIDGE GLKView*)glkitview_init();
          break;
       }
 

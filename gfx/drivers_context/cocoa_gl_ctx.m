@@ -831,6 +831,10 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
    {
 #if defined(HAVE_COCOATOUCH)
       case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_COCOA_METAL)
+           // the metal build supports both the OpenGL and Metal video drivers
+           [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
+#endif
          // setViewType is not (yet?) defined for iOS
          // [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
          break;
