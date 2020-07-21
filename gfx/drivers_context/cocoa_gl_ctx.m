@@ -52,30 +52,27 @@
 
 typedef struct cocoa_ctx_data
 {
+   bool is_syncing;
    bool core_hw_context_enable;
+   bool use_hw_ctx;
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
    int swap_interval;
 #endif
-    unsigned width;
-    unsigned height;
+   int fast_forward_skips;
+   unsigned width;
+   unsigned height;
 } cocoa_ctx_data_t;
 
-static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
-
+/* TODO/FIXME - static globals */
 #if defined(HAVE_COCOATOUCH)
-static GLKView *g_view;
+static GLKView *g_view              = NULL;
 #endif
-
-static GLContextClass* g_hw_ctx;
-static GLContextClass* g_context;
-
-static int g_fast_forward_skips;
-static bool g_is_syncing = true;
-static bool g_use_hw_ctx = false;
-
-static unsigned g_minor  = 0;
-static unsigned g_major  = 0;
+static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
+static GLContextClass* g_hw_ctx     = NULL;
+static GLContextClass* g_context    = NULL;
+static unsigned g_minor             = 0;
+static unsigned g_major             = 0;
 
 #if defined(HAVE_COCOATOUCH)
 @interface EAGLContext (OSXCompat) @end
@@ -527,12 +524,13 @@ static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
 
 static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
-   (void)data;
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-         g_use_hw_ctx = enable;
+         cocoa_ctx->use_hw_ctx = enable;
 
          if (enable)
             [g_hw_ctx makeCurrentContext];
@@ -593,10 +591,10 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
       {
 #if defined(HAVE_COCOATOUCH) // < No way to disable Vsync on iOS?
          //   Just skip presents so fast forward still works.
-         g_is_syncing         = interval ? true : false;
-         g_fast_forward_skips = interval ? 0 : 3;
+         cocoa_ctx->is_syncing         = interval ? true : false;
+         cocoa_ctx->fast_forward_skips = interval ? 0 : 3;
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-         GLint value          = interval ? 1 : 0;
+         GLint value                     = interval ? 1 : 0;
          [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #endif
          break;
@@ -627,7 +625,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-         if (!(--g_fast_forward_skips < 0))
+         if (!(--cocoa_ctx->fast_forward_skips < 0))
             return;
 
 #if TARGET_OS_OSX
@@ -638,7 +636,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data)
             [g_view display];
 #endif
 
-         g_fast_forward_skips = g_is_syncing ? 0 : 3;
+         cocoa_ctx->fast_forward_skips = cocoa_ctx->is_syncing ? 0 : 3;
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
@@ -759,12 +757,12 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          }
 #endif
 
-         if (g_use_hw_ctx)
+         if (cocoa_ctx->use_hw_ctx)
             g_hw_ctx  = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-         g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:(g_use_hw_ctx) ? g_hw_ctx : nil];
+         g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:(cocoa_ctx->use_hw_ctx) ? g_hw_ctx : nil];
          [g_context setView:g_view];
 #else
-         if (g_use_hw_ctx)
+         if (cocoa_ctx->use_hw_ctx)
             g_hw_ctx = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
          g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
          g_view.context = g_context;
@@ -834,6 +832,8 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
 
    if (!cocoa_ctx)
       return NULL;
+
+   cocoa_ctx->is_syncing       = true;
 
    switch (cocoagl_api)
    {
