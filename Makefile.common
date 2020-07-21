@@ -161,9 +161,9 @@ endif
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
-   _CACHEDIR = $(if $(OBJDIR), $(OBJDIR), $(CURDIR))
+   _CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
    _LAST_GIT_VERSION := $(shell cat "$(_CACHEDIR)"/last-git-version 2>/dev/null)
-   ifneq ($(GIT_VERSION), $(_LAST_GIT_VERSION))
+   ifneq ($(GIT_VERSION),$(_LAST_GIT_VERSION))
       $(shell \
          mkdir -p "$(_CACHEDIR)"; \
          echo "$(GIT_VERSION)" > "$(_CACHEDIR)"/last-git-version; \
