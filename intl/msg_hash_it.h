@@ -2669,6 +2669,14 @@ MSG_HASH(
    "Controlla che il firmware richiesto sia presente prima di tentare di caricare il contenuto."
    )
 #ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Ricarica sempre il Core in esecuzione dei contenuti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Riavvia RetroArch quando avvii i contenuti, anche quando il core richiesto è già caricato. Questo può migliorare la stabilità del sistema, a scapito di un aumento dei tempi di carico."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
@@ -3113,6 +3121,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "Regola Notifiche A Schermo"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "Visibilità Notifiche"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "Attiva/disattiva la visibilità di tipi specifici di notifica."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
@@ -3317,8 +3333,120 @@ MSG_HASH(
    "Mostra Utilizzo della Memoria"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
+   "Intervallo Di Aggiornamento dell'utilizzo Della Memoria (In fotogrammi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   "Il display di utilizzo della memoria verrà aggiornato all'intervallo impostato (in fotogrammi)."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    "Visualizza la quantità di memoria usata e totale sul sistema."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Notifica Avvio \"Carica Contenuto\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Mostra una breve animazione di feedback di avvio durante il caricamento del contenuto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   "Notifiche Di Connessione Input (Autoconfig)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "Notifiche del trucco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "Mostra un messaggio sullo schermo quando vengono applicati i trucchi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   "Visualizza un messaggio sullo schermo quando si collegano/disconnettono i dispositivi di ingresso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
+   "Notifiche caricate di rimappatura dell'input"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+   "Visualizza un messaggio sullo schermo durante il caricamento dei file di rimappatura."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Sovrascrivi Le Notifiche Caricate"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Visualizza un messaggio sullo schermo durante il caricamento dei file di rimappatura."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "Notifiche del disco iniziale ripristinato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "Visualizza un messaggio sullo schermo quando si ripristina automaticamente all'avvio l'ultimo disco utilizzato di contenuti multi-disco caricato tramite playlist M3U."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Notifiche Rapide"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Visualizza un indicatore sullo schermo quando il contenuto viene inoltrato velocemente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
+   "Notifiche di cattura Schermata"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   "Visualizza un messaggio sullo schermo durante il caricamento dei file di rimappatura."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "Persistenza della notifica di cattura schermata"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "Definire la durata del messaggio cattura schermata sullo schermo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
+   "Normale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   "Veloce"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   "Molto Veloce"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   "Istantaneo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "Effetto Flash della cattura schermata"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "Visualizza un effetto lampeggiante bianco sullo schermo con la durata desiderata quando si esegue una schermata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   "ON (normale)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   "ON (veloce)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -4329,6 +4457,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    "Abilita o disabilita gli achievements non ufficiali e/o funzionalità beta per scopi di test."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Sblocca Suono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Riproduce un suono quando un risultato è sbloccato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -7922,8 +8058,32 @@ MSG_HASH(
    "Rinomina playlist"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   "Sei sicuro di voler eliminare la playlist \"%1\"?"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_QUESTION,
    "Domanda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
+   "Impossibile eliminare il file."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
+   "Impossibile rinominare il file."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
+   "Raccolta elenco di file..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
+   "Aggiunta di file alla playlist..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
+   "Elemento Playlist"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
@@ -7936,6 +8096,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
    "Estensioni:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+   "(separati da spazio; include tutti per impostazione predefinita)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+   "Filtra all'interno degli archivi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
+   "(usato per trovare le miniature)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   "Sei sicuro di voler eliminare l'elemento \"%1\"?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
+   "Si prega di scegliere prima una playlist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE,
@@ -7974,6 +8154,30 @@ MSG_HASH(
    "Errore nell'aggiornare la voce della playlist."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
+   "Si prega di compilare tutti i campi obbligatori."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+   "Aggiorna RetroArch (nightly)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
+   "RetroArch aggiornato con successo. Riavvia l'applicazione per rendere effettive le modifiche."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
+   "Aggiornamento non riuscito."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
+   "Collaboratori"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
+   "Shader corrente"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    "Sposta In Basso"
    )
@@ -8010,6 +8214,22 @@ MSG_HASH(
    "Cancella Tutti I Passaggi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
+   "Nessun paggiaggio dello shader."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
+   "Resetta Passaggio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL_PASSES,
+   "Reimposta Tutti I Passaggi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
+   "Ripristina Parametro"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
    "Scarica miniatura"
    )
@@ -8028,6 +8248,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
    "Limite cache miniature:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+   "Limite dimensione della miniatura di trascinamento:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
@@ -8073,12 +8297,20 @@ MSG_HASH(
    "Cheevos Account"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
+   "Punto finale della lista Account"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "Retro Achievements"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
    "Contatori di core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Nessun disco selezionato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
@@ -8216,12 +8448,20 @@ MSG_HASH(
    "Rapporto d'aspetto Automatico"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
+   "Nome Utente (LAN): %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATUS,
    "Stato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "Abilita Sistema BGM"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
+   "Rapporto Personalizzato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
@@ -8234,6 +8474,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
    "Salva la registrazione di Output nella Directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
+   "Visualizza Partita #"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+   "Seleziona la corrispondenza da visualizzare."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
@@ -8250,6 +8498,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME,
    "Riprendi il contenuto corrente e chiude il menu rapido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
+   "Visualizza la lista delle %u partite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
+   "Crea Codice Da Questa Partita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
+   "Elimina Questa Partita"
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
@@ -8312,8 +8572,20 @@ MSG_HASH(
    "Che cos'è un core?"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+   "Invia Informazioni Di Debug"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+   "Invia informazioni diagnostiche sul tuo dispositivo e la configurazione di RetroArch ai nostri server per l'analisi."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
    "Impostazioni del Database"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
+   "Ritardo dei fotogrammi Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
@@ -8340,8 +8612,44 @@ MSG_HASH(
    "Limita la velocità massima di esercizio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
+   "Inizia A Cercare Nuovo Codice Di Trucchi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
+   "Inizia la ricerca di un nuovo trucco. Il numero di bit può essere cambiato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
+   "Continua La Ricerca"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
+   "Continua a cercare un nuovo trucco."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
    "Lista Achievement (Hardcore)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
+   "Dettagli del Trucco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
+   "Gestisce le impostazioni dei dettagli."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+   "Inizia o continua la ricerca di trucchi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
+   "Inizia o continua una ricerca di trucchi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
+   "Passaggi Per Trucchi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
@@ -8365,6 +8673,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
    "Analogico Destro Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
+   "Inizia o continua la ricerca di trucchi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
@@ -8433,6 +8745,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Configurazione"
+   )
+MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+   "Scaricamenti"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -8537,6 +8853,34 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Installazione core fallita"
    )
 MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
+   "Premi a destra cinque volte per eliminare tutti i trucchi."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "Impossibile salvare le informazioni di debug."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "Impossibile inviare informazioni di debug al server."
+   )
+MSG_HASH(
+   MSG_SENDING_DEBUG_INFO,
+   "Invio informazioni di debug..."
+   )
+MSG_HASH(
+   MSG_SENT_DEBUG_INFO,
+   "Informazioni di debug inviate al server con successo. Il tuo numero ID è %u."
+   )
+MSG_HASH(
+   MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
+   "Premi altre due volte per inviare informazioni diagnostiche al team di RetroArch."
+   )
+MSG_HASH(
+   MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
+   "Premi ancora una volta per inviare informazioni diagnostiche al team di RetroArch."
+   )
+MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
    "Volume globale del mixer audio"
    )
@@ -8565,8 +8909,24 @@ MSG_HASH(
    "Il file esiste già. Salvataggio in buffer di backup"
    )
 MSG_HASH(
+   MSG_GOT_CONNECTION_FROM,
+   "Ottenuto connessione da: \"%s\""
+   )
+MSG_HASH(
+   MSG_GOT_CONNECTION_FROM_NAME,
+   "Ottenuto connessione da: \"%s (%s)\""
+   )
+MSG_HASH(
    MSG_PUBLIC_ADDRESS,
    "Indirizzo pubblico"
+   )
+MSG_HASH(
+   MSG_UPNP_FAILED,
+   "Mappatura Porta Non Riuscita"
+   )
+MSG_HASH(
+   MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
+   "Nessun argomento fornito e nessun menu integrato, mostrando aiuto..."
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
@@ -8585,6 +8945,42 @@ MSG_HASH(
    "Sei entrato come giocatore %u"
    )
 MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+   "Ti sei unito con i dispositivi di input %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLAYER_S_LEFT,
+   "Il giocatore %.*s ha lasciato la partita"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+   "%.*s si è unito come giocatore %u"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+   "%.*s si è unito con i dispositivi di input %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_NOT_RETROARCH,
+   "Un tentativo di connessione alla rete fallito perché il peer non esegue RetroArch, o sta eseguendo una vecchia versione di RetroArch."
+   )
+MSG_HASH(
+   MSG_NETPLAY_OUT_OF_DATE,
+   "Il peer di netplay sta eseguendo una vecchia versione di RetroArch. Impossibile connettersi."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_VERSIONS,
+   "ATTENZIONE: Un peer di rete sta eseguendo una versione diversa di RetroArch. Se si verificano problemi, usa la stessa versione."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_CORES,
+   "Un peer di netplay sta eseguendo un nucleo diverso. Impossibile connettersi."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+   "ATTENZIONE: Un peer di netplay sta eseguendo una versione diversa del nucleo. Se si verificano problemi, usa la stessa versione."
+   )
+MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
    "Questo core non supporta la rete di inter-architettura tra questi sistemi"
    )
@@ -8597,8 +8993,16 @@ MSG_HASH(
    "Inserisci la password del server netplay:"
    )
 MSG_HASH(
+   MSG_DISCORD_CONNECTION_REQUEST,
+   "Vuoi consentire la connessione dall'utente:"
+   )
+MSG_HASH(
    MSG_NETPLAY_INCORRECT_PASSWORD,
    "Password errata"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   "\"%s\" si è disconnesso"
    )
 MSG_HASH(
    MSG_NETPLAY_SERVER_HANGUP,
@@ -8617,8 +9021,20 @@ MSG_HASH(
    "Non ci sono slot liberi per i giocatori"
    )
 MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+   "I dispositivi di ingresso richiesti non sono disponibili"
+   )
+MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY,
    "Non è possibile passare in modalità gioco"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PEER_PAUSED,
+   "Netplay peer \"%s\" in pausa"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CHANGED_NICK,
+   "Il tuo soprannome è cambiato in \"%s\""
    )
 MSG_HASH(
    MSG_AUDIO_VOLUME,
@@ -8649,6 +9065,50 @@ MSG_HASH(
    "Connessione allo slot"
    )
 MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "Recupero lista core..."
+   )
+MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "Impossibile recuperare il core list!"
+   )
+MSG_HASH(
+   MSG_LATEST_CORE_INSTALLED,
+   "Ultima versione già installata: "
+   )
+MSG_HASH(
+   MSG_UPDATING_CORE,
+   "Aggiornamento del nucleo: "
+   )
+MSG_HASH(
+   MSG_DOWNLOADING_CORE,
+   "Scaricamento core: "
+   )
+MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "Estrazione del nucleo: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLED,
+   "Core installato: "
+   )
+MSG_HASH(
+   MSG_SCANNING_CORES,
+   "Scansione nuclei..."
+   )
+MSG_HASH(
+   MSG_CHECKING_CORE,
+   "Controllo nucleo: "
+   )
+MSG_HASH(
+   MSG_ALL_CORES_UPDATED,
+   "Tutti i core installati all'ultima versione"
+   )
+MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "core aggiornati: "
+   )
+MSG_HASH(
    MSG_NUM_CORES_LOCKED,
    "core saltati: "
    )
@@ -8657,12 +9117,44 @@ MSG_HASH(
    "Aggiornamento core disabilitato - il core è bloccato: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+   "Ripristino dei core: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CORES_RESET,
+   "Riavvio dei core: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+   "Pulizia playlist: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   "Playlist pulita: "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Aggiunto ai Preferiti"
    )
 MSG_HASH(
+   MSG_ADD_TO_FAVORITES_FAILED,
+   "Impossibile aggiungere il preferito: playlist completo"
+   )
+MSG_HASH(
+   MSG_SET_CORE_ASSOCIATION,
+   "Core associato: "
+   )
+MSG_HASH(
+   MSG_RESET_CORE_ASSOCIATION,
+   "L'associazione core della voce della playlist è stata resettata."
+   )
+MSG_HASH(
    MSG_APPENDED_DISK,
    "Disco aggiunto"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Accodamento del disco non riuscito"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -8703,6 +9195,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLOCKING_SRAM_OVERWRITE,
    "Bloccare la sovrascrittura della SRAM"
+   )
+MSG_HASH(
+   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   "Portare l'interfaccia di comando sulla porta"
+   )
+MSG_HASH(
+   MSG_BYTES,
+   "byte"
    )
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
@@ -8777,6 +9277,10 @@ MSG_HASH(
    "La mancata corrispondenza del checksum CRC32 tra il file di contenuto e il checksum del contenuto salvato nell'intestazione del file di replay, riproduce molto probabilmente il desync sulla riproduzione."
    )
 MSG_HASH(
+   MSG_CUSTOM_TIMING_GIVEN,
+   "Tempi personalizzati forniti"
+   )
+MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    "Decompressione già in corso."
    )
@@ -8809,6 +9313,10 @@ MSG_HASH(
    "Scaricamento in corso del file"
    )
 MSG_HASH(
+   MSG_INDEX_FILE,
+   "indice"
+   )
+MSG_HASH(
    MSG_DOWNLOAD_FAILED,
    "Download fallito"
    )
@@ -8823,6 +9331,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
    "I core Libretro richiedono contenuti speciali, ma nessun dato è stato fornito."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+   "Core non supporta VFS e il caricamento da una copia locale non è riuscito"
    )
 MSG_HASH(
    MSG_ERROR_PARSING_ARGUMENTS,
@@ -8875,6 +9387,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
    "Impossibile applicare lo shader."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "Applicazione della preimpostazione shader non riuscita:"
    )
 MSG_HASH(
    MSG_FAILED_TO_BIND_SOCKET,
@@ -9033,6 +9549,10 @@ MSG_HASH(
    "Trovato shader"
    )
 MSG_HASH(
+   MSG_FRAMES,
+   "Fotogrammi"
+   )
+MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
    "Opzioni di gioco: opzioni di base specifiche per il gioco trovate in"
    )
@@ -9041,8 +9561,28 @@ MSG_HASH(
    "Indice del disco non valida."
    )
 MSG_HASH(
+   MSG_GRAB_MOUSE_STATE,
+   "Cattura lo stato del mouse"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_ON,
+   "Priorità del gioco attivato"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_OFF,
+   "Priorità del gioco disattivato"
+   )
+MSG_HASH(
+   MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
+   "Il core Libretro è reso hardware. Deve usare anche la registrazione post-ombreggiata."
+   )
+MSG_HASH(
    MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
    "Il checksum inserito non corrisponde a CRC32."
+   )
+MSG_HASH(
+   MSG_INPUT_CHEAT,
+   "Input Trucco"
    )
 MSG_HASH(
    MSG_INPUT_CHEAT_FILENAME,
@@ -9071,6 +9611,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_INVALID_NICKNAME_SIZE,
    "Dimensione del nome utente non valido."
+   )
+MSG_HASH(
+   MSG_IN_BYTES,
+   "in byte"
+   )
+MSG_HASH(
+   MSG_IN_MEGABYTES,
+   "in megabyte"
+   )
+MSG_HASH(
+   MSG_IN_GIGABYTES,
+   "in gigabyte"
    )
 MSG_HASH(
    MSG_LIBRETRO_ABI_BREAK,
@@ -9103,6 +9655,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
    "Caricamento dei file della cronologia"
+   )
+MSG_HASH(
+   MSG_LOADING_FAVORITES_FILE,
+   "Caricamento file preferiti"
    )
 MSG_HASH(
    MSG_LOADING_STATE,
@@ -9205,6 +9761,10 @@ MSG_HASH(
    "Riavviato"
    )
 MSG_HASH(
+   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   "Riavvio della registrazione a causa del reinsediamento del driver."
+   )
+MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Ripristinato un vecchio salva stato."
    )
@@ -9257,6 +9817,10 @@ MSG_HASH(
    "Salvato con successo su"
    )
 MSG_HASH(
+   MSG_SAVING_RAM_TYPE,
+   "Salvataggio tipo di RAM"
+   )
+MSG_HASH(
    MSG_SAVING_STATE,
    "Salvataggio dello stato"
    )
@@ -9279,6 +9843,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
    "Shader predefinito salvato con successo."
+   )
+MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Carico SRAM saltato."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION,
+   "Slow Motion."
    )
 MSG_HASH(
    MSG_FAST_FORWARD,
@@ -9313,6 +9885,38 @@ MSG_HASH(
    "Effettua screenshot."
    )
 MSG_HASH(
+   MSG_SCREENSHOT_SAVED,
+   "Schermata salvata"
+   )
+MSG_HASH(
+   MSG_ACHIEVEMENT_UNLOCKED,
+   "Obiettivo Sbloccato"
+   )
+MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Cambia il tipo di miniatura"
+   )
+MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Miniature a schermo intero"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Attiva/Disattiva metadati"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_AVAILABLE,
+   "Nessuna miniatura disponibile"
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_QUIT,
+   "Premi di nuovo per uscire..."
+   )
+MSG_HASH(
+   MSG_TO,
+   "a"
+   )
+MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Annullamento del caricamento del salvataggio"
    )
@@ -9321,12 +9925,24 @@ MSG_HASH(
    "Annullamento del salvataggio"
    )
 MSG_HASH(
+   MSG_UNKNOWN,
+   "Sconosciuto"
+   )
+MSG_HASH(
+   MSG_UNPAUSED,
+   "Non In pausa."
+   )
+MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
    "Comando non riconosciuto"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "Utilizzo del nome di un core per la nuova configurazione."
+   )
+MSG_HASH(
+   MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+   "Usare il nucleo fittizio libretro. Registrazione saltata."
    )
 MSG_HASH(
    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -9357,6 +9973,14 @@ MSG_HASH(
    "Vassoio del disco virtuale."
    )
 MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "espelli"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "chiudi"
+   )
+MSG_HASH(
    MSG_FAILED,
    "fallito"
    )
@@ -9373,8 +9997,16 @@ MSG_HASH(
    "non configurata, utilizza fallback"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Scansione Bluetooth completata."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Scansione completata delle reti Wi-Fi ."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Scansione dispositivi bluetooth..."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
@@ -9411,6 +10043,38 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "Password non corretta."
+   )
+MSG_HASH(
+   MSG_CONFIG_OVERRIDE_LOADED,
+   "Sovrascrivi configurazione caricata."
+   )
+MSG_HASH(
+   MSG_GAME_REMAP_FILE_LOADED,
+   "File di remap del gioco caricato."
+   )
+MSG_HASH(
+   MSG_DIRECTORY_REMAP_FILE_LOADED,
+   "File remap per la cartella di contenuto caricato."
+   )
+MSG_HASH(
+   MSG_CORE_REMAP_FILE_LOADED,
+   "File di remap del Core caricato."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "L'esecuzione anticipata è stato disabilitato perché questo core non supporta gli stati di salvataggio."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Impossibile salvare lo stato. Esecuzione anticipata è stata disabilitata."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Impossibile caricare lo stato. Esecuzione anticipata è stata disabilitata."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Creazione della seconda istanza non riuscita. L'esecuzione anticipata ora userà solo un'istanza."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
@@ -9501,6 +10165,14 @@ MSG_HASH(
    "Impossibile impostare l'ultimo disco usato..."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+   "È stato caricato uno stato di salvataggio. La modalità Hardcore degli obiettivi è stata disattivata per la sessione corrente."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   "Un trucco è stato attivato. Achievements Hardcore Mode disabilitato per la sessione corrente."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Molto Basso"
    )
@@ -9521,8 +10193,84 @@ MSG_HASH(
    "Molto Alto"
    )
 MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Attenzione: risorse mancanti, utilizzare l'aggiornamento online se disponibile"
+   )
+MSG_HASH(
+   MSG_DUMPING_DISC,
+   "Dumping disco..."
+   )
+MSG_HASH(
+   MSG_DRIVE_NUMBER,
+   "Lettore %d"
+   )
+MSG_HASH(
+   MSG_LOAD_CORE_FIRST,
+   "Si prega di caricare un nucleo prima."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+   "Lettura dal disco non riuscita. Dump interrotto."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+   "Scrittura su disco non riuscita. Dump interrotto."
+   )
+MSG_HASH(
+   MSG_NO_DISC_INSERTED,
+   "Nessun disco inserito nell'unità."
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+   "Preimpostazione Shader rimossa con successo."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_SHADER_PRESET,
+   "Errore nella rimozione delle preimpostazioni shader."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "File DAT arcade non valido selezionato"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "Il file arcade DAT selezionato è troppo grande (memoria libera insufficiente)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
+   "Impossibile caricare il file DAT di arcade (formato non valido?)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Configurazione di scansione manuale non valida"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Nessun contenuto valido rilevato"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_START,
+   "Scansione contenuto: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Scansione in corso: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
+   "Pulizia voci M3U: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_END,
+   "Scansione completata: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_SCANNING_CORE,
+   "Scansione nucleo: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_ALREADY_EXISTS,
+   "Il backup del core installato esiste già: "
    )
 MSG_HASH(
    MSG_BACKING_UP_CORE,
@@ -9543,6 +10291,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORING_CORE,
    "Ripristino del core: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_COMPLETE,
+   "Ripristino del nucleo completato: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   "Il file core selezionato è già installato: "
    )
 MSG_HASH(
    MSG_INSTALLING_CORE,
@@ -9661,6 +10417,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    "Abilita il filtro morbido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   "Scansiona per i dispositivi bluetooth e li collega."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
