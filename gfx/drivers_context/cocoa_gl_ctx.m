@@ -411,7 +411,8 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   physical_width        = screen_rect.size.width  * scale;
     float   physical_height       = screen_rect.size.height * scale;
     float   dpi                   = 160                     * scale;
-    unsigned idiom_type           = UI_USER_INTERFACE_IDIOM();
+    CGFloat maxSize               = fmaxf(physical_width, physical_height);
+    NSInteger idiom_type           = UI_USER_INTERFACE_IDIOM();
 
     switch (idiom_type)
     {
@@ -422,7 +423,12 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
           dpi = 132 * scale;
           break;
        case UIUserInterfaceIdiomPhone:
-          dpi = 163 * scale;
+          if (maxSize >= 2208.0) {
+              // Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 11, 11 Pro Max
+              dpi = 81 * scale;
+          } else {
+              dpi = 163 * scale;
+          }
           break;
        case UIUserInterfaceIdiomTV:
        case UIUserInterfaceIdiomCarPlay:
