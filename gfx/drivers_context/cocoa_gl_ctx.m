@@ -23,7 +23,7 @@
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>
 #include <AppKit/NSScreen.h>
@@ -103,7 +103,7 @@ void *nsview_get_ptr(void)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);
-#elif defined(HAVE_COCOA_METAL)
+#elif defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);
@@ -116,7 +116,7 @@ void nsview_set_ptr(CocoaView *p)
     g_instance = p;
 }
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
 static NSOpenGLPixelFormat* g_format;
 
 void *glcontext_get_ptr(void)
@@ -240,7 +240,7 @@ float get_backing_scale_factor(void)
       return backing_scale_def;
 
    backing_scale_def    = 1.0f;
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
    screen               = (BRIDGE RAScreen*)get_chosen_screen();
 
    if (screen)
@@ -269,7 +269,7 @@ void cocoagl_gfx_ctx_update(void)
    {
       case GFX_CTX_OPENGL_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
 #if MAC_OS_X_VERSION_10_7
          CGLUpdateContext(g_hw_ctx.CGLContextObj);
          CGLUpdateContext(g_context.CGLContextObj);
@@ -299,7 +299,7 @@ static void cocoagl_gfx_ctx_destroy(void *data)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
          [GLContextClass clearCurrentContext];
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
          [g_context clearDrawable];
          RELEASE(g_context);
          RELEASE(g_format);
@@ -340,7 +340,7 @@ static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 {
    (void)data;
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
    if (state)
       [NSCursor unhide];
    else
@@ -369,7 +369,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
    return ret;
 }
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
 static void cocoagl_gfx_ctx_update_title(void *data)
 {
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
@@ -392,7 +392,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
             float *value)
 {
     RAScreen *screen              = (BRIDGE RAScreen*)get_chosen_screen();
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
     NSDictionary *description     = [screen deviceDescription];
     NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
     CGSize  display_physical_size = CGDisplayScreenSize(
@@ -482,7 +482,7 @@ static void cocoagl_gfx_ctx_input_driver(void *data,
 static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
    CGRect size, cgrect;
    GLsizei backingPixelWidth, backingPixelHeight;
 #if defined(HAVE_COCOA_METAL)
@@ -630,7 +630,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data)
          if (!(--g_fast_forward_skips < 0))
             return;
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
          [g_context flushBuffer];
          [g_hw_ctx flushBuffer];
 #elif defined(HAVE_COCOATOUCH)
@@ -699,12 +699,12 @@ static void *cocoagl_gfx_ctx_get_context_data(void *data)
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
-#if defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
    NSView *g_view              = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
@@ -715,7 +715,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       {
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
          if ([g_view respondsToSelector: @selector(setWantsBestResolutionOpenGLSurface:)])
             [g_view setWantsBestResolutionOpenGLSurface:YES];
 
@@ -791,7 +791,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          break;
    }
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
    static bool has_went_fullscreen = false;
    /* TODO: Screen mode support. */
 
@@ -839,6 +839,10 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
    {
 #if defined(HAVE_COCOATOUCH)
       case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_COCOA_METAL)
+           // the metal build supports both the OpenGL and Metal video drivers
+           [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
+#endif
          // setViewType is not (yet?) defined for iOS
          // [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
          break;
@@ -921,7 +925,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* get_video_output_next */
    cocoagl_gfx_ctx_get_metrics,
    NULL, /* translate_aspect */
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
    cocoagl_gfx_ctx_update_title,
 #else
    NULL, /* update_title */

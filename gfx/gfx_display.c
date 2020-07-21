@@ -304,7 +304,7 @@ float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
     * unfortunate, and needs to be fixed at the gfx context driver
     * level. Until this is done, all we can do is fallback to using
     * the old legacy 'magic number' scaling on Mac platforms. */
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    if (true)
    {
       scale        = (diagonal_pixels / 6.5f) / 212.0f;

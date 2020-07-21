@@ -25,7 +25,7 @@
 #import <gfx/video_frame.h>
 
 #import "metal_common.h"
-#import "Context.h"
+#include "metal/Context.h"
 
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 
@@ -53,9 +53,11 @@
 
 @implementation MetalView
 
+#if !defined(HAVE_COCOATOUCH)
 - (void)keyDown:(NSEvent*)theEvent
 {
 }
+#endif
 
 /* Stop the annoying sound when pressing a key. */
 - (BOOL)acceptsFirstResponder
@@ -500,7 +502,13 @@
 
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size
 {
+    NSLog(@"mtkView drawableSizeWillChange to: %f x %f",size.width,size.height);
+#ifdef HAVE_COCOATOUCH
+    CGFloat scale = [[UIScreen mainScreen] scale];
+    [self setViewportWidth:(unsigned int)view.bounds.size.width*scale height:(unsigned int)view.bounds.size.height*scale forceFull:NO allowRotate:YES];
+#else
    [self setViewportWidth:(unsigned int)size.width height:(unsigned int)size.height forceFull:NO allowRotate:YES];
+#endif
 }
 
 - (void)drawInMTKView:(MTKView *)view
@@ -693,7 +701,11 @@ typedef struct MTLALIGN(16)
       switch (i)
       {
          case RARCH_WRAP_BORDER:
+#if defined(HAVE_COCOATOUCH)
+            sd.sAddressMode = MTLSamplerAddressModeClampToZero;
+#else
             sd.sAddressMode = MTLSamplerAddressModeClampToBorderColor;
+#endif
             break;
 
          case RARCH_WRAP_EDGE:
@@ -1023,7 +1035,9 @@ typedef struct MTLALIGN(16)
 
             if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
                [rce setFragmentBuffer:buffer offset:0 atIndex:buffer_sem->binding];
+#if !defined(HAVE_COCOATOUCH)
             [buffer didModifyRange:NSMakeRange(0, buffer.length)];
+#endif
          }
       }
 
@@ -1356,7 +1370,7 @@ typedef struct MTLALIGN(16)
                if (size == 0)
                   continue;
 
-               id<MTLBuffer> buf = [_context.device newBufferWithLength:size options:MTLResourceStorageModeManaged];
+                id<MTLBuffer> buf = [_context.device newBufferWithLength:size options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
                STRUCT_ASSIGN(_engine.pass[i].buffers[j], buf);
             }
          } @finally
@@ -1472,7 +1486,7 @@ typedef struct MTLALIGN(16)
    NSUInteger needed = sizeof(SpriteVertex) * count * 4;
    if (!_vert || _vert.length < needed)
    {
-      _vert = [_context.device newBufferWithLength:needed options:MTLResourceStorageModeManaged];
+      _vert = [_context.device newBufferWithLength:needed options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
    }
 
    for (NSUInteger i = 0; i < count; i++)
@@ -1490,11 +1504,13 @@ typedef struct MTLALIGN(16)
 
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
 {
+#if !defined(HAVE_COCOATOUCH)
    if (_vertDirty)
    {
       [_vert didModifyRange:NSMakeRange(0, _vert.length)];
       _vertDirty = NO;
    }
+#endif
 
    NSUInteger count = _images.count;
    for (NSUInteger i = 0; i < count; ++i)

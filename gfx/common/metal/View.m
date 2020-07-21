@@ -23,9 +23,14 @@
 
 - (NSString *)debugDescription
 {
+#if defined(HAVE_COCOATOUCH)
+    NSString *sizeDesc = [NSString stringWithFormat:@"width: %f, height: %f",_size.width,_size.height];
+#else
+    NSString *sizeDesc = NSStringFromSize(_size);
+#endif
    return [NSString stringWithFormat:@"( format = %@, frame = %@ )",
                                      NSStringFromRPixelFormat(_format),
-                                     NSStringFromSize(_size)];
+                                     sizeDesc];
 }
 
 @end

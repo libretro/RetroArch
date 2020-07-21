@@ -1005,11 +1005,8 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &ui_companion_win32,
 #endif
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
    &ui_companion_cocoa,
-#endif
-#ifdef HAVE_COCOATOUCH
-   &ui_companion_cocoatouch,
 #endif
    &ui_companion_null,
    NULL
@@ -33002,7 +32999,6 @@ bool video_driver_translate_coord_viewport(
    int norm_vp_height        = (int)vp->height;
    int norm_full_vp_width    = (int)vp->full_width;
    int norm_full_vp_height   = (int)vp->full_height;
-
    if (norm_vp_width <= 0 ||
        norm_vp_height <= 0 ||
        norm_full_vp_width <= 0 ||
@@ -33040,7 +33036,6 @@ bool video_driver_translate_coord_viewport(
    *res_y             = scaled_y;
    *res_screen_x      = scaled_screen_x;
    *res_screen_y      = scaled_screen_y;
-
    return true;
 }
 

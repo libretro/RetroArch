@@ -9,6 +9,7 @@
 #import "Context.h"
 #import "Filter.h"
 #import <QuartzCore/QuartzCore.h>
+#import "metal_common.h"
 
 @interface BufferNode : NSObject
 @property (nonatomic, readonly) id<MTLBuffer> src;
@@ -174,6 +175,8 @@
 {
 #if TARGET_OS_OSX
    return _layer.displaySyncEnabled;
+#else
+    return NO;
 #endif
 }
 
@@ -759,14 +762,8 @@ static const NSUInteger kConstantAlignment = 4;
 - (bool)allocRange:(BufferRange *)range length:(NSUInteger)length
 {
    MTLResourceOptions opts;
-
+   opts = PLATFORM_METAL_RESOURCE_STORAGE_MODE;
    memset(range, 0, sizeof(*range));
-
-#if TARGET_OS_OSX
-   opts = MTLResourceStorageModeManaged;
-#else
-   opts = MTLResourceStorageModeShared;
-#endif
 
    if (!_head)
    {

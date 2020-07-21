@@ -5,7 +5,7 @@
 #import "Context.h"
 #import "MenuDisplay.h"
 #import "ShaderTypes.h"
-#import "menu_driver.h"
+#include "../../../menu/menu_driver.h"
 #import <Metal/Metal.h>
 /* TODO(sgc): this dependency is incorrect */
 #import "../metal_common.h"
