@@ -1,9 +1,12 @@
 #ifndef COCOA_APPLE_PLATFORM_H
 #define COCOA_APPLE_PLATFORM_H
 
-#if defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+
+#ifdef HAVE_COCOA_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
+#endif
 
 #if !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
@@ -52,16 +55,11 @@ extern id<ApplePlatform> apple_platform;
 id<ApplePlatform> apple_platform;
 
 #if defined(HAVE_COCOATOUCH)
-#if defined(HAVE_COCOA_METAL)
 @interface RetroArch_iOS : UINavigationController<ApplePlatform, UIApplicationDelegate,
 UINavigationControllerDelegate> {
     UIView *_renderView;
     apple_view_type_t _vt;
 }
-#else
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate,
-UINavigationControllerDelegate>
-#endif
 
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
@@ -101,7 +99,7 @@ id apple_platform;
 }
 #endif
 
-#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
+#if TARGET_OS_OSX
 @property(nonatomic, retain) NSWindow IBOutlet *window;
 
 @end

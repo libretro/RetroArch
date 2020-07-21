@@ -87,7 +87,7 @@
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
-		9204BE2B1D319EF300BD49DB /* RADEBUGL.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RADEBUGL.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9204BE2B1D319EF300BD49DB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9222F1FE2314BA7C0097C0FD /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = "<group>"; };
 		9222F2082315DAD50097C0FD /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		9222F20A2315DD3D0097C0FD /* retroarch_logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = retroarch_logo.png; sourceTree = "<group>"; };
@@ -343,7 +343,7 @@
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9204BE2B1D319EF300BD49DB /* RADEBUGL.app */,
+				9204BE2B1D319EF300BD49DB /* RetroArch.app */,
 				926C77D721FD1E6500103EDE /* RetroArchTV.app */,
 			);
 			name = Products;
@@ -419,7 +419,7 @@
 			);
 			name = RetroArchiOS11;
 			productName = RetroArch;
-			productReference = 9204BE2B1D319EF300BD49DB /* RADEBUGL.app */;
+			productReference = 9204BE2B1D319EF300BD49DB /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
 		};
 		926C77D621FD1E6500103EDE /* RetroArchTV */ = {
@@ -696,8 +696,8 @@
 					"-DHAVE_MFI",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RADEBUG2;
-				PRODUCT_NAME = RADEBUGL;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
+				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -799,8 +799,8 @@
 					"-DHAVE_MFI",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RADEBUG2;
-				PRODUCT_NAME = RADEBUGL;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
+				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";

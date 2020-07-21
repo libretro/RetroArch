@@ -82,26 +82,6 @@ typedef enum apple_view_type {
 + (CocoaView*)get;
 @end
 
-#if !defined(HAVE_COCOA_METAL)
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate,
-UINavigationControllerDelegate>
-@property (nonatomic) UIWindow* window;
-@property (nonatomic) NSString* documentsDirectory;
-@property (nonatomic) RAMenuBase* mainmenu;
-@property (nonatomic) int menu_count;
-
-+ (RetroArch_iOS*)get;
-
-- (void)showGameView;
-- (void)toggleUI;
-- (void)supportOtherAudioSessions;
-
-- (void)refreshSystemConfig;
-- (void)mainMenuPushPop: (bool)pushp;
-- (void)mainMenuRefresh;
-@end
-#endif
-
 void get_ios_version(int *major, int *minor);
 
 #endif
