@@ -158,15 +158,28 @@ ifeq ($(TARGET), retroarch_3ds)
 endif
 
 # Git Version
+GIT_VERSION_CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
+GIT_VERSION_CACHEFILE = $(GIT_VERSION_CACHEDIR)/git-version.cache
 
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
-ifneq ($(GIT_VERSION),)
-   _CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
-   _LAST_GIT_VERSION := $(shell cat "$(_CACHEDIR)"/last-git-version 2>/dev/null)
-   ifneq ($(GIT_VERSION),$(_LAST_GIT_VERSION))
+ifneq (,$(wildcard .git/index))  # Building inside a Git repository?
+   GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+endif
+
+ifneq (,$(wildcard $(GIT_VERSION_CACHEFILE)))  # Cached Git version?
+   GIT_VERSION_CACHE = $(shell cat "$(GIT_VERSION_CACHEFILE)" 2>/dev/null)
+endif
+
+ifeq ($(GIT_VERSION),)
+   ifneq ($(GIT_VERSION_CACHE),)  # If no Git version, use cached if found
+      GIT_VERSION = $(GIT_VERSION_CACHE)
+   endif
+endif
+
+ifneq ($(GIT_VERSION),)  # Enable version_git.o?
+   ifneq ($(GIT_VERSION),$(GIT_VERSION_CACHE))  # Update version_git.o?
       $(shell \
-         mkdir -p "$(_CACHEDIR)"; \
-         echo "$(GIT_VERSION)" > "$(_CACHEDIR)"/last-git-version; \
+         mkdir -p "$(GIT_VERSION_CACHEDIR)" && \
+         echo "$(GIT_VERSION)" > "$(GIT_VERSION_CACHEFILE)" && \
          touch version_git.c)
    endif
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
