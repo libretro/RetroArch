@@ -1520,7 +1520,8 @@ enum
    RA_OPT_MAX_FRAMES_SCREENSHOT,
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
    RA_OPT_SET_SHADER,
-   RA_OPT_ACCESSIBILITY
+   RA_OPT_ACCESSIBILITY,
+   RA_OPT_LOAD_MENU_ON_ERROR
 };
 
 enum  runloop_state
@@ -35519,7 +35520,7 @@ static void retroarch_print_help(const char *arg0)
           "the device (1 to %d).\n", MAX_USERS);
 
    {
-      char buf[2148];
+      char buf[2560];
       buf[0] = '\0';
       strlcpy(buf, "                        Format is PORT:ID, where ID is a number "
             "corresponding to the particular device.\n", sizeof(buf));
@@ -35583,6 +35584,8 @@ static void retroarch_print_help(const char *arg0)
       strlcat(buf, "      --accessibility\n"
             "                        Enables accessibilty for blind users using text-to-speech.\n", sizeof(buf));
 #endif
+      strlcat(buf, "      --load-menu-on-error\n"
+            "                        Open menu instead of quitting if specified core or content fails to load.\n", sizeof(buf));
       puts(buf);
    }
 }
@@ -35603,8 +35606,11 @@ static void retroarch_parse_input_and_config(
    unsigned i;
    static bool           first_run = true;
    const char           *optstring = NULL;
-   bool           explicit_menu    = false;
-   global_t            *global     = &p_rarch->g_extern;
+   bool              explicit_menu = false;
+   bool                 cli_active = false;
+   bool               cli_core_set = false;
+   bool            cli_content_set = false;
+   global_t                *global = &p_rarch->g_extern;
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -35659,6 +35665,7 @@ static void retroarch_parse_input_and_config(
       { "version",            0, NULL, RA_OPT_VERSION },
       { "log-file",           1, NULL, RA_OPT_LOG_FILE },
       { "accessibility",      0, NULL, RA_OPT_ACCESSIBILITY},
+      { "load-menu-on-error", 0, NULL, RA_OPT_LOAD_MENU_ON_ERROR },
       { NULL, 0, NULL, 0 }
    };
 
@@ -35676,6 +35683,12 @@ static void retroarch_parse_input_and_config(
       string_trim_whitespace_right(p_rarch->launch_arguments);
 
       first_run = false;
+
+      /* Command line interface is only considered
+       * to be 'active' (i.e. used by a third party)
+       * if this is the first run (subsequent runs
+       * are triggered by RetroArch itself) */
+      cli_active = true;
    }
 
    /* Handling the core type is finicky. Based on the arguments we pass in,
@@ -35719,6 +35732,7 @@ static void retroarch_parse_input_and_config(
 #ifdef HAVE_CONFIGFILE
    p_rarch->runloop_overrides_active     = false;
 #endif
+   global->cli_load_menu_on_error        = false;
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind    = 0;
@@ -36209,6 +36223,9 @@ static void retroarch_parse_input_and_config(
                p_rarch->accessibility_enabled = true;
 #endif
                break;
+            case RA_OPT_LOAD_MENU_ON_ERROR:
+               global->cli_load_menu_on_error = true;
+               break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
                retroarch_fail(1, "retroarch_parse_input()");
@@ -36258,7 +36275,19 @@ static void retroarch_parse_input_and_config(
          path_set(RARCH_PATH_NAMES, (const char*)argv[optind]);
       else
          path_set_special(argv + optind, argc - optind);
+
+      /* Register that content has been set via the
+       * command line interface */
+      cli_content_set = true;
    }
+
+   /* Check whether a core has been set via the
+    * command line interface */
+   cli_core_set = (p_rarch->current_core_type != CORE_TYPE_DUMMY);
+
+   /* Update global 'content launched from command
+    * line' status flag */
+   global->launched_from_cli = cli_active && (cli_core_set || cli_content_set);
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -36524,7 +36553,8 @@ bool retroarch_main_init(int argc, char *argv[])
    if (init_failed)
    {
       /* Check if menu was active prior to core initialization */
-      if (!global->launched_from_cli
+      if (   !global->launched_from_cli
+          || global->cli_load_menu_on_error
 #ifdef HAVE_MENU
           || p_rarch->menu_driver_alive
 #endif
