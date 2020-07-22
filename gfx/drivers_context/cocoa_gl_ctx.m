@@ -586,9 +586,7 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
 static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
 {
    unsigned interval           = (unsigned)i;
-#ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-#endif
 
    switch (cocoagl_api)
    {
