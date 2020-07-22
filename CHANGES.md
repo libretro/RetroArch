@@ -1,4 +1,5 @@
 # Future
+- ANDROID/VIBRATION: Fixes "Vibrate on Key Press" having no effect on Android devices, which occurred because only the off time/strength was defined in what should have been a pair of off/on values
 - BLUETOOTH: Add a Bluetooth driver (Lakka-only for now)
 - CHEEVOS: Option to play sound on achievement unlock.
 - CHEEVOS: Upgrade to rcheevos 9.1
@@ -14,11 +15,15 @@
 - IOS: Fixed iOS 6 version
 - IOS/METAL: Metal video driver now works on RetroArch iOS
 - LOCALIZATION: Updates for several languages (synchronized from Crowdin)
+- MEMORY/LINUX/ANDROID: Fix reporting of free memory
+- MEMORY/WINDOWS: Fix reporting of free memory
 - MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - MENU: Fix cursor forced to first entry after displaying lists
 - MENU/WIDGETS: Add optional widget-based 'load content' launch feedback animation
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
+- PS2: Improve FPS Limiter
 - SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
+- VIDEO FILTERS/BLARGG: Make Blargg_snes filter customizable
 - WINDOWS/RAWINPUT: Fix invalid calls to dinput_handle_message when input driver is not set to dinput
 - X11: Add lightgun support
 
