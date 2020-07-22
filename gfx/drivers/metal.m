@@ -54,10 +54,107 @@
 
 #import "../video_coord_array.h"
 
-/* Temporary workaround for metal not being able to poll flags during init */
-static gfx_ctx_driver_t metal_fake_context;
-
 static uint32_t metal_get_flags(void *data);
+
+#pragma mark Graphics Context for Metal
+
+// The graphics context for the Metal driver is just a stubbed out version
+// It supports getting metrics such as dpi which is needed for iOS/tvOS
+
+static bool metal_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
+            float *value)
+{
+#ifdef HAVE_COCOATOUCH
+    CGRect screenRect = [[UIScreen mainScreen] bounds];
+    CGFloat scale = [[UIScreen mainScreen] scale];
+    float   displayHeight        = screenRect.size.height;
+    float   physicalWidth        = screenRect.size.width  * scale;
+    float   physicalHeight       = screenRect.size.height * scale;
+    float   dpi                  = 160                     * scale;
+    CGFloat maxSize              = fmaxf(physicalWidth, physicalHeight);
+    NSInteger idiom_type         = UI_USER_INTERFACE_IDIOM();
+    switch (idiom_type)
+    {
+       case -1:
+          break;
+       case UIUserInterfaceIdiomPad:
+          dpi = 132 * scale;
+          break;
+       case UIUserInterfaceIdiomPhone:
+            if (maxSize >= 2208.0) {
+                // Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 11, 11 Pro Max
+                dpi = 81 * scale;
+            } else {
+                dpi = 163 * scale;
+            }
+          break;
+       case UIUserInterfaceIdiomTV:
+       case UIUserInterfaceIdiomCarPlay:
+          /* TODO */
+          break;
+    }
+    (void)displayHeight;
+
+    switch (type)
+    {
+        case DISPLAY_METRIC_MM_WIDTH:
+            *value = physicalWidth;
+            break;
+        case DISPLAY_METRIC_MM_HEIGHT:
+            *value = physicalHeight;
+            break;
+        case DISPLAY_METRIC_DPI:
+            *value = dpi;
+            break;
+        case DISPLAY_METRIC_NONE:
+        default:
+            *value = 0;
+            return false;
+    }
+    return true;
+#else
+    return false;
+#endif
+}
+
+/* Temporary workaround for metal not being able to poll flags during init */
+static gfx_ctx_driver_t metal_fake_context = {
+       NULL,
+       NULL,
+       NULL,
+       NULL,
+       NULL,
+       NULL,
+       NULL,
+       NULL, /* get_refresh_rate */
+       NULL, /* get_video_output_size */
+       NULL, /* get_video_output_prev */
+       NULL, /* get_video_output_next */
+#ifdef HAVE_COCOATOUCH
+       metal_gfx_ctx_get_metrics,
+#else
+       NULL,
+#endif
+       NULL, /* translate_aspect */
+       NULL, /* update_title */
+       NULL,
+       NULL, /* set_resize */
+       NULL,
+       NULL,
+       false,
+       NULL,
+       NULL,
+       NULL,
+       NULL, /* image_buffer_init */
+       NULL, /* image_buffer_write */
+       NULL, /* show_mouse */
+       "metal",
+       NULL,
+       NULL,
+       NULL,
+       NULL, /* get_context_data */
+       NULL  /* make_current */
+};
 
 static bool metal_set_shader(void *data,
       enum rarch_shader_type type, const char *path);
