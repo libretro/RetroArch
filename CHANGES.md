@@ -11,6 +11,7 @@
 - EMSCRIPTEN: Fix input code to ignore unknown keys
 - FILE I/O: VFS and NBIO interfaces will now use 64-bit fseek/ftell where possible, should allow for reading/writing to files bigger than 2GB
 - IOS: Fixed iOS 6 version
+- IOS/METAL: Metal video driver now works on RetroArch iOS
 - LOCALIZATION: Updates for several languages (synchronized from Crowdin)
 - MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - MENU: Fix cursor forced to first entry after displaying lists
