@@ -706,8 +706,8 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
 #elif defined(HAVE_COCOA)
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
-#if TARGET_OS_OSX
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#if TARGET_OS_OSX
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 #endif
