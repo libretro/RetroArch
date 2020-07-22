@@ -5,6 +5,7 @@
 - CHEEVOS: Restore display of unlocked achievements across hardcore modes
 - CHEEVOS: Hash buffered data when available
 - CHEEVOS: Fix 'Auto Save State freezes RetroArch while Cheevos is enabled'
+- CLI: A new command line option --load-menu-on-error has been added
 - CONFIG FILE: Optimise parsing of configuration files
 - D3D9/D3D11: Fix core-initiated D3D9/D3D11 driver switches
 - DRIVERS: Implemented protection to avoid setting critical drivers to nothing thus preventing the user from locking him/herself out of the program
