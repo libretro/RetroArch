@@ -715,11 +715,11 @@ char *video_shader_read_reference_path(const char *path)
       char *ref_path = line + STRLEN_CONST("#reference");
 
       /* have at least 1 whitespace */
-      if (!isspace(*ref_path))
+      if (!isspace((unsigned char)*ref_path))
          goto end;
       ref_path++;
 
-      while (isspace(*ref_path))
+      while (isspace((unsigned char)*ref_path))
          ref_path++;
 
       if (*ref_path == '\"')
@@ -738,7 +738,7 @@ char *video_shader_read_reference_path(const char *path)
          {
             /* if there's no second ", remove whitespace at the end */
             p--;
-            while (isspace(*p))
+            while (isspace((unsigned char)*p))
                *p-- = '\0';
          }
       }
@@ -746,7 +746,7 @@ char *video_shader_read_reference_path(const char *path)
       {
          /* remove whitespace at the end (e.g. carriage return) */
          char *end = ref_path + strlen(ref_path) - 1;
-         while (isspace(*end))
+         while (isspace((unsigned char)*end))
             *end-- = '\0';
       }
 
