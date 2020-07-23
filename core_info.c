@@ -1313,10 +1313,10 @@ bool core_info_hw_api_supported(core_info_t *info)
       int api_pos                = 0;
       int major_str_pos          = 0;
       int minor_str_pos          = 0;
-      int cur_api_len            = 0;
-      int j                      = 0;
       int major                  = 0;
       int minor                  = 0;
+      unsigned cur_api_len       = 0;
+      unsigned j                 = 0;
       bool found_major           = false;
       bool found_minor           = false;
       enum compare_op op         = COMPARE_OP_GREATER_EQUAL;
@@ -1336,7 +1336,8 @@ bool core_info_hw_api_supported(core_info_t *info)
          {
             case STATE_API_NAME:
             {
-               if (isupper(cur_api[j]) || islower(cur_api[j]))
+               if (  isupper((unsigned char)cur_api[j]) || 
+                     islower((unsigned char)cur_api[j]))
                   api_str[api_pos++] = cur_api[j];
                else
                {
