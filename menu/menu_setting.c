@@ -2173,7 +2173,7 @@ static rarch_setting_t setting_int_setting(const char* name,
    return result;
 }
 
-#if 0
+#ifdef HAVE_NETWORKING
 static void config_bool_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
