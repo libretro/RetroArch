@@ -133,7 +133,7 @@ static int16_t kpad_axis(unsigned port, uint32_t axis)
          data.is_negative);
 }
 
-static int16_t kpad_joypad_state(
+static int16_t kpad_state(
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port)
