@@ -577,7 +577,7 @@ static uint64_t frontend_psp_get_mem_total(void)
    return _newlib_heap_end - _newlib_heap_base;
 }
 
-static uint64_t frontend_psp_get_mem_used(void)
+static uint64_t frontend_psp_get_mem_free(void)
 {
    return _newlib_heap_end - _newlib_heap_cur;
 }
@@ -605,7 +605,7 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_parse_drive_list,
 #ifdef VITA
    frontend_psp_get_mem_total,
-   frontend_psp_get_mem_used,
+   frontend_psp_get_mem_free,
 #else
    NULL,                         /* get_mem_total */
    NULL,                         /* get_mem_free */
