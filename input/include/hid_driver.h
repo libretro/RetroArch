@@ -58,8 +58,8 @@ struct hid_driver
    hid_instance.os_driver_data, pad, state)
 #define HID_BUTTON(pad, key) hid_instance.os_driver->button( \
    hid_instance.os_driver_data, pad, key)
-#define HID_AXIS(pad, axis) hid_instance.os_driver->axis( \
-   hid_instance.os_driver_data, pad, axis)
+#define HID_AXIS(pad, a) hid_instance.os_driver->axis( \
+   hid_instance.os_driver_data, pad, (a))
 #define HID_PAD_NAME(pad) \
    hid_instance.os_driver->name(hid_instance.os_driver_data, pad)
 #define HID_SET_PROTOCOL(pad, protocol) \
