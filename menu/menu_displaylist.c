@@ -7502,6 +7502,10 @@ unsigned menu_displaylist_build_list(
 #endif
 #endif
                   case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+                     if (video_font_enable ||
+                         (widgets_supported && menu_enable_widgets))
+                        build_list[i].checked = true;
+                     break;
                   case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
