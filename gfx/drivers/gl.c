@@ -788,7 +788,9 @@ static void gl2_create_fbo_texture(gl_t *gl,
    if (video_ctx_scaling)
        video_smooth = false;
 #endif
+#ifndef HAVE_OPENGLES
    bool force_srgb_disable       = settings->bools.video_force_srgb_disable;
+#endif
    GLuint base_filt              = video_smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt          = video_smooth ?
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
@@ -2823,10 +2825,7 @@ static bool gl2_frame(void *data, const void *frame,
    bool use_rgba                       = video_info->use_rgba;
    bool statistics_show                = video_info->statistics_show;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
-   bool black_frame_insertion          = video_info->black_frame_insertion;
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state; 
-   bool runloop_is_slowmotion          = video_info->runloop_is_slowmotion;
-   bool runloop_is_paused              = video_info->runloop_is_paused;
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
    struct font_params *osd_params      = (struct font_params*)
@@ -3098,17 +3097,22 @@ static bool gl2_frame(void *data, const void *frame,
 
    /* emscripten has to do black frame insertion in its main loop */
 #ifndef EMSCRIPTEN
-   /* Disable BFI during fast forward, slow-motion,
-    * and pause to prevent flicker. */
-   if (
-         black_frame_insertion
-         && !input_driver_nonblock_state
-         && !runloop_is_slowmotion
-         && !runloop_is_paused)
    {
-      if (gl->ctx_driver->swap_buffers)
-         gl->ctx_driver->swap_buffers(gl->ctx_data);
-      glClear(GL_COLOR_BUFFER_BIT);
+      bool runloop_is_slowmotion          = video_info->runloop_is_slowmotion;
+      bool runloop_is_paused              = video_info->runloop_is_paused;
+      bool black_frame_insertion          = video_info->black_frame_insertion;
+      /* Disable BFI during fast forward, slow-motion,
+       * and pause to prevent flicker. */
+      if (
+            black_frame_insertion
+            && !input_driver_nonblock_state
+            && !runloop_is_slowmotion
+            && !runloop_is_paused)
+      {
+         if (gl->ctx_driver->swap_buffers)
+            gl->ctx_driver->swap_buffers(gl->ctx_data);
+         glClear(GL_COLOR_BUFFER_BIT);
+      }
    }
 #endif
 
