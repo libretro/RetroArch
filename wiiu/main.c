@@ -56,7 +56,9 @@ static void fsdev_exit(void);
 
 bool iosuhaxMount      = 0;
 int fsaFd              = -1;
+#ifdef HAVE_IOSUHAX
 static int mcp_hook_fd = -1;
+#endif
 
 /* HBL elf entry point */
 int __entry_menu(int argc, char **argv)
@@ -77,8 +79,7 @@ int __entry_menu(int argc, char **argv)
 }
 
 /* RPX entry point */
-__attribute__((noreturn))
-void _start(int argc, char **argv)
+__attribute__((noreturn)) void _start(int argc, char **argv)
 {
    memoryInitialize();
    __init();
@@ -93,8 +94,7 @@ void _start(int argc, char **argv)
 
 void __eabi(void) { }
 
-__attribute__((weak))
-void __init(void)
+__attribute__((weak)) void __init(void)
 {
    extern void (*const __CTOR_LIST__)(void);
    extern void (*const __CTOR_END__)(void);
@@ -104,8 +104,7 @@ void __init(void)
       (*ctor++)();
 }
 
-__attribute__((weak))
-void __fini(void)
+__attribute__((weak)) void __fini(void)
 {
    extern void (*const __DTOR_LIST__)(void);
    extern void (*const __DTOR_END__)(void);
@@ -115,12 +114,12 @@ void __fini(void)
       (*dtor++)();
 }
 
+#ifdef HAVE_IOSUHAX
 /* libiosuhax related */
 
 /* just to be able to call async */
 static void some_func(void *arg) { (void)arg; }
 
-#ifdef HAVE_IOSUHAX
 int MCPHookOpen(void)
 {
    /* take over mcp thread */
