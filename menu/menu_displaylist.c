@@ -7553,9 +7553,9 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_GFX_WIDGETS
             bool widgets_supported   = video_driver_has_widgets();
             bool menu_enable_widgets = settings->bools.menu_enable_widgets;
-#endif
 #ifdef HAVE_SCREENSHOTS
             bool notification_show_screenshot = settings->bools.notification_show_screenshot;
+#endif
 #endif
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_FPS_SHOW,                                PARSE_ONLY_BOOL,  true },

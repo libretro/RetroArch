@@ -1605,10 +1605,12 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    if (string_is_empty(core_path))
       goto end;
 
+   core_info.inf  = NULL;
+   core_info.path = NULL;
+
    /* Check whether core path is to be validated */
    if (validate_path)
    {
-      core_info.inf  = NULL;
       core_info.path = core_path;
 
       if (core_info_find(&core_info))

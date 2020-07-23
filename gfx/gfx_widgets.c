@@ -73,13 +73,6 @@ static float gfx_widgets_backdrop_orig[16]               = {
    0.00, 0.00, 0.00, 0.75,
 };
 
-static float gfx_widgets_backdrop[16]                    = {
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-};
-
 /* Icons */
 static const char 
 *gfx_widgets_icons_names[MENU_WIDGETS_ICON_LAST]         = {

@@ -67,7 +67,9 @@
  * The Wii U frontend driver, along with the main() method.
  */
 
+#ifndef IS_SALAMANDER
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
+#endif
 static const char *elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 
 static bool exists(char *path)
@@ -341,7 +343,9 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
 
 static void main_setup(void);
 static void get_arguments(int *argc, char ***argv);
+#ifndef IS_SALAMANDER
 static void main_loop(void);
+#endif
 static void main_teardown(void);
 
 static void init_network(void);
@@ -439,6 +443,7 @@ static void main_teardown(void)
    deinit_network();
 }
 
+#ifndef IS_SALAMANDER
 static void main_loop(void)
 {
    OSTime start_time;
@@ -460,6 +465,7 @@ static void main_loop(void)
          break;
    }
 }
+#endif
 
 static void SaveCallback(void)
 {
