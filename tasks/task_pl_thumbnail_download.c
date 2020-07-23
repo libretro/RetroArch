@@ -87,7 +87,7 @@ static bool get_thumbnail_paths(
    char *path, size_t path_size,
    char *url, size_t url_size)
 {
-   char raw_url[2048];
+   char raw_url[8192];
    char content_dir[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
    const char *system      = NULL;
