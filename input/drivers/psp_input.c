@@ -410,33 +410,31 @@ static bool psp_input_set_sensor_state(void *data, unsigned port,
    if(!psp)
       return false;
   
-   switch(action)
+   switch (action)
    {
-      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
-         return false;
-
       case RETRO_SENSOR_ILLUMINANCE_DISABLE:
          return true;
-		 
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
          if(psp->sensors_enabled)
          {
-           psp->sensors_enabled = false;
-           sceMotionMagnetometerOff();
-           sceMotionStopSampling();
+            psp->sensors_enabled = false;
+            sceMotionMagnetometerOff();
+            sceMotionStopSampling();
          }
          return true;
-
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
          if(!psp->sensors_enabled)
          {
-           psp->sensors_enabled = true;
-           sceMotionStartSampling();
-           sceMotionMagnetometerOn();
+            psp->sensors_enabled = true;
+            sceMotionStartSampling();
+            sceMotionMagnetometerOn();
          }
          return true;
+      case RETRO_SENSOR_DUMMY:
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+         break;
    }
    
    return false;

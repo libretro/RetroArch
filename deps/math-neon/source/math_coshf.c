@@ -117,4 +117,4 @@ float coshf_neon_sfp(float x)
 #else
 	return coshf_c(x);
 #endif
-};
+}

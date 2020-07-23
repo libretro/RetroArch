@@ -458,7 +458,6 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita,
 static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   gfx_ctx_aspect_t aspect_data;
    int x                     = 0;
    int y                     = 0;
    float device_aspect       = (float)viewport_width / viewport_height;
@@ -467,10 +466,6 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
    vita_video_t *vita        = (vita_video_t*)data;
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-
-   aspect_data.aspect        = &device_aspect;
-   aspect_data.width         = viewport_width;
-   aspect_data.height        = viewport_height;
 
    if (video_scale_integer && !force_full)
    {

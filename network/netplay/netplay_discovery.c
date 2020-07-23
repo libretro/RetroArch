@@ -89,7 +89,9 @@ static struct netplay_host_list discovered_hosts;
 static size_t discovered_hosts_allocated;
 
 /* Forward declarations */
+#ifdef HAVE_NETPLAYDISCOVERY
 static bool netplay_lan_ad_client(void);
+#endif
 
 /** Initialize Netplay discovery (client) */
 bool init_netplay_discovery(void)
@@ -201,6 +203,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
    return true;
 }
 
+#ifdef HAVE_NETPLAYDISCOVERY
 static bool init_lan_ad_server_socket(netplay_t *netplay, uint16_t port)
 {
    struct addrinfo *addr = NULL;
@@ -226,6 +229,7 @@ error:
    RARCH_ERR("[discovery] Failed to initialize netplay advertisement socket\n");
    return false;
 }
+#endif
 
 /**
  * netplay_lan_ad_server
@@ -404,6 +408,8 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 }
 
 #ifdef HAVE_SOCKET_LEGACY
+
+#ifndef htons
 /* The fact that I need to write this is deeply depressing */
 static int16_t htons_for_morons(int16_t value)
 {
@@ -414,11 +420,12 @@ static int16_t htons_for_morons(int16_t value)
    val.l = htonl(value);
    return val.s[1];
 }
-#ifndef htons
 #define htons htons_for_morons
 #endif
+
 #endif
 
+#ifdef HAVE_NETPLAYDISCOVERY
 static bool netplay_lan_ad_client(void)
 {
    unsigned i;
@@ -547,3 +554,4 @@ static bool netplay_lan_ad_client(void)
 
    return true;
 }
+#endif

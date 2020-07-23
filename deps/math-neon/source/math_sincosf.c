@@ -48,11 +48,11 @@ void sincosf_c( float x, float r[2])
 		int 	i;
 	} ax, bx;
 	
-	float y;
-	float a, b, c, d, xx, yy;
+	float xx, yy;
 	int m, n, o, p;
 	
-	y = x + __sincosf_rng[1];
+	float y = x + __sincosf_rng[1];
+
 	ax.f = fabsf(x);
 	bx.f = fabsf(y);
 	
