@@ -1,6 +1,7 @@
 # Future
 - ANDROID/VIBRATION: Fixes "Vibrate on Key Press" having no effect on Android devices, which occurred because only the off time/strength was defined in what should have been a pair of off/on values
 - BLUETOOTH: Add a Bluetooth driver (Lakka-only for now)
+- CHEATS: Fix for wrong number of remaining cheat search matches on some machines
 - CHEEVOS: Option to play sound on achievement unlock.
 - CHEEVOS: Upgrade to rcheevos 9.1
 - CHEEVOS: Restore display of unlocked achievements across hardcore modes
