@@ -1328,7 +1328,7 @@ static bool android_input_key_pressed(android_input_t *android, int key)
    return button_is_pressed(
          android->joypad,
          &joypad_info,
-         &input_config_binds[0],
+         input_config_binds[0],
          joypad_info.joy_idx,
          key);
 }
