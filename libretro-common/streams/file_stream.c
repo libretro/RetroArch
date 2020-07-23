@@ -255,7 +255,7 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
             *subfmtiter++ = *format++;
          }
 
-         while (isdigit(*format))
+         while (isdigit((unsigned char)*format))
             *subfmtiter++ = *format++; /* width */
 
          /* length */
@@ -311,9 +311,9 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
          ret++;
          bufiter += sublen;
       }
-      else if (isspace(*format))
+      else if (isspace((unsigned char)*format))
       {
-         while (isspace(*bufiter))
+         while (isspace((unsigned char)*bufiter))
             bufiter++;
          format++;
       }

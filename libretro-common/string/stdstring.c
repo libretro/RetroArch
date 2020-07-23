@@ -355,7 +355,7 @@ unsigned string_to_unsigned(const char *str)
 
    for (ptr = str; *ptr != '\0'; ptr++)
    {
-      if (!isdigit(*ptr))
+      if (!isdigit((unsigned char)*ptr))
          return 0;
    }
 
@@ -388,7 +388,7 @@ unsigned string_hex_to_unsigned(const char *str)
    /* Check for valid characters */
    for (ptr = hex_str; *ptr != '\0'; ptr++)
    {
-      if (!isxdigit(*ptr))
+      if (!isxdigit((unsigned char)*ptr))
          return 0;
    }
 
