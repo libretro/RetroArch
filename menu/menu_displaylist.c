@@ -137,6 +137,8 @@ static struct menu_displaylist_state menu_displist_st;
 /* TODO/FIXME - static public global variables */
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
 
+extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
+
 enum filebrowser_enums filebrowser_get_type(void)
 {
    return filebrowser_types;
@@ -3998,6 +4000,224 @@ static unsigned menu_displaylist_parse_disk_options(
             MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
             MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0))
       count++;
+
+   return count;
+}
+
+static int menu_displaylist_parse_input_description_list(menu_displaylist_info_t *info)
+{
+   unsigned count              = 0;
+   rarch_system_info_t *system = runloop_get_system_info();
+   settings_t *settings        = config_get_ptr();
+   size_t menu_index           = 0;
+   bool current_input_mapped   = false;
+   unsigned user_idx;
+   unsigned btn_idx;
+   unsigned current_remap_idx;
+   size_t i;
+   char entry_label[21];
+
+   entry_label[0] = '\0';
+
+   if (!system || !settings)
+      goto end;
+
+   /* Determine user/button indices */
+   user_idx = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+
+   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+      goto end;
+
+   /* Get current mapping for selected button */
+   current_remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+
+   if (current_remap_idx >= RARCH_CUSTOM_BIND_LIST_END)
+      current_remap_idx = RARCH_UNMAPPED;
+
+   /* An annoyance: Menu entries do not have
+    * enough parameters to pass on all the information
+    * required to interpret a remap selection without
+    * adding workarounds...
+    * We need to record the current user/button indices,
+    * and so have to convert 'info->type' to a string
+    * and pass it as the entry label... */
+   snprintf(entry_label, sizeof(entry_label),
+         "%u", info->type);
+
+   /* Loop over core input definitions */
+   for (i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+   {
+      const char *input_desc_btn = system->input_desc_btn[user_idx][i];
+
+      /* Check whether an input is defined for
+       * this button */
+      if (!string_is_empty(input_desc_btn))
+      {
+         char input_description[256];
+
+         input_description[0] = '\0';
+
+         /* > Up to RARCH_FIRST_CUSTOM_BIND, inputs
+          *   are buttons - description can be used
+          *   directly
+          * > Above RARCH_FIRST_CUSTOM_BIND, inputs
+          *   are analog axes - have to add +/-
+          *   indicators */
+         if (i < RARCH_FIRST_CUSTOM_BIND)
+            strlcpy(input_description, input_desc_btn,
+                  sizeof(input_description));
+         else
+            snprintf(input_description, sizeof(input_description),
+                     "%s %c", input_desc_btn,
+                     ((i % 2) == 0) ? '+' : '-');
+
+         if (string_is_empty(input_description))
+            continue;
+
+         /* Add menu entry */
+         if (menu_entries_append_enum(info->list,
+               input_description,
+               entry_label,
+               MENU_ENUM_LABEL_INPUT_DESCRIPTION,
+               MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION,
+               0, i))
+         {
+            /* Add checkmark if input is currently
+             * mapped to this entry */
+            if (current_remap_idx == i)
+            {
+               menu_entries_set_checked(info->list, menu_index, true);
+               menu_navigation_set_selection(menu_index);
+               current_input_mapped = true;
+            }
+
+            count++;
+            menu_index++;
+         }
+      }
+   }
+
+   /* Add 'unmapped' entry at end of list */
+   if (menu_entries_append_enum(info->list,
+         "---",
+         entry_label,
+         MENU_ENUM_LABEL_INPUT_DESCRIPTION,
+         MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION,
+         0, RARCH_UNMAPPED))
+   {
+      /* Add checkmark if input is currently unmapped */
+      if (!current_input_mapped)
+      {
+         menu_entries_set_checked(info->list, menu_index, true);
+         menu_navigation_set_selection(menu_index);
+      }
+
+      count++;
+      menu_index++;
+   }
+
+end:
+   /* Fallback */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0))
+         count++;
+
+   return count;
+}
+
+static int menu_displaylist_parse_input_description_kbd_list(menu_displaylist_info_t *info)
+{
+   unsigned count       = 0;
+   settings_t *settings = config_get_ptr();
+   size_t menu_index    = 0;
+   unsigned user_idx;
+   unsigned btn_idx;
+   unsigned current_key_id;
+   size_t i;
+   char entry_label[21];
+
+   entry_label[0] = '\0';
+
+   if (!settings)
+      goto end;
+
+   /* Determine user/button indices */
+   user_idx = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   btn_idx  = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+
+   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+      goto end;
+
+   /* Get current mapping for selected button */
+   current_key_id = settings->uints.input_keymapper_ids[user_idx][btn_idx];
+
+   if (current_key_id >= (RARCH_MAX_KEYS + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))
+      current_key_id = RETROK_FIRST;
+
+   /* An annoyance: Menu entries do not have
+    * enough parameters to pass on all the information
+    * required to interpret a remap selection without
+    * adding workarounds...
+    * We need to record the current user/button indices,
+    * and so have to convert 'info->type' to a string
+    * and pass it as the entry label... */
+   snprintf(entry_label, sizeof(entry_label),
+         "%u", info->type);
+
+   /* Loop over keyboard keys */
+   for (i = 0; i < RARCH_MAX_KEYS; i++)
+   {
+      unsigned key_id       = key_descriptors[i].key;
+      const char *key_label = key_descriptors[i].desc;
+      char input_description[256];
+
+      input_description[0] = '\0';
+
+      if (string_is_empty(key_label))
+         continue;
+
+      /* TODO/FIXME: Localise 'Keyboard' */
+      if (key_id == RETROK_FIRST)
+         strlcpy(input_description, "---", sizeof(input_description));
+      else
+         snprintf(input_description, sizeof(input_description),
+               "Keyboard %s", key_label);
+
+      /* Add menu entry */
+      if (menu_entries_append_enum(info->list,
+            input_description,
+            entry_label,
+            MENU_ENUM_LABEL_INPUT_DESCRIPTION_KBD,
+            MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD,
+            0, key_id))
+      {
+         /* Add checkmark if input is currently
+          * mapped to this entry */
+         if (current_key_id == key_id)
+         {
+            menu_entries_set_checked(info->list, menu_index, true);
+            menu_navigation_set_selection(menu_index);
+         }
+
+         count++;
+         menu_index++;
+      }
+   }
+
+end:
+   /* Fallback */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0))
+         count++;
 
    return count;
 }
@@ -8701,8 +8921,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_refresh = true;
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS_PORT:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
          {
             settings_t        *settings = config_get_ptr();
             unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
@@ -8710,6 +8928,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             bool is_rgui                = string_is_equal(menu_driver, "rgui");
             file_list_t *list           = info->list;
             unsigned p                  = atoi(info->path);
+            size_t selection            = menu_navigation_get_selection();
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
             {
                char key_type[PATH_MAX_LENGTH];
@@ -8824,9 +9045,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
             }
 
-            info->need_push    = true;
-            info->need_refresh = true;
-            info->need_clear   = true;
+            info->need_push     = true;
+            info->need_refresh  = true;
+            if (selection >= count)
+               info->need_clear = true;
          }
          break;
 #ifdef HAVE_CDROM
@@ -10470,6 +10692,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                info, info->list, info->type,
                MENU_SETTINGS_SHADER_PRESET_PARAMETER_0,
                MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PRESET_PARAM);
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count              = menu_displaylist_parse_input_description_list(info);
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count              = menu_displaylist_parse_input_description_kbd_list(info);
          info->need_refresh = true;
          info->need_push    = true;
          break;

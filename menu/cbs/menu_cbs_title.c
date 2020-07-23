@@ -420,6 +420,61 @@ error:
    return 0;
 }
 
+static int action_get_title_dropdown_input_description_common(
+      const char *input_name, unsigned port, char *s, size_t len)
+{
+   const char *input_label_ptr = input_name;
+   char input_label[256];
+
+   input_label[0] = '\0';
+
+   if (!string_is_empty(input_label_ptr))
+   {
+      /* Strip off 'Auto:' prefix, if required */
+      if (string_starts_with_size(input_label_ptr, "Auto:",
+            STRLEN_CONST("Auto:")))
+         input_label_ptr += STRLEN_CONST("Auto:");
+
+      strlcpy(input_label, input_label_ptr,
+            sizeof(input_label));
+
+      string_trim_whitespace_left(input_label);
+   }
+
+   /* Sanity check */
+   if (string_is_empty(input_label))
+      strlcpy(input_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+            sizeof(input_label));
+
+   /* Build title string */
+   snprintf(s, len, "%s #%u -  %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+         port + 1,
+         input_label);
+
+   return 1;
+}
+
+static int action_get_title_dropdown_input_description(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   unsigned port = (menu_type - MENU_SETTINGS_INPUT_DESC_BEGIN) /
+         (RARCH_FIRST_CUSTOM_BIND + 8);
+
+   return action_get_title_dropdown_input_description_common(
+      path, port, s, len);
+}
+
+static int action_get_title_dropdown_input_description_kbd(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   unsigned port = (menu_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) /
+         RARCH_FIRST_CUSTOM_BIND;
+
+   return action_get_title_dropdown_input_description_common(
+      path, port, s, len);
+}
+
 DEFAULT_TITLE_MACRO(action_get_quick_menu_override_options,     MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_user_accounts_cheevos_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS)
 DEFAULT_TITLE_MACRO(action_get_user_accounts_youtube_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE)
@@ -1486,6 +1541,8 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,          action_get_title_dropdown_manual_content_scan_system_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,            action_get_title_dropdown_manual_content_scan_core_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,                               action_get_title_dropdown_disk_index},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,                        action_get_title_dropdown_input_description},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,                    action_get_title_dropdown_input_description_kbd},
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,                                          action_get_quick_menu_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,                                              action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS,                                  action_get_title_deferred_playlist_list},

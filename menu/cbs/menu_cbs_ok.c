@@ -279,6 +279,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -656,6 +660,24 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -5820,6 +5842,61 @@ static int action_ok_push_dropdown_item_disk_index(const char *path,
    return 0;
 }
 
+static int action_ok_push_dropdown_item_input_description(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned remap_idx   = (unsigned)entry_idx;
+   unsigned entry_type  = string_to_unsigned(label);
+   settings_t *settings = config_get_ptr();
+   unsigned user_idx;
+   unsigned btn_idx;
+
+   if (!settings ||
+       (entry_type < MENU_SETTINGS_INPUT_DESC_BEGIN) ||
+       ((remap_idx >= RARCH_CUSTOM_BIND_LIST_END) &&
+            (remap_idx != RARCH_UNMAPPED)))
+      return menu_cbs_exit();
+
+   /* Determine user/button indices */
+   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+
+   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+      return menu_cbs_exit();
+
+   /* Assign new mapping */
+   settings->uints.input_remap_ids[user_idx][btn_idx] = remap_idx;
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_item_input_description_kbd(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned key_id      = (unsigned)entry_idx;
+   unsigned entry_type  = string_to_unsigned(label);
+   settings_t *settings = config_get_ptr();
+   unsigned user_idx;
+   unsigned btn_idx;
+
+   if (!settings ||
+       (entry_type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) ||
+       (key_id >= (RARCH_MAX_KEYS + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)))
+      return menu_cbs_exit();
+
+   /* Determine user/button indices */
+   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+
+   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+      return menu_cbs_exit();
+
+   /* Assign new mapping */
+   settings->uints.input_keymapper_ids[user_idx][btn_idx] = key_id;
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6084,6 +6161,22 @@ static int action_ok_disk_index_dropdown_box_list(const char *path,
 {
    return generic_dropdown_box_list(idx,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX);
+}
+
+static int action_ok_input_description_dropdown_box_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(
+      path, NULL, label, type, idx, entry_idx,
+      ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION);
+}
+
+static int action_ok_input_description_kbd_dropdown_box_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(
+      path, NULL, label, type, idx, entry_idx,
+      ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD);
 }
 
 static int action_ok_disk_cycle_tray_status(const char *path,
@@ -7127,6 +7220,16 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_core_option_dropdown_list);
    }
+   else if ((type >= MENU_SETTINGS_INPUT_DESC_BEGIN) &&
+            (type <= MENU_SETTINGS_INPUT_DESC_END))
+   {
+      BIND_ACTION_OK(cbs, action_ok_input_description_dropdown_box_list);
+   }
+   else if ((type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) &&
+            (type <= MENU_SETTINGS_INPUT_DESC_KBD_END))
+   {
+      BIND_ACTION_OK(cbs, action_ok_input_description_kbd_dropdown_box_list);
+   }
    else
    {
       switch (type)
@@ -7187,6 +7290,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_disk_index);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_description);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_description_kbd);
             break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);

@@ -1079,6 +1079,10 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_LEFT(cbs, action_left_core_lock);
             break;
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
+            BIND_ACTION_LEFT(cbs, action_left_scroll);
+            break;
          default:
             return -1;
       }

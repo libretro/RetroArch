@@ -4587,7 +4587,14 @@ static int generic_menu_iterate(
                if (enum_idx != MSG_UNKNOWN)
                   ret = msg_hash_get_help_enum(enum_idx,
                         menu->menu_state_msg, sizeof(menu->menu_state_msg));
+               else
+               {
+                  strlcpy(menu->menu_state_msg,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
+                        sizeof(menu->menu_state_msg));
 
+                  ret = 0;
+               }
             }
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
