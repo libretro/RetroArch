@@ -882,13 +882,13 @@ static int rc_hash_psx(char hash[33], const char* path)
       if (strncmp(ptr, "BOOT", 4) == 0)
       {
         ptr += 4;
-        while (isspace(*ptr))
+        while (isspace((unsigned char)*ptr))
           ++ptr;
 
         if (*ptr == '=')
         {
           ++ptr;
-          while (isspace(*ptr))
+          while (isspace((unsigned char)*ptr))
             ++ptr;
 
           if (strncmp(ptr, "cdrom:", 6) == 0)
@@ -897,7 +897,7 @@ static int rc_hash_psx(char hash[33], const char* path)
             ++ptr;
 
           start = ptr;
-          while (!isspace(*ptr) && *ptr != ';')
+          while (!isspace((unsigned char)*ptr) && *ptr != ';')
             ++ptr;
 
           size = (unsigned)(ptr - start);
@@ -1237,7 +1237,7 @@ static const char* rc_hash_get_first_item_from_playlist(const char* path)
     next = ptr;
 
     /* remove trailing whitespace - especially '\r' */
-    while (ptr > start && isspace(ptr[-1]))
+    while (ptr > start && isspace((unsigned char)ptr[-1]))
       --ptr;
 
     /* if we found a non-empty line, break out of the loop to process it */

@@ -30,7 +30,7 @@ static const char* rc_parse_line(const char* line, const char** end) {
     if (endline > line && endline[-1] == '\r')
       --endline;
   } else {
-    while (endline > line && isspace(endline[-1]))
+    while (endline > line && isspace((unsigned char)endline[-1]))
       --endline;
   }
 
@@ -237,7 +237,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
       else
         key = strtoul(&number[0], &endptr, 10);
 
-      if (*endptr && !isspace(*endptr)) {
+      if (*endptr && !isspace((unsigned char)*endptr)) {
         parse->offset = RC_INVALID_CONST_OPERAND;
         return nextline;
       }
