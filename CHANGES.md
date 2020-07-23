@@ -21,6 +21,7 @@
 - MEMORY/WINDOWS: Fix reporting of free memory
 - MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - MENU: Fix cursor forced to first entry after displaying lists
+- MENU: Make Notification Font option visible when Graphics Widgets are enabled
 - MENU/WIDGETS: Add optional widget-based 'load content' launch feedback animation
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 - PS2: Improve FPS Limiter
