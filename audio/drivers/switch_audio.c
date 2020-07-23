@@ -239,8 +239,8 @@ static void *switch_audio_init(const char *device,
       unsigned *new_rate)
 {
    unsigned i;
-   char names[8][0x20];
 #ifndef HAVE_LIBNX
+   char names[8][0x20];
    uint32_t num_names  = 0;
 #endif
    switch_audio_t *swa = (switch_audio_t*) calloc(1, sizeof(*swa));
