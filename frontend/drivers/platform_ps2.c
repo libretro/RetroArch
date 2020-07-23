@@ -44,10 +44,12 @@ static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
 
+   /* TODO/FIXME - third parameter here needs to be size of
+    * rootDevicePath(bootDeviceID) */
    strlcpy(user_path, rootDevicePath(bootDeviceID), rootDevicePath(bootDeviceID));
-   strcat(user_path, "RETROARCH");
+   strlcat(user_path, "RETROARCH", sizeof(user_path));
    
-   // Content in the same folder
+   /* Content in the same folder */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], cwd,
          "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], cwd,

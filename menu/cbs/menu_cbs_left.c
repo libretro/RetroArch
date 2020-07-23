@@ -383,7 +383,8 @@ static int playlist_association_left(unsigned type, const char *label,
       bool wraparound)
 {
    char core_filename[PATH_MAX_LENGTH];
-   size_t i, next, current          = 0;
+   size_t i, current                = 0;
+   size_t next                      = 0;
    playlist_t *playlist             = playlist_get_cached();
    const char *default_core_path    = playlist_get_default_core_path(playlist);
    bool default_core_set            = false;
@@ -430,11 +431,8 @@ static int playlist_association_left(unsigned type, const char *label,
 
       /* ...then decrement it */
       if (current == 0)
-      {
          /* Unset core association (DETECT) */
-         next             = 0;
          default_core_set = false;
-      }
       else
          next = current - 1;
    }
