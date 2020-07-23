@@ -8,6 +8,7 @@
 *.dol
 *.map
 *.swp
+*.cache
 .tmp
 .tmp.c
 .tmp.cxx
