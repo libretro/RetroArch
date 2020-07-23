@@ -15995,6 +15995,8 @@ bool command_event(enum event_command cmd, void *data)
             playlist_config.old_format             = settings->bools.playlist_use_old_format;
             playlist_config.compress               = settings->bools.playlist_compression;
             playlist_config.fuzzy_archive_match    = settings->bools.playlist_fuzzy_archive_match;
+            /* don't use relative paths for content, music, video, and image histories */
+            playlist_config_set_base_content_directory(&playlist_config, NULL);
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
@@ -39625,6 +39627,7 @@ void rarch_favorites_init(void)
    playlist_config.old_format          = settings ? settings->bools.playlist_use_old_format : false;
    playlist_config.compress            = settings ? settings->bools.playlist_compression : false;
    playlist_config.fuzzy_archive_match = settings ? settings->bools.playlist_fuzzy_archive_match : false;
+   playlist_config_set_base_content_directory(&playlist_config, NULL);
 
    if (!settings)
       return;

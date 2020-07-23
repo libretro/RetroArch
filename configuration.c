@@ -1722,6 +1722,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("playlist_show_sublabels",       &settings->bools.playlist_show_sublabels, true, DEFAULT_PLAYLIST_SHOW_SUBLABELS, false);
    SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, DEFAULT_PLAYLIST_SORT_ALPHABETICAL, false);
    SETTING_BOOL("playlist_fuzzy_archive_match",  &settings->bools.playlist_fuzzy_archive_match, true, DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH, false);
+   SETTING_BOOL("playlist_portable_paths",       &settings->bools.playlist_portable_paths, true, DEFAULT_PLAYLIST_PORTABLE_PATHS, false);
 
    SETTING_BOOL("quit_press_twice", &settings->bools.quit_press_twice, true, DEFAULT_QUIT_PRESS_TWICE, false);
    SETTING_BOOL("vibrate_on_keypress", &settings->bools.vibrate_on_keypress, true, vibrate_on_keypress, false);

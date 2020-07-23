@@ -4293,6 +4293,10 @@ MSG_HASH(
    "playlist_sublabel_last_played_style"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_PORTABLE_PATHS,
+   "playlist_portable_paths"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
    "help_send_debug_info"
    )
