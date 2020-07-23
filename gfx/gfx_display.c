@@ -162,9 +162,7 @@ static INLINE float gfx_display_scalef(float val,
 
 static INLINE float gfx_display_randf(float min, float max)
 {
-   /* TODO/FIXME - warning: implicit conversion from 'int' to 'float'
-    * changes value from 2147483647 to 2147483648 [-Wimplicit-int-float-conversion] expanded from macro 'RAND_MAX' */
-   return (rand() * ((max - min) / RAND_MAX)) + min;
+   return (rand() * ((max - min) / (double)RAND_MAX)) + min;
 }
 
 static float gfx_display_get_adjusted_scale_internal(
