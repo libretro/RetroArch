@@ -2173,6 +2173,7 @@ static rarch_setting_t setting_int_setting(const char* name,
    return result;
 }
 
+#if 0
 static void config_bool_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -2196,6 +2197,7 @@ static void config_bool_alt(
    if (flags != SD_FLAG_NONE)
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, flags);
 }
+#endif
 
 static void config_bool(
       rarch_setting_t **list,
