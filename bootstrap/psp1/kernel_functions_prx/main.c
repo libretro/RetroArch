@@ -39,25 +39,28 @@ unsigned int read_system_buttons(void)
 
 void exitspawn_kernel(const char *fileName, SceSize args, void *argp)
 {
+   int k1;
    struct SceKernelLoadExecVSHParam game_param;
 
-   thread_active = 0;
+   thread_active                = 0;
 
    memset(&game_param,0,sizeof(game_param));
 
-   game_param.size = sizeof(game_param);
-   game_param.args = args;
-   game_param.argp = argp;
-   game_param.key  = "game";
+   game_param.size              = sizeof(game_param);
+   game_param.args              = args;
+   game_param.argp              = argp;
+   game_param.key               = "game";
    game_param.vshmain_args_size = 0;
-   game_param.vshmain_args = NULL;
-   game_param.configfile = 0;
-   game_param.unk4 = 0;
-   game_param.unk5 = 0x10000;
+   game_param.vshmain_args      = NULL;
+   game_param.configfile        = 0;
+   game_param.unk4              = 0;
+   game_param.unk5              = 0x10000;
 
-   int k1 = pspSdkSetK1(0);
-   //sceKernelSuspendAllUserThreads();
-   int ret = sceKernelLoadExecVSHMs2(fileName, &game_param);
+   k1                           = pspSdkSetK1(0);
+#if 0
+   sceKernelSuspendAllUserThreads();
+#endif
+   sceKernelLoadExecVSHMs2(fileName, &game_param);
    pspSdkSetK1(k1);
 }
 

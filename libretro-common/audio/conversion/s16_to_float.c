@@ -50,7 +50,7 @@ void convert_s16_float_asm(float *out, const int16_t *in,
 void convert_s16_to_float(float *out,
       const int16_t *in, size_t samples, float gain)
 {
-   size_t i      = 0;
+   unsigned i      = 0;
 
 #if defined(__SSE2__)
    float fgain   = gain / UINT32_C(0x80000000);
@@ -77,7 +77,6 @@ void convert_s16_to_float(float *out,
     * optimize for the good path (very likely). */
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
-      size_t i;
       const vector float gain_vec = { gain, gain , gain, gain };
       const vector float zero_vec = { 0.0f, 0.0f, 0.0f, 0.0f};
 
