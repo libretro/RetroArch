@@ -59,6 +59,8 @@ enum
    ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,
    ACTION_OK_DL_OPEN_ARCHIVE,
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
    ACTION_OK_DL_MUSIC,
@@ -231,12 +233,6 @@ int action_ok_directory_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 int core_setting_right(unsigned type, const char *label,
-      bool wraparound);
-
-int action_right_input_desc(unsigned type, const char *label,
-      bool wraparound);
-
-int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound);
 
 int action_right_cheat(unsigned type, const char *label,

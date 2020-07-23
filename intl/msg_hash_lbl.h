@@ -657,6 +657,14 @@ MSG_HASH(
    "deferred_dropdown_box_list_disk_index"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,
+   "deferred_dropdown_box_list_input_description"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,
+   "deferred_dropdown_box_list_input_description_kbd"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
    "deferred_configurations_list"
    )
