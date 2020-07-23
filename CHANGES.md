@@ -13,6 +13,7 @@
 - DRIVERS: Implemented protection to avoid setting critical drivers to nothing thus preventing the user from locking him/herself out of the program
 - EMSCRIPTEN: Fix input code to ignore unknown keys
 - FILE I/O: VFS and NBIO interfaces will now use 64-bit fseek/ftell where possible, should allow for reading/writing to files bigger than 2GB
+- INPUT MAPPING/REMAPPING: Add input remap drop-down lists
 - IOS: Fixed iOS 6 version
 - IOS/METAL: Metal video driver now works on RetroArch iOS
 - LOCALIZATION: Updates for several languages (synchronized from Crowdin)
