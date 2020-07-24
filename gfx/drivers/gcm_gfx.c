@@ -193,7 +193,7 @@ static gcmContextData *gcm_init_screen(gcm_video_t* gcm)
 
       /* Initialise Reality, which sets up the 
        * command buffer and shared I/O memory */
-      context = rsxInit (CB_SIZE, HOST_SIZE, host_addr);
+      rsxInit (&context, CB_SIZE, HOST_SIZE, host_addr);
       if (!context)
          goto error;
       saved_context = context;
