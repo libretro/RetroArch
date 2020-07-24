@@ -67,8 +67,56 @@ static uint8_t ds3_control_packet[] = {
 
 extern pad_connection_interface_t ds3_pad_connection;
 
-static void ds3_update_pad_state(ds3_instance_t *instance);
-static void ds3_update_analog_state(ds3_instance_t *instance);
+static void ds3_update_pad_state(ds3_instance_t *instance)
+{
+   uint32_t i, pressed_keys;
+
+   static const uint32_t button_mapping[17] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_L3,
+      RETRO_DEVICE_ID_JOYPAD_R3,
+      RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_L2,
+      RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_Y,
+      16 /* PS button */
+   };
+
+   instance->buttons = 0;
+
+   pressed_keys = instance->data[2]        | 
+                  (instance->data[3] << 8) |
+                  ((instance->data[4] & 0x01) << 16);
+
+   for(i = 0; i < 17; i++)
+     instance->buttons |= (pressed_keys & (1 << i)) ?
+        (1 << button_mapping[i]) : 0;
+}
+
+static void ds3_update_analog_state(ds3_instance_t *instance)
+{
+   int pad_axis;
+   int16_t interpolated;
+   unsigned stick, axis;
+
+   for(pad_axis = 0; pad_axis < 4; pad_axis++)
+   {
+      axis         = pad_axis % 2 ? 0 : 1;
+      stick        = pad_axis / 2;
+      interpolated = instance->data[6+pad_axis];
+      instance->analog_state[stick][axis] = (interpolated - 128) * 256;
+   }
+}
 
 #if defined(WIIU)
 static int32_t ds3_send_activation_packet(ds3_instance_t *instance)
@@ -101,8 +149,8 @@ static uint32_t set_protocol(ds3_instance_t *instance, int protocol)
 static int32_t ds3_send_control_packet(ds3_instance_t *instance)
 {
    /* TODO/FIXME - C89-incompatible */
-   uint8_t packet_buffer[sizeof(ds3_control_packet)];
    int32_t result = 0;
+   uint8_t packet_buffer[sizeof(ds3_control_packet)];
    memcpy(packet_buffer, ds3_control_packet, sizeof(ds3_control_packet));
 
    packet_buffer[LED_OFFSET] = 0;
@@ -132,7 +180,7 @@ static int32_t ds3_send_control_packet(ds3_instance_t *instance)
 static void *ds3_init(void *handle)
 {
    int errors                 = 0;
-   ds3_isntance_t *instance   = (ds3_instance_t *)
+   ds3_instance_t *instance   = (ds3_instance_t *)
       malloc(sizeof(ds3_instance_t));
    if (!instance)
       return NULL;
@@ -172,10 +220,11 @@ static void ds3_free(void *data)
 {
    ds3_instance_t *instance = (ds3_instance_t *)data;
 
-   if(instance) {
-      hid_pad_deregister(instance->pad);
-      free(instance);
-   }
+   if (!instance)
+      return;
+
+   hid_pad_deregister(instance->pad);
+   free(instance);
 }
 
 static void ds3_handle_packet(void *data, uint8_t *packet, size_t size)
@@ -260,62 +309,8 @@ static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
    ds3_update_analog_state(instance);
 }
 
-static void ds3_update_analog_state(ds3_instance_t *instance)
-{
-   int pad_axis;
-   int16_t interpolated;
-   unsigned stick, axis;
-
-   for(pad_axis = 0; pad_axis < 4; pad_axis++)
-   {
-      axis         = pad_axis % 2 ? 0 : 1;
-      stick        = pad_axis / 2;
-      interpolated = instance->data[6+pad_axis];
-      instance->analog_state[stick][axis] = (interpolated - 128) * 256;
-   }
-}
-
-static void ds3_update_pad_state(ds3_instance_t *instance)
-{
-   uint32_t i, pressed_keys;
-
-   static const uint32_t button_mapping[17] =
-   {
-      RETRO_DEVICE_ID_JOYPAD_SELECT,
-      RETRO_DEVICE_ID_JOYPAD_L3,
-      RETRO_DEVICE_ID_JOYPAD_R3,
-      RETRO_DEVICE_ID_JOYPAD_START,
-      RETRO_DEVICE_ID_JOYPAD_UP,
-      RETRO_DEVICE_ID_JOYPAD_RIGHT,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_LEFT,
-      RETRO_DEVICE_ID_JOYPAD_L2,
-      RETRO_DEVICE_ID_JOYPAD_R2,
-      RETRO_DEVICE_ID_JOYPAD_L,
-      RETRO_DEVICE_ID_JOYPAD_R,
-      RETRO_DEVICE_ID_JOYPAD_X,
-      RETRO_DEVICE_ID_JOYPAD_A,
-      RETRO_DEVICE_ID_JOYPAD_B,
-      RETRO_DEVICE_ID_JOYPAD_Y,
-      16 /* PS button */
-   };
-
-   instance->buttons = 0;
-
-   pressed_keys = instance->data[2]        | 
-                  (instance->data[3] << 8) |
-                  ((instance->data[4] & 0x01) << 16);
-
-   for(i = 0; i < 17; i++)
-     instance->buttons |= (pressed_keys & (1 << i)) ?
-        (1 << button_mapping[i]) : 0;
-}
-
 static void ds3_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
 static int16_t ds3_get_axis(void *data, unsigned axis)
 {
@@ -330,19 +325,14 @@ static int16_t ds3_get_axis(void *data, unsigned axis)
    return gamepad_get_axis_value(pad->analog_state, &axis_data);
 }
 
-static const char *ds3_get_name(void *data)
-{
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-   return "Sony DualShock 3";
-}
+static const char *ds3_get_name(void *data) { return "Sony DualShock 3"; }
 
 static int16_t ds3_button(void *data, uint16_t joykey)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
-   if (!pad)
-      return 0;
    if (joykey < 31)
-      return (pad->buttons & (1 << joykey));
+      if (pad)
+         return (pad->buttons & (1 << joykey));
    return 0;
 }
 
