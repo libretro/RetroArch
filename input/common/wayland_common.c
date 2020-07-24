@@ -32,7 +32,6 @@ static void keyboard_handle_keymap(void* data,
       int fd,
       uint32_t size)
 {
-   (void)data;
    if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1)
    {
       close(fd);
@@ -74,10 +73,6 @@ static void keyboard_handle_key(void *data,
       uint32_t key,
       uint32_t state)
 {
-   (void)serial;
-   (void)time;
-   (void)keyboard;
-
    int value                  = 1;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
@@ -109,16 +104,8 @@ static void keyboard_handle_modifiers(void *data,
       uint32_t modsLocked,
       uint32_t group)
 {
-   (void)data;
-   (void)keyboard;
-   (void)serial;
 #ifdef HAVE_XKBCOMMON
    handle_xkb_state_mask(modsDepressed, modsLatched, modsLocked, group);
-#else
-   (void)modsDepressed;
-   (void)modsLatched;
-   (void)modsLocked;
-   (void)group;
 #endif
 }
 
@@ -127,10 +114,6 @@ void keyboard_handle_repeat_info(void *data,
       int32_t rate,
       int32_t delay)
 {
-   (void)data;
-   (void)wl_keyboard;
-   (void)rate;
-   (void)delay;
    /* TODO: Seems like we'll need this to get
     * repeat working. We'll have to do it on our own. */
 }
@@ -163,9 +146,6 @@ static void pointer_handle_enter(void *data,
       wl_fixed_t sy)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   (void)pointer;
-   (void)serial;
-   (void)surface;
 
    wl->input.mouse.last_x = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
    wl->input.mouse.last_y = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
@@ -184,9 +164,6 @@ static void pointer_handle_leave(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->input.mouse.focus      = false;
-   (void)pointer;
-   (void)serial;
-   (void)surface;
 }
 
 static void pointer_handle_motion(void *data,
@@ -213,31 +190,41 @@ static void pointer_handle_button(void *data,
 
    if (state == WL_POINTER_BUTTON_STATE_PRESSED)
    {
-      if (button == BTN_LEFT)
+      switch (button)
       {
-         wl->input.mouse.left = true;
+         case BTN_LEFT:
+            wl->input.mouse.left = true;
 
-         if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
-         {
-			 if (wl->xdg_toplevel)
-			   xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
-			 else if (wl->zxdg_toplevel)
-			   zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
-         }
+            if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
+            {
+               if (wl->xdg_toplevel)
+                  xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
+               else if (wl->zxdg_toplevel)
+                  zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
+            }
+            break;
+         case BTN_RIGHT:
+            wl->input.mouse.right = true;
+            break;
+         case BTN_MIDDLE:
+            wl->input.mouse.middle = true;
+            break;
       }
-      else if (button == BTN_RIGHT)
-         wl->input.mouse.right = true;
-      else if (button == BTN_MIDDLE)
-         wl->input.mouse.middle = true;
    }
    else
    {
-      if (button == BTN_LEFT)
-         wl->input.mouse.left = false;
-      else if (button == BTN_RIGHT)
-         wl->input.mouse.right = false;
-      else if (button == BTN_MIDDLE)
-         wl->input.mouse.middle = false;
+      switch (button)
+      {
+         case BTN_LEFT:
+            wl->input.mouse.left = false;
+            break;
+         case BTN_RIGHT:
+            wl->input.mouse.right = false;
+            break;
+         case BTN_MIDDLE:
+            wl->input.mouse.middle = false;
+            break;
+      }
    }
 }
 
@@ -245,14 +232,7 @@ static void pointer_handle_axis(void *data,
       struct wl_pointer *wl_pointer,
       uint32_t time,
       uint32_t axis,
-      wl_fixed_t value)
-{
-   (void)data;
-   (void)wl_pointer;
-   (void)time;
-   (void)axis;
-   (void)value;
-}
+      wl_fixed_t value) { }
 
 /* TODO: implement check for resize */
 
@@ -368,10 +348,7 @@ static void touch_handle_motion(void *data,
 }
 
 static void touch_handle_frame(void *data,
-      struct wl_touch *wl_touch)
-{
-   /* TODO */
-}
+      struct wl_touch *wl_touch) { }
 
 static void touch_handle_cancel(void *data,
       struct wl_touch *wl_touch)
@@ -433,8 +410,6 @@ static void seat_handle_capabilities(void *data,
 static void seat_handle_name(void *data,
       struct wl_seat *seat, const char *name)
 {
-   (void)data;
-   (void)seat;
    RARCH_LOG("[Wayland]: Seat name: %s.\n", name);
 }
 
@@ -461,12 +436,7 @@ static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
     };
 }
 
-static void wl_nop(void *a, struct wl_surface *b, struct wl_output *c)
-{
-   (void)a;
-   (void)b;
-   (void)c;
-}
+static void wl_nop(void *a, struct wl_surface *b, struct wl_output *c) { }
 
 /* Shell surface callbacks. */
 static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
@@ -546,11 +516,7 @@ static void display_handle_mode(void *data,
 }
 
 static void display_handle_done(void *data,
-      struct wl_output *output)
-{
-   (void)data;
-   (void)output;
-}
+      struct wl_output *output) { }
 
 static void display_handle_scale(void *data,
       struct wl_output *output,
@@ -567,8 +533,6 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   (void)version;
 
    if (string_is_equal(interface, "wl_compositor"))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
