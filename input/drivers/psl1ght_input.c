@@ -429,7 +429,7 @@ static int16_t ps3_joypad_button(unsigned port, uint16_t joykey)
       return 0;
    state                                = transform_buttons(
          &pad_state[port]);
-   return (state & (UINT64_C(1) << joykey);
+   return (state & (UINT64_C(1) << joykey));
 }
 
 static void ps3_joypad_get_buttons(unsigned port, input_bits_t *state)
