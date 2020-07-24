@@ -45,6 +45,7 @@
 #include "../../defines/ps3_defines.h"
 
 #include <rsx/rsx.h>
+#include <rsx/nv40.h>
 #include <ppu-types.h>
 
 #define CB_SIZE		0x100000
