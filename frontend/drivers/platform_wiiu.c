@@ -358,7 +358,6 @@ static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_
 static void init_pad_libraries(void);
 static void deinit_pad_libraries(void);
 static void SaveCallback(void);
-static bool swap_is_pending(void *start_time);
 
 static struct sockaddr_in broadcast;
 static int wiiu_log_socket = -1;
@@ -444,6 +443,15 @@ static void main_teardown(void)
 }
 
 #ifndef IS_SALAMANDER
+static bool swap_is_pending(void *start_time)
+{
+   uint32_t swap_count, flip_count;
+   OSTime last_flip, last_vsync;
+
+   GX2GetSwapStatus(&swap_count, &flip_count, &last_flip, &last_vsync);
+   return last_vsync < *(OSTime *)start_time;
+}
+
 static void main_loop(void)
 {
    OSTime start_time;
@@ -472,14 +480,6 @@ static void SaveCallback(void)
    OSSavesDone_ReadyToRelease();
 }
 
-static bool swap_is_pending(void *start_time)
-{
-   uint32_t swap_count, flip_count;
-   OSTime last_flip, last_vsync;
-
-   GX2GetSwapStatus(&swap_count, &flip_count, &last_flip, &last_vsync);
-   return last_vsync < *(OSTime *)start_time;
-}
 
 static void init_network(void)
 {
