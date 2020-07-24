@@ -154,7 +154,7 @@ static int32_t ds3_send_control_packet(ds3_instance_t *instance)
    memcpy(packet_buffer, ds3_control_packet, sizeof(ds3_control_packet));
 
    packet_buffer[LED_OFFSET] = 0;
-   if(instance->pad)
+   if (instance->pad)
       packet_buffer[LED_OFFSET] = 1 << ((instance->slot % 4) + 1);
    packet_buffer[MOTOR1_OFFSET] = instance->motors[1] >> 8;
    packet_buffer[MOTOR2_OFFSET] = instance->motors[0] >> 8;
@@ -194,24 +194,24 @@ static void *ds3_init(void *handle)
    set_protocol(instance, 1);
 
    /* Sending control packet.. */
-   if(ds3_send_control_packet(instance) < 0)
+   if (ds3_send_control_packet(instance) < 0)
       errors++;
 
    /* Sending activation packet.. */
-   if(ds3_send_activation_packet(instance) < 0)
+   if (ds3_send_activation_packet(instance) < 0)
       errors++;
 
-   if(errors)
+   if (errors)
       goto error;
 
    instance->pad = hid_pad_register(instance, &ds3_pad_connection);
-   if(!instance->pad)
+   if (!instance->pad)
       goto error;
 
    return instance;
 
 error:
-   if(instance)
+   if (instance)
       free(instance);
    return NULL;
 }
@@ -231,7 +231,7 @@ static void ds3_handle_packet(void *data, uint8_t *packet, size_t size)
 {
    ds3_instance_t *instance = (ds3_instance_t *)data;
 
-   if(!instance || !instance->pad)
+   if (!instance || !instance->pad)
       return;
 
    instance->pad->iface->packet_handler(data, packet, size);
@@ -265,7 +265,7 @@ static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 static void ds3_pad_deinit(void *data)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
-   if(pad)
+   if (pad)
       input_autoconfigure_disconnect(pad->slot,
             ds3_pad_connection.get_name(pad));
 }
@@ -274,11 +274,11 @@ static void ds3_get_buttons(void *data, input_bits_t *state)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
 
-   if(pad)
+   if (pad)
    {
       BITS_COPY16_PTR(state, pad->buttons);
 
-      if(pad->buttons & 0x10000)
+      if (pad->buttons & 0x10000)
          BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
    }
    else
@@ -291,13 +291,13 @@ static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
    ds3_instance_t *instance = (ds3_instance_t *)data;
 
-   if(instance->pad && !instance->led_set)
+   if (instance->pad && !instance->led_set)
    {
       ds3_send_control_packet(instance);
       instance->led_set = true;
    }
 
-   if(size > sizeof(ds3_control_packet))
+   if (size > sizeof(ds3_control_packet))
    {
       RARCH_ERR("[ds3]: Expecting packet to be %d but was %d\n",
          sizeof(ds3_control_packet), size);
@@ -319,7 +319,7 @@ static int16_t ds3_get_axis(void *data, unsigned axis)
 
    gamepad_read_axis_data(axis, &axis_data);
 
-   if(!pad || axis_data.axis >= 4)
+   if (!pad || axis_data.axis >= 4)
       return 0;
 
    return gamepad_get_axis_value(pad->analog_state, &axis_data);
