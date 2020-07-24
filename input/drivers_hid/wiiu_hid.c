@@ -36,13 +36,12 @@ static bool wiiu_hid_joypad_query(void *data, unsigned slot)
 
 static joypad_connection_t *get_pad(wiiu_hid_t *hid, unsigned slot)
 {
+   joypad_connection_t *result;
    if (!wiiu_hid_joypad_query(hid, slot))
       return NULL;
-
-   joypad_connection_t *result = HID_PAD_CONNECTION_PTR(slot);
+   result = HID_PAD_CONNECTION_PTR(slot);
    if (!result || !result->connected || !result->iface || !result->data)
       return NULL;
-
    return result;
 }
 
@@ -73,6 +72,16 @@ static int16_t wiiu_hid_joypad_button(void *data,
    return pad->iface->button(pad->data, joykey);
 }
 
+static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
+{
+   joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
+
+   if (!pad)
+      return 0;
+
+   return pad->iface->get_axis(pad->data, joyaxis);
+}
+
 static int16_t wiiu_hid_joypad_state(
       void *data,
       rarch_joypad_info_t *joypad_info,
@@ -81,7 +90,11 @@ static int16_t wiiu_hid_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
-   const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
+   const struct retro_keybind *binds    = (const struct retro_keybind*)
+      binds_data;
+   joypad_connection_t *pad             = get_pad((wiiu_hid_t *)data, port);
+   if (!pad)
+      return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -92,12 +105,11 @@ static int16_t wiiu_hid_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && wiiu_hid_joypad_button(
-               data,
-               port, (uint16_t)joykey))
+            && pad->iface->button(pad->data,
+               (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(wiiu_hid_joypad_axis(data, port, joyaxis)) 
+            ((float)abs(pad->iface->get_axis(pad->data, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -115,16 +127,6 @@ static bool wiiu_hid_joypad_rumble(void *data, unsigned slot,
 
    pad->iface->set_rumble(pad->data, effect, strength);
    return false;
-}
-
-static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
-{
-   joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
-
-   if (!pad)
-      return 0;
-
-   return pad->iface->get_axis(pad->data, joyaxis);
 }
 
 static void *wiiu_hid_init(void)
