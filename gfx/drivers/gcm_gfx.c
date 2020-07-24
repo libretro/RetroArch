@@ -193,7 +193,13 @@ static gcmContextData *gcm_init_screen(gcm_video_t* gcm)
 
       /* Initialise Reality, which sets up the 
        * command buffer and shared I/O memory */
+#ifdef NV40TCL_RENDER_ENABLE
+      /* There was an api breakage on 2020-07-10, let's
+       * workaround this by using one of the new defines */
       rsxInit (&context, CB_SIZE, HOST_SIZE, host_addr);
+#else
+      context = rsxInit (CB_SIZE, HOST_SIZE, host_addr);
+#endif
       if (!context)
          goto error;
       saved_context = context;
