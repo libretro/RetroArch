@@ -50,7 +50,7 @@ extern pad_connection_interface_t wiiu_gca_pad_connection;
 static void wiiu_gca_unregister_pad(hid_wiiu_gca_instance_t *instance, int slot)
 {
    joypad_connection_t *pad = NULL;
-   if(!instance || slot < 0 || slot >= 4 || !instance->pads[slot])
+   if (!instance || slot < 0 || slot >= 4 || !instance->pads[slot])
       return;
 
    pad                      = instance->pads[slot];
@@ -65,7 +65,7 @@ static void wiiu_gca_update_pad_state(hid_wiiu_gca_instance_t *instance)
    unsigned char port_connected;
    joypad_connection_t *pad;
 
-   if(!instance || !instance->online)
+   if (!instance || !instance->online)
       return;
 
    /* process each pad */
@@ -75,7 +75,7 @@ static void wiiu_gca_update_pad_state(hid_wiiu_gca_instance_t *instance)
       pad            = instance->pads[port];
       port_connected = instance->device_state[i];
 
-      if(port_connected > GCA_PORT_POWERED)
+      if (port_connected > GCA_PORT_POWERED)
       {
          if (!pad)
          {
@@ -128,27 +128,27 @@ static void *wiiu_gca_init(void *handle)
 
 static void wiiu_gca_free(void *data)
 {
-   hid_wiiu_gca_instance_t *instance = (hid_wiiu_gca_instance_t *)data;
    int i;
+   hid_wiiu_gca_instance_t *instance = (hid_wiiu_gca_instance_t *)data;
 
-   if(instance)
-   {
-      instance->online = false;
+   if (!instance)
+      return;
 
-      for (i = 0; i < 4; i++)
-         wiiu_gca_unregister_pad(instance, i);
+   instance->online = false;
 
-      free(instance);
-   }
+   for (i = 0; i < 4; i++)
+      wiiu_gca_unregister_pad(instance, i);
+
+   free(instance);
 }
 
 static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
 {
    hid_wiiu_gca_instance_t *instance = (hid_wiiu_gca_instance_t *)data;
-   if(!instance || !instance->online)
+   if (!instance || !instance->online)
       return;
 
-   if(size > sizeof(instance->device_state))
+   if (size > sizeof(instance->device_state))
    {
       RARCH_WARN("[gca]: packet size %d is too big for buffer of size %d\n",
          size, sizeof(instance->device_state));
@@ -181,7 +181,7 @@ static void *wiiu_gca_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
    gca_pad_t *pad = (gca_pad_t *)malloc(sizeof(gca_pad_t));
 
-   if(!pad)
+   if (!pad)
       return NULL;
 
    memset(pad, 0, sizeof(gca_pad_t));
@@ -208,7 +208,7 @@ static void wiiu_gca_pad_deinit(void *data)
 static void wiiu_gca_get_buttons(void *data, input_bits_t *state)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
-   if(pad)
+   if (pad)
    {
       BITS_COPY16_PTR(state, pad->buttons);
    }
@@ -238,11 +238,11 @@ static void update_buttons(gca_pad_t *pad)
       RETRO_DEVICE_ID_JOYPAD_L,
    };
 
-   if(!pad)
+   if (!pad)
       return;
 
-   pressed_keys = pad->data[1] | (pad->data[2] << 8);
-   pad->buttons = 0;
+   pressed_keys     = pad->data[1] | (pad->data[2] << 8);
+   pad->buttons     = 0;
 
    for (i = 0; i < 12; i++)
       pad->buttons |= (pressed_keys & (1 << i)) ?
@@ -260,7 +260,7 @@ static void wiiu_gca_update_analog_state(gca_pad_t *pad)
     * by 256 to get the 16-bit range RetroArch expects. */
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      axis         = pad_axis % 2 ? 0 : 1;
+      axis         = (pad_axis % 2) ? 0 : 1;
       stick        = pad_axis / 2;
       interpolated = pad->data[3 + pad_axis];
       /* libretro requires "up" to be negative, so we invert the y axis */
@@ -288,7 +288,7 @@ static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
 
-   if(!pad || !packet || size > sizeof(pad->data))
+   if (!pad || !packet || size > sizeof(pad->data))
       return;
 
    memcpy(pad->data, packet, size);
@@ -306,7 +306,7 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 
    gamepad_read_axis_data(axis, &axis_data);
 
-   if(!pad || axis_data.axis >= 4)
+   if (!pad || axis_data.axis >= 4)
       return 0;
 
    return gamepad_get_axis_value(pad->analog_state, &axis_data);
@@ -328,10 +328,9 @@ static const char *wiiu_gca_get_name(void *data)
 static int16_t wiiu_gca_button(void *data, uint16_t joykey)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
-   if (!pad)
-      return 0;
    if (joykey < 31)
-      return pad->buttons & (1 << joykey);
+      if (pad)
+         return pad->buttons & (1 << joykey);
    return 0;
 }
 
