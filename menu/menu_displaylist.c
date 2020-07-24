@@ -10531,25 +10531,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
              * toggles the Quick Menu off and on again (returning
              * to the Core Options menu) the menu must be refreshed
              * (or undefined behaviour occurs).
-             * We therefore have to cache the last set menu size,
-             * and compare this with the new size after processing
-             * the current core_option_manager_t struct.
-             * Note: It would be 'nicer' to only refresh the menu
-             * if the selection marker is at an index higher than
-             * the new size, but we don't really have access that
-             * information at this stage (i.e. the selection can
-             * change after this function is called) */
-            static size_t prev_count = 0;
+             * To prevent the menu selection from going out of bounds,
+             * we therefore have to check that the current selection
+             * index is less than the current number of menu entries
+             * - if not, we reset the navigation pointer */
+            size_t selection = menu_navigation_get_selection();
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
             if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
             {
-               size_t                   opts = 0;
+               size_t               num_opts = 0;
                settings_t      *settings     = config_get_ptr();
                bool game_specific_options    = settings->bools.game_specific_options;
 
-               rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
+               rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &num_opts);
 
                if (game_specific_options)
                {
@@ -10557,9 +10553,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      if (menu_entries_append_enum(info->list,
                            msg_hash_to_str(
-                              MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
+                                 MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
                            msg_hash_to_str(
-                              MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
+                                 MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
                            MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
                            MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
                         count++;
@@ -10567,29 +10563,28 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   else
                      if (menu_entries_append_enum(info->list,
                            msg_hash_to_str(
-                              MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
+                                 MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
                            msg_hash_to_str(
-                              MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
+                                 MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
                            MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
                            MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
                         count++;
                }
 
-               if (opts != 0)
+               if (num_opts != 0)
                {
                   core_option_manager_t *coreopts = NULL;
 
-                  rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
-
-                  for (i = 0; i < opts; i++)
+                  if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
                   {
-                     if (core_option_manager_get_visible(coreopts, i))
+                     for (i = 0; i < num_opts; i++)
                      {
-                        menu_entries_append_enum(info->list,
-                              core_option_manager_get_desc(coreopts, i), "",
-                              MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
-                              (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0);
-                        count++;
+                        if (core_option_manager_get_visible(coreopts, i))
+                           if (menu_entries_append_enum(info->list,
+                                 core_option_manager_get_desc(coreopts, i), "",
+                                 MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
+                                 (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0))
+                              count++;
                      }
                   }
                }
@@ -10602,11 +10597,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
                      MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
 
-            if (count != prev_count)
+            if (selection >= count)
             {
                info->need_refresh          = true;
                info->need_navigation_clear = true;
-               prev_count                  = count;
             }
             info->need_push                = true;
          }

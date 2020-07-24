@@ -3440,17 +3440,77 @@ static int action_ok_audio_run(const char *path,
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char core_option_lbl[256];
-   char core_option_idx[256];
-   snprintf(core_option_lbl, sizeof(core_option_lbl),
-         "core_option_%d", (int)idx);
-   snprintf(core_option_idx, sizeof(core_option_idx), "%d",
-         type);
+   core_option_manager_t *coreopts = NULL;
+   struct core_option *option      = NULL;
+   const char *value_label_0       = NULL;
+   const char *value_label_1       = NULL;
+   size_t option_index;
+   char option_path_str[256];
+   char option_lbl_str[256];
 
+   option_path_str[0] = '\0';
+   option_lbl_str[0]  = '\0';
+
+   /* Boolean options are toggled directly,
+    * without the use of a drop-down list */
+
+   /* > Get current option index */
+   if (type < MENU_SETTINGS_CORE_OPTION_START)
+      goto push_dropdown_list;
+
+   option_index = type - MENU_SETTINGS_CORE_OPTION_START;
+
+   /* > Get core options struct */
+   if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts) ||
+       (option_index >= coreopts->size))
+      goto push_dropdown_list;
+
+   /* > Get current option, and check whether
+    *   it has exactly 2 values (i.e. on/off) */
+   option = (struct core_option*)&coreopts->opts[option_index];
+
+   if (!option ||
+       (option->vals->size != 2) ||
+       ((option->index != 0) &&
+            (option->index != 1)))
+      goto push_dropdown_list;
+
+   /* > Check whether option values correspond
+    *   to a boolean toggle */
+   value_label_0 = option->val_labels->elems[0].data;
+   value_label_1 = option->val_labels->elems[1].data;
+
+   if (string_is_empty(value_label_0) ||
+       string_is_empty(value_label_1) ||
+       !((string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))   &&
+            string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))) ||
+         (string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))  &&
+            string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
+      goto push_dropdown_list;
+
+   /* > Update value and return */
+   core_option_manager_set_val(coreopts, option_index,
+         (option->index == 0) ? 1 : 0);
+
+   return 0;
+
+push_dropdown_list:
+
+   /* If this option is not a boolean toggle,
+    * push drop-down list */
+   snprintf(option_path_str, sizeof(option_path_str),
+         "core_option_%d", (int)idx);
+   snprintf(option_lbl_str, sizeof(option_lbl_str),
+         "%d", type);
+
+   /* TODO/FIXME: This should be refactored to make
+    * use of a core-option-specific drop-down list,
+    * rather than hijacking the generic one... */
    generic_action_ok_displaylist_push(
-         core_option_lbl, NULL,
-         core_option_idx, 0, idx, 0,
+         option_path_str, NULL,
+         option_lbl_str, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST);
+
    return 0;
 }
 

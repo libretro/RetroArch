@@ -17354,11 +17354,64 @@ int main(int argc, char *argv[])
 #endif
 
 /* CORE OPTIONS */
+static const char *core_option_manager_parse_value_label(
+      const char *value, const char *value_label)
+{
+   /* 'value_label' may be NULL */
+   const char *label = string_is_empty(value_label) ?
+         value : value_label;
+
+   if (string_is_empty(label))
+      return NULL;
+
+   /* Any label starting with a digit (or +/-)
+    * cannot be a boolean string, and requires
+    * no further processing */
+   if (isdigit((unsigned char)*label) ||
+       (*label == '+') ||
+       (*label == '-'))
+      return label;
+
+   /* Core devs have a habit of using arbitrary
+    * strings to label boolean values (i.e. enabled,
+    * Enabled, on, On, ON, true, True, TRUE, disabled,
+    * Disabled, off, Off, OFF, false, False, FALSE).
+    * These should all be converted to standard ON/OFF
+    * strings
+    * > Note: We require some duplication here
+    *   (e.g. MENU_ENUM_LABEL_ENABLED *and*
+    *    MENU_ENUM_LABEL_VALUE_ENABLED) in order
+    *   to match both localised and non-localised
+    *   strings. This function is not performance
+    *   critical, so these extra comparisons do
+    *   no harm */
+   if (string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+       string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ENABLED)) ||
+       string_is_equal_noncase(label, "enable") ||
+       string_is_equal_noncase(label, "on") ||
+       string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)) ||
+       string_is_equal_noncase(label, "true") ||
+       string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE)))
+      label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+   else if (string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+            string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED)) ||
+            string_is_equal_noncase(label, "disable") ||
+            string_is_equal_noncase(label, "off") ||
+            string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) ||
+            string_is_equal_noncase(label, "false") ||
+            string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE)))
+      label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+
+   return label;
+}
+
 static bool core_option_manager_parse_variable(
       core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var,
       config_file_t *config_src)
 {
+   size_t i;
+   union string_list_elem_attr attr;
    const char *val_start      = NULL;
    char *value                = NULL;
    char *desc_end             = NULL;
@@ -17391,12 +17444,29 @@ static bool core_option_manager_parse_variable(
    if (!option->vals)
       goto error;
 
-   /* Legacy core option interface has no concept of
-    * value labels - use actual values for display purposes */
-   option->val_labels = string_list_clone(option->vals);
+   /* Legacy core option interface has no concept
+    * of value labels
+    * > Use actual values for display purposes */
+   attr.i             = 0;
+   option->val_labels = string_list_new();
 
    if (!option->val_labels)
       goto error;
+
+   /* > Loop over values and 'extract' labels */
+   for (i = 0; i < option->vals->size; i++)
+   {
+      const char *value       = option->vals->elems[i].data;
+      const char *value_label = core_option_manager_parse_value_label(
+            value, NULL);
+
+      /* Redundant safely check... */
+      value_label = string_is_empty(value_label) ?
+            value : value_label;
+
+      /* Append value label string */
+      string_list_append(option->val_labels, value_label, attr);
+   }
 
    /* Legacy core option interface always uses first
     * defined value as the default */
@@ -17411,8 +17481,6 @@ static bool core_option_manager_parse_variable(
    /* Set current config value */
    if (entry && !string_is_empty(entry->value))
    {
-      size_t i;
-
       for (i = 0; i < option->vals->size; i++)
       {
          if (string_is_equal(option->vals->elems[i].data, entry->value))
@@ -17475,26 +17543,35 @@ static bool core_option_manager_parse_option(
    if (!option->vals || !option->val_labels)
       return false;
 
-   /* Initialse default value */
+   /* Initialise default value */
    option->default_index = 0;
    option->index         = 0;
 
    /* Extract value/label pairs */
    for (i = 0; i < num_vals; i++)
    {
-      /* We know that 'value' is valid */
-      string_list_append(option->vals, values[i].value, attr);
+      const char *value       = values[i].value;
+      const char *value_label = values[i].label;
 
-      /* Value 'label' may be NULL */
-      if (!string_is_empty(values[i].label))
-         string_list_append(option->val_labels, values[i].label, attr);
-      else
-         string_list_append(option->val_labels, values[i].value, attr);
+      /* Append value string
+       * > We know that 'value' is always valid */
+      string_list_append(option->vals, value, attr);
+
+      /* Value label requires additional processing */
+      value_label = core_option_manager_parse_value_label(
+            value, value_label);
+
+      /* > Redundant safely check... */
+      value_label = string_is_empty(value_label) ?
+            value : value_label;
+
+      /* Append value label string */
+      string_list_append(option->val_labels, value_label, attr);
 
       /* Check whether this value is the default setting */
       if (!string_is_empty(option_def->default_value))
       {
-         if (string_is_equal(option_def->default_value, values[i].value))
+         if (string_is_equal(option_def->default_value, value))
          {
             option->default_index = i;
             option->index         = i;
