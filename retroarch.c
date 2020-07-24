@@ -17387,6 +17387,7 @@ static const char *core_option_manager_parse_value_label(
     *   no harm */
    if (string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
        string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ENABLED)) ||
+       string_is_equal_noncase(label, "enable") ||
        string_is_equal_noncase(label, "on") ||
        string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)) ||
        string_is_equal_noncase(label, "true") ||
@@ -17394,6 +17395,7 @@ static const char *core_option_manager_parse_value_label(
       label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
    else if (string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
             string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED)) ||
+            string_is_equal_noncase(label, "disable") ||
             string_is_equal_noncase(label, "off") ||
             string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) ||
             string_is_equal_noncase(label, "false") ||
