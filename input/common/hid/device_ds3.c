@@ -70,43 +70,44 @@ extern pad_connection_interface_t ds3_pad_connection;
 static void ds3_update_pad_state(ds3_instance_t *instance);
 static void ds3_update_analog_state(ds3_instance_t *instance);
 
+#if defined(WIIU)
 static int32_t ds3_send_activation_packet(ds3_instance_t *instance)
 {
-   int32_t result;
-#if defined(WIIU)
-   result = HID_SET_REPORT(instance->handle,
-                  HID_REPORT_FEATURE,
-                  DS3_ACTIVATION_REPORT_ID,
-                  ds3_activation_packet,
-                  sizeof(ds3_activation_packet));
-#else
-   HID_SEND_CONTROL(instance->handle,
-                    ds3_activation_packet, sizeof(ds3_activation_packet));
-#endif
-
-   return result;
+   return HID_SET_REPORT(instance->handle,
+         HID_REPORT_FEATURE,
+         DS3_ACTIVATION_REPORT_ID,
+         ds3_activation_packet,
+         sizeof(ds3_activation_packet));
 }
 
 static uint32_t set_protocol(ds3_instance_t *instance, int protocol)
 {
-   uint32_t result = 0;
-#if defined(WIIU)
-   result = HID_SET_PROTOCOL(instance->handle, 1);
-#endif
-
-   return result;
+   return HID_SET_PROTOCOL(instance->handle, 1);
 }
+#else
+static int32_t ds3_send_activation_packet(ds3_instance_t *instance)
+{
+   HID_SEND_CONTROL(instance->handle,
+         ds3_activation_packet, sizeof(ds3_activation_packet));
+   return 0;
+}
+
+static uint32_t set_protocol(ds3_instance_t *instance, int protocol)
+{
+   return 0;
+}
+#endif
 
 static int32_t ds3_send_control_packet(ds3_instance_t *instance)
 {
+   /* TODO/FIXME - C89-incompatible */
    uint8_t packet_buffer[sizeof(ds3_control_packet)];
    int32_t result = 0;
    memcpy(packet_buffer, ds3_control_packet, sizeof(ds3_control_packet));
 
    packet_buffer[LED_OFFSET] = 0;
-   if(instance->pad) {
+   if(instance->pad)
       packet_buffer[LED_OFFSET] = 1 << ((instance->slot % 4) + 1);
-   }
    packet_buffer[MOTOR1_OFFSET] = instance->motors[1] >> 8;
    packet_buffer[MOTOR2_OFFSET] = instance->motors[0] >> 8;
 
@@ -130,26 +131,25 @@ static int32_t ds3_send_control_packet(ds3_instance_t *instance)
 
 static void *ds3_init(void *handle)
 {
-   ds3_instance_t *instance;
-   int errors = 0;
-   RARCH_LOG("[ds3]: init\n");
-   instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
-   if(!instance)
-     goto error;
+   int errors                 = 0;
+   ds3_isntance_t *instance   = (ds3_instance_t *)
+      malloc(sizeof(ds3_instance_t));
+   if (!instance)
+      return NULL;
 
    memset(instance, 0, sizeof(ds3_instance_t));
    instance->handle = handle;
 
-   RARCH_LOG("[ds3]: setting protocol\n");
+   /* Setting protocol */
 
    /* this might fail, but we don't care. */
    set_protocol(instance, 1);
 
-   RARCH_LOG("[ds3]: sending control packet\n");
+   /* Sending control packet.. */
    if(ds3_send_control_packet(instance) < 0)
       errors++;
 
-   RARCH_LOG("[ds3]: sending activation packet\n");
+   /* Sending activation packet.. */
    if(ds3_send_activation_packet(instance) < 0)
       errors++;
 
@@ -160,14 +160,12 @@ static void *ds3_init(void *handle)
    if(!instance->pad)
       goto error;
 
-   RARCH_LOG("[ds3]: init complete.\n");
    return instance;
 
-   error:
-      RARCH_ERR("[ds3]: init failed.\n");
-      if(instance)
-         free(instance);
-      return NULL;
+error:
+   if(instance)
+      free(instance);
+   return NULL;
 }
 
 static void ds3_free(void *data)
@@ -210,7 +208,7 @@ hid_device_t ds3_hid_device = {
 static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
-   pad->slot = slot;
+   pad->slot           = slot;
 
    return data;
 }
@@ -218,9 +216,9 @@ static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 static void ds3_pad_deinit(void *data)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
-   if(pad) {
-      input_autoconfigure_disconnect(pad->slot, ds3_pad_connection.get_name(pad));
-   }
+   if(pad)
+      input_autoconfigure_disconnect(pad->slot,
+            ds3_pad_connection.get_name(pad));
 }
 
 static void ds3_get_buttons(void *data, input_bits_t *state)
@@ -233,7 +231,9 @@ static void ds3_get_buttons(void *data, input_bits_t *state)
 
       if(pad->buttons & 0x10000)
          BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
-   } else {
+   }
+   else
+   {
       BIT256_CLEAR_ALL_PTR(state);
    }
 }
@@ -268,8 +268,8 @@ static void ds3_update_analog_state(ds3_instance_t *instance)
 
    for(pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      axis = pad_axis % 2 ? 0 : 1;
-      stick = pad_axis / 2;
+      axis         = pad_axis % 2 ? 0 : 1;
+      stick        = pad_axis / 2;
       interpolated = instance->data[6+pad_axis];
       instance->analog_state[stick][axis] = (interpolated - 128) * 256;
    }
@@ -302,14 +302,17 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
 
    instance->buttons = 0;
 
-   pressed_keys = instance->data[2]|(instance->data[3] << 8)|((instance->data[4] & 0x01) << 16);
+   pressed_keys = instance->data[2]        | 
+                  (instance->data[3] << 8) |
+                  ((instance->data[4] & 0x01) << 16);
 
    for(i = 0; i < 17; i++)
      instance->buttons |= (pressed_keys & (1 << i)) ?
         (1 << button_mapping[i]) : 0;
 }
 
-static void ds3_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
+static void ds3_set_rumble(void *data,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
 }
@@ -335,13 +338,11 @@ static const char *ds3_get_name(void *data)
 
 static int16_t ds3_button(void *data, uint16_t joykey)
 {
-   ds3_instance_t *pad                  = (ds3_instance_t *)data;
-
+   ds3_instance_t *pad = (ds3_instance_t *)data;
    if (!pad)
       return 0;
    if (joykey < 31)
-      if (pad->buttons & (1 << joykey))
-         ret |= (1 << joykey);
+      return (pad->buttons & (1 << joykey));
    return 0;
 }
 

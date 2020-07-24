@@ -48,11 +48,12 @@ joypad_connection_t *hid_pad_register(
    int slot;
    joypad_connection_t *result;
 
-   if(!pad_handle)
+   if (!pad_handle)
       return NULL;
 
    slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
-   if(slot < 0)
+
+   if (slot < 0)
    {
       RARCH_ERR("[hid]: failed to find a vacant pad.\n");
       return NULL;
@@ -69,13 +70,13 @@ joypad_connection_t *hid_pad_register(
 
 void hid_pad_deregister(joypad_connection_t *pad)
 {
-   if(!pad)
+   if (!pad)
       return;
 
-   if(pad->data)
+   if (pad->data)
    {
       pad->iface->deinit(pad->data);
-      pad->data = NULL;
+      pad->data   = NULL;
    }
 
    pad->iface     = NULL;
@@ -84,15 +85,15 @@ void hid_pad_deregister(joypad_connection_t *pad)
 
 static bool init_pad_list(hid_driver_instance_t *instance, unsigned slots)
 {
-   if(!instance || slots > MAX_USERS)
+   if (!instance || slots > MAX_USERS)
       return false;
 
-   if(instance->pad_list)
+   if (instance->pad_list)
       return true;
 
-   RARCH_LOG("[hid]: initializing pad list...\n");
+   /* Initializing pad list.. */
    instance->pad_list = pad_connection_init(slots);
-   if(!instance->pad_list)
+   if (!instance->pad_list)
       return false;
 
    instance->max_slot = slots;
@@ -115,26 +116,24 @@ bool hid_init(hid_driver_instance_t *instance,
               input_device_driver_t *pad_driver,
               unsigned slots)
 {
-   RARCH_LOG("[hid]: initializing instance with %d pad slots\n", slots);
-   if(!instance || !hid_driver || !pad_driver || slots > MAX_USERS)
+   void *os_driver_data = NULL;
+   if (!instance || !hid_driver || !pad_driver || slots > MAX_USERS)
       return false;
 
-   RARCH_LOG("[hid]: initializing HID subsystem driver...\n");
-   instance->os_driver_data = hid_driver->init();
-   if(!instance->os_driver_data)
+   /* Initializing HID subsystem driver */
+   os_driver_data = hid_driver->init();
+   if (!os_driver_data)
       return false;
 
-   if(!init_pad_list(instance, slots))
+   if (!init_pad_list(instance, slots))
    {
-      hid_driver->free(instance->os_driver_data);
-      instance->os_driver_data = NULL;
+      hid_driver->free(os_driver_data);
       return false;
    }
 
-   instance->os_driver = hid_driver;
-   instance->pad_driver = pad_driver;
-
-   RARCH_LOG("[hid]: instance initialization complete.\n");
+   instance->os_driver_data = os_driver_data;
+   instance->os_driver      = hid_driver;
+   instance->pad_driver     = pad_driver;
 
    return true;
 }
@@ -146,20 +145,15 @@ bool hid_init(hid_driver_instance_t *instance,
  */
 void hid_deinit(hid_driver_instance_t *instance)
 {
-   if(!instance)
+   if (!instance)
       return;
 
-   RARCH_LOG("[hid]: destroying instance\n");
-
-   if(instance->os_driver && instance->os_driver_data)
-   {
-      RARCH_LOG("[hid]: tearing down HID subsystem driver...\n");
+   if (instance->os_driver && instance->os_driver_data)
       instance->os_driver->free(instance->os_driver_data);
-   }
 
-   RARCH_LOG("[hid]: destroying pad data...\n");
+   /* Destroying pad data.. */
    pad_connection_destroy(instance->pad_list);
 
-   RARCH_LOG("[hid]: wiping instance data...\n");
+   /* Wiping instance data.. */
    memset(instance, 0, sizeof(hid_driver_instance_t));
 }
