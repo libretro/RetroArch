@@ -2822,19 +2822,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-   "Salvar registro de tempo de execução (por núcleo)"
+   "Registro de tempo de execução por núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   "Mantém o controle de quanto tempo seu conteúdo está sendo executado ao longo do tempo."
+   "Mantém um registro de quanto tempo cada item está sendo executado por um núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "Salvar registro de tempo de execução (agregar)"
+   "Registro de tempo de execução total"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "Mantém o controle de quanto tempo cada item do conteúdo foi executado, registrado como o total agregado em todos os núcleos."
+   "Mantém um registro de quanto tempo cada item está sendo executado agregando todos os núcleos."
    )
 
 /* Settings > Logging */
@@ -2869,7 +2869,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
-   "Redireciona as mensagens do registro de eventos do sistema para o arquivo. Requer 'Verbosidade do registro de eventos' para ser ativado."
+   "Redireciona as mensagens do registro de eventos do sistema para um arquivo. Requer 'Verbosidade do registro de eventos' para habilitar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
@@ -3764,7 +3764,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "O fornecimento de uma senha ao ocultar a aba de configurações permite restaurar mais tarde a partir do menu, indo para a aba Menu Principal, selecionando Habilitar aba configurações e inserindo a senha."
+   "Impede o acesso a aba de configurações com uma senha. Ela pode ser restaurada ao digitar a senha após clicar em 'Habilitar aba configurações' no Menu Principal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
