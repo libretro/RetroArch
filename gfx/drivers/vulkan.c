@@ -2540,6 +2540,25 @@ static uint32_t vulkan_get_flags(void *data)
    return flags;
 }
 
+static void vulkan_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   gfx_ctx_size_t size_data;
+   size_data.width  = width;
+   size_data.height = height;
+   video_context_driver_get_video_output_size(&size_data);
+}
+
+static void vulkan_get_video_output_prev(void *data)
+{
+   video_context_driver_get_video_output_prev();
+}
+
+static void vulkan_get_video_output_next(void *data)
+{
+   video_context_driver_get_video_output_next();
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_flags,
    vulkan_load_texture,
@@ -2547,9 +2566,9 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_set_video_mode,
    vulkan_get_refresh_rate, /* get_refresh_rate */
    NULL,
-   NULL,
-   NULL,
-   NULL,
+   vulkan_get_video_output_size,
+   vulkan_get_video_output_prev,
+   vulkan_get_video_output_next,
    NULL,
    NULL,
    vulkan_set_aspect_ratio,
