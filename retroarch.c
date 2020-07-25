@@ -33492,7 +33492,7 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
    return true;
 }
 
-bool video_driver_get_flags(gfx_ctx_flags_t *flags)
+static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->video_driver_poke || !p_rarch->video_driver_poke->get_flags)
