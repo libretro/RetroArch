@@ -1822,6 +1822,26 @@ static uint32_t d3d12_get_flags(void *data)
    return flags;
 }
 
+static void d3d12_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   win32_get_video_output_size(width, height);
+}
+
+static void d3d12_get_video_output_prev(void *data)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   win32_get_video_output_prev(&width, &height);
+}
+
+static void d3d12_get_video_output_next(void *data)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   win32_get_video_output_next(&width, &height);
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
@@ -1834,9 +1854,9 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL,
 #endif
    d3d12_set_filtering,
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
+   d3d12_get_video_output_size,
+   d3d12_get_video_output_prev,
+   d3d12_get_video_output_next,
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
    d3d12_gfx_set_aspect_ratio,
