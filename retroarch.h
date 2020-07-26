@@ -1766,8 +1766,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(
 
 bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img);
 
-bool video_context_driver_get_video_output_prev(void);
-
 bool video_context_driver_set(const gfx_ctx_driver_t *data);
 
 void video_context_driver_destroy(void);

@@ -31932,6 +31932,15 @@ static bool video_context_driver_get_video_output_next(struct
    return true;
 }
 
+static bool video_context_driver_get_video_output_prev(
+      struct rarch_state *p_rarch)
+{
+   if (!p_rarch->current_video_context.get_video_output_prev)
+      return false;
+   p_rarch->current_video_context.get_video_output_prev(
+         p_rarch->video_context_data);
+   return true;
+}
 
 bool video_driver_get_next_video_out(void)
 {
@@ -31960,7 +31969,7 @@ bool video_driver_get_prev_video_out(void)
             p_rarch->video_driver_data);
       return true;
    }
-   return video_context_driver_get_video_output_prev();
+   return video_context_driver_get_video_output_prev(p_rarch);
 }
 
 void video_driver_monitor_reset(void)
@@ -33353,16 +33362,6 @@ bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img)
             img->rgb32, img->index, img->handle))
       return true;
    return false;
-}
-
-bool video_context_driver_get_video_output_prev(void)
-{
-   struct rarch_state   *p_rarch = &rarch_st;
-   if (!p_rarch->current_video_context.get_video_output_prev)
-      return false;
-   p_rarch->current_video_context.get_video_output_prev(
-         p_rarch->video_context_data);
-   return true;
 }
 
 void video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
