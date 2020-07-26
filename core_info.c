@@ -1321,7 +1321,6 @@ bool core_info_hw_api_supported(core_info_t *info)
       unsigned j                 = 0;
       bool found_major           = false;
       bool found_minor           = false;
-      bool found_match           = false;
       enum compare_op op         = COMPARE_OP_GREATER_EQUAL;
       enum api_parse_state state = STATE_API_NAME;
 
@@ -1338,73 +1337,73 @@ bool core_info_hw_api_supported(core_info_t *info)
          switch (state)
          {
             case STATE_API_NAME:
+            {
+               if (  isupper((unsigned char)cur_api[j]) || 
+                     islower((unsigned char)cur_api[j]))
+                  api_str[api_pos++] = cur_api[j];
+               else
                {
-                  if (  isupper((unsigned char)cur_api[j]) || 
-                        islower((unsigned char)cur_api[j]))
-                     api_str[api_pos++] = cur_api[j];
-                  else
-                  {
-                     j--;
-                     state = STATE_API_COMPARE_OP;
-                     break;
-                  }
-
+                  j--;
+                  state = STATE_API_COMPARE_OP;
                   break;
                }
+
+               break;
+            }
             case STATE_API_COMPARE_OP:
+            {
+               if (j < cur_api_len - 1 && !(cur_api[j] >= '0' && cur_api[j] <= '9'))
                {
-                  if (j < cur_api_len - 1 && !(cur_api[j] >= '0' && cur_api[j] <= '9'))
+                  if (cur_api[j] == '=' && cur_api[j + 1] == '=')
                   {
-                     if (cur_api[j] == '=' && cur_api[j + 1] == '=')
-                     {
-                        op = COMPARE_OP_EQUAL;
-                        j++;
-                     }
-                     else if (cur_api[j] == '=')
-                        op = COMPARE_OP_EQUAL;
-                     else if (cur_api[j] == '!' && cur_api[j + 1] == '=')
-                     {
-                        op = COMPARE_OP_NOT_EQUAL;
-                        j++;
-                     }
-                     else if (cur_api[j] == '<' && cur_api[j + 1] == '=')
-                     {
-                        op = COMPARE_OP_LESS_EQUAL;
-                        j++;
-                     }
-                     else if (cur_api[j] == '>' && cur_api[j + 1] == '=')
-                     {
-                        op = COMPARE_OP_GREATER_EQUAL;
-                        j++;
-                     }
-                     else if (cur_api[j] == '<')
-                        op = COMPARE_OP_LESS;
-                     else if (cur_api[j] == '>')
-                        op = COMPARE_OP_GREATER;
+                     op = COMPARE_OP_EQUAL;
+                     j++;
                   }
-
-                  state = STATE_API_VERSION;
-
-                  break;
+                  else if (cur_api[j] == '=')
+                     op = COMPARE_OP_EQUAL;
+                  else if (cur_api[j] == '!' && cur_api[j + 1] == '=')
+                  {
+                     op = COMPARE_OP_NOT_EQUAL;
+                     j++;
+                  }
+                  else if (cur_api[j] == '<' && cur_api[j + 1] == '=')
+                  {
+                     op = COMPARE_OP_LESS_EQUAL;
+                     j++;
+                  }
+                  else if (cur_api[j] == '>' && cur_api[j + 1] == '=')
+                  {
+                     op = COMPARE_OP_GREATER_EQUAL;
+                     j++;
+                  }
+                  else if (cur_api[j] == '<')
+                     op = COMPARE_OP_LESS;
+                  else if (cur_api[j] == '>')
+                     op = COMPARE_OP_GREATER;
                }
+
+               state = STATE_API_VERSION;
+
+               break;
+            }
             case STATE_API_VERSION:
+            {
+               if (!found_minor && cur_api[j] >= '0' && cur_api[j] <= '9' && cur_api[j] != '.')
                {
-                  if (!found_minor && cur_api[j] >= '0' && cur_api[j] <= '9' && cur_api[j] != '.')
-                  {
-                     found_major = true;
+                  found_major = true;
 
-                     if (major_str_pos < sizeof(major_str) - 1)
-                        major_str[major_str_pos++] = cur_api[j];
-                  }
-                  else if (found_major && found_minor && cur_api[j] >= '0' && cur_api[j] <= '9')
-                  {
-                     if (minor_str_pos < sizeof(minor_str) - 1)
-                        minor_str[minor_str_pos++] = cur_api[j];
-                  }
-                  else if (cur_api[j] == '.')
-                     found_minor = true;
-                  break;
+                  if (major_str_pos < sizeof(major_str) - 1)
+                     major_str[major_str_pos++] = cur_api[j];
                }
+               else if (found_major && found_minor && cur_api[j] >= '0' && cur_api[j] <= '9')
+               {
+                  if (minor_str_pos < sizeof(minor_str) - 1)
+                     minor_str[minor_str_pos++] = cur_api[j];
+               }
+               else if (cur_api[j] == '.')
+                  found_minor = true;
+               break;
+            }
             default:
                break;
          }
@@ -1421,113 +1420,88 @@ bool core_info_hw_api_supported(core_info_t *info)
       fflush(stdout);
 #endif
 
-      switch (sys_api)
+
+      if ((string_is_equal_noncase(api_str, "opengl") && sys_api == GFX_CTX_OPENGL_API) ||
+            (string_is_equal_noncase(api_str, "openglcompat") && sys_api == GFX_CTX_OPENGL_API) ||
+            (string_is_equal_noncase(api_str, "openglcompatibility") && sys_api == GFX_CTX_OPENGL_API))
       {
-         case GFX_CTX_OPENGL_API:
-            if (     (string_is_equal_noncase(api_str, "opengl") )
-                  || (string_is_equal_noncase(api_str, "openglcompat"))
-                  || (string_is_equal_noncase(api_str, "openglcompatibility"))
-               )
-            {
-               /* system is running a core context while compat is requested */
-               if (sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT))   
-                  return false;
+         /* system is running a core context while compat is requested */
+         if (sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT))   
+            return false;
 
-               sscanf(sys_api_version_str, "%d.%d",
-                     &sys_api_version_major, &sys_api_version_minor);
+         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
 
-               found_match = true;
-            }
-            else if (string_is_equal_noncase(api_str, "openglcore"))
-            {
-               sscanf(sys_api_version_str, "%d.%d",
-                     &sys_api_version_major, &sys_api_version_minor);
-
-               found_match = true;
-            }
-            break;
-         case GFX_CTX_OPENGL_ES_API:
-            if (string_is_equal_noncase(api_str, "opengles"))
-            {
-               sscanf(sys_api_version_str, "OpenGL ES %d.%d",
-                     &sys_api_version_major, &sys_api_version_minor);
-
-               found_match = true;
-            }
-            break;
-         case GFX_CTX_DIRECT3D8_API:
-            if (string_is_equal_noncase(api_str, "direct3d8"))
-            {
-               sys_api_version_major = 8;
-               sys_api_version_minor = 0;
-
-               found_match = true;
-            }
-            break;
-         case GFX_CTX_DIRECT3D9_API:
-            if (string_is_equal_noncase(api_str, "direct3d9"))
-            {
-               sys_api_version_major = 9;
-               sys_api_version_minor = 0;
-
-               found_match = true;
-            }
-            break;
-         case GFX_CTX_DIRECT3D10_API:
-            if (string_is_equal_noncase(api_str, "direct3d10"))
-            {
-               sys_api_version_major = 10;
-               sys_api_version_minor = 0;
-
-               found_match = true;
-            }
-         case GFX_CTX_DIRECT3D11_API:
-            if (string_is_equal_noncase(api_str, "direct3d11"))
-            {
-               sys_api_version_major = 11;
-               sys_api_version_minor = 0;
-
-               found_match = true;
-            }
-            break;
-         case GFX_CTX_DIRECT3D12_API:
-            if (string_is_equal_noncase(api_str, "direct3d12"))
-            {
-               sys_api_version_major = 12;
-               sys_api_version_minor = 0;
-
-               found_match = true;
-            }
-            break;
-         case GFX_CTX_VULKAN_API:
-            if (string_is_equal_noncase(api_str, "vulkan"))
-            {
-               sscanf(sys_api_version_str, "%d.%d",
-                     &sys_api_version_major, &sys_api_version_minor);
-
-               found_match = true;
-            }
-            break;
-         case GFX_CTX_METAL_API:
-            if (string_is_equal_noncase(api_str, "metal"))
-            {
-               sscanf(sys_api_version_str, "%d.%d",
-                     &sys_api_version_major, &sys_api_version_minor);
-
-               found_match = true;
-            }
-            break;
-         case GFX_CTX_OPENVG_API:
-            /* TODO/FIXME - implement */
-            break;
-         case GFX_CTX_NONE:
-            break;
-      }
-
-      if (found_match)
-         if (core_info_compare_api_version(sys_api_version_major,
-                  sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
             return true;
+      }
+      else if (string_is_equal_noncase(api_str, "openglcore") && sys_api == GFX_CTX_OPENGL_API)
+      {
+         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "opengles") && sys_api == GFX_CTX_OPENGL_ES_API)
+      {
+         sscanf(sys_api_version_str, "OpenGL ES %d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d8") && sys_api == GFX_CTX_DIRECT3D8_API)
+      {
+         sys_api_version_major = 8;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d9") && sys_api == GFX_CTX_DIRECT3D9_API)
+      {
+         sys_api_version_major = 9;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d10") && sys_api == GFX_CTX_DIRECT3D10_API)
+      {
+         sys_api_version_major = 10;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d11") && sys_api == GFX_CTX_DIRECT3D11_API)
+      {
+         sys_api_version_major = 11;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d12") && sys_api == GFX_CTX_DIRECT3D12_API)
+      {
+         sys_api_version_major = 12;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "vulkan") && sys_api == GFX_CTX_VULKAN_API)
+      {
+         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "metal") && sys_api == GFX_CTX_METAL_API)
+      {
+         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
    }
 
    return false;
