@@ -1168,32 +1168,24 @@ const char *video_shader_to_str(enum rarch_shader_type type)
  **/
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
-   gfx_ctx_flags_t flags;
-   enum display_flags testflag = GFX_CTX_FLAGS_NONE;
-
-   flags.flags     = 0;
+   gfx_ctx_flags_t flags       = video_driver_get_flags_wrapper();
 
    switch (type)
    {
       case RARCH_SHADER_SLANG:
-         testflag = GFX_CTX_FLAGS_SHADERS_SLANG;
-         break;
+         return BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG);
       case RARCH_SHADER_GLSL:
-         testflag = GFX_CTX_FLAGS_SHADERS_GLSL;
-         break;
+         return BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL);
       case RARCH_SHADER_CG:
-         testflag = GFX_CTX_FLAGS_SHADERS_CG;
-         break;
+         return BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG);
       case RARCH_SHADER_HLSL:
-         testflag = GFX_CTX_FLAGS_SHADERS_HLSL;
-         break;
+         return BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL);
       case RARCH_SHADER_NONE:
       default:
-         return false;
+         break;
    }
-   video_context_driver_get_flags(&flags);
 
-   return BIT32_GET(flags.flags, testflag);
+   return false;
 }
 
 const char *video_shader_get_preset_extension(enum rarch_shader_type type)
@@ -1216,10 +1208,7 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
 
 bool video_shader_any_supported(void)
 {
-   gfx_ctx_flags_t flags;
-   flags.flags     = 0;
-   video_context_driver_get_flags(&flags);
-
+   gfx_ctx_flags_t flags = video_driver_get_flags_wrapper();
    return
       BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG) ||
       BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)  ||

@@ -33473,9 +33473,10 @@ bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info)
    return true;
 }
 
-bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
+static bool video_context_driver_get_flags(
+      struct rarch_state *p_rarch,
+      gfx_ctx_flags_t *flags)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->current_video_context.get_flags)
       return false;
 
@@ -33492,13 +33493,26 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
    return true;
 }
 
-static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
+static bool video_driver_get_flags(
+      struct rarch_state *p_rarch,
+      gfx_ctx_flags_t *flags)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->video_driver_poke || !p_rarch->video_driver_poke->get_flags)
       return false;
    flags->flags = p_rarch->video_driver_poke->get_flags(p_rarch->video_driver_data);
    return true;
+}
+
+gfx_ctx_flags_t video_driver_get_flags_wrapper(void)
+{
+   gfx_ctx_flags_t flags;
+   struct rarch_state *p_rarch = &rarch_st;
+   flags.flags                 = 0;
+
+   if (!video_driver_get_flags(p_rarch, &flags))
+      video_context_driver_get_flags(p_rarch, &flags);
+
+   return flags;
 }
 
 /**
@@ -33510,17 +33524,8 @@ static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
  **/
 bool video_driver_test_all_flags(enum display_flags testflag)
 {
-   gfx_ctx_flags_t flags;
-
-   if (video_driver_get_flags(&flags))
-      if (BIT32_GET(flags.flags, testflag))
-         return true;
-
-   if (video_context_driver_get_flags(&flags))
-      if (BIT32_GET(flags.flags, testflag))
-         return true;
-
-   return false;
+   gfx_ctx_flags_t flags = video_driver_get_flags_wrapper();
+   return BIT32_GET(flags.flags, testflag);
 }
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
