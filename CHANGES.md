@@ -23,6 +23,7 @@
 - MENU: Fix cursor forced to first entry after displaying lists
 - MENU: Make Notification Font option visible when Graphics Widgets are enabled
 - MENU/WIDGETS: Add optional widget-based 'load content' launch feedback animation
+- MENU/WIDGETS: Make notification font size option visible when graphics widgets are enabled
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 - PS2: Improve FPS Limiter
 - SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
