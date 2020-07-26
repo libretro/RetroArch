@@ -1808,7 +1808,7 @@ bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);
 
-gfx_ctx_flags_t video_driver_get_flags_wrapper(void);
+bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_driver_test_all_flags(enum display_flags testflag);
 

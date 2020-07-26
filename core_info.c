@@ -1285,8 +1285,8 @@ bool core_info_hw_api_supported(core_info_t *info)
 #ifdef RARCH_INTERNAL
    unsigned i;
    enum gfx_ctx_api sys_api;
+   gfx_ctx_flags_t sys_flags       = {0};
    const char *sys_api_version_str = video_driver_get_gpu_api_version_string();
-   gfx_ctx_flags_t sys_flags       = video_driver_get_flags_wrapper();
    int sys_api_version_major       = 0;
    int sys_api_version_minor       = 0;
 
@@ -1297,13 +1297,11 @@ bool core_info_hw_api_supported(core_info_t *info)
       STATE_API_VERSION
    };
 
-   if (
-            !info
-         || !info->required_hw_api_list 
-         || info->required_hw_api_list->size == 0)
+   if (!info || !info->required_hw_api_list || info->required_hw_api_list->size == 0)
       return true;
 
    sys_api = video_context_driver_get_api();
+   video_context_driver_get_flags(&sys_flags);
 
    for (i = 0; i < info->required_hw_api_list->size; i++)
    {
@@ -1419,7 +1417,6 @@ bool core_info_hw_api_supported(core_info_t *info)
       printf("Version: %s\n", version);
       fflush(stdout);
 #endif
-
 
       if ((string_is_equal_noncase(api_str, "opengl") && sys_api == GFX_CTX_OPENGL_API) ||
             (string_is_equal_noncase(api_str, "openglcompat") && sys_api == GFX_CTX_OPENGL_API) ||
