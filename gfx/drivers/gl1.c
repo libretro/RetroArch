@@ -1163,20 +1163,28 @@ static void gl1_set_texture_frame(void *data,
 static void gl1_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_size_t size_data;
-   size_data.width  = width;
-   size_data.height = height;
-   video_context_driver_get_video_output_size(&size_data);
+   gl1_t *gl         = (gl1_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
+      return;
+   gl->ctx_driver->get_video_output_size(
+         gl->ctx_data,
+         width, height);
 }
 
 static void gl1_get_video_output_prev(void *data)
 {
-   video_context_driver_get_video_output_prev();
+   gl1_t *gl         = (gl1_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_prev)
+      return;
+   gl->ctx_driver->get_video_output_prev(gl->ctx_data);
 }
 
 static void gl1_get_video_output_next(void *data)
 {
-   video_context_driver_get_video_output_next();
+   gl1_t *gl         = (gl1_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_next)
+      return;
+   gl->ctx_driver->get_video_output_next(gl->ctx_data);
 }
 
 static void gl1_set_video_mode(void *data, unsigned width, unsigned height,
