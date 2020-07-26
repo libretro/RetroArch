@@ -1285,7 +1285,6 @@ bool core_info_hw_api_supported(core_info_t *info)
 #ifdef RARCH_INTERNAL
    unsigned i;
    enum gfx_ctx_api sys_api;
-   const char *sys_api_version_str = video_driver_get_gpu_api_version_string();
    gfx_ctx_flags_t sys_flags       = video_driver_get_flags_wrapper();
    int sys_api_version_major       = 0;
    int sys_api_version_minor       = 0;
@@ -1353,26 +1352,40 @@ bool core_info_hw_api_supported(core_info_t *info)
                }
             case STATE_API_COMPARE_OP:
                {
-                  if (j < cur_api_len - 1 && !(cur_api[j] >= '0' && cur_api[j] <= '9'))
+                  if (         (j < cur_api_len - 1)
+                           && !(cur_api[j] >= '0' 
+                           && cur_api[j] <= '9')
+                     )
                   {
-                     if (cur_api[j] == '=' && cur_api[j + 1] == '=')
+                     if (     (cur_api[j]     == '=')
+                           && (cur_api[j + 1] == '=')
+                        )
                      {
                         op = COMPARE_OP_EQUAL;
                         j++;
                      }
                      else if (cur_api[j] == '=')
                         op = COMPARE_OP_EQUAL;
-                     else if (cur_api[j] == '!' && cur_api[j + 1] == '=')
+                     else if (
+                              (cur_api[j]     == '!')
+                           && (cur_api[j + 1] == '=')
+                           )
                      {
                         op = COMPARE_OP_NOT_EQUAL;
                         j++;
                      }
-                     else if (cur_api[j] == '<' && cur_api[j + 1] == '=')
+                     else if (
+                              (cur_api[j]     == '<')
+                           && (cur_api[j + 1] == '=')
+                           )
                      {
                         op = COMPARE_OP_LESS_EQUAL;
                         j++;
                      }
-                     else if (cur_api[j] == '>' && cur_api[j + 1] == '=')
+                     else if (
+                              (cur_api[j]     == '>')
+                           && (cur_api[j + 1] == '=')
+                           )
                      {
                         op = COMPARE_OP_GREATER_EQUAL;
                         j++;
@@ -1389,14 +1402,23 @@ bool core_info_hw_api_supported(core_info_t *info)
                }
             case STATE_API_VERSION:
                {
-                  if (!found_minor && cur_api[j] >= '0' && cur_api[j] <= '9' && cur_api[j] != '.')
+                  if (     !found_minor 
+                        && (cur_api[j] >= '0')
+                        && (cur_api[j] <= '9')
+                        && (cur_api[j] != '.')
+                     )
                   {
                      found_major = true;
 
                      if (major_str_pos < sizeof(major_str) - 1)
                         major_str[major_str_pos++] = cur_api[j];
                   }
-                  else if (found_major && found_minor && cur_api[j] >= '0' && cur_api[j] <= '9')
+                  else if (
+                           found_major 
+                        && found_minor
+                        && (cur_api[j] >= '0')
+                        && (cur_api[j] <= '9')
+                        )
                   {
                      if (minor_str_pos < sizeof(minor_str) - 1)
                         minor_str[minor_str_pos++] = cur_api[j];
@@ -1429,30 +1451,37 @@ bool core_info_hw_api_supported(core_info_t *info)
                   || (string_is_equal_noncase(api_str, "openglcompatibility"))
                )
             {
+               const char *sys_api_version_str = NULL;
                /* system is running a core context while compat is requested */
                if (sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT))   
                   return false;
 
+               sys_api_version_str             = 
+                  video_driver_get_gpu_api_version_string();
                sscanf(sys_api_version_str, "%d.%d",
                      &sys_api_version_major, &sys_api_version_minor);
 
-               found_match = true;
+               found_match                     = true;
             }
             else if (string_is_equal_noncase(api_str, "openglcore"))
             {
+               const char *sys_api_version_str = 
+                  video_driver_get_gpu_api_version_string();
                sscanf(sys_api_version_str, "%d.%d",
                      &sys_api_version_major, &sys_api_version_minor);
 
-               found_match = true;
+               found_match                     = true;
             }
             break;
          case GFX_CTX_OPENGL_ES_API:
             if (string_is_equal_noncase(api_str, "opengles"))
             {
+               const char *sys_api_version_str = 
+                  video_driver_get_gpu_api_version_string();
                sscanf(sys_api_version_str, "OpenGL ES %d.%d",
                      &sys_api_version_major, &sys_api_version_minor);
 
-               found_match = true;
+               found_match                     = true;
             }
             break;
          case GFX_CTX_DIRECT3D8_API:
@@ -1461,7 +1490,7 @@ bool core_info_hw_api_supported(core_info_t *info)
                sys_api_version_major = 8;
                sys_api_version_minor = 0;
 
-               found_match = true;
+               found_match           = true;
             }
             break;
          case GFX_CTX_DIRECT3D9_API:
@@ -1470,7 +1499,7 @@ bool core_info_hw_api_supported(core_info_t *info)
                sys_api_version_major = 9;
                sys_api_version_minor = 0;
 
-               found_match = true;
+               found_match           = true;
             }
             break;
          case GFX_CTX_DIRECT3D10_API:
@@ -1479,7 +1508,7 @@ bool core_info_hw_api_supported(core_info_t *info)
                sys_api_version_major = 10;
                sys_api_version_minor = 0;
 
-               found_match = true;
+               found_match           = true;
             }
          case GFX_CTX_DIRECT3D11_API:
             if (string_is_equal_noncase(api_str, "direct3d11"))
@@ -1496,25 +1525,29 @@ bool core_info_hw_api_supported(core_info_t *info)
                sys_api_version_major = 12;
                sys_api_version_minor = 0;
 
-               found_match = true;
+               found_match           = true;
             }
             break;
          case GFX_CTX_VULKAN_API:
             if (string_is_equal_noncase(api_str, "vulkan"))
             {
+               const char *sys_api_version_str = 
+                  video_driver_get_gpu_api_version_string();
                sscanf(sys_api_version_str, "%d.%d",
                      &sys_api_version_major, &sys_api_version_minor);
 
-               found_match = true;
+               found_match                     = true;
             }
             break;
          case GFX_CTX_METAL_API:
             if (string_is_equal_noncase(api_str, "metal"))
             {
+               const char *sys_api_version_str = 
+                  video_driver_get_gpu_api_version_string();
                sscanf(sys_api_version_str, "%d.%d",
                      &sys_api_version_major, &sys_api_version_minor);
 
-               found_match = true;
+               found_match                     = true;
             }
             break;
          case GFX_CTX_OPENVG_API:
