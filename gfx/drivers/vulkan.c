@@ -2543,28 +2543,20 @@ static uint32_t vulkan_get_flags(void *data)
 static void vulkan_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
-   vk_t *vk = (vk_t*)data;
-   if (!vk || !vk->ctx_driver || !vk->ctx_driver->get_video_output_size)
-      return;
-   vk->ctx_driver->get_video_output_size(
-         vk->ctx_data,
-         width, height);
+   gfx_ctx_size_t size_data;
+   size_data.width  = width;
+   size_data.height = height;
+   video_context_driver_get_video_output_size(&size_data);
 }
 
 static void vulkan_get_video_output_prev(void *data)
 {
-   vk_t *vk = (vk_t*)data;
-   if (!vk || !vk->ctx_driver || !vk->ctx_driver->get_video_output_prev)
-      return;
-   vk->ctx_driver->get_video_output_prev(vk->ctx_data);
+   video_context_driver_get_video_output_prev();
 }
 
 static void vulkan_get_video_output_next(void *data)
 {
-   vk_t *vk = (vk_t*)data;
-   if (!vk || !vk->ctx_driver || !vk->ctx_driver->get_video_output_next)
-      return;
-   vk->ctx_driver->get_video_output_next(vk->ctx_data);
+   video_context_driver_get_video_output_next();
 }
 
 static const video_poke_interface_t vulkan_poke_interface = {

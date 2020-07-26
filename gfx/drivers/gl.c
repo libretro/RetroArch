@@ -4393,28 +4393,20 @@ static void gl2_apply_state_changes(void *data)
 static void gl2_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gl_t *gl         = (gl_t*)data;
-   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
-      return;
-   gl->ctx_driver->get_video_output_size(
-         gl->ctx_data,
-         width, height);
+   gfx_ctx_size_t size_data;
+   size_data.width  = width;
+   size_data.height = height;
+   video_context_driver_get_video_output_size(&size_data);
 }
 
 static void gl2_get_video_output_prev(void *data)
 {
-   gl_t *gl = (gl_t*)data;
-   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_prev)
-      return;
-   gl->ctx_driver->get_video_output_prev(gl->ctx_data);
+   video_context_driver_get_video_output_prev();
 }
 
 static void gl2_get_video_output_next(void *data)
 {
-   gl_t *gl = (gl_t*)data;
-   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_next)
-      return;
-   gl->ctx_driver->get_video_output_next(gl->ctx_data);
+   video_context_driver_get_video_output_next();
 }
 
 static void video_texture_load_gl2(
