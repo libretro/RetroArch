@@ -4654,3 +4654,27 @@ MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,
    "settings_views_settings"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_PLAY,
+   "mixer_action_play"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_PLAY_LOOPED,
+   "mixer_action_play_looped"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "mixer_action_play_sequential"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_STOP,
+   "mixer_action_stop"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_REMOVE,
+   "mixer_action_remove"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_ACTION_VOLUME,
+   "mixer_action_volume"
+   )
