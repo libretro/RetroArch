@@ -31922,50 +31922,30 @@ bool video_driver_supports_rgba(void)
    return tmp;
 }
 
-static bool video_context_driver_get_video_output_prev(void)
-{
-   struct rarch_state   *p_rarch = &rarch_st;
-   if (!p_rarch->current_video_context.get_video_output_prev)
-      return false;
-   p_rarch->current_video_context.get_video_output_prev(
-         p_rarch->video_context_data);
-   return true;
-}
-
-static bool video_context_driver_get_video_output_next(void)
-{
-   struct rarch_state   *p_rarch = &rarch_st;
-   if (!p_rarch->current_video_context.get_video_output_next)
-      return false;
-   p_rarch->current_video_context.get_video_output_next(
-         p_rarch->video_context_data);
-   return true;
-}
-
-
 bool video_driver_get_next_video_out(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (!p_rarch->video_driver_poke)
+   if (     !p_rarch->video_driver_poke
+         || !p_rarch->video_driver_poke->get_video_output_next
+      )
       return false;
 
-   if (!p_rarch->video_driver_poke->get_video_output_next)
-      return video_context_driver_get_video_output_next();
-   p_rarch->video_driver_poke->get_video_output_next(p_rarch->video_driver_data);
+   p_rarch->video_driver_poke->get_video_output_next(
+         p_rarch->video_driver_data);
    return true;
 }
 
 bool video_driver_get_prev_video_out(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (!p_rarch->video_driver_poke)
+   if (
+            !p_rarch->video_driver_poke
+         || !p_rarch->video_driver_poke->get_video_output_prev
+      )
       return false;
 
-   if (!p_rarch->video_driver_poke->get_video_output_prev)
-   {
-      return video_context_driver_get_video_output_prev();
-   }
-   p_rarch->video_driver_poke->get_video_output_prev(p_rarch->video_driver_data);
+   p_rarch->video_driver_poke->get_video_output_prev(
+         p_rarch->video_driver_data);
    return true;
 }
 
