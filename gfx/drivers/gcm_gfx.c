@@ -646,8 +646,8 @@ static uint32_t gcm_get_flags(void *data)
 
 static const video_poke_interface_t gcm_poke_interface = {
    gcm_get_flags,
-   NULL, /* load_texture */
-   NULL, /* unload_texture */
+   NULL,                                  /* load_texture */
+   NULL,                                  /* unload_texture */
    NULL,
    NULL,
    gcm_set_filtering,

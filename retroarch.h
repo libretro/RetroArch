@@ -1307,7 +1307,7 @@ typedef struct gfx_ctx_driver
     * which do not have global context state. */
    void *(*get_context_data)(void *data);
 
-   /* Optional. Makes driver context (only GLX right now)
+   /* Optional. Makes driver context (only GL right now)
     * active for this thread. */
    void (*make_current)(bool release);
 } gfx_ctx_driver_t;
@@ -1376,7 +1376,7 @@ typedef struct video_poke_interface
    uint32_t (*get_flags)(void *data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
-   void (*unload_texture)(void *data, uintptr_t id);
+   void (*unload_texture)(void *data, bool threaded, uintptr_t id);
    void (*set_video_mode)(void *data, unsigned width,
          unsigned height, bool fullscreen);
    float (*get_refresh_rate)(void *data);

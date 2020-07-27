@@ -261,7 +261,7 @@ static void caca_set_texture_frame(void *data,
 }
 
 static const video_poke_interface_t caca_poke_interface = {
-   NULL, /* get_flags */
+   NULL,                   /* get_flags */
    NULL,
    NULL,
    NULL,

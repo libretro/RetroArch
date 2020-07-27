@@ -32936,7 +32936,10 @@ bool video_driver_texture_unload(uintptr_t *id)
          p_rarch->current_video_context.make_current(false);
 #endif
 
-   p_rarch->video_driver_poke->unload_texture(p_rarch->video_driver_data, *id);
+   p_rarch->video_driver_poke->unload_texture(
+         p_rarch->video_driver_data,
+         VIDEO_DRIVER_IS_THREADED_INTERNAL(),
+         *id);
    *id = 0;
    return true;
 }

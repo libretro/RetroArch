@@ -1763,7 +1763,8 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void d3d8_unload_texture(void *data, uintptr_t id)
+static void d3d8_unload_texture(void *data, bool threaded,
+      uintptr_t id)
 {
    LPDIRECT3DTEXTURE8 texid;
    if (!id)

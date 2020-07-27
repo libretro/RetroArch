@@ -336,7 +336,7 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    gfx_ctx_w_vk_set_resize,
    win32_has_focus,
    win32_suppress_screensaver,
-   true, /* has_windowed */
+   true,                            /* has_windowed */
    gfx_ctx_w_vk_swap_buffers,
    gfx_ctx_w_vk_input_driver,
    NULL,
@@ -348,5 +348,5 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    gfx_ctx_w_vk_set_flags,
    gfx_ctx_w_vk_bind_hw_render,
    gfx_ctx_w_vk_get_context_data,
-   NULL
+   NULL                             /* make_current */
 };

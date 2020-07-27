@@ -312,18 +312,18 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    android_gfx_ctx_vk_set_swap_interval,
    android_gfx_ctx_vk_set_video_mode,
    android_gfx_ctx_vk_get_video_size,
-   NULL, /* get_refresh_rate */
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
+   NULL,                                     /* get_refresh_rate */
+   NULL,                                     /* get_video_output_size */
+   NULL,                                     /* get_video_output_prev */
+   NULL,                                     /* get_video_output_next */
    android_gfx_ctx_vk_get_metrics,
    NULL,
-   NULL, /* update_title */
+   NULL,                                     /* update_title */
    android_gfx_ctx_vk_check_window,
    android_gfx_ctx_vk_set_resize,
    android_gfx_ctx_vk_has_focus,
    android_gfx_ctx_vk_suppress_screensaver,
-   false, /* has_windowed */
+   false,                                    /* has_windowed */
    android_gfx_ctx_vk_swap_buffers,
    android_gfx_ctx_vk_input_driver,
    android_gfx_ctx_vk_get_proc_address,
@@ -335,5 +335,5 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    android_gfx_ctx_vk_set_flags,
    android_gfx_ctx_vk_bind_hw_render,
    android_gfx_ctx_vk_get_context_data,
-   NULL
+   NULL                                      /* make_current */
 };

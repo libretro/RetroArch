@@ -1707,7 +1707,8 @@ static uintptr_t d3d10_gfx_load_texture(
 
    return (uintptr_t)texture;
 }
-static void d3d10_gfx_unload_texture(void* data, uintptr_t handle)
+static void d3d10_gfx_unload_texture(void* data, 
+      bool threaded, uintptr_t handle)
 {
    d3d10_texture_t* texture = (d3d10_texture_t*)handle;
 

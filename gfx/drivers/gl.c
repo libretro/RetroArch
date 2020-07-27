@@ -4489,7 +4489,8 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void gl2_unload_texture(void *data, uintptr_t id)
+static void gl2_unload_texture(void *data, 
+      bool threaded, uintptr_t id)
 {
    GLuint glid;
    if (!id)

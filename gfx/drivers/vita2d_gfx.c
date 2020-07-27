@@ -716,7 +716,8 @@ static uintptr_t vita_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void vita_unload_texture(void *data, uintptr_t handle)
+static void vita_unload_texture(void *data, 
+      bool threaded, uintptr_t handle)
 {
    struct vita2d_texture *texture = (struct vita2d_texture*)handle;
    if (!texture)
@@ -727,7 +728,9 @@ static void vita_unload_texture(void *data, uintptr_t handle)
    vita2d_wait_rendering_done();
    vita2d_free_texture(texture);
 
-   //free(texture);
+#if 0
+   free(texture);
+#endif
 }
 
 static bool vita_get_current_sw_framebuffer(void *data,
