@@ -7133,6 +7133,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SCREEN_RESOLUTION,                   action_ok_video_resolution},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},
          {MENU_ENUM_LABEL_CORE_MANAGER_LIST,                   action_ok_push_core_manager_list},
+         {MENU_ENUM_LABEL_EXPLORE_TAB,                         action_ok_push_default},
       };
 
       for (i = 0; i < ARRAY_SIZE(ok_list); i++)

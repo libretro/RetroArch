@@ -3078,6 +3078,12 @@ static unsigned menu_displaylist_parse_playlists(
             count++;
       }
 
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
+         msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB),
+         MENU_ENUM_LABEL_EXPLORE_TAB,
+         MENU_EXPLORE_TAB, 0, 0))
+      count++;
      if (settings->bools.menu_content_show_favorites)
       if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -4357,6 +4363,11 @@ static bool menu_displaylist_push_internal(
       if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
          return true;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info))
+         return true;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info))
@@ -5433,6 +5444,12 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_SYSTEM_INFO:
          count              = menu_displaylist_parse_system_info(list);
+         break;
+      case DISPLAYLIST_EXPLORE:
+         {
+            unsigned menu_displaylist_explore(file_list_t *list);
+            count           = menu_displaylist_explore(list);
+         }
          break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
 #ifdef HAVE_LIBRETRODB
@@ -10785,6 +10802,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_INFORMATION_LIST:
+      case DISPLAYLIST_EXPLORE:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
       case DISPLAYLIST_SYSTEM_INFO:
       case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:

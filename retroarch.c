@@ -6051,6 +6051,7 @@ bool menu_entries_append_enum(
 
    if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
        && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
       cbs->setting                 = menu_setting_find_enum(enum_idx);
 

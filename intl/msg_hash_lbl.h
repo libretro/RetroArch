@@ -51,6 +51,14 @@ MSG_HASH(
    "configurations_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_TAB,
+   "explore_tab"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_ITEM,
+   "explore_item"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ADD_TAB,
    "add_tab"
    )

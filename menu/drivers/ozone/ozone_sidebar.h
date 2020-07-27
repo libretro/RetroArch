@@ -39,6 +39,7 @@ enum
    OZONE_SYSTEM_TAB_NETPLAY,
 #endif
    OZONE_SYSTEM_TAB_ADD,
+   OZONE_SYSTEM_TAB_EXPLORE,
 
    /* End of this enum - use the last one to determine num of possible tabs */
    OZONE_SYSTEM_TAB_LAST

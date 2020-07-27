@@ -2993,3 +2993,9 @@ core_info_t *playlist_get_default_core_info(playlist_t* playlist)
 
    return NULL;
 }
+
+// hack for allowing the explore view to switch over to a playlist item
+void playlist_set_cached(playlist_t* pl)
+{
+   playlist_cached = pl;
+}

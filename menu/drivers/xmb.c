@@ -249,6 +249,7 @@ enum
    XMB_SYSTEM_TAB_NETPLAY,
 #endif
    XMB_SYSTEM_TAB_ADD,
+   XMB_SYSTEM_TAB_EXPLORE,
 
    /* End of this enum - use the last one to determine num of possible tabs */
    XMB_SYSTEM_TAB_MAX_LENGTH
@@ -339,6 +340,7 @@ typedef struct xmb_handle
    xmb_node_t history_tab_node;
    xmb_node_t favorites_tab_node;
    xmb_node_t add_tab_node;
+   xmb_node_t explore_tab_node;
    xmb_node_t netplay_tab_node;
    menu_input_pointer_t pointer;
 
@@ -1864,6 +1866,8 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 #endif
       case XMB_SYSTEM_TAB_ADD:
          return &xmb->add_tab_node;
+      case XMB_SYSTEM_TAB_EXPLORE:
+         return &xmb->explore_tab_node;
       default:
          if (i > xmb->system_tab_end)
             return xmb_get_userdata_from_horizontal_list(
@@ -5446,6 +5450,8 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 
+   xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
+
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
    /* TODO/FIXME - we don't use framebuffer at all
@@ -5928,6 +5934,10 @@ static void xmb_context_reset_textures(
    xmb->add_tab_node.alpha      = xmb->categories_active_alpha;
    xmb->add_tab_node.zoom       = xmb->categories_active_zoom;
 
+   xmb->explore_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+   xmb->explore_tab_node.alpha  = xmb->categories_active_alpha;
+   xmb->explore_tab_node.zoom   = xmb->categories_active_zoom;
+
 #ifdef HAVE_NETWORKING
    xmb->netplay_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_NETPLAY];
    xmb->netplay_tab_node.alpha  = xmb->categories_active_alpha;
@@ -6353,6 +6363,12 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_ADD_TAB;
+               break;
+            case XMB_SYSTEM_TAB_EXPLORE:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_EXPLORE_TAB;
                break;
             default:
                menu_stack->list[stack_size - 1].label =

@@ -41,6 +41,10 @@ MSG_HASH(
    "Netplay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Explore"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Import Content"
    )
