@@ -4470,7 +4470,11 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
+      gl_t *gl                     = (gl_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl2;
+
+      if (gl->ctx_driver->make_current)
+         gl->ctx_driver->make_current(false);
 
       switch (filter_type)
       {
@@ -4493,8 +4497,17 @@ static void gl2_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    GLuint glid;
+   gl_t *gl                     = (gl_t*)data;
    if (!id)
       return;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      if (gl->ctx_driver->make_current)
+         gl->ctx_driver->make_current(false);
+   }
+#endif
 
    glid = (GLuint)id;
    glDeleteTextures(1, &glid);

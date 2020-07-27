@@ -32899,43 +32899,23 @@ bool video_driver_texture_load(void *data,
       uintptr_t *id)
 {
    struct rarch_state *p_rarch = &rarch_st;
-#ifdef HAVE_THREADS
-   bool            is_threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL();
-#endif
    if (     !id 
          || !p_rarch->video_driver_poke 
          || !p_rarch->video_driver_poke->load_texture)
       return false;
-
-#ifdef HAVE_THREADS
-   if (is_threaded)
-      if (p_rarch->current_video_context.make_current)
-         p_rarch->current_video_context.make_current(false);
-#endif
-
    *id = p_rarch->video_driver_poke->load_texture(
          p_rarch->video_driver_data, data,
          VIDEO_DRIVER_IS_THREADED_INTERNAL(),
          filter_type);
-
    return true;
 }
 
 bool video_driver_texture_unload(uintptr_t *id)
 {
    struct rarch_state *p_rarch = &rarch_st;
-#ifdef HAVE_THREADS
-   bool            is_threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL();
-#endif
-   if (!p_rarch->video_driver_poke || !p_rarch->video_driver_poke->unload_texture)
+   if (     !p_rarch->video_driver_poke 
+         || !p_rarch->video_driver_poke->unload_texture)
       return false;
-
-#ifdef HAVE_THREADS
-   if (is_threaded)
-      if (p_rarch->current_video_context.make_current)
-         p_rarch->current_video_context.make_current(false);
-#endif
-
    p_rarch->video_driver_poke->unload_texture(
          p_rarch->video_driver_data,
          VIDEO_DRIVER_IS_THREADED_INTERNAL(),
