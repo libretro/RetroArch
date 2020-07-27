@@ -33325,17 +33325,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    return NULL;
 }
 
-bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img)
-{
-   struct rarch_state   *p_rarch = &rarch_st;
-   return (
-            p_rarch->current_video_context.image_buffer_write
-         && p_rarch->current_video_context.image_buffer_write(
-            p_rarch->video_context_data,
-            img->frame, img->width, img->height, img->pitch,
-            img->rgb32, img->index, img->handle));
-}
-
 bool video_context_driver_get_video_output_prev(void)
 {
    struct rarch_state   *p_rarch = &rarch_st;

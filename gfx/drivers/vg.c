@@ -373,19 +373,16 @@ static void vg_copy_frame(void *data, const void *frame,
 
    if (vg->mEglImageBuf)
    {
-      gfx_ctx_image_t img_info;
       EGLImageKHR img = 0;
       bool new_egl    = false;
 
-      img_info.frame  = frame;
-      img_info.width  = width;
-      img_info.height = height;
-      img_info.pitch  = pitch;
-      img_info.rgb32  = (vg->mTexType == VG_sXRGB_8888);
-      img_info.index  = 0;
-      img_info.handle = &img;
-
-      new_egl         = video_context_driver_write_to_image_buffer(&img_info);
+      if (vg->ctx_driver->image_buffer_write)
+         new_egl      = vg->ctx_driver->image_buffer_write(
+               vg->ctx_data,
+               frame, width, height, pitch,
+               (vg->mTexType == VG_sXRGB_8888),
+               0,
+               &img);
 
       retro_assert(img != EGL_NO_IMAGE_KHR);
 

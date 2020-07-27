@@ -1416,20 +1416,16 @@ static void gl2_renderchain_copy_frame(
 #if defined(HAVE_EGL)
    if (chain->egl_images)
    {
-      gfx_ctx_image_t img_info;
       bool new_egl    = false;
       EGLImageKHR img = 0;
 
-      img_info.frame  = frame;
-      img_info.width  = width;
-      img_info.height = height;
-      img_info.pitch  = pitch;
-      img_info.index  = gl->tex_index;
-      img_info.rgb32  = (gl->base_size == 4);
-      img_info.handle = &img;
-
-      new_egl         =
-         video_context_driver_write_to_image_buffer(&img_info);
+      if (gl->ctx_driver->image_buffer_write)
+         new_egl      =  gl->ctx_driver->image_buffer_write(
+               gl->ctx_data,
+               frame, width, height, pitch,
+               (gl->base_size == 4),
+               gl->tex_index,
+               &img);
 
       if (img == EGL_NO_IMAGE_KHR)
       {

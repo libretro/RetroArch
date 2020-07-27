@@ -1764,8 +1764,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(
       enum gfx_ctx_api api, unsigned major, unsigned minor,
       bool hw_render_ctx, void **ctx_data);
 
-bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img);
-
 bool video_context_driver_get_video_output_prev(void);
 
 bool video_context_driver_get_video_output_next(void);
