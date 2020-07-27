@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <limits.h>
 #include <boolean.h>
 #include <retro_common_api.h>
 
@@ -2944,7 +2945,10 @@ enum msg_hash_enums
    MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
    MSG_MANUAL_CONTENT_SCAN_END,
 
-   MSG_LAST
+   MSG_LAST,
+
+   /* Ensure sizeof(enum) == sizeof(int) */
+   MSG_DUMMY          = INT_MAX
 };
 
 /* Callback strings */
