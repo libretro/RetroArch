@@ -33516,8 +33516,6 @@ bool video_driver_has_windowed(void)
    struct rarch_state      *p_rarch = &rarch_st;
    if (p_rarch->video_driver_data && p_rarch->current_video->has_windowed)
       return p_rarch->current_video->has_windowed(p_rarch->video_driver_data);
-   else if (p_rarch->video_context_data)
-      return p_rarch->current_video_context.has_windowed;
 #endif
    return false;
 }

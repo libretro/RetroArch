@@ -2945,6 +2945,14 @@ static void vulkan_get_overlay_interface(void *data,
 static bool vulkan_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
+static bool vulkan_has_windowed(void *data)
+{
+   vk_t *vk        = (vk_t*)data;
+   if (vk && vk->ctx_driver)
+      return vk->ctx_driver->has_windowed;
+   return false;
+}
+
 video_driver_t video_vulkan = {
    vulkan_init,
    vulkan_frame,
@@ -2952,7 +2960,7 @@ video_driver_t video_vulkan = {
    vulkan_alive,
    NULL,                         /* focus */
    vulkan_suppress_screensaver,
-   NULL,                         /* has_windowed */
+   vulkan_has_windowed,
    vulkan_set_shader,
    vulkan_free,
    "vulkan",

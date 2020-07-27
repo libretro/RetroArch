@@ -2296,6 +2296,14 @@ static unsigned gl_core_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
+static bool gl_core_has_windowed(void *data)
+{
+   gl_core_t *gl        = (gl_core_t*)data;
+   if (gl && gl->ctx_driver)
+      return gl->ctx_driver->has_windowed;
+   return false;
+}
+
 video_driver_t video_gl_core = {
    gl_core_init,
    gl_core_frame,
@@ -2303,7 +2311,7 @@ video_driver_t video_gl_core = {
    gl_core_alive,
    NULL,                    /* focus */
    gl_core_suppress_screensaver,
-   NULL,                    /* has_windowed */
+   gl_core_has_windowed,
 
    gl_core_set_shader,
 

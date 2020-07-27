@@ -482,6 +482,14 @@ static bool vg_set_shader(void *data,
 static void vg_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { }
 
+static bool vg_has_windowed(void *data)
+{
+   vg_t            *vg  = (vg_t*)data;
+   if (vg && vg->ctx_driver)
+      return vg->ctx_driver->has_windowed;
+   return false;
+}
+
 video_driver_t video_vg = {
    vg_init,
    vg_frame,
@@ -489,7 +497,7 @@ video_driver_t video_vg = {
    vg_alive,
    NULL,                      /* focused */
    vg_suppress_screensaver,
-   NULL,                      /* has_windowed */
+   vg_has_windowed,
    vg_set_shader,
    vg_free,
    "vg",

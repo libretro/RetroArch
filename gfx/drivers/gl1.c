@@ -1538,6 +1538,14 @@ static void gl1_get_overlay_interface(void *data,
 
 #endif
 
+static bool gl1_has_windowed(void *data)
+{
+   gl1_t *gl        = (gl1_t*)data;
+   if (gl && gl->ctx_driver)
+      return gl->ctx_driver->has_windowed;
+   return false;
+}
+
 video_driver_t video_gl1 = {
    gl1_gfx_init,
    gl1_gfx_frame,
@@ -1545,7 +1553,7 @@ video_driver_t video_gl1 = {
    gl1_gfx_alive,
    gl1_gfx_focus,
    gl1_gfx_suppress_screensaver,
-   NULL, /* has_windowed */
+   gl1_has_windowed,
    gl1_gfx_set_shader,
    gl1_gfx_free,
    "gl1",

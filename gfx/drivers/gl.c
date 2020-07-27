@@ -4565,6 +4565,14 @@ static bool gl2_gfx_widgets_enabled(void *data)
 }
 #endif
 
+static bool gl2_has_windowed(void *data)
+{
+   gl_t *gl        = (gl_t*)data;
+   if (gl && gl->ctx_driver)
+      return gl->ctx_driver->has_windowed;
+   return false;
+}
+
 video_driver_t video_gl2 = {
    gl2_init,
    gl2_frame,
@@ -4572,7 +4580,7 @@ video_driver_t video_gl2 = {
    gl2_alive,
    NULL,                    /* focus */
    gl2_suppress_screensaver,
-   NULL,                    /* has_windowed */
+   gl2_has_windowed,
 
    gl2_set_shader,
 
