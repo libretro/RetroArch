@@ -33501,6 +33501,18 @@ static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
    return true;
 }
 
+gfx_ctx_flags_t video_driver_get_flags_wrapper(void)
+{
+   gfx_ctx_flags_t flags;
+   struct rarch_state *p_rarch = &rarch_st;
+   flags.flags                 = 0;
+
+   if (!video_driver_get_flags(&flags))
+      video_context_driver_get_flags(&flags);
+
+   return flags;
+}
+
 /**
  * video_driver_test_all_flags:
  * @testflag          : flag to test

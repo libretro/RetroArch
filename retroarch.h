@@ -1812,6 +1812,8 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_driver_test_all_flags(enum display_flags testflag);
 
+gfx_ctx_flags_t video_driver_get_flags_wrapper(void);
+
 void video_driver_set_gpu_device_string(const char *str);
 
 const char* video_driver_get_gpu_device_string(void);

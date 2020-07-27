@@ -1285,10 +1285,10 @@ bool core_info_hw_api_supported(core_info_t *info)
 #ifdef RARCH_INTERNAL
    unsigned i;
    enum gfx_ctx_api sys_api;
-   gfx_ctx_flags_t sys_flags       = {0};
-   const char *sys_api_version_str = video_driver_get_gpu_api_version_string();
    int sys_api_version_major       = 0;
    int sys_api_version_minor       = 0;
+   const char *sys_api_version_str = video_driver_get_gpu_api_version_string();
+   gfx_ctx_flags_t sys_flags       = video_driver_get_flags_wrapper();
 
    enum api_parse_state
    {
@@ -1301,7 +1301,6 @@ bool core_info_hw_api_supported(core_info_t *info)
       return true;
 
    sys_api = video_context_driver_get_api();
-   video_context_driver_get_flags(&sys_flags);
 
    for (i = 0; i < info->required_hw_api_list->size; i++)
    {
