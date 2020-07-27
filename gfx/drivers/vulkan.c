@@ -2953,12 +2953,20 @@ static bool vulkan_has_windowed(void *data)
    return false;
 }
 
+static bool vulkan_focus(void *data)
+{
+   vk_t *vk        = (vk_t*)data;
+   if (vk && vk->ctx_driver && vk->ctx_driver->has_focus)
+      return vk->ctx_driver->has_focus(vk->ctx_data);
+   return true;
+}
+
 video_driver_t video_vulkan = {
    vulkan_init,
    vulkan_frame,
    vulkan_set_nonblock_state,
    vulkan_alive,
-   NULL,                         /* focus */
+   vulkan_focus,
    vulkan_suppress_screensaver,
    vulkan_has_windowed,
    vulkan_set_shader,

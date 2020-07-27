@@ -2304,12 +2304,20 @@ static bool gl_core_has_windowed(void *data)
    return false;
 }
 
+static bool gl_core_focus(void *data)
+{
+   gl_core_t *gl        = (gl_core_t*)data;
+   if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
+      return gl->ctx_driver->has_focus(gl->ctx_data);
+   return true;
+}
+
 video_driver_t video_gl_core = {
    gl_core_init,
    gl_core_frame,
    gl_core_set_nonblock_state,
    gl_core_alive,
-   NULL,                    /* focus */
+   gl_core_focus,
    gl_core_suppress_screensaver,
    gl_core_has_windowed,
 

@@ -4573,12 +4573,20 @@ static bool gl2_has_windowed(void *data)
    return false;
 }
 
+static bool gl2_focus(void *data)
+{
+   gl_t *gl        = (gl_t*)data;
+   if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
+      return gl->ctx_driver->has_focus(gl->ctx_data);
+   return true;
+}
+
 video_driver_t video_gl2 = {
    gl2_init,
    gl2_frame,
    gl2_set_nonblock_state,
    gl2_alive,
-   NULL,                    /* focus */
+   gl2_focus,
    gl2_suppress_screensaver,
    gl2_has_windowed,
 

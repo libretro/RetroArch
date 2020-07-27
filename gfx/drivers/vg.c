@@ -490,12 +490,20 @@ static bool vg_has_windowed(void *data)
    return false;
 }
 
+static bool vg_focus(void *data)
+{
+   vg_t            *vg  = (vg_t*)data;
+   if (vg && vg->ctx_driver && vg->ctx_driver->has_focus)
+      return vg->ctx_driver->has_focus(vg->ctx_data);
+   return true;
+}
+
 video_driver_t video_vg = {
    vg_init,
    vg_frame,
    vg_set_nonblock_state,
    vg_alive,
-   NULL,                      /* focused */
+   vg_focus,
    vg_suppress_screensaver,
    vg_has_windowed,
    vg_set_shader,

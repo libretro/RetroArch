@@ -968,7 +968,9 @@ static bool gl1_gfx_alive(void *data)
 
 static bool gl1_gfx_focus(void *data)
 {
-   (void)data;
+   gl1_t *gl        = (gl1_t*)data;
+   if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
+      return gl->ctx_driver->has_focus(gl->ctx_data);
    return true;
 }
 
