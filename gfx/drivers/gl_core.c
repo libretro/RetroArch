@@ -2184,20 +2184,28 @@ static void gl_core_set_texture_enable(void *data, bool state, bool full_screen)
 static void gl_core_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_size_t size_data;
-   size_data.width  = width;
-   size_data.height = height;
-   video_context_driver_get_video_output_size(&size_data);
+   gl_core_t   *gl = (gl_core_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
+      return;
+   gl->ctx_driver->get_video_output_size(
+         gl->ctx_data,
+         width, height);
 }
 
 static void gl_core_get_video_output_prev(void *data)
 {
-   video_context_driver_get_video_output_prev();
+   gl_core_t   *gl = (gl_core_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_prev)
+      return;
+   gl->ctx_driver->get_video_output_prev(gl->ctx_data);
 }
 
 static void gl_core_get_video_output_next(void *data)
 {
-   video_context_driver_get_video_output_next();
+   gl_core_t   *gl = (gl_core_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_next)
+      return;
+   gl->ctx_driver->get_video_output_next(gl->ctx_data);
 }
 
 static uintptr_t gl_core_get_current_framebuffer(void *data)

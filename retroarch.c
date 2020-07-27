@@ -31922,6 +31922,27 @@ bool video_driver_supports_rgba(void)
    return tmp;
 }
 
+static bool video_context_driver_get_video_output_prev(void)
+{
+   struct rarch_state   *p_rarch = &rarch_st;
+   if (!p_rarch->current_video_context.get_video_output_prev)
+      return false;
+   p_rarch->current_video_context.get_video_output_prev(
+         p_rarch->video_context_data);
+   return true;
+}
+
+static bool video_context_driver_get_video_output_next(void)
+{
+   struct rarch_state   *p_rarch = &rarch_st;
+   if (!p_rarch->current_video_context.get_video_output_next)
+      return false;
+   p_rarch->current_video_context.get_video_output_next(
+         p_rarch->video_context_data);
+   return true;
+}
+
+
 bool video_driver_get_next_video_out(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -31941,7 +31962,9 @@ bool video_driver_get_prev_video_out(void)
       return false;
 
    if (!p_rarch->video_driver_poke->get_video_output_prev)
+   {
       return video_context_driver_get_video_output_prev();
+   }
    p_rarch->video_driver_poke->get_video_output_prev(p_rarch->video_driver_data);
    return true;
 }
@@ -33325,26 +33348,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    return NULL;
 }
 
-bool video_context_driver_get_video_output_prev(void)
-{
-   struct rarch_state   *p_rarch = &rarch_st;
-   if (!p_rarch->current_video_context.get_video_output_prev)
-      return false;
-   p_rarch->current_video_context.get_video_output_prev(
-         p_rarch->video_context_data);
-   return true;
-}
-
-bool video_context_driver_get_video_output_next(void)
-{
-   struct rarch_state   *p_rarch = &rarch_st;
-   if (!p_rarch->current_video_context.get_video_output_next)
-      return false;
-   p_rarch->current_video_context.get_video_output_next(
-         p_rarch->video_context_data);
-   return true;
-}
-
 void video_context_driver_free(void)
 {
    struct rarch_state   *p_rarch = &rarch_st;
@@ -33352,19 +33355,6 @@ void video_context_driver_free(void)
       p_rarch->current_video_context.destroy(p_rarch->video_context_data);
    video_context_driver_destroy();
    p_rarch->video_context_data    = NULL;
-}
-
-bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
-{
-   struct rarch_state   *p_rarch = &rarch_st;
-   if (!size_data)
-      return false;
-   if (!p_rarch->current_video_context.get_video_output_size)
-      return false;
-   p_rarch->current_video_context.get_video_output_size(
-         p_rarch->video_context_data,
-         size_data->width, size_data->height);
-   return true;
 }
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
