@@ -3895,6 +3895,10 @@ MSG_HASH(
    "rgui_extended_ascii"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_RGUI_SWITCH_ICONS,
+   "rgui_switch_icons"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,
    "menu_show_rewind_settings"
    )
