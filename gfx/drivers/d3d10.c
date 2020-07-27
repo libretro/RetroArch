@@ -1564,18 +1564,8 @@ static bool d3d10_gfx_alive(void* data)
    return !quit;
 }
 
-static bool d3d10_gfx_suppress_screensaver(void* data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool d3d10_gfx_has_windowed(void* data)
-{
-   (void)data;
-   return true;
-}
+static bool d3d10_gfx_suppress_screensaver(void* data, bool enable) { return false; }
+static bool d3d10_gfx_has_windowed(void* data) { return true; }
 
 static struct video_shader* d3d10_gfx_get_current_shader(void* data)
 {

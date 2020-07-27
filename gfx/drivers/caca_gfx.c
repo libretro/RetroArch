@@ -168,11 +168,6 @@ static bool caca_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void caca_gfx_set_nonblock_state(void *data, bool a,
-      bool b, unsigned c)
-{
-}
-
 static bool caca_gfx_alive(void *data)
 {
    caca_t *caca              = (caca_t*)data;
@@ -180,24 +175,11 @@ static bool caca_gfx_alive(void *data)
    return true;
 }
 
-static bool caca_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool caca_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool caca_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
+static void caca_gfx_set_nonblock_state(void *data, bool a,
+      bool b, unsigned c) { }
+static bool caca_gfx_focus(void *data) { return true; }
+static bool caca_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool caca_gfx_has_windowed(void *data) { return true; }
 
 static void caca_gfx_free(void *data)
 {

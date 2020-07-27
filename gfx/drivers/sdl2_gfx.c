@@ -689,24 +689,13 @@ static void sdl2_poke_set_osd_msg(void *data,
    sdl2_render_msg(vid, msg);
 }
 
-static void sdl2_show_mouse(void *data, bool state)
-{
-   (void)data;
-   SDL_ShowCursor(state);
-}
-
+static void sdl2_show_mouse(void *data, bool state) { SDL_ShowCursor(state); }
 static void sdl2_grab_mouse_toggle(void *data)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
 }
-
-static uint32_t sdl2_get_flags(void *data)
-{
-   uint32_t             flags   = 0;
-
-   return flags;
-}
+static uint32_t sdl2_get_flags(void *data) { return 0; }
 
 static video_poke_interface_t sdl2_video_poke_interface = {
    sdl2_get_flags,

@@ -945,7 +945,6 @@ static const video_overlay_interface_t vita2d_overlay_interface = {
 
 static void vita2d_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
 {
-   (void)data;
    *iface = &vita2d_overlay_interface;
 }
 #endif

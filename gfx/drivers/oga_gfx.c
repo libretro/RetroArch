@@ -359,41 +359,26 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
         vid->menu_frame = frame_output;
 }
 
-static void oga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d)
-{
-}
+static void oga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool oga_gfx_alive(void *data)
 {
     return !frontend_driver_get_signal_handler_state();
 }
 
-static bool oga_gfx_focus(void *data)
-{
-    (void)data;
-    return true;
-}
-
-static bool oga_gfx_suppress_screensaver(void *data, bool enable)
-{
-    (void)data;
-    (void)enable;
-    return false;
-}
-
-static bool oga_gfx_has_windowed(void *data)
-{
-    (void)data;
-    return false;
-}
+static bool oga_gfx_focus(void *data) { return true; }
+static bool oga_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool oga_gfx_has_windowed(void *data) { return false; }
 
 static void oga_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
     oga_video_t *vid = (oga_video_t*)data;
-    vp->x = 0;
-    vp->y = 0;
-    vp->width = vp->full_width = NATIVE_WIDTH;
-    vp->height = vp->full_height = NATIVE_HEIGHT;
+    vp->x            = 0;
+    vp->y            = 0;
+    vp->width        = NATIVE_WIDTH;
+    vp->full_width   = NATIVE_WIDTH;
+    vp->height       = NATIVE_HEIGHT;
+    vp->full_height  = NATIVE_HEIGHT;
 }
 
 static const video_poke_interface_t oga_poke_interface = {
@@ -423,7 +408,6 @@ static const video_poke_interface_t oga_poke_interface = {
 void oga_set_rotation(void *data, unsigned rotation)
 {
    /* called before init? */
-   (void)data;
    switch (rotation)
    {
       case 0:
@@ -444,9 +428,9 @@ void oga_set_rotation(void *data, unsigned rotation)
    }
 }
 
-static void oga_get_poke_interface(void *data, const video_poke_interface_t **iface)
+static void oga_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
 {
-    (void)data;
     *iface = &oga_poke_interface;
 }
 

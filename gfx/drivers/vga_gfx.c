@@ -356,12 +356,7 @@ static void vga_set_texture_frame(void *data,
    }
 }
 
-static uint32_t vga_get_flags(void *data)
-{
-   uint32_t flags = 0;
-
-   return flags;
-}
+static uint32_t vga_get_flags(void *data) { return 0; }
 
 static const video_poke_interface_t vga_poke_interface = {
    vga_get_flags,
@@ -388,16 +383,9 @@ static const video_poke_interface_t vga_poke_interface = {
 };
 
 static void vga_gfx_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
-{
-   (void)data;
-   *iface = &vga_poke_interface;
-}
-
+      const video_poke_interface_t **iface) { *iface = &vga_poke_interface; }
 void vga_gfx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-}
+      unsigned viewport_height, bool force_full, bool allow_rotate) { }
 
 video_driver_t video_vga = {
    vga_gfx_init,

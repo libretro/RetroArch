@@ -1998,23 +1998,18 @@ static const video_poke_interface_t d3d9_poke_interface = {
 static void d3d9_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &d3d9_poke_interface;
 }
 
-static bool d3d9_has_windowed(void *data)
-{
 #ifdef _XBOX
-   return false;
+static bool d3d9_has_windowed(void *data) { return false; }
 #else
-   return true;
+static bool d3d9_has_windowed(void *data) { return true; }
 #endif
-}
 
 #ifdef HAVE_GFX_WIDGETS
 static bool d3d9_gfx_widgets_enabled(void *data)
 {
-   (void)data;
    return false; /* currently disabled due to memory issues */
 }
 #endif

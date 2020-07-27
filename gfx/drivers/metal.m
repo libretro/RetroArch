@@ -208,24 +208,12 @@ static void metal_set_nonblock_state(void *data, bool non_block,
    md.context.displaySyncEnabled = !non_block;
 }
 
-static bool metal_alive(void *data)
-{
-   return true;
-}
-
-static bool metal_has_windowed(void *data)
-{
-   return true;
-}
-
-static bool metal_focus(void *data)
-{
-   return apple_platform.hasFocus;
-}
+static bool metal_alive(void *data) { return true; }
+static bool metal_has_windowed(void *data) { return true; }
+static bool metal_focus(void *data) { return apple_platform.hasFocus; }
 
 static bool metal_suppress_screensaver(void *data, bool disable)
 {
-   RARCH_LOG("[Metal]: suppress screen saver: %s\n", disable ? "YES" : "NO");
    return [apple_platform setDisableDisplaySleep:disable];
 }
 

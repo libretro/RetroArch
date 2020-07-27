@@ -505,24 +505,9 @@ static bool gdi_gfx_alive(void *data)
    return ret;
 }
 
-static bool gdi_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gdi_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool gdi_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool gdi_gfx_focus(void *data) { return true; }
+static bool gdi_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool gdi_gfx_has_windowed(void *data) { return true; }
 
 static void gdi_gfx_free(void *data)
 {

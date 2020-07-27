@@ -1633,18 +1633,8 @@ static bool d3d12_gfx_alive(void* data)
    return !quit;
 }
 
-static bool d3d12_gfx_suppress_screensaver(void* data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool d3d12_gfx_has_windowed(void* data)
-{
-   (void)data;
-   return true;
-}
+static bool d3d12_gfx_suppress_screensaver(void* data, bool enable) { return false; }
+static bool d3d12_gfx_has_windowed(void* data) { return true; }
 
 static struct video_shader* d3d12_gfx_get_current_shader(void* data)
 {
@@ -1878,11 +1868,7 @@ static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_
 }
 
 #ifdef HAVE_GFX_WIDGETS
-static bool d3d12_gfx_widgets_enabled(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool d3d12_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
 video_driver_t video_d3d12 = {

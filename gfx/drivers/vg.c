@@ -478,21 +478,9 @@ static bool vg_suppress_screensaver(void *data, bool enable)
 }
 
 static bool vg_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
-
+      enum rarch_shader_type type, const char *path) { return false; }
 static void vg_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
-{
-   (void)data;
-   (void)iface;
-}
+      const video_poke_interface_t **iface) { }
 
 video_driver_t video_vg = {
    vg_init,

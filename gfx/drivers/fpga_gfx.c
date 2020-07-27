@@ -251,24 +251,9 @@ static bool fpga_gfx_alive(void *data)
    return true;
 }
 
-static bool fpga_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool fpga_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool fpga_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool fpga_gfx_focus(void *data) { return true; }
+static bool fpga_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool fpga_gfx_has_windowed(void *data) { return true; }
 
 static void fpga_gfx_free(void *data)
 {

@@ -1640,18 +1640,8 @@ static bool d3d11_gfx_alive(void* data)
    return !quit;
 }
 
-static bool d3d11_gfx_suppress_screensaver(void* data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool d3d11_gfx_has_windowed(void* data)
-{
-   (void)data;
-   return true;
-}
+static bool d3d11_gfx_suppress_screensaver(void* data, bool enable) { return false; }
+static bool d3d11_gfx_has_windowed(void* data) { return true; }
 
 static struct video_shader* d3d11_gfx_get_current_shader(void* data)
 {
@@ -1803,11 +1793,12 @@ static void d3d11_gfx_unload_texture(void* data,
    free(texture);
 }
 
-   static bool
-d3d11_get_hw_render_interface(void* data, const struct retro_hw_render_interface** iface)
+static bool d3d11_get_hw_render_interface(
+      void* data, const struct retro_hw_render_interface** iface)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-   *iface               = (const struct retro_hw_render_interface*)&d3d11->hw.iface;
+   *iface               = (const struct retro_hw_render_interface*)
+      &d3d11->hw.iface;
    return d3d11->hw.enable;
 }
 
@@ -1872,17 +1863,14 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_get_hw_render_interface,
 };
 
-static void d3d11_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
+static void d3d11_gfx_get_poke_interface(void* data,
+      const video_poke_interface_t** iface)
 {
    *iface = &d3d11_poke_interface;
 }
 
 #if defined(HAVE_GFX_WIDGETS)
-static bool d3d11_gfx_widgets_enabled(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool d3d11_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
 video_driver_t video_d3d11 = {

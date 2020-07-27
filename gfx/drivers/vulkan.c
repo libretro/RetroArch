@@ -2938,19 +2938,11 @@ static const video_overlay_interface_t vulkan_overlay_interface = {
 };
 
 static void vulkan_get_overlay_interface(void *data,
-      const video_overlay_interface_t **iface)
-{
-   (void)data;
-   *iface = &vulkan_overlay_interface;
-}
+      const video_overlay_interface_t **iface) { *iface = &vulkan_overlay_interface; }
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-static bool vulkan_gfx_widgets_enabled(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool vulkan_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
 video_driver_t video_vulkan = {

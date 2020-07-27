@@ -252,43 +252,19 @@ static bool xenon360_gfx_frame(void *data,
    return true;
 }
 
-static void xenon360_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
-
 static bool xenon360_gfx_alive(void *data)
 {
    xenos_t *xenos = (xenos_t*)data;
    return !xenos->quitting;
 }
 
-static bool xenon360_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool xenon360_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
+static void xenon360_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool xenon360_gfx_focus(void *data) { return true; }
+static bool xenon360_gfx_suppress_screensaver(void *data, bool enable) { return false; }
 static bool xenon360_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
-
+      enum rarch_shader_type type, const char *path) { return false; }
 static void xenon360_gfx_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
-{
-   (void)data;
-   (void)iface;
-}
+      const video_poke_interface_t **iface) { }
 
 video_driver_t video_xenon360 = {
    xenon360_gfx_init,

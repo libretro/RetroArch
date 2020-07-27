@@ -424,14 +424,11 @@ static bool sdl_gfx_alive(void *data)
 
 static bool sdl_gfx_focus(void *data)
 {
-   (void)data;
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
 static bool sdl_gfx_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
-   (void)enable;
 #ifdef HAVE_X11
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
    {
@@ -443,13 +440,8 @@ static bool sdl_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool sdl_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   /* TODO - implement. */
-   return true;
-}
+/* TODO/FIXME - implement */
+static bool sdl_gfx_has_windowed(void *data) { return true; }
 
 static void sdl_gfx_viewport_info(void *data, struct video_viewport *vp)
 {

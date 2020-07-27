@@ -484,30 +484,10 @@ static void switch_set_nonblock_state(void *data, bool toggle, bool c, unsigned 
     sw->vsync = !toggle;
 }
 
-static bool switch_alive(void *data)
-{
-    (void)data;
-    return true;
-}
-
-static bool switch_focus(void *data)
-{
-    (void)data;
-    return true;
-}
-
-static bool switch_suppress_screensaver(void *data, bool enable)
-{
-    (void)data;
-    (void)enable;
-    return false;
-}
-
-static bool switch_has_windowed(void *data)
-{
-    (void)data;
-    return false;
-}
+static bool switch_alive(void *data) { return true; }
+static bool switch_focus(void *data) { return true; }
+static bool switch_suppress_screensaver(void *data, bool enable) { return false; }
+static bool switch_has_windowed(void *data) { return false; }
 
 static void switch_free(void *data)
 {
@@ -639,42 +619,18 @@ static bool switch_overlay_load(void *data,
     if (!swa)
         return false;
 
-    swa->overlay = images;
+    swa->overlay         = images;
     swa->overlay_enabled = true;
 
     return true;
 }
 
 static void switch_overlay_tex_geom(void *data,
-            unsigned idx, float x, float y, float w, float h)
-{
-    switch_video_t *swa = (switch_video_t *)data;
-
-    if (!swa)
-        return;
-}
-
+            unsigned idx, float x, float y, float w, float h) { }
 static void switch_overlay_vertex_geom(void *data,
-            unsigned idx, float x, float y, float w, float h)
-{
-    switch_video_t *swa = (switch_video_t *)data;
-
-    if (!swa)
-        return;
-}
-
-static void switch_overlay_full_screen(void *data, bool enable)
-{
-    (void)data;
-    (void)enable;
-}
-
-static void switch_overlay_set_alpha(void *data, unsigned idx, float mod)
-{
-    (void)data;
-    (void)idx;
-    (void)mod;
-}
+            unsigned idx, float x, float y, float w, float h) { }
+static void switch_overlay_full_screen(void *data, bool enable) { }
+static void switch_overlay_set_alpha(void *data, unsigned idx, float mod) { }
 
 static const video_overlay_interface_t switch_overlay = {
     switch_overlay_enable,

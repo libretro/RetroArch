@@ -416,8 +416,6 @@ static bool sixel_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void sixel_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
-
 static bool sixel_gfx_alive(void *data)
 {
    unsigned temp_width  = 0;
@@ -435,24 +433,10 @@ static bool sixel_gfx_alive(void *data)
    return true;
 }
 
-static bool sixel_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool sixel_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool sixel_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
+static void sixel_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool sixel_gfx_focus(void *data) { return true; }
+static bool sixel_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool sixel_gfx_has_windowed(void *data) { return true; }
 
 static void sixel_gfx_free(void *data)
 {
