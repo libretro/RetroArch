@@ -1470,7 +1470,6 @@ static void vulkan_set_video_mode(void *data,
 static void vulkan_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   gfx_ctx_aspect_t aspect_data;
    int x                     = 0;
    int y                     = 0;
    float device_aspect       = (float)viewport_width / viewport_height;
@@ -1482,11 +1481,9 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    unsigned width            = vk->video_width;
    unsigned height           = vk->video_height;
 
-   aspect_data.aspect        = &device_aspect;
-   aspect_data.width         = viewport_width;
-   aspect_data.height        = viewport_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
+   if (vk->ctx_driver->translate_aspect)
+      device_aspect         = vk->ctx_driver->translate_aspect(
+            vk->ctx_data, viewport_width, viewport_height);
 
    if (video_scale_integer && !force_full)
    {

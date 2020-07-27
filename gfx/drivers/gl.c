@@ -386,18 +386,15 @@ static void gl2_set_viewport(gl_t *gl,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
 {
-   gfx_ctx_aspect_t aspect_data;
    settings_t *settings     = config_get_ptr();
    unsigned height          = gl->video_height;
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
 
-   aspect_data.aspect       = &device_aspect;
-   aspect_data.width        = viewport_width;
-   aspect_data.height       = viewport_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
+   if (gl->ctx_driver->translate_aspect)
+      device_aspect         = gl->ctx_driver->translate_aspect(
+            gl->ctx_data, viewport_width, viewport_height);
 
    if (settings->bools.video_scale_integer && !force_full)
    {

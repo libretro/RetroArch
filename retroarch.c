@@ -33328,14 +33328,12 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img)
 {
    struct rarch_state   *p_rarch = &rarch_st;
-   if (
+   return (
             p_rarch->current_video_context.image_buffer_write
          && p_rarch->current_video_context.image_buffer_write(
             p_rarch->video_context_data,
             img->frame, img->width, img->height, img->pitch,
-            img->rgb32, img->index, img->handle))
-      return true;
-   return false;
+            img->rgb32, img->index, img->handle));
 }
 
 bool video_context_driver_get_video_output_prev(void)
@@ -33356,15 +33354,6 @@ bool video_context_driver_get_video_output_next(void)
    p_rarch->current_video_context.get_video_output_next(
          p_rarch->video_context_data);
    return true;
-}
-
-void video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
-{
-   struct rarch_state   *p_rarch = &rarch_st;
-   if (!p_rarch->video_context_data || !aspect || !p_rarch->current_video_context.translate_aspect)
-      return;
-   *aspect->aspect = p_rarch->current_video_context.translate_aspect(
-         p_rarch->video_context_data, aspect->width, aspect->height);
 }
 
 void video_context_driver_free(void)

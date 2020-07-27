@@ -110,7 +110,6 @@ static void *vg_init(const video_info_t *video,
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
-   gfx_ctx_aspect_t aspect_data;
    unsigned win_width, win_height;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
    int interval                    = 0;
@@ -208,11 +207,9 @@ static void *vg_init(const video_info_t *video,
 
    vg->mScreenAspect = (float)temp_width / temp_height;
 
-   aspect_data.aspect   = &vg->mScreenAspect;
-   aspect_data.width    = temp_width;
-   aspect_data.height   = temp_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
+   if (vg->ctx_driver->translate_aspect)
+      vg->mScreenAspect = vg->ctx_driver->translate_aspect(
+            vg->ctx_data, temp_width, temp_height);
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
