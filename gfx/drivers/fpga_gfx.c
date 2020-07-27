@@ -103,7 +103,6 @@ static void fpga_gfx_create(fpga_t *fpga)
 static void *fpga_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   const gfx_ctx_driver_t *ctx_driver   = NULL;
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    *input                               = NULL;

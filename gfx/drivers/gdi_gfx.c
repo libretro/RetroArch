@@ -200,7 +200,6 @@ static void *gdi_gfx_init(const video_info_t *video,
 {
    unsigned full_x, full_y;
    void *ctx_data                       = NULL;
-   const gfx_ctx_driver_t *ctx_driver   = NULL;
    unsigned mode_width = 0, mode_height = 0;
    unsigned win_width  = 0, win_height  = 0;
    unsigned temp_width = 0, temp_height = 0;
@@ -479,10 +478,6 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void gdi_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d)
-{
-}
-
 static bool gdi_gfx_alive(void *data)
 {
    unsigned temp_width  = 0;
@@ -505,6 +500,7 @@ static bool gdi_gfx_alive(void *data)
    return ret;
 }
 
+static void gdi_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 static bool gdi_gfx_focus(void *data) { return true; }
 static bool gdi_gfx_suppress_screensaver(void *data, bool enable) { return false; }
 static bool gdi_gfx_has_windowed(void *data) { return true; }
@@ -551,14 +547,7 @@ static void gdi_gfx_free(void *data)
 }
 
 static bool gdi_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static void gdi_set_texture_enable(
       void *data, bool state, bool full_screen)
@@ -670,12 +659,7 @@ static void gdi_unload_texture(void *data,
    free(texture);
 }
 
-static uint32_t gdi_get_flags(void *data)
-{
-   uint32_t             flags   = 0;
-
-   return flags;
-}
+static uint32_t gdi_get_flags(void *data) { return 0; }
 
 static void gdi_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
@@ -722,16 +706,9 @@ static const video_poke_interface_t gdi_poke_interface = {
 };
 
 static void gdi_gfx_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
-{
-   (void)data;
-   *iface = &gdi_poke_interface;
-}
-
+      const video_poke_interface_t **iface) { *iface = &gdi_poke_interface; }
 static void gdi_gfx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-}
+      unsigned viewport_height, bool force_full, bool allow_rotate) { }
 
 video_driver_t video_gdi = {
    gdi_gfx_init,
