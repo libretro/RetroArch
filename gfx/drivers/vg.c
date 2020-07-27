@@ -142,8 +142,6 @@ static void *vg_init(const video_info_t *video,
 
    temp_width  = mode.width;
    temp_height = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
 
    RARCH_LOG("[VG]: Detecting screen resolution %ux%u.\n", temp_width, temp_height);
 
@@ -173,11 +171,9 @@ static void *vg_init(const video_info_t *video,
       win_height = temp_height;
    }
 
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
-
-   if (!video_context_driver_set_video_mode(&mode))
+   if (     !vg->ctx_driver->set_video_mode
+         || !vg->ctx_driver->set_video_mode(vg->ctx_data,
+            win_width, win_height, video->fullscreen))
       goto error;
 
    video_driver_get_size(&temp_width, &temp_height);
@@ -191,8 +187,6 @@ static void *vg_init(const video_info_t *video,
 
    temp_width        = mode.width;
    temp_height       = mode.height;
-   mode.width        = 0;
-   mode.height       = 0;
 
    vg->should_resize = true;
 

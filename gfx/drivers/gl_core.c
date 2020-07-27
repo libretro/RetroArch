@@ -1211,11 +1211,9 @@ static void *gl_core_init(const video_info_t *video,
       win_height = full_y;
    }
 
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
-
-   if (!video_context_driver_set_video_mode(&mode))
+   if (     !gl->ctx_driver->set_video_mode
+         || !gl->ctx_driver->set_video_mode(gl->ctx_data,
+            win_width, win_height, video->fullscreen))
       goto error;
 
    gl_core_context_bind_hw_render(gl, false);
@@ -1289,9 +1287,6 @@ static void *gl_core_init(const video_info_t *video,
    video_context_driver_get_video_size(&mode);
    temp_width     = mode.width;
    temp_height    = mode.height;
-
-   mode.width     = 0;
-   mode.height    = 0;
 
    /* Get real known video size, which might have been altered by context. */
 
@@ -2124,13 +2119,10 @@ static void gl_core_unload_texture(void *data, bool threaded,
 static void gl_core_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gfx_ctx_mode_t mode;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
+   gl_core_t                *gl = (gl_core_t*)data;
+   if (gl->ctx_driver->set_video_mode)
+      gl->ctx_driver->set_video_mode(gl->ctx_data,
+            width, height, fullscreen);
 }
 
 static void gl_core_show_mouse(void *data, bool state)

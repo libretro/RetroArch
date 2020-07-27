@@ -316,7 +316,9 @@ static void *gl1_gfx_init(const video_info_t *video,
       ctx_driver->swap_interval(gl1->ctx_data, interval);
    }
 
-   if (!video_context_driver_set_video_mode(&mode))
+   if (     !gl1->ctx_driver->set_video_mode
+         || !gl1->ctx_driver->set_video_mode(gl1->ctx_data,
+            win_width, win_height, video->fullscreen))
       goto error;
 
    gl1->fullscreen = video->fullscreen;
@@ -328,8 +330,6 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    temp_width     = mode.width;
    temp_height    = mode.height;
-   mode.width     = 0;
-   mode.height    = 0;
 
    /* Get real known video size, which might have been altered by context. */
 
@@ -1187,13 +1187,10 @@ static void gl1_get_video_output_next(void *data)
 static void gl1_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gfx_ctx_mode_t mode;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
+   gl1_t               *gl = (gl1_t*)data;
+   if (gl->ctx_driver->set_video_mode)
+      gl->ctx_driver->set_video_mode(gl->ctx_data,
+            width, height, fullscreen);
 }
 
 static unsigned gl1_wrap_type_to_enum(enum gfx_wrap_type type)

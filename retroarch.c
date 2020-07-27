@@ -31465,9 +31465,7 @@ bool video_driver_set_rotation(unsigned rotation)
 bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen)
 {
-   gfx_ctx_mode_t mode;
    struct rarch_state            *p_rarch = &rarch_st;
-
    if (  p_rarch->video_driver_poke &&
          p_rarch->video_driver_poke->set_video_mode)
    {
@@ -31475,12 +31473,7 @@ bool video_driver_set_video_mode(unsigned width,
             width, height, fullscreen);
       return true;
    }
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   return video_context_driver_set_video_mode(&mode);
+   return false;
 }
 
 bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
@@ -33382,16 +33375,6 @@ bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
       return false;
    ident->ident = p_rarch->current_video_context.ident;
    return true;
-}
-
-bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
-{
-   struct rarch_state      *p_rarch = &rarch_st;
-   if (!p_rarch->current_video_context.set_video_mode)
-      return false;
-   return p_rarch->current_video_context.set_video_mode(
-         p_rarch->video_context_data, mode_info->width,
-         mode_info->height, mode_info->fullscreen);
 }
 
 bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info)

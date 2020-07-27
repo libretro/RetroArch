@@ -2106,13 +2106,10 @@ static void gl2_set_rotation(void *data, unsigned rotation)
 static void gl2_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gfx_ctx_mode_t mode;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
+   gl_t               *gl = (gl_t*)data;
+   if (gl->ctx_driver->set_video_mode)
+      gl->ctx_driver->set_video_mode(gl->ctx_data,
+            width, height, fullscreen);
 }
 
 static void gl2_update_input_size(gl_t *gl, unsigned width,
@@ -3616,8 +3613,6 @@ static void *gl2_init(const video_info_t *video,
 #endif
    full_x      = mode.width;
    full_y      = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
    interval    = 0;
 
    RARCH_LOG("[GL]: Detecting screen resolution %ux%u.\n", full_x, full_y);
@@ -3643,16 +3638,16 @@ static void *gl2_init(const video_info_t *video,
       win_height = full_y;
    }
 
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
-
-   if (!video_context_driver_set_video_mode(&mode))
+   if (     !gl->ctx_driver->set_video_mode
+         || !gl->ctx_driver->set_video_mode(gl->ctx_data,
+            win_width, win_height, video->fullscreen))
       goto error;
 #if defined(__APPLE__) && !defined(IOS)
    /* This is a hack for now to work around a very annoying
     * issue that currently eludes us. */
-   if (!video_context_driver_set_video_mode(&mode))
+   if (     !gl->ctx_driver->set_video_mode
+         || !gl->ctx_driver->set_video_mode(gl->ctx_data,
+            win_width, win_height, video->fullscreen))
       goto error;
 #endif
 
@@ -3771,8 +3766,6 @@ static void *gl2_init(const video_info_t *video,
 #endif
    temp_width     = mode.width;
    temp_height    = mode.height;
-   mode.width     = 0;
-   mode.height    = 0;
 
    /* Get real known video size, which might have been altered by context. */
 
