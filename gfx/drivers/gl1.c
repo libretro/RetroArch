@@ -219,9 +219,10 @@ static void *gl1_gfx_init(const video_info_t *video,
 {
    unsigned full_x, full_y;
    gfx_ctx_input_t inp;
-   gfx_ctx_mode_t mode;
    void *ctx_data                       = NULL;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
+   unsigned mode_width                  = 0;
+   unsigned mode_height                 = 0;
    unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
@@ -269,12 +270,14 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    RARCH_LOG("[GL1]: Found GL1 context: %s\n", ctx_driver->ident);
 
-   video_context_driver_get_video_size(&mode);
+   if (gl1->ctx_driver->get_video_size)
+      gl1->ctx_driver->get_video_size(gl1->ctx_data,
+               &mode_width, &mode_height);
 
-   full_x      = mode.width;
-   full_y      = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
+   full_x      = mode_width;
+   full_y      = mode_height;
+   mode_width  = 0;
+   mode_height = 0;
 #ifdef VITA
    if (!vgl_inited)
    {
@@ -301,9 +304,8 @@ static void *gl1_gfx_init(const video_info_t *video,
       win_height = full_y;
    }
 
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
+   mode_width      = win_width;
+   mode_height     = win_height;
 
    interval = video->swap_interval;
 
@@ -323,13 +325,15 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    gl1->fullscreen = video->fullscreen;
 
-   mode.width     = 0;
-   mode.height    = 0;
+   mode_width     = 0;
+   mode_height    = 0;
 
-   video_context_driver_get_video_size(&mode);
+   if (gl1->ctx_driver->get_video_size)
+      gl1->ctx_driver->get_video_size(gl1->ctx_data,
+               &mode_width, &mode_height);
 
-   temp_width     = mode.width;
-   temp_height    = mode.height;
+   temp_width     = mode_width;
+   temp_height    = mode_height;
 
    /* Get real known video size, which might have been altered by context. */
 
@@ -686,8 +690,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   gfx_ctx_mode_t mode;
    const void *frame_to_copy = NULL;
+   unsigned mode_width       = 0;
+   unsigned mode_height      = 0;
    unsigned width            = 0;
    unsigned height           = 0;
    bool draw                 = true;
@@ -779,10 +784,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       gl1->video_height = height;
    }
 
-   video_context_driver_get_video_size(&mode);
+   if (gl1->ctx_driver->get_video_size)
+      gl1->ctx_driver->get_video_size(gl1->ctx_data,
+               &mode_width, &mode_height);
 
-   gl1->screen_width           = mode.width;
-   gl1->screen_height          = mode.height;
+   gl1->screen_width           = mode_width;
+   gl1->screen_height          = mode_height;
 
    if (draw)
    {

@@ -33377,16 +33377,6 @@ bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
    return true;
 }
 
-bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info)
-{
-   struct rarch_state      *p_rarch = &rarch_st;
-   if (!p_rarch->current_video_context.get_video_size)
-      return false;
-   p_rarch->current_video_context.get_video_size(p_rarch->video_context_data,
-         &mode_info->width, &mode_info->height);
-   return true;
-}
-
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 {
    struct rarch_state *p_rarch = &rarch_st;

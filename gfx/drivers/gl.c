@@ -3575,7 +3575,6 @@ static void *gl2_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    enum gfx_wrap_type wrap_type;
-   gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    video_shader_ctx_info_t shader_info;
@@ -3583,6 +3582,8 @@ static void *gl2_init(const video_info_t *video,
    bool video_gpu_record                = settings->bools.video_gpu_record;
    int interval                         = 0;
    unsigned mip_level                   = 0;
+   unsigned mode_width                  = 0;
+   unsigned mode_height                 = 0;
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
    unsigned temp_width                  = 0;
@@ -3606,13 +3607,16 @@ static void *gl2_init(const video_info_t *video,
 
    RARCH_LOG("[GL]: Found GL context: %s\n", ctx_driver->ident);
 
-   video_context_driver_get_video_size(&mode);
+   if (gl->ctx_driver->get_video_size)
+      gl->ctx_driver->get_video_size(gl->ctx_data,
+               &mode_width, &mode_height);
+
 #if defined(DINGUX)
-   mode.width  = 320;
-   mode.height = 240;
+   mode_width  = 320;
+   mode_height = 240;
 #endif
-   full_x      = mode.width;
-   full_y      = mode.height;
+   full_x      = mode_width;
+   full_y      = mode_height;
    interval    = 0;
 
    RARCH_LOG("[GL]: Detecting screen resolution %ux%u.\n", full_x, full_y);
@@ -3755,17 +3759,19 @@ static void *gl2_init(const video_info_t *video,
    gl->vsync      = video->vsync;
    gl->fullscreen = video->fullscreen;
 
-   mode.width     = 0;
-   mode.height    = 0;
+   mode_width     = 0;
+   mode_height    = 0;
 
-   video_context_driver_get_video_size(&mode);
+   if (gl->ctx_driver->get_video_size)
+      gl->ctx_driver->get_video_size(gl->ctx_data,
+            &mode_width, &mode_height);
 
 #if defined(DINGUX)
-   mode.width     = 320;
-   mode.height    = 240;
+   mode_width     = 320;
+   mode_height    = 240;
 #endif
-   temp_width     = mode.width;
-   temp_height    = mode.height;
+   temp_width     = mode_width;
+   temp_height    = mode_height;
 
    /* Get real known video size, which might have been altered by context. */
 

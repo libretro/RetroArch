@@ -1164,11 +1164,12 @@ static void *vulkan_init(const video_info_t *video,
       input_driver_t **input,
       void **input_data)
 {
-   gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    unsigned win_width;
    unsigned win_height;
+   unsigned mode_width                = 0;
+   unsigned mode_height               = 0;
    int interval                       = 0;
    unsigned temp_width                = 0;
    unsigned temp_height               = 0;
@@ -1190,11 +1191,14 @@ static void *vulkan_init(const video_info_t *video,
    
    RARCH_LOG("[Vulkan]: Found vulkan context: %s\n", ctx_driver->ident);
 
-   video_context_driver_get_video_size(&mode);
-   full_x                             = mode.width;
-   full_y                             = mode.height;
-   mode.width                         = 0;
-   mode.height                        = 0;
+   if (vk->ctx_driver->get_video_size)
+      vk->ctx_driver->get_video_size(vk->ctx_data,
+            &mode_width, &mode_height);
+
+   full_x                             = mode_width;
+   full_y                             = mode_height;
+   mode_width                         = 0;
+   mode_height                        = 0;
 
    RARCH_LOG("[Vulkan]: Detecting screen resolution %ux%u.\n", full_x, full_y);
    interval = video->vsync ? video->swap_interval : 0;
@@ -1225,9 +1229,12 @@ static void *vulkan_init(const video_info_t *video,
       goto error;
    }
 
-   video_context_driver_get_video_size(&mode);
-   temp_width  = mode.width;
-   temp_height = mode.height;
+   if (vk->ctx_driver->get_video_size)
+      vk->ctx_driver->get_video_size(vk->ctx_data,
+            &mode_width, &mode_height);
+
+   temp_width  = mode_width;
+   temp_height = mode_height;
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(temp_width, temp_height);

@@ -1770,8 +1770,6 @@ void video_context_driver_destroy(void);
 
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident);
 
-bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
-
 bool video_context_driver_get_refresh_rate(float *refresh_rate);
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);

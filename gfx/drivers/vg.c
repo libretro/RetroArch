@@ -108,11 +108,12 @@ static INLINE bool vg_query_extension(const char *ext)
 static void *vg_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned win_width, win_height;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
    int interval                    = 0;
+   unsigned mode_width             = 0;
+   unsigned mode_height            = 0;
    unsigned temp_width             = 0;
    unsigned temp_height            = 0;
    void *ctx_data                  = NULL;
@@ -138,10 +139,12 @@ static void *vg_init(const video_info_t *video,
    vg->ctx_driver = ctx;
    video_context_driver_set((void*)ctx);
 
-   video_context_driver_get_video_size(&mode);
+   if (vg->ctx_driver->get_video_size)
+      vg->ctx_driver->get_video_size(vg->ctx_data,
+               &mode_width, &mode_height);
 
-   temp_width  = mode.width;
-   temp_height = mode.height;
+   temp_width  = mode_width;
+   temp_height = mode_height;
 
    RARCH_LOG("[VG]: Detecting screen resolution %ux%u.\n", temp_width, temp_height);
 
@@ -180,13 +183,15 @@ static void *vg_init(const video_info_t *video,
 
    temp_width        = 0;
    temp_height       = 0;
-   mode.width        = 0;
-   mode.height       = 0;
+   mode_width        = 0;
+   mode_height       = 0;
 
-   video_context_driver_get_video_size(&mode);
+   if (vg->ctx_driver->get_video_size)
+      vg->ctx_driver->get_video_size(vg->ctx_data,
+               &mode_width, &mode_height);
 
-   temp_width        = mode.width;
-   temp_height       = mode.height;
+   temp_width        = mode_width;
+   temp_height       = mode_height;
 
    vg->should_resize = true;
 
