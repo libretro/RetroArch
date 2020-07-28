@@ -294,6 +294,19 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
          svcCloseHandle(lcd_handle);
       }
    }
+   
+   if (menu_driver_is_alive())
+   {
+      return;
+   }
+   else if ((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONSLEEP))
+   {
+      command_event(CMD_EVENT_AUDIO_STOP, NULL);
+   }
+   else if ((hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
+   {
+      command_event(CMD_EVENT_AUDIO_START, NULL);
+   }
 }
 
 static void ctr_vsync_hook(ctr_video_t* ctr)
