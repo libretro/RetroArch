@@ -73,7 +73,7 @@ bool video_display_server_set_window_decorations(bool on);
 
 bool video_display_server_set_resolution(
       unsigned width, unsigned height,
-      int int_hz, float hz, int center, int monitor_index, int xoffset);
+      int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust);
 
 void *video_display_server_get_resolution_list(unsigned *size);
 
