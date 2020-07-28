@@ -30518,13 +30518,13 @@ bool video_display_server_set_window_decorations(bool on)
 }
 
 bool video_display_server_set_resolution(unsigned width, unsigned height,
-      int int_hz, float hz, int center, int monitor_index, int xoffset)
+      int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             p_rarch->current_display_server_data, width, height, int_hz,
-            hz, center, monitor_index, xoffset);
+            hz, center, monitor_index, xoffset, padjust);
    return false;
 }
 
@@ -32833,6 +32833,7 @@ static void video_driver_frame(const void *data, unsigned width,
             p_rarch->video_driver_core_hz,
             video_info.crt_switch_resolution,
             video_info.crt_switch_center_adjust,
+            video_info.crt_switch_porch_adjust,
             video_info.monitor_index,
             p_rarch->video_driver_crt_dynamic_super_width);
    }
@@ -32944,6 +32945,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
+   video_info->crt_switch_porch_adjust    = settings->ints.crt_switch_porch_adjust;
    video_info->black_frame_insertion       = settings->bools.video_black_frame_insertion;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;

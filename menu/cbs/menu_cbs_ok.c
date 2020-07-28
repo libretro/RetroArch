@@ -5634,7 +5634,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       refreshrate = (unsigned)strtoul(pch, NULL, 0);
 
    if (video_display_server_set_resolution(width, height,
-         refreshrate, (float)refreshrate, 0, 0, 0))
+         refreshrate, (float)refreshrate, 0, 0, 0, 0))
    {
       settings_t *settings = config_get_ptr();
 

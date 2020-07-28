@@ -2909,6 +2909,10 @@ MSG_HASH(
 	  "crt_switch_center_adjust"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,
+	  "crt_switch_porch_adjust"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
    "video_aspect_ratio"
    )

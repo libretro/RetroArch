@@ -1141,6 +1141,7 @@ typedef struct video_frame_info
    int custom_vp_x;
    int custom_vp_y;
    int crt_switch_center_adjust;
+   int crt_switch_porch_adjust;
 
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;
