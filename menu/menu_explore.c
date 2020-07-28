@@ -499,12 +499,7 @@ static void explore_build_list(void)
    const char *directory_database           = settings->paths.path_content_database;
    libretro_vfs_implementation_dir *dir     = NULL;
 
-   if (explore_state)
-   {
-      explore_free(explore_state);
-      free(explore_state);
-      explore_state = NULL;
-   }
+   menu_explore_free();
 
    explore_state                            = (explore_state_t*)calloc(
          1, sizeof(explore_state_t));
@@ -744,7 +739,10 @@ static void explore_build_list(void)
    {
       uint32_t idx;
       size_t len = EX_BUF_LEN(explore_state->by[i]);
-      qsort(explore_state->by[i], len, sizeof(*explore_state->by[i]), explore_qsort_func_strings);
+
+      if (explore_state->by[i])
+         qsort(explore_state->by[i], len, sizeof(*explore_state->by[i]), explore_qsort_func_strings);
+
       for (idx = 0; idx != len; idx++)
          explore_state->by[i][idx]->idx = idx;
 
@@ -1160,4 +1158,14 @@ SKIP_ENTRY:;
    }
 
    return list->size;
+}
+
+void menu_explore_free(void)
+{
+   if (explore_state)
+   {
+      explore_free(explore_state);
+      free(explore_state);
+      explore_state = NULL;
+   }
 }

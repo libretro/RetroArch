@@ -7355,6 +7355,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #ifdef HAVE_NETWORKING
          core_updater_list_free_cached();
 #endif
+#ifdef HAVE_LIBRETRODB
+         menu_explore_free();
+#endif
 
          if (p_rarch->menu_driver_data)
          {

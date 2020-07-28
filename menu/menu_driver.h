@@ -474,6 +474,8 @@ void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
 
+void menu_explore_free(void);
+
 menu_handle_t *menu_driver_get_ptr(void);
 
 enum action_iterate_type
