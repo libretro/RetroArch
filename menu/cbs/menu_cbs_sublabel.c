@@ -1129,20 +1129,29 @@ static int action_bind_sublabel_audio_mixer_stream(
                sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_STOPPED:
-         strlcpy(msg, "Stopped", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_STOPPED),
+               sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING:
-         strlcpy(msg, "Playing", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_PLAYING),
+               sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-         strlcpy(msg, "Playing (Looped)", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_PLAYING_LOOPED),
+               sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-         strlcpy(msg, "Playing (Sequential)", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_PLAYING_SEQUENTIAL),
+               sizeof(msg));
          break;
    }
 
-   snprintf(s, len, "State : %s | %s: %.2f dB", msg,
+   snprintf(s, len, "%s: %s | %s: %.2f dB", msg,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STATE),
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
          stream->volume);
    return 0;

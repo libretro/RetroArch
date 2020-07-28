@@ -1993,8 +1993,32 @@ MSG_HASH(
    "Volume"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STATE,
+   "State"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_STREAM,
+   "Mixer Stream #"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "Adjust the volume of the audio stream."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_STOPPED,
+   "Stopped"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_PLAYING,
+   "Playing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_PLAYING_LOOPED,
+   "Playing (Looped)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_PLAYING_SEQUENTIAL,
+   "Playing (Sequential)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -6569,10 +6593,6 @@ MSG_HASH(
    "Handler"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
-   "Memory Search Size"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
    "Type"
    )
@@ -6619,34 +6639,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
    "After each iteration the 'Value' will be increased by this amount."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
-   "Rumble When Memory"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
-   "Rumble Value"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
-   "Rumble Port"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
-   "Rumble Primary Strength"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
-   "Rumble Primary Duration (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
-   "Rumble Secondary Strength"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
-   "Rumble Secondary Duration (ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
@@ -7655,22 +7647,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
    "Decrease by Value"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "Run Next Cheat If Value = Memory"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-   "Run Next Cheat If Value != Memory"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-   "Run Next Cheat If Value < Memory"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-   "Run Next Cheat If Value > Memory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
@@ -10688,12 +10664,12 @@ MSG_HASH(
    "Disconnect device from a valid port."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Closed"
+   MSG_DISK_CLOSED_VIRTUAL_DISK_TRAY,
+   "Closed virtual disk tray."
    )
 MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Ejected"
+   MSG_DISK_EJECTED_VIRTUAL_DISK_TRAY,
+   "Ejected virtual disk tray."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -10784,8 +10760,16 @@ MSG_HASH(
    "Failed to bind socket."
    )
 MSG_HASH(
+   MSG_FAILED_TO_CLOSE_VIRTUAL_DISK_TRAY,
+   "Failed to close the virtual disk tray."
+   )
+MSG_HASH(
    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    "Failed to create the directory."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_EJECT_VIRTUAL_DISK_TRAY,
+   "Failed to eject virtual disk tray."
    )
 MSG_HASH(
    MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
@@ -11362,18 +11346,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "virtual disc tray."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "eject"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "close"
    )
 MSG_HASH(
    MSG_FAILED,
