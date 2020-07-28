@@ -494,8 +494,8 @@ static void explore_build_list(void)
    core_info_list_t *core_list              = NULL;
    ex_hashmap32 map_cores                   = {0};
    ex_hashmap32 rdb_indices                 = {0};
-   explore_string_t **split_buf             = NULL;
    ex_hashmap32 cat_maps[EXPLORE_CAT_COUNT] = {{0}};
+   explore_string_t **split_buf             = NULL;
    settings_t *settings                     = config_get_ptr();
    const char *directory_playlist           = settings->paths.directory_playlist;
    const char *directory_database           = settings->paths.path_content_database;
@@ -512,11 +512,19 @@ static void explore_build_list(void)
    /* Index all playlists */
    for (dir = retro_vfs_opendir_impl(directory_playlist, false); dir;)
    {
-      size_t j, used_entries            = 0;
-      playlist_config_t playlist_config = {0};
-      playlist_t *playlist              = NULL;
-      const char *fext                  = NULL;
-      const char *fname                 = NULL;
+      playlist_config_t playlist_config;
+      size_t j, used_entries                    = 0;
+      playlist_t *playlist                      = NULL;
+      const char *fext                          = NULL;
+      const char *fname                         = NULL;
+
+      playlist_config.path[0]                   = '\0';
+      playlist_config.base_content_directory[0] = '\0';
+      playlist_config.capacity                  = 0;
+      playlist_config.old_format                = false;
+      playlist_config.compress                  = false;
+      playlist_config.fuzzy_archive_match       = false;
+      playlist_config.autofix_paths             = false;
 
       if (!retro_vfs_readdir_impl(dir))
       {
@@ -624,30 +632,33 @@ static void explore_build_list(void)
          unsigned k, l, cat;
          uint32_t crc32;
          explore_entry_t e;
+         char *fields[EXPLORE_CAT_COUNT];
          char numeric_buf[EXPLORE_CAT_COUNT][16];
-         char* fields[EXPLORE_CAT_COUNT]    = {NULL};
          const struct playlist_entry *entry = NULL;
-         char* original_title               = NULL;
+         char *original_title               = NULL;
          bool found_crc32                   = false;
          core_info_t* core_info             = NULL;
 
          if (item.type != RDT_MAP)
             continue;
 
+         for (k = 0; k < EXPLORE_CAT_COUNT; k++)
+            fields[k]                       = NULL;
+
          for (k = 0; k < item.val.map.len; k++)
          {
-            const char *key_str            = NULL;
-            struct rmsgpack_dom_value *key = &item.val.map.items[k].key;
-            struct rmsgpack_dom_value *val = &item.val.map.items[k].value;
+            const char *key_str             = NULL;
+            struct rmsgpack_dom_value *key  = &item.val.map.items[k].key;
+            struct rmsgpack_dom_value *val  = &item.val.map.items[k].value;
             if (!key || !val || key->type != RDT_STRING)
                continue;
 
-            key_str                        = key->val.string.buff;
+            key_str                         = key->val.string.buff;
             if (string_is_equal(key_str, "crc"))
             {
-               crc32                       = 
+               crc32                        = 
                   swap_if_little32(*(uint32_t*)val->val.binary.buff);
-               found_crc32                 = true;
+               found_crc32                  = true;
                continue;
             }
             else if (string_is_equal(key_str, "original_title"))
@@ -828,8 +839,11 @@ static void explore_action_find_complete(void *userdata, const char *line)
 
 static int explore_action_ok_find(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_ctx_line_t line = {0};
+   menu_input_ctx_line_t line;
    line.label                 = "Search Text";
+   line.label_setting         = NULL;
+   line.type                  = 0;
+   line.idx                   = 0;
    line.cb                    = explore_action_find_complete;
    menu_input_dialog_start(&line);
    return 0;
