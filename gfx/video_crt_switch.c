@@ -243,6 +243,7 @@ void crt_switch_res_core(
    p_switch->ra_tmp_height     = p_switch->ra_core_height;
    p_switch->ra_tmp_width      = p_switch->ra_core_width;
    p_switch->tmp_center_adjust = p_switch->center_adjust;
+   p_switch->tmp_porch_adjust =  p_switch->porch_adjust;
 
    /* Check if aspect is correct, if not change */
    if (video_driver_get_aspect_ratio() != p_switch->fly_aspect)
