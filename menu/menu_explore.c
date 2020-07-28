@@ -901,7 +901,8 @@ unsigned menu_displaylist_explore(file_list_t *list)
 
    if (current_type == MENU_EXPLORE_TAB)
    {
-      // free any existing playlist when entering the explore view
+      /* free any existing playlist 
+       * when entering the explore view */
       playlist_free_cached();
    }
 
