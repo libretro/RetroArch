@@ -251,6 +251,13 @@ static void ex_hashmap32__grow(ex_hashmap32* map, uint32_t new_cap)
    free(old_vals);
 }
 
+static INLINE void ex_hashmap32_init(ex_hashmap32* map)
+{
+   map->len = map->cap = 0;
+   map->keys = NULL;
+   map->vals = NULL;
+}
+
 static void ex_hashmap32_free(ex_hashmap32* map)
 {
    if (!map)
@@ -489,10 +496,15 @@ static void explore_build_list(void)
 {
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
-   struct explore_rdb { libretrodb_t *handle; ex_hashmap32 playlist_entries; } 
+   struct explore_rdb
+   {
+      libretrodb_t *handle;
+      size_t count;
+      ex_hashmap32 playlist_crcs;
+      ex_hashmap32 playlist_names;
+      char systemname[256];
+   }
    *rdbs                                    = NULL;
-   core_info_list_t *core_list              = NULL;
-   ex_hashmap32 map_cores                   = {0};
    ex_hashmap32 rdb_indices                 = {0};
    ex_hashmap32 cat_maps[EXPLORE_CAT_COUNT] = {{0}};
    explore_string_t **split_buf             = NULL;
@@ -517,6 +529,7 @@ static void explore_build_list(void)
       playlist_t *playlist                      = NULL;
       const char *fext                          = NULL;
       const char *fname                         = NULL;
+      uint32_t fhash;
 
       playlist_config.path[0]                   = '\0';
       playlist_config.base_content_directory[0] = '\0';
@@ -544,61 +557,88 @@ static void explore_build_list(void)
       playlist_config.capacity          = COLLECTION_SIZE;
       playlist                          = playlist_init(&playlist_config);
 
+      fhash = ex_hash32_nocase_filtered(
+            (unsigned char*)fname, fext - fname, '0', 255);
+
       for (j = 0; j < playlist_size(playlist); j++)
       {
          uintptr_t rdb_num;
          uint32_t entry_crc32;
          struct explore_rdb* rdb             = NULL;
          const struct playlist_entry *entry  = NULL;
+         const char *db_name                 = fname;
+         const char *db_ext                  = fext;
+         uint32_t rdb_hash                   = fhash;
          playlist_get_index(playlist, j, &entry);
 
-         /* Maybe remove this to also include playlist entries 
-          * with no CRC/db/label (build label from file name) */
-         if (
-                  !entry->crc32 
-               || !*entry->crc32
-               || !entry->db_name
-               || !*entry->db_name
-               || !entry->label
-               || !*entry->label)
+         /* We also could build label from file name, for now it's required */
+         if (!entry->label || !*entry->label)
             continue;
 
-         rdb_num = ex_hashmap32_strgetnum(&rdb_indices, entry->db_name);
+         /* For auto scanned playlists the entry db_name matches the
+          * lpl file name and we can just use that */
+         if (entry->db_name && *entry->db_name
+               && strcasecmp(entry->db_name, fname))
+         {
+            db_name = entry->db_name;
+            db_ext = strrchr(db_name, '.');
+            if (!db_ext)
+               db_ext = db_name + strlen(db_name);
+            rdb_hash = ex_hash32_nocase_filtered(
+               (unsigned char*)db_name, db_ext - db_name, '0', 255);
+         }
+
+         rdb_num = ex_hashmap32_getnum(&rdb_indices, rdb_hash);
          if (!rdb_num)
          {
-            struct explore_rdb rdb;
+            struct explore_rdb newrdb;
+            size_t systemname_len;
 
-            rdb.handle                = libretrodb_new();
-            rdb.playlist_entries.len  = 0;
-            rdb.playlist_entries.cap  = 0;
-            rdb.playlist_entries.keys = NULL;
-            rdb.playlist_entries.vals = NULL;
+            newrdb.handle = libretrodb_new();
+            newrdb.count  = 0;
+            ex_hashmap32_init(&newrdb.playlist_crcs);
+            ex_hashmap32_init(&newrdb.playlist_names);
+
+            systemname_len = db_ext - db_name;
+            if (systemname_len >= sizeof(newrdb.systemname))
+               systemname_len = sizeof(newrdb.systemname)-1;
+            memcpy(newrdb.systemname, db_name, systemname_len);
+            newrdb.systemname[systemname_len] = '\0';
 
             fill_pathname_join_noext(
-                  tmp, directory_database, entry->db_name, sizeof(tmp));
+                  tmp, directory_database, db_name, sizeof(tmp));
             strlcat(tmp, ".rdb", sizeof(tmp));
 
-            if (libretrodb_open(tmp, rdb.handle) != 0)
+            if (libretrodb_open(tmp, newrdb.handle) != 0)
             {
                /* Invalid RDB file */
-               libretrodb_free(rdb.handle);
-               ex_hashmap32_strsetnum(&rdb_indices,
-                     entry->db_name, (uintptr_t)-1);
+               libretrodb_free(newrdb.handle);
+               ex_hashmap32_setnum(&rdb_indices, rdb_hash, (uintptr_t)-1);
                continue;
             }
 
-            EX_BUF_PUSH(rdbs, rdb);
+            EX_BUF_PUSH(rdbs, newrdb);
             rdb_num = (uintptr_t)EX_BUF_LEN(rdbs);
-            ex_hashmap32_strsetnum(&rdb_indices, entry->db_name, rdb_num);
+            ex_hashmap32_setnum(&rdb_indices, rdb_hash, rdb_num);
          }
 
          if (rdb_num == (uintptr_t)-1)
             continue;
 
-         rdb         = &rdbs[rdb_num - 1];
-         entry_crc32 = (uint32_t)strtoul(entry->crc32, NULL, 16);
-         ex_hashmap32_setptr(&rdb->playlist_entries,
-               entry_crc32, (void*)entry);
+         rdb = &rdbs[rdb_num - 1];
+         rdb->count++;
+         entry_crc32 = (uint32_t)strtoul(
+               (entry->crc32 ? entry->crc32 : ""), NULL, 16);
+         if (entry_crc32)
+         {
+            ex_hashmap32_setptr(&rdb->playlist_crcs,
+                  entry_crc32, (void*)entry);
+         }
+         else
+         {
+            ex_hashmap32_strsetptr(&rdb->playlist_names,
+                  entry->label, (void*)entry);
+         }
          used_entries++;
       }
 
@@ -607,12 +647,6 @@ static void explore_build_list(void)
       else
          playlist_free(playlist);
    }
-
-   if (core_info_get_list(&core_list) && core_list)
-      for (i = 0; i != core_list->count; i++)
-         ex_hashmap32_strsetptr(&map_cores,
-               core_list->list[i].display_name,
-               &core_list->list[i]);
 
    /* Loop through all RDBs referenced in the playlists 
     * and load meta data strings */
@@ -630,14 +664,13 @@ static void explore_build_list(void)
                libretrodb_cursor_read_item(cur, &item) == 0))
       {
          unsigned k, l, cat;
-         uint32_t crc32;
          explore_entry_t e;
          char *fields[EXPLORE_CAT_COUNT];
          char numeric_buf[EXPLORE_CAT_COUNT][16];
          const struct playlist_entry *entry = NULL;
+         uint32_t crc32                     = 0;
+         char *name                         = NULL;
          char *original_title               = NULL;
-         bool found_crc32                   = false;
-         core_info_t* core_info             = NULL;
 
          if (item.type != RDT_MAP)
             continue;
@@ -656,9 +689,12 @@ static void explore_build_list(void)
             key_str                         = key->val.string.buff;
             if (string_is_equal(key_str, "crc"))
             {
-               crc32                        = 
-                  swap_if_little32(*(uint32_t*)val->val.binary.buff);
-               found_crc32                  = true;
+               crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
+               continue;
+            }
+            else if (string_is_equal(key_str, "name"))
+            {
+               name = val->val.string.buff;
                continue;
             }
             else if (string_is_equal(key_str, "original_title"))
@@ -689,11 +725,16 @@ static void explore_build_list(void)
             }
          }
 
-         if (!found_crc32)
-            continue;
-
-         entry = (const struct playlist_entry *)ex_hashmap32_getptr(
-               &rdb->playlist_entries, crc32);
+         if (crc32)
+         {
+            entry = (const struct playlist_entry *)ex_hashmap32_getptr(
+                  &rdb->playlist_crcs, crc32);
+         }
+         if (!entry && name)
+         {
+            entry = (const struct playlist_entry *)ex_hashmap32_strgetptr(
+                  &rdb->playlist_names, name);
+         }
          if (!entry)
             continue;
 
@@ -703,16 +744,11 @@ static void explore_build_list(void)
          e.split           = NULL;
          e.original_title  = NULL;
 
+         fields[EXPLORE_BY_SYSTEM] = rdb->systemname;
+
          for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
             explore_add_unique_string(cat_maps, &e, cat,
                   fields[cat], &split_buf);
-
-         if (!string_is_empty(entry->core_name))
-            core_info = (core_info_t*)
-               ex_hashmap32_strgetptr(&map_cores, entry->core_name);
-         explore_add_unique_string(cat_maps, &e,
-               EXPLORE_BY_SYSTEM,
-               (core_info ? core_info->systemname : NULL), NULL);
 
          if (original_title && *original_title)
          {
@@ -735,16 +771,23 @@ static void explore_build_list(void)
          }
 
          EX_BUF_PUSH(explore_state->entries, e);
+
+         /* if all entries have found connections, we can leave early */
+         if (--rdb->count == 0)
+         {
+            rmsgpack_dom_value_free(&item);
+            break;
+         }
       }
 
       libretrodb_cursor_close(cur);
       libretrodb_cursor_free(cur);
       libretrodb_close(rdb->handle);
       libretrodb_free(rdb->handle);
-      ex_hashmap32_free(&rdb->playlist_entries);
+      ex_hashmap32_free(&rdb->playlist_crcs);
+      ex_hashmap32_free(&rdb->playlist_names);
    }
    EX_BUF_FREE(split_buf);
-   ex_hashmap32_free(&map_cores);
    ex_hashmap32_free(&rdb_indices);
    EX_BUF_FREE(rdbs);
 
