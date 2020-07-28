@@ -873,6 +873,53 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    *num_infos = supported;
 }
 
+/*
+ * Matches core path A and B "base" filename (ignoring everything after _libretro)
+ *
+ * Ex:
+ *   snes9x_libretro.dll and snes9x_libretro_android.so are matched
+ *   snes9x__2005_libretro.dll and snes9x_libretro_android.so are NOT matched
+ */
+bool core_info_core_file_id_is_equal(const char* core_path_a, const char* core_path_b)
+{
+   const char *core_path_basename_a = NULL;
+   const char *extension_pos        = NULL;
+   const char *underscore_pos       = NULL;
+
+   if (!core_path_a || !core_path_b)
+      return false;
+
+   core_path_basename_a = path_basename(core_path_a);
+
+   if (core_path_basename_a)
+   {
+      extension_pos = strrchr(core_path_basename_a, '.');
+
+      if (extension_pos)
+      {
+         /* Remove extension */
+         *((char*)extension_pos) = '\0';
+
+         underscore_pos = strrchr(core_path_basename_a, '_');
+
+         /* Restore extension */
+         *((char*)extension_pos) = '.';
+
+         if (underscore_pos)
+         {
+            size_t core_base_file_id_length  = underscore_pos - core_path_basename_a;
+            const char* core_path_basename_b = path_basename(core_path_b);
+
+            if (string_starts_with_size(core_path_basename_a, core_path_basename_b,
+                  core_base_file_id_length))
+               return true;
+         }
+      }
+   }
+
+   return false;
+}
+
 void core_info_get_name(const char *path, char *s, size_t len,
       const char *path_info, const char *dir_cores,
       const char *exts, bool dir_show_hidden_files,

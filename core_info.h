@@ -220,6 +220,8 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path);
 
 core_info_state_t *coreinfo_get_ptr(void);
 
+bool core_info_core_file_id_is_equal(const char* core_path_a, const char* core_path_b);
+
 RETRO_END_DECLS
 
 #endif /* CORE_INFO_H_ */

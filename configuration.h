@@ -219,6 +219,7 @@ typedef struct settings
       bool menu_rgui_inline_thumbnails;
       bool menu_rgui_swap_thumbnails;
       bool menu_rgui_extended_ascii;
+      bool menu_rgui_switch_icons;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
@@ -404,6 +405,7 @@ typedef struct settings
       bool playlist_sort_alphabetical;
       bool playlist_show_sublabels;
       bool playlist_fuzzy_archive_match;
+      bool playlist_portable_paths;
 
       bool quit_press_twice;
       bool vibrate_on_keypress;
