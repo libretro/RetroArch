@@ -119,15 +119,21 @@ struct playlist_entry
 typedef struct
 {
    char path[PATH_MAX_LENGTH];
+   char base_content_directory[PATH_MAX_LENGTH];
    size_t capacity;
    bool old_format;
    bool compress;
    bool fuzzy_archive_match;
+   bool autofix_paths;   
 } playlist_config_t;
 
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
 void playlist_config_set_path(playlist_config_t *config, const char *path);
+
+/* Convenience function: copies base content directory
+ * path to specified playlist configuration object */
+void playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
 
 /* Creates a copy of the specified playlist configuration.
  * Returns false in the event of an error */

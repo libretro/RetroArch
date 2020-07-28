@@ -2076,6 +2076,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_config.old_format             = settings->bools.playlist_use_old_format;
    playlist_config.compress               = settings->bools.playlist_compression;
    playlist_config.fuzzy_archive_match    = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
    content_path[0]  = '\0';
    content_label[0] = '\0';
@@ -6360,6 +6361,7 @@ static int action_ok_manual_content_scan_start(const char *path,
    playlist_config.old_format          = settings->bools.playlist_use_old_format;
    playlist_config.compress            = settings->bools.playlist_compression;
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
    task_push_manual_content_scan(&playlist_config, directory_playlist);
    return 0;
