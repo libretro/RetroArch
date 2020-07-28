@@ -33409,7 +33409,6 @@ static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
 gfx_ctx_flags_t video_driver_get_flags_wrapper(void)
 {
    gfx_ctx_flags_t flags;
-   struct rarch_state *p_rarch = &rarch_st;
    flags.flags                 = 0;
 
    if (!video_driver_get_flags(&flags))
