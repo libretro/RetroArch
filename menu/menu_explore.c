@@ -114,6 +114,7 @@ typedef struct
    char title[1024];
    char find_string[1024];
    unsigned top_depth;
+   playlist_t *cached_playlist;
 } explore_state_t;
 
 static const struct { const char *name, *rdbkey; bool use_split, is_company, is_numeric; }
@@ -478,7 +479,8 @@ static void explore_free(explore_state_t *state)
    EX_BUF_FREE(state->entries);
 
    for (i = 0; i != EX_BUF_LEN(state->playlists); i++)
-      playlist_free(state->playlists[i]);
+      if (state->playlists[i] != state->cached_playlist)
+         playlist_free(state->playlists[i]);
    EX_BUF_FREE(state->playlists);
    ex_arena_free(&state->arena);
 }
@@ -907,6 +909,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
    }
 
    playlist_set_cached(NULL);
+   explore_state->cached_playlist = NULL;
 
    if (     current_type == MENU_EXPLORE_TAB 
          || current_type == EXPLORE_TYPE_ADDITIONALFILTER)
@@ -1149,6 +1152,7 @@ SKIP_ENTRY:;
          /* Fake all the state so the content screen 
           * and information screen think we're viewing via playlist */
          playlist_set_cached(pl);
+         explore_state->cached_playlist = pl;
          menu->rpl_entry_selection_ptr = (pl_entry - pl_first);
          strlcpy(menu->deferred_path,
                pl_entry->path, sizeof(menu->deferred_path));
