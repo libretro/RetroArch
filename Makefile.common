@@ -531,6 +531,10 @@ ifeq ($(HAVE_LIBRETRODB), 1)
           database_info.o \
           tasks/task_database.o \
           tasks/task_database_cue.o
+
+   ifeq ($(HAVE_MENU), 1)
+      OBJ += menu/menu_explore.o
+   endif
 endif
 
 ifeq ($(HAVE_BUILTINMBEDTLS), 1)
@@ -541,7 +545,8 @@ ifeq ($(HAVE_BUILTINMBEDTLS), 1)
       DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
    endif
 
-   # MinGW requires this for some reason, even though the include paths are relative to the source
+   # MinGW requires this for some reason, 
+	# even though the include paths are relative to the source
    INCLUDE_DIRS += -Ideps/mbedtls
 
    OBJS_TLS_CRYPTO = deps/mbedtls/aes.o \
@@ -913,8 +918,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_up.o \
           menu/cbs/menu_cbs_down.o \
           menu/cbs/menu_cbs_contentlist_switch.o \
-          menu/menu_displaylist.o \
-          menu/menu_explore.o
+          menu/menu_displaylist.o
 endif
 
 ifeq ($(HAVE_GFX_WIDGETS), 1)

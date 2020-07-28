@@ -196,7 +196,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_content_show_add && !settings->bools.kiosk_mode_enable)
       ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_ADD;
 
+#ifdef HAVE_LIBRETRODB
    ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_EXPLORE;
+#endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
