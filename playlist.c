@@ -92,6 +92,13 @@ typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
       const struct playlist_entry *b);
 
+/* TODO/FIXME - hack for allowing the explore view to switch 
+ * over to a playlist item */
+void playlist_set_cached(playlist_t* pl)
+{
+   playlist_cached = pl;
+}
+
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
 void playlist_config_set_path(playlist_config_t *config, const char *path)
@@ -2994,8 +3001,3 @@ core_info_t *playlist_get_default_core_info(playlist_t* playlist)
    return NULL;
 }
 
-// hack for allowing the explore view to switch over to a playlist item
-void playlist_set_cached(playlist_t* pl)
-{
-   playlist_cached = pl;
-}
