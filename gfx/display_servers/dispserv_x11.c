@@ -165,7 +165,7 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 
 #ifdef HAVE_XRANDR
 static bool x11_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset)
+      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    int screen;
    Window window;
@@ -201,11 +201,11 @@ static bool x11_display_server_set_resolution(void *data,
    /* following code is the mode line generator */
    if (width < 700)
    {
-      hfp    = (width * 1.033);
-      hbp  = width * 1.225;
+      hfp    = (width * 1.033)+(padjust*2);
+      hbp  = (width * 1.225)+(padjust*2);
    }else {
-      hfp  = (width * 1.033) + (width / 112);
-      hbp  = (width * 1.225) + (width /58);
+      hfp  = ((width * 1.033) + (width / 112))+(padjust*4);
+      hbp  = ((width * 1.225) + (width /58))+(padjust*4);
       xoffset = xoffset*2;
    }
    
