@@ -121,11 +121,11 @@ static int16_t android_joypad_state(
             && android_joypad_button_state(
                android_app,
                buf,
-               port, (uint16_t)joykey))
+               joypad_info->joy_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
             ((float)abs(android_joypad_axis_state(
-                  android_app, port, joyaxis)) 
+                  android_app, joypad_info->joy_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

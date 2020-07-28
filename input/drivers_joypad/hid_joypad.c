@@ -78,10 +78,10 @@ static int16_t hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if ((uint16_t)joykey != NO_BTN && hid_joypad_button(
-               port, (uint16_t)joykey))
+               joypad_info->joy_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(hid_joypad_axis(port, joyaxis)) 
+            ((float)abs(hid_joypad_axis(joypad_info->joy_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

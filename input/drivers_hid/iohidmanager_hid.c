@@ -235,10 +235,10 @@ static int16_t iohidmanager_hid_joypad_state(
       if (
                (uint16_t)joykey != NO_BTN 
             && iohidmanager_hid_joypad_button(data,
-               port, (uint16_t)joykey))
+               joypad_info->joy_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(iohidmanager_hid_joypad_axis(data, port, joyaxis)) 
+            ((float)abs(iohidmanager_hid_joypad_axis(data, joypad_info->joy_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
