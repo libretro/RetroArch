@@ -66,6 +66,7 @@ enum menu_settings_type
    MENU_VIDEO_TAB,
    MENU_IMAGES_TAB,
    MENU_NETPLAY_TAB,
+   MENU_EXPLORE_TAB,
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
@@ -472,6 +473,8 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
+
+void menu_explore_free(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 

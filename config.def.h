@@ -573,6 +573,7 @@ static const bool rgui_shadows = false;
 static const unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 #define DEFAULT_RGUI_PARTICLE_EFFECT_SPEED 1.0f
 static const bool rgui_extended_ascii = false;
+#define DEFAULT_RGUI_SWITCH_ICONS true
 #endif
 
 #ifdef HAVE_MENU
@@ -1056,6 +1057,8 @@ static const int default_content_favorites_size = 200;
 #endif
 
 #define DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH false
+
+#define DEFAULT_PLAYLIST_PORTABLE_PATHS false
 
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true

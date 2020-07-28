@@ -1349,6 +1349,9 @@ MENU
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_displaylist.c"
+#ifdef HAVE_LIBRETRODB
+#include "../menu/menu_explore.c"
+#endif
 #endif
 
 #if defined(HAVE_LIBNX)

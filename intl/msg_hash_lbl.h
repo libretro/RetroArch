@@ -51,6 +51,14 @@ MSG_HASH(
    "configurations_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_TAB,
+   "explore_tab"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_ITEM,
+   "explore_item"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ADD_TAB,
    "add_tab"
    )
@@ -3899,6 +3907,10 @@ MSG_HASH(
    "rgui_extended_ascii"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_RGUI_SWITCH_ICONS,
+   "rgui_switch_icons"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,
    "menu_show_rewind_settings"
    )
@@ -4303,6 +4315,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
    "playlist_sublabel_last_played_style"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_PORTABLE_PATHS,
+   "playlist_portable_paths"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,

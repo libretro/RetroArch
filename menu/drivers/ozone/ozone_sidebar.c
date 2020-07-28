@@ -46,7 +46,12 @@ enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
 #ifdef HAVE_NETWORKING
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
 #endif
+#ifdef HAVE_LIBRETRODB
+   MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB
+#else
    MENU_ENUM_LABEL_VALUE_ADD_TAB
+#endif
 };
 
 enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
@@ -64,7 +69,12 @@ enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
 #ifdef HAVE_NETWORKING
    MENU_NETPLAY_TAB,
 #endif
+#ifdef HAVE_LIBRETRODB
+   MENU_ADD_TAB,
+   MENU_EXPLORE_TAB
+#else
    MENU_ADD_TAB
+#endif
 };
 
 enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
@@ -82,7 +92,12 @@ enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
 #ifdef HAVE_NETWORKING
    MENU_ENUM_LABEL_NETPLAY_TAB,
 #endif
+#ifdef HAVE_LIBRETRODB
+   MENU_ENUM_LABEL_ADD_TAB,
+   MENU_ENUM_LABEL_EXPLORE_TAB
+#else
    MENU_ENUM_LABEL_ADD_TAB
+#endif
 };
 
 unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
@@ -1006,6 +1021,9 @@ bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
          case OZONE_SYSTEM_TAB_ADD:
 #ifdef HAVE_NETWORKING
          case OZONE_SYSTEM_TAB_NETPLAY:
+#endif
+#ifdef HAVE_LIBRETRODB
+         case OZONE_SYSTEM_TAB_EXPLORE:
 #endif
             is_playlist = false;
             break;

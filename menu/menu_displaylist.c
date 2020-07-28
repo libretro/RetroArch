@@ -1673,6 +1673,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    playlist_config.old_format          = settings->bools.playlist_use_old_format;
    playlist_config.compress            = settings->bools.playlist_compression;
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
    path_playlist[0] = path_base[0] = query[0] = '\0';
 
@@ -2314,6 +2315,7 @@ static void menu_displaylist_set_new_playlist(
    playlist_config.old_format          = settings->bools.playlist_use_old_format;
    playlist_config.compress            = settings->bools.playlist_compression;
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
    menu->db_playlist_file[0]       = '\0';
 
@@ -3053,62 +3055,70 @@ static unsigned menu_displaylist_parse_playlists(
        * from the main menu 'Scan Content' entry. Placing
        * them here as well is unnecessary/ugly duplication */
       if (settings->bools.menu_content_show_add &&
-          !(string_is_equal(menu_ident, "glui") &&
-            !settings->bools.menu_materialui_show_nav_bar))
+            !(string_is_equal(menu_ident, "glui") &&
+               !settings->bools.menu_materialui_show_nav_bar))
       {
 #ifdef HAVE_LIBRETRODB
          if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-               MENU_ENUM_LABEL_SCAN_DIRECTORY,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
+                  MENU_ENUM_LABEL_SCAN_DIRECTORY,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
          if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
-               MENU_ENUM_LABEL_SCAN_FILE,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+                  MENU_ENUM_LABEL_SCAN_FILE,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
 #endif
          if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
-               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
+                  MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 
-     if (settings->bools.menu_content_show_favorites)
+#ifdef HAVE_LIBRETRODB
       if (menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-            MENU_ENUM_LABEL_GOTO_FAVORITES,
-            MENU_SETTING_ACTION, 0, 0))
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
+               msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB),
+               MENU_ENUM_LABEL_EXPLORE_TAB,
+               MENU_EXPLORE_TAB, 0, 0))
          count++;
-     if (settings->bools.menu_content_show_images)
-      if (menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
-            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
-            MENU_ENUM_LABEL_GOTO_IMAGES,
-            MENU_SETTING_ACTION, 0, 0))
-         count++;
+#endif
+      if (settings->bools.menu_content_show_favorites)
+         if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                  MENU_ENUM_LABEL_GOTO_FAVORITES,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
+      if (settings->bools.menu_content_show_images)
+         if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
+                  MENU_ENUM_LABEL_GOTO_IMAGES,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
 
-     if (settings->bools.menu_content_show_music)
-      if (menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
-            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
-            MENU_ENUM_LABEL_GOTO_MUSIC,
-            MENU_SETTING_ACTION, 0, 0))
-         count++;
+      if (settings->bools.menu_content_show_music)
+         if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
+                  MENU_ENUM_LABEL_GOTO_MUSIC,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-     if (settings->bools.menu_content_show_video)
-      if (menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
-            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
-            MENU_ENUM_LABEL_GOTO_VIDEO,
-            MENU_SETTING_ACTION, 0, 0))
-         count++;
+      if (settings->bools.menu_content_show_video)
+         if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
+                  MENU_ENUM_LABEL_GOTO_VIDEO,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
 #endif
    }
 
@@ -4357,6 +4367,13 @@ static bool menu_displaylist_push_internal(
       if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
          return true;
    }
+#ifdef HAVE_LIBRETRODB
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info))
+         return true;
+   }
+#endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info))
@@ -5130,6 +5147,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,       PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_PLAYLIST_PORTABLE_PATHS,             PARSE_ONLY_BOOL, true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -5433,6 +5451,14 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_SYSTEM_INFO:
          count              = menu_displaylist_parse_system_info(list);
+         break;
+      case DISPLAYLIST_EXPLORE:
+#ifdef HAVE_LIBRETRODB
+         {
+            unsigned menu_displaylist_explore(file_list_t *list);
+            count           = menu_displaylist_explore(list);
+         }
+#endif
          break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
 #ifdef HAVE_LIBRETRODB
@@ -8573,6 +8599,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_TICKER_SMOOTH,                           PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA,                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_EXTENDED_ASCII,                     PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_RGUI_SWITCH_ICONS,                       PARSE_ONLY_BOOL,   true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10785,6 +10812,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_INFORMATION_LIST:
+      case DISPLAYLIST_EXPLORE:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
       case DISPLAYLIST_SYSTEM_INFO:
       case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:

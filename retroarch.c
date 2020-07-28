@@ -6051,6 +6051,7 @@ bool menu_entries_append_enum(
 
    if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
        && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
       cbs->setting                 = menu_setting_find_enum(enum_idx);
 
@@ -7353,6 +7354,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #endif
 #ifdef HAVE_NETWORKING
          core_updater_list_free_cached();
+#endif
+#ifdef HAVE_LIBRETRODB
+         menu_explore_free();
 #endif
 
          if (p_rarch->menu_driver_data)
@@ -16002,6 +16006,8 @@ bool command_event(enum event_command cmd, void *data)
             playlist_config.old_format             = settings->bools.playlist_use_old_format;
             playlist_config.compress               = settings->bools.playlist_compression;
             playlist_config.fuzzy_archive_match    = settings->bools.playlist_fuzzy_archive_match;
+            /* don't use relative paths for content, music, video, and image histories */
+            playlist_config_set_base_content_directory(&playlist_config, NULL);
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
@@ -33410,7 +33416,6 @@ static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
 gfx_ctx_flags_t video_driver_get_flags_wrapper(void)
 {
    gfx_ctx_flags_t flags;
-   struct rarch_state *p_rarch = &rarch_st;
    flags.flags                 = 0;
 
    if (!video_driver_get_flags(&flags))
@@ -39625,6 +39630,7 @@ void rarch_favorites_init(void)
    playlist_config.old_format          = settings ? settings->bools.playlist_use_old_format : false;
    playlist_config.compress            = settings ? settings->bools.playlist_compression : false;
    playlist_config.fuzzy_archive_match = settings ? settings->bools.playlist_fuzzy_archive_match : false;
+   playlist_config_set_base_content_directory(&playlist_config, NULL);
 
    if (!settings)
       return;
