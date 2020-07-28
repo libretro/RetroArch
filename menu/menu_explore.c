@@ -901,6 +901,12 @@ unsigned menu_displaylist_explore(file_list_t *list)
                " '%s'", explore_state->find_string);
    }
 
+   if (current_type == MENU_EXPLORE_TAB)
+   {
+      // free any existing playlist when entering the explore view
+      playlist_free_cached();
+   }
+
    playlist_set_cached(NULL);
 
    if (     current_type == MENU_EXPLORE_TAB 
@@ -1112,6 +1118,8 @@ SKIP_ENTRY:;
 
       explore_append_title(explore_state,
             " (%u)", (unsigned) (list->size - 1));
+
+      ex_hashmap32_free(&map_filtered_category);
    }
    else
    {
