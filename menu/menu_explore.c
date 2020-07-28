@@ -432,11 +432,12 @@ static void explore_build_list()
 
 		for (; more; more = (rmsgpack_dom_value_free(&item), libretrodb_cursor_read_item(cur, &item) == 0))
 		{
+			uint32_t crc32;
 			char numeric_buf[EXPLORE_CAT_COUNT][16];
 			char* fields[EXPLORE_CAT_COUNT] = {NULL};
-			char* original_title = NULL;
-			bool found_crc32 = false;
-			uint32_t crc32;
+			char* original_title            = NULL;
+			bool found_crc32                = false;
+         core_info_t* core_info          = NULL;
 
 			if (item.type != RDT_MAP)
 				continue;
@@ -487,7 +488,8 @@ static void explore_build_list()
 			for (unsigned cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
 				explore_add_unique_string(cat_maps, &e, cat, fields[cat], &split_buf);
 
-			core_info_t* core_info = (core_info_t*)ex_hashmap32_strgetptr(&map_cores, entry->core_name);
+         if (!string_is_empty(entry->core_name))
+            core_info = (core_info_t*)ex_hashmap32_strgetptr(&map_cores, entry->core_name);
 			explore_add_unique_string(cat_maps, &e, EXPLORE_BY_SYSTEM, (core_info ? core_info->systemname : NULL), NULL);
 
 			if (original_title && *original_title)
