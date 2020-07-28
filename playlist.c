@@ -176,7 +176,6 @@ static void path_replace_base_path_and_convert_to_local_file_system(
       const char *in_oldrefpath, const char *in_refpath,
       size_t size)
 {
-   const char fs_delimeter     = LOCAL_FILE_SYSTEM_PATH_DELIMITER;
    size_t in_oldrefpath_length = strlen(in_oldrefpath);
    size_t in_refpath_length    = strlen(in_refpath);
 
@@ -2689,8 +2688,6 @@ playlist_t *playlist_init(const playlist_config_t *config)
        !string_is_equal(playlist->base_content_directory,
             playlist->config.base_content_directory))
    {
-      size_t playlist_base_content_directory_length = strlen(playlist->base_content_directory);
-      size_t new_base_content_directory_length      = strlen(playlist->config.base_content_directory);
       size_t i;
       size_t j;
       char tmp_entry_path[PATH_MAX_LENGTH];
