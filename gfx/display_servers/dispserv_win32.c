@@ -220,7 +220,7 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 }
 
 static bool win32_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset)
+      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    DEVMODE dm                = {0};
    LONG res                  = 0;
