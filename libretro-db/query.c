@@ -33,6 +33,7 @@
 #include <compat/fnmatch.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "libretrodb.h"
 #include "query.h"
