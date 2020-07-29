@@ -138,7 +138,7 @@ static int16_t ps2_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
 
-   if (port >= DEFAULT_MAX_PADS)
+   if (joypad_info->joy_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -150,11 +150,11 @@ static int16_t ps2_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && pad_state[port] & (UINT64_C(1) << joykey)
+            && pad_state[joypad_info->joy_idx] & (UINT64_C(1) << joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(ps2_joypad_axis_state(port, joyaxis)) 
+            ((float)abs(ps2_joypad_axis_state(joypad_info->joy_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

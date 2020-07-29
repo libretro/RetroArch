@@ -92,7 +92,7 @@ static int16_t wiiu_hid_joypad_state(
    int16_t ret                          = 0;
    const struct retro_keybind *binds    = (const struct retro_keybind*)
       binds_data;
-   joypad_connection_t *pad             = get_pad((wiiu_hid_t *)data, port);
+   joypad_connection_t *pad             = get_pad((wiiu_hid_t *)data, joypad_info->joy_idx);
    if (!pad)
       return 0;
 

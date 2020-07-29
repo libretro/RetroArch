@@ -151,7 +151,7 @@ static int16_t ps4_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
 
-   if (port >= PS4_MAX_ORBISPADS)
+   if (joypad_info->joy_idx >= PS4_MAX_ORBISPADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -161,7 +161,7 @@ static int16_t ps4_joypad_state(
          ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
       if (
                (uint16_t)joykey != NO_BTN 
-            && pad_state[port] & (UINT64_C(1) << (uint16_t)joykey)
+            && pad_state[joypad_info->joy_idx] & (UINT64_C(1) << (uint16_t)joykey)
          )
          ret |= ( 1 << i);
    }

@@ -173,10 +173,10 @@ static int16_t rwebpad_joypad_state(
    EmscriptenGamepadEvent gamepad_state;
    int16_t ret                          = 0;
    EMSCRIPTEN_RESULT r                  = emscripten_get_gamepad_status(
-         port, &gamepad_state);
+         joypad_info->joy_idx, &gamepad_state);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
       return 0;
-   if (port >= DEFAULT_MAX_PADS)
+   if (joypad_info->joy_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -194,7 +194,7 @@ static int16_t rwebpad_joypad_state(
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
             ((float)abs(rwebpad_joypad_axis_state(
-                  &gamepad_state, port, joyaxis)) 
+                  &gamepad_state, joypad_info->joy_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

@@ -360,9 +360,9 @@ static int16_t linuxraw_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
    const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
-      &linuxraw_pads[port];
+      &linuxraw_pads[joypad_info->joy_idx];
 
-   if (port >= DEFAULT_MAX_PADS)
+   if (joypad_info->joy_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -377,7 +377,7 @@ static int16_t linuxraw_joypad_state(
             (BIT32_GET(pad->buttons, joykey)))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(linuxraw_joypad_axis_state(pad, port, joyaxis)) 
+            ((float)abs(linuxraw_joypad_axis_state(pad, joypad_info->joy_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

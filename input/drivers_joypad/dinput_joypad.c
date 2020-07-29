@@ -575,7 +575,7 @@ static int16_t dinput_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
-   const struct dinput_joypad_data *pad = &g_pads[port];
+   const struct dinput_joypad_data *pad = &g_pads[joypad_info->joy_idx];
 
    if (!pad || !pad->joypad)
       return 0;
