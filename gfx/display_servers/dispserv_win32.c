@@ -126,7 +126,7 @@ static void win32_display_server_destroy(void *data)
             dispserv->orig_height,
             dispserv->orig_refresh,
             (float)dispserv->orig_refresh,
-            dispserv->crt_center, 0, 0);
+            dispserv->crt_center, 0, 0, 0);
 
 #ifdef HAS_TASKBAR_EXT
    if (dispserv->taskbar_list)
