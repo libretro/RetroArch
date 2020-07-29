@@ -442,7 +442,7 @@ static void cpulist_parse(CpuList* list, char **buf, ssize_t length)
       for (val = start_value; val <= end_value; val++)
       {
          if ((unsigned)val < 32)
-            list->mask |= (uint32_t)(1U << val);
+            list->mask |= (uint32_t)(UINT32_C(1) << val);
       }
 
       /* Jump to next item */

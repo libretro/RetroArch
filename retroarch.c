@@ -9015,7 +9015,7 @@ static bool get_self_input_state(
                {
                   state[word] |=
                         cb(local_device, RETRO_DEVICE_KEYBOARD, 0, netplay_key_ntoh(key)) ?
-                              (1U << bit) : 0;
+                              (UINT32_C(1) << bit) : 0;
                   bit++;
                   if (bit >= 32)
                   {
@@ -9433,7 +9433,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
             word = key / 32;
             bit  = key % 32;
             if (word <= istate->size)
-               return ((1U<<bit) & curr_input_state[word]) ? 1 : 0;
+               return ((UINT32_C(1) << bit) & curr_input_state[word]) ? 1 : 0;
             return 0;
          }
       default:

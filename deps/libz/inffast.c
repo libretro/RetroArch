@@ -69,8 +69,8 @@ void ZLIB_INTERNAL inflate_fast(z_streamp strm, unsigned start)
    unsigned                   bits = state->bits;
    code const FAR           *lcode = state->lencode;
    code const FAR           *dcode = state->distcode;
-   unsigned                  lmask = (1U << state->lenbits) - 1;
-   unsigned                  dmask = (1U << state->distbits) - 1;
+   unsigned                  lmask = (UINT32_C(1) << state->lenbits) - 1;
+   unsigned                  dmask = (UINT32_C(1) << state->distbits) - 1;
 
    /* decode literals and length/distances until end-of-block or not enough
       input data or output space */
@@ -102,7 +102,7 @@ dolen:
                hold += (unsigned long)(*in++) << bits;
                bits += 8;
             }
-            len   += (unsigned)hold & ((1U << op) - 1);
+            len   += (unsigned)hold & ((UINT32_C(1) << op) - 1);
             hold >>= op;
             bits  -= op;
          }
@@ -136,7 +136,7 @@ dodist:
                   bits += 8;
                }
             }
-            dist  += (unsigned)hold & ((1U << op) - 1);
+            dist  += (unsigned)hold & ((UINT32_C(1) << op) - 1);
             hold >>= op;
             bits  -= op;
             op     = (unsigned)(out - beg);     /* max distance in output */
@@ -236,7 +236,7 @@ dodist:
          }
          else if ((op & 64) == 0)            /* 2nd level distance code */
          {
-            here = dcode + here->val + (hold & ((1U << op) - 1));
+            here = dcode + here->val + (hold & ((UINT32_C(1) << op) - 1));
             goto dodist;
          }
          else
@@ -248,7 +248,7 @@ dodist:
       }
       else if ((op & 64) == 0)                /* 2nd level length code */
       {
-         here = lcode + here->val + (hold & ((1U << op) - 1));
+         here = lcode + here->val + (hold & ((UINT32_C(1) << op) - 1));
          goto dolen;
       }
       else if (op & 32)                       /* end-of-block */
@@ -268,7 +268,7 @@ dodist:
    len              = bits >> 3;
    in              -= len;
    bits            -= len << 3;
-   hold            &= (1U << bits) - 1;
+   hold            &= (UINT32_C(1) << bits) - 1;
 
    /* update state and return */
    strm->next_in    = in;

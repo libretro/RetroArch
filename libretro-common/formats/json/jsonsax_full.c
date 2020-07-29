@@ -95,7 +95,7 @@ typedef uint32_t Codepoint;
 #define IS_TRAILING_SURROGATE(c)         (((c) & 0xFFFFFC00) == 0xDC00)
 #define CODEPOINT_FROM_SURROGATES(hi_lo) ((((hi_lo) >> 16) << 10) + ((hi_lo) & 0xFFFF) + 0xFCA02400)
 #define SURROGATES_FROM_CODEPOINT(c)     ((((c) << 6) & 0x7FF0000) + ((c) & 0x3FF) + 0xD7C0DC00)
-#define SHORTEST_ENCODING_SEQUENCE(enc)  (1U << ((enc) >> 1))
+#define SHORTEST_ENCODING_SEQUENCE(enc)  (UINT32_C(1) << ((enc) >> 1))
 #define LONGEST_ENCODING_SEQUENCE        4
 
 /* Internal types that alias enum types in the public API.

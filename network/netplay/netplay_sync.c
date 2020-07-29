@@ -413,10 +413,10 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
                 * wavefronts.
                 */
                const uint32_t keep =
-                  (1U << RETRO_DEVICE_ID_JOYPAD_UP) |
-                  (1U << RETRO_DEVICE_ID_JOYPAD_DOWN) |
-                  (1U << RETRO_DEVICE_ID_JOYPAD_LEFT) |
-                  (1U << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  (UINT32_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) |
+                  (UINT32_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) |
+                  (UINT32_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) |
+                  (UINT32_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT);
                simstate->data[0] &= keep;
                simstate->data[0] |= pstate->data[0] & ~keep;
             }

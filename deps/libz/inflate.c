@@ -379,7 +379,7 @@ void makefixed(void)
    puts("       subject to change. Applications should only use zlib.h.");
    puts("     */");
    puts("");
-   size = 1U << 9;
+   size = UINT32_C(1) << 9;
    printf("    static const code lenfix[%u] = {", size);
    low = 0;
    for (;;) {
@@ -390,7 +390,7 @@ void makefixed(void)
       putchar(',');
    }
    puts("\n    };");
-   size = 1U << 5;
+   size = UINT32_C(1) << 5;
    printf("\n    static const code distfix[%u] = {", size);
    low = 0;
    for (;;) {
@@ -550,7 +550,7 @@ static int updatewindow(z_streamp strm, const Bytef *end, unsigned copy)
 
 /* Return the low n bits of the bit accumulator (n < 16) */
 #define BITS(n) \
-   ((unsigned)hold & ((1U << (n)) - 1))
+   ((unsigned)hold & ((UINT32_C(1) << (n)) - 1))
 
 /* Remove n bits from the bit accumulator */
 #define DROPBITS(n) \
@@ -1469,7 +1469,7 @@ int inflateCopy(z_streamp dest, z_streamp source)
 
    if (window != Z_NULL)
    {
-      wsize = 1U << state->wbits;
+      wsize = UINT32_C(1) << state->wbits;
       memcpy(window, state->window, wsize);
    }
    copy->window = window;
