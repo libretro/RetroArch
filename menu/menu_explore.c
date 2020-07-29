@@ -832,7 +832,17 @@ static int explore_action_sublabel_spacer(
       file_list_t *list, unsigned type, unsigned i,
       const char *label, const char *path, char *s, size_t len)
 {
-   strlcpy(s, " ", len);
+   const char *menu_driver = menu_driver_ident();
+
+   /* Only add a blank 'spacer' sublabel when
+    * using Ozone
+    * > In XMB/GLUI it upsets the vertical layout
+    * > In RGUI it does nothing other than
+    *   unnecessarily blank out the fallback
+    *   core title text in the sublabel area */
+   if (string_is_equal(menu_driver, "ozone"))
+      strlcpy(s, " ", len);
+
    return 1; /* 1 means it'll never change and can be cached */
 }
 

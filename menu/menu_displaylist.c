@@ -3080,13 +3080,14 @@ static unsigned menu_displaylist_parse_playlists(
             count++;
       }
 
-#ifdef HAVE_LIBRETRODB
-      if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
-               msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB),
-               MENU_ENUM_LABEL_EXPLORE_TAB,
-               MENU_EXPLORE_TAB, 0, 0))
-         count++;
+#if defined(HAVE_LIBRETRODB)
+      if (settings->bools.menu_content_show_explore)
+         if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
+                  MENU_ENUM_LABEL_GOTO_EXPLORE,
+                  MENU_EXPLORE_TAB, 0, 0))
+            count++;
 #endif
       if (settings->bools.menu_content_show_favorites)
          if (menu_entries_append_enum(info->list,
@@ -4367,7 +4368,7 @@ static bool menu_displaylist_push_internal(
       if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
          return true;
    }
-#ifdef HAVE_LIBRETRODB
+#if defined(HAVE_LIBRETRODB)
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info))
@@ -5453,11 +5454,8 @@ unsigned menu_displaylist_build_list(
          count              = menu_displaylist_parse_system_info(list);
          break;
       case DISPLAYLIST_EXPLORE:
-#ifdef HAVE_LIBRETRODB
-         {
-            unsigned menu_displaylist_explore(file_list_t *list);
-            count           = menu_displaylist_explore(list);
-         }
+#if defined(HAVE_LIBRETRODB)
+         count              = menu_displaylist_explore(list);
 #endif
          break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
@@ -5781,6 +5779,15 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
+#if defined(HAVE_LIBRETRODB)
+            if (settings->bools.menu_content_show_explore)
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
+                        MENU_ENUM_LABEL_GOTO_EXPLORE,
+                        MENU_EXPLORE_TAB, 0, 0))
+                  count++;
+#endif
             if (menu_content_show_favorites)
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -7443,6 +7450,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN,                                    PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS,                                 PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD,                        PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC,                                    PARSE_ONLY_BOOL, true  },

@@ -110,6 +110,8 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
       case MENU_ENUM_LABEL_GOTO_MUSIC:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
+      case MENU_ENUM_LABEL_GOTO_EXPLORE:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
 
       /* Menu icons */
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
@@ -165,7 +167,7 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
       case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INFO];
-	  case MENU_ENUM_LABEL_EXPLORE_TAB:
+      case MENU_ENUM_LABEL_EXPLORE_TAB:
       case MENU_ENUM_LABEL_UPDATE_DATABASES:
       case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];

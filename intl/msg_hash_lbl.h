@@ -697,6 +697,10 @@ MSG_HASH(
    "deferred_video_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST,
+   "deferred_explore_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_NETPLAY,
    "deferred_netplay"
    )
@@ -3317,6 +3321,10 @@ MSG_HASH(
    "content_show_playlists"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE,
+   "content_show_explore"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,
    "content_show_favorites"
    )
@@ -3625,6 +3633,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_GOTO_VIDEO,
    "goto_video"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GOTO_EXPLORE,
+   "goto_explore"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,

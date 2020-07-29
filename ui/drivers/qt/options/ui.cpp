@@ -119,7 +119,7 @@ QWidget *ViewsPage::widget()
          menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
             file_list_get_actiondata_at_offset(list, i);
 
-         if (cbs->enum_idx == (kioskMode ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS : MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES))
+         if (cbs->enum_idx == (kioskMode ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS : MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE))
          {
             tabs_begin = i;
             break;

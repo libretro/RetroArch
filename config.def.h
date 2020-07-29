@@ -522,6 +522,9 @@ static const bool content_show_netplay      = true;
 static const bool content_show_history      = true;
 static const bool content_show_add     	    = true;
 static const bool content_show_playlists    = true;
+#if defined(HAVE_LIBRETRODB)
+#define DEFAULT_MENU_CONTENT_SHOW_EXPLORE true
+#endif
 
 #ifdef HAVE_XMB
 static const unsigned xmb_alpha_factor      = 75;
