@@ -125,8 +125,9 @@ static int16_t ctr_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (joypad_info->joy_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -141,7 +142,7 @@ static int16_t ctr_joypad_state(
             (pad_state & (1 << (uint16_t)joykey)))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(ctr_joypad_axis_state(joypad_info->joy_idx, joyaxis)) 
+            ((float)abs(ctr_joypad_axis_state(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

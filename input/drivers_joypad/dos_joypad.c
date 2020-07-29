@@ -209,10 +209,11 @@ static int16_t dos_joypad_state(
       unsigned port)
 {
    unsigned i;
-   int16_t ret   = 0;
-   uint16_t *buf = dos_keyboard_state_get(joypad_info->joy_idx);
+   int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
+   uint16_t *buf                        = dos_keyboard_state_get(port_idx);
 
-   if (joypad_info->joy_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)

@@ -116,9 +116,11 @@ static int16_t qnx_joypad_state(
    int16_t ret                    = 0;
    qnx_input_t            *qnx    = (qnx_input_t*)input_driver_get_data();
    qnx_input_device_t* controller = NULL;
-   if (!qnx || joypad_info->joy_idx >= DEFAULT_MAX_PADS)
+   uint16_t port_idx              = joypad_info->joy_idx;
+
+   if (!qnx || port_idx >= DEFAULT_MAX_PADS)
       return 0;
-   controller                     = (qnx_input_device_t*)&qnx->devices[joypad_info->joy_idx];
+   controller                     = (qnx_input_device_t*)&qnx->devices[port_idx];
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -134,7 +136,7 @@ static int16_t qnx_joypad_state(
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(qnx_joypad_axis_state(qnx, controller, joypad_info->joy_idx, joyaxis)) 
+            ((float)abs(qnx_joypad_axis_state(qnx, controller, port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

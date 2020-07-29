@@ -92,7 +92,8 @@ static int16_t wiiu_hid_joypad_state(
    int16_t ret                          = 0;
    const struct retro_keybind *binds    = (const struct retro_keybind*)
       binds_data;
-   joypad_connection_t *pad             = get_pad((wiiu_hid_t *)data, joypad_info->joy_idx);
+   uint16_t port_idx                    = joypad_info->joy_idx;
+   joypad_connection_t *pad             = get_pad((wiiu_hid_t *)data, port_idx);
    if (!pad)
       return 0;
 
@@ -105,8 +106,7 @@ static int16_t wiiu_hid_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && pad->iface->button(pad->data,
-               (uint16_t)joykey))
+            && pad->iface->button(pad->data, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
             ((float)abs(pad->iface->get_axis(pad->data, joyaxis)) 

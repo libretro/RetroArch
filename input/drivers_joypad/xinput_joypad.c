@@ -524,11 +524,12 @@ static int16_t xinput_joypad_state_func(
    unsigned i;
    uint16_t btn_word;
    int16_t ret         = 0;
-   int xuser           = pad_index_to_xuser_index(joypad_info->joy_idx);
+   uint16_t port_idx   = joypad_info->joy_idx;
+   int xuser           = pad_index_to_xuser_index(port_idx);
    XINPUT_GAMEPAD *pad = &(g_xinput_states[xuser].xstate.Gamepad);
 #ifdef HAVE_DINPUT
    if (xuser == -1)
-      return dinput_joypad.state(joypad_info, binds, joypad_info->joy_idx);
+      return dinput_joypad.state(joypad_info, binds, port_idx);
 #endif
    if (!(g_xinput_states[xuser].connected))
       return 0;
@@ -544,10 +545,10 @@ static int16_t xinput_joypad_state_func(
       if (
                (uint16_t)joykey != NO_BTN 
             && xinput_joypad_button_state(
-               xuser, btn_word, joypad_info->joy_idx, (uint16_t)joykey))
+               xuser, btn_word, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(xinput_joypad_axis_state(pad, joypad_info->joy_idx, joyaxis)) 
+            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

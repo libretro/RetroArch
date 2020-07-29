@@ -1411,7 +1411,8 @@ static int16_t btstack_hid_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
    const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
-   const struct dinput_joypad_data *pad = &g_pads[joypad_info->joy_idx];
+   uint16_t port_idx                    = joypad_info->joy_idx;
+   const struct dinput_joypad_data *pad = &g_pads[port_idx];
 
    if (!pad || !pad->joypad)
       return 0;
@@ -1425,11 +1426,10 @@ static int16_t btstack_hid_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && btstack_hid_joypad_button(data,
-               joypad_info->joy_idx, (uint16_t)joykey))
+            && btstack_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(btstack_hid_joypad_axis(data, joypad_info->joy_idx, joyaxis)) 
+            ((float)abs(btstack_hid_joypad_axis(data, port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

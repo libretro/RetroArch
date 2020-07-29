@@ -389,8 +389,9 @@ static int16_t apple_gamecontroller_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (joypad_info->joy_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -403,11 +404,11 @@ static int16_t apple_gamecontroller_joypad_state(
       if (     (uint16_t)joykey != NO_BTN 
             && !GET_HAT_DIR(i)
             && (i < 32)
-            && ((mfi_buttons[joypad_info->joy_idx] & (1 << i)) != 0)
+            && ((mfi_buttons[port_idx] & (1 << i)) != 0)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(apple_gamecontroller_joypad_axis(joypad_info->joy_idx, joyaxis)) 
+            ((float)abs(apple_gamecontroller_joypad_axis(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

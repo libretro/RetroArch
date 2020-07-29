@@ -353,10 +353,11 @@ static int16_t parport_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
    const struct parport_joypad     *pad = (const struct parport_joypad*)
-      &parport_pads[joypad_info->joy_idx];
+      &parport_pads[port_idx];
 
-   if (joypad_info->joy_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)

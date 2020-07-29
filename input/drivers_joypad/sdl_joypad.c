@@ -379,11 +379,12 @@ static int16_t sdl_joypad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
-   sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[joypad_info->joy_idx];
+   uint16_t port_idx                    = joypad_info->joy_idx;
+   sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port_idx];
 
    if (!pad || !pad->joypad)
       return 0;
-   if (joypad_info->joy_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -395,11 +396,11 @@ static int16_t sdl_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && sdl_joypad_button_state(pad, joypad_info->joy_idx, (uint16_t)joykey)
+            && sdl_joypad_button_state(pad, port_idx, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(sdl_joypad_axis_state(pad, joypad_info->joy_idx, joyaxis)) 
+            ((float)abs(sdl_joypad_axis_state(pad, port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

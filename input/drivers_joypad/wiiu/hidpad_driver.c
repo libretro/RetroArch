@@ -87,8 +87,9 @@ static int16_t hidpad_state(
 {
    unsigned i;
    int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (!hidpad_query_pad(port))
+   if (!hidpad_query_pad(port_idx))
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -100,11 +101,11 @@ static int16_t hidpad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN
-            && HID_BUTTON(port, (uint16_t)joykey)
+            && HID_BUTTON(port_idx, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(HID_AXIS(port, joyaxis)) 
+            ((float)abs(HID_AXIS(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
