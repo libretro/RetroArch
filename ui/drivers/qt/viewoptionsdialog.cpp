@@ -27,6 +27,11 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "../../../config.h"
+#endif
+
+#include "../../../configuration.h"
 #include "../../../msg_hash.h"
 
 #ifndef CXX_BUILD
