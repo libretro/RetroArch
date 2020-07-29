@@ -38,9 +38,12 @@ QWidget *UserInterfacePage::widget()
 {
    QWidget                     * widget = new QWidget;
    QVBoxLayout                  *layout = new QVBoxLayout;
-   SettingsGroup             *menuGroup = new SettingsGroup("Menu");
-   SettingsGroup            *inputGroup = new SettingsGroup("Input");
-   SettingsGroup             *miscGroup = new SettingsGroup("Miscellaneous");
+   SettingsGroup             *menuGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_MENU));
+   SettingsGroup            *inputGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_INPUT));
+   SettingsGroup             *miscGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_MISCELLANEOUS));
    CheckableSettingsGroup *desktopGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE);
    rarch_setting_t           *kioskMode = menu_setting_find_enum(MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE);
 
@@ -98,13 +101,19 @@ QWidget *ViewsPage::widget()
    QHBoxLayout *mainLayout    = new QHBoxLayout;
    FormLayout *leftLayout     = new FormLayout;
    QVBoxLayout *rightLayout   = new QVBoxLayout;
-   SettingsGroup *quickMenu   = new SettingsGroup("Quick Menu");
+   SettingsGroup *quickMenu   = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_QUICK_MENU));
    QuickMenuPage *quickPage   = new QuickMenuPage(this);
-   SettingsGroup *mainMenu    = new SettingsGroup("Main Menu");
-   SettingsGroup *settings    = new SettingsGroup("Settings");
-   SettingsGroup *tabs        = new SettingsGroup("Tabs");
-   SettingsGroup *status      = new SettingsGroup("Status");
-   SettingsGroup *startScreen = new SettingsGroup("StartScreen");
+   SettingsGroup *mainMenu    = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_MAIN_MENU));
+   SettingsGroup *settings    = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_SETTINGS));
+   SettingsGroup *tabs        = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_TABS));
+   SettingsGroup *status      = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_STATUS));
+   SettingsGroup *startScreen = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_START_SCREEN));
 
    {
       unsigned i;
@@ -264,7 +273,7 @@ DesktopMenuPage::DesktopMenuPage(MainWindow *mainwindow, QObject *parent) :
    OptionsPage(parent)
    ,m_widget(new ViewOptionsWidget(mainwindow))
 {
-   setDisplayName("Desktop Menu");
+   setDisplayName(MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_DESKTOP_MENU);
 }
 
 void DesktopMenuPage::apply()

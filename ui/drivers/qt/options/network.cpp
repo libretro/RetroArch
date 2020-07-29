@@ -42,11 +42,16 @@ QWidget *NetplayPage::widget()
    QWidget *widget            = new QWidget;
    QGridLayout *layout        = new QGridLayout;
    FormLayout *checksLayout   = new FormLayout;
-   QGroupBox *serverGroup     = new QGroupBox("Server");
-   SettingsGroup *syncGroup   = new SettingsGroup("Synchronization");
-   SettingsGroup *slaveGroup  = new SettingsGroup("Slave-Mode");
-   SettingsGroup *inputGroup  = new SettingsGroup("Input Sharing");
-   SettingsGroup *deviceGroup = new SettingsGroup("Device Request");
+   QGroupBox *serverGroup     = new QGroupBox(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_SERVER));
+   SettingsGroup *syncGroup   = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_SYNCHRONIZATION));
+   SettingsGroup *slaveGroup  = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_SLAVEMODE));
+   SettingsGroup *inputGroup  = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_INPUT_SHARING));
+   SettingsGroup *deviceGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_DEVICE_REQUEST));
    FormLayout *serverForm     = new FormLayout;
    QHBoxLayout *serverLayout  = new QHBoxLayout;
    QVBoxLayout *mainLayout    = new QVBoxLayout;

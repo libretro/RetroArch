@@ -297,14 +297,14 @@ bool disk_control_set_eject_state(
 
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
-      snprintf(
+      strlcpy(
             msg,
             eject ? msg_hash_to_str(MSG_DISK_EJECTED_VIRTUAL_DISK_TRAY) :
                   msg_hash_to_str(MSG_DISK_CLOSED_VIRTUAL_DISK_TRAY);
    else
    {
       error = true;
-      snprintf(
+      strlcpy(
             msg,
             eject ? msg_hash_to_str(MSG_FAILED_TO_EJECT_VIRTUAL_DISK_TRAY) :
                   msg_hash_to_str(MSG_FAILED_TO_CLOSE_VIRTUAL_DISK_TRAY));

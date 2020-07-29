@@ -40,11 +40,15 @@ QWidget *VideoPage::widget()
 
    QVBoxLayout        *layout          = new QVBoxLayout;
 
-   SettingsGroup *outputGroup          = new SettingsGroup("Output");
-   SettingsGroup *aspectGroup          = new SettingsGroup("Scaling");
+   SettingsGroup *outputGroup          = new SettingsGroup((msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS));
+   SettingsGroup *aspectGroup          = new SettingsGroup((msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS));
 
-   SettingsGroup *fullscreenGroup      = new SettingsGroup("Fullscreen Mode");
-   SettingsGroup *windowedGroup        = new SettingsGroup("Windowed Mode");
+   SettingsGroup *fullscreenGroup      = new SettingsGroup((msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS));
+   SettingsGroup *windowedGroup        = new SettingsGroup((msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS));
 
    QHBoxLayout *fullcreenSizeLayout    = new QHBoxLayout;
    FormLayout *leftFullscreenSizeForm  = new FormLayout;
@@ -54,15 +58,18 @@ QWidget *VideoPage::widget()
    FormLayout *leftWindowedSizeForm    = new FormLayout;
    FormLayout *rightWindowedSizeForm   = new FormLayout;
 
-   SettingsGroup *syncGroup            = new SettingsGroup("Synchronization");
+   SettingsGroup *syncGroup            = new SettingsGroup((msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS));
    CheckableSettingsGroup *vSyncGroup  = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
 
    QHBoxLayout *outputScalingLayout    = new QHBoxLayout;
    QHBoxLayout *modeLayout             = new QHBoxLayout;
    QHBoxLayout *syncMiscLayout         = new QHBoxLayout;
 
-   SettingsGroup *miscGroup            = new SettingsGroup("Miscellaneous");
-   SettingsGroup *filterGroup          = new SettingsGroup("Video Filter");
+   SettingsGroup *miscGroup            = new SettingsGroup((msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_VIDEO_MISCELLANEOUS));
+   SettingsGroup *filterGroup          = new SettingsGroup((msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_FILTER));
 
    unsigned i, size                    = 0;
    struct video_display_config *list   = (struct video_display_config*) video_display_server_get_resolution_list(&size);

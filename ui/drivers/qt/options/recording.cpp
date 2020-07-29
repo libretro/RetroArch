@@ -25,8 +25,10 @@ QWidget *RecordingPage::widget()
 {
    QWidget              * widget = new QWidget;
    QVBoxLayout           *layout = new QVBoxLayout;
-   SettingsGroup *recordingGroup = new SettingsGroup("Recording");
-   SettingsGroup *streamingGroup = new SettingsGroup("Streaming");
+   SettingsGroup *recordingGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_RECORDING_RECORDING));
+   SettingsGroup *streamingGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_RECORDING_STREAMING));
    QHBoxLayout               *hl = new QHBoxLayout;
 
    recordingGroup->add(MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY);

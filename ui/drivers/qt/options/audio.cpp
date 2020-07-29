@@ -29,12 +29,16 @@ QWidget *AudioPage::widget()
 {
    QWidget *widget                = new QWidget;
    QVBoxLayout *layout            = new QVBoxLayout;
-   SettingsGroup *outputGroup     = new SettingsGroup("Output");
-   SettingsGroup *resamplerGroup  = new SettingsGroup("Resampler");
+   SettingsGroup *outputGroup     = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS));
+   SettingsGroup *resamplerGroup  = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS));
    SettingsGroup *syncGroup       = new SettingsGroup(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_AUDIO_SYNC));
-   SettingsGroup *dspGroup        = new SettingsGroup("DSP plugin");
-   SettingsGroup *volumeGroup     = new SettingsGroup("Volume");
+   SettingsGroup *dspGroup        = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN));
+   SettingsGroup *volumeGroup     = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_AUDIO_VOLUME));
    QGridLayout *volumeLayout      = new QGridLayout();
 
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_ENABLE);

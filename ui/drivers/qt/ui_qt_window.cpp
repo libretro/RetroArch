@@ -899,23 +899,7 @@ void MainWindow::showWelcomeScreen()
 {
    bool dontAsk              = false;
    bool answer               = false;
-   const QString welcomeText = QStringLiteral(""
-      "Welcome to the RetroArch Desktop Menu!<br>\n"
-      "<br>\n"
-      "Many settings and actions are currently only available in the familiar Big Picture menu, "
-      "but this Desktop Menu should be functional for launching content and managing playlists.<br>\n"
-      "<br>\n"
-      "Some useful hotkeys for interacting with the Big Picture menu include:\n"
-      "<ul><li>F1 - Bring up the Big Picture menu</li>\n"
-      "<li>F - Switch between fullscreen and windowed modes</li>\n"
-      "<li>F5 - Bring the Desktop Menu back if closed</li>\n"
-      "<li>Esc - Exit RetroArch</li></ul>\n"
-      "\n"
-      "For more hotkeys and their assignments, see:<br>\n"
-      "Settings -> Input -> Input Hotkey Binds<br>\n"
-      "<br>\n"
-      "Documentation for RetroArch, libretro and cores:<br>\n"
-      "<a href=\"https://docs.libretro.com/\">https://docs.libretro.com/</a>");
+   const QString welcomeText = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_WELCOME_TO_DESKTOP_MODE));
 
    if (!m_settings->value("show_welcome_screen", true).toBool())
       return;

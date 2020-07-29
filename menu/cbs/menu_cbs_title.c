@@ -331,7 +331,7 @@ static int action_get_title_mixer_stream_actions(const char *path, const char *l
 {
    unsigned         offset      = (menu_type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN);
 
-   snprintf(s, len, "%s%d: %s",
+   snprintf(s, len, "%s%s%d: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_STREAM),
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
          offset + 1,

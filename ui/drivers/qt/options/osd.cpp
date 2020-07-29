@@ -40,12 +40,12 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y);
-   notificationsGroup->addRow("Notification Color: ", new FloatColorButton(
+   notificationsGroup->addRow((msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIDEO_MESSAGE_COLOR), new FloatColorButton(
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE));
 
-   bgGroup->addRow("Notification Background Color: ", new UIntColorButton(
+   bgGroup->addRow((msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIDEO_NOTIFICATION_BACKGROUND_COLOR), new UIntColorButton(
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE));

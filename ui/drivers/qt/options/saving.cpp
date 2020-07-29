@@ -25,13 +25,19 @@ QWidget *SavingPage::widget()
 {
    QWidget                             *widget = new QWidget;
    FormLayout                          *layout = new FormLayout;
-   SettingsGroup                   *savesGroup = new SettingsGroup("Saves");
-   SettingsGroup              *savestatesGroup = new SettingsGroup("Savestates");
+   SettingsGroup                   *savesGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SAVES));
+   SettingsGroup              *savestatesGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SAVESTATES));
    CheckableSettingsGroup *autoSavestatesGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE);
-   SettingsGroup                 *saveRamGroup = new SettingsGroup("SaveRAM");
-   SettingsGroup          *systemFilesDirGroup = new SettingsGroup("System Files");
-   SettingsGroup          *screenshotsDirGroup = new SettingsGroup("Screenshots");
-   SettingsGroup          *runtimeLogGroup     = new SettingsGroup("Runtime Log");
+   SettingsGroup                 *saveRamGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SAVERAM));
+   SettingsGroup          *systemFilesDirGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SYSTEMFILES));
+   SettingsGroup          *screenshotsDirGroup = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SCREENSHOTS));
+   SettingsGroup          *runtimeLogGroup     = new SettingsGroup(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_RUNTIME_LOG));
 
    savesGroup->add(MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE);
    savesGroup->add(MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE);

@@ -9608,6 +9608,130 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
    "Reset All"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_AUDIO_VOLUME,
+   "Volume"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_SERVER,
+   "Server"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_SYNCHRONIZATION,
+   "Synchronization"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_SLAVEMODE,
+   "Slave-Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_INPUT_SHARING,
+   "Input Sharing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_NETWORK_DEVICE_REQUEST,
+   "Device Request"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIDEO_MESSAGE_COLOR,
+   "Notification Color: "
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIDEO_NOTIFICATION_BACKGROUND_COLOR,
+   "Notification Background Color: "
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_RECORDING_RECORDING,
+   "Recording"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_RECORDING_STREAMING,
+   "Streaming"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SAVES,
+   "Saves"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SAVESTATES,
+   "Savestates"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SAVERAM,
+   "SaveRAM"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SYSTEMFILES,
+   "System Files"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_SCREENSHOTS,
+   "Screenshots"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_SAVING_RUNTIME_LOG,
+   "Runtime Log"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_MENU,
+   "Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_INPUT,
+   "Input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_MISCELLANEOUS,
+   "Miscellaneous"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_QUICK_MENU,
+   "Quick Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_MAIN_MENU,
+   "Main Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_SETTINGS,
+   "Settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_TABS,
+   "Tabs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_STATUS,
+   "Status"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_START_SCREEN,
+   "Start Screen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_UI_DESKTOP_MENU,
+   "Desktop Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SETTINGS_SUBSECTION_VIDEO_MISCELLANEOUS,
+   "Miscellaneous"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+   "Reset All"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+   "Reset All"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+   "Reset All"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+   "Reset All"
+   )
 
 /* Unsorted */
 
@@ -12139,5 +12263,9 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
    "Scan Finished.<br><br>\nIn order for content to be correctly scanned, you must:\n<ul><li>have a compatible core already downloaded</li>\n<li>have \"Core Info Files\" updated via Online Updater</li>\n<li>have \"Databases\" updated via Online Updater</li>\n<li>restart RetroArch if any of the above was just done</li></ul>\nFinally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_WELCOME_TO_DESKTOP_MODE,
+   "Welcome to the RetroArch Desktop Menu!<br>\n<br>\nMany settings and actions are currently only available in the familiar Big Picture menu, but this Desktop Menu should be functional for launching content and managing playlists.<br>\n<br>\nSome useful hotkeys for interacting with the Big Picture menu include:\n<ul><li>F1 - Bring up the Big Picture menu</li>\n<li>F - Switch between fullscreen and windowed modes</li>\n<li>F5 - Bring the Desktop Menu back if closed</li>\n<li>Esc - Exit RetroArch</li></ul>\n\nFor more hotkeys and their assignments, see:<br>\nSettings -> Input -> Input Hotkey Binds<br>\n<br>\nDocumentation for RetroArch, libretro and cores:<br>\n<a href=\"https://docs.libretro.com/\">https://docs.libretro.com/</a>"
    )
 #endif
