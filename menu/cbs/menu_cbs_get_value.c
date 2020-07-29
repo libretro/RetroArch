@@ -1856,6 +1856,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case 7:   /* Run */
       case MENU_SETTING_ACTION_DELETE_ENTRY:
       case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+      case MENU_EXPLORE_TAB:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_more);
          break;

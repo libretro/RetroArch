@@ -249,7 +249,9 @@ enum
    XMB_SYSTEM_TAB_NETPLAY,
 #endif
    XMB_SYSTEM_TAB_ADD,
+#if defined(HAVE_LIBRETRODB)
    XMB_SYSTEM_TAB_EXPLORE,
+#endif
 
    /* End of this enum - use the last one to determine num of possible tabs */
    XMB_SYSTEM_TAB_MAX_LENGTH
@@ -340,7 +342,9 @@ typedef struct xmb_handle
    xmb_node_t history_tab_node;
    xmb_node_t favorites_tab_node;
    xmb_node_t add_tab_node;
+#if defined(HAVE_LIBRETRODB)
    xmb_node_t explore_tab_node;
+#endif
    xmb_node_t netplay_tab_node;
    menu_input_pointer_t pointer;
 
@@ -1866,8 +1870,10 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 #endif
       case XMB_SYSTEM_TAB_ADD:
          return &xmb->add_tab_node;
+#if defined(HAVE_LIBRETRODB)
       case XMB_SYSTEM_TAB_EXPLORE:
          return &xmb->explore_tab_node;
+#endif
       default:
          if (i > xmb->system_tab_end)
             return xmb_get_userdata_from_horizontal_list(
@@ -2522,6 +2528,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_MOVIE];
       case MENU_ENUM_LABEL_GOTO_MUSIC:
          return xmb->textures.list[XMB_TEXTURE_MUSIC];
+      case MENU_ENUM_LABEL_GOTO_EXPLORE:
+         return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
 
       case MENU_ENUM_LABEL_LOAD_DISC:
       case MENU_ENUM_LABEL_DUMP_DISC:
@@ -5450,8 +5458,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 
-#ifdef HAVE_LIBRETRODB
-   xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
+#if defined(HAVE_LIBRETRODB)
+   if (settings->bools.menu_content_show_explore)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
 #endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
@@ -5936,9 +5945,11 @@ static void xmb_context_reset_textures(
    xmb->add_tab_node.alpha      = xmb->categories_active_alpha;
    xmb->add_tab_node.zoom       = xmb->categories_active_zoom;
 
+#if defined(HAVE_LIBRETRODB)
    xmb->explore_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
    xmb->explore_tab_node.alpha  = xmb->categories_active_alpha;
    xmb->explore_tab_node.zoom   = xmb->categories_active_zoom;
+#endif
 
 #ifdef HAVE_NETWORKING
    xmb->netplay_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_NETPLAY];
@@ -6366,12 +6377,14 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                menu_stack->list[stack_size - 1].type =
                   MENU_ADD_TAB;
                break;
+#if defined(HAVE_LIBRETRODB)
             case XMB_SYSTEM_TAB_EXPLORE:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_EXPLORE_TAB;
                break;
+#endif
             default:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU));

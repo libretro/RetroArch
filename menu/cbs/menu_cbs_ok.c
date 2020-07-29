@@ -525,7 +525,16 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST;
-         dl_type           = DISPLAYLIST_GENERIC;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_EXPLORE_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = label;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_REMAPPINGS_PORT_LIST:
          info.type          = type;
@@ -4958,6 +4967,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_goto_images, ACTION_OK_DL_IMAGES_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_goto_video, ACTION_OK_DL_VIDEO_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_goto_music, ACTION_OK_DL_MUSIC_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_goto_explore, ACTION_OK_DL_EXPLORE_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_save, ACTION_OK_DL_SHADER_PRESET_SAVE)
 DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_remove, ACTION_OK_DL_SHADER_PRESET_REMOVE)
@@ -6932,6 +6942,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_GOTO_MUSIC,                          action_ok_goto_music},
          {MENU_ENUM_LABEL_GOTO_IMAGES,                         action_ok_goto_images},
          {MENU_ENUM_LABEL_GOTO_VIDEO,                          action_ok_goto_video},
+         {MENU_ENUM_LABEL_GOTO_EXPLORE,                        action_ok_goto_explore},
          {MENU_ENUM_LABEL_BROWSE_START,                        action_ok_browse_url_start},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE,                   action_ok_load_core},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION, action_ok_core_deferred_set},
