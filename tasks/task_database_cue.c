@@ -254,6 +254,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
          {
             if (
                    (string_is_equal(game_id, "ULES-"))
+                || (string_is_equal(game_id, "ULUS-"))
                 || (string_is_equal(game_id, "ULJS-"))
                 || (string_is_equal(game_id, "ULEM-"))
                 || (string_is_equal(game_id, "ULUM-"))
@@ -267,7 +268,6 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
          {
             if (
                    (string_is_equal(game_id, "UCES-"))
-                || (string_is_equal(game_id, "UCUS-"))
                 || (string_is_equal(game_id, "UCUS-"))
                 || (string_is_equal(game_id, "UCJS-"))
                 || (string_is_equal(game_id, "UCAS-"))
