@@ -351,7 +351,7 @@ core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry);
  * default core association */
 core_info_t *playlist_get_default_core_info(playlist_t* playlist);
 
-void playlist_set_cached(playlist_t* pl);
+void playlist_set_cached_external(playlist_t* pl);
 
 RETRO_END_DECLS
 

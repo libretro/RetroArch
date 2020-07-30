@@ -486,8 +486,7 @@ static void explore_free(explore_state_t *state)
    EX_BUF_FREE(state->entries);
 
    for (i = 0; i != EX_BUF_LEN(state->playlists); i++)
-      if (state->playlists[i] != state->cached_playlist)
-         playlist_free(state->playlists[i]);
+      playlist_free(state->playlists[i]);
    EX_BUF_FREE(state->playlists);
    ex_arena_free(&state->arena);
 }
@@ -968,16 +967,6 @@ unsigned menu_displaylist_explore(file_list_t *list)
                " '%s'", explore_state->find_string);
    }
 
-   if (current_type == MENU_EXPLORE_TAB)
-   {
-      /* free any existing playlist 
-       * when entering the explore view */
-      playlist_free_cached();
-   }
-
-   playlist_set_cached(NULL);
-   explore_state->cached_playlist = NULL;
-
    if (     current_type == MENU_EXPLORE_TAB 
          || current_type == EXPLORE_TYPE_ADDITIONALFILTER)
    {
@@ -1218,8 +1207,7 @@ SKIP_ENTRY:;
 
          /* Fake all the state so the content screen 
           * and information screen think we're viewing via playlist */
-         playlist_set_cached(pl);
-         explore_state->cached_playlist = pl;
+         playlist_set_cached_external(pl);
          menu->rpl_entry_selection_ptr = (pl_entry - pl_first);
          strlcpy(menu->deferred_path,
                pl_entry->path, sizeof(menu->deferred_path));
