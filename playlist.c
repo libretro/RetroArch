@@ -56,6 +56,7 @@ struct content_playlist
    bool modified;
    bool old_format;
    bool compressed;
+   bool cached_external;
 
    enum playlist_label_display_mode label_display_mode;
    enum playlist_thumbnail_mode right_thumbnail_mode;
@@ -107,9 +108,11 @@ typedef int (playlist_sort_fun_t)(
 
 /* TODO/FIXME - hack for allowing the explore view to switch 
  * over to a playlist item */
-void playlist_set_cached(playlist_t* pl)
+void playlist_set_cached_external(playlist_t* pl)
 {
+   playlist_free_cached();
    playlist_cached = pl;
+   playlist_cached->cached_external = true;
 }
 
 /* Convenience function: copies specified playlist
@@ -1386,9 +1389,10 @@ void playlist_write_runtime_file(playlist_t *playlist)
    JSON_Writer_WriteNewLine(context.writer);
    JSON_Writer_Free(context.writer);
 
-   playlist->modified   = false;
-   playlist->old_format = false;
-   playlist->compressed = false;
+   playlist->modified        = false;
+   playlist->old_format      = false;
+   playlist->compressed      = false;
+   playlist->cached_external = false;
 
    RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->config.path);
 end:
@@ -2609,7 +2613,8 @@ end:
 
 void playlist_free_cached(void)
 {
-   playlist_free(playlist_cached);
+   if (playlist_cached && !playlist_cached->cached_external)
+      playlist_free(playlist_cached);
    playlist_cached = NULL;
 }
 
@@ -2668,6 +2673,7 @@ playlist_t *playlist_init(const playlist_config_t *config)
    playlist->modified               = false;
    playlist->old_format             = false;
    playlist->compressed             = false;
+   playlist->cached_external        = false;
    playlist->size                   = 0;
    playlist->default_core_name      = NULL;
    playlist->default_core_path      = NULL;
