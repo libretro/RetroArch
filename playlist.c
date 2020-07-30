@@ -111,8 +111,11 @@ typedef int (playlist_sort_fun_t)(
 void playlist_set_cached_external(playlist_t* pl)
 {
    playlist_free_cached();
-   playlist_cached = pl;
-   playlist_cached->cached_external = true;
+   if (pl)
+   {
+      playlist_cached = pl;
+      playlist_cached->cached_external = true;
+   }
 }
 
 /* Convenience function: copies specified playlist
@@ -1392,7 +1395,6 @@ void playlist_write_runtime_file(playlist_t *playlist)
    playlist->modified        = false;
    playlist->old_format      = false;
    playlist->compressed      = false;
-   playlist->cached_external = false;
 
    RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->config.path);
 end:
