@@ -908,8 +908,7 @@ static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
       float volume)
 {
    int i;
-   struct resampler_data info;
-   float temp_buffer[AUDIO_MIXER_TEMP_BUFFER] = { 0 };
+   float* temp_buffer = NULL;
    unsigned buf_free                = (unsigned)(num_frames * 2);
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
@@ -917,6 +916,9 @@ static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
    if (voice->types.ogg.position == voice->types.ogg.samples)
    {
 again:
+      if (temp_buffer == NULL)
+         temp_buffer = (float*)malloc(AUDIO_MIXER_TEMP_BUFFER * sizeof(float));
+
       temp_samples = stb_vorbis_get_samples_float_interleaved(
             voice->types.ogg.stream, 2, temp_buffer,
             AUDIO_MIXER_TEMP_BUFFER) * 2;
@@ -936,18 +938,21 @@ again:
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
          voice->type = AUDIO_MIXER_TYPE_NONE;
-         return;
+         goto cleanup;
       }
 
-      info.data_in              = temp_buffer;
-      info.data_out             = voice->types.ogg.buffer;
-      info.input_frames         = temp_samples / 2;
-      info.output_frames        = 0;
-      info.ratio                = voice->types.ogg.ratio;
-
       if (voice->types.ogg.resampler)
+      {
+         struct resampler_data info;
+         info.data_in = temp_buffer;
+         info.data_out = voice->types.ogg.buffer;
+         info.input_frames = temp_samples / 2;
+         info.output_frames = 0;
+         info.ratio = voice->types.ogg.ratio;
+
          voice->types.ogg.resampler->process(
                voice->types.ogg.resampler_data, &info);
+      }
       else
          memcpy(voice->types.ogg.buffer, temp_buffer,
                temp_samples * sizeof(float));
@@ -972,6 +977,10 @@ again:
 
    voice->types.ogg.position += buf_free;
    voice->types.ogg.samples  -= buf_free;
+
+cleanup:
+   if (temp_buffer != NULL)
+      free(temp_buffer);
 }
 #endif
 
@@ -1227,7 +1236,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
       }
    }
 
-   for (j = 0, sample = buffer; j < num_frames; j++, sample++)
+   for (j = 0, sample = buffer; j < num_frames * 2; j++, sample++)
    {
       if (*sample < -1.0f)
          *sample = -1.0f;
