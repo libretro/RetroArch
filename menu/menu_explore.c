@@ -117,19 +117,24 @@ typedef struct
    playlist_t *cached_playlist;
 } explore_state_t;
 
-static const struct { const char *name, *rdbkey; bool use_split, is_company, is_numeric; }
+static const struct
+{
+   enum msg_hash_enums name_enum;
+   const char* rdbkey;
+   bool use_split, is_company, is_numeric;
+}
 explore_by_info[EXPLORE_CAT_COUNT] = 
 {
-   { "Developer",    "developer",   true,  true,  false },
-   { "Publisher",    "publisher",   true,  true,  false },
-   { "Release Year", "releaseyear", false, false, true  },
-   { "Player Count", "users",       false, false, true  },
-   { "Genre",        "genre",       true,  false, false },
-   { "Origin",       "origin",      false, false, false },
-   { "Region",       "region",      false, false, false },
-   { "Franchise",    "franchise",   false, false, false },
-   { "Tags",         "tags",        true,  false, false },
-   { "System",       "system",      false, false, false },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,           "developer",   true,  true,  false },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,           "publisher",   true,  true,  false },
+   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR, "releaseyear", false, false, true  },
+   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT, "users",       false, false, true  },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,               "genre",       true,  false, false },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,              "origin",      false, false, false },
+   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,       "region",      false, false, false },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,           "franchise",   false, false, false },
+   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAGS,         "tags",        true,  false, false },
+   { MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,         "system",      false, false, false },
 };
 
 /* TODO/FIXME - static global */
@@ -892,7 +897,7 @@ static void explore_action_find_complete(void *userdata, const char *line)
 static int explore_action_ok_find(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_input_ctx_line_t line;
-   line.label                 = "Search Text";
+   line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
@@ -906,7 +911,6 @@ unsigned menu_displaylist_explore(file_list_t *list)
    unsigned i, cat;
    char tmp[512];
    unsigned depth, current_type, current_cat, previous_cat;
-   unsigned levels              = 0;
    struct item_file *stack_top  = NULL;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
 
@@ -931,6 +935,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
 
    if (depth)
    {
+      unsigned levels           = 0;
       bool clear_find_text      = false;
       ((menu_file_list_cbs_t*)stack_top[depth].actiondata)->action_get_title = 
          explore_action_get_title;
@@ -941,8 +946,6 @@ unsigned menu_displaylist_explore(file_list_t *list)
       for (i = 1; i < depth; i++)
       {
          unsigned by_selected_type;
-         explore_string_t **entries;
-         const char* name          = NULL;
          unsigned by_category      = (stack_top[i].type - 
                EXPLORE_TYPE_FIRSTCATEGORY);
 
@@ -952,19 +955,22 @@ unsigned menu_displaylist_explore(file_list_t *list)
             continue;
 
          by_selected_type           = stack_top[i + 1].type;
-         name                       = explore_by_info[by_category].name;
-         entries                    = explore_state->by[by_category];
-         explore_append_title(explore_state,
-               "%s%s: %s", (levels++ ? " / " : ""),
-               name, (by_selected_type != EXPLORE_TYPE_FILTERNULL ? entries[by_selected_type - EXPLORE_TYPE_FIRSTITEM]->str : "Unknown"));
+         explore_append_title(explore_state, "%s%s: %s",
+               (levels++ ? " / " : ""),
+               msg_hash_to_str(explore_by_info[by_category].name_enum),
+               (by_selected_type != EXPLORE_TYPE_FILTERNULL ?
+                  explore_state->by[by_category][by_selected_type - EXPLORE_TYPE_FIRSTITEM]->str
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
       }
 
       if (clear_find_text)
          explore_state->find_string[0] = '\0';
 
       if (*explore_state->find_string)
-         explore_append_title(explore_state,
-               " '%s'", explore_state->find_string);
+         explore_append_title(explore_state, "%s%s: '%s'",
+               (levels++ ? " / " : ""),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
+               explore_state->find_string);
    }
 
    if (     current_type == MENU_EXPLORE_TAB 
@@ -973,16 +979,19 @@ unsigned menu_displaylist_explore(file_list_t *list)
       /* Explore top or selecting an additional filter */
       bool is_top = (current_type == MENU_EXPLORE_TAB);
       if (is_top)
-         strlcpy(explore_state->title, "Explore", sizeof(explore_state->title));
+         strlcpy(explore_state->title,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
+               sizeof(explore_state->title));
       else
-         explore_append_title(explore_state,
-               " - Additional Filter");
+         explore_append_title(explore_state, " - %s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER));
 
       if (is_top || !*explore_state->find_string)
       {
          menu_file_list_cbs_t *new_cbs = explore_menu_entry(
                list, explore_state,
-               "Search Name ...", EXPLORE_TYPE_SEARCH);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
+               EXPLORE_TYPE_SEARCH);
          if (new_cbs)
             new_cbs->action_ok         = explore_action_ok_find;
          explore_menu_add_spacer(list);
@@ -990,7 +999,6 @@ unsigned menu_displaylist_explore(file_list_t *list)
 
       for (cat = 0; cat < EXPLORE_CAT_COUNT; cat++)
       {
-         const char          *name  = explore_by_info[cat].name;
          explore_string_t **entries = explore_state->by[cat];
 
          if (!EX_BUF_LEN(entries))
@@ -1001,12 +1009,21 @@ unsigned menu_displaylist_explore(file_list_t *list)
                goto SKIP_EXPLORE_BY_CATEGORY;
 
          if (!is_top)
-            snprintf(tmp, sizeof(tmp), "By %s", name);
+            snprintf(tmp, sizeof(tmp), "%s %s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_BY),
+                  msg_hash_to_str(explore_by_info[cat].name_enum));
          else if (explore_by_info[cat].is_numeric)
-            snprintf(tmp, sizeof(tmp), "By %s (%s - %s)", name, entries[0]->str, entries[EX_BUF_LEN(entries) - 1]->str);
+            snprintf(tmp, sizeof(tmp), "%s %s (%s - %s)",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_BY),
+                  msg_hash_to_str(explore_by_info[cat].name_enum),
+                  entries[0]->str, entries[EX_BUF_LEN(entries) - 1]->str);
          else
-            snprintf(tmp, sizeof(tmp), "By %s (%u entries)", name,
-                  (unsigned)EX_BUF_LEN(entries));
+            snprintf(tmp, sizeof(tmp), "%s %s (%u %s)",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_BY),
+                  msg_hash_to_str(explore_by_info[cat].name_enum),
+                  (unsigned)EX_BUF_LEN(entries),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS));
+
          explore_menu_entry(list, explore_state,
                tmp, cat + EXPLORE_TYPE_FIRSTCATEGORY);
 
@@ -1017,7 +1034,8 @@ SKIP_EXPLORE_BY_CATEGORY:;
       {
          explore_menu_add_spacer(list);
          explore_menu_entry(list, explore_state,
-               "Show All", EXPLORE_TYPE_SHOWALL);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL),
+               EXPLORE_TYPE_SHOWALL);
       }
    }
    else if (
@@ -1036,11 +1054,12 @@ SKIP_EXPLORE_BY_CATEGORY:;
       {
          explore_menu_add_spacer(list);
          explore_menu_entry(list, explore_state,
-               "Unknown", EXPLORE_TYPE_FILTERNULL);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN), EXPLORE_TYPE_FILTERNULL);
       }
 
-      explore_append_title(explore_state,
-            "Select %s", explore_by_info[current_cat].name);
+      explore_append_title(explore_state, "%s %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT),
+            msg_hash_to_str(explore_by_info[current_cat].name_enum));
    }
    else if (
             previous_cat < EXPLORE_CAT_COUNT 
@@ -1062,9 +1081,9 @@ SKIP_EXPLORE_BY_CATEGORY:;
 
       /* List filtered items in a selected explore by category */
       if (is_filtered_category)
-         explore_append_title(explore_state,
-               " - Select %s",
-               explore_by_info[current_cat].name);
+         explore_append_title(explore_state, " - %s %s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT),
+               msg_hash_to_str(explore_by_info[current_cat].name_enum));
       else
       {
          /* Game list */
@@ -1072,16 +1091,17 @@ SKIP_EXPLORE_BY_CATEGORY:;
          {
             menu_file_list_cbs_t *new_cbs = NULL;
             explore_append_title(explore_state,
-                  "All");
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ALL));
             new_cbs               = explore_menu_entry(
-                  list, explore_state, "Search Name ...",
+                  list, explore_state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
                   EXPLORE_TYPE_SEARCH);
             if (new_cbs)
                new_cbs->action_ok = explore_action_ok_find;
          }
          else
             explore_menu_entry(list, explore_state,
-                  "Add Additional Filter",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER),
                   EXPLORE_TYPE_ADDITIONALFILTER);
          explore_menu_add_spacer(list);
       }
@@ -1171,11 +1191,12 @@ SKIP_ENTRY:;
       {
          explore_menu_add_spacer(list);
          explore_menu_entry(list, explore_state,
-               "Unknown", EXPLORE_TYPE_FILTERNULL);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
+               EXPLORE_TYPE_FILTERNULL);
       }
 
       explore_append_title(explore_state,
-            " (%u)", (unsigned) (list->size - 1));
+            " (%u)", (unsigned) (list->size - (is_filtered_category ? 0 : 1)));
 
       ex_hashmap32_free(&map_filtered_category);
    }
