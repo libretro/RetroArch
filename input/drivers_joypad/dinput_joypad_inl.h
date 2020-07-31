@@ -22,9 +22,14 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include <windowsx.h>
+#include <dinput.h>
+#include <mmsystem.h>
+
 /* Forward declaration */
 extern struct dinput_joypad_data g_pads[MAX_USERS];
 extern unsigned g_joypad_cnt;
+extern LPDIRECTINPUT8 g_dinput_ctx;
 
 /* Function prototype forward declarations */
 void dinput_destroy_context(void);
@@ -335,7 +340,7 @@ static bool dinput_joypad_query_pad(unsigned port)
    return port < MAX_USERS && g_pads[port].joypad;
 }
 
-bool dinput_joypad_set_rumble(unsigned port,
+static bool dinput_joypad_set_rumble(unsigned port,
       enum retro_rumble_effect type, uint16_t strength)
 {
    int i = type == RETRO_RUMBLE_STRONG ? 1 : 0;

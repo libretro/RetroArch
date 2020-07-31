@@ -61,6 +61,7 @@
  * a 360 pad, or the correct XInput user number (0..3 inclusive) if it is.
  */
 extern int g_xinput_pad_indexes[MAX_USERS];
+extern unsigned g_last_xinput_pad_idx;
 extern bool g_xinput_block_pads;
 
 #ifdef HAVE_DYNAMIC
@@ -110,18 +111,117 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 #endif
 };
 
+#include "dinput_joypad_inl.h"
 #include "xinput_joypad_inl.h"
 
-static INLINE int pad_index_to_xuser_index(unsigned pad)
+/* Forward declaration */
+bool guid_is_xinput_device(const GUID* product_guid);
+
+static BOOL CALLBACK enum_joypad_cb_hybrid(
+      const DIDEVICEINSTANCE *inst, void *p)
 {
-   return g_xinput_pad_indexes[pad];
+   bool is_xinput_pad;
+   LPDIRECTINPUTDEVICE8 *pad = NULL;
+   if (g_joypad_cnt == MAX_USERS)
+      return DIENUM_STOP;
+
+   pad = &g_pads[g_joypad_cnt].joypad;
+
+#ifdef __cplusplus
+   if (FAILED(IDirectInput8_CreateDevice(
+               g_dinput_ctx, inst->guidInstance, pad, NULL)))
+#else
+   if (FAILED(IDirectInput8_CreateDevice(
+               g_dinput_ctx, &inst->guidInstance, pad, NULL)))
+#endif
+      return DIENUM_CONTINUE;
+
+   g_pads[g_joypad_cnt].joy_name          = 
+      strdup((const char*)inst->tszProductName);
+   g_pads[g_joypad_cnt].joy_friendly_name = 
+      strdup((const char*)inst->tszInstanceName);
+
+   /* there may be more useful info in the GUID,
+    * so leave this here for a while */
+#if 0
+   printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
+   inst->guidProduct.Data1,
+   inst->guidProduct.Data2,
+   inst->guidProduct.Data3,
+   inst->guidProduct.Data4[0],
+   inst->guidProduct.Data4[1],
+   inst->guidProduct.Data4[2],
+   inst->guidProduct.Data4[3],
+   inst->guidProduct.Data4[4],
+   inst->guidProduct.Data4[5],
+   inst->guidProduct.Data4[6],
+   inst->guidProduct.Data4[7]);
+#endif
+
+   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
+   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
+
+   is_xinput_pad            =    g_xinput_block_pads
+                              && guid_is_xinput_device(&inst->guidProduct);
+
+   if (is_xinput_pad)
+   {
+      if (g_last_xinput_pad_idx < 4)
+         g_xinput_pad_indexes[g_joypad_cnt] = g_last_xinput_pad_idx++;
+      goto enum_iteration_done;
+   }
+
+   /* Set data format to simple joystick */
+   IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
+   IDirectInputDevice8_SetCooperativeLevel(*pad,
+         (HWND)video_driver_window_get(),
+         DISCL_EXCLUSIVE | DISCL_BACKGROUND);
+
+   IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb,
+         *pad, DIDFT_ABSAXIS);
+
+   dinput_create_rumble_effects(&g_pads[g_joypad_cnt]);
+
+   if (!is_xinput_pad)
+   {
+      input_autoconfigure_connect(
+            g_pads[g_joypad_cnt].joy_name,
+            g_pads[g_joypad_cnt].joy_friendly_name,
+            dinput_joypad.ident,
+            g_joypad_cnt,
+            g_pads[g_joypad_cnt].vid,
+            g_pads[g_joypad_cnt].pid);
+   }
+
+enum_iteration_done:
+   g_joypad_cnt++;
+   return DIENUM_CONTINUE;
 }
+
+static void dinput_joypad_init_hybrid(void *data)
+{
+   unsigned i;
+
+   g_last_xinput_pad_idx = 0;
+
+   for (i = 0; i < MAX_USERS; ++i)
+   {
+      g_xinput_pad_indexes[i]     = -1;
+      g_pads[i].joy_name          = NULL;
+      g_pads[i].joy_friendly_name = NULL;
+   }
+
+   IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
+         enum_joypad_cb_hybrid, NULL, DIEDFL_ATTACHEDONLY);
+}
+
+#define PAD_INDEX_TO_XUSER_INDEX(pad) (g_xinput_pad_indexes[(pad)])
 
 static const char *xinput_joypad_name(unsigned pad)
 {
    /* On platforms with dinput support, we are able
     * to get a name from the device itself */
-   return dinput_joypad.name(pad);
+   return dinput_joypad_name(pad);
 }
 
 static bool xinput_joypad_init(void *data)
@@ -216,22 +316,24 @@ static bool xinput_joypad_init(void *data)
 
    /* We're going to have to be buddies with dinput if we want to be able
     * to use XInput and non-XInput controllers together. */
-   if (!dinput_joypad.init(data))
+   if (!dinput_init_context())
    {
       g_xinput_block_pads = false;
       goto error;
    }
 
+   dinput_joypad_init_hybrid(data);
+
    for (j = 0; j < MAX_USERS; j++)
    {
       const char *name = xinput_joypad_name(j);
 
-      if (pad_index_to_xuser_index(j) > -1)
+      if (PAD_INDEX_TO_XUSER_INDEX(j) > -1)
       {
          int32_t vid          = 0;
          int32_t pid          = 0;
          int32_t dinput_index = 0;
-         bool success         = dinput_joypad_get_vidpid_from_xinput_index((int32_t)pad_index_to_xuser_index(j), (int32_t*)&vid, (int32_t*)&pid,
+         bool success         = dinput_joypad_get_vidpid_from_xinput_index((int32_t)PAD_INDEX_TO_XUSER_INDEX(j), (int32_t*)&vid, (int32_t*)&pid,
 			 (int32_t*)&dinput_index);
          /* On success, found VID/PID from dinput index */
 
@@ -260,10 +362,10 @@ error:
 
 static bool xinput_joypad_query_pad(unsigned pad)
 {
-   int xuser = pad_index_to_xuser_index(pad);
+   int xuser = PAD_INDEX_TO_XUSER_INDEX(pad);
    if (xuser > -1)
       return g_xinput_states[xuser].connected;
-   return dinput_joypad.query_pad(pad);
+   return dinput_joypad_query_pad(pad);
 }
 
 static void xinput_joypad_destroy(void)
@@ -291,7 +393,7 @@ static void xinput_joypad_destroy(void)
    g_XInputGetStateEx  = NULL;
    g_XInputSetState    = NULL;
 
-   dinput_joypad.destroy();
+   dinput_joypad_destroy();
 
    g_xinput_block_pads = false;
 }
@@ -299,10 +401,10 @@ static void xinput_joypad_destroy(void)
 
 static int16_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
-   int xuser         = pad_index_to_xuser_index(port);
+   int xuser         = PAD_INDEX_TO_XUSER_INDEX(port);
    uint16_t btn_word = 0;
    if (xuser == -1)
-      return dinput_joypad.button(port, joykey);
+      return dinput_joypad_button(port, joykey);
    if (!(g_xinput_states[xuser].connected))
       return 0;
    btn_word          = g_xinput_states[xuser].xstate.Gamepad.wButtons;
@@ -311,10 +413,10 @@ static int16_t xinput_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int xuser           = pad_index_to_xuser_index(port);
+   int xuser           = PAD_INDEX_TO_XUSER_INDEX(port);
    XINPUT_GAMEPAD *pad = &(g_xinput_states[xuser].xstate.Gamepad);
    if (xuser == -1)
-      return dinput_joypad.axis(port, joyaxis);
+      return dinput_joypad_axis(port, joyaxis);
    if (!(g_xinput_states[xuser].connected))
       return 0;
    return xinput_joypad_axis_state(pad, port, joyaxis);
@@ -329,10 +431,10 @@ static int16_t xinput_joypad_state_func(
    uint16_t btn_word;
    int16_t ret         = 0;
    uint16_t port_idx   = joypad_info->joy_idx;
-   int xuser           = pad_index_to_xuser_index(port_idx);
+   int xuser           = PAD_INDEX_TO_XUSER_INDEX(port_idx);
    XINPUT_GAMEPAD *pad = &(g_xinput_states[xuser].xstate.Gamepad);
    if (xuser == -1)
-      return dinput_joypad.state(joypad_info, binds, port_idx);
+      return dinput_joypad_state(joypad_info, binds, port_idx);
    if (!(g_xinput_states[xuser].connected))
       return 0;
    btn_word            = g_xinput_states[xuser].xstate.Gamepad.wButtons;
@@ -373,20 +475,79 @@ static void xinput_joypad_poll(void)
       }
    }
 
-   dinput_joypad.poll();
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned j;
+      HRESULT ret;
+      struct dinput_joypad_data *pad  = &g_pads[i];
+      bool                    polled  = g_xinput_pad_indexes[i] < 0;
+      if (!polled)
+         continue;
+      if (!pad || !pad->joypad)
+         continue;
+
+      pad->joy_state.lX               = 0;
+      pad->joy_state.lY               = 0;
+      pad->joy_state.lRx              = 0;
+      pad->joy_state.lRy              = 0;
+      pad->joy_state.lRz              = 0;
+      pad->joy_state.rglSlider[0]     = 0;
+      pad->joy_state.rglSlider[1]     = 0;
+      pad->joy_state.rgdwPOV[0]       = 0;
+      pad->joy_state.rgdwPOV[1]       = 0;
+      pad->joy_state.rgdwPOV[2]       = 0;
+      pad->joy_state.rgdwPOV[3]       = 0;
+      for (j = 0; j < 128; j++)
+         pad->joy_state.rgbButtons[j] = 0;
+
+      pad->joy_state.lVX              = 0;
+      pad->joy_state.lVY              = 0;
+      pad->joy_state.lVZ              = 0;
+      pad->joy_state.lVRx             = 0;
+      pad->joy_state.lVRy             = 0;
+      pad->joy_state.lVRz             = 0;
+      pad->joy_state.rglVSlider[0]    = 0;
+      pad->joy_state.rglVSlider[1]    = 0;
+      pad->joy_state.lAX              = 0;
+      pad->joy_state.lAY              = 0;
+      pad->joy_state.lAZ              = 0;
+      pad->joy_state.lARx             = 0;
+      pad->joy_state.lARy             = 0;
+      pad->joy_state.lARz             = 0;
+      pad->joy_state.rglASlider[0]    = 0;
+      pad->joy_state.rglASlider[1]    = 0;
+      pad->joy_state.lFX              = 0;
+      pad->joy_state.lFY              = 0;
+      pad->joy_state.lFZ              = 0;
+      pad->joy_state.lFRx             = 0;
+      pad->joy_state.lFRy             = 0;
+      pad->joy_state.lFRz             = 0;
+      pad->joy_state.rglFSlider[0]    = 0;
+      pad->joy_state.rglFSlider[1]    = 0;
+
+      /* If this fails, something *really* bad must have happened. */
+      if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
+         if (
+                  FAILED(IDirectInputDevice8_Acquire(pad->joypad))
+               || FAILED(IDirectInputDevice8_Poll(pad->joypad))
+            )
+            continue;
+
+      ret = IDirectInputDevice8_GetDeviceState(pad->joypad,
+            sizeof(DIJOYSTATE2), &pad->joy_state);
+
+      if (ret == DIERR_INPUTLOST || ret == DIERR_NOTACQUIRED)
+         input_autoconfigure_disconnect(i, g_pads[i].joy_friendly_name);
+   }
 }
 
 static bool xinput_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   int xuser = pad_index_to_xuser_index(pad);
+   int xuser = PAD_INDEX_TO_XUSER_INDEX(pad);
 
    if (xuser == -1)
-   {
-      if (dinput_joypad.set_rumble)
-         return dinput_joypad.set_rumble(pad, effect, strength);
-      return false;
-   }
+      return dinput_joypad_set_rumble(pad, effect, strength);
 
    /* Consider the low frequency (left) motor the "strong" one. */
    if (effect == RETRO_RUMBLE_STRONG)

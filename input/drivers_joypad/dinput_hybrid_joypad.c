@@ -42,12 +42,9 @@
 /* TODO/FIXME - globals */
 struct dinput_joypad_data g_pads[MAX_USERS];
 unsigned g_joypad_cnt;
-
-/* TODO/FIXME - static globals */
-static unsigned g_last_xinput_pad_idx;
+unsigned g_last_xinput_pad_idx;
 
 /* Forward declarations */
-extern LPDIRECTINPUT8 g_dinput_ctx;
 extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
 
@@ -81,7 +78,7 @@ bool dinput_joypad_get_vidpid_from_xinput_index(
 }
 
 /* Based on SDL2's implementation. */
-static bool guid_is_xinput_device(const GUID* product_guid)
+bool guid_is_xinput_device(const GUID* product_guid)
 {
    static const GUID common_xinput_guids[] = {
       {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
