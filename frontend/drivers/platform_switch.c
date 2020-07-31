@@ -331,7 +331,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
    args++;
 #endif
 
-   game_path[0]       = NULL;
+   game_path[0]       = '\0';
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
 
@@ -339,7 +339,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
-      arg_data[args] = game_path;
+      arg_data[args]     = game_path;
       arg_data[args + 1] = NULL;
       args++;
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));

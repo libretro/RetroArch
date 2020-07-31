@@ -140,7 +140,7 @@ static void switch_font_render_line(
 
       for (i = 0; i < msg_len; i++)
       {
-         int off_x, off_y, tex_x, tex_y, width, height, y;
+         int off_x, off_y, tex_x, tex_y, width, height;
          const char *msg_tmp = &msg[i];
          unsigned code       = utf8_walk(&msg_tmp);
          unsigned skip       = msg_tmp - &msg[i];
@@ -157,9 +157,9 @@ static void switch_font_render_line(
          if (!glyph)
             continue;
 
-         off_x = x + glyph->draw_offset_x + delta_x;
-         off_y = y + glyph->draw_offset_y + delta_y;
-         width = glyph->width;
+         off_x  = x + glyph->draw_offset_x + delta_x;
+         off_y  = y + glyph->draw_offset_y + delta_y;
+         width  = glyph->width;
          height = glyph->height;
 
          tex_x = glyph->atlas_offset_x;

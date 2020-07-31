@@ -9367,8 +9367,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       {
          unsigned i;
          char text[PATH_MAX_LENGTH];
-         char current_profile[PATH_MAX_LENGTH];
 #ifdef HAVE_LAKKA_SWITCH
+         char current_profile[PATH_MAX_LENGTH];
          FILE               *profile = NULL;
 #endif
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);

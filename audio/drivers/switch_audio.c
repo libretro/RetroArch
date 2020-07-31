@@ -29,11 +29,11 @@
 #define BUFFER_COUNT 3
 #endif
 
-static const int sample_rate           = 48000;
-static const int max_num_samples       = sample_rate;
-static const int num_channels          = 2;
+
+#define SAMPLE_RATE 48000
+#define NUM_CHANNELS 2
 #ifndef HAVE_LIBNX
-static const size_t sample_buffer_size = ((max_num_samples * num_channels * sizeof(uint16_t)) + 0xfff) & ~0xfff;
+#define SAMPLE_BUFFER_SIZE (((SAMPLE_RATE * NUM_CHANNELS * sizeof(uint16_t)) + 0xfff) & ~0xfff)
 #endif
 
 typedef struct
@@ -51,16 +51,19 @@ typedef struct
 #endif
 } switch_audio_t;
 
+#ifdef HAVE_LIBNX
 static uint32_t switch_audio_data_size(void)
 {
-#ifdef HAVE_LIBNX
-   static const int framerate = 1000 / 30;
-   static const int samplecount = (sample_rate / framerate);
-   return (samplecount * num_channels * sizeof(uint16_t));
-#else
-   return sample_buffer_size;
-#endif
+   static const int framerate   = 1000 / 30;
+   static const int samplecount = (SAMPLE_RATE / framerate);
+   return (samplecount * NUM_CHANNELS * sizeof(uint16_t));
 }
+#else
+static uint32_t switch_audio_data_size(void)
+{
+   return SAMPLE_BUFFER_SIZE;
+}
+#endif
 
 static size_t switch_audio_buffer_size(void *data)
 {
@@ -68,7 +71,7 @@ static size_t switch_audio_buffer_size(void *data)
 #ifdef HAVE_LIBNX
    return (switch_audio_data_size() + 0xfff) & ~0xfff;
 #else
-   return sample_buffer_size;
+   return SAMPLE_BUFFER_SIZE;
 #endif
 }
 
@@ -267,16 +270,16 @@ static void *switch_audio_init(const char *device,
    if (audio_ipc_open_output(names[0], &swa->output) != 0)
       goto fail_audio_ipc;
 
-   if (swa->output.sample_rate != sample_rate)
+   if (swa->output.sample_rate != SAMPLE_RATE)
    {
       RARCH_ERR("expected sample rate of %d, got sample rate of %d\n",
-            sample_rate, swa->output.sample_rate);
+            SAMPLE_RATE, swa->output.sample_rate);
       goto fail_audio_output;
    }
 
-   if (swa->output.num_channels != num_channels)
+   if (swa->output.num_channels != NUM_CHANNELS)
    {
-      RARCH_ERR("expected %d channels, got %d\n", num_channels,
+      RARCH_ERR("expected %d channels, got %d\n", NUM_CHANNELS,
             swa->output.num_channels);
       goto fail_audio_output;
    }
@@ -308,7 +311,8 @@ static void *switch_audio_init(const char *device,
 #else
       swa->buffers[i].ptr         = &swa->buffers[i].sample_data;
       swa->buffers[i].unknown     = 0;
-      swa->buffers[i].sample_data = alloc_pages(sample_buffer_size, switch_audio_buffer_size(NULL), NULL);
+      swa->buffers[i].sample_data = alloc_pages(SAMPLE_BUFFER_SIZE,
+            switch_audio_buffer_size(NULL), NULL);
 
       if (!swa->buffers[i].sample_data)
 	      goto fail_audio_output;
