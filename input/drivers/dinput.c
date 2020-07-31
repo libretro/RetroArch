@@ -51,14 +51,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-/* Keep track of which pad indexes are 360 controllers.
- * Not static, will be read in xinput_joypad.c
- * -1 = not xbox pad, otherwise 0..3
- */
-
-int g_xinput_pad_indexes[MAX_USERS];
-bool g_xinput_block_pads;
-
 /* Context has to be global as joypads also ride on this context. */
 LPDIRECTINPUT8 g_dinput_ctx;
 
