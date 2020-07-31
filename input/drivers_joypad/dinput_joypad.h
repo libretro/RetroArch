@@ -41,10 +41,6 @@ struct dinput_joypad_data
    DIEFFECT rumble_props;
 };
 
-bool dinput_joypad_get_vidpid_from_xinput_index(
-      int32_t index, int32_t *vid,
-      int32_t *pid, int32_t *dinput_index);
-
 RETRO_END_DECLS
 
 #endif

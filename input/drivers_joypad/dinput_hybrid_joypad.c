@@ -50,32 +50,6 @@ extern int g_xinput_pad_indexes[MAX_USERS];
 
 #include "dinput_joypad_inl.h"
 
-bool dinput_joypad_get_vidpid_from_xinput_index(
-      int32_t index, int32_t *vid,
-      int32_t *pid, int32_t *dinput_index)
-{
-   int i;
-
-   for (i = 0; i < ARRAY_SIZE(g_xinput_pad_indexes); i++)
-   {
-      /* Found XInput pad? */
-      if (index == g_xinput_pad_indexes[i])
-      {
-         if (vid)
-            *vid = g_pads[i].vid;
-
-         if (pid)
-            *pid = g_pads[i].pid;
-
-         if (dinput_index)
-            *dinput_index = i;
-
-         return true;
-      }
-   }
-
-   return false;
-}
 
 /* Based on SDL2's implementation. */
 bool guid_is_xinput_device(const GUID* product_guid)
