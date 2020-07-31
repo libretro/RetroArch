@@ -24,6 +24,7 @@
 
 /* Forward declaration */
 void dinput_destroy_context(void);
+bool dinput_init_context(void);
 
 /* Keep track of which pad indexes are 360 controllers.
  * Not static, will be read in xinput_joypad.c

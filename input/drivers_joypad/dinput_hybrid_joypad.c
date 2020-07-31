@@ -42,23 +42,13 @@
 /* TODO/FIXME - static globals */
 static struct dinput_joypad_data g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
-
-/* forward declarations */
-bool dinput_init_context(void);
-
-extern LPDIRECTINPUT8 g_dinput_ctx;
-
-#include "dinput_joypad_inl.h"
-
-extern bool g_xinput_block_pads;
-extern int g_xinput_pad_indexes[MAX_USERS];
 static unsigned g_last_xinput_pad_idx;
 
-static const GUID common_xinput_guids[] = {
-   {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
-   {MAKELONG(0x045E, 0x02A1),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Wired 360 pad */
-   {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  /* wireless 360 pad */
-};
+extern LPDIRECTINPUT8 g_dinput_ctx;
+extern bool g_xinput_block_pads;
+extern int g_xinput_pad_indexes[MAX_USERS];
+
+#include "dinput_joypad_inl.h"
 
 bool dinput_joypad_get_vidpid_from_xinput_index(
       int32_t index, int32_t *vid,
@@ -90,6 +80,11 @@ bool dinput_joypad_get_vidpid_from_xinput_index(
 /* Based on SDL2's implementation. */
 static bool guid_is_xinput_device(const GUID* product_guid)
 {
+   static const GUID common_xinput_guids[] = {
+      {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
+      {MAKELONG(0x045E, 0x02A1),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Wired 360 pad */
+      {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  /* wireless 360 pad */
+   };
    unsigned i, num_raw_devs     = 0;
    PRAWINPUTDEVICELIST raw_devs = NULL;
 
@@ -221,8 +216,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
    g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
 
-   is_xinput_pad = g_xinput_block_pads
-      && guid_is_xinput_device(&inst->guidProduct);
+   is_xinput_pad            =    g_xinput_block_pads
+                              && guid_is_xinput_device(&inst->guidProduct);
 
    if (is_xinput_pad)
    {
