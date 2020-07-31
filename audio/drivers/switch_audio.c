@@ -32,9 +32,8 @@
 
 #define SAMPLE_RATE 48000
 #define NUM_CHANNELS 2
-#ifndef HAVE_LIBNX
+
 #define SAMPLE_BUFFER_SIZE (((SAMPLE_RATE * NUM_CHANNELS * sizeof(uint16_t)) + 0xfff) & ~0xfff)
-#endif
 
 typedef struct
 {
@@ -54,9 +53,9 @@ typedef struct
 #ifdef HAVE_LIBNX
 static uint32_t switch_audio_data_size(void)
 {
-   static const int framerate   = 1000 / 30;
-   static const int samplecount = (SAMPLE_RATE / framerate);
-   return (samplecount * NUM_CHANNELS * sizeof(uint16_t));
+   static const int framerate    = 1000 / 30;
+   static const int sample_count = (SAMPLE_RATE / framerate);
+   return (sample_count * NUM_CHANNELS * sizeof(uint16_t));
 }
 #else
 static uint32_t switch_audio_data_size(void)
@@ -67,7 +66,6 @@ static uint32_t switch_audio_data_size(void)
 
 static size_t switch_audio_buffer_size(void *data)
 {
-   (void) data;
 #ifdef HAVE_LIBNX
    return (switch_audio_data_size() + 0xfff) & ~0xfff;
 #else
@@ -126,11 +124,11 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 	if (to_write > switch_audio_buffer_size(NULL) - swa->current_buffer->data_size)
 		to_write = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
 
-   #ifndef HAVE_LIBNX
-	memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, buf, to_write);
-   #else
-	memcpy(((uint8_t*) swa->current_buffer->buffer) + swa->current_buffer->data_size, buf, to_write);
-   #endif
+#ifndef HAVE_LIBNX
+   memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, buf, to_write);
+#else
+   memcpy(((uint8_t*) swa->current_buffer->buffer) + swa->current_buffer->data_size, buf, to_write);
+#endif
 	swa->current_buffer->data_size   += to_write;
 	swa->current_buffer->buffer_size  = switch_audio_buffer_size(NULL);
 
@@ -154,7 +152,6 @@ static bool switch_audio_stop(void *data)
 
    /* TODO/FIXME - fix libnx codepath */
 #ifndef HAVE_LIBNX
-
    if (!swa->is_paused)
 	   if (switch_audio_ipc_output_stop(swa) != 0)
 		   return false;
@@ -214,8 +211,7 @@ static void switch_audio_free(void *data)
 
 static bool switch_audio_use_float(void *data)
 {
-	(void) data;
-	return false; /* force INT16 */
+   return false; /* force INT16 */
 }
 
 static size_t switch_audio_write_avail(void *data)
