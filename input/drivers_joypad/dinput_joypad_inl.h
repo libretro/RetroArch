@@ -22,6 +22,9 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+/* Forward declaration */
+void dinput_destroy_context(void);
+
 static void dinput_joypad_destroy(void)
 {
    unsigned i;

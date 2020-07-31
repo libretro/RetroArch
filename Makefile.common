@@ -1106,8 +1106,13 @@ ifeq ($(HAVE_DINPUT), 1)
    HAVE_DX_COMMON  = 1
    LIBS += -ldinput8 -lole32
    DEFINES += -DHAVE_DINPUT
-   OBJ += input/drivers/dinput.o \
-          input/drivers_joypad/dinput_joypad.o
+   OBJ += input/drivers/dinput.o
+
+   ifeq ($(HAVE_XINPUT), 1)
+      OBJ += input/drivers_joypad/dinput_hybrid_joypad.o
+   else
+      OBJ += input/drivers_joypad/dinput_joypad.o
+   endif
 endif
 
 ifeq ($(HAVE_XINPUT), 1)
