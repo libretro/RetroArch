@@ -1112,7 +1112,11 @@ endif
 
 ifeq ($(HAVE_XINPUT), 1)
    DEFINES += -DHAVE_XINPUT
-   OBJ += input/drivers_joypad/xinput_joypad.o
+   ifeq ($(HAVE_DINPUT), 1)
+      OBJ += input/drivers_joypad/xinput_hybrid_joypad.o
+   else
+      OBJ += input/drivers_joypad/xinput_joypad.o
+   endif
 endif
 
 ifeq ($(HAVE_OPENDINGUX_FBDEV), 1)

@@ -735,7 +735,11 @@ INPUT
 #endif
 
 #ifdef HAVE_XINPUT
+#ifdef HAVE_DINPUT
+#include "../input/drivers_joypad/xinput_hybrid_joypad.c"
+#else
 #include "../input/drivers_joypad/xinput_joypad.c"
+#endif
 #endif
 
 #if defined(__linux__) && !defined(ANDROID)
