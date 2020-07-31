@@ -60,9 +60,9 @@
  * For each pad index, the appropriate entry will be set to -1 if it is not
  * a 360 pad, or the correct XInput user number (0..3 inclusive) if it is.
  */
-extern int g_xinput_pad_indexes[MAX_USERS];
-extern unsigned g_last_xinput_pad_idx;
-extern bool g_xinput_block_pads;
+static int g_xinput_pad_indexes[MAX_USERS];
+static unsigned g_last_xinput_pad_idx;
+static bool g_xinput_block_pads;
 
 #ifdef HAVE_DYNAMIC
 /* For xinput1_n.dll */
@@ -114,8 +114,103 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 #include "dinput_joypad_inl.h"
 #include "xinput_joypad_inl.h"
 
-/* Forward declaration */
-bool guid_is_xinput_device(const GUID* product_guid);
+/* Based on SDL2's implementation. */
+static bool guid_is_xinput_device(const GUID* product_guid)
+{
+   static const GUID common_xinput_guids[] = {
+      {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
+      {MAKELONG(0x045E, 0x02A1),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Wired 360 pad */
+      {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  /* wireless 360 pad */
+   };
+   unsigned i, num_raw_devs     = 0;
+   PRAWINPUTDEVICELIST raw_devs = NULL;
+
+   /* Check for well known XInput device GUIDs,
+    * thereby removing the need for the IG_ check.
+    * This lets us skip RAWINPUT for popular devices.
+    *
+    * Also, we need to do this for the Valve Streaming Gamepad
+    * because it's virtualized and doesn't show up in the device list.  */
+
+   for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
+   {
+      if (string_is_equal_fast(product_guid,
+               &common_xinput_guids[i], sizeof(GUID)))
+         return true;
+   }
+
+   /* Go through RAWINPUT (WinXP and later) to find HID devices. */
+   if (!raw_devs)
+   {
+      if ((GetRawInputDeviceList(NULL, &num_raw_devs,
+                  sizeof(RAWINPUTDEVICELIST)) == (UINT)-1) || (!num_raw_devs))
+         return false;
+
+      raw_devs = (PRAWINPUTDEVICELIST)
+         malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
+      if (!raw_devs)
+         return false;
+
+      if (GetRawInputDeviceList(raw_devs, &num_raw_devs,
+               sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
+      {
+         free(raw_devs);
+         raw_devs = NULL;
+         return false;
+      }
+   }
+
+   for (i = 0; i < num_raw_devs; i++)
+   {
+      RID_DEVICE_INFO rdi;
+      char *dev_name  = NULL;
+      UINT rdi_size   = sizeof(rdi);
+      UINT name_size  = 0;
+
+      rdi.cbSize      = rdi_size;
+
+      /* 
+       * Step 1 -
+       * Check if device type is HID
+       * Step 2 -
+       * Query size of name
+       * Step 3 -
+       * Allocate string holding ID of device
+       * Step 4 -
+       * query ID of device
+       * Step 5 -
+       * Check if the device ID contains "IG_".
+       * If it does, then it's an XInput device
+       * This information can not be found from DirectInput 
+       */
+      if (
+               (raw_devs[i].dwType == RIM_TYPEHID)                    /* 1 */
+            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
+                RIDI_DEVICEINFO, &rdi, &rdi_size) != ((UINT)-1))
+            && (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
+             == ((LONG)product_guid->Data1))
+            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
+                RIDI_DEVICENAME, NULL, &name_size) != ((UINT)-1))     /* 2 */
+            && ((dev_name = (char*)malloc(name_size)) != NULL)        /* 3 */
+            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
+                RIDI_DEVICENAME, dev_name, &name_size) != ((UINT)-1)) /* 4 */
+            && (strstr(dev_name, "IG_"))                              /* 5 */
+         )
+      {
+         free(dev_name);
+         free(raw_devs);
+         raw_devs = NULL;
+         return true;
+      }
+
+      if (dev_name)
+         free(dev_name);
+   }
+
+   free(raw_devs);
+   raw_devs = NULL;
+   return false;
+}
 
 static bool dinput_joypad_get_vidpid_from_xinput_index(
       int32_t index, int32_t *vid,

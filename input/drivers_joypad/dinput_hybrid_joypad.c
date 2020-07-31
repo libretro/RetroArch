@@ -42,112 +42,8 @@
 /* TODO/FIXME - globals */
 struct dinput_joypad_data g_pads[MAX_USERS];
 unsigned g_joypad_cnt;
-unsigned g_last_xinput_pad_idx;
-
-/* Forward declarations */
-extern bool g_xinput_block_pads;
-extern int g_xinput_pad_indexes[MAX_USERS];
 
 #include "dinput_joypad_inl.h"
-
-
-/* Based on SDL2's implementation. */
-bool guid_is_xinput_device(const GUID* product_guid)
-{
-   static const GUID common_xinput_guids[] = {
-      {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
-      {MAKELONG(0x045E, 0x02A1),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Wired 360 pad */
-      {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  /* wireless 360 pad */
-   };
-   unsigned i, num_raw_devs     = 0;
-   PRAWINPUTDEVICELIST raw_devs = NULL;
-
-   /* Check for well known XInput device GUIDs,
-    * thereby removing the need for the IG_ check.
-    * This lets us skip RAWINPUT for popular devices.
-    *
-    * Also, we need to do this for the Valve Streaming Gamepad
-    * because it's virtualized and doesn't show up in the device list.  */
-
-   for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
-   {
-      if (string_is_equal_fast(product_guid,
-               &common_xinput_guids[i], sizeof(GUID)))
-         return true;
-   }
-
-   /* Go through RAWINPUT (WinXP and later) to find HID devices. */
-   if (!raw_devs)
-   {
-      if ((GetRawInputDeviceList(NULL, &num_raw_devs,
-                  sizeof(RAWINPUTDEVICELIST)) == (UINT)-1) || (!num_raw_devs))
-         return false;
-
-      raw_devs = (PRAWINPUTDEVICELIST)
-         malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
-      if (!raw_devs)
-         return false;
-
-      if (GetRawInputDeviceList(raw_devs, &num_raw_devs,
-               sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
-      {
-         free(raw_devs);
-         raw_devs = NULL;
-         return false;
-      }
-   }
-
-   for (i = 0; i < num_raw_devs; i++)
-   {
-      RID_DEVICE_INFO rdi;
-      char *dev_name  = NULL;
-      UINT rdi_size   = sizeof(rdi);
-      UINT name_size  = 0;
-
-      rdi.cbSize      = rdi_size;
-
-      /* 
-       * Step 1 -
-       * Check if device type is HID
-       * Step 2 -
-       * Query size of name
-       * Step 3 -
-       * Allocate string holding ID of device
-       * Step 4 -
-       * query ID of device
-       * Step 5 -
-       * Check if the device ID contains "IG_".
-       * If it does, then it's an XInput device
-       * This information can not be found from DirectInput 
-       */
-      if (
-               (raw_devs[i].dwType == RIM_TYPEHID)                    /* 1 */
-            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
-                RIDI_DEVICEINFO, &rdi, &rdi_size) != ((UINT)-1))
-            && (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
-             == ((LONG)product_guid->Data1))
-            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
-                RIDI_DEVICENAME, NULL, &name_size) != ((UINT)-1))     /* 2 */
-            && ((dev_name = (char*)malloc(name_size)) != NULL)        /* 3 */
-            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
-                RIDI_DEVICENAME, dev_name, &name_size) != ((UINT)-1)) /* 4 */
-            && (strstr(dev_name, "IG_"))                              /* 5 */
-         )
-      {
-         free(dev_name);
-         free(raw_devs);
-         raw_devs = NULL;
-         return true;
-      }
-
-      if (dev_name)
-         free(dev_name);
-   }
-
-   free(raw_devs);
-   raw_devs = NULL;
-   return false;
-}
 
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
@@ -192,16 +88,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
    g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
 
-   is_xinput_pad            =    g_xinput_block_pads
-                              && guid_is_xinput_device(&inst->guidProduct);
-
-   if (is_xinput_pad)
-   {
-      if (g_last_xinput_pad_idx < 4)
-         g_xinput_pad_indexes[g_joypad_cnt] = g_last_xinput_pad_idx++;
-      goto enum_iteration_done;
-   }
-
    /* Set data format to simple joystick */
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(*pad,
@@ -213,18 +99,14 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
    dinput_create_rumble_effects(&g_pads[g_joypad_cnt]);
 
-   if (!is_xinput_pad)
-   {
-      input_autoconfigure_connect(
-            g_pads[g_joypad_cnt].joy_name,
-            g_pads[g_joypad_cnt].joy_friendly_name,
-            dinput_joypad.ident,
-            g_joypad_cnt,
-            g_pads[g_joypad_cnt].vid,
-            g_pads[g_joypad_cnt].pid);
-   }
+   input_autoconfigure_connect(
+         g_pads[g_joypad_cnt].joy_name,
+         g_pads[g_joypad_cnt].joy_friendly_name,
+         dinput_joypad.ident,
+         g_joypad_cnt,
+         g_pads[g_joypad_cnt].vid,
+         g_pads[g_joypad_cnt].pid);
 
-enum_iteration_done:
    g_joypad_cnt++;
    return DIENUM_CONTINUE;
 }
@@ -236,11 +118,8 @@ static bool dinput_joypad_init(void *data)
    if (!dinput_init_context())
       return false;
 
-   g_last_xinput_pad_idx = 0;
-
    for (i = 0; i < MAX_USERS; ++i)
    {
-      g_xinput_pad_indexes[i]     = -1;
       g_pads[i].joy_name          = NULL;
       g_pads[i].joy_friendly_name = NULL;
    }
@@ -258,9 +137,6 @@ static void dinput_joypad_poll(void)
       unsigned j;
       HRESULT ret;
       struct dinput_joypad_data *pad  = &g_pads[i];
-      bool                    polled  = g_xinput_pad_indexes[i] < 0;
-      if (!polled)
-         continue;
       if (!pad || !pad->joypad)
          continue;
 

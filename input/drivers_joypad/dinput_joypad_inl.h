@@ -39,10 +39,6 @@ bool dinput_init_context(void);
  * Not static, will be read in xinput_joypad.c
  * -1 = not xbox pad, otherwise 0..3
  */
-
-int g_xinput_pad_indexes[MAX_USERS];
-bool g_xinput_block_pads;
-
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
