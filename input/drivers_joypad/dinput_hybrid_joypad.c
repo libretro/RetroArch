@@ -44,6 +44,7 @@ static struct dinput_joypad_data g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
 static unsigned g_last_xinput_pad_idx;
 
+/* Forward declarations */
 extern LPDIRECTINPUT8 g_dinput_ctx;
 extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
@@ -193,8 +194,10 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
       return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name          = strdup((const char*)inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name = strdup((const char*)inst->tszInstanceName);
+   g_pads[g_joypad_cnt].joy_name          = 
+      strdup((const char*)inst->tszProductName);
+   g_pads[g_joypad_cnt].joy_friendly_name = 
+      strdup((const char*)inst->tszInstanceName);
 
    /* there may be more useful info in the GUID,
     * so leave this here for a while */
