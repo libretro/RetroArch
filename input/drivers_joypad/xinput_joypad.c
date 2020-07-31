@@ -101,8 +101,11 @@ static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_START,
    XINPUT_GAMEPAD_BACK,
    XINPUT_GAMEPAD_LEFT_THUMB,
-   XINPUT_GAMEPAD_RIGHT_THUMB,
+   XINPUT_GAMEPAD_RIGHT_THUMB
+#ifndef _XBOX
+   ,
    XINPUT_GAMEPAD_GUIDE
+#endif
 };
 
 static INLINE int pad_index_to_xuser_index(unsigned pad)

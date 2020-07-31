@@ -807,7 +807,7 @@ static input_device_driver_t *joypad_drivers[] = {
 #ifdef WIIU
    &wiiu_joypad,
 #endif
-#ifdef _XBOX
+#ifdef _XBOX1
    &xdk_joypad,
 #endif
 #if defined(ORBIS)

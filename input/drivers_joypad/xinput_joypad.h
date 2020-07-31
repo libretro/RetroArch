@@ -30,7 +30,7 @@
  * Official and mingw xinput headers have different include guards.
  * Windows 10 API version doesn't have an include guard at all and just uses #pragma once instead
  */
-#if ((!_XINPUT_H_) && (!__WINE_XINPUT_H)) && !defined(__WINRT__)
+#if ((!_XINPUT_H_) && (!__WINE_XINPUT_H)) && !defined(__WINRT__) && !defined(_XBOX)
 
 #define XINPUT_GAMEPAD_DPAD_UP          0x0001
 #define XINPUT_GAMEPAD_DPAD_DOWN        0x0002

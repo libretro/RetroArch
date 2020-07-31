@@ -28,21 +28,17 @@ typedef struct
 } xinput_joypad_state;
 
 static xinput_joypad_state g_xinput_states[DEFAULT_MAX_PADS];
-
-#ifdef _XBOX1
 static HANDLE gamepads[DEFAULT_MAX_PADS];
-#endif
-
-static const char* const XBOX_CONTROLLER_NAMES[4] =
-{
-   "XInput Controller (User 1)",
-   "XInput Controller (User 2)",
-   "XInput Controller (User 3)",
-   "XInput Controller (User 4)"
-};
 
 static const char *xdk_joypad_name(unsigned pad)
 {
+   static const char* const XBOX_CONTROLLER_NAMES[4] =
+   {
+      "XInput Controller (User 1)",
+      "XInput Controller (User 2)",
+      "XInput Controller (User 3)",
+      "XInput Controller (User 4)"
+   };
    return XBOX_CONTROLLER_NAMES[pad];
 }
 
@@ -59,36 +55,9 @@ static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
 
 static bool xdk_joypad_init(void *data)
 {
-#ifdef _XBOX1
    XInitDevices(0, NULL);
-#else
-   unsigned autoconf_pad;
-   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
-      xdk_joypad_autodetect_add(autoconf_pad);
-#endif
-
-   (void)data;
-
    return true;
 }
-
-#ifndef _XBOX1
-/* Buttons are provided by XInput as bits of a uint16.
- * Map from rarch button index (0..10) to a mask to bitwise-& the buttons against.
- * dpad is handled seperately. */
-static const uint16_t button_index_to_bitmap_code[] =  {
-   XINPUT_GAMEPAD_A,
-   XINPUT_GAMEPAD_B,
-   XINPUT_GAMEPAD_X,
-   XINPUT_GAMEPAD_Y,
-   XINPUT_GAMEPAD_LEFT_SHOULDER,
-   XINPUT_GAMEPAD_RIGHT_SHOULDER,
-   XINPUT_GAMEPAD_START,
-   XINPUT_GAMEPAD_BACK,
-   XINPUT_GAMEPAD_LEFT_THUMB,
-   XINPUT_GAMEPAD_RIGHT_THUMB
-};
-#endif
 
 static int16_t xdk_joypad_button_state(
       XINPUT_GAMEPAD *pad,
@@ -116,7 +85,6 @@ static int16_t xdk_joypad_button_state(
    }
    else
    {
-#ifdef _XBOX1
       switch (joykey)
       {
          case RETRO_DEVICE_ID_JOYPAD_A:
@@ -146,10 +114,6 @@ static int16_t xdk_joypad_button_state(
          default:
                break;
       }
-#else
-      if (joykey < 10)
-         return (btn_word & button_index_to_bitmap_code[joykey]);
-#endif
    }
    return 0;
 }
@@ -175,13 +139,13 @@ static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
 
    if (AXIS_NEG_GET(joyaxis) <= 3)
    {
-      axis   = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      axis             = AXIS_NEG_GET(joyaxis);
+      is_neg           = true;
    }
    else if (AXIS_POS_GET(joyaxis) <= 5)
    {
-      axis   = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      axis             = AXIS_POS_GET(joyaxis);
+      is_pos           = true;
    }
    else
       return 0;
@@ -199,16 +163,6 @@ static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
          break;
       case 3:
          val = pad->sThumbRY;
-         break;
-      case 4:
-#ifdef _XBOX360
-         val = pad->bLeftTrigger  * 32767 / 255;
-#endif
-         break; /* map 0..255 to 0..32767 */
-      case 5:
-#ifdef _XBOX360
-         val = pad->bRightTrigger * 32767 / 255;
-#endif
          break;
    }
 
@@ -271,7 +225,6 @@ static int16_t xdk_joypad_state(
 static void xdk_joypad_poll(void)
 {
    unsigned port;
-#if defined(_XBOX1)
    DWORD dwInsertions, dwRemovals;
 
 #ifdef __cplusplus
@@ -283,11 +236,9 @@ static void xdk_joypad_poll(void)
          (PDWORD)&dwInsertions,
          (PDWORD)&dwRemovals);
 #endif
-#endif
 
    for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
-#if defined(_XBOX1)
       bool device_removed    = false;
       bool device_inserted   = false;
 
@@ -335,17 +286,12 @@ static void xdk_joypad_poll(void)
        * the device handle will be NULL. */
       if (XInputPoll(gamepads[port]) != ERROR_SUCCESS)
          continue;
-#endif
 
       memset(&g_xinput_states[port], 0, sizeof(xinput_joypad_state));
 
       g_xinput_states[port].connected = !
       (XInputGetState(
-#ifdef _XBOX1
          gamepads[port]
-#else
-         port
-#endif
          , &g_xinput_states[port].xstate) == ERROR_DEVICE_NOT_CONNECTED);
    }
 }
@@ -362,11 +308,9 @@ static void xdk_joypad_destroy(void)
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
-#if defined(_XBOX1)
       if (gamepads[i])
          XInputClose(gamepads[i]);
       gamepads[i]  = 0;
-#endif
    }
 }
 

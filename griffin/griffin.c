@@ -702,7 +702,9 @@ INPUT
 #include "../input/drivers_joypad/wiiu/pad_functions.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
+#ifdef _XBOX1
 #include "../input/drivers_joypad/xdk_joypad.c"
+#endif
 #elif defined(XENON)
 #include "../input/drivers/xenon360_input.c"
 #elif defined(ANDROID)
