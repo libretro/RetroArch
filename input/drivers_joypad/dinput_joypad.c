@@ -36,10 +36,11 @@
 #include "../../verbosity.h"
 #include "dinput_joypad.h"
 
-/* TODO/FIXME - static globals */
-static struct dinput_joypad_data g_pads[MAX_USERS];
-static unsigned g_joypad_cnt;
+/* TODO/FIXME - globals */
+struct dinput_joypad_data g_pads[MAX_USERS];
+unsigned g_joypad_cnt;
 
+/* TODO/FIXME - forward declaration */
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
 #include "dinput_joypad_inl.h"

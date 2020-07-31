@@ -23,6 +23,10 @@
 #include <retro_common_api.h>
 
 /* Forward declaration */
+extern struct dinput_joypad_data g_pads[MAX_USERS];
+extern unsigned g_joypad_cnt;
+
+/* Function prototype forward declarations */
 void dinput_destroy_context(void);
 bool dinput_init_context(void);
 
