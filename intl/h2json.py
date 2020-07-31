@@ -38,11 +38,12 @@ try:
       messages = {}
       for msg in result:
          key, val = parse_message(msg)
-         messages[key] = val.replace('\\\"', '"') # unescape
-         if key not in seen:
-            seen.add(key)
-         else:
-            print("Duplicate key: " + key)
+         if not key.startswith('MENU_ENUM_LABEL_VALUE_LANG_'):
+            messages[key] = val.replace('\\\"', '"') # unescape
+            if key not in seen:
+               seen.add(key)
+            else:
+               print("Duplicate key: " + key)
       with open(json_filename, 'w') as json_file:
          json.dump(messages, json_file, indent=2)
 except EnvironmentError:
