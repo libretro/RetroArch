@@ -36,45 +36,28 @@
 #include "../../verbosity.h"
 #include "dinput_joypad.h"
 
-/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
-#define ARRAY_SIZE_RGB_BUTTONS 128
-
-#ifndef NUM_HATS
-#define NUM_HATS 4
-#endif
-
-struct dinput_joypad_data
-{
-   LPDIRECTINPUTDEVICE8 joypad;
-   DIJOYSTATE2 joy_state;
-   char* joy_name;
-   char* joy_friendly_name;
-   int32_t vid;
-   int32_t pid;
-   LPDIRECTINPUTEFFECT rumble_iface[2];
-   DIEFFECT rumble_props;
-};
-
 /* TODO/FIXME - static globals */
 static struct dinput_joypad_data g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
 #ifdef HAVE_XINPUT
 static unsigned g_last_xinput_pad_idx;
-#endif
 
 static const GUID common_xinput_guids[] = {
    {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
    {MAKELONG(0x045E, 0x02A1),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Wired 360 pad */
    {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  /* wireless 360 pad */
 };
+#endif
 
 /* forward declarations */
 void dinput_destroy_context(void);
 bool dinput_init_context(void);
 
+extern LPDIRECTINPUT8 g_dinput_ctx;
+
+#ifdef HAVE_XINPUT
 extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
-extern LPDIRECTINPUT8 g_dinput_ctx;
 
 bool dinput_joypad_get_vidpid_from_xinput_index(
       int32_t index, int32_t *vid,
@@ -102,6 +85,7 @@ bool dinput_joypad_get_vidpid_from_xinput_index(
 
    return false;
 }
+#endif
 
 static void dinput_joypad_destroy(void)
 {
@@ -171,23 +155,21 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
    pad->rumble_props.rgdwAxes                = &axis;
    pad->rumble_props.rglDirection            = &direction;
 
+   axis                                      = DIJOFS_Y;
+
 #ifdef __cplusplus
    if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
-#else
-   if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
-         &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
-      RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
-#endif
 
-   axis = DIJOFS_Y;
-
-#ifdef __cplusplus
    if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
 #else
+   if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
+      RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
+
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
@@ -216,7 +198,7 @@ static BOOL CALLBACK enum_axes_cb(
 /* Based on SDL2's implementation. */
 static bool guid_is_xinput_device(const GUID* product_guid)
 {
-   unsigned i, num_raw_devs = 0;
+   unsigned i, num_raw_devs     = 0;
    PRAWINPUTDEVICELIST raw_devs = NULL;
 
    /* Check for well known XInput device GUIDs,
@@ -311,7 +293,6 @@ static const char *dinput_joypad_name(unsigned port)
 {
    if (port < MAX_USERS)
       return g_pads[port].joy_name;
-
    return NULL;
 }
 
@@ -321,9 +302,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    bool is_xinput_pad;
 #endif
    LPDIRECTINPUTDEVICE8 *pad = NULL;
-
-   (void)p;
-
    if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
@@ -341,7 +319,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].joy_name          = strdup((const char*)inst->tszProductName);
    g_pads[g_joypad_cnt].joy_friendly_name = strdup((const char*)inst->tszInstanceName);
 
-   /* there may be more useful info in the GUID so leave this here for a while */
+   /* there may be more useful info in the GUID,
+    * so leave this here for a while */
 #if 0
    printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
    inst->guidProduct.Data1,
@@ -407,8 +386,6 @@ static bool dinput_joypad_init(void *data)
 {
    unsigned i;
 
-   (void)data;
-
    if (!dinput_init_context())
       return false;
 
@@ -418,7 +395,9 @@ static bool dinput_joypad_init(void *data)
 
    for (i = 0; i < MAX_USERS; ++i)
    {
+#ifdef HAVE_XINPUT
       g_xinput_pad_indexes[i]     = -1;
+#endif
       g_pads[i].joy_name          = NULL;
       g_pads[i].joy_friendly_name = NULL;
    }
@@ -437,7 +416,9 @@ static int16_t dinput_joypad_button_state(
    if (hat_dir)
    {
       unsigned h = GET_HAT(joykey);
-      if (h < NUM_HATS)
+
+      /* 4 is number of hats */
+      if (h < 4)
       {
          unsigned pov = pad->joy_state.rgdwPOV[h];
          switch (hat_dir)
@@ -612,9 +593,12 @@ static void dinput_joypad_poll(void)
       unsigned j;
       HRESULT ret;
       struct dinput_joypad_data *pad  = &g_pads[i];
+#ifdef HAVE_XINPUT
       bool                    polled  = g_xinput_pad_indexes[i] < 0;
-
-      if (!pad || !pad->joypad || !polled)
+      if (!polled)
+         continue;
+#endif
+      if (!pad || !pad->joypad)
          continue;
 
       pad->joy_state.lX               = 0;
