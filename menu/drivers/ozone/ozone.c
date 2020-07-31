@@ -151,6 +151,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->show_thumbnail_bar                 = false;
    ozone->dimensions.sidebar_width           = 0.0f;
 
+   ozone->num_search_terms_old             = 0;
+
    ozone->thumbnail_path_data = gfx_thumbnail_path_init();
    if (!ozone->thumbnail_path_data)
       goto error;
@@ -2009,9 +2011,24 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       /* Playlist content */
       if (string_is_empty(s))
       {
-         size_t selection           = menu_navigation_get_selection();
+         size_t selection      = menu_navigation_get_selection();
+         size_t list_size      = menu_entries_get_size();
+         file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
+         bool playlist_valid   = false;
+         size_t playlist_index = selection;
+
+         /* Get playlist index corresponding
+          * to the selected entry */
+         if (list &&
+             (selection < list_size) &&
+             (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+         {
+            playlist_valid = true;
+            playlist_index = list->list[selection].entry_idx;
+         }
+
          gfx_thumbnail_set_content_playlist(ozone->thumbnail_path_data,
-               playlist_get_cached(), selection);
+               playlist_valid ? playlist_get_cached() : NULL, playlist_index);
       }
    }
    else if (ozone->is_db_manager_list)
@@ -2525,7 +2542,13 @@ static void ozone_set_header(ozone_handle_t *ozone)
       ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
 
       if (node && node->console_name)
+      {
          strlcpy(ozone->title, node->console_name, sizeof(ozone->title));
+
+         /* Add current search terms */
+         menu_driver_search_append_terms_string(
+               ozone->title, sizeof(ozone->title));
+      }
    }
 }
 
@@ -2605,6 +2628,56 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
    {
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       ozone_selection_changed(ozone, false);
+
+      /* Handle playlist searches
+       * (Ozone is a fickle beast...) */
+      if (ozone->is_playlist)
+      {
+         struct string_list *menu_search_terms =
+               menu_driver_search_get_terms();
+         size_t num_search_terms               =
+               menu_search_terms ? menu_search_terms->size : 0;
+
+         if (ozone->num_search_terms_old != num_search_terms)
+         {
+            /* Refresh thumbnails */
+            ozone_unload_thumbnail_textures(ozone);
+
+            if (gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
+                gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+            {
+               ozone_set_thumbnail_content(ozone, "");
+               ozone_update_thumbnail_image(ozone);
+            }
+
+            /* If we are currently inside an empty
+             * playlist, return to the sidebar */
+            if (!ozone->cursor_in_sidebar)
+            {
+               size_t list_size        = menu_entries_get_size();
+               file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
+               uintptr_t animation_tag = (uintptr_t)&ozone->animations.cursor_alpha;
+               bool goto_sidebar       = false;
+
+               if (!list || (list->size < 1))
+                  goto_sidebar = true;
+
+               if (!goto_sidebar &&
+                   (list->list[0].type != FILE_TYPE_RPL_ENTRY))
+                  goto_sidebar = true;
+
+               if (goto_sidebar)
+               {
+                  gfx_animation_kill_by_tag(&animation_tag);
+                  ozone->empty_playlist = true;
+                  ozone_go_to_sidebar(ozone, animation_tag);
+               }
+            }
+
+            ozone->num_search_terms_old = num_search_terms;
+         }
+      }
+
       return;
    }
 
@@ -3329,6 +3402,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          break;
       case MENU_ACTION_LEFT:
          ozone->cursor_mode = false;
+
          if (ozone->cursor_in_sidebar)
          {
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
@@ -3365,6 +3439,18 @@ static enum menu_action ozone_parse_menu_entry_action(
          break;
       case MENU_ACTION_CANCEL:
          ozone->cursor_mode = false;
+
+         /* If this is a playlist, handle 'backing out'
+          * of a search, if required */
+         if (ozone->is_playlist)
+         {
+            struct string_list *menu_search_terms = menu_driver_search_get_terms();
+
+            if (menu_search_terms &&
+                (menu_search_terms->size > 0))
+               break;
+         }
+
          if (ozone->cursor_in_sidebar)
          {
             /* Go back to main menu tab */
@@ -3573,7 +3659,22 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
 
    if (ozone->is_playlist && playlist)
    {
-      const char *core_label       = NULL;
+      const char *core_label             = NULL;
+      const struct playlist_entry *entry = NULL;
+      size_t list_size                   = menu_entries_get_size();
+      file_list_t *list                  = menu_entries_get_selection_buf_ptr(0);
+      bool playlist_valid                = false;
+      size_t playlist_index              = selection;
+
+      /* Get playlist index corresponding
+       * to the selected entry */
+      if (list &&
+          (selection < list_size) &&
+          (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+      {
+         playlist_valid = true;
+         playlist_index = list->list[selection].entry_idx;
+      }
 
       /* Fill core name */
       if (!core_name || string_is_equal(core_name, "DETECT"))
@@ -3597,15 +3698,15 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          ozone->selection_core_name_lines = 1;
 
       /* Fill play time if applicable */
-      if (content_runtime_log || content_runtime_log_aggr)
+      if (playlist_valid &&
+          (content_runtime_log || content_runtime_log_aggr))
+         playlist_get_index(playlist, playlist_index, &entry);
+
+      if (entry)
       {
-         const struct playlist_entry *entry = NULL;
-
-         playlist_get_index(playlist, selection, &entry);
-
          if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
             runtime_update_playlist(
-                  playlist, selection,
+                  playlist, playlist_index,
                   directory_runtime_log,
                   directory_playlist,
                   (runtime_type == PLAYLIST_RUNTIME_PER_CORE),

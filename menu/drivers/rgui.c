@@ -4959,13 +4959,29 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    rgui->entry_has_thumbnail         = false;
    rgui->entry_has_left_thumbnail    = false;
    rgui->thumbnail_load_pending      = false;
-   
+
    /* Update thumbnail content/path */
    if ((rgui->show_fs_thumbnail || rgui_inline_thumbnails) 
          && rgui->is_playlist)
    {
+      size_t selection      = menu_navigation_get_selection();
+      size_t list_size      = menu_entries_get_size();
+      file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
+      bool playlist_valid   = false;
+      size_t playlist_index = selection;
+
+      /* Get playlist index corresponding
+       * to the selected entry */
+      if (list &&
+          (selection < list_size) &&
+          (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+      {
+         playlist_valid = true;
+         playlist_index = list->list[selection].entry_idx;
+      }
+
       if (gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
-            playlist_get_cached(), menu_navigation_get_selection()))
+            playlist_valid ? playlist_get_cached() : NULL, playlist_index))
       {
          if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
             has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
@@ -4976,7 +4992,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
                             has_thumbnail;
       }
    }
-   
+
    /* Check whether thumbnails should be loaded */
    if (has_thumbnail)
    {

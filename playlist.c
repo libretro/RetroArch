@@ -379,7 +379,7 @@ void playlist_get_index(playlist_t *playlist,
       size_t idx,
       const struct playlist_entry **entry)
 {
-   if (!playlist || !entry)
+   if (!playlist || !entry || (idx >= playlist->size))
       return;
 
    *entry = &playlist->entries[idx];

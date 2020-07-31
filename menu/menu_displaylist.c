@@ -1394,11 +1394,13 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    settings_t       *settings        = config_get_ptr();
    bool show_inline_core_name        = false;
    const char *menu_driver           = menu_driver_ident();
+   struct string_list *search_terms  = menu_driver_search_get_terms();
    unsigned pl_show_inline_core_name = settings->uints.playlist_show_inline_core_name;
    bool pl_show_sublabels            = settings->bools.playlist_show_sublabels;
    void (*sanitization)(char*);
 
    label_spacer[0] = '\0';
+   info->count     = 0;
 
    if (list_size == 0)
       goto error;
@@ -1482,7 +1484,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    for (i = 0; i < list_size; i++)
    {
       char menu_entry_label[PATH_MAX_LENGTH];
-      const struct playlist_entry *entry  = NULL;
+      const struct playlist_entry *entry = NULL;
+      const char *entry_path             = NULL;
+      bool entry_valid                   = true;
 
       menu_entry_label[0] = '\0';
 
@@ -1516,8 +1520,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             }
          }
 
-         menu_entries_append_enum(info->list, menu_entry_label, entry->path,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
+         entry_path = entry->path;
       }
       else
       {
@@ -1532,12 +1535,37 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          else if (!string_is_empty(entry->core_name))
             strlcpy(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
 
-         menu_entries_append_enum(info->list, menu_entry_label, path_playlist,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
+         entry_path = path_playlist;
       }
 
-      info->count++;
+      /* Check whether entry matches search terms,
+       * if required */
+      if (search_terms)
+      {
+         size_t j;
+
+         for (j = 0; j < search_terms->size; j++)
+         {
+            const char *search_term = search_terms->elems[j].data;
+
+            if (!string_is_empty(search_term) &&
+                !strcasestr(menu_entry_label, search_term))
+            {
+               entry_valid = false;
+               break;
+            }
+         }
+      }
+
+      /* Add menu entry */
+      if (entry_valid && menu_entries_append_enum(info->list,
+            menu_entry_label, entry_path,
+            MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i))
+         info->count++;
    }
+
+   if (info->count < 1)
+      goto error;
 
    return 0;
 

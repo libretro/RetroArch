@@ -33,19 +33,61 @@ int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    size_t new_selection_ptr;
-   const char *menu_label        = NULL;
+   const char *menu_label                = NULL;
+   unsigned menu_type                    = MENU_SETTINGS_NONE;
+   bool menu_has_label                   = false;
+   struct string_list *menu_search_terms = menu_driver_search_get_terms();
 #ifdef HAVE_AUDIOMIXER
-   settings_t *settings          = config_get_ptr();
-   bool audio_enable_menu        = settings->bools.audio_enable_menu;
-   bool audio_enable_menu_cancel = settings->bools.audio_enable_menu_cancel;
+   settings_t *settings                  = config_get_ptr();
+   bool audio_enable_menu                = settings->bools.audio_enable_menu;
+   bool audio_enable_menu_cancel         = settings->bools.audio_enable_menu_cancel;
 
    if (audio_enable_menu && audio_enable_menu_cancel)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
 #endif
 
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(NULL, &menu_label, &menu_type, NULL, NULL);
+   menu_has_label = !string_is_empty(menu_label);
 
-   if (!string_is_empty(menu_label))
+   /* Check whether search terms have been set */
+   if (menu_search_terms)
+   {
+      bool is_playlist = false;
+
+      /* Check whether this is a playlist */
+      is_playlist = (menu_type == MENU_SETTING_HORIZONTAL_MENU) ||
+                    (menu_type == MENU_HISTORY_TAB) ||
+                    (menu_type == MENU_FAVORITES_TAB) ||
+                    (menu_type == MENU_IMAGES_TAB) ||
+                    (menu_type == MENU_MUSIC_TAB) ||
+                    (menu_type == MENU_VIDEO_TAB) ||
+                    (menu_type == FILE_TYPE_PLAYLIST_COLLECTION);
+
+      if (!is_playlist && menu_has_label)
+         is_playlist = string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
+                       string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
+                       string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
+                       string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
+                       string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
+
+      /* Remove last search term */
+      if (is_playlist && menu_driver_search_pop())
+      {
+         bool refresh = false;
+
+         /* Reset navigation pointer */
+         menu_navigation_set_selection(0);
+         menu_driver_navigation_set(false);
+
+         /* Refresh menu */
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+         return 0;
+      }
+   }
+
+   if (menu_has_label)
    {
       if (
          string_is_equal(menu_label,
