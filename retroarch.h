@@ -1143,6 +1143,12 @@ typedef struct video_frame_info
    int crt_switch_center_adjust;
    int crt_switch_porch_adjust;
 
+   /* TODO/FIXME - nasty hack needed for struct misalignment in Windows X64 -
+    * otherwise the audio/video statistics display glitches after the recent
+    * addition of the above 'crt_switch_porch_adjust' member
+    */
+   char placeholder;
+
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
