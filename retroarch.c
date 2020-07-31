@@ -7279,6 +7279,139 @@ static void menu_driver_list_free(
    }
 }
 
+bool menu_driver_search_push(const char *search_term)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+   union string_list_elem_attr attr;
+
+   if (!menu || string_is_empty(search_term))
+      return false;
+
+   /* Initialise list, if required */
+   if (!menu->search_terms)
+   {
+      menu->search_terms = string_list_new();
+
+      if (!menu->search_terms)
+         return false;
+   }
+
+   /* Check whether search term already exists */
+   if (string_list_find_elem(menu->search_terms, search_term))
+      return false;
+
+   /* Add search term */
+   attr.i = 0;
+
+   if (!string_list_append(menu->search_terms,
+         search_term, attr))
+      return false;
+
+   return true;
+}
+
+bool menu_driver_search_pop(void)
+{
+   struct rarch_state *p_rarch      = &rarch_st;
+   menu_handle_t *menu              = p_rarch->menu_driver_data;
+   union string_list_elem_attr attr = {0};
+   size_t element_index;
+
+   if (!menu || !menu->search_terms)
+      return false;
+
+   /* If we have a 'broken' list, free it
+    * (this cannot actually happen, but if
+    * we didn't free the list in this case
+    * then menu navigation could get 'stuck') */
+   if ((menu->search_terms->size < 1) ||
+       !menu->search_terms->elems)
+      goto free_list;
+
+   /* Get index of last element in the list */
+   element_index = menu->search_terms->size - 1;
+
+   /* If this is the only element, free the
+    * entire list */
+   if (element_index == 0)
+      goto free_list;
+
+   /* Otherwise, 'reset' the element... */
+   if (menu->search_terms->elems[element_index].data)
+   {
+      free(menu->search_terms->elems[element_index].data);
+      menu->search_terms->elems[element_index].data = NULL;
+   }
+
+   if (menu->search_terms->elems[element_index].userdata)
+   {
+      free(menu->search_terms->elems[element_index].userdata);
+      menu->search_terms->elems[element_index].userdata = NULL;
+   }
+
+   menu->search_terms->elems[element_index].attr = attr;
+
+   /* ...and decrement the list size */
+   menu->search_terms->size--;
+
+   return true;
+
+free_list:
+   string_list_free(menu->search_terms);
+   menu->search_terms = NULL;
+   return true;
+}
+
+void menu_driver_search_clear(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return;
+
+   if (menu->search_terms)
+      string_list_free(menu->search_terms);
+
+   menu->search_terms = NULL;
+}
+
+struct string_list *menu_driver_search_get_terms(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return NULL;
+
+   return menu->search_terms;
+}
+
+/* Convenience function: Appends list of current
+ * search terms to specified string */
+void menu_driver_search_append_terms_string(char *s, size_t len)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (menu &&
+       menu->search_terms &&
+       (menu->search_terms->size > 0) &&
+       s)
+   {
+      char search_str[512];
+
+      search_str[0] = '\0';
+
+      string_list_join_concat(search_str, sizeof(search_str),
+            menu->search_terms, " > ");
+
+      strlcat(s, " > ", len);
+      strlcat(s, search_str, len);
+   }
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -7399,6 +7532,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (p_rarch->menu_driver_data->core_buf)
                free(p_rarch->menu_driver_data->core_buf);
             p_rarch->menu_driver_data->core_buf  = NULL;
+
+            menu_driver_search_clear();
 
             menu_st->entries.need_refresh        = false;
             menu_st->entries.nonblocking_refresh = false;
@@ -11892,18 +12027,68 @@ bool gfx_widgets_ready(void)
 
 static void menu_input_search_cb(void *userdata, const char *str)
 {
-   size_t idx = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   const char *label = NULL;
+   unsigned type     = MENU_SETTINGS_NONE;
+   bool is_playlist  = false;
 
-   if (!selection_buf)
-      return;
+   if (string_is_empty(str))
+      goto end;
 
-   if (str && *str && file_list_search(selection_buf, str, &idx))
+   /* Determine whether we are currently
+    * viewing a playlist */
+   menu_entries_get_last_stack(NULL,
+         &label, &type,
+         NULL, NULL);
+
+   is_playlist = (type == MENU_SETTING_HORIZONTAL_MENU) ||
+                 (type == MENU_HISTORY_TAB) ||
+                 (type == MENU_FAVORITES_TAB) ||
+                 (type == MENU_IMAGES_TAB) ||
+                 (type == MENU_MUSIC_TAB) ||
+                 (type == MENU_VIDEO_TAB) ||
+                 (type == FILE_TYPE_PLAYLIST_COLLECTION);
+
+   if (!is_playlist && !string_is_empty(label))
+      is_playlist = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
+                    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
+                    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
+                    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
+                    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
+
+   if (is_playlist)
    {
-      menu_navigation_set_selection(idx);
-      menu_driver_navigation_set(true);
+      /* Add search term */
+      if (menu_driver_search_push(str))
+      {
+         bool refresh = false;
+
+         /* Reset navigation pointer */
+         menu_navigation_set_selection(0);
+         menu_driver_navigation_set(false);
+
+         /* Refresh menu */
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      }
+   }
+   /* Perform a regular search: jump to the
+    * first matching entry */
+   else
+   {
+      size_t idx                 = 0;
+      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+      if (!selection_buf)
+         goto end;
+
+      if (file_list_search(selection_buf, str, &idx))
+      {
+         menu_navigation_set_selection(idx);
+         menu_driver_navigation_set(true);
+      }
    }
 
+end:
    menu_input_dialog_end();
 }
 

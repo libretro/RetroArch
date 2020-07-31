@@ -2756,7 +2756,7 @@ static INLINE void materialui_kill_scroll_animation(
 static bool materialui_render_process_entry_default(
       materialui_handle_t* mui,
       materialui_node_t *node,
-      size_t entry_idx, size_t selection,
+      size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
@@ -2775,7 +2775,7 @@ static bool materialui_render_process_entry_default(
 static bool materialui_render_process_entry_playlist_thumb_list(
       materialui_handle_t* mui,
       materialui_node_t *node,
-      size_t entry_idx, size_t selection,
+      size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
@@ -2786,15 +2786,15 @@ static bool materialui_render_process_entry_playlist_thumb_list(
     * and free thumbnails for all off-screen entries */
    if (mui->secondary_thumbnail_enabled)
       gfx_thumbnail_process_streams(
-         mui->thumbnail_path_data, mui->playlist, entry_idx,
-         &node->thumbnails.primary, &node->thumbnails.secondary,
-         on_screen,
-         thumbnail_upscale_threshold,
-         network_on_demand_thumbnails);
+            mui->thumbnail_path_data, mui->playlist, playlist_idx,
+            &node->thumbnails.primary, &node->thumbnails.secondary,
+            on_screen,
+            thumbnail_upscale_threshold,
+            network_on_demand_thumbnails);
    else
       gfx_thumbnail_process_stream(
             mui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT,
-            mui->playlist, entry_idx, &node->thumbnails.primary,
+            mui->playlist, playlist_idx, &node->thumbnails.primary,
             on_screen,
             thumbnail_upscale_threshold,
             network_on_demand_thumbnails);
@@ -2810,7 +2810,7 @@ static bool materialui_render_process_entry_playlist_thumb_list(
 static bool materialui_render_process_entry_playlist_dual_icon(
       materialui_handle_t* mui,
       materialui_node_t *node,
-      size_t entry_idx, size_t selection,
+      size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
@@ -2822,11 +2822,11 @@ static bool materialui_render_process_entry_playlist_dual_icon(
     * > Note that secondary thumbnail is force
     *   enabled in dual icon mode */
    gfx_thumbnail_process_streams(
-      mui->thumbnail_path_data, mui->playlist, entry_idx,
-      &node->thumbnails.primary, &node->thumbnails.secondary,
-      on_screen,
-      thumbnail_upscale_threshold,
-      network_on_demand_thumbnails);
+         mui->thumbnail_path_data, mui->playlist, playlist_idx,
+         &node->thumbnails.primary, &node->thumbnails.secondary,
+         on_screen,
+         thumbnail_upscale_threshold,
+         network_on_demand_thumbnails);
 
    /* Always return true - every entry must
     * be processed */
@@ -2839,7 +2839,7 @@ static bool materialui_render_process_entry_playlist_dual_icon(
 static bool materialui_render_process_entry_playlist_desktop(
       materialui_handle_t* mui,
       materialui_node_t *node,
-      size_t entry_idx, size_t selection,
+      size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
@@ -2862,11 +2862,11 @@ static bool materialui_render_process_entry_playlist_desktop(
     * > Note that secondary thumbnail is force
     *   enabled */
    gfx_thumbnail_process_streams(
-      mui->thumbnail_path_data, mui->playlist, entry_idx,
-      &node->thumbnails.primary, &node->thumbnails.secondary,
-      is_on_screen,
-      thumbnail_upscale_threshold,
-      network_on_demand_thumbnails);
+         mui->thumbnail_path_data, mui->playlist, playlist_idx,
+         &node->thumbnails.primary, &node->thumbnails.secondary,
+         is_on_screen,
+         thumbnail_upscale_threshold,
+         network_on_demand_thumbnails);
 
    /* If this is *not* the currently selected
     * entry, then our work is done */
@@ -2929,7 +2929,7 @@ static bool materialui_render_process_entry_playlist_desktop(
             int n;
 
             /* Read playlist entry */
-            playlist_get_index(mui->playlist, selection, &entry);
+            playlist_get_index(mui->playlist, playlist_idx, &entry);
 
             /* Sanity check */
             if (!entry)
@@ -2956,7 +2956,7 @@ static bool materialui_render_process_entry_playlist_desktop(
             {
                if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
                   runtime_update_playlist(
-                        mui->playlist, selection,
+                        mui->playlist, playlist_idx,
                         directory_runtime_log,
                         directory_playlist,
                         (runtime_type == PLAYLIST_RUNTIME_PER_CORE),
@@ -3024,7 +3024,7 @@ static bool materialui_render_process_entry_playlist_desktop(
 static bool (*materialui_render_process_entry)(
       materialui_handle_t* mui,
       materialui_node_t *node,
-      size_t entry_idx, size_t selection,
+      size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails) = materialui_render_process_entry_default;
@@ -3285,6 +3285,7 @@ static void materialui_render(void *data,
        * for the current entry */
       if (!materialui_render_process_entry(
             mui, node, i, selection,
+            list->list[i].entry_idx,
             first_entry_found, last_entry_found,
             thumbnail_upscale_threshold,
             network_on_demand_thumbnails))
@@ -7658,11 +7659,22 @@ static void materialui_populate_entries(
                                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD));
    }
 
-   /* If this is a playlist, then cache it */
+   /* If this is a *valid* playlist, then cache it
+    * Note: Empty playlists have a 'no entries available'
+    * message as the first item - thus a playlist is
+    * valid if the first item is of the correct
+    * FILE_TYPE_RPL_ENTRY type */
+   mui->playlist = NULL;
    if (mui->is_playlist)
-      mui->playlist = playlist_get_cached();
-   else
-      mui->playlist = NULL;
+   {
+      file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+      size_t list_size  = menu_entries_get_size();
+
+      if (list &&
+          (list_size > 0) &&
+          (list->list[0].type == FILE_TYPE_RPL_ENTRY))
+         mui->playlist = playlist_get_cached();
+   }
 
    /* Update navigation bar tabs
     * > Note: We do this regardless of whether

@@ -1226,9 +1226,24 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       /* Playlist content */
       if (string_is_empty(s))
       {
-         size_t selection = menu_navigation_get_selection();
+         size_t selection      = menu_navigation_get_selection();
+         size_t list_size      = menu_entries_get_size();
+         file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
+         bool playlist_valid   = false;
+         size_t playlist_index = selection;
+
+         /* Get playlist index corresponding
+          * to the selected entry */
+         if (list &&
+             (selection < list_size) &&
+             (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+         {
+            playlist_valid = true;
+            playlist_index = list->list[selection].entry_idx;
+         }
+
          gfx_thumbnail_set_content_playlist(xmb->thumbnail_path_data,
-               playlist_get_cached(), selection);
+               playlist_valid ? playlist_get_cached() : NULL, playlist_index);
          xmb->fullscreen_thumbnails_available = true;
       }
    }
@@ -1261,7 +1276,6 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       size_t selection           = menu_navigation_get_selection();
       file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
       xmb_node_t *node           = (xmb_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
-
 
       if (node)
       {
@@ -1831,6 +1845,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
    else
    {
       const char *path = NULL;
+
       menu_entries_get_at_offset(
             xmb->horizontal_list,
             xmb->categories_selection_ptr - (xmb->system_tab_end + 1),
@@ -1841,6 +1856,10 @@ static void xmb_set_title(xmb_handle_t *xmb)
 
       fill_pathname_base_noext(
             xmb->title_name, path, sizeof(xmb->title_name));
+
+      /* Add current search terms */
+      menu_driver_search_append_terms_string(
+            xmb->title_name, sizeof(xmb->title_name));
    }
 }
 
@@ -2399,14 +2418,14 @@ static void xmb_populate_entries(void *data,
    xmb->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
                         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS));
 
+   xmb_set_title(xmb);
+
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
       xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       return;
    }
-
-   xmb_set_title(xmb);
 
    if (xmb->categories_selection_ptr != xmb->categories_active_idx_old)
       xmb_list_switch(xmb);

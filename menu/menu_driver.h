@@ -28,6 +28,7 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
+#include <lists/string_list.h>
 
 #include "menu_defines.h"
 #include "menu_input.h"
@@ -330,6 +331,12 @@ typedef struct
    {
       unsigned                unsigned_var;
    } scratchpad;
+
+   /* Holds a list of search terms that may be
+    * used to filter the currently displayed
+    * menu list */
+   struct string_list *search_terms;
+
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
 } menu_handle_t;
@@ -477,6 +484,14 @@ void menu_display_handle_wallpaper_upload(retro_task_t *task,
 #if defined(HAVE_LIBRETRODB)
 void menu_explore_free(void);
 #endif
+
+bool menu_driver_search_push(const char *search_term);
+bool menu_driver_search_pop(void);
+void menu_driver_search_clear(void);
+struct string_list *menu_driver_search_get_terms(void);
+/* Convenience function: Appends list of current
+ * search terms to specified string */
+void menu_driver_search_append_terms_string(char *s, size_t len);
 
 menu_handle_t *menu_driver_get_ptr(void);
 

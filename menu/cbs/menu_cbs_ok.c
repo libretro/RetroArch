@@ -760,7 +760,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
          info.enum_idx                 = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS;
          info.directory_ptr            = idx;
-         menu->rpl_entry_selection_ptr = (unsigned)idx;
+         menu->rpl_entry_selection_ptr = (unsigned)entry_idx;
          dl_type                       = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:

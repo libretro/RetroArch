@@ -209,6 +209,7 @@ struct ozone_handle
 
    bool is_playlist;
    bool is_playlist_old;
+   size_t num_search_terms_old;
 
    bool empty_playlist;
 

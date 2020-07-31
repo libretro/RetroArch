@@ -482,17 +482,16 @@ void gfx_thumbnail_process_stream(
 
          if (thumbnail->delay_timer > p_gfx_thumb->stream_delay)
          {
-            /* Sanity check */
-            if (!path_data || !playlist)
-               return;
-
             /* Update thumbnail content */
-            if (!gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
+            if (!path_data ||
+                !playlist ||
+                !gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
             {
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
                gfx_thumbnail_reset(thumbnail);
                thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+               thumbnail->alpha  = 1.0f;
                return;
             }
 
@@ -576,12 +575,10 @@ void gfx_thumbnail_process_streams(
          /* Check if one or more thumbnails should be requested */
          if (request_right || request_left)
          {
-            /* Sanity check */
-            if (!path_data || !playlist)
-               return;
-
             /* Update thumbnail content */
-            if (!gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
+            if (!path_data ||
+                !playlist ||
+                !gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
             {
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
@@ -589,12 +586,14 @@ void gfx_thumbnail_process_streams(
                {
                   gfx_thumbnail_reset(right_thumbnail);
                   right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+                  right_thumbnail->alpha  = 1.0f;
                }
 
                if (request_left)
                {
                   gfx_thumbnail_reset(left_thumbnail);
                   left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
+                  left_thumbnail->alpha   = 1.0f;
                }
 
                return;

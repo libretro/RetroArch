@@ -1211,8 +1211,10 @@ static int action_bind_sublabel_playlist_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   size_t list_size                          = menu_entries_get_size();
    playlist_t *playlist                      = NULL;
    const struct playlist_entry *entry        = NULL;
+   size_t playlist_index                     = i;
 #ifdef HAVE_OZONE
    const char *menu_ident                    = menu_driver_ident();
 #endif
@@ -1239,17 +1241,24 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
 #endif
 
+   /* Get playlist index corresponding
+    * to the current entry */
+   if (!list || (i >= list_size))
+      return 0;
+
+   playlist_index = list->list[i].entry_idx;
+
    /* Get current playlist */
    playlist = playlist_get_cached();
 
    if (!playlist)
       return 0;
 
-   if (i >= playlist_get_size(playlist))
+   if (playlist_index >= playlist_get_size(playlist))
       return 0;
 
    /* Read playlist entry */
-   playlist_get_index(playlist, i, &entry);
+   playlist_get_index(playlist, playlist_index, &entry);
 
    /* Only add sublabel if a core is currently assigned
     * > Both core name and core path must be valid */
@@ -1286,7 +1295,7 @@ static int action_bind_sublabel_playlist_entry(
    /* Check whether runtime info should be loaded from log file */
    if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
       runtime_update_playlist(
-            playlist, i,
+            playlist, playlist_index,
             directory_runtime_log,
             directory_playlist,
             (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
