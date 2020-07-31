@@ -108,6 +108,8 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 #endif
 };
 
+#include "xinput_joypad_inl.h"
+
 static INLINE int pad_index_to_xuser_index(unsigned pad)
 {
 #ifdef HAVE_DINPUT
@@ -118,11 +120,6 @@ static INLINE int pad_index_to_xuser_index(unsigned pad)
 #endif
 }
 
-/* Generic 'XInput' instead of 'Xbox 360', because
- * there are some other non-Xbox third party PC
- * controllers */
-static const char XBOX_CONTROLLER_NAME[] = "XInput Controller";
-
 static const char *xinput_joypad_name(unsigned pad)
 {
 #ifdef HAVE_DINPUT
@@ -130,6 +127,10 @@ static const char *xinput_joypad_name(unsigned pad)
     * to get a name from the device itself */
    return dinput_joypad.name(pad);
 #else
+   /* Generic 'XInput' instead of 'Xbox 360', because
+    * there are some other non-Xbox third party PC
+    * controllers */
+   static const char XBOX_CONTROLLER_NAME[] = "XInput Controller";
    if (pad_index_to_xuser_index(pad) < 0)
       return NULL;
 
@@ -139,38 +140,6 @@ static const char *xinput_joypad_name(unsigned pad)
    return XBOX_CONTROLLER_NAME;
 #endif
 }
-
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
-static bool load_xinput_dll(void)
-{
-   const char *version = "1.4";
-   /* Find the correct path to load the DLL from.
-    * Usually this will be from the system directory,
-    * but occasionally a user may wish to use a third-party
-    * wrapper DLL (such as x360ce); support these by checking
-    * the working directory first.
-    *
-    * No need to check for existance as we will be checking dylib_load's
-    * success anyway.
-    */
-
-   g_xinput_dll = dylib_load("xinput1_4.dll");
-   if (!g_xinput_dll)
-   {
-      g_xinput_dll = dylib_load("xinput1_3.dll");
-      version = "1.3";
-   }
-
-   if (!g_xinput_dll)
-   {
-      RARCH_ERR("[XInput]: Failed to load XInput, ensure DirectX and controller drivers are up to date.\n");
-      return false;
-   }
-
-   RARCH_LOG("[XInput]: Found XInput v%s.\n", version);
-   return true;
-}
-#endif
 
 static bool xinput_joypad_init(void *data)
 {
@@ -354,33 +323,6 @@ static void xinput_joypad_destroy(void)
 #endif
 }
 
-static int16_t xinput_joypad_button_state(
-      unsigned xuser, uint16_t btn_word,
-      unsigned port, uint16_t joykey)
-{
-   unsigned hat_dir  = GET_HAT_DIR(joykey);
-
-   if (hat_dir)
-   {
-      switch (hat_dir)
-      {
-         case HAT_UP_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_UP);
-         case HAT_DOWN_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_DOWN);
-         case HAT_LEFT_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_LEFT);
-         case HAT_RIGHT_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_RIGHT);
-         default:
-            break;
-      }
-      /* hat requested and no hat button down */
-   }
-   else if (joykey < g_xinput_num_buttons)
-      return (btn_word & button_index_to_bitmap_code[joykey]);
-   return 0;
-}
 
 static int16_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
@@ -394,60 +336,6 @@ static int16_t xinput_joypad_button(unsigned port, uint16_t joykey)
       return 0;
    btn_word          = g_xinput_states[xuser].xstate.Gamepad.wButtons;
    return xinput_joypad_button_state(xuser, btn_word, port, joykey);
-}
-
-static int16_t xinput_joypad_axis_state(
-      XINPUT_GAMEPAD *pad,
-      unsigned port, uint32_t joyaxis)
-{
-   int16_t val         = 0;
-   int     axis        = -1;
-   bool is_neg         = false;
-   bool is_pos         = false;
-   /* triggers (axes 4,5) cannot be negative */
-   if (AXIS_NEG_GET(joyaxis) <= 3)
-   {
-      axis             = AXIS_NEG_GET(joyaxis);
-      is_neg           = true;
-   }
-   else if (AXIS_POS_GET(joyaxis) <= 5)
-   {
-      axis             = AXIS_POS_GET(joyaxis);
-      is_pos           = true;
-   }
-   else
-      return 0;
-
-   switch (axis)
-   {
-      case 0:
-         val = pad->sThumbLX;
-         break;
-      case 1:
-         val = pad->sThumbLY;
-         break;
-      case 2:
-         val = pad->sThumbRX;
-         break;
-      case 3:
-         val = pad->sThumbRY;
-         break;
-      case 4:
-         val = pad->bLeftTrigger  * 32767 / 255;
-         break; /* map 0..255 to 0..32767 */
-      case 5:
-         val = pad->bRightTrigger * 32767 / 255;
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   /* Clamp to avoid overflow error. */
-   else if (val == -32768)
-      return -32767;
-   return val;
 }
 
 static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
