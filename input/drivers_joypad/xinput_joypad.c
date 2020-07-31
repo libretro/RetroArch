@@ -46,62 +46,7 @@
 #include "dinput_joypad.h"
 #endif
 
-#if defined(__WINRT__)
-#include <Xinput.h>
-#endif
-
-/* Check if the definitions do not already exist.
- * Official and mingw xinput headers have different include guards.
- * Windows 10 API version doesn't have an include guard at all and just uses #pragma once instead
- */
-#if ((!_XINPUT_H_) && (!__WINE_XINPUT_H)) && !defined(__WINRT__)
-
-#define XINPUT_GAMEPAD_DPAD_UP          0x0001
-#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
-#define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
-#define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
-#define XINPUT_GAMEPAD_START            0x0010
-#define XINPUT_GAMEPAD_BACK             0x0020
-#define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
-#define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
-#define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
-#define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
-#define XINPUT_GAMEPAD_A                0x1000
-#define XINPUT_GAMEPAD_B                0x2000
-#define XINPUT_GAMEPAD_X                0x4000
-#define XINPUT_GAMEPAD_Y                0x8000
-
-typedef struct
-{
-   uint16_t wButtons;
-   uint8_t  bLeftTrigger;
-   uint8_t  bRightTrigger;
-   int16_t  sThumbLX;
-   int16_t  sThumbLY;
-   int16_t  sThumbRX;
-   int16_t  sThumbRY;
-} XINPUT_GAMEPAD;
-
-typedef struct
-{
-   uint32_t       dwPacketNumber;
-   XINPUT_GAMEPAD Gamepad;
-} XINPUT_STATE;
-
-typedef struct
-{
-   uint16_t wLeftMotorSpeed;
-   uint16_t wRightMotorSpeed;
-} XINPUT_VIBRATION;
-
-#endif
-
-/* Guide constant is not officially documented. */
-#define XINPUT_GAMEPAD_GUIDE 0x0400
-
-#ifndef ERROR_DEVICE_NOT_CONNECTED
-#define ERROR_DEVICE_NOT_CONNECTED 1167
-#endif
+#include "xinput_joypad.h"
 
 #ifdef HAVE_DINPUT
 /* Due to 360 pads showing up under both XInput and DirectInput,
@@ -139,7 +84,7 @@ typedef struct
 } xinput_joypad_state;
 
 /* TODO/FIXME - static globals */
-static XINPUT_VIBRATION g_xinput_rumble_states[4];
+static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 static xinput_joypad_state g_xinput_states[4];
 
 /* Buttons are provided by XInput as bits of a uint16.
@@ -159,7 +104,6 @@ static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_RIGHT_THUMB,
    XINPUT_GAMEPAD_GUIDE
 };
-
 
 static INLINE int pad_index_to_xuser_index(unsigned pad)
 {
