@@ -330,7 +330,9 @@ static void xinput_joypad_poll(void)
 
    for (i = 0; i < 4; ++i)
    {
-      bool new_connected = g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
+      DWORD status       = g_XInputGetStateEx(i, &(g_xinput_states[i].xstate));
+      bool success       = status == ERROR_SUCCESS;
+      bool new_connected = status != ERROR_DEVICE_NOT_CONNECTED;
       if (new_connected != g_xinput_states[i].connected)
       {
          /* Normally, dinput handles device insertion/removal for us, but
@@ -347,7 +349,7 @@ static void xinput_joypad_poll(void)
          }
 
          g_xinput_states[i].connected = new_connected;
-         if (!g_xinput_states[i].connected)
+         if (!success)
             input_autoconfigure_disconnect(i, xinput_joypad_name(i));
       }
    }
