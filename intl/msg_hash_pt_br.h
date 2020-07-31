@@ -41,6 +41,10 @@ MSG_HASH(
    "Jogo em rede"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Explorar"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importar conteúdo"
    )
@@ -259,6 +263,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
    "Os vídeos que foram reproduzidos anteriormente aparecerão aqui."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "Explorar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "Navegue por todo o conteúdo correspondente ao banco de dados por meio de uma interface de pesquisa categorizada."
    )
 
 /* Main Menu > Online Updater */
@@ -1332,6 +1344,14 @@ MSG_HASH(
    "Alterne entre essas opções se a imagem não estiver centralizada corretamente no visor."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Ajustar pórtico"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Percorra essas opções para ajustar as configurações de pórtico e alterar o tamanho da imagem."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Usar taxa de atualização personalizada"
    )
@@ -1462,7 +1482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Lembre-se do tamanho e posição da janela, permitindo que isso tenha precedência sobre a escala no modo janela."
+   "Lembrar do tamanho e posição da janela, permitindo que isso tenha precedência sobre a escala no modo janela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -2169,7 +2189,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Alterna entre ligada/desligada as entradas da gravação de jogos no formato .bsv."
+   "Ativa ou não a gravação de comandos do jogo no formato .bsv."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -2614,7 +2634,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-   "Habilitar contexto compartilhado de hardware"
+   "Contexto compartilhado de hardware"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
@@ -2822,19 +2842,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-   "Salvar registro de tempo de execução (por núcleo)"
+   "Registro de tempo de execução por núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   "Mantém o controle de quanto tempo seu conteúdo está sendo executado ao longo do tempo."
+   "Mantém um registro de quanto tempo cada item está sendo executado por um núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "Salvar registro de tempo de execução (agregar)"
+   "Registro de tempo de execução total"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "Mantém o controle de quanto tempo cada item do conteúdo foi executado, registrado como o total agregado em todos os núcleos."
+   "Mantém um registro de quanto tempo cada item está sendo executado agregando todos os núcleos."
    )
 
 /* Settings > Logging */
@@ -2869,7 +2889,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
-   "Redireciona as mensagens do registro de eventos do sistema para o arquivo. Requer 'Verbosidade do registro de eventos' para ser ativado."
+   "Redireciona as mensagens do registro de eventos do sistema para um arquivo. Requer 'Verbosidade do registro de eventos' para habilitar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
@@ -3501,7 +3521,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "Alterna a visibilidade dos itens de menu do RetroArch."
+   "Alterna a visibilidade dos itens do menu no RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
@@ -3764,7 +3784,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "O fornecimento de uma senha ao ocultar a aba de configurações permite restaurar mais tarde a partir do menu, indo para a aba Menu Principal, selecionando Habilitar aba configurações e inserindo a senha."
+   "Impede o acesso a aba de configurações com uma senha. Ela pode ser restaurada ao digitar a senha após clicar em 'Habilitar aba configurações' no Menu Principal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
@@ -3829,6 +3849,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
    "Mostra abas de lista de reprodução dentro do menu principal."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
+   "Mostrar aba 'Explorar'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
+   "Mostra a aba 'Explorar' dentro do menu principal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
@@ -4277,7 +4305,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-   "Usar a cor do tema do seu sistema operacional (se houver) - substitui as configurações do tema."
+   "Substitui o esquema de cores do tema pelo o do seu sistema operacional."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
@@ -4360,7 +4388,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
-   "O idioma do qual o serviço será traduzido. Se definido como 'Não importa', ele tentará detectar automaticamente o idioma. A configuração para um idioma específico tornará a tradução mais precisa."
+   "O idioma do qual o serviço será traduzido. Se definido como 'Não importa', ele tentará detectar automaticamente. A configuração para um idioma específico tornará a tradução mais precisa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
@@ -4694,7 +4722,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   "Especifica quantas cópias de segurança geradas automaticamente devem ser mantidos para cada núcleo instalado. Quando esse limite é atingido, a criação de uma nova cópia por meio de uma atualização online excluirá a cópia mais antiga. Nota: As cópias de segurança principais manuais não são afetadas por esta configuração."
+   "Especifica quantas cópias de segurança geradas automaticamente devem ser mantidos para cada núcleo instalado. Ao atingir o limite, a criação de uma nova cópia por meio de uma atualização online excluirá a mais antiga. Nota: As cópias de segurança manuais não são afetadas por esta configuração."
    )
 
 /* Settings > Playlists */
@@ -4721,7 +4749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limita o número de entradas na lista de reprodução de favoritos. Ao atingir o limite, novas adições serão evitadas até que as entradas antigas sejam removidas. Definir um valor -1 permite entradas 'ilimitadas' (99999). AVISO: A redução do valor excluirá as entradas existentes!"
+   "Limita o número de entradas na lista de favoritos. Ao atingir o limite, novas entradas serão evitadas até que as antigas sejam apagadas. Definir um valor -1 permite entradas 'ilimitadas' (99999). AVISO: A redução do valor apagará as entradas existentes!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -4741,7 +4769,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
-   "Ordenar listas de reprodução por ordem alfabética"
+   "Ordenar listas por ordem alfabética"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
@@ -4749,7 +4777,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
-   "Salvar listas de reprodução usando o formato antigo"
+   "Salvar listas usando o formato antigo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
@@ -4761,7 +4789,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
-   "Salva dados da lista de reprodução em um formato arquivado. Reduz o tamanho do arquivo e o tempo de carregamento, às custas do (insignificante) aumento do uso da CPU. Pode ser usado com listas de reprodução de formato antigo ou novo."
+   "Salva dados da lista de reprodução em um formato arquivado. Reduz o tamanho do arquivo e o tempo de carregamento às custas do (insignificante) aumento do uso da CPU. Pode ser usado com listas de reprodução de formato antigo ou novo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
@@ -4813,7 +4841,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "Ao pesquisar as listas de reprodução de entradas associadas a arquivos compactados, corresponde apenas ao nome do arquivo morto em vez de [nome do arquivo]+[conteúdo]. Habilite isso para evitar entradas de histórico de conteúdo duplicadas ao carregar arquivos compactados."
+   "Ao pesquisar nas listas de reprodução por itens associados a arquivos compactados, corresponder apenas ao nome do arquivo em vez de [nome do arquivo]+[conteúdo]. Habilite isso para evitar itens de histórico de conteúdo duplicados ao carregar arquivos compactados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -4821,7 +4849,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-   "Quando desativado, o conteúdo só é adicionado às listas de reprodução se você tiver um núcleo instalado que suporte sua extensão. Ao ativar isso, ele será adicionado à lista de reprodução independentemente. Desta forma, você pode instalar o núcleo que você precisa mais tarde, após a análise."
+   "Quando desativado, o conteúdo só é adicionado às listas de reprodução se você tiver um núcleo instalado que suporte sua extensão. Ao ativar isso, ele será adicionado à lista de reprodução mesmo assim. Desta forma, você pode instalar o núcleo que precisa mais tarde, após a análise."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -4830,6 +4858,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
    "Executa tarefas de manutenção em listas de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   "Lista de Reprodução Portátil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
+   "Quando ativado e o diretório de 'Navegador de Arquivos' é escolhido, o valor atual do parâmetro 'Navegador de Arquivos' é salvo na lista de reprodução. Quando a lista é carregada em outro sistema onde a mesma opção está ativada, o valor do parâmetro 'Gerenciador de Arquivos' é comparado com o valor da lista de reprodução; se diferente, os caminhos dos itens da lista serão corrigidos automaticamente."
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -5393,7 +5429,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "Quando habilitado, qualquer lista de reprodução existente será excluída antes da análise do conteúdo. Quando desabilitado, as entradas da lista de reprodução existentes serão preservadas e apenas o conteúdo que estiver ausente da lista de reprodução será adicionado."
+   "Quando habilitado, qualquer lista de reprodução existente será excluída antes da análise do conteúdo. Quando desabilitado, os itens da lista existentes serão preservados e apenas o conteúdo que estiver ausente dela será adicionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
@@ -5402,6 +5438,56 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
    "Analisa o conteúdo selecionado."
+   )
+
+/* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   "Ano de lançamento"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   "Número de jogadores"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "Região"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAGS,
+   "Etiquetas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
+   "Pesquisar nome..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY,
+   "Por"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS,
+   "Itens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   "Mostrar tudo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT,
+   "Selecionar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   "Filtro adicional"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
+   "Tudo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
+   "Adicionar filtro adicional"
    )
 
 /* Playlist > Playlist Item */
@@ -6001,19 +6087,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
-   "Força primária da vibração"
+   "Força da vibração primária"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
-   "Duração (ms) da vibração primária"
+   "Duração da vibração primária (em ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
-   "Força secundária da vibração"
+   "Força da vibração secundária"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
-   "Duração (ms) da vibração secundária"
+   "Duração da vibração secundária (ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
@@ -6143,7 +6229,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
-   "Sombreamento"
+   "Shaders"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -6401,6 +6487,266 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
+   "Afrikaans"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
+   "Albanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
+   "Arabic - عربى (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
+   "Asturian - Asturianu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
+   "Azerbaijani"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
+   "Basque"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
+   "Bengali"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
+   "Bulgarian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
+   "Catalan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
+   "Chinese (Simplified) - 简体中文 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
+   "Chinese (Traditional) - 繁體中文 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
+   "Croatian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CZECH,
+   "Czech"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_DANISH,
+   "Danish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
+   "Dutch - Nederlands"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
+   "English"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
+   "Esperanto - Esperanto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
+   "Estonian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
+   "Filipino"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
+   "Finnish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
+   "French - Français"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
+   "Galician"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
+   "Georgian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
+   "German - Deutsch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
+   "Greek - Ελληνικά"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
+   "Gujarati"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
+   "Haitian Creole"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
+   "Hebrew"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HINDI,
+   "Hindi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
+   "Hungarian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
+   "Icelandic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
+   "Indonesian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
+   "Irish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
+   "Italian - Italiano"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
+   "Japanese - 日本語"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
+   "Kannada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
+   "Korean - 한국어 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LATIN,
+   "Latin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
+   "Latvian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
+   "Lithuanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
+   "Macedonian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MALAY,
+   "Malay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MALTESE,
+   "Maltese"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN,
+   "Norwegian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
+   "Persian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_POLISH,
+   "Polish - Polski"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
+   "Portuguese (Brazil) - Português (Brasil)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
+   "Portuguese (Portugal) - Português (Portugal)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
+   "Romanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
+   "Russian - Русский"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
+   "Serbian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
+   "Slovak - Slovenský"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
+   "Slovenian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
+   "Spanish - Español"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
+   "Swahili"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
+   "Swedish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
+   "Tamil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
+   "Telugu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_THAI,
+   "Thai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
+   "Turkish - Türkçe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
+   "Ukrainian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_URDU,
+   "Urdu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
+   "Vietnamese - Tiếng Việt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
+   "Welsh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
+   "Yiddish"
+   )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_UNKNOWN_COMPILER,
    "Compilador desconhecido"
@@ -6611,19 +6957,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "Executar próxima trapaça se valor for igual à memória"
+   "Executar a próxima trapaça caso o valor seja igual à memória"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-   "Executar próxima trapaça se valor for diferente da memória"
+   "Executar a próxima trapaça caso valor seja diferente da memória"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-   "Executar próxima trapaça se valor for menor que a memória"
+   "Executar a próxima trapaça caso valor seja menor que a memória"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-   "Executar próxima trapaça se valor for maior que a memória"
+   "Executar a próxima trapaça caso valor seja maior que a memória"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
@@ -7047,6 +7393,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
    "Ativa a exibição de caracteres ASCII não padrão. Necessário para compatibilidade com certos idiomas ocidentais não ingleses. Tem um impacto moderado no desempenho."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   "Mostrar Interruptores"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
+   "Utilize ícones em vez do texto LIGAR/DESLIGAR para representar o menu do interruptor da entrada das configurações."
    )
 
 /* RGUI: Settings Options */
@@ -7574,7 +7928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "Ao habilitar esta opção, cada elemento dos metadados de um conteúdo a ser exibido na barra direita das listas de reprodução (núcleo associado, tempo de jogo...) vai ocupar apenas uma linha, cadeias que excedem a largura da barra se moverão automaticamente. Ao desabilitar esta opção, cada elemento dos metadados é apresentado estaticamente, estendendo as linhas conforme necessário."
+   "Ao habilitar esta opção, cada elemento dos metadados de um conteúdo a ser exibido na barra direita das listas de reprodução (núcleo associado, tempo de jogo...) vai ocupar apenas uma linha, cadeias que excedem a largura da barra se moverão automaticamente. Desabilitando, cada elemento dos metadados é apresentado estaticamente, estendendo as linhas conforme necessário."
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
@@ -7657,7 +8011,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Preenche o espaço não utilizado nas imagens em miniatura com um fundo sólido. Isso garante um tamanho de exibição uniforme para todas as imagens, melhorando a aparência do menu ao exibir miniaturas de conteúdo misto com diferentes dimensões básicas."
+   "Preenche o espaço não utilizado nas imagens em miniatura com um fundo sólido. Isso garante um tamanho de exibição uniforme para todas as imagens, melhorando a aparência do menu ao exibir itens com miniaturas de diferentes tamanhos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -9290,7 +9644,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Modo Hardcore habilitado, Jogos salvos e Rebobinamento estão desabilitados."
+   "Modo Hardcore habilitado: jogos salvos e rebobinamento foram desativados."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -9382,11 +9736,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISK_CLOSED,
-   "Fechado"
+   "Fechada"
    )
 MSG_HASH(
    MSG_DISK_EJECTED,
-   "Ejetado"
+   "Ejetada"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -10042,11 +10396,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-   "Falha no cálculo de tamanho da janela de exibição! Prosseguindo usando dados brutos. Isto provavelmente não funcionará corretamente..."
+   "Falha no cálculo de tamanho da janela de exibição! Prosseguindo usando dados brutos. Isto poderá não funcionar corretamente..."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY,
-   "bandeja de disco virtual."
+   "bandeja do disco virtual."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
@@ -10452,7 +10806,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "Aplica uma substituição manual da escala ao desenhar os widgets na tela. Aplica-se apenas quando 'Escalar automaticamente os widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
+   "Aplica uma substituição manual da escala ao desenhar os widgets na tela. Aplica-se apenas quando 'Dimensionar widgets gráficos automaticamente' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,

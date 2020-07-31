@@ -41,6 +41,10 @@ MSG_HASH(
    "Διαδικτυακό Παιχνίδι"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Εξερεύνηση"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Εισαγωγή περιεχομένου"
    )
@@ -76,6 +80,18 @@ MSG_HASH(
    "Φόρτωση Δίσκου"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Φόρτωση φυσικού δίσκου πολυμέσων. Θα πρέπει να έχει επιλεγεί ο πυρήνας (Φόρτωση Πυρήνα) που θες να χρησιμοποιήσεις για το δίσκο."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "Αντιγραφή Δίσκου"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "Αντιγραφή του φυσικού δίσκου στην εσωτερική μνήμη. Θα αποθηκευτεί σαν αρχείο \"εικόνας\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Λίστες Αναπαραγωγής"
    )
@@ -88,6 +104,10 @@ MSG_HASH(
    "Σάρωση Περιεχομένου"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Σάρωση περιεχομένου και προσθήκη στην βάση δεδομένων."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Εμφάνιση Μενού Επιφάνειας Εργασίας"
    )
@@ -98,6 +118,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    "Απενεργοποίηση Λειτουργίας Παιδιού"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Απενεργοποιεί την λειτουργία κιόσκη. (Χρειάζεται επανεκκίνηση)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -171,8 +195,16 @@ MSG_HASH(
    "Λήψη Πυρήνα..."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   "Λήψη και εγκατάσταση ενός πυρήνα μέσω διαδικτύου."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    "Εγκατάσταση ή Επαναφορά ενός Πυρήνα"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Εγκατάσταση ή ανάκτηση πυρήνα από των κατάλογο των ληφθέντων."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -209,6 +241,10 @@ MSG_HASH(
    "Αγαπημένα"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   "Περιεχόμενο που έχετε προσθέσει στα 'Αγαπημένα' θα εμφανίζεται εδώ."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "Μουσική"
    )
@@ -236,6 +272,10 @@ MSG_HASH(
 /* Main Menu > Online Updater */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   "Λήψη Πυρήνων"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
    "Ενημέρωση Εγκατεστημένων Πυρήνων"
    )
@@ -248,6 +288,18 @@ MSG_HASH(
    "Ενημερωτής Σκίτσων"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+   "Λήψη ολοκληρωμένου πακέτου εικονιδίων για το επιλεγμένο σύστημα."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   "Ενημέρωση Εικονιδίων Λίστας Παιχνιδιού"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "Λήψη εικονιδίων για τις εγγραφές στην επιλεγμένη λίστα παιχνιδιών."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Λήψη Περιεχομένου"
    )
@@ -258,6 +310,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
    "Ενημέρωση Βασικών Στοιχείων"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   "Ενημέρωση Προφίλ Χειριστηρίων"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
@@ -291,8 +347,16 @@ MSG_HASH(
    "Πληροφορίες πυρήνα"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   "Προβολή πληροφοριών σχετικά με την εφαρμογή/πυρήνα."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
    "Πληροφορίες Δίσκου"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   "Προβολή πληροφοριών σχετικά με τον εισαγμένο δίσκο."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
@@ -378,6 +442,10 @@ MSG_HASH(
    "Λείπει"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT,
+   "Παρόν"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPTIONAL,
    "Προεραιτικό"
    )
@@ -386,12 +454,32 @@ MSG_HASH(
    "Απαραίτητο"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   "Κλείδωμα Εγκατεστημένο Πυρήνα"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Αποτροπή τροποποιήσεων του τρέχοντος εγκατεστημένου πυρήνα. Μπορεί να χρησιμοποιηθεί για αποφυγή ανεπιθύμητων ενημερώσεων όταν το περιεχόμενο απαιτεί συγκεκριμένη έκδοση πυρήνα (π.χ. Παιχνίδια Arcade)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Διαγραφή πυρήνα"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
    "Κατάργηση αυτού του πυρήνα από τον δίσκο."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   "Αντίγραφο Ασφαλείας Πυρήνα"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   "Δημιουργία αντιγράφου ασφαλείας του τωρινά εγκατεστημένου πυρήνα."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   "Επαναφορά Αντιγράφου Ασφαλείας"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
@@ -2213,6 +2301,54 @@ MSG_HASH(
    "Εμφάνιση τεχνικών στατιστικών στην οθόνη."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
+   "Ειδοποιήσεις Λήψης Στιγμιότυπου Οθόνης"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   "Εμφάνιση μηνύματος στην οθόνη κατά τη λήψη στιγμιότυπου οθόνης (Screenshot)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "Διατήρηση Ειδοποίησης Στιγμιότυπου Οθόνης"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "Ορίστε τη διάρκεια του μηνύματος στιγμιότυπου οθόνης (Screenshot)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
+   "Φυσιολογική Ταχύτητα"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   "Γρήγορη Ταχύτητα"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   "Πολύ Γρήγορη Ταχύτητα"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   "Ακαριαία"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "Εφέ Φλας Στιγμιότυπου Οθόνης"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "Εμφάνιση λευκού εφέ που αναβοσβήνει στην οθόνη με την επιθυμητή διάρκεια κατά τη λήψη ενός στιγμιότυπου οθόνης."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   "Ενεργοποίηση (Κανονική Ταχύτητα)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   "Ενεργοποίηση (Γρήγορη Ταχύτητα)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Γραμματοσειρά Ειδοποιήσεων"
    )
@@ -2689,7 +2825,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Περιορισμός του αριθμού καταχωρίσεων στην λίστα αγαπημένων. Μόλις φτάσει το όριο, οι νέες προσθήκες θα αποτρέπονται μέχρι οι παλιές να αφαιρεθούν. Ορίζοντας την τιμή σε -1 επιτρέπει 'απεριόριστες' (99999) καταχωρήσεις. ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Μειώνοντας την τιμή θα διαγράψει ήδη υπάρχ[...]"
+   "Περιορισμός καταχωρίσεων στην λίστα αγαπημένων. Μόλις φτάσει το όριο θα αποτρέπονται προσθήκες μέχρι παλαιότερες να αφαιρεθούν. Ορίζοντας το σε -1 επιτρέπει 'απεριόριστες' (99999) καταχωρήσεις. ΠΡΟΣΟΧΗ: Μειώνοντας την τιμή θα διαγράψει υπάρχουσες καταχωρήσεις!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -2706,6 +2842,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Τελευταίο Παιχνίδι:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   "Φορητές Λίστες Αναπαραγωγής"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -2995,6 +3135,8 @@ MSG_HASH(
 
 /* Import content > Manual Scan */
 
+
+/* Explore tab */
 
 /* Playlist > Playlist Item */
 
@@ -3477,6 +3619,266 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
+   "Afrikaans"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
+   "Albanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
+   "Arabic - عربى (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
+   "Asturian - Asturianu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
+   "Azerbaijani"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
+   "Basque"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
+   "Bengali"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
+   "Bulgarian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
+   "Catalan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
+   "Chinese (Simplified) - 简体中文 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
+   "Chinese (Traditional) - 繁體中文 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
+   "Croatian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CZECH,
+   "Czech"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_DANISH,
+   "Danish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
+   "Dutch - Nederlands"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
+   "English"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
+   "Esperanto - Esperanto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
+   "Estonian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
+   "Filipino"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
+   "Finnish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
+   "French - Français"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
+   "Galician"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
+   "Georgian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
+   "German - Deutsch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
+   "Greek - Ελληνικά"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
+   "Gujarati"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
+   "Haitian Creole"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
+   "Hebrew"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HINDI,
+   "Hindi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
+   "Hungarian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
+   "Icelandic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
+   "Indonesian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
+   "Irish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
+   "Italian - Italiano"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
+   "Japanese - 日本語"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
+   "Kannada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
+   "Korean - 한국어 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LATIN,
+   "Latin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
+   "Latvian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
+   "Lithuanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
+   "Macedonian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MALAY,
+   "Malay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MALTESE,
+   "Maltese"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN,
+   "Norwegian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
+   "Persian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_POLISH,
+   "Polish - Polski"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
+   "Portuguese (Brazil) - Português (Brasil)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
+   "Portuguese (Portugal) - Português (Portugal)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
+   "Romanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
+   "Russian - Русский"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
+   "Serbian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
+   "Slovak - Slovenský"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
+   "Slovenian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
+   "Spanish - Español"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
+   "Swahili"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
+   "Swedish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
+   "Tamil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
+   "Telugu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_THAI,
+   "Thai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
+   "Turkish - Türkçe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
+   "Ukrainian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_URDU,
+   "Urdu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
+   "Vietnamese - Tiếng Việt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
+   "Welsh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
+   "Yiddish"
+   )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_UNKNOWN_COMPILER,
    "Άγνωστος Μεταγλωττιστής"

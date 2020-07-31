@@ -37,6 +37,10 @@ MSG_HASH(
    "Videor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Utforska"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importera innehåll"
    )
@@ -542,71 +546,215 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   "Stöd för LibretroDB"
+   "LibretroDB-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Stöd för overlays"
+   "Overlays-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "Stöd för Command Interface"
+   "Command Interface-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "Stöd för Network Command Interface"
+   "Network Command Interface-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "Stöd för Network Controller"
+   "Network Controller-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   "Stöd för Cocoa"
+   "Cocoa-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   "Stöd för PNG (RPNG)"
+   "PNG (RPNG)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   "Stöd för JPEG (RJPEG)"
+   "JPEG (RJPEG)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   "Stöd för BMP (RBMP)"
+   "BMP (RBMP)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   "Stöd för TGA (RTGA)"
+   "TGA (RTGA)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   "Stöd för SDL 1.2"
+   "SDL 1.2-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   "Stöd för SDL 2"
+   "SDL 2-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   "Stöd för Vulkan"
+   "Vulkan-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   "Stöd för Metal"
+   "Metal-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   "Stöd för OpenGL"
+   "OpenGL-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   "Stöd för OpenGL ES"
+   "OpenGL ES-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   "Stöd för Threading"
+   "Threading-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
+   "KMS/EGL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
+   "udev-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
+   "OpenVG-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
+   "EGL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
+   "X11-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
+   "Wayland-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
+   "XVideo-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
+   "ALSA-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
+   "OSS-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
+   "OpenAL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
+   "OpenSL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
+   "RSound-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
+   "RoarAudio-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
+   "JACK-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
+   "PulseAudio-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+   "CoreAudio-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "CoreAudio V3-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
+   "DirectSound-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+   "WASAPI-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
+   "XAudio2-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
+   "zlib-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
+   "7zip-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
+   "Dynamic Library-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
+   "Cg-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
+   "GLSL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
+   "HLSL-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
+   "SDL Image-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
+   "FFmpeg-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
+   "mpv-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
+   "CoreText-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
+   "FreeType-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+   "STB TrueType-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
+   "Peer-to-peer-nätverksstöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
+   "Python-stöd (i shaders)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
+   "Video4Linux2-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
+   "libusb-stöd"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -652,15 +800,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   "Stöd för analog kontroll"
+   "Analog input stöds"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "Stöd för rumble"
+   "Rumble stöds"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   "Stöd för co-op"
+   "Co-op stöds"
    )
 
 /* Main Menu > Configuration File */
@@ -966,6 +1114,10 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Tvinga sRGB FBO-stödet att vara inaktivt. Vissa Intel OpenGL-drivrutiner i Windows har bildproblem när sRGB FBO-stödet är aktivt. Denna inställning kan avhjälpa detta."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
@@ -981,6 +1133,10 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   "Använd floatformat för WASAPI-drivrutinen, om det stöds av din ljudenhet."
+   )
 
 /* Settings > Audio > Output */
 
@@ -1002,21 +1158,37 @@ MSG_HASH(
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "Maximalt antal användare som stöds av RetroArch."
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   "Aktivera enheters vibration (för kärnor som stödjer det)"
+   )
 
 /* Settings > Input > Menu Controls */
 
 
 /* Settings > Input > Hotkey Binds */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   "Spola tillbaka nuvarande innehåll medan knappen trycks ned. Observera att \"Stöd för tillbakaspolning\" måste aktiveras."
+   )
 
 /* Settings > Input > Port # Binds */
 
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för savestates."
+   )
 
 /* Settings > Core */
 
@@ -1034,12 +1206,20 @@ MSG_HASH(
 
 /* Settings > File Browser */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Visa bara filer med filnamnstillägg som det finns stöd för."
+   )
 
 /* Settings > Frame Throttle */
 
 
 /* Settings > Frame Throttle > Rewind */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
+   "Stöd för tillbakaspolning"
+   )
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
@@ -1140,6 +1320,8 @@ MSG_HASH(
 /* Import content > Manual Scan */
 
 
+/* Explore tab */
+
 /* Playlist > Playlist Item */
 
 
@@ -1205,6 +1387,270 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
+   "Afrikaans"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
+   "Albanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
+   "Arabic - عربى (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
+   "Asturian - Asturianu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
+   "Azerbaijani"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
+   "Basque"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
+   "Bengali"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
+   "Bulgarian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
+   "Catalan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
+   "Chinese (Simplified) - 简体中文 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
+   "Chinese (Traditional) - 繁體中文 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
+   "Croatian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CZECH,
+   "Czech"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_DANISH,
+   "Danish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
+   "Dutch - Nederlands"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
+   "English"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
+   "Esperanto - Esperanto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
+   "Estonian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
+   "Filipino"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
+   "Finnish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
+   "French - Français"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
+   "Galician"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
+   "Georgian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
+   "German - Deutsch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
+   "Greek - Ελληνικά"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
+   "Gujarati"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
+   "Haitian Creole"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
+   "Hebrew"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HINDI,
+   "Hindi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
+   "Hungarian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
+   "Icelandic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
+   "Indonesian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
+   "Irish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
+   "Italian - Italiano"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
+   "Japanese - 日本語"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
+   "Kannada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
+   "Korean - 한국어 (Restart Required)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LATIN,
+   "Latin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
+   "Latvian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
+   "Lithuanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
+   "Macedonian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MALAY,
+   "Malay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MALTESE,
+   "Maltese"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN,
+   "Norwegian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
+   "Persian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_POLISH,
+   "Polish - Polski"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
+   "Portuguese (Brazil) - Português (Brasil)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
+   "Portuguese (Portugal) - Português (Portugal)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
+   "Romanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
+   "Russian - Русский"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
+   "Serbian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
+   "Slovak - Slovenský"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
+   "Slovenian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
+   "Spanish - Español"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
+   "Swahili"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
+   "Swedish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
+   "Tamil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
+   "Telugu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_THAI,
+   "Thai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
+   "Turkish - Türkçe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
+   "Ukrainian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_URDU,
+   "Urdu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
+   "Vietnamese - Tiếng Việt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
+   "Welsh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
+   "Yiddish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
+   "Stöds inte"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
@@ -1238,12 +1684,28 @@ MSG_HASH(
 
 /* Unused (Needs Confirmation) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
+   "Slang-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
+   "OpenGL/Direct3D render-to-texture-stöd (multipass shaders)"
+   )
 
 /* Discord Status */
 
 
 /* Notifications */
 
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Kärnan har inget stöd för savestates."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Run-Ahead har inaktiverats eftersom denna kärna saknar stöd för savestates."
+   )
 
 /* Lakka */
 
