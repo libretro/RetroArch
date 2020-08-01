@@ -61,8 +61,8 @@ def update(messages, template, source_messages):
    for tp_msg in template_messages:
       if tp_msg['key'] in messages:
          old_msg = tp_msg['msg']
-         # Remove English duplicates
-         if messages[tp_msg['key']] == source_messages[tp_msg['key']]:
+         # Remove English duplicates and non-translateable _LANG_ strings
+         if messages[tp_msg['key']] == source_messages[tp_msg['key']] or tp_msg['key'].startswith('MENU_ENUM_LABEL_VALUE_LANG_'):
             new_translation = new_translation.replace(old_msg + '\n', '')
             continue
          tp_msg_val = tp_msg['val']

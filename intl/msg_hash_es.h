@@ -2205,7 +2205,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Grabar repetición de partida (alternar)"
+   "Grabar repetición de entrada (alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
@@ -6981,7 +6981,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "Ejecutar el siguiente truco si el valor es igual al de la memoria"
+   "Ejecutar el siguiente truco si el valor es idéntico al de la memoria"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
@@ -9740,7 +9740,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
-   "El CRC32 del contenido no concuerda con el de la cabecera de la repetición. Es muy probable que la reproducción se desincronice."
+   "El CRC32 del contenido no concuerda con el de la cabecera de la repetición. Es muy probable que la repetición no se muestre sincronizada."
    )
 MSG_HASH(
    MSG_CUSTOM_TIMING_GIVEN,
@@ -10132,15 +10132,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "La grabación no es un archivo BSV1 válido."
+   "El archivo de la repetición de entrada no es un archivo BSV1 válido."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-   "El formato de la grabación parece tener una versión diferente de serializer. Probablemente dará error."
+   "El formato de la repetición de entrada parece tener una versión diferente del serializador. Probablemente dará error."
    )
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
-   "La reproducción ha finalizado."
+   "La repetición de entrada ha finalizado."
    )
 MSG_HASH(
    MSG_MOVIE_RECORD_STOPPED,
@@ -10380,7 +10380,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
-   "Carga rápida deshecha."
+   "Se ha anulado la carga del guardado rápido."
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
