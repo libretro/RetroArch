@@ -27,7 +27,9 @@
 #include <cell/sysmodule.h>
 #endif
 
+#if defined(__PSL1GHT__)
 #include <lv2/process.h>
+#endif
 #include <sys/process.h>
 
 #ifdef HAVE_CONFIG_H
