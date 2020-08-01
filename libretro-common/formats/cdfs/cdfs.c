@@ -225,7 +225,8 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
          if (remaining >= len)
          {
             memcpy(buffer,
-                  &file->sector_buffer[file->current_sector_offset], len);
+                  &file->sector_buffer[file->current_sector_offset],
+                  (size_t)len);
             file->current_sector_offset += len;
             return len;
          }
