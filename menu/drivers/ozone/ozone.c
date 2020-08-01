@@ -2654,7 +2654,6 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
              * playlist, return to the sidebar */
             if (!ozone->cursor_in_sidebar)
             {
-               size_t list_size        = menu_entries_get_size();
                file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
                uintptr_t animation_tag = (uintptr_t)&ozone->animations.cursor_alpha;
                bool goto_sidebar       = false;
