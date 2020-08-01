@@ -1024,7 +1024,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
             {
                strlcat(tmp, " (", sizeof(tmp));
                snprintf(tmp + tmplen + 2, sizeof(tmp) - tmplen - 2,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEM_COUNT),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
                      (unsigned)EX_BUF_LEN(entries));
                strlcat(tmp, ")", sizeof(tmp));
             }
