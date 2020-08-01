@@ -439,7 +439,7 @@ char *intfstream_gets(intfstream_internal_t *intf,
 #endif
       case INTFSTREAM_RZIP:
 #if defined(HAVE_ZLIB)
-         return rzipstream_gets(intf->rzip.fp, buffer, len);
+         return rzipstream_gets(intf->rzip.fp, buffer, (size_t)len);
 #else
          break;
 #endif
