@@ -2962,20 +2962,8 @@ MSG_HASH(
    "Пошук за назвою..."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY,
-   "За"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS,
-   "Елементи"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
    "Показати всі"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT,
-   "Вибрати"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
