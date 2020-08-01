@@ -2383,7 +2383,8 @@ static bool playlist_read_file(playlist_t *playlist)
             goto json_cleanup;
          }
 
-         if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
+         if (!JSON_Parser_Parse(context.parser, chunk,
+                  (size_t)length, JSON_False))
          {
             /* Note: Chunk may not be null-terminated.
              * It is therefore dangerous to print its contents.

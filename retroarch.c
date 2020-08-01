@@ -19456,10 +19456,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
          if (cb)
             p_rarch->audio_callback = *cb;
-	 return true;
       }
-#endif
+      break;
+#else
       return false;
+#endif
 
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
@@ -37303,10 +37304,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             if (!string_is_empty(loaded_core_file) &&
                 string_is_equal(core_file, loaded_core_file))
                return true;
-
-            return false;
          }
-         break;
+         return false;
       case RARCH_CTL_HAS_SET_USERNAME:
          return p_rarch->has_set_username;
       case RARCH_CTL_IS_INITED:

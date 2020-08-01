@@ -251,7 +251,7 @@ int64_t retro_vfs_file_seek_internal(
    }
 #endif
 
-   if (lseek(stream->fd, offset, whence) < 0)
+   if (lseek(stream->fd, (off_t)offset, whence) < 0)
       return -1;
 
    return 0;
@@ -610,7 +610,7 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
    if (_chsize(_fileno(stream->fp), length) != 0)
       return -1;
 #elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && (!defined(SWITCH) || defined(HAVE_LIBNX))
-   if (ftruncate(fileno(stream->fp), length) != 0)
+   if (ftruncate(fileno(stream->fp), (off_t)length) != 0)
       return -1;
 #endif
 

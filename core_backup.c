@@ -293,9 +293,8 @@ bool core_backup_get_backup_crc(char *backup_path, uint32_t *crc)
             string_list_free(metadata_list);
             metadata_list = NULL;
 
-            return true;
          }
-         break;
+         return true;
       case CORE_BACKUP_TYPE_LIB:
          {
             intfstream_t *backup_file = NULL;

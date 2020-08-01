@@ -377,7 +377,7 @@ static void task_core_backup_handler(retro_task_t *task)
 
             /* Update progress display */
             task_set_progress(task,
-                  (backup_handle->file_data_read * 100) / backup_handle->core_file_size);
+                  (int8_t)((backup_handle->file_data_read * 100) / backup_handle->core_file_size));
          }
          break;
       case CORE_BACKUP_CHECK_HISTORY:
@@ -856,7 +856,7 @@ static void task_core_restore_handler(retro_task_t *task)
 
             /* Update progress display */
             task_set_progress(task,
-                  (backup_handle->file_data_read * 100) / backup_handle->backup_file_size);
+                  (int8_t)((backup_handle->file_data_read * 100) / backup_handle->backup_file_size));
          }
          break;
       case CORE_RESTORE_END:
