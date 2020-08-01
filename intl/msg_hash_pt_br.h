@@ -7400,7 +7400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
-   "Utilize ícones em vez do texto LIGAR/DESLIGAR para representar o menu do interruptor da entrada das configurações."
+   "Usa interruptores para simbolizar opções ATIVADO/DESATIVADO ao invés de texto."
    )
 
 /* RGUI: Settings Options */
