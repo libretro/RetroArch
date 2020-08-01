@@ -9027,13 +9027,11 @@ static int materialui_pointer_up(void *userdata,
              * to open the core information menu */
             else if (mui->is_core_updater_list)
                return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
-            /* In all other cases, just perform a normal 'left'
-             * navigation event */
-            else
-               return materialui_pointer_up_swipe_horz_default(
-                     mui, entry, ptr, selection, entries_end, MENU_ACTION_LEFT);
          }
-         break;
+         /* In all other cases, just perform a normal 'left'
+          * navigation event */
+         return materialui_pointer_up_swipe_horz_default(
+               mui, entry, ptr, selection, entries_end, MENU_ACTION_LEFT);
       case MENU_INPUT_GESTURE_SWIPE_RIGHT:
          {
             /* If we are at the top level and the navigation bar is
@@ -9055,13 +9053,11 @@ static int materialui_pointer_up(void *userdata,
              * to open the core information menu */
             else if (mui->is_core_updater_list)
                return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
-            /* In all other cases, just perform a normal 'right'
-             * navigation event */
-            else
-               return materialui_pointer_up_swipe_horz_default(
-                     mui, entry, ptr, selection, entries_end, MENU_ACTION_RIGHT);
          }
-         break;
+         /* In all other cases, just perform a normal 'right'
+          * navigation event */
+         return materialui_pointer_up_swipe_horz_default(
+               mui, entry, ptr, selection, entries_end, MENU_ACTION_RIGHT);
       default:
          /* Ignore input */
          break;

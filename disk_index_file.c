@@ -219,7 +219,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
       }
 
       /* Parse chunk */
-      if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
+      if (!JSON_Parser_Parse(context.parser, chunk, (size_t)length, JSON_False))
       {
          RARCH_ERR(
                "[disk index file] Error parsing chunk of disk index file: %s\n---snip---\n%s\n---snip---\n",

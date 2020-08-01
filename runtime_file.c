@@ -194,7 +194,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
       }
 
       /* Parse chunk */
-      if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
+      if (!JSON_Parser_Parse(context.parser, chunk, (size_t)length, JSON_False))
       {
          RARCH_ERR("Error parsing chunk of runtime log file: %s\n---snip---\n%s\n---snip---\n", runtime_log->path, chunk);
          RtlJSONLogError(&context);

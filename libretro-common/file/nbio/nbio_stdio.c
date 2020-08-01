@@ -131,7 +131,7 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
    handle->mode          = mode;
 
    if (len)
-      buf                = malloc(len);
+      buf                = malloc((size_t)len);
 
    if (len && !buf)
       goto error;
