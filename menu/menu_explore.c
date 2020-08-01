@@ -1000,6 +1000,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
       for (cat = 0; cat < EXPLORE_CAT_COUNT; cat++)
       {
          explore_string_t **entries = explore_state->by[cat];
+         int tmplen;
 
          if (!EX_BUF_LEN(entries))
             continue;
@@ -1008,21 +1009,26 @@ unsigned menu_displaylist_explore(file_list_t *list)
             if (stack_top[i].type == cat + EXPLORE_TYPE_FIRSTCATEGORY)
                goto SKIP_EXPLORE_BY_CATEGORY;
 
-         if (!is_top)
-            snprintf(tmp, sizeof(tmp), "%s %s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_BY),
-                  msg_hash_to_str(explore_by_info[cat].name_enum));
-         else if (explore_by_info[cat].is_numeric)
-            snprintf(tmp, sizeof(tmp), "%s %s (%s - %s)",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_BY),
-                  msg_hash_to_str(explore_by_info[cat].name_enum),
-                  entries[0]->str, entries[EX_BUF_LEN(entries) - 1]->str);
-         else
-            snprintf(tmp, sizeof(tmp), "%s %s (%u %s)",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_BY),
-                  msg_hash_to_str(explore_by_info[cat].name_enum),
-                  (unsigned)EX_BUF_LEN(entries),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS));
+         tmplen = snprintf(tmp, sizeof(tmp),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY),
+               msg_hash_to_str(explore_by_info[cat].name_enum));
+
+         if (is_top && tmplen >= 0 && tmplen < sizeof(tmp) - 5)
+         {
+            if (explore_by_info[cat].is_numeric)
+            {
+               snprintf(tmp + tmplen, sizeof(tmp) - tmplen, " (%s - %s)",
+                     entries[0]->str, entries[EX_BUF_LEN(entries) - 1]->str);
+            }
+            else
+            {
+               strlcat(tmp, " (", sizeof(tmp));
+               snprintf(tmp + tmplen + 2, sizeof(tmp) - tmplen - 2,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
+                     (unsigned)EX_BUF_LEN(entries));
+               strlcat(tmp, ")", sizeof(tmp));
+            }
+         }
 
          explore_menu_entry(list, explore_state,
                tmp, cat + EXPLORE_TYPE_FIRSTCATEGORY);
@@ -1057,8 +1063,8 @@ SKIP_EXPLORE_BY_CATEGORY:;
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN), EXPLORE_TYPE_FILTERNULL);
       }
 
-      explore_append_title(explore_state, "%s %s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT),
+      explore_append_title(explore_state,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT_CATEGORY),
             msg_hash_to_str(explore_by_info[current_cat].name_enum));
    }
    else if (
@@ -1081,9 +1087,12 @@ SKIP_EXPLORE_BY_CATEGORY:;
 
       /* List filtered items in a selected explore by category */
       if (is_filtered_category)
-         explore_append_title(explore_state, " - %s %s",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT),
+      {
+         explore_append_title(explore_state, " - ");
+         explore_append_title(explore_state,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT_CATEGORY),
                msg_hash_to_str(explore_by_info[current_cat].name_enum));
+      }
       else
       {
          /* Game list */
