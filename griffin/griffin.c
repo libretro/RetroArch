@@ -39,6 +39,22 @@
 #endif
 #endif
 
+#if defined(_WIN32)
+#if defined(_MSC_VER) && _MSC_VER >= 1500
+
+#ifndef HAVE_MMAP_WIN32
+#define HAVE_MMAP_WIN32
+#endif
+
+#elif !defined(_MSC_VER)
+
+#ifndef HAVE_MMAP_WIN32
+#define HAVE_MMAP_WIN32
+#endif
+#endif
+
+#endif
+
 #define JSON_STATIC 1 /* must come before runtime_file, netplay_room_parse and jsonsax_full */
 
 #if _MSC_VER && !defined(__WINRT__)
@@ -1057,7 +1073,7 @@ FILE
 #if defined(HAVE_MMAP) && defined(BSD)
 #include "../libretro-common/file/nbio/nbio_unixmmap.c"
 #endif
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(HAVE_MMAP_WIN32)
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
 #endif
 #if defined(ORBIS)
