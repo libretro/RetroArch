@@ -33546,15 +33546,16 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
    struct rarch_state   *p_rarch = &rarch_st;
-   settings_t *settings          = p_rarch->configuration_settings;
-   const char *joypad_name       = settings->arrays.input_joypad_driver;
-
-   if (!p_rarch->current_video_context.input_driver)
-      return false;
-   p_rarch->current_video_context.input_driver(
-         p_rarch->video_context_data, joypad_name,
-         inp->input, inp->input_data);
-   return true;
+   if (p_rarch->current_video_context.input_driver)
+   {
+      settings_t *settings          = p_rarch->configuration_settings;
+      const char *joypad_name       = settings->arrays.input_joypad_driver;
+      p_rarch->current_video_context.input_driver(
+            p_rarch->video_context_data, joypad_name,
+            inp->input, inp->input_data);
+      return true;
+   }
+   return false;
 }
 
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
