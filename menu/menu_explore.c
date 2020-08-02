@@ -119,22 +119,22 @@ typedef struct
 
 static const struct
 {
-   enum msg_hash_enums name_enum;
+   enum msg_hash_enums name_enum, by_enum;
    const char* rdbkey;
    bool use_split, is_company, is_numeric;
 }
 explore_by_info[EXPLORE_CAT_COUNT] = 
 {
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,           "developer",   true,  true,  false },
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,           "publisher",   true,  true,  false },
-   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR, "releaseyear", false, false, true  },
-   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT, "users",       false, false, true  },
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,               "genre",       true,  false, false },
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,              "origin",      false, false, false },
-   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,       "region",      false, false, false },
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,           "franchise",   false, false, false },
-   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAGS,         "tags",        true,  false, false },
-   { MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,         "system",      false, false, false },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,    "developer",   true,  true,  false },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,    "publisher",   true,  true,  false },
+   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR, MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR, "releaseyear", false, false, true  },
+   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT, MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT, "users",       false, false, true  },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,               MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,        "genre",       true,  false, false },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,              MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,       "origin",      false, false, false },
+   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,       MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,       "region",      false, false, false },
+   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,    "franchise",   false, false, false },
+   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,          MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,          "tags",        true,  false, false },
+   { MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,         MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,  "system",      false, false, false },
 };
 
 /* TODO/FIXME - static global */
@@ -1010,8 +1010,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
                goto SKIP_EXPLORE_BY_CATEGORY;
 
          tmplen = snprintf(tmp, sizeof(tmp),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY),
-               msg_hash_to_str(explore_by_info[cat].name_enum));
+               msg_hash_to_str(explore_by_info[cat].by_enum));
 
          if (is_top && tmplen >= 0 && tmplen < sizeof(tmp) - 5)
          {
@@ -1064,8 +1063,7 @@ SKIP_EXPLORE_BY_CATEGORY:;
       }
 
       explore_append_title(explore_state,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT_CATEGORY),
-            msg_hash_to_str(explore_by_info[current_cat].name_enum));
+            msg_hash_to_str(explore_by_info[current_cat].by_enum));
    }
    else if (
             previous_cat < EXPLORE_CAT_COUNT 
@@ -1088,10 +1086,8 @@ SKIP_EXPLORE_BY_CATEGORY:;
       /* List filtered items in a selected explore by category */
       if (is_filtered_category)
       {
-         explore_append_title(explore_state, " - ");
-         explore_append_title(explore_state,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SELECT_CATEGORY),
-               msg_hash_to_str(explore_by_info[current_cat].name_enum));
+         explore_append_title(explore_state, " - %s",
+               msg_hash_to_str(explore_by_info[current_cat].by_enum));
       }
       else
       {

@@ -5450,10 +5450,6 @@ MSG_HASH(
    "Regione"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAGS,
-   "Etichette"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
    "Cerca per Nome ..."
    )

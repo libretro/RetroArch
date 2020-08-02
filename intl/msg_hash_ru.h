@@ -5270,10 +5270,6 @@ MSG_HASH(
    "Регион"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAGS,
-   "Теги"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
    "Поиск по имени..."
    )
