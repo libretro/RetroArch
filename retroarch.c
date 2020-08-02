@@ -30883,51 +30883,44 @@ const char *video_driver_get_ident(void)
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
 {
-   struct rarch_state    *p_rarch = &rarch_st;
+   struct rarch_state     *p_rarch = &rarch_st;
+
    if (!data)
       return false;
    p_rarch->current_video_context = *data;
    return true;
 }
 
-static void video_context_driver_destroy_internal(
-      gfx_ctx_driver_t *ctx_driver)
-{
-   if (!ctx_driver)
-      return;
-
-   ctx_driver->init                       = NULL;
-   ctx_driver->bind_api                   = NULL;
-   ctx_driver->swap_interval              = NULL;
-   ctx_driver->set_video_mode             = NULL;
-   ctx_driver->get_video_size             = NULL;
-   ctx_driver->get_video_output_size      = NULL;
-   ctx_driver->get_video_output_prev      = NULL;
-   ctx_driver->get_video_output_next      = NULL;
-   ctx_driver->get_metrics                = NULL;
-   ctx_driver->translate_aspect           = NULL;
-   ctx_driver->update_window_title        = NULL;
-   ctx_driver->check_window               = NULL;
-   ctx_driver->set_resize                 = NULL;
-   ctx_driver->suppress_screensaver       = NULL;
-   ctx_driver->swap_buffers               = NULL;
-   ctx_driver->input_driver               = NULL;
-   ctx_driver->get_proc_address           = NULL;
-   ctx_driver->image_buffer_init          = NULL;
-   ctx_driver->image_buffer_write         = NULL;
-   ctx_driver->show_mouse                 = NULL;
-   ctx_driver->ident                      = NULL;
-   ctx_driver->get_flags                  = NULL;
-   ctx_driver->set_flags                  = NULL;
-   ctx_driver->bind_hw_render             = NULL;
-   ctx_driver->get_context_data           = NULL;
-   ctx_driver->make_current               = NULL;
-}
-
 void video_context_driver_destroy(void)
 {
-   struct rarch_state     *p_rarch        = &rarch_st;
-   video_context_driver_destroy_internal(&p_rarch->current_video_context);
+   struct rarch_state     *p_rarch                           = &rarch_st;
+
+   p_rarch->current_video_context.init                       = NULL;
+   p_rarch->current_video_context.bind_api                   = NULL;
+   p_rarch->current_video_context.swap_interval              = NULL;
+   p_rarch->current_video_context.set_video_mode             = NULL;
+   p_rarch->current_video_context.get_video_size             = NULL;
+   p_rarch->current_video_context.get_video_output_size      = NULL;
+   p_rarch->current_video_context.get_video_output_prev      = NULL;
+   p_rarch->current_video_context.get_video_output_next      = NULL;
+   p_rarch->current_video_context.get_metrics                = NULL;
+   p_rarch->current_video_context.translate_aspect           = NULL;
+   p_rarch->current_video_context.update_window_title        = NULL;
+   p_rarch->current_video_context.check_window               = NULL;
+   p_rarch->current_video_context.set_resize                 = NULL;
+   p_rarch->current_video_context.suppress_screensaver       = NULL;
+   p_rarch->current_video_context.swap_buffers               = NULL;
+   p_rarch->current_video_context.input_driver               = NULL;
+   p_rarch->current_video_context.get_proc_address           = NULL;
+   p_rarch->current_video_context.image_buffer_init          = NULL;
+   p_rarch->current_video_context.image_buffer_write         = NULL;
+   p_rarch->current_video_context.show_mouse                 = NULL;
+   p_rarch->current_video_context.ident                      = NULL;
+   p_rarch->current_video_context.get_flags                  = NULL;
+   p_rarch->current_video_context.set_flags                  = NULL;
+   p_rarch->current_video_context.bind_hw_render             = NULL;
+   p_rarch->current_video_context.get_context_data           = NULL;
+   p_rarch->current_video_context.make_current               = NULL;
 }
 
 /**
@@ -33478,7 +33471,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 void video_context_driver_free(void)
 {
    struct rarch_state   *p_rarch = &rarch_st;
-   video_context_driver_destroy_internal(&p_rarch->current_video_context);
+   video_context_driver_destroy();
    p_rarch->video_context_data    = NULL;
 }
 
@@ -33528,12 +33521,11 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
    struct rarch_state   *p_rarch = &rarch_st;
+   settings_t *settings          = p_rarch->configuration_settings;
+   const char *joypad_name       = settings->arrays.input_joypad_driver;
 
    if (p_rarch && p_rarch->current_video_context.input_driver)
    {
-      settings_t *settings          = p_rarch->configuration_settings;
-      const char *joypad_name       = settings->arrays.input_joypad_driver;
-
       p_rarch->current_video_context.input_driver(
             p_rarch->video_context_data, joypad_name,
             inp->input, inp->input_data);
