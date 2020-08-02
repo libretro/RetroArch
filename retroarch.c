@@ -32183,15 +32183,10 @@ void video_driver_update_viewport(
    unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
    float video_driver_aspect_ratio = p_rarch->video_driver_aspect_ratio;
 
-   if (     p_rarch->video_context_data
-         && p_rarch->current_video_context.translate_aspect)
-      device_aspect = p_rarch->current_video_context.translate_aspect(
-            p_rarch->video_context_data, vp->full_width, vp->full_height);
-
-   vp->x      = 0;
-   vp->y      = 0;
-   vp->width  = vp->full_width;
-   vp->height = vp->full_height;
+   vp->x                           = 0;
+   vp->y                           = 0;
+   vp->width                       = vp->full_width;
+   vp->height                      = vp->full_height;
 
    if (video_scale_integer && !force_full)
       video_viewport_get_scaled_integer(
