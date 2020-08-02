@@ -897,12 +897,14 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
    {
-      gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+      if (gl1->ctx_driver->swap_buffers)
+         gl1->ctx_driver->swap_buffers(gl1->ctx_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
-   gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+   if (gl1->ctx_driver->swap_buffers)
+      gl1->ctx_driver->swap_buffers(gl1->ctx_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (video_info->hard_sync

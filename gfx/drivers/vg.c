@@ -451,7 +451,8 @@ static bool vg_frame(void *data, const void *frame,
    if (vg->ctx_driver->update_window_title)
       vg->ctx_driver->update_window_title(vg->ctx_data);
 
-   vg->ctx_driver->swap_buffers(vg->ctx_data);
+   if (vg->ctx_driver->swap_buffers)
+      vg->ctx_driver->swap_buffers(vg->ctx_data);
 
    return true;
 }

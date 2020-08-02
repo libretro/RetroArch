@@ -30784,8 +30784,6 @@ bool video_driver_started_fullscreen(void)
 
 /* Stub functions */
 
-static void update_window_title_null(void *data) { }
-static void swap_buffers_null(void *data) { }
 static bool get_metrics_null(void *data, enum display_metric_types type,
       float *value) { return false; }
 static bool set_resize_null(void *a, unsigned b, unsigned c) { return false; }
@@ -30894,14 +30892,8 @@ static void video_context_driver_reset(void)
    if (!p_rarch->current_video_context.get_metrics)
       p_rarch->current_video_context.get_metrics         = get_metrics_null;
 
-   if (!p_rarch->current_video_context.update_window_title)
-      p_rarch->current_video_context.update_window_title = update_window_title_null;
-
    if (!p_rarch->current_video_context.set_resize)
       p_rarch->current_video_context.set_resize          = set_resize_null;
-
-   if (!p_rarch->current_video_context.swap_buffers)
-      p_rarch->current_video_context.swap_buffers        = swap_buffers_null;
 }
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
@@ -30929,11 +30921,11 @@ void video_context_driver_destroy(void)
    p_rarch->current_video_context.get_video_output_next      = NULL;
    p_rarch->current_video_context.get_metrics                = get_metrics_null;
    p_rarch->current_video_context.translate_aspect           = NULL;
-   p_rarch->current_video_context.update_window_title        = update_window_title_null;
+   p_rarch->current_video_context.update_window_title        = NULL;
    p_rarch->current_video_context.check_window               = NULL;
    p_rarch->current_video_context.set_resize                 = set_resize_null;
    p_rarch->current_video_context.suppress_screensaver       = NULL;
-   p_rarch->current_video_context.swap_buffers               = swap_buffers_null;
+   p_rarch->current_video_context.swap_buffers               = NULL;
    p_rarch->current_video_context.input_driver               = NULL;
    p_rarch->current_video_context.get_proc_address           = NULL;
    p_rarch->current_video_context.image_buffer_init          = NULL;

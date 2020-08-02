@@ -1982,11 +1982,13 @@ static bool gl_core_frame(void *data, const void *frame,
          && !runloop_is_slowmotion
          && !runloop_is_paused)
    {
-      gl->ctx_driver->swap_buffers(gl->ctx_data);
+      if (gl->ctx_driver->swap_buffers)
+         gl->ctx_driver->swap_buffers(gl->ctx_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   gl->ctx_driver->swap_buffers(gl->ctx_data);
+   if (gl->ctx_driver->swap_buffers)
+      gl->ctx_driver->swap_buffers(gl->ctx_data);
 
    if (video_info->hard_sync &&
        !input_driver_nonblock_state &&

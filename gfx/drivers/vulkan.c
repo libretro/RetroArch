@@ -1695,7 +1695,8 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   vk->ctx_driver->swap_buffers(context_data);
+   if (vk->ctx_driver->swap_buffers)
+      vk->ctx_driver->swap_buffers(context_data);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -2221,7 +2222,8 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   vk->ctx_driver->swap_buffers(vk->ctx_data);
+   if (vk->ctx_driver->swap_buffers)
+      vk->ctx_driver->swap_buffers(vk->ctx_data);
 
    if (!vk->context->swap_interval_emulation_lock)
    {
