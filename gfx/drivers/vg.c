@@ -108,7 +108,6 @@ static INLINE bool vg_query_extension(const char *ext)
 static void *vg_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   gfx_ctx_input_t inp;
    unsigned win_width, win_height;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
    int interval                    = 0;
@@ -222,10 +221,13 @@ static void *vg_init(const video_info_t *video,
          : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync, adaptive_vsync_enabled, interval);
 
-   inp.input      = input;
-   inp.input_data = input_data;
-
-   video_context_driver_input_driver(&inp);
+   if (vg->ctx_driver->input_driver)
+   {
+      const char *joypad_name = settings->arrays.input_joypad_driver;
+      vg->ctx_driver->input_driver(
+            vg->ctx_data, joypad_name,
+            input, input_data);
+   }
 
    if (     video->font_enable
          && font_renderer_create_default(
