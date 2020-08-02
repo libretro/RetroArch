@@ -30786,7 +30786,6 @@ bool video_driver_started_fullscreen(void)
 
 static bool get_metrics_null(void *data, enum display_metric_types type,
       float *value) { return false; }
-static bool set_resize_null(void *a, unsigned b, unsigned c) { return false; }
 
 /**
  * config_get_video_driver_options:
@@ -30891,9 +30890,6 @@ static void video_context_driver_reset(void)
 
    if (!p_rarch->current_video_context.get_metrics)
       p_rarch->current_video_context.get_metrics         = get_metrics_null;
-
-   if (!p_rarch->current_video_context.set_resize)
-      p_rarch->current_video_context.set_resize          = set_resize_null;
 }
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
@@ -30923,7 +30919,7 @@ void video_context_driver_destroy(void)
    p_rarch->current_video_context.translate_aspect           = NULL;
    p_rarch->current_video_context.update_window_title        = NULL;
    p_rarch->current_video_context.check_window               = NULL;
-   p_rarch->current_video_context.set_resize                 = set_resize_null;
+   p_rarch->current_video_context.set_resize                 = NULL;
    p_rarch->current_video_context.suppress_screensaver       = NULL;
    p_rarch->current_video_context.swap_buffers               = NULL;
    p_rarch->current_video_context.input_driver               = NULL;
