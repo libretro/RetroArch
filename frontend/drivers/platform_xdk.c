@@ -257,7 +257,9 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
    bool original_verbose       = verbosity_is_enabled();
 #endif
 #if defined(_XBOX1)
+#ifndef IS_SALAMANDER
    LAUNCH_DATA ptr;
+#endif
 #elif defined(_XBOX360)
    char game_path[1024]        = {0};
 #endif
