@@ -1166,7 +1166,6 @@ static void *vulkan_init(const video_info_t *video,
       input_driver_t **input,
       void **input_data)
 {
-   gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    unsigned win_width;
    unsigned win_height;
@@ -1176,6 +1175,7 @@ static void *vulkan_init(const video_info_t *video,
    unsigned temp_width                = 0;
    unsigned temp_height               = 0;
    const gfx_ctx_driver_t *ctx_driver = NULL;
+   settings_t *settings               = config_get_ptr();
    vk_t *vk                           = (vk_t*)calloc(1, sizeof(*vk));
    if (!vk)
       return NULL;
@@ -1277,9 +1277,13 @@ static void *vulkan_init(const video_info_t *video,
       goto error;
    }
 
-   inp.input      = input;
-   inp.input_data = input_data;
-   video_context_driver_input_driver(&inp);
+   if (vk->ctx_driver->input_driver)
+   {
+      const char *joypad_name = settings->arrays.input_joypad_driver;
+      vk->ctx_driver->input_driver(
+            vk->ctx_data, joypad_name,
+            input, input_data);
+   }
 
    if (video->font_enable)
       font_driver_init_osd(vk,

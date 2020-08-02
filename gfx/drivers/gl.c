@@ -3577,7 +3577,6 @@ static void *gl2_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    enum gfx_wrap_type wrap_type;
-   gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    video_shader_ctx_info_t shader_info;
    settings_t *settings                 = config_get_ptr();
@@ -3909,10 +3908,13 @@ static void *gl2_init(const video_info_t *video,
       }
    }
 
-   inp.input      = input;
-   inp.input_data = input_data;
-
-   video_context_driver_input_driver(&inp);
+   if (gl->ctx_driver->input_driver)
+   {
+      const char *joypad_name = settings->arrays.input_joypad_driver;
+      gl->ctx_driver->input_driver(
+            gl->ctx_data, joypad_name,
+            input, input_data);
+   }
 
    if (video->font_enable)
       font_driver_init_osd(gl, video,
