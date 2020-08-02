@@ -30,13 +30,17 @@
 #include <boolean.h>
 #include <retro_inline.h>
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
+
+#if defined(_XBOX)
+#include <Xtl.h>
+#else
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
-#elif defined(_WIN32) && defined(_XBOX)
-#include <Xtl.h>
+#endif
+
 #endif
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)

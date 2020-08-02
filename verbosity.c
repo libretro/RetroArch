@@ -39,9 +39,17 @@
 #include <android/log.h>
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
+
+#if defined(_XBOX)
+#include <Xtl.h>
+#else
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
+#endif
+
 #endif
 
 #include <file/file_path.h>
