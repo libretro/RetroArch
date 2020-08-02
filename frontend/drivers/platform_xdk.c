@@ -264,7 +264,11 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
 
 #ifdef IS_SALAMANDER
    if (!string_is_empty(path))
+#ifdef _XBOX360
+      XLaunchNewImage(path, 0);
+#else
       XLaunchNewImage(path, NULL);
+#endif
 #else
 #if defined(_XBOX1)
    memset(&ptr, 0, sizeof(ptr));
