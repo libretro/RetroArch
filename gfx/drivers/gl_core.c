@@ -1545,6 +1545,8 @@ static void gl_core_free(void *data)
    gl_core_context_bind_hw_render(gl, false);
    font_driver_free_osd();
    gl_core_destroy_resources(gl);
+   if (gl->ctx_driver && gl->ctx_driver->destroy)
+      gl->ctx_driver->destroy(gl->ctx_data);
    video_context_driver_free();
 }
 

@@ -309,6 +309,8 @@ static void vg_free(void *data)
       vgDestroyPaint(vg->mPaintBg);
    }
 
+   if (vg->ctx_driver && vg->ctx_driver->destroy)
+      vg->ctx_driver->destroy(vg->ctx_data);
    video_context_driver_free();
 
    free(vg);
