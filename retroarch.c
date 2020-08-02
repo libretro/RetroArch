@@ -33494,8 +33494,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 void video_context_driver_free(void)
 {
    struct rarch_state   *p_rarch = &rarch_st;
-   if (p_rarch->current_video_context.destroy)
-      p_rarch->current_video_context.destroy(p_rarch->video_context_data);
    video_context_driver_destroy_internal(&p_rarch->current_video_context);
    p_rarch->video_context_data    = NULL;
 }
