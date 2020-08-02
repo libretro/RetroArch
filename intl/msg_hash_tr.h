@@ -5482,10 +5482,6 @@ MSG_HASH(
    "Bölge"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAGS,
-   "Etiketler"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
    "İsim Ara..."
    )
