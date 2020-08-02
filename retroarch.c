@@ -33625,16 +33625,16 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
    if (!flags)
       return false;
 
-   if (p_rarch->current_video_context.set_flags)
+   if (!p_rarch->current_video_context.set_flags)
    {
-      p_rarch->current_video_context.set_flags(
-            p_rarch->video_context_data, flags->flags);
-      return true;
+      p_rarch->deferred_flag_data.flags                = flags->flags;
+      p_rarch->deferred_video_context_driver_set_flags = true;
+      return false;
    }
 
-   p_rarch->deferred_flag_data.flags                = flags->flags;
-   p_rarch->deferred_video_context_driver_set_flags = true;
-   return false;
+   p_rarch->current_video_context.set_flags(
+         p_rarch->video_context_data, flags->flags);
+   return true;
 }
 
 enum gfx_ctx_api video_context_driver_get_api(void)
