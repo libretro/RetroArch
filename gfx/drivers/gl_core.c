@@ -1157,6 +1157,7 @@ static void gl_core_set_viewport_wrapper(void *data,
 static void *gl_core_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
+   gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    settings_t *settings                 = config_get_ptr();
    bool video_gpu_record                = settings->bools.video_gpu_record;
@@ -1313,13 +1314,9 @@ static void *gl_core_init(const video_info_t *video,
     * the viewport sizes before we start running. */
    gl_core_set_viewport_wrapper(gl, temp_width, temp_height, false, true);
 
-   if (gl->ctx_driver->input_driver)
-   {
-      const char *joypad_name = settings->arrays.input_joypad_driver;
-      gl->ctx_driver->input_driver(
-            gl->ctx_data, joypad_name,
-            input, input_data);
-   }
+   inp.input      = input;
+   inp.input_data = input_data;
+   video_context_driver_input_driver(&inp);
 
    if (!gl_core_init_filter_chain(gl))
    {

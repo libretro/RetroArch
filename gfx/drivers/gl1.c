@@ -218,6 +218,7 @@ static void *gl1_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
+   gfx_ctx_input_t inp;
    void *ctx_data                       = NULL;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    unsigned mode_width                  = 0;
@@ -378,13 +379,10 @@ static void *gl1_gfx_init(const video_info_t *video,
          video_driver_set_gpu_api_version_string(version);
    }
 
-   if (gl1->ctx_driver->input_driver)
-   {
-      const char *joypad_name = settings->arrays.input_joypad_driver;
-      gl1->ctx_driver->input_driver(
-            gl1->ctx_data, joypad_name,
-            input, input_data);
-   }
+   inp.input      = input;
+   inp.input_data = input_data;
+
+   video_context_driver_input_driver(&inp);
 
    if (video_font_enable)
       font_driver_init_osd(gl1,

@@ -1784,6 +1784,8 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_driver_get_metrics(gfx_ctx_metrics_t *metrics);
 
+bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
+
 enum gfx_ctx_api video_context_driver_get_api(void);
 
 void video_context_driver_free(void);
