@@ -669,9 +669,7 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    return true;
 }
 
-static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl,
-      settings_t *settings,
-      struct retro_hw_render_callback *hwr)
+static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
 {
    unsigned major;
    unsigned minor;
@@ -679,25 +677,25 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl,
    gfx_ctx_flags_t flags;
    const gfx_ctx_driver_t *gfx_ctx      = NULL;
    void                      *ctx_data  = NULL;
+   settings_t                 *settings = config_get_ptr();
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
 
 #ifdef HAVE_OPENGLES3
-   api                                  = GFX_CTX_OPENGL_ES_API;
-   major                                = 3;
-   minor                                = 0;
+   api = GFX_CTX_OPENGL_ES_API;
+   major = 3;
+   minor = 0;
    if (hwr && hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
    {
-      major                             = hwr->version_major;
-      minor                             = hwr->version_minor;
+      major = hwr->version_major;
+      minor = hwr->version_minor;
    }
 #else
-   api                                  = GFX_CTX_OPENGL_API;
+   api   = GFX_CTX_OPENGL_API;
    if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
    {
-      major                             = hwr->version_major;
-      minor                             = hwr->version_minor;
-      gl_query_core_context_set(
-            hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
-
+      major = hwr->version_major;
+      minor = hwr->version_minor;
+      gl_query_core_context_set(hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
       if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
       {
          flags.flags = 0;
@@ -707,10 +705,10 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl,
    }
    else
    {
-      major                             = 3;
-      minor                             = 2;
+      major = 3;
+      minor = 2;
       gl_query_core_context_set(true);
-      flags.flags                       = 0;
+      flags.flags = 0;
       BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
       video_context_driver_set_flags(&flags);
    }
@@ -718,19 +716,16 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl,
 
    /* Force shared context. */
    if (hwr)
-      gl->use_shared_context            = 
-         hwr->context_type != RETRO_HW_CONTEXT_NONE;
+      gl->use_shared_context = hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
-   gfx_ctx                              = 
-      video_context_driver_init_first(gl,
-            settings->arrays.video_context_driver,
-            api, major, minor, gl->use_shared_context, &ctx_data);
+   gfx_ctx = video_context_driver_init_first(gl,
+         settings->arrays.video_context_driver,
+         api, major, minor, gl->use_shared_context, &ctx_data);
 
    if (ctx_data)
-      gl->ctx_data                      = ctx_data;
+      gl->ctx_data = ctx_data;
 
-   /* Need to force here since video_context_driver_init 
-    * also checks for global option. */
+   /* Need to force here since video_context_driver_init also checks for global option. */
    if (gfx_ctx->bind_hw_render)
       gfx_ctx->bind_hw_render(ctx_data, gl->use_shared_context);
    return gfx_ctx;
@@ -1173,9 +1168,8 @@ static void *gl_core_init(const video_info_t *video,
    const char *version                  = NULL;
    char *error_string                   = NULL;
    gl_core_t *gl                        = (gl_core_t*)calloc(1, sizeof(gl_core_t));
+   const gfx_ctx_driver_t *ctx_driver   = gl_core_get_context(gl);
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-   const gfx_ctx_driver_t *ctx_driver   = gl_core_get_context(gl, settings,
-         hwr);
 
    if (!gl || !ctx_driver)
       goto error;
