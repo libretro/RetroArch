@@ -25243,13 +25243,14 @@ static float menu_input_get_dpi(struct rarch_state *p_rarch)
        (p_rarch->video_driver_width  != last_video_width) ||
        (p_rarch->video_driver_height != last_video_height))
    {
+      gfx_ctx_metrics_t mets; 
       /* Note: If video_context_driver_get_metrics() fails,
        * we don't know what happened to dpi - so ensure it
        * is reset to a sane value */
-      if (!p_rarch->current_video_context.get_metrics(
-            p_rarch->video_context_data,
-            DISPLAY_METRIC_DPI,
-            &dpi))
+
+      mets.type  = DISPLAY_METRIC_DPI;
+      mets.value = &dpi;
+      if (!video_context_driver_get_metrics(&mets))
          dpi            = 0.0f;
 
       dpi_cached        = true;
@@ -33494,10 +33495,12 @@ void video_context_driver_free(void)
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 {
    struct rarch_state *p_rarch   = &rarch_st;
-   return p_rarch->current_video_context.get_metrics(
-         p_rarch->video_context_data,
-         metrics->type,
-         metrics->value);
+   if (p_rarch && p_rarch->current_video_context.get_metrics)
+      return p_rarch->current_video_context.get_metrics(
+            p_rarch->video_context_data,
+            metrics->type,
+            metrics->value);
+   return false;
 }
 
 bool video_context_driver_get_refresh_rate(float *refresh_rate)
