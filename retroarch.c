@@ -30784,6 +30784,10 @@ bool video_driver_started_fullscreen(void)
    return p_rarch->video_started_fullscreen;
 }
 
+/* Stub functions */
+
+static bool set_resize_null(void *a, unsigned b, unsigned c) { return false; }
+
 /**
  * config_get_video_driver_options:
  *
@@ -30881,6 +30885,14 @@ const char *video_driver_get_ident(void)
    return p_rarch->current_video->ident;
 }
 
+static void video_context_driver_reset(void)
+{
+   struct rarch_state  *p_rarch   = &rarch_st;
+
+   if (!p_rarch->current_video_context.set_resize)
+      p_rarch->current_video_context.set_resize          = set_resize_null;
+}
+
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
 {
    struct rarch_state     *p_rarch = &rarch_st;
@@ -30888,6 +30900,7 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data)
    if (!data)
       return false;
    p_rarch->current_video_context = *data;
+   video_context_driver_reset();
    return true;
 }
 
@@ -30907,7 +30920,7 @@ void video_context_driver_destroy(void)
    p_rarch->current_video_context.translate_aspect           = NULL;
    p_rarch->current_video_context.update_window_title        = NULL;
    p_rarch->current_video_context.check_window               = NULL;
-   p_rarch->current_video_context.set_resize                 = NULL;
+   p_rarch->current_video_context.set_resize                 = set_resize_null;
    p_rarch->current_video_context.suppress_screensaver       = NULL;
    p_rarch->current_video_context.swap_buffers               = NULL;
    p_rarch->current_video_context.input_driver               = NULL;
@@ -31554,6 +31567,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 #if defined(PSP)
    video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
 #endif
+
+   video_context_driver_reset();
 
    video_display_server_init(p_rarch->video_driver_display_type);
 
