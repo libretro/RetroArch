@@ -377,6 +377,7 @@ static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
 }
 
 static const video_poke_interface_t switch_poke_interface = {
+   NULL, /* get_metrics */
    NULL, /* get_flags */
 	NULL, /* load_texture */
 	NULL, /* unload_texture */

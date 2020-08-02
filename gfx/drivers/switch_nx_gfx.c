@@ -652,27 +652,28 @@ void switch_overlay_interface(void *data, const video_overlay_interface_t **ifac
 #endif
 
 static const video_poke_interface_t switch_poke_interface = {
-    NULL,                       /* get_flags */
-    NULL,                       /* load_texture */
-    NULL,                       /* unload_texture */
-    NULL,                       /* set_video_mode */
-    NULL,                       /* get_refresh_rate */
-    NULL,                       /* set_filtering */
-    NULL,                       /* get_video_output_size */
-    NULL,                       /* get_video_output_prev */
-    NULL,                       /* get_video_output_next */
-    NULL,                       /* get_current_framebuffer */
-    NULL,                       /* get_proc_address */
-    switch_set_aspect_ratio,    /* set_aspect_ratio */
-    switch_apply_state_changes, /* apply_state_changes */
-    switch_set_texture_frame,
-    switch_set_texture_enable,
-    font_driver_render_msg,
-    NULL, /* show_mouse */
-    NULL, /* grab_mouse_toggle */
-    NULL, /* get_current_shader */
-    NULL, /* get_current_software_framebuffer */
-    NULL, /* get_hw_render_interface */
+   NULL,                       /* get_metrics */
+   NULL,                       /* get_flags */
+   NULL,                       /* load_texture */
+   NULL,                       /* unload_texture */
+   NULL,                       /* set_video_mode */
+   NULL,                       /* get_refresh_rate */
+   NULL,                       /* set_filtering */
+   NULL,                       /* get_video_output_size */
+   NULL,                       /* get_video_output_prev */
+   NULL,                       /* get_video_output_next */
+   NULL,                       /* get_current_framebuffer */
+   NULL,                       /* get_proc_address */
+   switch_set_aspect_ratio,    /* set_aspect_ratio */
+   switch_apply_state_changes, /* apply_state_changes */
+   switch_set_texture_frame,
+   switch_set_texture_enable,
+   font_driver_render_msg,
+   NULL,                       /* show_mouse */
+   NULL,                       /* grab_mouse_toggle */
+   NULL,                       /* get_current_shader */
+   NULL,                       /* get_current_software_framebuffer */
+   NULL,                       /* get_hw_render_interface */
 };
 
 static void switch_get_poke_interface(void *data,

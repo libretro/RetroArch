@@ -2240,7 +2240,20 @@ static retro_proc_address_t gl_core_get_proc_address(
    return NULL;
 }
 
+static bool gl_core_get_metrics(void *data, enum display_metric_types type,
+      float *value)
+{
+   gl_core_t *gl        = (gl_core_t*)data;
+   if (     gl 
+         && gl->ctx_data
+         && gl->ctx_driver 
+         && gl->ctx_driver->get_metrics)
+      return gl->ctx_driver->get_metrics(gl->ctx_data, type, value);
+   return false;
+}
+
 static const video_poke_interface_t gl_core_poke_interface = {
+   gl_core_get_metrics,
    gl_core_get_flags,
    gl_core_load_texture,
    gl_core_unload_texture,

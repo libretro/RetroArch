@@ -179,6 +179,7 @@ static void xshm_show_mouse(void *data, bool state) { }
 static void xshm_grab_mouse_toggle(void *data) { }
 
 static video_poke_interface_t xshm_video_poke_interface = {
+   NULL, /* get_metrics */
    NULL, /* get_flags */
    NULL,
    NULL,

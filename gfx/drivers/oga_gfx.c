@@ -382,27 +382,28 @@ static void oga_gfx_viewport_info(void *data, struct video_viewport *vp)
 }
 
 static const video_poke_interface_t oga_poke_interface = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    oga_set_texture_frame,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
+   NULL,       /* get_metrics */
+   NULL,       /* get_flags   */
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   oga_set_texture_frame,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL
 };
 
 void oga_set_rotation(void *data, unsigned rotation)

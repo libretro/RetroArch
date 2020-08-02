@@ -1754,10 +1754,11 @@ static void d3d10_get_video_output_next(void *data)
 }
 
 static const video_poke_interface_t d3d10_poke_interface = {
+   win32_get_metrics,
    d3d10_get_flags,
    d3d10_gfx_load_texture,
    d3d10_gfx_unload_texture,
-   NULL, /* set_video_mode */
+   NULL,                         /* set_video_mode */
 #ifndef __WINRT__
    win32_get_refresh_rate,
 #else

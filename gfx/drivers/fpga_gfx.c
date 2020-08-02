@@ -273,35 +273,8 @@ static void fpga_gfx_free(void *data)
    do_mmap_op(&fpga->regOp);
 }
 
-static bool fpga_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
-
-static void fpga_gfx_set_rotation(void *data,
-      unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static void fpga_gfx_viewport_info(void *data,
-      struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
 static bool fpga_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   (void)data;
-   (void)buffer;
-
    return true;
 }
 
@@ -336,24 +309,25 @@ static void fpga_set_texture_frame(void *data,
    }
 }
 
+static bool fpga_gfx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
+static void fpga_gfx_set_rotation(void *data,
+      unsigned rotation) { }
+static void fpga_gfx_viewport_info(void *data,
+      struct video_viewport *vp) { }
 static void fpga_set_osd_msg(void *data, 
       const char *msg,
-      const void *params, void *font)
-{
-}
-
+      const void *params, void *font) { }
 static void fpga_get_video_output_size(void *data,
       unsigned *width, unsigned *height) { }
 static void fpga_get_video_output_prev(void *data) { }
 static void fpga_get_video_output_next(void *data) { }
-
 static void fpga_set_video_mode(void *data, unsigned width, unsigned height,
-      bool fullscreen)
-{
-}
+      bool fullscreen) { }
 
 static const video_poke_interface_t fpga_poke_interface = {
-   NULL,
+   NULL,                      /* get_metrics */
+   NULL,                      /* get_flags   */
    NULL,
    fpga_set_video_mode,
    NULL,

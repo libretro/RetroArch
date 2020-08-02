@@ -783,6 +783,7 @@ static uint32_t psp_get_flags(void *data)
 }
 
 static const video_poke_interface_t psp_poke_interface = {
+   NULL, /* get_metrics */
    psp_get_flags,
    NULL,
    NULL,

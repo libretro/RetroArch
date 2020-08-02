@@ -407,11 +407,12 @@ static bool ps2_get_hw_render_interface(void* data,
 }
 
 static const video_poke_interface_t ps2_poke_interface = {
+   NULL,          /* get_metrics */
    NULL,          /* get_flags  */
    NULL,
    NULL,
    NULL,
-   NULL, /* get_refresh_rate */
+   NULL,          /* get_refresh_rate */
    ps2_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

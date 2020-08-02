@@ -4532,7 +4532,20 @@ static uint32_t gl2_get_flags(void *data)
    return flags;
 }
 
+static bool gl2_get_metrics(void *data, enum display_metric_types type,
+      float *value)
+{
+   gl_t *gl        = (gl_t*)data;
+   if (     gl 
+         && gl->ctx_data 
+         && gl->ctx_driver 
+         && gl->ctx_driver->get_metrics)
+      return gl->ctx_driver->get_metrics(gl->ctx_data, type, value);
+   return false;
+}
+
 static const video_poke_interface_t gl2_poke_interface = {
+   gl2_get_metrics,
    gl2_get_flags,
    gl2_load_texture,
    gl2_unload_texture,
@@ -4559,7 +4572,6 @@ static const video_poke_interface_t gl2_poke_interface = {
 static void gl2_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &gl2_poke_interface;
 }
 

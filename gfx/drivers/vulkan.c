@@ -2567,7 +2567,20 @@ static void vulkan_get_video_output_next(void *data)
    vk->ctx_driver->get_video_output_next(vk->ctx_data);
 }
 
+static bool vulkan_get_metrics(void *data, enum display_metric_types type,
+      float *value)
+{
+   vk_t *vk        = (vk_t*)data;
+   if (     vk 
+         && vk->ctx_data
+         && vk->ctx_driver 
+         && vk->ctx_driver->get_metrics)
+      return vk->ctx_driver->get_metrics(vk->ctx_data, type, value);
+   return false;
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
+   vulkan_get_metrics,
    vulkan_get_flags,
    vulkan_load_texture,
    vulkan_unload_texture,

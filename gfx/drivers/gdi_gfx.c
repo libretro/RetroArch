@@ -682,6 +682,7 @@ static void gdi_get_video_output_next(void *data)
 }
 
 static const video_poke_interface_t gdi_poke_interface = {
+   win32_get_metrics,
    gdi_get_flags,
    gdi_load_texture,
    gdi_unload_texture,

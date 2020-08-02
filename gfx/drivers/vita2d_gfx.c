@@ -775,6 +775,7 @@ static uint32_t vita_get_flags(void *data)
 }
 
 static const video_poke_interface_t vita_poke_interface = {
+   NULL, /* get_metrics */
    vita_get_flags,
    vita_load_texture,
    vita_unload_texture,

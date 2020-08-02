@@ -1099,6 +1099,7 @@ static float omap_get_refresh_rate(void *data)
 }
 
 static const video_poke_interface_t omap_gfx_poke_interface = {
+   NULL, /* get_metrics */
    NULL, /* get_flags  */
    NULL,
    NULL,

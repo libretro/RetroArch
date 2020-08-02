@@ -25237,19 +25237,21 @@ static float menu_input_get_dpi(struct rarch_state *p_rarch)
 
    /* Regardless of menu driver, need 'actual' screen DPI
     * Note: DPI is a fixed hardware property. To minimise performance
-    * overheads we therefore only call video_context_driver_get_metrics()
+    * overheads we therefore only call video_driver_get_metrics()
     * on first run, or when the current video resolution changes */
    if (!dpi_cached ||
        (p_rarch->video_driver_width  != last_video_width) ||
        (p_rarch->video_driver_height != last_video_height))
    {
-      /* Note: If video_context_driver_get_metrics() fails,
+      struct gfx_ctx_metrics metrs;
+      /* Note: If video_driver_get_metrics() fails,
        * we don't know what happened to dpi - so ensure it
        * is reset to a sane value */
-      if (!p_rarch->current_video_context.get_metrics(
-            p_rarch->video_context_data,
-            DISPLAY_METRIC_DPI,
-            &dpi))
+
+      metrs.type  = DISPLAY_METRIC_DPI;
+      metrs.value = &dpi;
+
+      if (!video_driver_get_metrics(&metrs))
          dpi            = 0.0f;
 
       dpi_cached        = true;
@@ -30784,8 +30786,6 @@ bool video_driver_started_fullscreen(void)
 
 /* Stub functions */
 
-static bool get_metrics_null(void *data, enum display_metric_types type,
-      float *value) { return false; }
 static bool set_resize_null(void *a, unsigned b, unsigned c) { return false; }
 
 /**
@@ -30889,9 +30889,6 @@ static void video_context_driver_reset(void)
 {
    struct rarch_state  *p_rarch   = &rarch_st;
 
-   if (!p_rarch->current_video_context.get_metrics)
-      p_rarch->current_video_context.get_metrics         = get_metrics_null;
-
    if (!p_rarch->current_video_context.set_resize)
       p_rarch->current_video_context.set_resize          = set_resize_null;
 }
@@ -30919,7 +30916,7 @@ void video_context_driver_destroy(void)
    p_rarch->current_video_context.get_video_output_size      = NULL;
    p_rarch->current_video_context.get_video_output_prev      = NULL;
    p_rarch->current_video_context.get_video_output_next      = NULL;
-   p_rarch->current_video_context.get_metrics                = get_metrics_null;
+   p_rarch->current_video_context.get_metrics                = NULL;
    p_rarch->current_video_context.translate_aspect           = NULL;
    p_rarch->current_video_context.update_window_title        = NULL;
    p_rarch->current_video_context.check_window               = NULL;
@@ -33495,10 +33492,12 @@ void video_context_driver_free(void)
    p_rarch->video_context_data    = NULL;
 }
 
-bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
+bool video_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 {
    struct rarch_state *p_rarch   = &rarch_st;
-   return p_rarch->current_video_context.get_metrics(
+   if (!p_rarch->video_driver_poke || !p_rarch->video_driver_poke->get_metrics)
+      return false;
+   return p_rarch->video_driver_poke->get_metrics(
          p_rarch->video_context_data,
          metrics->type,
          metrics->value);

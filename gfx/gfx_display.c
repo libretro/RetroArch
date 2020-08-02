@@ -299,7 +299,7 @@ float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
    diagonal_pixels = (float)sqrt(
          (double)((width * width) + (height * height)));
 
-   /* TODO/FIXME: On Mac, calling video_context_driver_get_metrics()
+   /* TODO/FIXME: On Mac, calling video_driver_get_metrics()
     * here causes RetroArch to crash (EXC_BAD_ACCESS). This is
     * unfortunate, and needs to be fixed at the gfx context driver
     * level. Until this is done, all we can do is fallback to using
@@ -322,7 +322,7 @@ float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
    metrics.type  = DISPLAY_METRIC_DPI;
    metrics.value = &dpi;
 
-   if (video_context_driver_get_metrics(&metrics) && (dpi > 0.0f))
+   if (video_driver_get_metrics(&metrics) && (dpi > 0.0f))
    {
       float display_size;
       float dpi_scale;
@@ -433,7 +433,7 @@ float gfx_display_get_dpi_scale(unsigned width, unsigned height)
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
-    * we therefore only call video_context_driver_get_metrics()
+    * we therefore only call video_driver_get_metrics()
     * on first run, or when the current video resolution changes */
    if (!scale_cached ||
        (width  != last_width) ||
@@ -498,7 +498,7 @@ float gfx_display_get_widget_dpi_scale(
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
-    * we therefore only call video_context_driver_get_metrics()
+    * we therefore only call video_driver_get_metrics()
     * on first run, or when the current video resolution changes */
    if (!scale_cached ||
        (width  != last_width) ||

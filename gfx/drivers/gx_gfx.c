@@ -1326,11 +1326,12 @@ static uint32_t gx_get_flags(void *data)
 }
 
 static const video_poke_interface_t gx_poke_interface = {
+   NULL,                         /* get_metrics */
    gx_get_flags,
    NULL,
    NULL,
    gx_set_video_mode,
-   NULL, /* get_refresh_rate */
+   NULL,                         /* get_refresh_rate */
    NULL,
    gx_get_video_output_size,
    gx_get_video_output_prev,

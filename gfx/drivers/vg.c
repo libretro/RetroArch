@@ -483,10 +483,49 @@ static bool vg_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
+static bool vg_get_metrics(void *data, enum display_metric_types type,
+      float *value)
+{
+   vg_t            *vg  = (vg_t*)data;
+   if (vg && vg->ctx_data &&
+         vg->ctx_driver && vg->ctx_driver->get_metrics)
+      return vg->ctx_driver->get_metrics(vg->ctx_data, type, value);
+   return false;
+}
+
+static const video_poke_interface_t vg_poke_interface = {
+   vg_get_metrics,               /* get_metrics */
+   NULL,                         /* get_flags */
+   NULL,                         /* load_texture */
+   NULL,                         /* unload_texture */
+   NULL,                         /* set_video_mode */
+   NULL,                         /* get_refresh_rate */
+   NULL,
+   NULL,                         /* get_video_output_size */
+   NULL,                         /* get_video_output_prev */
+   NULL,                         /* get_video_output_next */
+   NULL,                         /* get_current_framebuffer */
+   NULL,                         /* get_proc_address */
+   NULL,                         /* set_aspect_ratio */
+   NULL,                         /* apply_state_changes */
+   NULL,                         /* set_texture_frame */
+   NULL,                         /* set_texture_enable */
+   NULL,                         /* render_msg */
+   NULL,                         /* show_mouse */
+   NULL,
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
+};
+
 static bool vg_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
+
 static void vg_get_poke_interface(void *data,
-      const video_poke_interface_t **iface) { }
+      const video_poke_interface_t **iface)
+{
+   *iface = &vg_poke_interface;
+}
 
 static bool vg_has_windowed(void *data)
 {

@@ -421,7 +421,8 @@ static void network_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen) { }
 
 static const video_poke_interface_t network_poke_interface = {
-   NULL,
+   NULL,                            /* get_metrics */
+   NULL,                            /* get_flags   */
    NULL,
    NULL,
    network_set_video_mode,

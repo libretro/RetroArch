@@ -1794,6 +1794,7 @@ static uint32_t d3d8_get_flags(void *data)
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
+   win32_get_metrics,
    d3d8_get_flags,
    d3d8_load_texture,
    d3d8_unload_texture,
