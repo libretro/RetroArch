@@ -1380,7 +1380,6 @@ struct aspect_ratio_elem
 
 typedef struct video_poke_interface
 {
-   get_metrics_cb get_metrics;
    uint32_t (*get_flags)(void *data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
@@ -1782,7 +1781,7 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate);
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
-bool video_driver_get_metrics(gfx_ctx_metrics_t *metrics);
+bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 

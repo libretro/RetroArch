@@ -521,7 +521,6 @@ static uint32_t sdl_get_flags(void *data)
 }
 
 static const video_poke_interface_t sdl_poke_interface = {
-   NULL, /* get_metrics */
    sdl_get_flags,
    NULL,
    NULL,

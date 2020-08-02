@@ -1386,20 +1386,7 @@ static uint32_t gl1_get_flags(void *data)
    return flags;
 }
 
-static bool gl1_get_metrics(void *data, enum display_metric_types type,
-      float *value)
-{
-   gl1_t *gl1        = (gl1_t*)data;
-   if (     gl1 
-         && gl1->ctx_data
-         && gl1->ctx_driver 
-         && gl1->ctx_driver->get_metrics)
-      return gl1->ctx_driver->get_metrics(gl1->ctx_data, type, value);
-   return false;
-}
-
 static const video_poke_interface_t gl1_poke_interface = {
-   gl1_get_metrics,
    gl1_get_flags,
    gl1_load_texture,
    gl1_unload_texture,

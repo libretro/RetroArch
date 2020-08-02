@@ -1092,7 +1092,6 @@ static void xv_viewport_info(void *data, struct video_viewport *vp)
 static uint32_t xv_get_flags(void *data) { return 0; }
 
 static video_poke_interface_t xv_video_poke_interface = {
-   NULL,                   /* get_metrics */
    xv_get_flags,
    NULL,
    NULL,

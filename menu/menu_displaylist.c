@@ -1255,7 +1255,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       metrics.type  = DISPLAY_METRIC_MM_WIDTH;
       metrics.value = &val;
 
-      if (video_driver_get_metrics(&metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                msg_hash_to_str(
@@ -1269,7 +1269,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
 
-      if (video_driver_get_metrics(&metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                msg_hash_to_str(
@@ -1283,7 +1283,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       metrics.type  = DISPLAY_METRIC_DPI;
 
-      if (video_driver_get_metrics(&metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                msg_hash_to_str(

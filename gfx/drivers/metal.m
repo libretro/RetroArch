@@ -59,15 +59,14 @@ static uint32_t metal_get_flags(void *data);
 #pragma mark Graphics Context for Metal
 
 // The graphics context for the Metal driver is just a stubbed out version
-// It supports getting metrics such as DPI which is needed for iOS/tvOS
+// It supports getting metrics such as dpi which is needed for iOS/tvOS
 
-static bool metal_gfx_ctx_get_metrics(
-      void *data, enum display_metric_types type,
-      float *value)
+static bool metal_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
+            float *value)
 {
 #ifdef HAVE_COCOATOUCH
-    CGRect screenRect            = [[UIScreen mainScreen] bounds];
-    CGFloat scale                = [[UIScreen mainScreen] scale];
+    CGRect screenRect = [[UIScreen mainScreen] bounds];
+    CGFloat scale = [[UIScreen mainScreen] scale];
     float   displayHeight        = screenRect.size.height;
     float   physicalWidth        = screenRect.size.width  * scale;
     float   physicalHeight       = screenRect.size.height * scale;
@@ -401,7 +400,6 @@ static uint32_t metal_get_flags(void *data)
 }
 
 static const video_poke_interface_t metal_poke_interface = {
-   .get_metrics         = metal_gfx_ctx_get_metrics,
    .get_flags           = metal_get_flags,
    .load_texture        = metal_load_texture,
    .unload_texture      = metal_unload_texture,

@@ -359,7 +359,6 @@ static void vga_set_texture_frame(void *data,
 static uint32_t vga_get_flags(void *data) { return 0; }
 
 static const video_poke_interface_t vga_poke_interface = {
-   NULL,                   /* get_metrics */
    vga_get_flags,
    NULL,
    NULL,

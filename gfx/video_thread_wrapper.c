@@ -1260,15 +1260,6 @@ static struct video_shader *thread_get_current_shader(void *data)
    return thr->poke->get_current_shader(thr->driver_data);
 }
 
-static bool thread_get_metrics(void *data, enum display_metric_types type,
-      float *value)
-{
-   thread_video_t *thr = (thread_video_t*)data;
-   if (!thr || !thr->poke || !thr->poke->get_metrics)
-      return false;
-   return thr->poke->get_metrics(thr->driver_data, type, value);
-}
-
 static uint32_t thread_get_flags(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -1278,7 +1269,6 @@ static uint32_t thread_get_flags(void *data)
 }
 
 static const video_poke_interface_t thread_poke = {
-   thread_get_metrics,
    thread_get_flags,
    thread_load_texture,
    thread_unload_texture,

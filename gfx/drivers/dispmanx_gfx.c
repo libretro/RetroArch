@@ -580,7 +580,6 @@ static uint32_t dispmanx_get_flags(void *data)
 }
 
 static const video_poke_interface_t dispmanx_poke_interface = {
-   NULL, /* get_metrics */
    dispmanx_get_flags,
    NULL,
    NULL,
@@ -607,6 +606,7 @@ static const video_poke_interface_t dispmanx_poke_interface = {
 static void dispmanx_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
+   (void)data;
    *iface = &dispmanx_poke_interface;
 }
 

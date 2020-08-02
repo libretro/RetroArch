@@ -1247,7 +1247,6 @@ static uint32_t ctr_get_flags(void *data)
 }
 
 static const video_poke_interface_t ctr_poke_interface = {
-   NULL,                                  /* get_metrics */
    ctr_get_flags,
    ctr_load_texture,
    ctr_unload_texture,

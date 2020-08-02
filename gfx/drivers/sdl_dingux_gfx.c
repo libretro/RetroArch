@@ -266,7 +266,6 @@ static void sdl_dingux_apply_state_changes(void *data) { }
 static uint32_t sdl_dingux_get_flags(void *data) { return 0; }
 
 static const video_poke_interface_t sdl_dingux_poke_interface = {
-   NULL, /* get_metrics */
    sdl_dingux_get_flags,
    NULL,
    NULL,

@@ -1368,12 +1368,25 @@ static void exynos_gfx_set_nonblock_state(void *data, bool state,
       vid->data->sync = !state;
 }
 
-/* always alive */
-static bool exynos_gfx_alive(void *data) { return true; }
-/* drm device always has focus */
-static bool exynos_gfx_focus(void *data) { return true; }
+static bool exynos_gfx_alive(void *data)
+{
+   (void)data;
+   return true; /* always alive */
+}
 
-static bool exynos_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool exynos_gfx_focus(void *data)
+{
+   (void)data;
+   return true; /* drm device always has focus */
+}
+
+static bool exynos_gfx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+   return false;
+}
 
 static void exynos_gfx_set_rotation(void *data, unsigned rotation)
 {
@@ -1405,16 +1418,19 @@ static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    vid->aspect_changed = true;
 }
 
-static void exynos_set_texture_frame(void *data,
-      const void *frame, bool rgb32,
+static void exynos_apply_state_changes(void *data)
+{
+   (void)data;
+}
+
+static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   const enum exynos_buffer_type buf_type = 
-      defaults[EXYNOS_IMAGE_MENU].buf_type;
-   struct exynos_video *vid               = data;
-   struct exynos_data *pdata              = vid->data;
-   struct g2d_image *src                  = pdata->src[EXYNOS_IMAGE_MENU];
-   const unsigned size                    = width * height * (rgb32 ? 4 : 2);
+   const enum exynos_buffer_type buf_type = defaults[EXYNOS_IMAGE_MENU].buf_type;
+   struct exynos_video *vid = data;
+   struct exynos_data *pdata = vid->data;
+   struct g2d_image *src = pdata->src[EXYNOS_IMAGE_MENU];
+   const unsigned size = width * height * (rgb32 ? 4 : 2);
 
    if (exynos_realloc_buffer(pdata, buf_type, size) != 0)
       return;
@@ -1445,13 +1461,21 @@ static void exynos_set_texture_enable(void *data, bool state, bool full_screen)
       vid->menu_active = state;
 }
 
-static void exynos_apply_state_changes(void *data) { }
 static void exynos_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params) { }
-static void exynos_show_mouse(void *data, bool state) { }
+      const struct font_params *params)
+{
+   (void)data;
+   (void)msg;
+   (void)params;
+}
+
+static void exynos_show_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
+}
 
 static const video_poke_interface_t exynos_poke_interface = {
-   NULL, /* get_metrics */
    NULL, /* get_flags */
    NULL,
    NULL,
