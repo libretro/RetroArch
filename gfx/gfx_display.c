@@ -278,7 +278,7 @@ enum menu_driver_id_type gfx_display_get_driver_id(void)
    return p_disp->menu_driver_id;
 }
 
-float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
+static float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
 {
    float dpi;
    float diagonal_pixels;
