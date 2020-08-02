@@ -1032,8 +1032,6 @@ static void gl1_gfx_free(void *data)
    gl1->extensions = NULL;
 
    font_driver_free_osd();
-   if (gl1->ctx_driver && gl1->ctx_driver->destroy)
-      gl1->ctx_driver->destroy(gl1->ctx_data);
    video_context_driver_free();
    free(gl1);
 }

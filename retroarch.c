@@ -33486,6 +33486,8 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 void video_context_driver_free(void)
 {
    struct rarch_state   *p_rarch = &rarch_st;
+   if (p_rarch->current_video_context.destroy)
+      p_rarch->current_video_context.destroy(p_rarch->video_context_data);
    video_context_driver_destroy();
    p_rarch->video_context_data    = NULL;
 }
@@ -33539,14 +33541,12 @@ bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
    settings_t *settings          = p_rarch->configuration_settings;
    const char *joypad_name       = settings->arrays.input_joypad_driver;
 
-   if (p_rarch && p_rarch->current_video_context.input_driver)
-   {
-      p_rarch->current_video_context.input_driver(
-            p_rarch->video_context_data, joypad_name,
-            inp->input, inp->input_data);
-      return true;
-   }
-   return false;
+   if (!p_rarch->current_video_context.input_driver)
+      return false;
+   p_rarch->current_video_context.input_driver(
+         p_rarch->video_context_data, joypad_name,
+         inp->input, inp->input_data);
+   return true;
 }
 
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)

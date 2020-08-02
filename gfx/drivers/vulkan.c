@@ -972,8 +972,6 @@ static void vulkan_free(void *data)
       if (vk->filter_chain)
          vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
 
-      if (vk->ctx_driver && vk->ctx_driver->destroy)
-         vk->ctx_driver->destroy(vk->ctx_data);
       video_context_driver_free();
    }
 

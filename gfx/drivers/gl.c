@@ -3213,8 +3213,6 @@ static void gl2_free(void *data)
    gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
    gl2_deinit_chain(gl);
 
-   if (gl->ctx_driver && gl->ctx_driver->destroy)
-      gl->ctx_driver->destroy(gl->ctx_data);
    video_context_driver_free();
 
    gl2_destroy_resources(gl);
