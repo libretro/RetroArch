@@ -32181,6 +32181,7 @@ void video_driver_update_viewport(
    settings_t *settings            = p_rarch->configuration_settings;
    bool video_scale_integer        = settings->bools.video_scale_integer;
    unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   float video_driver_aspect_ratio = p_rarch->video_driver_aspect_ratio;
 
    if (     p_rarch->video_context_data
          && p_rarch->current_video_context.translate_aspect)
@@ -32197,10 +32198,10 @@ void video_driver_update_viewport(
             vp,
             vp->full_width,
             vp->full_height,
-            p_rarch->video_driver_aspect_ratio, keep_aspect);
+            video_driver_aspect_ratio, keep_aspect);
    else if (keep_aspect && !force_full)
    {
-      float desired_aspect = p_rarch->video_driver_aspect_ratio;
+      float desired_aspect = video_driver_aspect_ratio;
 
 #if defined(HAVE_MENU)
       if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
