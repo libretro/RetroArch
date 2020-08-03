@@ -69,11 +69,6 @@ static uint32_t d3d11_get_flags(void *data);
 static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context;
-#define D3D11_MAX_GPU_COUNT 16
-
-static struct string_list *d3d11_gpu_list = NULL;
-static IDXGIAdapter1 *d3d11_adapters[D3D11_MAX_GPU_COUNT] = {NULL};
-static IDXGIAdapter1 *d3d11_current_adapter = NULL;
 
 static void d3d11_clear_scissor(d3d11_video_t *d3d11, unsigned video_width, unsigned video_height)
 {
@@ -596,7 +591,7 @@ static void d3d11_gfx_free(void* data)
    if (video_driver_is_video_cache_context())
    {
       cached_device_d3d11 = d3d11->device;
-      cached_context = d3d11->context;
+      cached_context      = d3d11->context;
       cached_supportedFeatureLevel = d3d11->supportedFeatureLevel;
    }
    else
@@ -607,10 +602,10 @@ static void d3d11_gfx_free(void* data)
 
    for (i = 0; i < D3D11_MAX_GPU_COUNT; i++)
    {
-      if (d3d11_adapters[i])
+      if (d3d11->adapters[i])
       {
-         Release(d3d11_adapters[i]);
-         d3d11_adapters[i] = NULL;
+         Release(d3d11->adapters[i]);
+         d3d11->adapters[i] = NULL;
       }
    }
 
@@ -1081,10 +1076,10 @@ static void *d3d11_gfx_init(const video_info_t* video,
       int         i = 0;
       int gpu_index = settings->ints.d3d11_gpu_index;
 
-      if (d3d11_gpu_list)
-         string_list_free(d3d11_gpu_list);
+      if (d3d11->gpu_list)
+         string_list_free(d3d11->gpu_list);
 
-      d3d11_gpu_list = string_list_new();
+      d3d11->gpu_list = string_list_new();
 
       for (;;)
       {
@@ -1109,28 +1104,28 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
          RARCH_LOG("[D3D11]: Found GPU at index %d: %s\n", i, str);
 
-         string_list_append(d3d11_gpu_list, str, attr);
+         string_list_append(d3d11->gpu_list, str, attr);
 
          if (i < D3D11_MAX_GPU_COUNT)
-            d3d11_adapters[i] = d3d11->adapter;
+            d3d11->adapters[i] = d3d11->adapter;
 
          i++;
       }
 
-      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, d3d11_gpu_list);
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, d3d11->gpu_list);
 
       if (0 <= gpu_index && gpu_index <= i && gpu_index < D3D11_MAX_GPU_COUNT)
       {
-         d3d11_current_adapter = d3d11_adapters[gpu_index];
-         d3d11->adapter = d3d11_current_adapter;
+         d3d11->current_adapter = d3d11->adapters[gpu_index];
+         d3d11->adapter         = d3d11->current_adapter;
          RARCH_LOG("[D3D11]: Using GPU index %d.\n", gpu_index);
-         video_driver_set_gpu_device_string(d3d11_gpu_list->elems[gpu_index].data);
+         video_driver_set_gpu_device_string(d3d11->gpu_list->elems[gpu_index].data);
       }
       else
       {
          RARCH_WARN("[D3D11]: Invalid GPU index %d, using first device found.\n", gpu_index);
-         d3d11_current_adapter = d3d11_adapters[0];
-         d3d11->adapter        = d3d11_current_adapter;
+         d3d11->current_adapter = d3d11->adapters[0];
+         d3d11->adapter         = d3d11->current_adapter;
       }
    }
 
