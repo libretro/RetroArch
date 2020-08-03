@@ -276,15 +276,6 @@ static unsigned num_miplevels(unsigned width, unsigned height)
    return levels;
 }
 
-
-static void build_vec4(float *data, unsigned width, unsigned height)
-{
-   data[0] = float(width);
-   data[1] = float(height);
-   data[2] = 1.0f / float(width);
-   data[3] = 1.0f / float(height);
-}
-
 struct Texture
 {
    gl_core_filter_chain_texture texture;
@@ -1103,14 +1094,14 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       if (refl->location.ubo_vertex >= 0 || refl->location.ubo_fragment >= 0)
       {
          float v4[4];
-         build_vec4(v4, width, height);
+         glslang_build_vec4(v4, width, height);
          if (refl->location.ubo_vertex >= 0)
             glUniform4fv(refl->location.ubo_vertex, 1, v4);
          if (refl->location.ubo_fragment >= 0)
             glUniform4fv(refl->location.ubo_fragment, 1, v4);
       }
       else
-         build_vec4(
+         glslang_build_vec4(
                reinterpret_cast<float *>(data + refl->ubo_offset),
                width,
                height);
@@ -1122,14 +1113,14 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             refl->location.push_fragment >= 0)
       {
          float v4[4];
-         build_vec4(v4, width, height);
+         glslang_build_vec4(v4, width, height);
          if (refl->location.push_vertex >= 0)
             glUniform4fv(refl->location.push_vertex, 1, v4);
          if (refl->location.push_fragment >= 0)
             glUniform4fv(refl->location.push_fragment, 1, v4);
       }
       else
-         build_vec4(
+         glslang_build_vec4(
                reinterpret_cast<float *>
                (push_constant_buffer.data() + refl->push_constant_offset),
                width,
@@ -1254,14 +1245,14 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       if (refl[index].location.ubo_vertex >= 0 || refl[index].location.ubo_fragment >= 0)
       {
          float v4[4];
-         build_vec4(v4, width, height);
+         glslang_build_vec4(v4, width, height);
          if (refl[index].location.ubo_vertex >= 0)
             glUniform4fv(refl[index].location.ubo_vertex, 1, v4);
          if (refl[index].location.ubo_fragment >= 0)
             glUniform4fv(refl[index].location.ubo_fragment, 1, v4);
       }
       else
-         build_vec4(
+         glslang_build_vec4(
                reinterpret_cast<float *>(data + refl[index].ubo_offset),
                width,
                height);
@@ -1272,14 +1263,14 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       if (refl[index].location.push_vertex >= 0 || refl[index].location.push_fragment >= 0)
       {
          float v4[4];
-         build_vec4(v4, width, height);
+         glslang_build_vec4(v4, width, height);
          if (refl[index].location.push_vertex >= 0)
             glUniform4fv(refl[index].location.push_vertex, 1, v4);
          if (refl[index].location.push_fragment >= 0)
             glUniform4fv(refl[index].location.push_fragment, 1, v4);
       }
       else
-         build_vec4(
+         glslang_build_vec4(
                reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset),
                width,
                height);

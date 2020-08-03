@@ -478,14 +478,6 @@ static void build_identity_matrix(float *data)
    data[15] = 1.0f;
 }
 
-static void build_vec4(float *data, unsigned width, unsigned height)
-{
-   data[0] = float(width);
-   data[1] = float(height);
-   data[2] = 1.0f / float(width);
-   data[3] = 1.0f / float(height);
-}
-
 static VkFormat glslang_format_to_vk(glslang_format fmt)
 {
 #undef FMT
@@ -2037,13 +2029,13 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       return;
 
    if (data && refl[index].uniform)
-      build_vec4(
+      glslang_build_vec4(
             reinterpret_cast<float *>(data + refl[index].ubo_offset),
             width,
             height);
 
    if (refl[index].push_constant)
-      build_vec4(
+      glslang_build_vec4(
             reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2)),
             width,
             height);
@@ -2061,13 +2053,13 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    auto &refl = reflection.semantics[semantic];
 
    if (data && refl.uniform)
-      build_vec4(
+      glslang_build_vec4(
             reinterpret_cast<float *>(data + refl.ubo_offset),
             width,
             height);
 
    if (refl.push_constant)
-      build_vec4(
+      glslang_build_vec4(
             reinterpret_cast<float *>
             (push.buffer.data() + (refl.push_constant_offset >> 2)),
             width,

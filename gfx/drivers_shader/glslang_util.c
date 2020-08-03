@@ -333,3 +333,11 @@ enum glslang_format glslang_find_format(const char *fmt)
 
    return SLANG_FORMAT_UNKNOWN;
 }
+
+void glslang_build_vec4(float *data, unsigned width, unsigned height)
+{
+   data[0] = (float)(width);
+   data[1] = (float)(height);
+   data[2] = 1.0f / (float)(width);
+   data[3] = 1.0f / (float)(height);
+}
