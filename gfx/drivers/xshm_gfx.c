@@ -138,7 +138,9 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
 {
    unsigned y;
    xshm_t      *xshm  = (xshm_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive = video_info->menu_is_alive;
+#endif
 
    for (y = 0; y < height; y++)
       memcpy(xshm->fbptr + sizeof(uint32_t)*xshm->width*y,

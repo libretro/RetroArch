@@ -692,25 +692,33 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   const void *frame_to_copy = NULL;
-   unsigned mode_width       = 0;
-   unsigned mode_height      = 0;
-   unsigned width            = 0;
-   unsigned height           = 0;
-   bool draw                 = true;
-   gl1_t *gl1                = (gl1_t*)data;
-   unsigned bits             = gl1->video_bits;
-   unsigned pot_width        = 0;
-   unsigned pot_height       = 0;
-   unsigned video_width      = video_info->width;
-   unsigned video_height     = video_info->height;
-   bool menu_is_alive        = video_info->menu_is_alive;
+   const void *frame_to_copy        = NULL;
+   unsigned mode_width              = 0;
+   unsigned mode_height             = 0;
+   unsigned width                   = 0;
+   unsigned height                  = 0;
+   bool draw                        = true;
+   gl1_t *gl1                       = (gl1_t*)data;
+   unsigned bits                    = gl1->video_bits;
+   unsigned pot_width               = 0;
+   unsigned pot_height              = 0;
+   unsigned video_width             = video_info->width;
+   unsigned video_height            = video_info->height;
+#ifdef HAVE_MENU
+   bool menu_is_alive               = video_info->menu_is_alive;
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active              = video_info->widgets_active;
+#endif
+   bool hard_sync                   = video_info->hard_sync;
+   struct font_params *osd_params   = (struct font_params*)
+      &video_info->osd_stat_params;
 
-   gl1_context_bind_hw_render(gl1, false);
-   
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
    video_info->menu_shader_pipeline = 0;
+
+   gl1_context_bind_hw_render(gl1, false);
 
    if (gl1->should_resize)
    {
@@ -803,7 +811,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
                width, height, gl1->tex, frame_to_copy);
    }
 
-   if (gl1->menu_frame && video_info->menu_is_alive)
+   if (gl1->menu_frame && menu_is_alive)
    {
       frame_to_copy = NULL;
       width         = gl1->menu_width;
@@ -824,22 +832,27 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
 
       if (!gl1->menu_video_buf)
-         gl1->menu_video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
+         gl1->menu_video_buf = (unsigned char*)
+            malloc(pot_width * pot_height * 4);
 
       if (bits == 16 && gl1->menu_video_buf)
       {
-         conv_rgba4444_argb8888(gl1->menu_video_buf, gl1->menu_frame, width, height, pot_width * sizeof(unsigned), pitch);
+         conv_rgba4444_argb8888(gl1->menu_video_buf,
+               gl1->menu_frame, width, height,
+               pot_width * sizeof(unsigned), pitch);
 
          frame_to_copy = gl1->menu_video_buf;
 
          if (gl1->menu_texture_full_screen)
          {
             glViewport(0, 0, video_width, video_height);
-            draw_tex(gl1, pot_width, pot_height, width, height, gl1->menu_tex, frame_to_copy);
+            draw_tex(gl1, pot_width, pot_height,
+                  width, height, gl1->menu_tex, frame_to_copy);
             glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
          }
          else
-            draw_tex(gl1, pot_width, pot_height, width, height, gl1->menu_tex, frame_to_copy);
+            draw_tex(gl1, pot_width, pot_height,
+                  width, height, gl1->menu_tex, frame_to_copy);
       }
    }
 
@@ -850,13 +863,10 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #endif
       if (video_info->statistics_show)
       {
-         struct font_params *osd_params = (struct font_params*)
-            &video_info->osd_stat_params;
-
          if (osd_params)
          {
             font_driver_render_msg(gl1, video_info->stat_text,
-                  (const struct font_params*)&video_info->osd_stat_params, NULL);
+                  osd_params, NULL);
 #if 0
             osd_params->y               = 0.350f;
             osd_params->scale           = 0.75f;
@@ -867,7 +877,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_active)
+   if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -889,7 +899,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
             4, GL_RGBA, GL_UNSIGNED_BYTE,
             gl1->readback_buffer_screenshot);
 
-   /* emscripten has to do black frame insertion in its main loop */
+   /* Emscripten has to do black frame insertion in its main loop */
 #ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
@@ -909,7 +919,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       gl1->ctx_driver->swap_buffers(gl1->ctx_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
-   if (video_info->hard_sync
+   if (hard_sync
          && !video_info->input_driver_nonblock_state
          && !gl1->menu_texture_enable)
    {

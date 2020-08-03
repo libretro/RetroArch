@@ -1049,10 +1049,16 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    uint32_t i;
-   wiiu_video_t *wiiu = (wiiu_video_t *) data;
-   bool menu_is_alive = video_info->menu_is_alive;
-
-   (void)msg;
+   wiiu_video_t *wiiu             = (wiiu_video_t *) data;
+#ifdef HAVE_MENU
+   bool menu_is_alive             = video_info->menu_is_alive;
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active            = video_info->widgets_active;
+#endif
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
+   bool statistics_show           = video_info->statistics_show;
 
    if (wiiu->vsync)
    {
@@ -1349,18 +1355,15 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
       menu_driver_frame(menu_is_alive, video_info);
    else
 #endif
-      if (video_info->statistics_show)
-   {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
-      if (osd_params)
-         font_driver_render_msg(wiiu, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
-   }
+      if (statistics_show)
+      {
+         if (osd_params)
+            font_driver_render_msg(wiiu, video_info->stat_text,
+                  osd_params, NULL);
+      }
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_active)
+   if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1370,9 +1373,13 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    wiiu->render_msg_enabled = false;
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
-                 wiiu->vertex_cache.v, wiiu->vertex_cache.current * sizeof(*wiiu->vertex_cache.v));
+                 wiiu->vertex_cache.v,
+                 wiiu->vertex_cache.current 
+                 * sizeof(*wiiu->vertex_cache.v));
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
-                 wiiu->vertex_cache_tex.v, wiiu->vertex_cache_tex.current * sizeof(*wiiu->vertex_cache_tex.v));
+                 wiiu->vertex_cache_tex.v,
+                 wiiu->vertex_cache_tex.current 
+                 * sizeof(*wiiu->vertex_cache_tex.v));
 
    if (wiiu->menu.enable)
       GX2DrawDone();

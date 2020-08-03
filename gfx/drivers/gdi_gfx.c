@@ -297,16 +297,18 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    BITMAPINFO info;
-   unsigned mode_width       = 0;
-   unsigned mode_height      = 0;
-   const void *frame_to_copy = frame;
-   unsigned width            = 0;
-   unsigned height           = 0;
-   bool draw                 = true;
-   gdi_t *gdi                = (gdi_t*)data;
-   unsigned bits             = gdi->video_bits;
-   HWND hwnd                 = win32_get_window();
-   bool menu_is_alive        = video_info->menu_is_alive;
+   unsigned mode_width              = 0;
+   unsigned mode_height             = 0;
+   const void *frame_to_copy        = frame;
+   unsigned width                   = 0;
+   unsigned height                  = 0;
+   bool draw                        = true;
+   gdi_t *gdi                       = (gdi_t*)data;
+   unsigned bits                    = gdi->video_bits;
+   HWND hwnd                        = win32_get_window();
+#ifdef HAVE_MENU
+   bool menu_is_alive               = video_info->menu_is_alive;
+#endif
 
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
@@ -332,7 +334,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gdi->menu_frame && video_info->menu_is_alive)
+#ifdef HAVE_MENU
+   if (gdi->menu_frame && menu_is_alive)
    {
       frame_to_copy = gdi->menu_frame;
       width         = gdi->menu_width;
@@ -341,6 +344,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       bits          = gdi->menu_bits;
    }
    else
+#endif
    {
       width         = gdi->video_width;
       height        = gdi->video_height;
@@ -352,8 +356,10 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          )
          draw = false;
 
-      if (video_info->menu_is_alive)
+#ifdef HAVE_MENU
+      if (menu_is_alive)
          draw = false;
+#endif
    }
 
    if (hwnd && !gdi->winDC)

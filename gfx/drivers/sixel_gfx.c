@@ -254,7 +254,9 @@ static bool sixel_gfx_frame(void *data, const void *frame,
    unsigned pixfmt           = SIXEL_PIXELFORMAT_RGB565;
    bool draw                 = true;
    sixel_t *sixel            = (sixel_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive        = video_info->menu_is_alive;
+#endif
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -275,7 +277,8 @@ static bool sixel_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (sixel_menu_frame && video_info->menu_is_alive)
+#ifdef HAVE_MENU
+   if (sixel_menu_frame && menu_is_alive)
    {
       frame_to_copy = sixel_menu_frame;
       width         = sixel_menu_width;
@@ -284,6 +287,7 @@ static bool sixel_gfx_frame(void *data, const void *frame,
       bits          = sixel_menu_bits;
    }
    else
+#endif
    {
       width         = sixel_video_width;
       height        = sixel_video_height;
@@ -292,8 +296,10 @@ static bool sixel_gfx_frame(void *data, const void *frame,
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
 
-      if (video_info->menu_is_alive)
+#ifdef HAVE_MENU
+      if (menu_is_alive)
          draw = false;
+#endif
    }
 
    if (sixel->video_width != width || sixel->video_height != height)

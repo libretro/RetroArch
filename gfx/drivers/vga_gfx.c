@@ -144,7 +144,9 @@ static bool vga_gfx_frame(void *data, const void *frame,
    const void *frame_to_copy = frame;
    bool draw                 = true;
    vga_t *vga                = (vga_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive        = video_info->menu_is_alive;
+#endif
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -165,7 +167,8 @@ static bool vga_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (vga->vga_menu_frame && video_info->menu_is_alive)
+#ifdef HAVE_MENU
+   if (vga->vga_menu_frame && menu_is_alive)
    {
       frame_to_copy = vga->vga_menu_frame;
       width         = vga->vga_menu_width;
@@ -174,6 +177,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
       bits          = vga->vga_menu_bits;
    }
    else
+#endif
    {
       width         = vga->vga_video_width;
       height        = vga->vga_video_height;
@@ -183,8 +187,10 @@ static bool vga_gfx_frame(void *data, const void *frame,
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
 
-      if (video_info->menu_is_alive)
+#ifdef HAVE_MENU
+      if (menu_is_alive)
          draw = false;
+#endif
    }
 
    if (draw)

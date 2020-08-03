@@ -1856,7 +1856,13 @@ static bool gl_core_frame(void *data, const void *frame,
    bool runloop_is_paused                      = video_info->runloop_is_paused;
    bool runloop_is_slowmotion                  = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state            = video_info->input_driver_nonblock_state;
+#ifdef HAVE_MENU
    bool menu_is_alive                          = video_info->menu_is_alive;
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active                         = video_info->widgets_active;
+#endif
+   bool hard_sync                              = video_info->hard_sync;
 
    if (!gl)
       return false;
@@ -1951,7 +1957,7 @@ static bool gl_core_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_active)
+   if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1997,7 +2003,7 @@ static bool gl_core_frame(void *data, const void *frame,
    if (gl->ctx_driver->swap_buffers)
       gl->ctx_driver->swap_buffers(gl->ctx_data);
 
-   if (video_info->hard_sync &&
+   if (hard_sync &&
        !input_driver_nonblock_state &&
        !gl->menu_texture_enable)
    {

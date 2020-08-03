@@ -249,7 +249,87 @@ static INLINE void psp_set_tex_coords (psp1_sprite_t* framecoords,
 }
 
 static void psp_update_viewport(psp1_video_t* psp,
-      video_frame_info_t *video_info);
+      video_frame_info_t *video_info)
+{
+   int x                     = 0;
+   int y                     = 0;
+   float device_aspect       = ((float)SCEGU_SCR_WIDTH) / SCEGU_SCR_HEIGHT;
+   float width               = SCEGU_SCR_WIDTH;
+   float height              = SCEGU_SCR_HEIGHT;
+   settings_t *settings      = config_get_ptr();
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+
+   if (video_scale_integer)
+   {
+      video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
+            SCEGU_SCR_HEIGHT, video_driver_get_aspect_ratio(), psp->keep_aspect);
+      width  = psp->vp.width;
+      height = psp->vp.height;
+   }
+   else if (psp->keep_aspect)
+   {
+#if defined(HAVE_MENU)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         x      = video_info->custom_vp_x;
+         y      = video_info->custom_vp_y;
+         width  = video_info->custom_vp_width;
+         height = video_info->custom_vp_height;
+      }
+      else
+#endif
+      {
+         float delta;
+         float desired_aspect = video_driver_get_aspect_ratio();
+
+         if ((fabsf(device_aspect - desired_aspect) < 0.0001f)
+               || (fabsf((16.0/9.0) - desired_aspect) < 0.02f))
+         {
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta = (desired_aspect / device_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            x     = (int)roundf(width * (0.5f - delta));
+            width = (unsigned)roundf(2.0f * width * delta);
+         }
+         else
+         {
+            delta  = (device_aspect / desired_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            y      = (int)roundf(height * (0.5f - delta));
+            height = (unsigned)roundf(2.0f * height * delta);
+         }
+      }
+
+      psp->vp.x      = x;
+      psp->vp.y      = y;
+      psp->vp.width  = width;
+      psp->vp.height = height;
+   }
+   else
+   {
+      psp->vp.x      = 0;
+      psp->vp.y      = 0;
+      psp->vp.width  = width;
+      psp->vp.height = height;
+   }
+
+   psp->vp.width  += psp->vp.width  & 0x1;
+   psp->vp.height += psp->vp.height & 0x1;
+
+   psp_set_screen_coords(psp->frame_coords, psp->vp.x,
+         psp->vp.y, psp->vp.width, psp->vp.height, psp->rotation);
+
+   psp->should_resize = false;
+
+}
+
 
 static void psp_on_vblank(u32 sub, psp1_video_t *psp)
 {
@@ -476,7 +556,9 @@ static bool psp_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    psp1_video_t *psp              = (psp1_video_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive             = video_info->menu_is_alive;
+#endif
 
    if (!width || !height)
       return false;
@@ -495,9 +577,8 @@ static bool psp_frame(void *data, const void *frame,
       pspDebugScreenSetXY(0,0);
       pspDebugScreenPuts(msg);
    }
-      
 
-   if ((psp->vsync)&&(psp->vblank_not_reached))
+   if ((psp->vsync) && (psp->vblank_not_reached))
       sceDisplayWaitVblankStart();
 
    psp->vblank_not_reached = true;
@@ -644,88 +725,6 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 
    if (psp)
       psp->menu.active = state;
-}
-
-static void psp_update_viewport(psp1_video_t* psp,
-      video_frame_info_t *video_info)
-{
-   int x                     = 0;
-   int y                     = 0;
-   float device_aspect       = ((float)SCEGU_SCR_WIDTH) / SCEGU_SCR_HEIGHT;
-   float width               = SCEGU_SCR_WIDTH;
-   float height              = SCEGU_SCR_HEIGHT;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
-            SCEGU_SCR_HEIGHT, video_driver_get_aspect_ratio(), psp->keep_aspect);
-      width  = psp->vp.width;
-      height = psp->vp.height;
-   }
-   else if (psp->keep_aspect)
-   {
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         x      = video_info->custom_vp_x;
-         y      = video_info->custom_vp_y;
-         width  = video_info->custom_vp_width;
-         height = video_info->custom_vp_height;
-      }
-      else
-#endif
-      {
-         float delta;
-         float desired_aspect = video_driver_get_aspect_ratio();
-
-         if ((fabsf(device_aspect - desired_aspect) < 0.0001f)
-               || (fabsf((16.0/9.0) - desired_aspect) < 0.02f))
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x     = (int)roundf(width * (0.5f - delta));
-            width = (unsigned)roundf(2.0f * width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y      = (int)roundf(height * (0.5f - delta));
-            height = (unsigned)roundf(2.0f * height * delta);
-         }
-      }
-
-      psp->vp.x      = x;
-      psp->vp.y      = y;
-      psp->vp.width  = width;
-      psp->vp.height = height;
-   }
-   else
-   {
-      psp->vp.x      = 0;
-      psp->vp.y      = 0;
-      psp->vp.width  = width;
-      psp->vp.height = height;
-   }
-
-   psp->vp.width  += psp->vp.width  & 0x1;
-   psp->vp.height += psp->vp.height & 0x1;
-
-   psp_set_screen_coords(psp->frame_coords, psp->vp.x,
-         psp->vp.y, psp->vp.width, psp->vp.height, psp->rotation);
-
-   psp->should_resize = false;
-
 }
 
 static void psp_set_rotation(void *data, unsigned rotation)

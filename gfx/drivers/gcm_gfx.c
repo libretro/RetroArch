@@ -466,7 +466,12 @@ static bool gcm_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
-   gcm_video_t       *gcm  = (gcm_video_t*)data;
+   gcm_video_t       *gcm         = (gcm_video_t*)data;
+#ifdef HAVE_MENU
+   bool statistics_show           = video_info->statistics_show;
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
+#endif
 
    if(frame && width && height)
    {
@@ -484,17 +489,11 @@ static bool gcm_frame(void* data, const void* frame,
    return true;
 
 #ifdef HAVE_MENU
-   if (video_info->statistics_show)
-   {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
+   if (statistics_show)
       if (osd_params)
-      {
-         font_driver_render_msg(gcm, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
-      }
-   }
+         font_driver_render_msg(gcm,
+               video_info->stat_text,
+               osd_params, NULL);
 #endif
 
    if (msg)

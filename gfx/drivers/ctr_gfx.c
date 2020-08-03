@@ -558,7 +558,9 @@ static bool ctr_frame(void* data, const void* frame,
    int custom_vp_y                = video_info->custom_vp_y;
    unsigned custom_vp_width       = video_info->custom_vp_width;
    unsigned custom_vp_height      = video_info->custom_vp_height;
+#ifdef HAVE_MENU
    bool menu_is_alive             = video_info->menu_is_alive;
+#endif
 
    if (!width || !height || !settings)
    {

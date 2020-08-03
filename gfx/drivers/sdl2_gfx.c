@@ -489,7 +489,9 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 {
    char title[128];
    sdl2_video_t *vid     = (sdl2_video_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive    = video_info->menu_is_alive;
+#endif
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);

@@ -186,7 +186,9 @@ static void *switch_init(const video_info_t *video,
     sw->vp.height       = sw->o_height = video->height;
     sw->overlay_enabled = false;
     sw->overlay         = NULL;
+#ifdef HAVE_MENU
     sw->in_menu         = false;
+#endif
 
     sw->vp.full_width   = 1280;
     sw->vp.full_height  = 720;
@@ -348,7 +350,12 @@ static bool switch_frame(void *data, const void *frame,
    switch_video_t   *sw = data;
    uint32_t *out_buffer = NULL;
    bool       ffwd_mode = video_info->input_driver_nonblock_state;
+#ifdef HAVE_MENU
    bool menu_is_alive   = video_info->menu_is_alive;
+#endif
+   struct font_params 
+      *osd_params       = (struct font_params *)&video_info->osd_stat_params;
+   bool statistics_show = video_info->statistics_show;
 
    if (!frame)
       return true;
@@ -397,7 +404,9 @@ static bool switch_frame(void *data, const void *frame,
          sw->hw_scale.width = ceil(screen_ratio / tgt_ratio * sw->scaler.out_width);
          sw->hw_scale.height = sw->scaler.out_height;
          sw->hw_scale.x_offset = ceil((sw->hw_scale.width - sw->scaler.out_width) / 2.0);
-         if (!video_info->menu_is_alive)
+#ifdef HAVE_MENU
+         if (!menu_is_alive)
+#endif
          {
             clear_screen(sw);
             nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
@@ -420,14 +429,15 @@ static bool switch_frame(void *data, const void *frame,
    sw->out_buffer = out_buffer;
    sw->stride     = stride;
 
-   if (sw->in_menu && !video_info->menu_is_alive && sw->smooth)
+#ifdef HAVE_MENU
+   if (sw->in_menu && !menu_is_alive && sw->smooth)
    {
       memset(out_buffer, 0, stride * sw->vp.full_height);
       nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
    }
-   sw->in_menu = video_info->menu_is_alive;
 
-#ifdef HAVE_MENU
+   sw->in_menu = menu_is_alive;
+
    if (sw->menu_texture.enable)
    {
       menu_driver_frame(menu_is_alive, video_info);
@@ -461,13 +471,11 @@ static bool switch_frame(void *data, const void *frame,
          gfx_cpy_dsp_buf(out_buffer, sw->image, sw->vp.full_width, sw->vp.full_height, stride, false);
       }
 
-   if (video_info->statistics_show && !sw->smooth)
+   if (statistics_show && !sw->smooth)
    {
-      struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
-
       if (osd_params)
          font_driver_render_msg(sw, video_info->stat_text,
-               (const struct font_params *)&video_info->osd_stat_params, NULL);
+               osd_params, NULL);
    }
 
    if (msg)

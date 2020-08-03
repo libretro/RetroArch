@@ -415,7 +415,9 @@ static bool vg_frame(void *data, const void *frame,
    vg_t                           *vg = (vg_t*)data;
    unsigned width                     = video_info->width;
    unsigned height                    = video_info->height;
+#ifdef HAVE_MENU
    bool menu_is_alive                 = video_info->menu_is_alive;
+#endif
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight

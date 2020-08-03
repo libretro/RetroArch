@@ -1283,11 +1283,13 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 {
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
+#ifdef HAVE_MENU
    bool menu_is_alive       = video_info->menu_is_alive;
 
    /* Check if neither menu nor core framebuffer is to be displayed. */
    if (!vid->menu_active && !frame)
       return true;
+#endif
 
    if (frame)
    {

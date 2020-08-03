@@ -757,7 +757,9 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    struct drm_video *_drmvars = data;
+#ifdef HAVE_MENU
    bool menu_is_alive         = video_info->menu_is_alive;
+#endif
 
    if (  ( width != _drmvars->core_width) ||
          (height != _drmvars->core_height))

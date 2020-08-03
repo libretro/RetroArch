@@ -1730,8 +1730,12 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned video_height                         = video_info->height;
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
+#ifdef HAVE_MENU
    bool menu_is_alive                            = video_info->menu_is_alive;
-
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active                           = video_info->widgets_active;
+#endif
    unsigned frame_index                          =
       vk->context->current_frame_index;
    unsigned swapchain_index                      =
@@ -2066,7 +2070,7 @@ static bool vulkan_frame(void *data, const void *frame,
          font_driver_render_msg(vk, msg, NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
-      if (video_info->widgets_active)
+      if (widgets_active)
          gfx_widgets_frame(video_info);
 #endif
 
@@ -2079,7 +2083,8 @@ static bool vulkan_frame(void *data, const void *frame,
     */
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
-   if (backbuffer->image != VK_NULL_HANDLE &&
+   if (
+         backbuffer->image != VK_NULL_HANDLE &&
          vk->context->has_acquired_swapchain &&
          (vk->readback.pending || vk->readback.streamed))
    {

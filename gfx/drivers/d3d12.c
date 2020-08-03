@@ -1177,7 +1177,9 @@ static bool d3d12_gfx_frame(
    struct font_params *osd_params = (struct font_params*)
       &video_info->osd_stat_params;
    bool menu_is_alive             = video_info->menu_is_alive;
-
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active            = video_info->widgets_active;
+#endif
 
    d3d12_gfx_sync(d3d12);
 
@@ -1572,7 +1574,7 @@ static bool d3d12_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_active)
+   if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 

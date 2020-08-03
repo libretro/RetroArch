@@ -365,7 +365,9 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
 {
    char title[128];
    sdl_video_t                    *vid = (sdl_video_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive                  = video_info->menu_is_alive;
+#endif
 
    if (!frame)
       return true;

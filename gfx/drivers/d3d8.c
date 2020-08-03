@@ -1494,9 +1494,9 @@ static bool d3d8_frame(void *data, const void *frame,
    const char *stat_text               = video_info->stat_text;
    bool statistics_show                = video_info->statistics_show;
    bool black_frame_insertion          = video_info->black_frame_insertion;
+#ifdef HAVE_MENU
    bool menu_is_alive                  = video_info->menu_is_alive;
-
-   (void)i;
+#endif
 
    if (!frame)
       return true;

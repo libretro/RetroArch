@@ -990,12 +990,16 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    omap_video_t  *vid = (omap_video_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive = video_info->menu_is_alive;
+#endif
 
    if (!frame)
       return true;
 
-   if (width > 4 && height > 4 && (width != vid->width || height != vid->height))
+   if (     (width  > 4)
+         && (height > 4)
+         && (width != vid->width || height != vid->height))
    {
       RARCH_LOG("[video_omap]: mode set (resolution changed by core)\n");
 
@@ -1005,7 +1009,7 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
          return false;
       }
 
-      vid->width = width;
+      vid->width  = width;
       vid->height = height;
    }
 

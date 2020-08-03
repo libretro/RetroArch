@@ -172,7 +172,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
         unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive      = video_info->menu_is_alive;
+#endif
 
    if (unlikely(!frame))
       return true;
@@ -186,7 +188,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (likely(!vid->menu_active))
    {
-      blit((uint32_t*)vid->screen->pixels, (uint32_t*)frame, vid->rgb ? width : width/2, height, pitch);
+      blit((uint32_t*)vid->screen->pixels,
+            (uint32_t*)frame,
+            vid->rgb ? width : width/2, height, pitch);
       if (unlikely(vid->was_in_menu))
          vid->was_in_menu = false;
    }

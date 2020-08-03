@@ -1010,7 +1010,9 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive        = video_info->menu_is_alive;
+#endif
 
    if (!frame)
       return true;

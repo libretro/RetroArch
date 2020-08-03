@@ -776,16 +776,15 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive            = video_info->menu_is_alive;
+#endif
 
    if (_dispvars->src_width != width || _dispvars->src_height != height)
    {
       /* Sanity check on new dimensions */
       if (width == 0 || height == 0)
          return true;
-
-      RARCH_LOG("video_sunxi: internal resolution changed by core: %ux%u -> %ux%u\n",
-            _dispvars->src_width, _dispvars->src_height, width, height);
 
       sunxi_setup_scale(_dispvars, width, height, pitch);
    }

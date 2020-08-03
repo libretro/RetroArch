@@ -174,7 +174,9 @@ static bool network_gfx_frame(void *data, const void *frame,
    unsigned pixfmt           = NETWORK_VIDEO_PIXELFORMAT_RGB565;
    bool draw                 = true;
    network_video_t *network  = (network_video_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive        = video_info->menu_is_alive;
+#endif
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -198,7 +200,7 @@ static bool network_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-   if (network_menu_frame && video_info->menu_is_alive)
+   if (network_menu_frame && menu_is_alive)
    {
       frame_to_copy = network_menu_frame;
       width         = network_menu_width;
@@ -219,20 +221,25 @@ static bool network_gfx_frame(void *data, const void *frame,
          draw = false;
 
 #ifdef HAVE_MENU
-      if (video_info->menu_is_alive)
+      if (menu_is_alive)
          draw = false;
 #endif
    }
 
-   if (network->video_width != width || network->video_height != height)
+   if (     network->video_width != width 
+         || network->video_height != height)
    {
-      network->video_width = width;
+      network->video_width  = width;
       network->video_height = height;
 
       if (network_video_temp_buf)
          free(network_video_temp_buf);
 
-      network_video_temp_buf = (unsigned*)malloc(network->screen_width * network->screen_height * sizeof(unsigned));
+      network_video_temp_buf = (unsigned*)
+         malloc(
+                 network->screen_width 
+               * network->screen_height 
+               * sizeof(unsigned));
    }
 
    if (bits == 16)
@@ -254,15 +261,19 @@ static bool network_gfx_frame(void *data, const void *frame,
                   unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
 
                   /* convert RGBX4444 to RGBX8888 */
-                  unsigned r = ((pixel & 0xF000) << 8) | ((pixel & 0xF000) << 4);
-                  unsigned g = ((pixel & 0x0F00) << 4) | ((pixel & 0x0F00) << 0);
-                  unsigned b = ((pixel & 0x00F0) << 0) | ((pixel & 0x00F0) >> 4);
+                  unsigned r           = ((pixel & 0xF000) << 8) 
+                     | ((pixel & 0xF000) << 4);
+                  unsigned g           = ((pixel & 0x0F00) << 4) 
+                     | ((pixel & 0x0F00) << 0);
+                  unsigned b           = ((pixel & 0x00F0) << 0) 
+                     | ((pixel & 0x00F0) >> 4);
 
-                  network_video_temp_buf[network->screen_width * y + x] = 0xFF000000 | b | g | r;
+                  network_video_temp_buf[network->screen_width * y + x] 
+                     = 0xFF000000 | b | g | r;
                }
             }
 
-            pixfmt = NETWORK_VIDEO_PIXELFORMAT_RGBA8888;
+            pixfmt        = NETWORK_VIDEO_PIXELFORMAT_RGBA8888;
             frame_to_copy = network_video_temp_buf;
          }
          else

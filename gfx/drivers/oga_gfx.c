@@ -249,12 +249,15 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
    uint8_t                      *src  = (uint8_t*)frame;
    int                            bpp = go2_drm_format_get_bpp(
          go2_surface_format_get(dst_surface)) / 8;
+#ifdef HAVE_MENU
    bool                 menu_is_alive = video_info->menu_is_alive;
+#endif
+   bool input_driver_nonblock_state   = video_info->input_driver_nonblock_state;
 
    if (unlikely(!frame || width == 0 || height == 0))
       return true;
 
-   if (unlikely(video_info->input_driver_nonblock_state) && !vid->threaded)
+   if (unlikely(input_driver_nonblock_state) && !vid->threaded)
    {
       if (frame_count % 4 != 0)
           return true;
@@ -318,13 +321,8 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
 static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
         unsigned width, unsigned height, float alpha)
 {
-    oga_video_t *vid = (oga_video_t*)data;
-
-    vid->menu_width = width;
-    vid->menu_height = height;
-    vid->menu_pitch = width * 4;
-
-
+   unsigned i, j;
+   oga_video_t *vid             = (oga_video_t*)data;
    /* Borrowed from drm_gfx
     *
     * We have to go on a pixel format conversion adventure
@@ -336,27 +334,32 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
    uint32_t line[dst_width];
 
    /* The output pixel array with the converted pixels. */
-   char *frame_output = vid->menu_buf;
+   char *frame_output            = vid->menu_buf;
 
    /* Remember, memcpy() works with 8bits pointers for increments. */
    char *dst_base_addr           = frame_output;
 
-   for (int i = 0; i < height; i++)
+   vid->menu_width               = width;
+   vid->menu_height              = height;
+   vid->menu_pitch               = width * 4;
+
+   for (i = 0; i < height; i++)
    {
-      for (int j = 0; j < src_pitch / 2; j++)
+      for (j = 0; j < src_pitch / 2; j++)
       {
          uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j);
-         /* The hex AND is for keeping only the part we need for each component. */
-         uint32_t R = (src_pix << 8) & 0x00FF0000;
-         uint32_t G = (src_pix << 4) & 0x0000FF00;
-         uint32_t B = (src_pix << 0) & 0x000000FF;
-         line[j] = (0 | R | G | B);
+         /* The hex AND is for keeping only the part 
+          * we need for each component. */
+         uint32_t R       = (src_pix << 8) & 0x00FF0000;
+         uint32_t G       = (src_pix << 4) & 0x0000FF00;
+         uint32_t B       = (src_pix << 0) & 0x000000FF;
+         line[j]          = (0 | R | G | B);
       }
       memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
    }
 
-    if (unlikely(!vid->menu_frame))
-        vid->menu_frame = frame_output;
+   if (unlikely(!vid->menu_frame))
+      vid->menu_frame = frame_output;
 }
 
 static void oga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
