@@ -1245,7 +1245,10 @@ enum
    MUI_TEXTURE_BATTERY_100,
    MUI_TEXTURE_BATTERY_CHARGING,
    MUI_TEXTURE_SWITCH_VIEW,
-   MUI_TEXTURE_LAST
+   MUI_TEXTURE_LAST,
+
+   /* special textures that use externally loaded texture ids */
+   MUI_TEXTURE_EXTERNAL_EXPLORE
 };
 
 /* This structure holds all runtime parameters
@@ -2369,7 +2372,9 @@ static void materialui_compute_entries_box_default(
 
       num_sublabel_lines = materialui_count_sublabel_lines(
             mui, usable_width, i,
-            (node->has_icon && mui->textures.list[node->icon_texture_index]));
+            (node->has_icon &&
+               (node->icon_texture_index >= MUI_TEXTURE_LAST ||
+                mui->textures.list[node->icon_texture_index])));
 
       node->text_height  = mui->font_data.list.line_height +
             (num_sublabel_lines * mui->font_data.hint.line_height);
@@ -3483,6 +3488,8 @@ static void materialui_render_menu_entry_default(
           ((entry_type >= MENU_SETTING_DROPDOWN_ITEM) &&
            (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL)))
          node->has_icon = false;
+      else if (node->icon_texture_index == MUI_TEXTURE_EXTERNAL_EXPLORE)
+         icon_texture = menu_explore_get_entry_icon(entry_type);
       else
          icon_texture = mui->textures.list[node->icon_texture_index];
    }
@@ -9658,6 +9665,11 @@ static void materialui_list_insert(
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
             {
                node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
+               node->has_icon           = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_ITEM)))
+            {
+               node->icon_texture_index = MUI_TEXTURE_EXTERNAL_EXPLORE;
                node->has_icon           = true;
             }
             else if (string_ends_with_size(label, "_input_binds_list",
