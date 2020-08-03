@@ -15590,6 +15590,10 @@ static bool input_driver_ungrab_mouse(struct rarch_state *p_rarch)
    return true;
 }
 
+/* Forward declaration */
+#ifdef HAVE_RUNAHEAD
+static void runahead_clear_variables(struct rarch_state *p_rarch);
+#endif
 
 /**
  * command_event:
@@ -16280,6 +16284,19 @@ bool command_event(enum event_command cmd, void *data)
             rcheevos_unload();
 #endif
             command_event_deinit_core(p_rarch, true);
+
+#ifdef HAVE_RUNAHEAD
+            /* If 'runahead_available' is false, then
+             * runahead is enabled by the user but an
+             * error occurred while the core was running
+             * (typically a save state issue). In this
+             * case we have to 'manually' reset the runahead
+             * runtime variables, otherwise runahead will
+             * remain disabled until the user restarts
+             * RetroArch */
+            if (!p_rarch->runahead_available)
+               runahead_clear_variables(p_rarch);
+#endif
 
             if (hwr)
                memset(hwr, 0, sizeof(*hwr));
