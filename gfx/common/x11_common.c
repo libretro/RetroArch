@@ -57,25 +57,23 @@
 #define MOVERESIZE_X_SHIFT                   8
 #define MOVERESIZE_Y_SHIFT                   9
 
-#define V_DBLSCAN 0x20
+#define V_DBLSCAN                            0x20
 
 /* TODO/FIXME - globals */
+bool g_x11_entered                          = false;
+Display *g_x11_dpy                          = NULL;
+unsigned g_x11_screen                       = 0;
+Window   g_x11_win                          = None;
+Colormap g_x11_cmap;
+
+/* TODO/FIXME - static globals */
 static XF86VidModeModeInfo desktop_mode;
 static bool xdg_screensaver_available       = true;
-bool g_x11_entered                          = false;
 static bool g_x11_has_focus                 = false;
 static bool g_x11_true_full                 = false;
-Display *g_x11_dpy                          = NULL;
-
-unsigned g_x11_screen                       = 0;
-
-Colormap g_x11_cmap;
-Window   g_x11_win = None;
-
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
-
 static Atom g_x11_quit_atom;
 static XIM g_x11_xim;
 static XIC g_x11_xic;

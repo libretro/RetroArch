@@ -297,25 +297,6 @@ void dxgi_copy(
 #pragma warning(default : 4293)
 #endif
 
-void dxgi_update_title(void)
-{
-#ifndef __WINRT__
-   const ui_window_t* window = ui_companion_driver_get_window_ptr();
-
-   if (window)
-   {
-      char title[128];
-
-      title[0] = '\0';
-
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         window->set_title(&main_window, title);
-   }
-#endif
-}
-
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt)
 {
 #undef FMT_

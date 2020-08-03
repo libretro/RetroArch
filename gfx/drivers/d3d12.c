@@ -1584,7 +1584,22 @@ static bool d3d12_gfx_frame(
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
       font_driver_render_msg(d3d12, msg, NULL, NULL);
-      dxgi_update_title();
+#ifndef __WINRT__
+      {
+         const ui_window_t* window = ui_companion_driver_get_window_ptr();
+         if (window)
+         {
+            char title[128];
+
+            title[0] = '\0';
+
+            video_driver_get_window_title(title, sizeof(title));
+
+            if (title[0])
+               window->set_title(&main_window, title);
+         }
+      }
+#endif
    }
    d3d12->sprites.enabled = false;
 

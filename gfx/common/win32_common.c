@@ -277,20 +277,6 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #define INT_PTR_COMPAT INT_PTR
 #endif
 
-
-/* TODO/FIXME - globals */
-bool g_win32_restore_desktop        = false;
-static bool taskbar_is_created      = false;
-bool g_win32_inited                 = false;
-
-unsigned g_win32_resize_width       = 0;
-unsigned g_win32_resize_height      = 0;
-
-ui_window_win32_t main_window;
-
-static HMONITOR win32_monitor_last;
-static HMONITOR win32_monitor_all[MAX_MONITORS];
-
 typedef struct win32_common_state
 {
    int pos_x;
@@ -303,6 +289,18 @@ typedef struct win32_common_state
    bool resized;
 } win32_common_state_t;
 
+/* TODO/FIXME - globals */
+bool g_win32_restore_desktop        = false;
+bool g_win32_inited                 = false;
+unsigned g_win32_resize_width       = 0;
+unsigned g_win32_resize_height      = 0;
+ui_window_win32_t main_window;
+
+/* TODO/FIXME - static globals */
+static bool taskbar_is_created      = false;
+static HMONITOR win32_monitor_last;
+static HMONITOR win32_monitor_all[MAX_MONITORS];
+
 static win32_common_state_t win32_st =
 {
    CW_USEDEFAULT,       /* pos_x */
@@ -314,7 +312,6 @@ static win32_common_state_t win32_st =
    0,                   /* monitor_count */
    false                /* resized */
 };
-
 
 bool win32_taskbar_is_created(void)
 {
