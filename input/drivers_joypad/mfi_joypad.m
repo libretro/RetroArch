@@ -31,17 +31,16 @@
 #define MAX_MFI_CONTROLLERS 4
 #endif
 
-static uint32_t mfi_buttons[MAX_USERS];
-static int16_t  mfi_axes[MAX_USERS][4];
-
-static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
-
-static NSMutableArray *mfiControllers;
-
 enum
 {
     GCCONTROLLER_PLAYER_INDEX_UNSET = -1,
 };
+
+/* TODO/FIXME - static globals */
+static uint32_t mfi_buttons[MAX_USERS];
+static int16_t  mfi_axes[MAX_USERS][4];
+static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
+static NSMutableArray *mfiControllers;
 
 static bool apple_gamecontroller_available(void)
 {

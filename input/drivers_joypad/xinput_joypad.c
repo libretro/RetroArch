@@ -44,29 +44,26 @@
 
 #include "xinput_joypad.h"
 
-#ifdef HAVE_DYNAMIC
-/* For xinput1_n.dll */
-static dylib_t g_xinput_dll = NULL;
-#endif
-
-/* Function pointer, to be assigned with dylib_proc */
-typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
-static XInputGetStateEx_t g_XInputGetStateEx;
-
-typedef uint32_t (__stdcall *XInputSetState_t)(uint32_t, XINPUT_VIBRATION*);
-static XInputSetState_t g_XInputSetState;
-
-/* Guide button may or may not be available */
-static bool g_xinput_guide_button_supported = false;
-static unsigned g_xinput_num_buttons        = 0;
-
 typedef struct
 {
    XINPUT_STATE xstate;
    bool         connected;
 } xinput_joypad_state;
 
+/* Function pointer, to be assigned with dylib_proc */
+typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
+typedef uint32_t (__stdcall *XInputSetState_t)(uint32_t, XINPUT_VIBRATION*);
+
 /* TODO/FIXME - static globals */
+#ifdef HAVE_DYNAMIC
+/* For xinput1_n.dll */
+static dylib_t g_xinput_dll = NULL;
+#endif
+/* Guide button may or may not be available */
+static bool g_xinput_guide_button_supported = false;
+static unsigned g_xinput_num_buttons        = 0;
+static XInputSetState_t g_XInputSetState;
+static XInputGetStateEx_t g_XInputGetStateEx;
 static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 static xinput_joypad_state g_xinput_states[4];
 

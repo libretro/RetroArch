@@ -60,26 +60,6 @@
  * For each pad index, the appropriate entry will be set to -1 if it is not
  * a 360 pad, or the correct XInput user number (0..3 inclusive) if it is.
  */
-static int g_xinput_pad_indexes[MAX_USERS];
-static unsigned g_last_xinput_pad_idx;
-static bool g_xinput_block_pads;
-
-#ifdef HAVE_DYNAMIC
-/* For xinput1_n.dll */
-static dylib_t g_xinput_dll = NULL;
-#endif
-
-/* Function pointer, to be assigned with dylib_proc */
-typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
-static XInputGetStateEx_t g_XInputGetStateEx;
-
-typedef uint32_t (__stdcall *XInputSetState_t)(uint32_t, XINPUT_VIBRATION*);
-static XInputSetState_t g_XInputSetState;
-
-/* Guide button may or may not be available */
-static bool g_xinput_guide_button_supported = false;
-static unsigned g_xinput_num_buttons        = 0;
-
 typedef struct
 {
    XINPUT_STATE xstate;
@@ -87,6 +67,21 @@ typedef struct
 } xinput_joypad_state;
 
 /* TODO/FIXME - static globals */
+static int g_xinput_pad_indexes[MAX_USERS];
+static unsigned g_last_xinput_pad_idx;
+static bool g_xinput_block_pads;
+#ifdef HAVE_DYNAMIC
+/* For xinput1_n.dll */
+static dylib_t g_xinput_dll = NULL;
+#endif
+/* Function pointer, to be assigned with dylib_proc */
+typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
+typedef uint32_t (__stdcall *XInputSetState_t)(uint32_t, XINPUT_VIBRATION*);
+/* Guide button may or may not be available */
+static bool g_xinput_guide_button_supported = false;
+static unsigned g_xinput_num_buttons        = 0;
+static XInputSetState_t g_XInputSetState;
+static XInputGetStateEx_t g_XInputGetStateEx;
 static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 static xinput_joypad_state g_xinput_states[4];
 

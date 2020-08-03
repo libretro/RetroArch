@@ -39,7 +39,7 @@
 #include "../../verbosity.h"
 #include "dinput_joypad.h"
 
-/* TODO/FIXME - globals */
+/* TODO/FIXME - globals referenced outside */
 struct dinput_joypad_data g_pads[MAX_USERS];
 unsigned g_joypad_cnt;
 

@@ -48,6 +48,7 @@ struct linuxraw_joypad
    char *ident;
 };
 
+/* TODO/FIXME - static globals */
 static struct linuxraw_joypad linuxraw_pads[MAX_USERS];
 static int linuxraw_epoll                              = 0;
 static int linuxraw_inotify                            = 0;

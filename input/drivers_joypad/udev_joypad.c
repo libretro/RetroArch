@@ -95,6 +95,7 @@ struct joypad_udev_entry
    struct udev_list_entry *item;
 };
 
+/* TODO/FIXME - static globals */
 static struct udev *udev_joypad_fd             = NULL;
 static struct udev_monitor *udev_joypad_mon    = NULL;
 static struct udev_joypad udev_pads[MAX_USERS];

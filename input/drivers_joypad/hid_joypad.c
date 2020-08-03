@@ -17,6 +17,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 
+/* TODO/FIXME - static global */
 static const hid_driver_t *generic_hid = NULL;
 
 static bool hid_joypad_init(void *data)
@@ -24,9 +25,6 @@ static bool hid_joypad_init(void *data)
    generic_hid = input_hid_init_first();
    if (!generic_hid)
        return false;
-
-   (void)data;
-
    return true;
 }
 

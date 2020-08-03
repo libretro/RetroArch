@@ -33,10 +33,6 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
    unsigned vid = 0;
    unsigned pid = 0;
 
-   (void)event_type;
-   (void)gamepad_event;
-   (void)user_data;
-
    if (strncmp(gamepad_event->mapping, "standard",
        sizeof(gamepad_event->mapping)) == 0)
    {
@@ -45,46 +41,40 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
       pid = 1;
    }
 
-   if (event_type == EMSCRIPTEN_EVENT_GAMEPADCONNECTED)
-      input_autoconfigure_connect(
+   switch (event_type)
+   {
+      case EMSCRIPTEN_EVENT_GAMEPADCONNECTED:
+         input_autoconfigure_connect(
                gamepad_event->id,    /* name */
                NULL,                 /* display name */
                rwebpad_joypad.ident, /* driver */
                gamepad_event->index, /* idx */
                vid,                  /* vid */
                pid);                 /* pid */
-   else if (event_type == EMSCRIPTEN_EVENT_GAMEPADDISCONNECTED)
-      input_autoconfigure_disconnect(gamepad_event->index,
-         rwebpad_joypad.ident);
+         break;
+      case EMSCRIPTEN_EVENT_GAMEPADDISCONNECTED:
+         input_autoconfigure_disconnect(gamepad_event->index,
+               rwebpad_joypad.ident);
+         break;
+      default:
+         break;
+   }
 
    return EM_TRUE;
 }
 
 static bool rwebpad_joypad_init(void *data)
 {
-   EMSCRIPTEN_RESULT r;
-   (void)data;
-
-   r = emscripten_sample_gamepad_data();
+   EMSCRIPTEN_RESULT r = emscripten_sample_gamepad_data();
    if (r == EMSCRIPTEN_RESULT_NOT_SUPPORTED)
       return false;
 
    /* callbacks needs to be registered for gamepads to connect */
    r = emscripten_set_gamepadconnected_callback(NULL, false,
       rwebpad_gamepad_cb);
-   if (r != EMSCRIPTEN_RESULT_SUCCESS)
-   {
-      RARCH_ERR(
-         "[EMSCRIPTEN/PAD] failed to create connect callback: %d\n", r);
-   }
 
    r = emscripten_set_gamepaddisconnected_callback(NULL, false,
       rwebpad_gamepad_cb);
-   if (r != EMSCRIPTEN_RESULT_SUCCESS)
-   {
-      RARCH_ERR(
-         "[EMSCRIPTEN/PAD] failed to create disconnect callback: %d\n", r);
-   }
 
    return true;
 }
@@ -93,7 +83,6 @@ static const char *rwebpad_joypad_name(unsigned pad)
 {
    static EmscriptenGamepadEvent gamepad_state;
    EMSCRIPTEN_RESULT r = emscripten_get_gamepad_status(pad, &gamepad_state);
-
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
       return gamepad_state.id;
    return "";
@@ -215,13 +204,10 @@ static bool rwebpad_joypad_query_pad(unsigned pad)
 
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
       return gamepad_state.connected == EM_TRUE;
-
    return false;
 }
 
-static void rwebpad_joypad_destroy(void)
-{
-}
+static void rwebpad_joypad_destroy(void) { }
 
 input_device_driver_t rwebpad_joypad = {
    rwebpad_joypad_init,

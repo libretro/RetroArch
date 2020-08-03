@@ -27,6 +27,7 @@ typedef struct
    bool connected;
 } xinput_joypad_state;
 
+/* TODO/FIXME - static globals */
 static xinput_joypad_state g_xinput_states[DEFAULT_MAX_PADS];
 static HANDLE gamepads[DEFAULT_MAX_PADS];
 

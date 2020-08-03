@@ -27,8 +27,8 @@
 #define PS2_ANALOG_STICKS 2
 #define PS2_ANALOG_AXIS 2
 
+/* TODO/FIXME - static globals */
 static unsigned char padBuf[2][256] ALIGNED(64);
-
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][PS2_ANALOG_STICKS][PS2_ANALOG_AXIS];
 

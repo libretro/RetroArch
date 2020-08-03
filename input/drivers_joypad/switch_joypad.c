@@ -19,6 +19,7 @@
 /* TODO/FIXME - weird header include */
 #include "string.h"
 
+/* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
 
 /* TODO/FIXME - static globals */

@@ -38,8 +38,8 @@
 #define LOCK_VAR(x) LockData((void*)&x, sizeof(x))
 #define LOCK_FUNC(x) LockCode(x, (int)x##_End - (int)x)
 
+/* TODO/FIXME - static globals */
 static uint16_t normal_keys[LAST_KEYCODE + 1];
-
 static _go32_dpmi_seginfo old_kbd_int;
 static _go32_dpmi_seginfo kbd_int;
 

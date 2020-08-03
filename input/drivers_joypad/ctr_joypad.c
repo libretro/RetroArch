@@ -28,8 +28,11 @@
 #include "string.h"
 #include "3ds.h"
 
+/* TODO/FIXME - static globals */
 static uint32_t pad_state;
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
+
+/* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
 
 static const char *ctr_joypad_name(unsigned pad)

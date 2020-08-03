@@ -61,6 +61,7 @@ struct gx_mousedata
    bool valid;
 };
 
+/* TODO/FIXME - static global */
 static struct gx_mousedata gx_mouse[2];
 #endif
 
@@ -119,14 +120,14 @@ enum
 #define GC_JOYSTICK_THRESHOLD (48 * 256)
 #define WII_JOYSTICK_THRESHOLD (40 * 256)
 
+/* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
+
+/* TODO/FIXME - static globals */
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static uint32_t pad_type[DEFAULT_MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 static bool g_menu = false;
-
-static bool gx_joypad_query_pad(unsigned pad);
-
 #ifdef HW_RVL
 static bool g_quit = false;
 
@@ -435,6 +436,11 @@ static int16_t WPAD_StickY(WPADData *data, u8 right)
 }
 #endif
 
+static bool gx_joypad_query_pad(unsigned pad)
+{
+   return pad < MAX_USERS && pad_type[pad] != WPAD_EXP_NOCONTROLLER;
+}
+
 static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
@@ -635,11 +641,6 @@ static bool gx_joypad_init(void *data)
    gx_joypad_poll();
 
    return true;
-}
-
-static bool gx_joypad_query_pad(unsigned pad)
-{
-   return pad < MAX_USERS && pad_type[pad] != WPAD_EXP_NOCONTROLLER;
 }
 
 static void gx_joypad_destroy(void)

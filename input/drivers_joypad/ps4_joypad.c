@@ -49,11 +49,13 @@
 #define	ORBISPAD_TOUCH_PAD	0x00100000
 #define	ORBISPAD_INTERCEPTED	0x80000000
 
-typedef struct SceUserServiceLoginUserIdList {
-	int32_t userId[SCE_USER_SERVICE_MAX_LOGIN_USERS];
+typedef struct SceUserServiceLoginUserIdList
+{
+   int32_t userId[SCE_USER_SERVICE_MAX_LOGIN_USERS];
 } SceUserServiceLoginUserIdList;
 
-int sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList* userIdList);
+int sceUserServiceGetLoginUserIdList(
+      SceUserServiceLoginUserIdList* userIdList);
 
 /*
  * Global var's
@@ -65,6 +67,7 @@ typedef struct
    bool connected;
 } ds_joypad_state;
 
+/* TODO/FIXME - static globals */
 static ds_joypad_state ds_joypad_states[PS4_MAX_ORBISPADS];
 static uint64_t pad_state[PS4_MAX_ORBISPADS];
 static int16_t analog_state[PS4_MAX_ORBISPADS][2][2];

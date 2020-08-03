@@ -48,6 +48,7 @@ struct parport_joypad
    char *ident;
 };
 
+/* TODO/FIXME - static global */
 static struct parport_joypad parport_pads[MAX_USERS];
 
 static void parport_poll_pad(struct parport_joypad *pad)

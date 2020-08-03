@@ -35,6 +35,8 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/ctrl.h>
 #include <psp2/touch.h>
+
+/* TODO/FIXME - static globals */
 static int psp2_model;
 static SceCtrlPortInfo old_ctrl_info, curr_ctrl_info;
 static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
@@ -53,9 +55,11 @@ static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 #define SE_AREA(x, y) AREA(SCREEN_HALF_WIDTH, SCREEN_HALF_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, (x), (y))
 #endif
 
+/* TODO/FIXME - static globals */
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 
+/* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
 
 static const char *psp_joypad_name(unsigned pad)
