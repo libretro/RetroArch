@@ -1085,7 +1085,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
          tmplen = strlcpy(tmp,
                msg_hash_to_str(explore_by_info[cat].by_enum), sizeof(tmp));
 
-         if (is_top && tmplen >= 0 && tmplen < sizeof(tmp) - 5)
+         if (is_top && tmplen < sizeof(tmp) - 5)
          {
             if (explore_by_info[cat].is_numeric)
             {
