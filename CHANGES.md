@@ -26,6 +26,7 @@
 - MENU/WIDGETS: Make notification font size option visible when graphics widgets are enabled
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
 - PS2: Improve FPS Limiter
+- RUNAHEAD: Prevent runahead from being disabled *permanently* when an error occurs
 - SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
 - VIDEO FILTERS/BLARGG: Make Blargg_snes filter customizable
 - WINDOWS/RAWINPUT: Fix invalid calls to dinput_handle_message when input driver is not set to dinput
