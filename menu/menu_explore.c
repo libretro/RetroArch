@@ -1256,10 +1256,10 @@ SKIP_ENTRY:;
 
 void menu_explore_free(void)
 {
-   if (explore_state)
-   {
-      explore_free(explore_state);
-      free(explore_state);
-      explore_state = NULL;
-   }
+   if (!explore_state)
+      return;
+
+   explore_free(explore_state);
+   free(explore_state);
+   explore_state = NULL;
 }
