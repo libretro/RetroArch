@@ -20,6 +20,9 @@
 #include "../../config.h"
 #endif
 
+#include <lists/string_list.h>
+
+
 #define VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS    16
 #define VULKAN_MAX_DESCRIPTOR_POOL_SIZES        16
 #define VULKAN_BUFFER_BLOCK_SIZE                (64 * 1024)
@@ -165,6 +168,8 @@ typedef struct gfx_ctx_vulkan_data
    /* Used to check if we need to use mailbox emulation or not.
     * Only relevant on Windows for now. */
    bool fullscreen;
+
+   struct string_list *gpu_list;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info

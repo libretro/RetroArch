@@ -51,7 +51,6 @@ static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
-static struct string_list *vulkan_gpu_list = NULL;
 
 #if 0
 #define WSI_HARDENING_TEST
@@ -1576,10 +1575,10 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
-   if (vulkan_gpu_list)
-      string_list_free(vulkan_gpu_list);
+   if (vk->gpu_list)
+      string_list_free(vk->gpu_list);
 
-   vulkan_gpu_list = string_list_new();
+   vk->gpu_list = string_list_new();
 
    for (i = 0; i < gpu_count; i++)
    {
@@ -1590,10 +1589,10 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
       RARCH_LOG("[Vulkan]: Found GPU at index %d: %s\n", i, gpu_properties.deviceName);
 
-      string_list_append(vulkan_gpu_list, gpu_properties.deviceName, attr);
+      string_list_append(vk->gpu_list, gpu_properties.deviceName, attr);
    }
 
-   video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vulkan_gpu_list);
+   video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vk->gpu_list);
 
    if (0 <= gpu_index && gpu_index < (int)gpu_count)
    {
@@ -2651,10 +2650,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    }
 
    video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, NULL);
-   if (vulkan_gpu_list)
+   if (vk->gpu_list)
    {
-      string_list_free(vulkan_gpu_list);
-      vulkan_gpu_list = NULL;
+      string_list_free(vk->gpu_list);
+      vk->gpu_list = NULL;
    }
 }
 
