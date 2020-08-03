@@ -86,9 +86,11 @@ static const float ticker_pixel_period = (1.0f / 60.0f) * 1000.0f;
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
  
 /* Forward declarations */
+
+/* By default, this should be a NOOP */
 static void gfx_animation_update_time_default(
-      float *dst,
-      unsigned video_width, unsigned video_height);
+      float *ticker_pixel_increment,
+      unsigned video_width, unsigned video_height) { }
 
 static update_time_cb update_time_callback = gfx_animation_update_time_default;
 
@@ -1204,13 +1206,6 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
       da_push(p_anim->list, t);
 
    return true;
-}
-
-static void gfx_animation_update_time_default(
-      float *ticker_pixel_increment,
-      unsigned video_width, unsigned video_height)
-{
-   /* By default, this should be a NOOP */
 }
 
 void gfx_animation_set_update_time_cb(update_time_cb cb)
