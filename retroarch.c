@@ -27787,6 +27787,14 @@ const char *input_config_get_device_config_name(unsigned port)
    return p_rarch->input_device_info[port].config_name;
 }
 
+const char *input_config_get_device_joypad_driver(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   if (string_is_empty(p_rarch->input_device_info[port].joypad_driver))
+      return NULL;
+   return p_rarch->input_device_info[port].joypad_driver;
+}
+
 uint16_t input_config_get_device_vid(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -27875,6 +27883,14 @@ void input_config_set_device_config_name(unsigned port, const char *name)
             sizeof(p_rarch->input_device_info[port].config_name));
 }
 
+void input_config_set_device_joypad_driver(unsigned port, const char *driver)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   if (!string_is_empty(driver))
+      strlcpy(p_rarch->input_device_info[port].joypad_driver, driver,
+            sizeof(p_rarch->input_device_info[port].joypad_driver));
+}
+
 void input_config_set_device_vid(unsigned port, uint16_t vid)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -27924,6 +27940,12 @@ void input_config_clear_device_config_name(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
    p_rarch->input_device_info[port].config_name[0] = '\0';
+}
+
+void input_config_clear_device_joypad_driver(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_device_info[port].joypad_driver[0] = '\0';
 }
 
 /* input_device_info wrappers END */
@@ -28014,6 +28036,7 @@ void input_config_reset(void)
       input_config_clear_device_display_name(i);
       input_config_clear_device_config_path(i);
       input_config_clear_device_config_name(i);
+      input_config_clear_device_joypad_driver(i);
       input_config_set_device_vid(i, 0);
       input_config_set_device_pid(i, 0);
       input_config_set_device_autoconfigured(i, false);

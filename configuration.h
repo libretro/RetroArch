@@ -904,11 +904,11 @@ bool config_load_remap(const char *directory_input_remapping,
 
 /**
  * config_save_autoconf_profile:
- * @path            : Path that shall be written to.
+ * @device_name       : Input device name
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-bool config_save_autoconf_profile(const char *path, unsigned user);
+bool config_save_autoconf_profile(const char *device_name, unsigned user);
 
 /**
  * config_save_file:

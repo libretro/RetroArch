@@ -3834,18 +3834,18 @@ static void video_driver_save_settings(config_file_t *conf)
 
 /**
  * config_save_autoconf_profile:
- * @path            : Path that shall be written to.
+ * @device_name       : Input device name
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-bool config_save_autoconf_profile(const char *path, unsigned user)
+bool config_save_autoconf_profile(const char *device_name, unsigned user)
 {
    static const char* invalid_filename_chars[] = {
       /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
       "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
       NULL
    };
-   unsigned i;
+   size_t i;
    config_file_t *conf                  = NULL;
    size_t path_size                     = PATH_MAX_LENGTH * sizeof(char);
    int32_t pid_user                     = 0;
@@ -3853,19 +3853,49 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    bool ret                             = false;
    settings_t *settings                 = config_get_ptr();
    const char *autoconf_dir             = settings->paths.directory_autoconfig;
-   const char *joypad_ident             = settings->arrays.input_joypad_driver;
+   const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
+   const char *joypad_driver            = NULL;
+   char *sanitised_name                 = NULL;
    char *buf                            = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    char *autoconf_file                  = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *path_new                       = strdup(path);
-   buf[0] = autoconf_file[0]            = '\0';
+
+   if (!buf || !autoconf_file)
+      goto end;
+
+   buf[0]           = '\0';
+   autoconf_file[0] = '\0';
+
+   if (string_is_empty(device_name))
+      goto end;
+
+   /* Get currently set joypad driver */
+   joypad_driver = input_config_get_device_joypad_driver(user);
+   if (string_is_empty(joypad_driver))
+   {
+      /* This cannot happen, but if we reach this
+       * point without a driver being set for the
+       * current input device then use the value
+       * from the settings struct as a fallback */
+      joypad_driver = joypad_driver_fallback;
+
+      if (string_is_empty(joypad_driver))
+         goto end;
+   }
+
+   /* Remove invalid filename characters from
+    * input device name */
+   sanitised_name = strdup(device_name);
+
+   if (string_is_empty(sanitised_name))
+      goto end;
 
    for (i = 0; invalid_filename_chars[i]; i++)
    {
       for (;;)
       {
-         char *tmp = strstr(path_new, invalid_filename_chars[i]);
+         char *tmp = strstr(sanitised_name, invalid_filename_chars[i]);
 
          if (tmp)
             *tmp = '_';
@@ -3874,50 +3904,47 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
       }
    }
 
-   path = path_new;
-
-   fill_pathname_join(buf, autoconf_dir, joypad_ident, path_size);
+   /* Generate autconfig file path */
+   fill_pathname_join(buf, autoconf_dir, joypad_driver, path_size);
 
    if (path_is_directory(buf))
    {
       char *buf_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-      buf_new[0]    = '\0';
+      if (!buf_new)
+         goto end;
+
+      buf_new[0] = '\0';
 
       fill_pathname_join(buf_new, buf,
-            path, path_size);
-      fill_pathname_noext(autoconf_file, buf_new,
-            ".cfg",
-            path_size);
+            sanitised_name, path_size);
+      fill_pathname_noext(autoconf_file,
+            buf_new, ".cfg", path_size);
 
       free(buf_new);
    }
    else
    {
       fill_pathname_join(buf, autoconf_dir,
-            path, path_size);
-      fill_pathname_noext(autoconf_file, buf,
-            ".cfg",
-            path_size);
+            sanitised_name, path_size);
+      fill_pathname_noext(autoconf_file,
+            buf, ".cfg", path_size);
    }
 
-   free(buf);
-   free(path_new);
-
+   /* Open config file */
    conf = config_file_new_from_path_to_string(autoconf_file);
 
    if (!conf)
    {
       conf = config_file_new_alloc();
+
       if (!conf)
-      {
-         free(autoconf_file);
-         return false;
-      }
+         goto end;
    }
 
+   /* Update config file */
    config_set_string(conf, "input_driver",
-         joypad_ident);
+         joypad_driver);
    config_set_string(conf, "input_device",
          input_config_get_device_name(user));
 
@@ -3943,8 +3970,19 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 
    ret = config_file_write(conf, autoconf_file, false);
 
-   config_file_free(conf);
-   free(autoconf_file);
+end:
+   if (sanitised_name)
+      free(sanitised_name);
+
+   if (buf)
+      free(buf);
+
+   if (autoconf_file)
+      free(autoconf_file);
+
+   if (conf)
+      config_file_free(conf);
+
    return ret;
 }
 
