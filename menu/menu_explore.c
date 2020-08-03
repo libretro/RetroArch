@@ -389,6 +389,7 @@ static int explore_check_company_suffix(const char* p, bool search_reverse)
 }
 
 static void explore_add_unique_string(
+      explore_state_t *explore,
       ex_hashmap32 *maps, explore_entry_t *e,
       unsigned cat, const char *str,
       explore_string_t ***split_buf)
@@ -398,7 +399,7 @@ static void explore_add_unique_string(
    const char *p_next;
    if (!str || !*str)
    {
-      explore_state->has_unknown[cat] = true;
+      explore->has_unknown[cat] = true;
       return;
    }
 
@@ -447,11 +448,11 @@ static void explore_add_unique_string(
       if (!entry)
       {
          entry                = (explore_string_t*)
-            ex_arena_alloc(&explore_state->arena,
+            ex_arena_alloc(&explore->arena,
                   sizeof(explore_string_t) + len);
          memcpy(entry->str, str, len);
          entry->str[len]      = '\0';
-         EX_BUF_PUSH(explore_state->by[cat], entry);
+         EX_BUF_PUSH(explore->by[cat], entry);
          ex_hashmap32_setptr(&maps[cat], hash, entry);
       }
 
@@ -496,7 +497,7 @@ static void explore_free(explore_state_t *state)
    ex_arena_free(&state->arena);
 }
 
-static void explore_build_list(void)
+static explore_state_t *explore_build_list(void)
 {
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
@@ -517,12 +518,13 @@ static void explore_build_list(void)
    const char *directory_database           = settings->paths.path_content_database;
    libretro_vfs_implementation_dir *dir     = NULL;
 
-   menu_explore_free();
+   explore_state_t *explore                 = (explore_state_t*)calloc(
+         1, sizeof(*explore));
 
-   explore_state                            = (explore_state_t*)calloc(
-         1, sizeof(explore_state_t));
+   if (!explore)
+      return NULL;
 
-   explore_state->label_explore_item_str    = 
+   explore->label_explore_item_str    = 
       msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_ITEM);
 
    /* Index all playlists */
@@ -647,7 +649,7 @@ static void explore_build_list(void)
       }
 
       if (used_entries)
-         EX_BUF_PUSH(explore_state->playlists, playlist);
+         EX_BUF_PUSH(explore->playlists, playlist);
       else
          playlist_free(playlist);
    }
@@ -751,14 +753,17 @@ static void explore_build_list(void)
          fields[EXPLORE_BY_SYSTEM] = rdb->systemname;
 
          for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
-            explore_add_unique_string(cat_maps, &e, cat,
+         {
+            explore_add_unique_string(explore,
+                  cat_maps, &e, cat,
                   fields[cat], &split_buf);
+         }
 
          if (original_title && *original_title)
          {
             size_t len       = strlen(original_title) + 1;
             e.original_title = (char*)
-               ex_arena_alloc(&explore_state->arena, len);
+               ex_arena_alloc(&explore->arena, len);
             memcpy(e.original_title, original_title, len);
          }
 
@@ -769,12 +774,12 @@ static void explore_build_list(void)
             EX_BUF_PUSH(split_buf, NULL); /* terminator */
             len        = EX_BUF_SIZEOF(split_buf);
             e.split    = (explore_string_t **)
-               ex_arena_alloc(&explore_state->arena, len);
+               ex_arena_alloc(&explore->arena, len);
             memcpy(e.split, split_buf, len);
             EX_BUF_CLEAR(split_buf);
          }
 
-         EX_BUF_PUSH(explore_state->entries, e);
+         EX_BUF_PUSH(explore->entries, e);
 
          /* if all entries have found connections, we can leave early */
          if (--rdb->count == 0)
@@ -798,19 +803,21 @@ static void explore_build_list(void)
    for (i = 0; i != EXPLORE_CAT_COUNT; i++)
    {
       uint32_t idx;
-      size_t len = EX_BUF_LEN(explore_state->by[i]);
+      size_t len = EX_BUF_LEN(explore->by[i]);
 
-      if (explore_state->by[i])
-         qsort(explore_state->by[i], len, sizeof(*explore_state->by[i]), explore_qsort_func_strings);
+      if (explore->by[i])
+         qsort(explore->by[i], len, sizeof(*explore->by[i]),
+               explore_qsort_func_strings);
 
       for (idx = 0; idx != len; idx++)
-         explore_state->by[i][idx]->idx = idx;
+         explore->by[i][idx]->idx = idx;
 
       ex_hashmap32_free(&cat_maps[i]);
    }
-   qsort(explore_state->entries,
-         EX_BUF_LEN(explore_state->entries),
-         sizeof(*explore_state->entries), explore_qsort_func_entries);
+   qsort(explore->entries,
+         EX_BUF_LEN(explore->entries),
+         sizeof(*explore->entries), explore_qsort_func_entries);
+   return explore;
 }
 
 static int explore_action_get_title(
@@ -916,7 +923,8 @@ unsigned menu_displaylist_explore(file_list_t *list)
 
    if (!explore_state)
    {
-      explore_build_list();
+      menu_explore_free();
+      explore_state             = explore_build_list();
       explore_state->top_depth  = (unsigned)menu_stack->size - 1;
    }
 
