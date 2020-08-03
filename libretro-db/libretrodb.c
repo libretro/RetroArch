@@ -103,7 +103,6 @@ static int libretrodb_write_metadata(RFILE *fd, libretrodb_metadata_t *md)
 static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
 {
    unsigned i;
-   struct rmsgpack_dom_value key, value;
    int rv = 0;
 
    if (doc->type != RDT_MAP)
@@ -111,8 +110,8 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
 
    for (i = 0; i < doc->val.map.len; i++)
    {
-      key = doc->val.map.items[i].key;
-      value = doc->val.map.items[i].value;
+      struct rmsgpack_dom_value key   = doc->val.map.items[i].key;
+      struct rmsgpack_dom_value value = doc->val.map.items[i].value;
 
       if (key.type != RDT_STRING)
          return -EINVAL;
@@ -324,7 +323,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       return -1;
 
    bufflen = idx.next;
-   buff = malloc(bufflen);
+   buff    = malloc(bufflen);
 
    if (!buff)
       return -ENOMEM;
@@ -332,7 +331,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    while (nread < bufflen)
    {
       void *buff_ = (uint64_t *)buff + nread;
-      rv = (int)filestream_read(db->fd, buff_, bufflen - nread);
+      rv          = (int)filestream_read(db->fd, buff_, bufflen - nread);
 
       if (rv <= 0)
       {
@@ -433,7 +432,8 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
  *
  * Returns: 0 if successful, otherwise negative.
  **/
-int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
+int libretrodb_cursor_open(libretrodb_t *db,
+      libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
    RFILE *fd = NULL;

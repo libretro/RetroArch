@@ -136,9 +136,10 @@ static struct rmsgpack_dom_value func_equals(
          res.val.bool_ = 0;
       else
       {
-         if (input.type == RDT_UINT && arg.a.value.type == RDT_INT)
+         if (  input.type       == RDT_UINT && 
+               arg.a.value.type == RDT_INT)
          {
-            arg.a.value.type = RDT_UINT;
+            arg.a.value.type      = RDT_UINT;
             arg.a.value.val.uint_ = arg.a.value.val.int_;
          }
          res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.a.value) == 0);
@@ -163,13 +164,11 @@ static struct rmsgpack_dom_value query_func_operator_or(
       if (argv[i].type == AT_VALUE)
          res = func_equals(input, 1, &argv[i]);
       else
-      {
          res = query_func_is_true(
                argv[i].a.invocation.func(input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ), 0, NULL);
-      }
 
       if (res.val.bool_)
          return res;
@@ -193,14 +192,12 @@ static struct rmsgpack_dom_value query_func_operator_and(
       if (argv[i].type == AT_VALUE)
          res = func_equals(input, 1, &argv[i]);
       else
-      {
          res = query_func_is_true(
                argv[i].a.invocation.func(input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ),
                0, NULL);
-      }
 
       if (!res.val.bool_)
          return res;
@@ -215,16 +212,16 @@ static struct rmsgpack_dom_value query_func_between(
    struct rmsgpack_dom_value res;
    unsigned i                     = 0;
 
-   res.type      = RDT_BOOL;
-   res.val.bool_ = 0;
-
-   (void)i;
+   res.type                       = RDT_BOOL;
+   res.val.bool_                  = 0;
 
    if (argc != 2)
       return res;
-   if (argv[0].type != AT_VALUE || argv[1].type != AT_VALUE)
+   if (     argv[0].type != AT_VALUE 
+         || argv[1].type != AT_VALUE)
       return res;
-   if (argv[0].a.value.type != RDT_INT || argv[1].a.value.type != RDT_INT)
+   if (     argv[0].a.value.type != RDT_INT 
+         || argv[1].a.value.type != RDT_INT)
       return res;
 
    switch (input.type)
@@ -240,7 +237,7 @@ static struct rmsgpack_dom_value query_func_between(
                && (input.val.int_ <= argv[1].a.value.val.int_));
          break;
       default:
-         return res;
+         break;
    }
 
    return res;
@@ -251,7 +248,7 @@ static struct rmsgpack_dom_value query_func_glob(
       unsigned argc, const struct argument * argv)
 {
    struct rmsgpack_dom_value res;
-   unsigned i = 0;
+   unsigned i    = 0;
 
    res.type      = RDT_BOOL;
    res.val.bool_ = 0;
