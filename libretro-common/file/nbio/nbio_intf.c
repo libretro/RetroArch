@@ -37,6 +37,7 @@ extern nbio_intf_t nbio_orbis;
 #endif
 extern nbio_intf_t nbio_stdio;
 
+#ifndef _XBOX
 #if defined(_WIN32)
 #if defined(_MSC_VER) && _MSC_VER >= 1500
 
@@ -48,6 +49,7 @@ extern nbio_intf_t nbio_stdio;
 
 #ifndef HAVE_MMAP_WIN32
 #define HAVE_MMAP_WIN32
+#endif
 #endif
 #endif
 

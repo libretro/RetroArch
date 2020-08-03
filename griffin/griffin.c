@@ -39,6 +39,7 @@
 #endif
 #endif
 
+#ifndef _XBOX
 #if defined(_WIN32)
 #if defined(_MSC_VER) && _MSC_VER >= 1500
 
@@ -53,6 +54,7 @@
 #endif
 #endif
 
+#endif
 #endif
 
 #define JSON_STATIC 1 /* must come before runtime_file, netplay_room_parse and jsonsax_full */
