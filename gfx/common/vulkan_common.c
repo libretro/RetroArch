@@ -2864,38 +2864,42 @@ retry:
    if (fence != VK_NULL_HANDLE)
       vkDestroyFence(vk->context.device, fence, NULL);
 
-   if (err == VK_NOT_READY || err == VK_TIMEOUT)
+   switch (err)
    {
-      /* Do nothing. */
-   }
-   else if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
-   {
-      /* Throw away the old swapchain and try again. */
-      vulkan_destroy_swapchain(vk);
+      case VK_NOT_READY:
+      case VK_TIMEOUT:
+         /* Do nothing. */
+         break;
+      case VK_ERROR_OUT_OF_DATE_KHR:
+      case VK_SUBOPTIMAL_KHR:
+         /* Throw away the old swapchain and try again. */
+         vulkan_destroy_swapchain(vk);
 
-      if (is_retrying)
-      {
-         RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one. Have tried multiple times ...\n");
-         retro_sleep(10);
-      }
-      else
-         RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one.\n");
-      is_retrying = true;
-      vulkan_acquire_clear_fences(vk);
-      goto retry;
-   }
-   else if (err != VK_SUCCESS)
-   {
-      /* We are screwed, don't try anymore. Maybe it will work later. */
-      vulkan_destroy_swapchain(vk);
-      RARCH_ERR("[Vulkan]: Failed to acquire from swapchain (err = %d).\n",
-            (int)err);
-      if (err == VK_ERROR_SURFACE_LOST_KHR)
-         RARCH_ERR("[Vulkan]: Got VK_ERROR_SURFACE_LOST_KHR.\n");
-      /* Force driver to reset swapchain image handles. */
-      vk->context.invalid_swapchain = true;
-      vulkan_acquire_clear_fences(vk);
-      return;
+         if (is_retrying)
+         {
+            RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one. Have tried multiple times ...\n");
+            retro_sleep(10);
+         }
+         else
+            RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one.\n");
+         is_retrying = true;
+         vulkan_acquire_clear_fences(vk);
+         goto retry;
+      default:
+         if (err != VK_SUCCESS)
+         {
+            /* We are screwed, don't try anymore. Maybe it will work later. */
+            vulkan_destroy_swapchain(vk);
+            RARCH_ERR("[Vulkan]: Failed to acquire from swapchain (err = %d).\n",
+                  (int)err);
+            if (err == VK_ERROR_SURFACE_LOST_KHR)
+               RARCH_ERR("[Vulkan]: Got VK_ERROR_SURFACE_LOST_KHR.\n");
+            /* Force driver to reset swapchain image handles. */
+            vk->context.invalid_swapchain = true;
+            vulkan_acquire_clear_fences(vk);
+            return;
+         }
+         break;
    }
 
    index = vk->context.current_swapchain_index;
