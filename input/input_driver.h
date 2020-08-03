@@ -157,6 +157,7 @@ typedef struct
    char display_name[256];
    char config_path[PATH_MAX_LENGTH];
    char config_name[PATH_MAX_LENGTH];
+   char joypad_driver[32];
    uint16_t vid;
    uint16_t pid;
    bool autoconfigured;
@@ -493,6 +494,7 @@ void input_config_set_device_name(unsigned port, const char *name);
 void input_config_set_device_display_name(unsigned port, const char *name);
 void input_config_set_device_config_path(unsigned port, const char *path);
 void input_config_set_device_config_name(unsigned port, const char *name);
+void input_config_set_device_joypad_driver(unsigned port, const char *driver);
 void input_config_set_device_vid(unsigned port, uint16_t vid);
 void input_config_set_device_pid(unsigned port, uint16_t pid);
 void input_config_set_device_autoconfigured(unsigned port, bool autoconfigured);
@@ -503,6 +505,7 @@ void input_config_clear_device_name(unsigned port);
 void input_config_clear_device_display_name(unsigned port);
 void input_config_clear_device_config_path(unsigned port);
 void input_config_clear_device_config_name(unsigned port);
+void input_config_clear_device_joypad_driver(unsigned port);
 
 unsigned input_config_get_device_count(void);
 
@@ -517,6 +520,7 @@ const char *input_config_get_device_name(unsigned port);
 const char *input_config_get_device_display_name(unsigned port);
 const char *input_config_get_device_config_path(unsigned port);
 const char *input_config_get_device_config_name(unsigned port);
+const char *input_config_get_device_joypad_driver(unsigned port);
 uint16_t input_config_get_device_vid(unsigned port);
 uint16_t input_config_get_device_pid(unsigned port);
 bool input_config_get_device_autoconfigured(unsigned port);

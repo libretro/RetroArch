@@ -42,7 +42,6 @@ typedef struct
    input_device_info_t device_info;
    bool autoconfig_enabled;
    bool suppress_notifcations;
-   char *driver;
    char *dir_autoconfig;
    char *dir_driver_autoconfig;
    config_file_t *autoconfig_file;
@@ -56,12 +55,6 @@ static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
    if (!autoconfig_handle)
       return;
-
-   if (autoconfig_handle->driver)
-   {
-      free(autoconfig_handle->driver);
-      autoconfig_handle->driver = NULL;
-   }
 
    if (autoconfig_handle->dir_autoconfig)
    {
@@ -415,6 +408,13 @@ static void cb_input_autoconfigure_connect(
    else
       input_config_clear_device_display_name(port);
 
+   /* > Driver */
+   if (!string_is_empty(autoconfig_handle->device_info.joypad_driver))
+      input_config_set_device_joypad_driver(port,
+            autoconfig_handle->device_info.joypad_driver);
+   else
+      input_config_clear_device_joypad_driver(port);
+
    /* > VID/PID */
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
    input_config_set_device_pid(port, autoconfig_handle->device_info.pid);
@@ -493,11 +493,14 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
       /* Preset fallback device names - must match
        * those set in 'input_autodetect_builtin.c' */
-      if (string_is_equal(autoconfig_handle->driver, "android"))
+      if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "android"))
          fallback_device_name = "Android Gamepad";
-      else if (string_is_equal(autoconfig_handle->driver, "xinput"))
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "xinput"))
          fallback_device_name = "XInput Controller";
-      else if (string_is_equal(autoconfig_handle->driver, "sdl2"))
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "sdl2"))
          fallback_device_name = "Standard Gamepad";
 
       if (!string_is_empty(fallback_device_name) &&
@@ -604,6 +607,7 @@ void input_autoconfigure_connect(
 {
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
+   bool driver_valid                      = false;
    settings_t *settings                   = config_get_ptr();
    bool autoconfig_enabled                = settings ?
          settings->bools.input_autodetect_enable : false;
@@ -630,21 +634,21 @@ void input_autoconfigure_connect(
    if (!autoconfig_handle)
       goto error;
 
-   autoconfig_handle->port                        = port;
-   autoconfig_handle->device_info.vid             = vid;
-   autoconfig_handle->device_info.pid             = pid;
-   autoconfig_handle->device_info.name[0]         = '\0';
-   autoconfig_handle->device_info.display_name[0] = '\0';
-   autoconfig_handle->device_info.config_path[0]  = '\0';
-   autoconfig_handle->device_info.config_name[0]  = '\0';
-   autoconfig_handle->device_info.autoconfigured  = false;
-   autoconfig_handle->device_info.name_index      = 0;
-   autoconfig_handle->autoconfig_enabled          = autoconfig_enabled;
-   autoconfig_handle->suppress_notifcations       = !notification_show_autoconfig;
-   autoconfig_handle->driver                      = NULL;
-   autoconfig_handle->dir_autoconfig              = NULL;
-   autoconfig_handle->dir_driver_autoconfig       = NULL;
-   autoconfig_handle->autoconfig_file             = NULL;
+   autoconfig_handle->port                         = port;
+   autoconfig_handle->device_info.vid              = vid;
+   autoconfig_handle->device_info.pid              = pid;
+   autoconfig_handle->device_info.name[0]          = '\0';
+   autoconfig_handle->device_info.display_name[0]  = '\0';
+   autoconfig_handle->device_info.config_path[0]   = '\0';
+   autoconfig_handle->device_info.config_name[0]   = '\0';
+   autoconfig_handle->device_info.joypad_driver[0] = '\0';
+   autoconfig_handle->device_info.autoconfigured   = false;
+   autoconfig_handle->device_info.name_index       = 0;
+   autoconfig_handle->autoconfig_enabled           = autoconfig_enabled;
+   autoconfig_handle->suppress_notifcations        = !notification_show_autoconfig;
+   autoconfig_handle->dir_autoconfig               = NULL;
+   autoconfig_handle->dir_driver_autoconfig        = NULL;
+   autoconfig_handle->autoconfig_file              = NULL;
 
    if (!string_is_empty(name))
       strlcpy(autoconfig_handle->device_info.name, name,
@@ -654,8 +658,10 @@ void input_autoconfigure_connect(
       strlcpy(autoconfig_handle->device_info.display_name, display_name,
             sizeof(autoconfig_handle->device_info.display_name));
 
-   if (!string_is_empty(driver))
-      autoconfig_handle->driver = strdup(driver);
+   driver_valid = !string_is_empty(driver);
+   if (driver_valid)
+      strlcpy(autoconfig_handle->device_info.joypad_driver,
+            driver, sizeof(autoconfig_handle->device_info.joypad_driver));
 
    /* > Have to cache both the base autoconfig directory
     *   and the driver-specific autoconfig directory
@@ -668,16 +674,14 @@ void input_autoconfigure_connect(
    {
       autoconfig_handle->dir_autoconfig = strdup(dir_autoconfig);
 
-      /* 'autoconfig_handle->driver' will only be
-       * non-NULL if 'driver' is a non-empty string */
-      if (autoconfig_handle->driver)
+      if (driver_valid)
       {
          char dir_driver_autoconfig[PATH_MAX_LENGTH];
          dir_driver_autoconfig[0] = '\0';
 
          /* Generate driver-specific autoconfig directory */
-         fill_pathname_join(dir_driver_autoconfig,
-               dir_autoconfig, autoconfig_handle->driver,
+         fill_pathname_join(dir_driver_autoconfig, dir_autoconfig,
+               autoconfig_handle->device_info.joypad_driver,
                sizeof(dir_driver_autoconfig));
 
          if (!string_is_empty(dir_driver_autoconfig))
@@ -778,6 +782,7 @@ static void cb_input_autoconfigure_disconnect(
    input_config_clear_device_display_name(port);
    input_config_clear_device_config_path(port);
    input_config_clear_device_config_name(port);
+   input_config_clear_device_joypad_driver(port);
    input_config_set_device_vid(port, 0);
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);
