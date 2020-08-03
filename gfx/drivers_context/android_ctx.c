@@ -238,14 +238,9 @@ static bool android_gfx_ctx_bind_api(void *data,
    android_api = api;
 
 #ifdef HAVE_OPENGLES
-   version = major * 100 + minor;
-   if (version > 300)
-      return false;
-   if (version < 300)
-      g_es3 = false;
-   else if (version == 300)
+   version     = major * 100 + minor;
+   if (version >= 300)
       g_es3 = true;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
 #endif
