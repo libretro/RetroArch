@@ -15590,9 +15590,17 @@ static bool input_driver_ungrab_mouse(struct rarch_state *p_rarch)
    return true;
 }
 
-/* Forward declaration */
 #ifdef HAVE_RUNAHEAD
-static void runahead_clear_variables(struct rarch_state *p_rarch);
+static void runahead_clear_variables(struct rarch_state *p_rarch)
+{
+   p_rarch->runahead_save_state_size          = 0;
+   p_rarch->runahead_save_state_size_known    = false;
+   p_rarch->runahead_video_driver_is_active   = true;
+   p_rarch->runahead_available                = true;
+   p_rarch->runahead_secondary_core_available = true;
+   p_rarch->runahead_force_input_dirty        = true;
+   p_rarch->runahead_last_frame_count         = 0;
+}
 #endif
 
 /**
@@ -35186,17 +35194,6 @@ static void runahead_remove_hooks(struct rarch_state *p_rarch)
       p_rarch->original_retro_unload          = NULL;
    }
    remove_input_state_hook();
-}
-
-static void runahead_clear_variables(struct rarch_state *p_rarch)
-{
-   p_rarch->runahead_save_state_size          = 0;
-   p_rarch->runahead_save_state_size_known    = false;
-   p_rarch->runahead_video_driver_is_active   = true;
-   p_rarch->runahead_available                = true;
-   p_rarch->runahead_secondary_core_available = true;
-   p_rarch->runahead_force_input_dirty        = true;
-   p_rarch->runahead_last_frame_count         = 0;
 }
 
 static void runahead_destroy(struct rarch_state *p_rarch)
