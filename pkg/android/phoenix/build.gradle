@@ -36,6 +36,8 @@ android {
 
   productFlavors {
     normal {
+      resValue "string", "app_name", "RetroArch"
+
       dimension "variant"
     }
     aarch64 {
