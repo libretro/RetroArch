@@ -270,6 +270,32 @@ void fill_pathname_application_special(char *s,
          }
 
          break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ICONS:
+         {
+#ifdef HAVE_MENU
+            settings_t *settings   = config_get_ptr();
+            const char *menu_ident = settings->arrays.menu_driver;
+
+            if (string_is_equal(menu_ident, "xmb"))
+            {
+               fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+            }
+            else if (string_is_equal(menu_ident, "glui"))
+            {
+               fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
+            }
+            else if (string_is_equal(menu_ident, "ozone"))
+            {
+               fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
+            }
+            else if (len)
+            {
+               s[0] = '\0';
+            }
+#endif
+         }
+
+         break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE:
 #ifdef HAVE_OZONE
          {
@@ -288,6 +314,30 @@ void fill_pathname_application_special(char *s,
          }
 #endif
          break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS:
+#ifdef HAVE_OZONE
+         {
+            settings_t *settings     = config_get_ptr();
+            const char *dir_assets   = settings->paths.directory_assets;
+
+            strlcpy(s, dir_assets, len);
+            fill_pathname_slash(s, len);
+
+            /* xmb */
+            strlcat(s, "xmb", len);
+            fill_pathname_slash(s, len);
+
+            /* monochrome */
+            strlcat(s, "monochrome", len);
+            fill_pathname_slash(s, len);
+
+            /* Icons path */
+            strlcat(s, "png", len);
+            fill_pathname_slash(s, len);
+         }
+#endif
+         break;
+
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB:
 #ifdef HAVE_XMB
          {

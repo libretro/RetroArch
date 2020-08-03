@@ -58,6 +58,10 @@ enum
    EXPLORE_BY_SYSTEM,
    EXPLORE_CAT_COUNT,
 
+   EXPLORE_ICONS_OFF             = 0,
+   EXPLORE_ICONS_CONTENT         = 1,
+   EXPLORE_ICONS_SYSTEM_CATEGORY = 2,
+
    EXPLORE_TYPE_ADDITIONALFILTER = FILE_TYPE_RDB, /* database icon */
    EXPLORE_TYPE_FILTERNULL       = MENU_SETTINGS_LAST,
    EXPLORE_TYPE_SEARCH,
@@ -110,11 +114,12 @@ typedef struct
 
    explore_entry_t* entries;
    playlist_t **playlists;
+   uintptr_t* icons;
    const char* label_explore_item_str;
    char title[1024];
    char find_string[1024];
    unsigned top_depth;
-   playlist_t *cached_playlist;
+   unsigned show_icons;
 } explore_state_t;
 
 static const struct
@@ -481,6 +486,16 @@ static void explore_add_unique_string(
    }
 }
 
+static void explore_unload_icons(explore_state_t *state)
+{
+   unsigned i;
+   if (!state)
+      return;
+   for (i = 0; i != EX_BUF_LEN(state->icons); i++)
+      if (state->icons[i])
+         video_driver_texture_unload(&state->icons[i]);
+}
+
 static void explore_free(explore_state_t *state)
 {
    unsigned i;
@@ -494,7 +509,56 @@ static void explore_free(explore_state_t *state)
    for (i = 0; i != EX_BUF_LEN(state->playlists); i++)
       playlist_free(state->playlists[i]);
    EX_BUF_FREE(state->playlists);
+
+   explore_unload_icons(state);
+   EX_BUF_FREE(state->icons);
+
    ex_arena_free(&state->arena);
+}
+
+static void explore_load_icons(explore_state_t *state)
+{
+   char path[PATH_MAX_LENGTH];
+   size_t i, pathlen, system_count;
+   if (!state)
+      return;
+
+   system_count = EX_BUF_LEN(state->by[EXPLORE_BY_SYSTEM]);
+   EX_BUF_RESIZE(state->icons, system_count);
+
+   fill_pathname_application_special(path, sizeof(path),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_ICONS);
+   if (string_is_empty(path))
+      return;
+
+   fill_pathname_slash(path, sizeof(path));
+   pathlen = strlen(path);
+
+   for (i = 0; i != system_count; i++)
+   {
+      struct texture_image ti;
+      state->icons[i] = 0;
+
+      strlcpy(path + pathlen,
+            state->by[EXPLORE_BY_SYSTEM][i]->str, sizeof(path) - pathlen);
+      strlcat(path, ".png", sizeof(path));
+      if (!path_is_valid(path))
+         continue;
+
+      ti.width         = 0;
+      ti.height        = 0;
+      ti.pixels        = NULL;
+      ti.supports_rgba = video_driver_supports_rgba();
+
+      if (!image_texture_load(&ti, path))
+         continue;
+
+      if (ti.pixels)
+         video_driver_texture_load(&ti,
+               TEXTURE_FILTER_MIPMAP_LINEAR, &state->icons[i]);
+
+      image_texture_free(&ti);
+   }
 }
 
 static explore_state_t *explore_build_list(void)
@@ -923,9 +987,9 @@ unsigned menu_displaylist_explore(file_list_t *list)
 
    if (!explore_state)
    {
-      menu_explore_free();
       explore_state             = explore_build_list();
       explore_state->top_depth  = (unsigned)menu_stack->size - 1;
+      explore_load_icons(explore_state);
    }
 
    if (menu_stack->size > 1)
@@ -940,6 +1004,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
    current_type                 = stack_top[depth].type;
    current_cat                  = current_type - EXPLORE_TYPE_FIRSTCATEGORY;
    previous_cat                 = stack_top[depth ? depth - 1 : 0].type - EXPLORE_TYPE_FIRSTCATEGORY;
+   explore_state->show_icons    = EXPLORE_ICONS_OFF;
 
    if (depth)
    {
@@ -1008,7 +1073,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
       for (cat = 0; cat < EXPLORE_CAT_COUNT; cat++)
       {
          explore_string_t **entries = explore_state->by[cat];
-         int tmplen;
+         size_t tmplen;
 
          if (!EX_BUF_LEN(entries))
             continue;
@@ -1072,6 +1137,9 @@ SKIP_EXPLORE_BY_CATEGORY:;
 
       explore_append_title(explore_state,
             msg_hash_to_str(explore_by_info[current_cat].by_enum));
+
+      if (current_cat == EXPLORE_BY_SYSTEM)
+         explore_state->show_icons = EXPLORE_ICONS_SYSTEM_CATEGORY;
    }
    else if (
             previous_cat < EXPLORE_CAT_COUNT 
@@ -1096,6 +1164,9 @@ SKIP_EXPLORE_BY_CATEGORY:;
       {
          explore_append_title(explore_state, " - %s",
                msg_hash_to_str(explore_by_info[current_cat].by_enum));
+
+        if (current_cat == EXPLORE_BY_SYSTEM)
+           explore_state->show_icons = EXPLORE_ICONS_SYSTEM_CATEGORY;
       }
       else
       {
@@ -1117,6 +1188,7 @@ SKIP_EXPLORE_BY_CATEGORY:;
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER),
                   EXPLORE_TYPE_ADDITIONALFILTER);
          explore_menu_add_spacer(list);
+         explore_state->show_icons = EXPLORE_ICONS_CONTENT;
       }
 
       for (i = 1; i < depth; i++)
@@ -1252,6 +1324,44 @@ SKIP_ENTRY:;
    }
 
    return list->size;
+}
+
+uintptr_t menu_explore_get_entry_icon(unsigned type)
+{
+   unsigned i;
+   if (!explore_state || !explore_state->show_icons
+         || type < EXPLORE_TYPE_FIRSTITEM)
+      return 0;
+
+   i = (type - EXPLORE_TYPE_FIRSTITEM);
+   if (explore_state->show_icons == EXPLORE_ICONS_CONTENT)
+   {
+      explore_entry_t* e = &explore_state->entries[i];
+      if (e < EX_BUF_END(explore_state->entries))
+         return explore_state->icons[e->by[EXPLORE_BY_SYSTEM]->idx];
+   }
+   else if (explore_state->show_icons == EXPLORE_ICONS_SYSTEM_CATEGORY)
+   {
+      if (i < EX_BUF_LEN(explore_state->icons))
+         return explore_state->icons[i];
+   }
+   return 0;
+}
+
+void menu_explore_context_init(void)
+{
+   if (!explore_state)
+      return;
+
+   explore_load_icons(explore_state);
+}
+
+void menu_explore_context_deinit(void)
+{
+   if (!explore_state)
+      return;
+
+   explore_unload_icons(explore_state);
 }
 
 void menu_explore_free(void)

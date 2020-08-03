@@ -482,6 +482,9 @@ void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *user_data, const char *err);
 
 #if defined(HAVE_LIBRETRODB)
+uintptr_t menu_explore_get_entry_icon(unsigned type);
+void menu_explore_context_init(void);
+void menu_explore_context_deinit(void);
 void menu_explore_free(void);
 #endif
 

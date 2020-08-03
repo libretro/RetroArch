@@ -7488,7 +7488,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #ifdef HAVE_NETWORKING
          core_updater_list_free_cached();
 #endif
-#ifdef HAVE_LIBRETRODB
+#if defined(HAVE_MENU) && defined(HAVE_LIBRETRODB)
          menu_explore_free();
 #endif
 
@@ -34554,8 +34554,14 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    {
       /* Initialize menu driver */
       if (flags & DRIVER_MENU_MASK)
+      {
          if (!menu_driver_init(video_is_threaded))
              RARCH_ERR("Unable to init menu driver.\n");
+
+#ifdef HAVE_LIBRETRODB
+         menu_explore_context_init();
+#endif
+      }
    }
 
    /* Initialising the menu driver will also initialise
@@ -34621,6 +34627,10 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU_MASK)
    {
+#ifdef HAVE_LIBRETRODB
+      menu_explore_context_deinit();
+#endif
+
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
    }
 #endif
