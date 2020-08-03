@@ -594,7 +594,6 @@ static void gl_core_destroy_resources(gl_core_t *gl)
    gl_core_deinit_fences(gl);
    gl_core_deinit_pbo_readback(gl);
    gl_core_deinit_hw_render(gl);
-   free(gl);
 }
 
 static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned height)
@@ -1354,6 +1353,8 @@ static void *gl_core_init(const video_info_t *video,
 error:
    video_context_driver_destroy();
    gl_core_destroy_resources(gl);
+   if (gl)
+      free(gl);
    return NULL;
 }
 
@@ -1541,10 +1542,11 @@ static void gl_core_free(void *data)
 
    gl_core_context_bind_hw_render(gl, false);
    font_driver_free_osd();
+   gl_core_destroy_resources(gl);
    if (gl->ctx_driver && gl->ctx_driver->destroy)
       gl->ctx_driver->destroy(gl->ctx_data);
    video_context_driver_free();
-   gl_core_destroy_resources(gl);
+   free(gl);
 }
 
 static bool gl_core_alive(void *data)
