@@ -38,20 +38,18 @@ struct _wiimote_state
    uint8_t  type;
 };
 
-/* it would be nice to use designated initializers here,
- * but those are only in C99 and newer. Oh well.
- */
-wiimote_state wiimotes[WIIU_WIIMOTE_CHANNELS]   = {
+/* static global variables */
+static bool kpad_ready                          = false;
+static int channel_slot_map[]                   = { -1, -1, -1, -1 };
+static int poll_failures[WIIU_WIIMOTE_CHANNELS] = { 0, 0, 0, 0 };
+static wiimote_state 
+wiimotes[WIIU_WIIMOTE_CHANNELS]                 = {
   { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
   { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
   { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
   { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
 };
 
-/* static global variables */
-static bool kpad_ready                          = false;
-static int channel_slot_map[]                   = { -1, -1, -1, -1 };
-static int poll_failures[WIIU_WIIMOTE_CHANNELS] = { 0, 0, 0, 0 };
 
 static int to_wiimote_channel(unsigned pad)
 {
@@ -78,8 +76,6 @@ static int get_slot_for_channel(unsigned channel)
 
 static bool kpad_init(void *data)
 {
-   (void)data;
-
    kpad_poll();
    kpad_ready = true;
 

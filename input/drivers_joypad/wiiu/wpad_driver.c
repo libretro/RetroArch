@@ -25,15 +25,17 @@
 
 #define PANIC_BUTTON_MASK (VPAD_BUTTON_R | VPAD_BUTTON_L | VPAD_BUTTON_STICK_R | VPAD_BUTTON_STICK_L)
 
+#define WPAD_INVALID_CHANNEL -1
+
 typedef struct _drc_state drc_state;
 struct _drc_state
 {
    uint64_t button_state;
    int16_t  analog_state[3][2];
 };
-static drc_state gamepads[WIIU_GAMEPAD_CHANNELS] = { 0 };
 
-#define WPAD_INVALID_CHANNEL -1
+/* TODO/FIXME - static global variables */
+static drc_state gamepads[WIIU_GAMEPAD_CHANNELS]   = { 0 };
 static int channel_slot_map[WIIU_GAMEPAD_CHANNELS] = { WPAD_INVALID_CHANNEL, WPAD_INVALID_CHANNEL };
 
 static VPADChan to_gamepad_channel(unsigned pad)
@@ -270,7 +272,8 @@ static bool wpad_init(void *data)
 
 static bool wpad_query_pad(unsigned port)
 {
-   return port < MAX_USERS && (to_gamepad_channel(port) != WPAD_INVALID_CHANNEL);
+   return port < MAX_USERS && 
+      (to_gamepad_channel(port) != WPAD_INVALID_CHANNEL);
 }
 
 static void wpad_destroy(void) { }
@@ -319,7 +322,8 @@ static int16_t wpad_axis(unsigned port, uint32_t axis)
       return 0;
 
    pad_functions.read_axis_data(axis, &data);
-   return pad_functions.get_axis_value(data.axis, gamepads[channel].analog_state, data.is_negative);
+   return pad_functions.get_axis_value(data.axis,
+         gamepads[channel].analog_state, data.is_negative);
 }
 
 static int16_t wpad_state(
