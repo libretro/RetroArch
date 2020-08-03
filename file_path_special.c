@@ -277,21 +277,13 @@ void fill_pathname_application_special(char *s,
             const char *menu_ident = settings->arrays.menu_driver;
 
             if (string_is_equal(menu_ident, "xmb"))
-            {
                fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-            }
             else if (string_is_equal(menu_ident, "glui"))
-            {
                fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
-            }
             else if (string_is_equal(menu_ident, "ozone"))
-            {
                fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
-            }
             else if (len)
-            {
                s[0] = '\0';
-            }
 #endif
          }
 
