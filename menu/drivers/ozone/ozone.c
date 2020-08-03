@@ -103,8 +103,6 @@ static void ozone_menu_animation_update_time(
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
 {
-   char xmb_path[PATH_MAX_LENGTH];
-   char monochrome_path[PATH_MAX_LENGTH];
    bool fallback_color_theme           = false;
    unsigned width, height, color_theme = 0;
    ozone_handle_t *ozone               = NULL;
@@ -281,28 +279,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       sizeof(ozone->tab_path)
    );
 
-   /* XMB monochrome */
-   fill_pathname_join(
-      xmb_path,
-      directory_assets,
-      "xmb",
-      sizeof(xmb_path)
-   );
-
-   fill_pathname_join(
-      monochrome_path,
-      xmb_path,
-      "monochrome",
-      sizeof(monochrome_path)
-   );
-
    /* Icons path */
-   fill_pathname_join(
-      ozone->icons_path,
-      monochrome_path,
-      "png",
-      sizeof(ozone->icons_path)
-   );
+   fill_pathname_application_special(ozone->icons_path,
+       sizeof(ozone->icons_path),
+       APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
 
    last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
    gfx_animation_set_update_time_cb(ozone_menu_animation_update_time);
