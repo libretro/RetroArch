@@ -52,15 +52,9 @@
 #error "UWP does not support D3D10"
 #endif
 
-#define D3D10_MAX_GPU_COUNT 16
-
 /* Temporary workaround for d3d10 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d10_fake_context;
 static uint32_t d3d10_get_flags(void *data);
-
-static struct string_list *d3d10_gpu_list = NULL;
-static IDXGIAdapter1 *d3d10_adapters[D3D10_MAX_GPU_COUNT] = {NULL};
-static IDXGIAdapter1 *d3d10_current_adapter = NULL;
 
 static void d3d10_clear_scissor(d3d10_video_t *d3d10, unsigned width, unsigned height)
 {
@@ -73,7 +67,6 @@ static void d3d10_clear_scissor(d3d10_video_t *d3d10, unsigned width, unsigned h
 
    D3D10SetScissorRects(d3d10->device, 1, &scissor_rect);
 }
-
 
 #ifdef HAVE_OVERLAY
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
@@ -592,10 +585,10 @@ static void d3d10_gfx_free(void* data)
 
    for (i = 0; i < D3D10_MAX_GPU_COUNT; i++)
    {
-      if (d3d10_adapters[i])
+      if (d3d10->adapters[i])
       {
-         Release(d3d10_adapters[i]);
-         d3d10_adapters[i] = NULL;
+         Release(d3d10->adapters[i]);
+         d3d10->adapters[i] = NULL;
       }
    }
 
@@ -1010,10 +1003,10 @@ static void *d3d10_gfx_init(const video_info_t* video,
       int         i = 0;
       int gpu_index = settings->ints.d3d10_gpu_index;
 
-      if (d3d10_gpu_list)
-         string_list_free(d3d10_gpu_list);
+      if (d3d10->gpu_list)
+         string_list_free(d3d10->gpu_list);
 
-      d3d10_gpu_list = string_list_new();
+      d3d10->gpu_list = string_list_new();
 
       for (;;)
       {
@@ -1038,28 +1031,28 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
          RARCH_LOG("[D3D10]: Found GPU at index %d: %s\n", i, str);
 
-         string_list_append(d3d10_gpu_list, str, attr);
+         string_list_append(d3d10->gpu_list, str, attr);
 
          if (i < D3D10_MAX_GPU_COUNT)
-            d3d10_adapters[i] = d3d10->adapter;
+            d3d10->adapters[i] = d3d10->adapter;
 
          i++;
       }
 
-      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D10_API, d3d10_gpu_list);
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D10_API, d3d10->gpu_list);
 
       if (0 <= gpu_index && gpu_index <= i && (gpu_index < D3D10_MAX_GPU_COUNT))
       {
-         d3d10_current_adapter = d3d10_adapters[gpu_index];
-         d3d10->adapter = d3d10_current_adapter;
+         d3d10->current_adapter = d3d10->adapters[gpu_index];
+         d3d10->adapter         = d3d10->current_adapter;
          RARCH_LOG("[D3D10]: Using GPU index %d.\n", gpu_index);
-         video_driver_set_gpu_device_string(d3d10_gpu_list->elems[gpu_index].data);
+         video_driver_set_gpu_device_string(d3d10->gpu_list->elems[gpu_index].data);
       }
       else
       {
          RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", gpu_index);
-         d3d10_current_adapter = d3d10_adapters[0];
-         d3d10->adapter        = d3d10_current_adapter;
+         d3d10->current_adapter = d3d10->adapters[0];
+         d3d10->adapter         = d3d10->current_adapter;
       }
    }
 
