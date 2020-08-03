@@ -79,6 +79,18 @@ struct slang_reflection
    unsigned pass_number = 0;
 };
 
+template <typename P>
+static bool slang_set_unique_map(std::unordered_map<std::string, P> &m,
+      const std::string &name, const P &p)
+{
+   auto itr = m.find(name);
+   /* Alias already exists? */
+   if (itr != end(m))
+      return false;
+   m[name] = p;
+   return true;
+}
+
 bool slang_reflect_spirv(
       const std::vector<uint32_t> &vertex,
       const std::vector<uint32_t> &fragment,

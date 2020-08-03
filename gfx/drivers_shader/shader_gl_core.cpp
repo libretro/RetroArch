@@ -39,22 +39,6 @@
 
 using namespace std;
 
-template <typename P>
-static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m,
-      const string &name, const P &p)
-{
-   auto itr = m.find(name);
-   if (itr != end(m))
-   {
-      RARCH_ERR("[slang]: Alias \"%s\" already exists.\n",
-            name.c_str());
-      return false;
-   }
-
-   m[name] = p;
-   return true;
-}
-
 GLuint gl_core_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,
@@ -875,7 +859,7 @@ bool Pass::build()
 
    for (i = 0; i < parameters.size(); i++)
    {
-      if (!gl_core_shader_set_unique_map(semantic_map, parameters[i].id,
+      if (!slang_set_unique_map(semantic_map, parameters[i].id,
                slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
          return false;
       j++;
@@ -1919,21 +1903,21 @@ bool gl_core_filter_chain::init_alias()
 
       j = &passes[i] - passes.data();
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map, name,
+      if (!slang_set_unique_map(common.texture_semantic_map, name,
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
                name + "Size",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map,
+      if (!slang_set_unique_map(common.texture_semantic_map,
                name + "Feedback",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
                name + "FeedbackSize",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
@@ -1942,12 +1926,12 @@ bool gl_core_filter_chain::init_alias()
    for (i = 0; i < common.luts.size(); i++)
    {
       j = &common.luts[i] - common.luts.data();
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map,
+      if (!slang_set_unique_map(common.texture_semantic_map,
                common.luts[i]->get_id(),
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
                common.luts[i]->get_id() + "Size",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
