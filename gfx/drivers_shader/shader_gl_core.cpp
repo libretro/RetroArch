@@ -264,18 +264,6 @@ static const uint32_t opaque_frag[] =
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 ;
 
-static unsigned num_miplevels(unsigned width, unsigned height)
-{
-   unsigned size = MAX(width, height);
-   unsigned levels = 0;
-   while (size)
-   {
-      levels++;
-      size >>= 1;
-   }
-   return levels;
-}
-
 struct Texture
 {
    gl_core_filter_chain_texture texture;
@@ -584,7 +572,7 @@ void Framebuffer::init()
    if (size.height == 0)
       size.height = 1;
 
-   levels = num_miplevels(size.width, size.height);
+   levels = glslang_num_miplevels(size.width, size.height);
    if (max_levels < levels)
       levels = max_levels;
    if (levels == 0)
@@ -625,7 +613,7 @@ void Framebuffer::init()
                glGenTextures(1, &image);
                glBindTexture(GL_TEXTURE_2D, image);
 
-               levels = num_miplevels(size.width, size.height);
+               levels = glslang_num_miplevels(size.width, size.height);
                if (max_levels < levels)
                   levels = max_levels;
                glTexStorage2D(GL_TEXTURE_2D, levels,
@@ -2086,7 +2074,7 @@ static unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
    if (!image_texture_load(&image, shader->path))
       return {};
 
-   unsigned levels = shader->mipmap ? gl_core_shader::num_miplevels(image.width, image.height) : 1;
+   unsigned levels = shader->mipmap ? glslang_num_miplevels(image.width, image.height) : 1;
 
    glGenTextures(1, &tex);
    glBindTexture(GL_TEXTURE_2D, tex);

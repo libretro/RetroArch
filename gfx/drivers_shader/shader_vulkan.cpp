@@ -431,18 +431,6 @@ struct vulkan_filter_chain
       void update_history_info();
 };
 
-static unsigned num_miplevels(unsigned width, unsigned height)
-{
-   unsigned size   = MAX(width, height);
-   unsigned levels = 0;
-   while (size)
-   {
-      levels++;
-      size >>= 1;
-   }
-   return levels;
-}
-
 static uint32_t find_memory_type_fallback(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
@@ -556,7 +544,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image_info.extent.height        = image.height;
    image_info.extent.depth         = 1;
    image_info.mipLevels            = shader->mipmap 
-      ? num_miplevels(image.width, image.height) : 1;
+      ? glslang_num_miplevels(image.width, image.height) : 1;
    image_info.arrayLayers          = 1;
    image_info.samples              = VK_SAMPLE_COUNT_1_BIT;
    image_info.tiling               = VK_IMAGE_TILING_OPTIMAL;
@@ -2385,7 +2373,8 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.extent.width      = size.width;
    info.extent.height     = size.height;
    info.extent.depth      = 1;
-   info.mipLevels         = min(max_levels, num_miplevels(size.width, size.height));
+   info.mipLevels         = min(max_levels,
+         glslang_num_miplevels(size.width, size.height));
    info.arrayLayers       = 1;
    info.samples           = VK_SAMPLE_COUNT_1_BIT;
    info.tiling            = VK_IMAGE_TILING_OPTIMAL;

@@ -341,3 +341,15 @@ void glslang_build_vec4(float *data, unsigned width, unsigned height)
    data[2] = 1.0f / (float)(width);
    data[3] = 1.0f / (float)(height);
 }
+
+unsigned glslang_num_miplevels(unsigned width, unsigned height)
+{
+   unsigned size   = MAX(width, height);
+   unsigned levels = 0;
+   while (size)
+   {
+      levels++;
+      size >>= 1;
+   }
+   return levels;
+}
