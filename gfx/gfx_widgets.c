@@ -805,10 +805,14 @@ void gfx_widgets_iterate(
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   float scale_factor               = (
-         gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
-      ? gfx_display_get_widget_pixel_scale(width, height, fullscreen) 
-      : gfx_display_get_widget_dpi_scale(width, height, fullscreen);
+   float scale_factor               = 0.0f;
+#ifdef HAVE_XMB
+   if (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB)
+      scale_factor                  = gfx_display_get_widget_pixel_scale(width, height, fullscreen);
+   else
+#endif
+      scale_factor                  = gfx_display_get_widget_dpi_scale(
+            width, height, fullscreen);
 
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
        (width        != p_dispwidget->last_video_width) ||
@@ -1866,13 +1870,16 @@ static void gfx_widgets_context_reset(
    }
 
    /* Update scaling/dimensions */
-   p_dispwidget->last_video_width  = width;
-   p_dispwidget->last_video_height = height;
-   p_dispwidget->last_scale_factor = (
-         gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
-         gfx_display_get_widget_pixel_scale(p_dispwidget->last_video_width,
-               p_dispwidget->last_video_height, fullscreen) :
-               gfx_display_get_widget_dpi_scale(
+   p_dispwidget->last_video_width     = width;
+   p_dispwidget->last_video_height    = height;
+#ifdef HAVE_XMB
+   if (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB)
+      p_dispwidget->last_scale_factor = gfx_display_get_widget_pixel_scale(
+            p_dispwidget->last_video_width,
+            p_dispwidget->last_video_height, fullscreen);
+   else
+#endif
+      p_dispwidget->last_scale_factor = gfx_display_get_widget_dpi_scale(
                      p_dispwidget->last_video_width,
                      p_dispwidget->last_video_height,
                      fullscreen);

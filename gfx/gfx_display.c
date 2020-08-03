@@ -486,15 +486,21 @@ float gfx_display_get_widget_dpi_scale(
 #endif
    gfx_display_t *p_disp                               = disp_get_ptr();
 
-   /* When using RGUI, _menu_scale_factor
-    * is ignored
-    * > If we are not using a widget scale factor override,
-    *   just set menu_scale_factor to 1.0 */
-   float menu_scale_factor                             = 
-      gfx_widget_scale_auto ?
-      ((p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI) ?
-       1.0f : _menu_scale_factor) :
-      menu_widget_scale_factor;
+   float menu_scale_factor                             = menu_widget_scale_factor;
+
+   if (gfx_widget_scale_auto)
+   {
+#ifdef HAVE_RGUI
+      /* When using RGUI, _menu_scale_factor
+       * is ignored
+       * > If we are not using a widget scale factor override,
+       *   just set menu_scale_factor to 1.0 */
+      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
+         menu_scale_factor                             = 1.0f;
+      else
+#endif
+         menu_scale_factor                             = _menu_scale_factor;
+   }
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
@@ -550,15 +556,21 @@ float gfx_display_get_widget_pixel_scale(
          menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
 #endif
    gfx_display_t *p_disp                               = disp_get_ptr();
+   float menu_scale_factor                             = menu_widget_scale_factor;
 
-   /* When using RGUI, _menu_scale_factor is ignored
-    * > If we are not using a widget scale factor override,
-    *   just set menu_scale_factor to 1.0 */
-   float menu_scale_factor                             = 
-      gfx_widget_scale_auto ?
-            ((p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI) ?
-                  1.0f : _menu_scale_factor) :
-                        menu_widget_scale_factor;
+   if (gfx_widget_scale_auto)
+   {
+#ifdef HAVE_RGUI
+      /* When using RGUI, _menu_scale_factor
+       * is ignored
+       * > If we are not using a widget scale factor override,
+       *   just set menu_scale_factor to 1.0 */
+      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
+         menu_scale_factor                             = 1.0f;
+      else
+#endif
+         menu_scale_factor                             = _menu_scale_factor;
+   }
 
    /* We need to perform a square root here, which
     * can be slow on some platforms (not *slow*, but
