@@ -71,19 +71,16 @@ struct ad_packet
    char subsystem_name[NETPLAY_HOST_STR_LEN];
 };
 
-/* TODO/FIXME - global referenced outside */
+/* TODO/FIXME - globals referenced outside */
 struct netplay_room *netplay_room_list = NULL;
-
-/* TODO/FIXME - globals - remove to make code thread-safe */
 int netplay_room_count                 = 0;
 
+/* TODO/FIXME - static globals */
 /* LAN discovery sockets */
 static int lan_ad_server_fd            = -1;
 static int lan_ad_client_fd            = -1;
-
 /* Packet buffer for advertisement and responses */
 static struct ad_packet ad_packet_buffer;
-
 /* List of discovered hosts */
 static struct netplay_host_list discovered_hosts;
 static size_t discovered_hosts_allocated;
