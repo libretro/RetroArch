@@ -1,4 +1,5 @@
 # Future
+- 3DS: Fix sound crackling when paused
 - ANDROID/VIBRATION: Fixes "Vibrate on Key Press" having no effect on Android devices, which occurred because only the off time/strength was defined in what should have been a pair of off/on values
 - AUTOCONFIG: Ensure correct directory is used when saving autoconfig profiles
 - BLUETOOTH: Add a Bluetooth driver (Lakka-only for now)
@@ -8,7 +9,11 @@
 - CHEEVOS: Restore display of unlocked achievements across hardcore modes
 - CHEEVOS: Hash buffered data when available
 - CHEEVOS: Fix 'Auto Save State freezes RetroArch while Cheevos is enabled'
+- CORE OPTIONS: Pressing OK (or clicking/tapping) on a 'boolean toggle' core option no longer opens a drop-down list. The value now toggles directly, just like boolean options everywhere else in the menu
+- CORE OPTIONS: Toggling an option that changes the number of core options being displayed (i.e. things like `Show Advanced Audio/Video Settings) no longer resets the navigation pointer to the start of the list
+- CORE OPTIONS: At present, RetroArch identifies core option values as being 'boolean' if they have labels matching the specific strings enabled or disabled. Most core devs abide by this, but not always... As a result, we sometimes end up with misidentified values, with all kinds of Enabled, Off, True, etc. strings littering the menu, in place of proper toggle switches. With this PR, all boolean-type value labels are now detected, and replaced with standard ON/OFF strings.
 - CLI: A new command line option --load-menu-on-error has been added
+- CRT: On the fly CRT porch adjuments - these changes allow a user to adjust how the porch algorithm generates the 15khz/31khz output. Giving the ability to change over/under scan.
 - CONFIG FILE: Optimise parsing of configuration files
 - D3D9/D3D11: Fix core-initiated D3D9/D3D11 driver switches
 - DRIVERS: Implemented protection to avoid setting critical drivers to nothing thus preventing the user from locking him/herself out of the program
@@ -17,15 +22,20 @@
 - INPUT MAPPING/REMAPPING: Add input remap drop-down lists
 - IOS: Fixed iOS 6 version
 - IOS/METAL: Metal video driver now works on RetroArch iOS
+- IOS/METAL: Support getting video metrics to support proper touchscreen interactions
 - LOCALIZATION: Updates for several languages (synchronized from Crowdin)
 - MEMORY/LINUX/ANDROID: Fix reporting of free memory
 - MEMORY/WINDOWS: Fix reporting of free memory
 - MENU: Enlarged INT/UINT selection limit from 999 to 9999
 - MENU: Fix cursor forced to first entry after displaying lists
 - MENU: Make Notification Font option visible when Graphics Widgets are enabled
+- MENU/RGUI: Add optional 'toggle switch' icons
 - MENU/WIDGETS: Add optional widget-based 'load content' launch feedback animation
 - MENU/WIDGETS: Make notification font size option visible when graphics widgets are enabled
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
+- PLAYLISTS: Playlist base content directory paths - portable playlists
+- PLAYLISTS/SEARCH: Enhanced playlist search functionality
+- PLAYLISTS/DATABASE: Add 'Explore' view
 - PS2: Improve FPS Limiter
 - RUNAHEAD: Prevent runahead from being disabled *permanently* when an error occurs
 - SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
