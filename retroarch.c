@@ -14507,7 +14507,10 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
       const char *ident                               = NULL;
       bool set_controller                             = false;
       const struct retro_controller_description *desc = NULL;
-      unsigned device                                 = input_config_get_device(i);
+      unsigned max_users                              = p_rarch->input_driver_max_users;
+      unsigned device                                 = (i < max_users) 
+         ? input_config_get_device(i)
+         : RETRO_DEVICE_NONE;
 
       if (info)
       {
