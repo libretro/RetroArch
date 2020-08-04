@@ -68,8 +68,6 @@ struct glsl_attrib
    GLsizei offset;
 };
 
-static gfx_ctx_proc_t (*glsl_get_proc_address)(const char*);
-
 struct shader_uniforms_frame
 {
    int texture;
@@ -1606,15 +1604,10 @@ static void gl_glsl_get_flags(uint32_t *flags)
    BIT32_SET(*flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 }
 
-void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
-{
-   glsl_get_proc_address = proc;
-}
-
 void gl_glsl_set_context_type(bool core_profile,
       unsigned major, unsigned minor)
 {
-   glsl_core = core_profile;
+   glsl_core  = core_profile;
    glsl_major = major;
    glsl_minor = minor;
 }

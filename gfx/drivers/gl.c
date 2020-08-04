@@ -2049,11 +2049,8 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
 
 #ifdef HAVE_GLSL
    if (type == RARCH_SHADER_GLSL)
-   {
-      gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
       gl_glsl_set_context_type(gl->core_context_in_use,
-                               hwr->version_major, hwr->version_minor);
-   }
+            hwr->version_major, hwr->version_minor);
 #endif
 
    init_data.gl.core_context_enabled = gl->core_context_in_use;
