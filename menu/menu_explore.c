@@ -103,7 +103,7 @@ typedef struct
    const struct playlist_entry* playlist_entry;
    explore_string_t *by[EXPLORE_CAT_COUNT];
    explore_string_t **split;
-#if 0
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
    char* original_title;
 #endif
 } explore_entry_t;
@@ -742,7 +742,7 @@ static explore_state_t *explore_build_list(void)
          const struct playlist_entry *entry = NULL;
          uint32_t crc32                     = 0;
          char *name                         = NULL;
-#if 0
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
          char *original_title               = NULL;
 #endif
 
@@ -771,7 +771,7 @@ static explore_state_t *explore_build_list(void)
                name = val->val.string.buff;
                continue;
             }
-#if 0
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
             else if (string_is_equal(key_str, "original_title"))
             {
                original_title = val->val.string.buff;
@@ -818,7 +818,7 @@ static explore_state_t *explore_build_list(void)
          for (l = 0; l < EXPLORE_CAT_COUNT; l++)
             e.by[l]        = NULL;
          e.split           = NULL;
-#if 0
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
          e.original_title  = NULL;
 #endif
 
@@ -831,7 +831,7 @@ static explore_state_t *explore_build_list(void)
                   fields[cat], &split_buf);
          }
 
-#if 0
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
          if (original_title && *original_title)
          {
             size_t len       = strlen(original_title) + 1;
@@ -1266,7 +1266,7 @@ SKIP_EXPLORE_BY_CATEGORY:;
                   str->str,
                   EXPLORE_TYPE_FIRSTITEM + str->idx);
          }
-#if 0
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
          else if (e->original_title)
             explore_menu_entry(list,
                   explore_state, e->original_title,
