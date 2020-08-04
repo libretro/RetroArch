@@ -436,7 +436,6 @@ int rmsgpack_dom_read_into(RFILE *fd, ...)
    int *bool_value;
    char *buff_value;
    uint64_t min_len;
-   int value_type = 0;
 
    va_start(ap, fd);
 

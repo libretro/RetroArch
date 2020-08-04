@@ -210,7 +210,6 @@ static struct rmsgpack_dom_value query_func_between(
       unsigned argc, const struct argument * argv)
 {
    struct rmsgpack_dom_value res;
-   unsigned i                     = 0;
 
    res.type                       = RDT_BOOL;
    res.val.bool_                  = 0;
