@@ -1837,7 +1837,6 @@ float win32_get_refresh_rate(void *data)
    unsigned int NumModeInfoArrayElements   = 0;
    DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray  = NULL;
    DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray  = NULL;
-   int result                              = 0;
 #ifdef HAVE_DYNAMIC
     static QUERYDISPLAYCONFIG pQueryDisplayConfig;
     static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
@@ -1859,11 +1858,10 @@ float win32_get_refresh_rate(void *data)
        (version_info.dwMajorVersion == 6 && version_info.dwMinorVersion < 1))
        return refresh_rate;
 
-   result = pGetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT,
+   if (pGetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT,
                                         &NumPathArrayElements,
-                                        &NumModeInfoArrayElements);
-
-   if (result != ERROR_SUCCESS)
+                                        &NumModeInfoArrayElements) 
+         != ERROR_SUCCESS)
       return refresh_rate;
 
    PathInfoArray = (DISPLAYCONFIG_PATH_INFO_CUSTOM *)
@@ -1871,14 +1869,13 @@ float win32_get_refresh_rate(void *data)
    ModeInfoArray = (DISPLAYCONFIG_MODE_INFO_CUSTOM *)
       malloc(sizeof(DISPLAYCONFIG_MODE_INFO_CUSTOM) * NumModeInfoArrayElements);
 
-   result = pQueryDisplayConfig(QDC_DATABASE_CURRENT,
+   if (pQueryDisplayConfig(QDC_DATABASE_CURRENT,
                                &NumPathArrayElements,
                                PathInfoArray,
                                &NumModeInfoArrayElements,
                                ModeInfoArray,
-                               &TopologyID);
-
-   if (result == ERROR_SUCCESS && NumPathArrayElements >= 1)
+                               &TopologyID) == ERROR_SUCCESS
+         && NumPathArrayElements >= 1)
       refresh_rate = (float) PathInfoArray[0].targetInfo.refreshRate.Numerator /
                              PathInfoArray[0].targetInfo.refreshRate.Denominator;
 
