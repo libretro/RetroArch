@@ -103,7 +103,9 @@ typedef struct
    const struct playlist_entry* playlist_entry;
    explore_string_t *by[EXPLORE_CAT_COUNT];
    explore_string_t **split;
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
    char* original_title;
+#endif
 } explore_entry_t;
 
 typedef struct 
@@ -740,7 +742,9 @@ static explore_state_t *explore_build_list(void)
          const struct playlist_entry *entry = NULL;
          uint32_t crc32                     = 0;
          char *name                         = NULL;
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
          char *original_title               = NULL;
+#endif
 
          if (item.type != RDT_MAP)
             continue;
@@ -767,11 +771,13 @@ static explore_state_t *explore_build_list(void)
                name = val->val.string.buff;
                continue;
             }
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
             else if (string_is_equal(key_str, "original_title"))
             {
                original_title = val->val.string.buff;
                continue;
             }
+#endif
 
             for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
             {
@@ -812,7 +818,9 @@ static explore_state_t *explore_build_list(void)
          for (l = 0; l < EXPLORE_CAT_COUNT; l++)
             e.by[l]        = NULL;
          e.split           = NULL;
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
          e.original_title  = NULL;
+#endif
 
          fields[EXPLORE_BY_SYSTEM] = rdb->systemname;
 
@@ -823,6 +831,7 @@ static explore_state_t *explore_build_list(void)
                   fields[cat], &split_buf);
          }
 
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
          if (original_title && *original_title)
          {
             size_t len       = strlen(original_title) + 1;
@@ -830,6 +839,7 @@ static explore_state_t *explore_build_list(void)
                ex_arena_alloc(&explore->arena, len);
             memcpy(e.original_title, original_title, len);
          }
+#endif
 
          if (EX_BUF_LEN(split_buf))
          {
@@ -1256,15 +1266,16 @@ SKIP_EXPLORE_BY_CATEGORY:;
                   str->str,
                   EXPLORE_TYPE_FIRSTITEM + str->idx);
          }
-         else
-         {
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
+         else if (e->original_title)
             explore_menu_entry(list,
-                  explore_state,
-                  (e->original_title 
-                   ? e->original_title 
-                   : e->playlist_entry->label),
+                  explore_state, e->original_title,
                   EXPLORE_TYPE_FIRSTITEM + (e - explore_state->entries));
-         }
+#endif
+         else
+            explore_menu_entry(list,
+                  explore_state, e->playlist_entry->label,
+                  EXPLORE_TYPE_FIRSTITEM + (e - explore_state->entries));
 
 SKIP_ENTRY:;
       }
