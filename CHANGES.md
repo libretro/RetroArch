@@ -18,6 +18,7 @@
 - D3D9/D3D11: Fix core-initiated D3D9/D3D11 driver switches
 - DRIVERS: Implemented protection to avoid setting critical drivers to nothing thus preventing the user from locking him/herself out of the program
 - EMSCRIPTEN: Fix input code to ignore unknown keys
+- FFMPEG CORE: Prevent seeking past the end of files (hang fix)
 - FILE I/O: VFS and NBIO interfaces will now use 64-bit fseek/ftell where possible, should allow for reading/writing to files bigger than 2GB
 - INPUT MAPPING/REMAPPING: Add input remap drop-down lists
 - IOS: Fixed iOS 6 version
@@ -36,6 +37,7 @@
 - PLAYLISTS: Playlist base content directory paths - portable playlists
 - PLAYLISTS/SEARCH: Enhanced playlist search functionality
 - PLAYLISTS/DATABASE: Add 'Explore' view
+- PLAYLISTS/DATABASE/EXPLORE: Show system icons in explore view
 - PS2: Improve FPS Limiter
 - RUNAHEAD: Prevent runahead from being disabled *permanently* when an error occurs
 - SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
