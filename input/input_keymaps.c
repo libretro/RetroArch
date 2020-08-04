@@ -1934,7 +1934,7 @@ void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map)
       if (rarch_keysym_rlut)
          free(rarch_keysym_rlut);
 
-      rarch_keysym_rlut = calloc(++rarch_keysym_rlut_size, sizeof(unsigned));
+      rarch_keysym_rlut = (unsigned*)calloc(++rarch_keysym_rlut_size, sizeof(unsigned));
 
       for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
          rarch_keysym_rlut[map->sym] = (enum retro_key)map->rk;
