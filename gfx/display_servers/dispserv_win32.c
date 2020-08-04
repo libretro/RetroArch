@@ -320,13 +320,14 @@ static void *win32_display_server_get_resolution_list(
 #endif
    struct video_display_config *conf = NULL;
 
-   if (win32_get_video_output(&dm, -1, sizeof(dm))) {
-      curr_width       = dm.dmPelsWidth;
-      curr_height      = dm.dmPelsHeight;
-      curr_bpp         = dm.dmBitsPerPel;
-      curr_refreshrate = dm.dmDisplayFrequency;
+   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   {
+      curr_width                     = dm.dmPelsWidth;
+      curr_height                    = dm.dmPelsHeight;
+      curr_bpp                       = dm.dmBitsPerPel;
+      curr_refreshrate               = dm.dmDisplayFrequency;
 #if _WIN32_WINNT >= 0x0500
-      curr_orientation = dm.dmDisplayOrientation;
+      curr_orientation               = dm.dmDisplayOrientation;
 #endif
    }
 
