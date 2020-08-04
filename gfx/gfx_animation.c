@@ -81,12 +81,10 @@ typedef struct gfx_animation gfx_animation_t;
 /* Pixel ticker nominally increases by one after each
  * ticker_pixel_period ms (actual increase depends upon
  * ticker speed setting and display resolution) */
-static const float ticker_pixel_period = (1.0f / 60.0f) * 1000.0f;
+static const float ticker_pixel_period    = (1.0f / 60.0f) * 1000.0f;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
  
-/* Forward declarations */
-
 /* By default, this should be a NOOP */
 static void gfx_animation_update_time_default(
       float *ticker_pixel_increment,
