@@ -136,19 +136,6 @@ const char *path_basename(const char *path);
 void path_basedir(char *path);
 
 /**
- * path_basedir_size:
- * @path               : path
- * @size               : size of path
- *
- * Extracts base directory by mutating path.
- * Keeps trailing '/'.
- *
- * Specialized function that avoids the implicit
- * strlen call
- **/
-void path_basedir_size(char *path, size_t size);
-
-/**
  * path_parent_dir:
  * @path               : path
  *

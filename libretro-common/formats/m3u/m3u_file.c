@@ -497,7 +497,7 @@ bool m3u_file_save(
    if (find_last_slash(m3u_file->path))
    {
       strlcpy(base_dir, m3u_file->path, sizeof(base_dir));
-      path_basedir_size(base_dir, STRLEN_CONST(base_dir));
+      path_basedir(base_dir);
    }
 
    /* Open file for writing */

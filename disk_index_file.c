@@ -313,7 +313,7 @@ bool disk_index_file_init(
    {
       /* Use content directory */
       strlcpy(disk_index_file_dir, content_path, sizeof(disk_index_file_dir));
-      path_basedir_size(disk_index_file_dir, STRLEN_CONST(disk_index_file_dir));
+      path_basedir(disk_index_file_dir);
    }
 
    /* > Create directory, if required */
