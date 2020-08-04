@@ -250,6 +250,18 @@ void CORE_PREFIX(retro_init)(void)
 void CORE_PREFIX(retro_deinit)(void)
 {
    libretro_supports_bitmasks = false;
+
+   if (video_buffer)
+   {
+      video_buffer_destroy(video_buffer);
+      video_buffer = NULL;
+   }
+
+   if (tpool)
+   {
+      tpool_destroy(tpool);
+      tpool = NULL;
+   }
 }
 
 unsigned CORE_PREFIX(retro_api_version)(void)
@@ -490,6 +502,7 @@ static void seek_frame(int seek_frames)
 {
    char msg[256];
    struct retro_message_ext msg_obj = {0};
+   int seek_frames_capped           = seek_frames;
    unsigned seek_hours              = 0;
    unsigned seek_minutes            = 0;
    unsigned seek_seconds            = 0;
@@ -497,10 +510,45 @@ static void seek_frame(int seek_frames)
 
    msg[0] = '\0';
 
+   /* Handle resets + attempts to seek to a location
+    * before the start of the video */
    if ((seek_frames < 0 && (unsigned)-seek_frames > frame_cnt) || reset_triggered)
       frame_cnt = 0;
-   else
+   /* Handle backwards seeking */
+   else if (seek_frames < 0)
       frame_cnt += seek_frames;
+   /* Handle forwards seeking */
+   else
+   {
+      double current_time     = (double)frame_cnt / media.interpolate_fps;
+      double seek_step_time   = (double)seek_frames / media.interpolate_fps;
+      double seek_target_time = current_time + seek_step_time;
+      double seek_time_max    = media.duration.time - 1.0;
+
+      seek_time_max = (seek_time_max > 0.0) ?
+            seek_time_max : 0.0;
+
+      /* Ensure that we don't attempt to seek past
+       * the end of the file */
+      if (seek_target_time > seek_time_max)
+      {
+         seek_step_time = seek_time_max - current_time;
+
+         /* If seek would have taken us to the
+          * end of the file, restart it instead
+          * (less jarring for the user in case of
+          * accidental seeking...) */
+         if (seek_step_time < 0.0)
+            seek_frames_capped = -1;
+         else
+            seek_frames_capped = (int)(seek_step_time * media.interpolate_fps);
+      }
+
+      if (seek_frames_capped < 0)
+         frame_cnt  = 0;
+      else
+         frame_cnt += seek_frames_capped;
+   }
 
    slock_lock(fifo_lock);
    do_seek        = true;
@@ -535,7 +583,7 @@ static void seek_frame(int seek_frames)
    msg_obj.progress = seek_progress;
    CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg_obj);
 
-   if (seek_frames < 0)
+   if (seek_frames_capped < 0)
    {
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Resetting PTS.\n");
       frames[0].pts = 0.0;
@@ -1663,7 +1711,7 @@ static void decode_thread(void *data)
 {
    unsigned i;
    bool eof                = false;
-   struct SwrContext *swr[audio_streams_num];
+   struct SwrContext *swr[(audio_streams_num > 0) ? audio_streams_num : 1];
    AVFrame *aud_frame      = NULL;
    size_t frame_size       = 0;
    int16_t *audio_buffer   = NULL;
