@@ -270,7 +270,7 @@ void fill_pathname_application_special(char *s,
          }
 
          break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ICONS:
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS:
          {
 #ifdef HAVE_MENU
             settings_t *settings   = config_get_ptr();
@@ -279,7 +279,12 @@ void fill_pathname_application_special(char *s,
             if (string_is_equal(menu_ident, "xmb"))
                fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
             else if (string_is_equal(menu_ident, "glui"))
-               fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
+            {
+               /* Type APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS
+                * contains no core system icons so we use the icon directory
+                * from ozone here */
+               fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
+            }
             else if (string_is_equal(menu_ident, "ozone"))
                fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
             else if (len)

@@ -1153,12 +1153,21 @@ enum materialui_list_view_type
    MUI_LIST_VIEW_PLAYLIST_THUMB_DESKTOP
 };
 
+/* Defines the various types of icon that
+ * can be associated with menu entries */
+enum materialui_node_icon_type
+{
+   MUI_ICON_TYPE_NONE = 0,
+   MUI_ICON_TYPE_INTERNAL,
+   MUI_ICON_TYPE_MENU_EXPLORE
+};
+
 /* This structure holds auxiliary information for
  * each menu entry (physical on-screen size/position,
  * icon data, thumbnail data, etc.) */
 typedef struct
 {
-   bool has_icon;
+   enum materialui_node_icon_type icon_type;
    unsigned icon_texture_index;
    float entry_width;
    float entry_height;
@@ -2363,13 +2372,17 @@ static void materialui_compute_entries_box_default(
       unsigned num_sublabel_lines = 0;
       materialui_node_t *node     = (materialui_node_t*)
             file_list_get_userdata_at_offset(list, i);
+      bool has_icon;
 
       if (!node)
          continue;
 
+      has_icon = ((node->icon_type == MUI_ICON_TYPE_INTERNAL) &&
+                        mui->textures.list[node->icon_texture_index]) ||
+                 (node->icon_type == MUI_ICON_TYPE_MENU_EXPLORE);
+
       num_sublabel_lines = materialui_count_sublabel_lines(
-            mui, usable_width, i,
-            (node->has_icon && mui->textures.list[node->icon_texture_index]));
+            mui, usable_width, i, has_icon);
 
       node->text_height  = mui->font_data.list.line_height +
             (num_sublabel_lines * mui->font_data.hint.line_height);
@@ -3477,34 +3490,35 @@ static void materialui_render_menu_entry_default(
    /* Draw entry icon
     * > Has to be done first, since it affects the left
     *   hand margin size for label + sublabel text */
-   if (node->has_icon)
+   switch (node->icon_type)
    {
-      if (entry->checked &&
-          ((entry_type >= MENU_SETTING_DROPDOWN_ITEM) &&
-           (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL)))
-         node->has_icon = false;
-      else
-         icon_texture = mui->textures.list[node->icon_texture_index];
-   }
-   else
-   {
-      switch (entry_file_type)
-      {
-         case FILE_TYPE_COMPRESSED:
-            /* Note that we have to perform a backup check here,
-             * since the 'manual content scan - file extensions'
-             * setting may have a value of 'zip' or '7z' etc, which
-             * means it would otherwise get incorrectly identified as
-             * an archive file... */
-            if (entry_type == FILE_TYPE_CARCHIVE)
-               icon_texture = mui->textures.list[MUI_TEXTURE_ARCHIVE];
-            break;
-         case FILE_TYPE_IMAGE:
-            icon_texture = mui->textures.list[MUI_TEXTURE_IMAGE];
-            break;
-         default:
-            break;
-      }
+      case MUI_ICON_TYPE_INTERNAL:
+         /* Note: Checked entries never have icons */
+         if (!entry->checked)
+            icon_texture = mui->textures.list[node->icon_texture_index];
+         break;
+      case MUI_ICON_TYPE_MENU_EXPLORE:
+         icon_texture = menu_explore_get_entry_icon(entry_type);
+         break;
+      default:
+         switch (entry_file_type)
+         {
+            case FILE_TYPE_COMPRESSED:
+               /* Note that we have to perform a backup check here,
+                * since the 'manual content scan - file extensions'
+                * setting may have a value of 'zip' or '7z' etc, which
+                * means it would otherwise get incorrectly identified as
+                * an archive file... */
+               if (entry_type == FILE_TYPE_CARCHIVE)
+                  icon_texture = mui->textures.list[MUI_TEXTURE_ARCHIVE];
+               break;
+            case FILE_TYPE_IMAGE:
+               icon_texture = mui->textures.list[MUI_TEXTURE_IMAGE];
+               break;
+            default:
+               break;
+         }
+         break;
    }
 
    if (icon_texture)
@@ -9098,7 +9112,7 @@ static void materialui_list_insert(
    {
       node = (materialui_node_t*)malloc(sizeof(materialui_node_t));
 
-      node->has_icon                         = false;
+      node->icon_type                        = MUI_ICON_TYPE_NONE;
       node->icon_texture_index               = 0;
       node->entry_width                      = 0.0f;
       node->entry_height                     = 0.0f;
@@ -9137,7 +9151,7 @@ static void materialui_list_insert(
       return;
    }
 
-   node->has_icon           = false;
+   node->icon_type          = MUI_ICON_TYPE_NONE;
    node->icon_texture_index = 0;
    node->entry_width        = 0.0f;
    node->entry_height       = 0.0f;
@@ -9159,7 +9173,7 @@ static void materialui_list_insert(
          case MENU_SET_CDROM_LIST:
          case MENU_SET_LOAD_CDROM_LIST:
             node->icon_texture_index = MUI_TEXTURE_DISK;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_DOWNLOAD_CORE:
          case FILE_TYPE_CORE:
@@ -9167,66 +9181,66 @@ static void materialui_list_insert(
          case MENU_SETTING_ACTION_CORE_LOCK:
          case MENU_EXPLORE_TAB:
             node->icon_texture_index = MUI_TEXTURE_CORES;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
          case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:
             node->icon_texture_index = MUI_TEXTURE_IMAGE;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_PARENT_DIRECTORY:
             node->icon_texture_index = MUI_TEXTURE_PARENT_DIRECTORY;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_PLAYLIST_COLLECTION:
             node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_RDB:
             node->icon_texture_index = MUI_TEXTURE_DATABASE;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_RDB_ENTRY:
             node->icon_texture_index = MUI_TEXTURE_SETTINGS;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_PLAIN:
          case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
             node->icon_texture_index = MUI_TEXTURE_FILE;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_MUSIC:
             node->icon_texture_index = MUI_TEXTURE_MUSIC;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_MOVIE:
             node->icon_texture_index = MUI_TEXTURE_VIDEO;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_DIRECTORY:
          case FILE_TYPE_DOWNLOAD_URL:
             node->icon_texture_index = MUI_TEXTURE_FOLDER;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_ROOM_LAN:
          case MENU_ROOM_RELAY:
          case MENU_ROOM:
             node->icon_texture_index = MUI_TEXTURE_SETTINGS;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_DELETE:
          case MENU_SETTING_ACTION_CORE_DELETE_BACKUP:
             node->icon_texture_index = MUI_TEXTURE_REMOVE;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_CREATE_BACKUP:
             node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_RESTORE_BACKUP:
             node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
-            node->has_icon           = true;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_RPL_ENTRY:
          case MENU_SETTING_DROPDOWN_ITEM:
@@ -9258,7 +9272,7 @@ static void materialui_list_insert(
          case MENU_SETTING_ITEM_CORE_RESTORE_BACKUP:
          case MENU_SETTING_ITEM_CORE_DELETE_BACKUP:
             /* None of these entries have icons - catch them
-             * here (and leave icon_texture_index/has_icon
+             * here (and leave icon_texture_index/icon_type
              * set to the default 'disabled' state) to avoid
              * having to process the 'default' case of this
              * switch */
@@ -9276,24 +9290,24 @@ static void materialui_list_insert(
                )
             {
                node->icon_texture_index = MUI_TEXTURE_INFO;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_DATABASE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES)))
             {
                node->icon_texture_index = MUI_TEXTURE_IMAGE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC)))
             {
                node->icon_texture_index = MUI_TEXTURE_MUSIC;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO)) ||
@@ -9302,68 +9316,68 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_VIDEO;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY)))
             {
                node->icon_texture_index = MUI_TEXTURE_SCAN;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
             {
                node->icon_texture_index = MUI_TEXTURE_HISTORY;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
             {
                node->icon_texture_index = MUI_TEXTURE_HELP;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT)))
             {
                node->icon_texture_index = MUI_TEXTURE_RESTART;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT)))
             {
                node->icon_texture_index = MUI_TEXTURE_RESUME;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT)))
             {
                node->icon_texture_index = MUI_TEXTURE_CLOSE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS)))
             {
                node->icon_texture_index = MUI_TEXTURE_CORE_OPTIONS;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)))
             {
                node->icon_texture_index = MUI_TEXTURE_CORE_CHEAT_OPTIONS;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS)))
             {
                node->icon_texture_index = MUI_TEXTURE_CONTROLS;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS)))
             {
                node->icon_texture_index = MUI_TEXTURE_SHADERS;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)) ||
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION)))
             {
                node->icon_texture_index = MUI_TEXTURE_CORES;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN)))
             {
                node->icon_texture_index = MUI_TEXTURE_RUN;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES)) ||
@@ -9372,7 +9386,7 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD_TO_FAVORITES;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)) ||
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION)) ||
@@ -9380,7 +9394,7 @@ static void materialui_list_insert(
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST)))
             {
                node->icon_texture_index = MUI_TEXTURE_RENAME;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER)) ||
@@ -9390,7 +9404,7 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD_TO_MIXER;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
@@ -9401,12 +9415,12 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_START_CORE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE)))
             {
                node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_EJECT)) ||
@@ -9414,7 +9428,7 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_EJECT;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)) ||
@@ -9426,7 +9440,7 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_DISK;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)) ||
@@ -9437,27 +9451,27 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE)))
             {
                node->icon_texture_index = MUI_TEXTURE_UNDO_LOAD_STATE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE)))
             {
                node->icon_texture_index = MUI_TEXTURE_UNDO_SAVE_STATE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT)))
             {
                node->icon_texture_index = MUI_TEXTURE_STATE_SLOT;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT)))
             {
                node->icon_texture_index = MUI_TEXTURE_TAKE_SCREENSHOT;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS)) ||
@@ -9468,7 +9482,7 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_CONFIGURATIONS;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST))
@@ -9478,13 +9492,13 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_LOAD_CONTENT;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY)) ||
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_PLAYLIST)))
             {
                node->icon_texture_index = MUI_TEXTURE_REMOVE;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS)) ||
@@ -9492,12 +9506,12 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_NETPLAY;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)))
             {
                node->icon_texture_index = MUI_TEXTURE_QUICKMENU;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER)) ||
@@ -9514,7 +9528,7 @@ static void materialui_list_insert(
                   )
                   {
                      node->icon_texture_index = MUI_TEXTURE_UPDATER;
-                     node->has_icon           = true;
+                     node->icon_type          = MUI_ICON_TYPE_INTERNAL;
                   }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
@@ -9523,14 +9537,14 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH)) ||
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_RETROARCH))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_QUIT;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             /* TODO/FIXME - all this should go away and be refactored so that we don't have to do
              * all this manually inside this menu driver */
@@ -9639,13 +9653,13 @@ static void materialui_list_insert(
                   )
                   {
                      node->icon_texture_index = MUI_TEXTURE_SETTINGS;
-                     node->has_icon           = true;
+                     node->icon_type          = MUI_ICON_TYPE_INTERNAL;
                   }
             else if (type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN && 
                   type <= MENU_SETTINGS_REMAPPING_PORT_END)
             {
                node->icon_texture_index = MUI_TEXTURE_SETTINGS;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
@@ -9653,13 +9667,15 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_FOLDER;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
             {
                node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
-               node->has_icon           = true;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_ITEM)))
+               node->icon_type          = MUI_ICON_TYPE_MENU_EXPLORE;
             else if (string_ends_with_size(label, "_input_binds_list",
                      strlen(label), STRLEN_CONST("_input_binds_list")))
             {
@@ -9675,7 +9691,7 @@ static void materialui_list_insert(
                   if (string_is_equal(label, val))
                   {
                      node->icon_texture_index = MUI_TEXTURE_SETTINGS;
-                     node->has_icon           = true;
+                     node->icon_type          = MUI_ICON_TYPE_INTERNAL;
                   }
                }
             }

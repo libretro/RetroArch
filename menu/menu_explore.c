@@ -527,7 +527,7 @@ static void explore_load_icons(explore_state_t *state)
    EX_BUF_RESIZE(state->icons, system_count);
 
    fill_pathname_application_special(path, sizeof(path),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_ICONS);
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
    if (string_is_empty(path))
       return;
 
