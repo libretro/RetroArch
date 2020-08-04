@@ -1956,9 +1956,11 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
 {
    unsigned i;
 
+   /* Fast path */
    if (rarch_keysym_rlut && sym < rarch_keysym_rlut_size)
       return (enum retro_key)rarch_keysym_rlut[sym];
 
+   /* Slow path */
    for (i = 0; i < ARRAY_SIZE(rarch_keysym_lut); i++)
    {
       if (rarch_keysym_lut[i] != sym)
