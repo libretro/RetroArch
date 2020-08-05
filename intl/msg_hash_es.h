@@ -4345,27 +4345,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
-   "Animación de textos largos"
+   "Animación de textos en movimiento"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
-   "Selecciona el método de desplazamiento horizontal para los textos largos de los menús."
+   "Selecciona el método de desplazamiento horizontal para los textos de los menús que sean muy largos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
-   "Velocidad de textos largos"
+   "Velocidad de textos en movimiento"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
-   "Indica la velocidad de animación de los textos largos de los menús."
+   "Indica la velocidad de animación de los textos de los menús que sean muy largos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
-   "Suavizar movimiento de textos largos"
+   "Suavizar movimiento de textos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
-   "Muestra los textos largos de los menús utilizando una animación suave. Afecta levemente al rendimiento."
+   "Muestra los textos de los menús que sean muy largos desplazándolos con una animación suavizada. Afecta levemente al rendimiento."
    )
 
 /* Settings > AI Service */
@@ -5478,6 +5478,10 @@ MSG_HASH(
    "Región"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   "Etiqueta"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
    "Buscar nombre..."
    )
@@ -5496,6 +5500,50 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
    "Añadir un filtro adicional"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
+   "%u elemento(s)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "Por desarrolladora"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   "Por distribuidora"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   "Por año de lanzamiento"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   "Por número de jugadores"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "Por género"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   "Por origen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   "Por región"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
+   "Por franquicia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
+   "Por etiqueta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   "Por nombre del sistema"
    )
 
 /* Playlist > Playlist Item */
@@ -6051,11 +6099,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
-   "Máscara de la dirección de memoria"
+   "Máscara de dirección de memoria"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
-   "Bitmask de la dirección cuando el tamaño de la búsqueda de memoria es menor a 8 bits."
+   "Máscara de bits de la dirección usada cuando el tamaño de la búsqueda en memoria es menor a 8 bits."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
@@ -6083,7 +6131,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
-   "Vibrar cuando memoria"
+   "Vibrar cuando la memoria..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
@@ -6095,7 +6143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
-   "Fuerza primaria de vibración"
+   "Fuerza de la vibración primaria"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
@@ -6103,7 +6151,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
-   "Fuerza secundaria de vibración"
+   "Fuerza de la vibración secundaria"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
@@ -6533,11 +6581,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
-   "Alternar izda./dcha."
+   "Rebotar de izda. a dcha."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
-   "Desplazar hacia la izda."
+   "Desplazar solo hacia la izda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
@@ -6641,47 +6689,47 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
-   "<Desactivado>"
+   "<Desactivar>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
-   "Cambios"
+   "Cambie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
-   "No cambia"
+   "No cambie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
-   "Aumenta"
+   "Aumente"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
-   "Disminuye"
+   "Disminuya"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
-   "Igual al valor de vibración"
+   "Sea idéntica al valor de vibración"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
-   "Distinto al valor de vibración"
+   "Sea distinta al valor de vibración"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
-   "Inferior al valor de vibración"
+   "Sea inferior al valor de vibración"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
-   "Superior al valor de vibración"
+   "Sea superior al valor de vibración"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
-   "Incrementa según el valor de vibración"
+   "Aumente por encima del valor de vibración"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
-   "Disminuye según el valor de vibración"
+   "Disminuya por debajo del valor de vibración"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -6693,15 +6741,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
-   "Establecer valor"
+   "Asignar valor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
-   "Aumentar por valor"
+   "Aumentar valor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
-   "Disminuir por valor"
+   "Disminuir valor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
@@ -7684,11 +7732,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Usar animación de textos largos en los metadatos"
+   "Mostrar metadatos de contenidos en movimiento"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "Si se activa esta opción, cada elemento de los metadatos de un contenido que se muestren en la barra derecha de las listas de reproducción (núcleo asociado, tiempo de juego...) ocupará únicamente una línea y las cadenas que superen el ancho disponible se desplazarán automáticamente. Al desactivarla, cada elemento de los metadatos se mostrará de forma estática, ocupando las líneas que sean necesarias."
+   "Si se activa esta opción, cada uno de los elementos de los metadatos de un contenido que se muestren en la barra derecha de las listas de reproducción (núcleo asociado, tiempo de juego...) ocupará únicamente una línea, y las cadenas que superen el ancho disponible se desplazarán automáticamente. Al desactivarla, cada elemento de los metadatos se mostrará de forma estática, ocupando las líneas que sean necesarias."
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
@@ -8683,7 +8731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-   "Seleccionar de la lista de reproducción"
+   "Seleccionar de una lista de reproducción"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME,
@@ -8878,7 +8926,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "Filtro de base de datos: desarrollador"
+   "Filtro de base de datos: desarrolladora"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
@@ -9104,11 +9152,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
-   "Conectado con: \"%s\""
+   "Conexión recibida desde: \"%s\""
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
-   "Conectado con: \"%s (%s)\""
+   "Conexión recibida desde: \"%s (%s)\""
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
@@ -9240,7 +9288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Cargando guardado rápido automáticamente desde"
+   "Carga automática de guardado rápido en"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -9256,7 +9304,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONNECTION_SLOT,
-   "Lugar de conexión"
+   "Punto de conexión"
    )
 MSG_HASH(
    MSG_FETCHING_CORE_LIST,
@@ -9344,7 +9392,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_APPENDED_DISK,
-   "Disco en cola"
+   "Disco añadido"
    )
 MSG_HASH(
    MSG_FAILED_TO_APPEND_DISK,
@@ -9392,7 +9440,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   "Iniciando la línea de comandos en el puerto"
+   "Iniciando interfaz de comandos en el puerto"
    )
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
@@ -9408,7 +9456,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COMPILED_AGAINST_API,
-   "Compilado para la API"
+   "API usada en la compilación"
    )
 MSG_HASH(
    MSG_CONFIG_DIRECTORY_NOT_SET,
@@ -9424,7 +9472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
-   "Carga de contenido omitida. La implementación usará la suya."
+   "Carga de contenido omitida. La implementación lo cargará por su cuenta."
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -9448,7 +9496,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "No se puede abrir la pista de datos"
+   "No se pudo abrir la pista de datos"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
@@ -9468,7 +9516,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CUSTOM_TIMING_GIVEN,
-   "Timing personalizado provisto"
+   "Indicada una velocidad personalizada"
    )
 MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
@@ -9480,7 +9528,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DETECTED_VIEWPORT_OF,
-   "Ventana detectada:"
+   "Se ha detectado una ventana con resolución"
    )
 MSG_HASH(
    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
@@ -9740,7 +9788,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "Opciones específicas del juego y del núcleo encontradas en"
+   "Opciones específicas de juego: se han encontrado opciones personalizadas según juego y núcleo en"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -10004,11 +10052,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVING_RAM_TYPE,
-   "Guardando RAM"
+   "Guardando tipo de RAM"
    )
 MSG_HASH(
    MSG_SAVING_STATE,
-   "Guardado rápido"
+   "Guardando guardado rápido"
    )
 MSG_HASH(
    MSG_SCANNING,
@@ -10148,7 +10196,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VERSION_OF_LIBRETRO_API,
-   "Versión de la API Libretro"
+   "Versión de la API libretro"
    )
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
@@ -10168,11 +10216,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED,
-   "Error"
+   "fallida"
    )
 MSG_HASH(
    MSG_SUCCEEDED,
-   "Proceso terminado"
+   "completada"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -10180,7 +10228,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
-   "no configurado, usando respaldo"
+   "no configurado, usando opción secundaria"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
@@ -10292,7 +10340,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Truco creado a partir de coincidencia"
+   "Se ha creado el truco a partir de la coincidencia"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
@@ -10328,11 +10376,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_COPY_BEFORE_SUCCESS,
-   "Truco copiado antes de este."
+   "Se ha copiado el truco antes de este."
    )
 MSG_HASH(
    MSG_CHEAT_COPY_AFTER_SUCCESS,
-   "Truco copiado después de este."
+   "Se ha copiado el truco después de este."
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
@@ -10574,11 +10622,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "Permitir acceso externo a archivos"
+   "Permitir acceso a archivos externos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "Abre la configuración de permisos de acceso a archivos de Windows."
+   "Abre la configuración de permisos de acceso de archivo en Windows."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
@@ -10618,7 +10666,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-   "Asignar ancho de interfaz visual"
+   "Fijar ancho de pantalla de la VI"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -10658,11 +10706,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-   "Preferir pantalla táctil frontal"
+   "Dar preferencia a la pantalla táctil frontal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
-   "Activar pantalla táctil"
+   "Control táctil"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
@@ -10678,11 +10726,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
-   "Asignar tiempo límite para bloquear"
+   "Intervalo de espera para introducir entradas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
-   "Indica el número de milisegundos a esperar para conseguir una muestra completa de entrada. Usar si tienes problemas para pulsar varios botones a la vez (solo en Android)."
+   "Indica el número de milisegundos a esperar para conseguir una muestra completa de entrada. Usar en caso de tener problemas para pulsar varios botones a la vez (solo en Android)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
