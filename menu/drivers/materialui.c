@@ -7906,30 +7906,26 @@ static int materialui_switch_tabs(
    /* If target tab is NULL, interpret menu action */
    if (!target_tab)
    {
-      int target_tab_index = 0;
+      unsigned target_tab_index = 0;
 
       switch (action)
       {
          case MENU_ACTION_LEFT:
-            {
-               target_tab_index = (int)mui->nav_bar.active_menu_tab_index - 1;
+            target_tab_index = mui->nav_bar.active_menu_tab_index - 1;
 
-               if (target_tab_index < 0)
-               {
-                  target_tab_index = (int)mui->nav_bar.num_menu_tabs - 1;
-                  mui->nav_bar.menu_navigation_wrapped = true;
-               }
+            if (target_tab_index < 0)
+            {
+               target_tab_index = mui->nav_bar.num_menu_tabs - 1;
+               mui->nav_bar.menu_navigation_wrapped = true;
             }
             break;
          case MENU_ACTION_RIGHT:
-            {
-               target_tab_index = (int)mui->nav_bar.active_menu_tab_index + 1;
+            target_tab_index = mui->nav_bar.active_menu_tab_index + 1;
 
-               if (target_tab_index >= mui->nav_bar.num_menu_tabs)
-               {
-                  target_tab_index = 0;
-                  mui->nav_bar.menu_navigation_wrapped = true;
-               }
+            if (target_tab_index >= mui->nav_bar.num_menu_tabs)
+            {
+               target_tab_index = 0;
+               mui->nav_bar.menu_navigation_wrapped = true;
             }
             break;
          default:
