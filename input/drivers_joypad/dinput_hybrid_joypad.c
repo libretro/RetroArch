@@ -47,7 +47,6 @@ unsigned g_joypad_cnt;
 
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
-   bool is_xinput_pad;
    LPDIRECTINPUTDEVICE8 *pad = NULL;
    if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
