@@ -6,6 +6,12 @@
 #include <boolean.h>
 #include <stdint.h>
 
+#ifdef RARCH_INTERNAL
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#endif
+
 #ifdef HAVE_SSA
 #include <ass/ass.h>
 #endif
