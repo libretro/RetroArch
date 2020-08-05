@@ -3317,6 +3317,10 @@ MSG_HASH(
    "content_show_add"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY,
+   "content_show_add_entry"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,
    "content_show_playlists"
    )

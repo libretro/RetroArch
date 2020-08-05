@@ -602,6 +602,7 @@ typedef struct settings
       unsigned menu_rgui_aspect_ratio_lock;
       unsigned menu_rgui_particle_effect;
       unsigned menu_ticker_type;
+      unsigned menu_content_show_add_entry;
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;

@@ -8446,6 +8446,12 @@ static int materialui_list_push(void *data, void *userdata,
             }
 #endif
 #endif
+            if (settings->uints.menu_content_show_add_entry ==
+                  MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
+               menu_displaylist_setting(&entry);
+            }
 
             if (settings->bools.menu_content_show_netplay)
             {
