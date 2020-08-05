@@ -2899,6 +2899,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             input_id = MENU_SETTINGS_INPUT_BEGIN;
             if ( type == input_id + 1)
                return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
+#ifdef HAVE_LIBNX
+            // account for the additional split joycon option in Input # Binds
+            input_id++;
+#endif
             if ( type == input_id + 2)
                return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
             if ( type == input_id + 3)
