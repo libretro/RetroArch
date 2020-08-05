@@ -3077,36 +3077,24 @@ static unsigned menu_displaylist_parse_playlists(
    if (!horizontal)
    {
       const char *menu_ident = menu_driver_ident();
+      bool show_add_content  = false;
 
-      /* When using MaterialUI with the navigation bar
-       * hidden, these 'add content' entries are accessible
-       * from the main menu 'Scan Content' entry. Placing
-       * them here as well is unnecessary/ugly duplication */
-      if (settings->bools.menu_content_show_add &&
-            !(string_is_equal(menu_ident, "glui") &&
-               !settings->bools.menu_materialui_show_nav_bar))
-      {
-#ifdef HAVE_LIBRETRODB
-         if (menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-                  MENU_ENUM_LABEL_SCAN_DIRECTORY,
-                  MENU_SETTING_ACTION, 0, 0))
-            count++;
-         if (menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
-                  MENU_ENUM_LABEL_SCAN_FILE,
-                  MENU_SETTING_ACTION, 0, 0))
-            count++;
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+      if (string_is_equal(menu_ident, "xmb") ||
+          string_is_equal(menu_ident, "ozone"))
+         show_add_content = settings->bools.menu_content_show_add;
+      else
 #endif
+         show_add_content = (settings->uints.menu_content_show_add_entry ==
+               MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
+
+      if (show_add_content)
          if (menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
-                  MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST),
+                  MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                   MENU_SETTING_ACTION, 0, 0))
             count++;
-      }
 
 #if defined(HAVE_LIBRETRODB)
       if (settings->bools.menu_content_show_explore)
@@ -7486,6 +7474,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_ADD,                                      PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY,                                PARSE_ONLY_UINT, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_TIMEDATE_ENABLE,                                       PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_TIMEDATE_STYLE,                                        PARSE_ONLY_UINT, true  },
@@ -11248,6 +11237,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             settings_t      *settings      = config_get_ptr();
             rarch_system_info_t *sys_info  = runloop_get_system_info();
             const char *menu_ident         = menu_driver_ident();
+            bool show_add_content          = false;
 
             if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
@@ -11330,11 +11320,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (settings->bools.menu_content_show_add)
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+            if (string_is_equal(menu_ident, "xmb") ||
+                string_is_equal(menu_ident, "ozone"))
+               show_add_content = settings->bools.menu_content_show_add;
+            else
+#endif
+               show_add_content = (settings->uints.menu_content_show_add_entry ==
+                     MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB);
+
+            if (show_add_content)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                      MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                      PARSE_ACTION, false) == 0)
                   count++;
+
 #ifdef HAVE_NETWORKING
             if (settings->bools.menu_content_show_netplay)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,

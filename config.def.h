@@ -520,7 +520,14 @@ static const bool content_show_netplay      = true;
 #endif
 #endif
 static const bool content_show_history      = true;
-static const bool content_show_add     	    = true;
+
+/* Specifies 'add content' visibility when using
+ * menus WITH a dedicated 'Import Content' tab */
+#define DEFAULT_MENU_CONTENT_SHOW_ADD true
+/* Specifies 'add content' visibility when using
+ * menus WITHOUT a dedicated 'Import Content' tab */
+#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+
 static const bool content_show_playlists    = true;
 #if defined(HAVE_LIBRETRODB)
 #define DEFAULT_MENU_CONTENT_SHOW_EXPLORE true
