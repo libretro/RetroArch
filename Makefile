@@ -235,6 +235,7 @@ install: $(TARGET)
 	cp $(TARGET) $(DESTDIR)$(BIN_DIR)
 	cp tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	cp retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)
+	cp com.libretro.RetroArch.appdata.xml $(DESTDIR)$(DATA_DIR)/metainfo
 	cp retroarch.desktop $(DESTDIR)$(DATA_DIR)/applications
 	cp docs/retroarch.6 $(DESTDIR)$(MAN_DIR)/man6
 	cp docs/retroarch-cg2glsl.6 $(DESTDIR)$(MAN_DIR)/man6
@@ -245,6 +246,7 @@ install: $(TARGET)
 	chmod 755 $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	chmod 644 $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	chmod 644 $(DESTDIR)$(DATA_DIR)/applications/retroarch.desktop
+	chmod 644 $(DESTDIR)$(DATA_DIR)/metainfo/com.libretro.RetroArch.appdata.xml
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
 	chmod 644 $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
@@ -269,6 +271,7 @@ uninstall:
 	rm -f $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	rm -f $(DESTDIR)$(DATA_DIR)/applications/retroarch.desktop
+	rm -f $(DESTDIR)$(DATA_DIR)/metainfo/com.libretro.RetroArch.appdata.xml
 	rm -f $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
 	rm -f $(DESTDIR)$(DOC_DIR)/COPYING
 	rm -f $(DESTDIR)$(DOC_DIR)/COPYING.assets
