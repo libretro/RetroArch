@@ -43,7 +43,7 @@
 typedef struct
 {
    gfx_thumbnail_t *thumbnail;
-   retro_time_t list_id;
+   uint64_t list_id;
 } gfx_thumbnail_tag_t;
 
 /* Setters */

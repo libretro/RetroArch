@@ -1756,7 +1756,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
       if (period_width < 0)
          goto end;
 
-      if (ticker->field_width < (3 * period_width))
+      if (ticker->field_width < (3 * (unsigned)period_width))
          goto end;
 
       /* Determine number of characters to copy */
