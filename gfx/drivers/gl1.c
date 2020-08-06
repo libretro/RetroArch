@@ -811,6 +811,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
                width, height, gl1->tex, frame_to_copy);
    }
 
+#ifdef HAVE_MENU
    if (gl1->menu_frame && menu_is_alive)
    {
       frame_to_copy = NULL;
@@ -856,7 +857,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
    }
 
-#ifdef HAVE_MENU
    if (gl1->menu_texture_enable)
       menu_driver_frame(menu_is_alive, video_info);
    else
