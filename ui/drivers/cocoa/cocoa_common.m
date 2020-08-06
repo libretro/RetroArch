@@ -178,14 +178,9 @@ void *glkitview_init(void);
     });
 }
 
-- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
-{
-    return UIRectEdgeBottom;
-}
-
 -(BOOL)prefersHomeIndicatorAutoHidden
 {
-    return NO;
+    return YES;
 }
 
 -(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
