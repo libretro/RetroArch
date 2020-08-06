@@ -2908,6 +2908,7 @@ static bool accessibility_speak_priority(
       const char* speak_text, int priority);
 #endif
 
+#ifdef HAVE_MENU
 static bool input_mouse_button_raw(
       struct rarch_state *p_rarch,
       unsigned port, unsigned id);
@@ -2921,7 +2922,6 @@ static bool input_keyboard_ctl(
       struct rarch_state *p_rarch,
       enum rarch_input_keyboard_ctl_state state, void *data);
 
-#ifdef HAVE_MENU
 static void menu_driver_list_free(
       struct rarch_state *p_rarch,
       menu_ctx_list_t *list);
@@ -26658,6 +26658,7 @@ static int16_t input_joypad_analog_axis(
    return res;
 }
 
+#ifdef HAVE_MENU
 /**
  * input_mouse_button_raw:
  * @port                    : Mouse number.
@@ -26690,7 +26691,7 @@ static bool input_mouse_button_raw(
             &joypad_info, p_rarch->libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id);
    return false;
 }
-
+#endif
 
 void input_pad_connect(unsigned port, input_device_driver_t *driver)
 {
@@ -26875,6 +26876,7 @@ static bool input_keyboard_line_event(
    return ret;
 }
 
+#ifdef HAVE_MENU
 static void input_keyboard_line_append(
       struct rarch_state *p_rarch,
       const char *word)
@@ -26949,6 +26951,7 @@ static const char **input_keyboard_start_line(void *userdata,
 
    return (const char**)&p_rarch->keyboard_line->buffer;
 }
+#endif
 
 /**
  * input_keyboard_event:
@@ -27114,6 +27117,7 @@ void input_keyboard_event(bool down, unsigned code,
    }
 }
 
+#ifdef HAVE_MENU
 static bool input_keyboard_ctl(
       struct rarch_state *p_rarch,
       enum rarch_input_keyboard_ctl_state state,
@@ -27159,6 +27163,7 @@ static bool input_keyboard_ctl(
 
    return true;
 }
+#endif
 
 static bool input_config_bind_map_get_valid(unsigned i)
 {

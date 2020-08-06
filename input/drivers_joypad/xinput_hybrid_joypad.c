@@ -36,6 +36,7 @@
 #include <retro_inline.h>
 #include <compat/strl.h>
 #include <dynamic/dylib.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

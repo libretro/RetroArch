@@ -39,12 +39,9 @@ static void keyboard_handle_keymap(void* data,
    }
 
 #ifdef HAVE_XKBCOMMON
-   if (init_xkb(fd, size) < 0)
-      RARCH_ERR("[Wayland]: Failed to init keymap.\n");
+   init_xkb(fd, size);
 #endif
    close(fd);
-
-   RARCH_LOG("[Wayland]: Loaded keymap.\n");
 }
 
 static void keyboard_handle_enter(void* data,
