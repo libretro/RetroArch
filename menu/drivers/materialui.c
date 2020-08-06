@@ -51,6 +51,7 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../runtime_file.h"
+#include "../../list_special.h"
 
 /* Defines the 'device independent pixel' base
  * unit reference size for all UI elements.
@@ -1159,7 +1160,8 @@ enum materialui_node_icon_type
 {
    MUI_ICON_TYPE_NONE = 0,
    MUI_ICON_TYPE_INTERNAL,
-   MUI_ICON_TYPE_MENU_EXPLORE
+   MUI_ICON_TYPE_MENU_EXPLORE,
+   MUI_ICON_TYPE_PLAYLIST
 };
 
 /* This structure holds auxiliary information for
@@ -1424,6 +1426,23 @@ enum materialui_onscreen_entry_position_type
    MUI_ONSCREEN_ENTRY_CENTRE
 };
 
+/* Contains the file path(s) and texture pointer
+ * of a single playlist icon */
+typedef struct
+{
+   char *playlist_file;
+   char *image_file;
+   uintptr_t image;
+} materialui_playlist_icon_t;
+
+/* Contains icon data for all installed
+ * playlists */
+typedef struct
+{
+   size_t size;
+   materialui_playlist_icon_t *icons;
+} materialui_playlist_icons_t;
+
 typedef struct materialui_handle
 {
    bool is_portrait;
@@ -1499,6 +1518,7 @@ typedef struct materialui_handle
    {
       uintptr_t bg;
       uintptr_t list[MUI_TEXTURE_LAST];
+      materialui_playlist_icons_t playlist;
    } textures;
 
    /* Font data */
@@ -1923,6 +1943,239 @@ void materialui_font_flush(
    font_driver_flush(video_width, video_height, font_data->font);
    font_data->raster_block.carr.coords.vertices = 0;
 }
+
+/* ==============================
+ * Playlist icons START
+ * ============================== */
+
+static void materialui_context_destroy_playlist_icons(materialui_handle_t *mui)
+{
+   size_t i;
+
+   for (i = 0; i < mui->textures.playlist.size; i++)
+      video_driver_texture_unload(&mui->textures.playlist.icons[i].image);
+}
+
+static void materialui_context_reset_playlist_icons(materialui_handle_t *mui)
+{
+   size_t i;
+   char icon_path[PATH_MAX_LENGTH];
+
+   icon_path[0] = '\0';
+
+   if (mui->textures.playlist.size < 1)
+      return;
+
+   /* Get icon directory */
+   fill_pathname_application_special(
+         icon_path, sizeof(icon_path),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
+
+   if (string_is_empty(icon_path))
+      return;
+
+   /* Load icons
+    * > Note that missing icons are ignored */
+   for (i = 0; i < mui->textures.playlist.size; i++)
+   {
+      const char *image_file =
+            mui->textures.playlist.icons[i].image_file;
+
+      if (string_is_empty(image_file))
+         continue;
+
+      gfx_display_reset_textures_list(
+            image_file, icon_path,
+            &mui->textures.playlist.icons[i].image,
+            TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+   }
+}
+
+static void materialui_free_playlist_icon_list(materialui_handle_t *mui)
+{
+   size_t i;
+
+   for (i = 0; i < mui->textures.playlist.size; i++)
+   {
+      /* Ensure that any textures are unloaded
+       * > Note: This should never be required.
+       *   Loaded icons will always be 'freed' by
+       *   materialui_context_destroy_playlist_icons() */
+      if (mui->textures.playlist.icons[i].image)
+         video_driver_texture_unload(&mui->textures.playlist.icons[i].image);
+
+      /* Free file names */
+      if (mui->textures.playlist.icons[i].playlist_file)
+         free(mui->textures.playlist.icons[i].playlist_file);
+
+      if (mui->textures.playlist.icons[i].image_file)
+         free(mui->textures.playlist.icons[i].image_file);
+   }
+
+   /* Free icons array and set list size to zero */
+   if (mui->textures.playlist.icons)
+      free(mui->textures.playlist.icons);
+
+   mui->textures.playlist.icons = NULL;
+   mui->textures.playlist.size  = 0;
+}
+
+static void materialui_refresh_playlist_icon_list(materialui_handle_t *mui)
+{
+   settings_t *settings          = config_get_ptr();
+   const char *dir_playlist      = settings ?
+         settings->paths.directory_playlist : NULL;
+   bool icons_enabled            = settings ?
+         settings->bools.menu_materialui_icons_enable : false;
+   bool playlist_icons_enabled   = settings ?
+         settings->bools.menu_materialui_playlist_icons_enable : false;
+   struct string_list *file_list = NULL;
+   size_t i;
+
+   /* Free existing icon list */
+   materialui_free_playlist_icon_list(mui);
+
+   /* If playlist icons are disabled, no further
+    * action is required */
+   if (!icons_enabled || !playlist_icons_enabled)
+      goto end;
+
+   /* Get list of .lpl files in playlists directory */
+   if (string_is_empty(dir_playlist))
+      goto end;
+
+   file_list = dir_list_new_special(dir_playlist,
+         DIR_LIST_COLLECTIONS, NULL, false);
+
+   if (!file_list || (file_list->size < 1))
+      goto end;
+
+   /* Allocate icons array
+    * > We may end up making this larger than
+    *   necessary (if 'invalid' playlist files
+    *   are included in the list), but this
+    *   reduces code complexity */
+   mui->textures.playlist.icons = (materialui_playlist_icon_t*)
+         malloc(file_list->size * sizeof(materialui_playlist_icon_t));
+
+   if (!mui->textures.playlist.icons)
+      goto end;
+
+   mui->textures.playlist.size  = file_list->size;
+
+   for (i = 0; i < file_list->size; i++)
+   {
+      const char *path          = file_list->elems[i].data;
+      const char *playlist_file = NULL;
+      char image_file[PATH_MAX_LENGTH];
+
+      image_file[0] = '\0';
+
+      /* We used malloc() to create the icons
+       * array - ensure struct members are
+       * correctly initialised */
+      mui->textures.playlist.icons[i].playlist_file = NULL;
+      mui->textures.playlist.icons[i].image_file    = NULL;
+      mui->textures.playlist.icons[i].image         = 0;
+
+      /* dir_list_new_special() is 'well behaved'.
+       * - It will only return file paths, not
+       *   directories
+       * - It will only return .lpl files
+       * Only basic sanity checks are therefore
+       * required */
+      if (string_is_empty(path))
+         continue;
+
+      playlist_file = path_basename(path);
+
+      if (string_is_empty(playlist_file))
+         continue;
+
+      /* > Ignore history/favourites playlists */
+      if (string_ends_with_size(playlist_file, "_history.lpl",
+            strlen(playlist_file), STRLEN_CONST("_history.lpl")) ||
+          string_is_equal(playlist_file,
+               file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+         continue;
+
+      /* Playlist is valid - generate image file name */
+      strlcpy(image_file, playlist_file, sizeof(image_file));
+      path_remove_extension(image_file);
+      strlcat(image_file, ".png", sizeof(image_file));
+
+      if (string_is_empty(image_file))
+         continue;
+
+      /* All good - cache paths */
+      mui->textures.playlist.icons[i].playlist_file = strdup(playlist_file);
+      mui->textures.playlist.icons[i].image_file    = strdup(image_file);
+   }
+
+end:
+   if (file_list)
+      string_list_free(file_list);
+}
+
+static void materialui_set_node_playlist_icon(
+      materialui_handle_t *mui, materialui_node_t* node,
+      const char *playlist_path)
+{
+   const char *playlist_file = NULL;
+   size_t i;
+
+   /* Set defaults */
+   node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
+   node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+
+   if (mui->textures.playlist.size < 1)
+      return;
+
+   /* Get playlist file name */
+   if (string_is_empty(playlist_path))
+      return;
+
+   playlist_file = path_basename(playlist_path);
+
+   if (string_is_empty(playlist_path))
+      return;
+
+   /* Search icon list for specified file */
+   for (i = 0; i < mui->textures.playlist.size; i++)
+   {
+      const char *icon_playlist_file =
+            mui->textures.playlist.icons[i].playlist_file;
+
+      if (string_is_empty(icon_playlist_file))
+         continue;
+
+      if (string_is_equal(playlist_file, icon_playlist_file))
+      {
+         node->icon_texture_index = i;
+         node->icon_type          = MUI_ICON_TYPE_PLAYLIST;
+         break;
+      }
+   }
+}
+
+static uintptr_t materialui_get_playlist_icon(
+      materialui_handle_t *mui, unsigned texture_index)
+{
+   uintptr_t playlist_icon;
+
+   /* Always use MUI_TEXTURE_PLAYLIST as
+    * a fallback */
+   if (texture_index >= mui->textures.playlist.size)
+      return mui->textures.list[MUI_TEXTURE_PLAYLIST];
+
+   playlist_icon = mui->textures.playlist.icons[texture_index].image;
+
+   return playlist_icon ? playlist_icon : mui->textures.list[MUI_TEXTURE_PLAYLIST];
+}
+
+/* ==============================
+ * Playlist icons END
+ * ============================== */
 
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
@@ -2372,14 +2625,26 @@ static void materialui_compute_entries_box_default(
       unsigned num_sublabel_lines = 0;
       materialui_node_t *node     = (materialui_node_t*)
             file_list_get_userdata_at_offset(list, i);
-      bool has_icon;
+      bool has_icon               = false;
 
       if (!node)
          continue;
 
-      has_icon = ((node->icon_type == MUI_ICON_TYPE_INTERNAL) &&
-                        mui->textures.list[node->icon_texture_index]) ||
-                 (node->icon_type == MUI_ICON_TYPE_MENU_EXPLORE);
+      switch (node->icon_type)
+      {
+         case MUI_ICON_TYPE_INTERNAL:
+            has_icon = mui->textures.list[node->icon_texture_index] != 0;
+            break;
+         case MUI_ICON_TYPE_MENU_EXPLORE:
+            has_icon = true;
+            break;
+         case MUI_ICON_TYPE_PLAYLIST:
+            has_icon = materialui_get_playlist_icon(
+                  mui, node->icon_texture_index) != 0;
+            break;
+         default:
+            break;
+      }
 
       num_sublabel_lines = materialui_count_sublabel_lines(
             mui, usable_width, i, has_icon);
@@ -3499,6 +3764,10 @@ static void materialui_render_menu_entry_default(
          break;
       case MUI_ICON_TYPE_MENU_EXPLORE:
          icon_texture = menu_explore_get_entry_icon(entry_type);
+         break;
+      case MUI_ICON_TYPE_PLAYLIST:
+         icon_texture = materialui_get_playlist_icon(
+               mui, node->icon_texture_index);
          break;
       default:
          switch (entry_file_type)
@@ -7228,6 +7497,11 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->status_bar.runtime_fallback_str[0]     = '\0';
    mui->status_bar.last_played_fallback_str[0] = '\0';
 
+   /* Initialise playlist icon list */
+   mui->textures.playlist.size  = 0;
+   mui->textures.playlist.icons = NULL;
+   materialui_refresh_playlist_icon_list(mui);
+
    gfx_animation_set_update_time_cb(materialui_menu_animation_update_time);
 
    return menu;
@@ -7253,6 +7527,9 @@ static void materialui_free(void *data)
 
    if (mui->thumbnail_path_data)
       free(mui->thumbnail_path_data);
+
+   materialui_free_playlist_icon_list(mui);
+
    gfx_animation_unset_update_time_cb();
 }
 
@@ -7290,7 +7567,7 @@ static void materialui_reset_thumbnails(void)
 static void materialui_context_destroy(void *data)
 {
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   unsigned i;
+   size_t i;
 
    if (!mui)
       return;
@@ -7298,6 +7575,9 @@ static void materialui_context_destroy(void *data)
    /* Free standard menu textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       video_driver_texture_unload(&mui->textures.list[i]);
+
+   /* Free playlist icons */
+   materialui_context_destroy_playlist_icons(mui);
 
    /* Free fonts */
    if (mui->font_data.title.font)
@@ -7766,13 +8046,14 @@ static void materialui_context_reset(void *data, bool is_threaded)
    settings_t        *settings     = config_get_ptr();
    const char *path_menu_wallpaper = settings ? settings->paths.path_menu_wallpaper : NULL;
 
-   if (!mui || !settings)
+   if (!mui)
       return;
 
    materialui_layout(mui, is_threaded);
    materialui_context_bg_destroy(mui);
    gfx_display_allocate_white_texture();
    materialui_context_reset_textures(mui);
+   materialui_context_reset_playlist_icons(mui);
 
    if (path_is_valid(path_menu_wallpaper))
       task_push_image_load(path_menu_wallpaper,
@@ -7785,21 +8066,37 @@ static void materialui_context_reset(void *data, bool is_threaded)
 static int materialui_environ(enum menu_environ_cb type,
       void *data, void *userdata)
 {
-   materialui_handle_t *mui              = (materialui_handle_t*)userdata;
+   materialui_handle_t *mui = (materialui_handle_t*)userdata;
+
+   if (!mui)
+      return -1;
 
    switch (type)
    {
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
-         if (!mui)
-            return -1;
          mui->mouse_show = true;
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
-         if (!mui)
-            return -1;
          mui->mouse_show = false;
          break;
-      case 0:
+      case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
+
+         /* Reset playlist icon list */
+         materialui_context_destroy_playlist_icons(mui);
+         materialui_refresh_playlist_icon_list(mui);
+         materialui_context_reset_playlist_icons(mui);
+
+         /* If we are currently viewing the playlists tab,
+          * the menu must be refreshed (since icon indices
+          * may have changed) */
+         if (mui->is_playlist_tab)
+         {
+            bool refresh = false;
+            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+         }
+
+         break;
       default:
          break;
    }
@@ -9199,8 +9496,7 @@ static void materialui_list_insert(
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_PLAYLIST_COLLECTION:
-            node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
-            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            materialui_set_node_playlist_icon(mui, node, path);
             break;
          case FILE_TYPE_RDB:
             node->icon_texture_index = MUI_TEXTURE_DATABASE;

@@ -76,6 +76,8 @@
 #ifdef HAVE_MATERIALUI
 /* Show icons to the left of each menu entry */
 #define DEFAULT_MATERIALUI_ICONS_ENABLE true
+/* Show system-specific icons in the playlists tab */
+#define DEFAULT_MATERIALUI_PLAYLIST_ICONS_ENABLE true
 #endif
 
 /* Material UI colour theme */
