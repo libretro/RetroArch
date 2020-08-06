@@ -16971,6 +16971,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             static bool game_focus_state  = false;
+            bool video_fullscreen         = settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
             intptr_t                 mode = (intptr_t)data;
 
             /* mode = -1: restores current game focus state
@@ -16982,8 +16983,8 @@ bool command_event(enum event_command cmd, void *data)
             else if (mode != -1)
                game_focus_state = !game_focus_state;
 
-            RARCH_LOG("%s: %s.\n",
-                  "Game focus is: ",
+            RARCH_LOG("%s => %s\n",
+                  "Game focus",
                   game_focus_state ? "on" : "off");
 
             if (game_focus_state)
@@ -17000,7 +17001,8 @@ bool command_event(enum event_command cmd, void *data)
             else
             {
                input_driver_ungrab_mouse(p_rarch);
-               video_driver_show_mouse();
+               if (!video_fullscreen)
+                  video_driver_show_mouse();
                p_rarch->input_driver_block_hotkey               = false;
                p_rarch->current_input->keyboard_mapping_blocked = false;
                if (mode != -1)
