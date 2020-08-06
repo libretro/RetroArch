@@ -73,7 +73,7 @@
 #define RBUF_POP(b) (b)[--RBUF__HDR(b)->len]
 #define RBUF_RESIZE(b, sz) (RBUF_FIT((b), (sz)), ((b) ? RBUF__HDR(b)->len = (sz) : 0))
 #define RBUF_CLEAR(b) ((b) ? RBUF__HDR(b)->len = 0 : 0)
-#define RBUF_TRYFIT(b, n) (RBUF_FIT((b), (n)), ((b) && RBUF_CAP(b) >= (size_t)(n)))
+#define RBUF_TRYFIT(b, n) (RBUF_FIT((b), (n)), (((b) && RBUF_CAP(b) >= (size_t)(n)) || !(n)))
 
 struct rbuf__hdr
 {
