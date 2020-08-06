@@ -22,6 +22,7 @@
 - FILE I/O: VFS and NBIO interfaces will now use 64-bit fseek/ftell where possible, should allow for reading/writing to files bigger than 2GB
 - INPUT MAPPING/REMAPPING: Add input remap drop-down lists
 - IOS: Fixed iOS 6 version
+- IOS: Hide the home indicator as it obscures the content too frequently
 - IOS/METAL: Metal video driver now works on RetroArch iOS
 - IOS/METAL: Support getting video metrics to support proper touchscreen interactions
 - LOCALIZATION: Updates for several languages (synchronized from Crowdin)
