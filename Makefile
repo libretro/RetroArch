@@ -229,6 +229,7 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)$(BIN_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(DATA_DIR)/applications 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(DATA_DIR)/metainfo 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(DOC_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(MAN_DIR)/man6 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(DATA_DIR)/pixmaps 2>/dev/null || /bin/true
