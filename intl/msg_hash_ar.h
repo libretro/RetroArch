@@ -96,14 +96,6 @@ MSG_HASH(
    "سيظهر هنا أي محتوى تعرض للتحليل و طابق قاعدة بيانات الألعاب المعروفة."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "تحليل محتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "يحلل المحتوى و يضيفه لقاعدة بيانات الألعاب المعروفة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "إظهار قائمة المكتب"
    )
@@ -4104,10 +4096,6 @@ MSG_HASH(
    "الحد من عدد المدخلات في قائمة التشغيل الحديثة للألعاب والصور والموسيقى والفيديو."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "الحد من عدد الإدخالات في قائمة التشغيل المفضلة. بمجرد الوصول إلى الحد الأقصى، سيتم منع الإضافات الجديدة حتى تتم إزالة الإدخالات القديمة. تحديد قيمة -1 يسمح للمدخلات 'غير محدودة' (99999). تحذير: تخفيض القيمة سيؤدي إلى حذف المدخلات الموجودة!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "السماح بإعادة تسمية المدخلات"
    )
@@ -6798,10 +6786,6 @@ MSG_HASH(
    "أيقونات القائمة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "إظهار الرموز في يسار إدخالات القائمة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    "تحسين التخطيط الأفقي"
    )
@@ -8035,10 +8019,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "الإعدادات"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "التنزيلات"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,

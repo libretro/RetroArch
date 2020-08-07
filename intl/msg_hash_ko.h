@@ -96,14 +96,6 @@ MSG_HASH(
    "검색된 컨텐츠가 이곳에 표시됩니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "컨텐츠 검색"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "컨텐츠를 검색하여 데이터베이스에 추가합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "데스크탑 메뉴 보이기"
    )
@@ -4032,10 +4024,6 @@ MSG_HASH(
    "게임, 이미지, 음악 및 비디오의 최근 실행 목록 항목 수를 제한합니다."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "즐겨찾기 목록의 항목 수를 제한합니다. 제한 수량을 채우면 이전 목록을 삭제하기 전까지 추가 저장이 제한됩니다. 설정값을 -1로 하면 '무제한'(99999)으로 설정됩니다. 경고: 값을 줄이면 기존 항목이 삭제 될 수 있음!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "항목 편집 허용"
    )
@@ -6590,10 +6578,6 @@ MSG_HASH(
    "메뉴 아이콘"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "메뉴 항목에 왼쪽에 표시되는 메뉴 아이콘들을 표시/해제합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    "가로 레이아웃 최적화"
    )
@@ -7747,10 +7731,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "환경설정"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "다운로드"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,

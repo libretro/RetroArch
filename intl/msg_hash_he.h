@@ -48,10 +48,6 @@ MSG_HASH(
    "טעינת תוכן"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "סריקת תוכן"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "הצג תפריט שולחן עבודה"
    )
