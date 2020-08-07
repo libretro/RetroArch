@@ -35,6 +35,7 @@
 - MENU/WIDGETS: Add optional widget-based 'load content' launch feedback animation
 - MENU/WIDGETS: Make notification font size option visible when graphics widgets are enabled
 - ODROID GO ADVANCE: Video driver - fix race condition with RGUI callback
+- PLAYLISTS: Change playlists to use dynamic arrays. Instead of a fixed initial 12MB memory allocation (99999 * 128 byte (on 64bit arch)), use a dynamically growing array
 - PLAYLISTS: Playlist base content directory paths - portable playlists
 - PLAYLISTS/SEARCH: Enhanced playlist search functionality
 - PLAYLISTS/DATABASE: Add 'Explore' view
