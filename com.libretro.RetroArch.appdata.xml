@@ -23,7 +23,7 @@
   <url type="bugtracker">https://github.com/libretro/RetroArch/issues</url>
   <url type="donation">https://www.retroarch.com/index.php?page=donate</url>
   <releases>
-    <release version="1.8.9"/>
+    <release version="1.9.0"/>
   </releases>
   <project_group>Libretro</project_group>
   <project_license>GPL-3.0</project_license>
