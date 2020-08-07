@@ -29,7 +29,7 @@
 RETRO_BEGIN_DECLS
 
 /* Default maximum playlist size */
-#define COLLECTION_SIZE 99999
+#define COLLECTION_SIZE 0x7FFFFFFF
 
 typedef struct content_playlist playlist_t;
 
