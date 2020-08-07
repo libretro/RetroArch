@@ -13,7 +13,7 @@
 - CHEEVOS: Fix 'Auto Save State freezes RetroArch while Cheevos is enabled'
 - CORE OPTIONS: Pressing OK (or clicking/tapping) on a 'boolean toggle' core option no longer opens a drop-down list. The value now toggles directly, just like boolean options everywhere else in the menu
 - CORE OPTIONS: Toggling an option that changes the number of core options being displayed (i.e. things like `Show Advanced Audio/Video Settings) no longer resets the navigation pointer to the start of the list
-- CORE OPTIONS: At present, RetroArch identifies core option values as being 'boolean' if they have labels matching the specific strings enabled or disabled. Most core devs abide by this, but not always... As a result, we sometimes end up with misidentified values, with all kinds of Enabled, Off, True, etc. strings littering the menu, in place of proper toggle switches. With this PR, all boolean-type value labels are now detected, and replaced with standard ON/OFF strings.
+- CORE OPTIONS: Before, RetroArch would identify core option values as being 'boolean' if they had labels matching the specific strings enabled or disabled. Most core devs would abide by this, but not always... As a result, we sometimes would end up with misidentified values, with all kinds of Enabled, Off, True, etc. strings littering the menu, in place of proper toggle switches. All boolean-type value labels are now detected, and replaced with standard ON/OFF strings.
 - CLI: A new command line option --load-menu-on-error has been added
 - CRT: On the fly CRT porch adjuments - these changes allow a user to adjust how the porch algorithm generates the 15khz/31khz output. Giving the ability to change over/under scan.
 - CONFIG FILE: Optimise parsing of configuration files
