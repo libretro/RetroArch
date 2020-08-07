@@ -1,4 +1,6 @@
 # Future
+
+# 1.9.0
 - 3DS: Fix sound crackling when paused
 - ANDROID/VIBRATION: Fixes "Vibrate on Key Press" having no effect on Android devices, which occurred because only the off time/strength was defined in what should have been a pair of off/on values
 - AUTOCONFIG: Ensure correct directory is used when saving autoconfig profiles
