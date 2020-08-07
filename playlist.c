@@ -2878,7 +2878,8 @@ void playlist_qsort(playlist_t *playlist)
    /* Avoid inadvertent sorting if 'sort mode'
     * has been set explicitly to PLAYLIST_SORT_MODE_OFF */
    if (!playlist ||
-       (playlist->sort_mode == PLAYLIST_SORT_MODE_OFF))
+       (playlist->sort_mode == PLAYLIST_SORT_MODE_OFF) ||
+       !playlist->entries)
       return;
 
    qsort(playlist->entries, RBUF_LEN(playlist->entries),
@@ -2975,7 +2976,7 @@ bool playlist_entries_are_equal(
 void playlist_get_crc32(playlist_t *playlist, size_t idx,
       const char **crc32)
 {
-   if (!playlist)
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return;
 
    if (crc32)
@@ -2985,7 +2986,7 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name)
 {
-   if (!playlist)
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return;
 
    if (db_name)
