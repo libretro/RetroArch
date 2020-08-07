@@ -489,7 +489,13 @@ static void explore_load_icons(explore_state_t *state)
       return;
 
    system_count = RBUF_LEN(state->by[EXPLORE_BY_SYSTEM]);
+
+   /* unload any icons that could exist from a previous call to this */
+   explore_unload_icons(state);
+
+   /* RBUF_RESIZE leaves memory uninitialised, have to zero it 'manually' */
    RBUF_RESIZE(state->icons, system_count);
+   memset(state->icons, 0, RBUF_SIZEOF(state->icons));
 
    fill_pathname_application_special(path, sizeof(path),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
@@ -502,7 +508,6 @@ static void explore_load_icons(explore_state_t *state)
    for (i = 0; i != system_count; i++)
    {
       struct texture_image ti;
-      state->icons[i] = 0;
 
       strlcpy(path + pathlen,
             state->by[EXPLORE_BY_SYSTEM][i]->str, sizeof(path) - pathlen);
