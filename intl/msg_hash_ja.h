@@ -96,14 +96,6 @@ MSG_HASH(
    "スキャンしたコンテンツを表示します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "コンテンツをスキャン"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "コンテンツをスキャンしてデータベースに追加します. "
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "デスクトップメニューを表示"
    )
@@ -4460,10 +4452,6 @@ MSG_HASH(
    "お気に入りのサイズ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "お気に入りプレイリストのエントリ数を制限します. 制限に達すると, 古いエントリが削除されるまで新しく追加できなくなります. 値を -1 に設定すると, '無制限' (99999) エントリが許可されます. 警告: 値を減らすと, 既存のエントリが削除されます!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "エントリの名前変更を許可"
    )
@@ -6982,10 +6970,6 @@ MSG_HASH(
    "メニューのアイコン"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "メニュー項目の左側に表示されるメニューアイコンを有効/無効にします。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
    "ナビゲーションバーを表示"
    )
@@ -8015,10 +7999,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "メイン設定ファイル"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "ダウンロード"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,

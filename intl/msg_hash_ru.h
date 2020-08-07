@@ -101,11 +101,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Сканировать контент"
+   "Импорт контента"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Сканировать контент и добавить в базу данных."
+   "Создавайте и обновляйте плейлисты, сканируя содержимое."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -1262,7 +1262,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "Изменить настройки масштабирования видео."
+   "Настройка параметров масштабирования изображения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -1286,7 +1286,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Повышает производительность за счёт понижения количества кадров в секунду. Использовать только тогда, когда другие способы не сработали."
+   "Улучшает производительность, но вносит увеличение задержки и снижение плавности. Используйте только при недостаточной скорости эмуляции."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -1310,7 +1310,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Добавляет небольшое размытие к изображению для сглаживания пикселей. Данная настройка практически не влияет на производительность."
+   "Включает небольшое размытие изображения для сглаживания пикселизации. Практически не влияет на производительность."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1408,7 +1408,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Вертикальная частота обновления экрана устройства. Используется для вычисления подходящего значения ввода аудиоданных.\nПРИМЕЧАНИЕ: не учитывается, если включена функция «Видео в отдельном потоке»."
+   "Вертикальная частота обновления экрана устройства. Используется для вычисления подходящего значения частоты ввода аудиоданных.\nПРИМЕЧАНИЕ: не учитывается, если вкл. 'Видео в отдельном потоке'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1766,7 +1766,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Перебивать аудиоустройство по умолчанию, используя аудиодрайвер. Эта настройка зависит от драйвера."
+   "Изменить устройство, используемое аудиодрайвером по умолчанию. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -2309,7 +2309,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
-   "Показывать частоту кадров"
+   "Показать FPS (переключение)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
@@ -2659,7 +2659,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Не показывать предупреждение, появляющееся если используется функция обгона и ядро не поддерживает сохранения."
+   "Не показывать предупреждение если включена функция обгона и ядро не поддерживает сохранения."
    )
 
 /* Settings > Core */
@@ -2716,7 +2716,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-   "Разрешить ядрам поворот изображения. Если выкл., запросы на вращение игнорируются. Полезно для конфигураций, где используется ручная установка поворота экрана."
+   "Разрешить ядрам поворот изображения. Если выкл., запросы на вращение будут игнорироваться. Подходит для конфигураций с ручной установкой поворота."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
@@ -2902,6 +2902,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
    "Уровень логирования фронтенда"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+   "Устанавливает уровень логирования фронтенда. Сообщения ниже заданного уровня игнорируются."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
@@ -3134,6 +3138,14 @@ MSG_HASH(
    "Настройки рамок и экранного управления"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "Макет экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "Настройка параметров макета экрана."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "Экранные уведомления"
    )
@@ -3254,8 +3266,28 @@ MSG_HASH(
 /* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
+   "Включить макеты экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
+   "Макеты используются для отображения рамок и других декоративных элементов."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
+   "Путь к макету экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
+   "Загрузить макет экрана из памяти."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
    "Выбранный вид"
+   )
+MSG_HASH( /* FIXME Unused */
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
+   "Выберите один из видов в загруженном макете."
    )
 
 /* Settings > On-Screen Display > On-Screen Notifications */
@@ -3537,7 +3569,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
-   "Показать дополнительные настройки"
+   "Расширенные настройки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
@@ -3716,7 +3748,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Показывать загрузчик ядер"
+   "Показывать 'Загрузчик ядер'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
@@ -3784,7 +3816,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Установить пароль для отключения вкладки 'Настройки'. Для восстановления вкладки выберите в главном меню пункт 'Включить вкладку Настройки' и введите пароль."
+   "Установка пароля позволяет восстановить доступ при отключении видимости вкладки 'Настройки'. Для этого выберите в главном меню пункт 'Включить вкладку Настройки' и введите пароль."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
@@ -3841,6 +3873,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
    "Показывать вкладку 'Импорт контента' в главном меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
+   "Показывать 'Импорт контента'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
+   "Показывать вкладку импорта содержимого в главном меню или в подменю плейлистов."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Главное меню"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   "Меню плейлистов"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
@@ -3919,7 +3967,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-   "Показывать 'Продолжить контент'"
+   "Показывать 'Продолжить'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
@@ -3927,7 +3975,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Показывать 'Перезапустить контент'"
+   "Показывать 'Перезагрузка'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
@@ -4106,7 +4154,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
-   "Показать Видео"
+   "Показывать 'Видео'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
@@ -4253,11 +4301,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Масштаб в меню"
+   "Масштаб меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
-   "Масштабирует элементы пользовательского интерфейса в меню."
+   "Масштабирование элементов интерфейса пользователя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
@@ -4305,7 +4353,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-   "Автоматически масштабировать миниатюры с шириной/высотой меньше заданного значения. Улучшает качество изображения. Оказывает незначительное влияние на производительность."
+   "Автоматически масштабировать эскизы с шириной/высотой меньше заданного значения. Повышает качество изображения. Умеренно влияет на производительность."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
@@ -4737,7 +4785,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Количество записей в избранном. При достижении предела, новые записи не будут добавлены до удаления старых. Установка значения -1 даёт 'неограниченное' (99999) количество записей. ВНИМАНИЕ: уменьшение значения приведёт к удалению существующих записей!"
+   "Ограничение количества записей в избранном. При достижения предела новые записи не будут добавляться до удаления старых. Значение '-1' снимает ограничение.ВНИМАНИЕ: уменьшение значения удалит существующие записи!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -5061,7 +5109,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Конфигурация"
+   "Конфигурации"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
@@ -5141,7 +5189,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
-   "Конфигурация записи"
+   "Конфигурации записи"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
@@ -5156,16 +5204,24 @@ MSG_HASH(
    "Каталог хранения оверлеев."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   "Макеты экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
+   "Каталог хранения макетов экрана."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-   "Скриншот"
+   "Скриншоты"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
-   "Выберите папку, где будут сохраняться ваши скриншоты."
+   "Каталог хранения скриншотов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "Преднастроенные контроллеры"
+   "Профили контроллеров"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
@@ -5353,7 +5409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Задаёт 'название системы' для связи с отсканированным контентом. Используется в качестве имени файла плейлиста, а также для идентификации миниатюр."
+   "Укажите 'название системы', с которой будет связан сканируемый контент. Используется в качестве имени плейлиста и для идентификации миниатюр."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
@@ -5361,7 +5417,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Пользовательская установка 'названия системы' для просканированного контента. Используется только если для параметра 'Название системы' выбрано <Ручной ввод>."
+   "Укажите своё название системы для сканируемого контента. Учитывается только если для настройки 'Название системы' выбрано '<Ручной ввод>'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -5635,7 +5691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
-   "Сделать скриншот экрана."
+   "Сделать снимок экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATE_SLOT,
@@ -5667,7 +5723,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-   "При загруженном сохранении, контент изменит свое состояние на предшествующее загруженному."
+   "Вернуться к состоянию контента до момента загрузки сохранения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
@@ -5675,7 +5731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "Если сохранение было перезаписано, будет произведен откат на предшествующее."
+   "Откатиться к предыдущему сохранению, если сохранение было перезаписано."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -6772,6 +6828,34 @@ MSG_HASH(
    "Отображать полные метки"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+   "Убрать ()"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+   "Убрать []"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+   "Убирать () и []"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+   "Оставить регион"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+   "Оставить номер диска"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+   "Оставить регион и номер диска"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
+   "По умолчанию"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
    "Бокс-арты"
    )
@@ -6786,6 +6870,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
    "Нормальная"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+   "Быстро"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ON,
@@ -6908,6 +6996,10 @@ MSG_HASH(
    "Колесо мыши влево"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
+   "Колесо мыши вправо"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
    "Ранняя"
    )
@@ -7028,11 +7120,31 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Включить фон заполнителя границ"
+   "Плотность фона"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   "Повышает зернистость клетчатого фона меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Включить заполнитель границ"
+   "Орнамент меню"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "Плотность орнамента"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "Повышает зернистость клетчатого орнамента меню."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "Отображать орнамент меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   "Макет по ширине окна"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
@@ -7045,6 +7157,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Добавляет небольшое размытие в меню для сглаживания пикселей."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   "Внутренний апскейлинг"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
@@ -7369,6 +7485,10 @@ MSG_HASH(
    "Отображение теней у иконок"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+   "Включить отбрасывание теней для иконок. Незначительно влияет на производительность."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    "Шейдер меню"
    )
@@ -7392,6 +7512,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    "Отображать левую миниатюру под правой, в правой части экрана."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "Степень масштабирования эскизов"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "Уменьшение размера миниатюр путём изменения максимального значения ширины."
+   )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Включить вкладку Настройки"
@@ -7408,6 +7536,10 @@ MSG_HASH(
    "Лента"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
+   "Лента (простая)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
    "Простой снег"
    )
@@ -7418,6 +7550,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
    "Боке"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
+   "Снежинки"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
@@ -7554,6 +7690,14 @@ MSG_HASH(
    "Отображать иконки слева от элементов меню."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Значки в плейлистах"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Показывать системные иконки на вкладке плейлистов (требуется перезапуск)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    "Оптимизировать меню в ландшафте"
    )
@@ -7594,8 +7738,32 @@ MSG_HASH(
    "Включить эффекты сглаживания для переходов между уровнями меню."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   "Режим эскизов в портрете"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   "Выбор режима миниатюр плейлиста в портретной ориентации."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   "Режим эскизов в ландшафте"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   "Выбор режима миниатюр плейлиста в альбомной ориентации."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+   "Добавочный эскиз в режиме списка"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "Показывать дополнительный эскиз в режиме отображения типа 'Список'. Данная настройка работает только если ширины экрана хватает для отображения двух эскизов."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   "Добавлять фон к эскизам"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -7607,7 +7775,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
-   "Основной тип миниатюр для записей в плейлистах. Используется в качестве иконок контента."
+   "Основной тип эскиза для записей в плейлистах. Используется в качестве иконок контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
@@ -7653,6 +7821,14 @@ MSG_HASH(
    "Ozone тёмная"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
+   "Затухание"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
+   "Скольжение"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
    "ВЫКЛ"
    )
@@ -7661,8 +7837,36 @@ MSG_HASH(
    "ВЫКЛ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
+   "Список (малый)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
+   "Список (средний)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
+   "Двойной эскиз"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
    "ВЫКЛ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL,
+   "Список (малый)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM,
+   "Список (средний)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE,
+   "Список (крупный)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP,
+   "Рабочий стол"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
@@ -7684,6 +7888,10 @@ MSG_HASH(
    "Инфо"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
+   "&Файл"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
    "&Загрузить ядро..."
    )
@@ -7692,8 +7900,24 @@ MSG_HASH(
    "Предварительный просмотр параметров шейдера"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
+   "Запоминать место стыковки:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   "Запоминать размеры окна:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
    "Запоминать последнюю открытую вкладку браузера:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+   "Тема:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
+   "<По умолчанию>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
@@ -7704,8 +7928,24 @@ MSG_HASH(
    "Пользовательская..."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "Настройки"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
+   "&Инструменты"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    "&Помощь"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
+   "О RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
+   "Документация"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
@@ -7716,6 +7956,18 @@ MSG_HASH(
    "Загрузить ядро"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+   "Загрузка ядра..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Название"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
+   "Версия"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "Плейлисты"
    )
@@ -7724,8 +7976,32 @@ MSG_HASH(
    "Файловый менеджер"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+   "Начало"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+   "Вверх"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+   "Обозреватель контента"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+   "Бокс-арт"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    "Скриншот"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   "Титульный экран"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+   "Все плейлисты"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE,
@@ -7736,28 +8012,156 @@ MSG_HASH(
    "Информация о ядре"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
+   "<Спрашивать>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "Информация"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_WARNING,
+   "Внимание"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ERROR,
    "Ошибка"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
+   "Ошибка сети"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+   "Пожалуйста, перезапустите программу для вступления изменений в силу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOG,
+   "Журнал событий"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
+   "Объектов: %1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
+   "Перетащите картинку"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
+   "Не показывать снова"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_STOP,
    "Стоп"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   "Привязать ядро"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
+   "Скрытые плейлисты"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_HIDE,
+   "Скрыть"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   "Цвет выделения:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
+   "&Выбор..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
+   "Выбрать цвет"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SELECT_THEME,
+   "Выбрать тему"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
    "Пользовательская тема"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
+   "Не задан путь к файлу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+   "Пустой файл."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   "Не удалось открыть файл для чтения."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
+   "Не удалось открыть файл для записи."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
+   "Файл не существует."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   "Сначала предлагать загруженное ядро:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ZOOM,
+   "Увеличить"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW,
+   "Вид"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
+   "Эскизы"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
+   "Список"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    "Очистить"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
+   "Прогресс:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   "Максимум записей для \"Все плейлисты\":"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   "Показывать скрытые файлы и папки:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
+   "Новый плейлист"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
+   "Пожалуйста, укажите имя нового плейлиста:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    "Удалить список воспроизведения"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
+   "Переименовать плейлист"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   "Вы уверены, что хотите удалить плейлист \"%1\"?"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -7875,6 +8279,10 @@ MSG_HASH(
    "Нет плейлистов."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "Подключен"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
    "Онлайн"
    )
@@ -7907,6 +8315,10 @@ MSG_HASH(
    "Игрок"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "Встроенный просмотр изображений"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Максимальное количество образов свопчейнов"
    )
@@ -7916,7 +8328,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-   "Изменяет настройки шейдера, которая в настоящее время используется в меню."
+   "Изменяет параметры текущего пресета шейдера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
@@ -8140,10 +8552,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Конфигурация"
    )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Загрузки"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
    "Настройки Netplay"
@@ -8340,7 +8748,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Автозагрузка из"
+   "Автозагрузка сохранения из"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -8420,7 +8828,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "Процесс автосохранения"
+   "Автосохранение в"
    )
 MSG_HASH(
    MSG_BLOCKING_SRAM_OVERWRITE,
@@ -9188,7 +9596,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
-   "Не настроен, используется резервный"
+   "не настроен, используется резерв"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
@@ -9241,6 +9649,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONFIG_OVERRIDE_LOADED,
    "Загружено переопределение конфигурации."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Обгон отключен, т.к. ядро не поддерживает быстрые сохранения."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Не удалось создать сохранение. Run-Ahead отключен."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Не удалось загрузить сохранение. Run-Ahead отключен."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,

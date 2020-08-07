@@ -96,10 +96,6 @@ MSG_HASH(
    "Đã quét nội dung khớp với Csdl và hiển thị tại đây."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Thêm nội dung"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "Cập nhật trực tuyến"
    )
@@ -1223,10 +1219,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Config Danh mục"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Mục Downloads"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,

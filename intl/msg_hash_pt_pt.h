@@ -84,10 +84,6 @@ MSG_HASH(
    "O conteúdo verificado aparecerá aqui."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Procurar conteúdo"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Mostrar Menu do Ambiente de trabalho"
    )
@@ -3810,10 +3806,6 @@ MSG_HASH(
    "Ícones do menu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "Ativar/desativar os ícones do menu que so mostrados no lado esquerdo das entradas do menu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
    "Tema da cor do menu"
    )
@@ -4307,10 +4299,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Configurar"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Transferências"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,

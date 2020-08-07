@@ -92,14 +92,6 @@ MSG_HASH(
    "Gescande inhoud zal hier getoond worden."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Inhoud toevoegen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Scan de inhoud en voeg toe aan de database."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Bureaubladmenu weergeven"
    )

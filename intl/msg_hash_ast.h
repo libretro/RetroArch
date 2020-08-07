@@ -1039,6 +1039,10 @@ MSG_HASH(
    "Amuesa la llingüeta «Importación» dientro del menú principal."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Menú principal"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    "Amosar la data y hora"
    )

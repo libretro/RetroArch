@@ -96,14 +96,6 @@ MSG_HASH(
    "Tutaj pojawi się skanowana zawartość."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Skanuj zawartość"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Zeskanuj zawartość i dodaj do bazy danych."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Pokaż menu pulpitu"
    )
@@ -3764,10 +3756,6 @@ MSG_HASH(
    "Ogranicz liczbę wpisów na liście odtwarzania dla gier, zdjęć, muzyki i filmów."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Ogranicz liczbę wpisów na liście odtwarzania ulubionych. Po osiągnięciu limitu nowe dodatki będą blokowane, dopóki stare wpisy nie zostaną usunięte. Ustawienie wartości -1 pozwala na „nieograniczoną” liczbę (99999) wpisów. OSTRZEŻENIE: Zmniejszenie wartości spowoduje usunięcie istniejących wpisów!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "Zezwalaj na zmianę nazw wpisów"
    )
@@ -6406,10 +6394,6 @@ MSG_HASH(
    "Ikony menu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "Włącz/wyłącz ikony menu pokazane po lewej stronie wpisów menu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    "Optymalizuj układ poziomy"
    )
@@ -7611,10 +7595,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Konfiguracja"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Pliki do pobrania"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,

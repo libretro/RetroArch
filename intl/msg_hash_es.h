@@ -101,11 +101,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Buscar contenido"
+   "Importar contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Busca contenidos y los incluye en la base de datos."
+   "Busca contenidos para crear y actualizar las listas de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -3863,6 +3863,22 @@ MSG_HASH(
    "Muestra la sección Importar contenido en el menú principal."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
+   "Mostrar Importar contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
+   "Muestra la opción Importar contenidos dentro del menú principal o en la sección de listas de reproducción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Menú principal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   "Menú de listas de reproducción"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "Mostrar secciones de listas de reproducción"
    )
@@ -4773,7 +4789,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limita la cantidad de elementos de la lista de reproducción de favoritos. Cuando se alcance el límite, no se añadirán más entradas hasta que se eliminen otras. Introduce -1 para tener un número de entradas «ilimitado» (99999). ADVERTENCIA: ¡Si se reduce este valor, se borrarán las entradas ya existentes!"
+   "Limita la cantidad de elementos de la lista de reproducción de favoritos. Cuando se alcance el límite, no se añadirán más entradas hasta que se eliminen otras. Introduce -1 para tener un número de entradas «ilimitado». ADVERTENCIA: ¡Si se reduce este valor, se borrarán las entradas ya existentes!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -7750,6 +7766,14 @@ MSG_HASH(
    "Muestra iconos a la izquierda de los elementos del menú."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Iconos de las listas de reproducción"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Muestra iconos de cada sistema en la sección de listas de reproducción (es necesario reiniciar)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    "Optimizar disposición en modo horizontal"
    )
@@ -8987,10 +9011,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Configuración"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Descargas"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
