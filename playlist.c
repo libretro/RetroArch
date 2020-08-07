@@ -30,6 +30,7 @@
 #include <file/file_path.h>
 #include <lists/string_list.h>
 #include <formats/jsonsax_full.h>
+#include <array/rbuf.h>
 
 #include "playlist.h"
 #include "verbosity.h"
@@ -63,8 +64,6 @@ struct content_playlist
    enum playlist_thumbnail_mode left_thumbnail_mode;
    enum playlist_sort_mode sort_mode;
 
-   size_t size;
-
    char *default_core_path;
    char *default_core_name;
    char *base_content_directory;
@@ -78,6 +77,7 @@ typedef struct
    bool in_items;
    bool in_subsystem_roms;
    bool capacity_exceeded;
+   bool out_of_memory;
 
    unsigned array_depth;
    unsigned object_depth;
@@ -355,7 +355,7 @@ uint32_t playlist_get_size(playlist_t *playlist)
 {
    if (!playlist)
       return 0;
-   return (uint32_t)playlist->size;
+   return (uint32_t)RBUF_LEN(playlist->entries);
 }
 
 char *playlist_get_conf_path(playlist_t *playlist)
@@ -379,7 +379,7 @@ void playlist_get_index(playlist_t *playlist,
       size_t idx,
       const struct playlist_entry **entry)
 {
-   if (!playlist || !entry || (idx >= playlist->size))
+   if (!playlist || !entry || (idx >= RBUF_LEN(playlist->entries)))
       return;
 
    *entry = &playlist->entries[idx];
@@ -452,15 +452,15 @@ static void playlist_free_entry(struct playlist_entry *entry)
 void playlist_delete_index(playlist_t *playlist,
       size_t idx)
 {
-   struct playlist_entry *entry_to_delete = NULL;
+   size_t len;
+   struct playlist_entry *entry_to_delete;
 
    if (!playlist)
       return;
 
-   if (idx >= playlist->size)
+   len = RBUF_LEN(playlist->entries);
+   if (idx >= len)
       return;
-
-   playlist->size     = playlist->size - 1;
 
    /* Free unwanted entry */
    entry_to_delete = (struct playlist_entry *)(playlist->entries + idx);
@@ -469,7 +469,9 @@ void playlist_delete_index(playlist_t *playlist,
 
    /* Shift remaining entries to fill the gap */
    memmove(playlist->entries + idx, playlist->entries + idx + 1,
-         (playlist->size - idx) * sizeof(struct playlist_entry));
+         (len - 1 - idx) * sizeof(struct playlist_entry));
+
+   RBUF_RESIZE(playlist->entries, len - 1);
 
    playlist->modified = true;
 }
@@ -497,7 +499,7 @@ void playlist_delete_by_path(playlist_t *playlist,
    strlcpy(real_search_path, search_path, sizeof(real_search_path));
    path_resolve_realpath(real_search_path, sizeof(real_search_path), true);
 
-   while (i < playlist->size)
+   while (i < RBUF_LEN(playlist->entries))
    {
       if (!playlist_path_equal(real_search_path, playlist->entries[i].path,
             &playlist->config))
@@ -518,7 +520,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
       const struct playlist_entry **entry)
 {
-   size_t i;
+   size_t i, len;
    char real_search_path[PATH_MAX_LENGTH];
 
    real_search_path[0] = '\0';
@@ -530,7 +532,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
    strlcpy(real_search_path, search_path, sizeof(real_search_path));
    path_resolve_realpath(real_search_path, sizeof(real_search_path), true);
 
-   for (i = 0; i < playlist->size; i++)
+   for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
    {
       if (!playlist_path_equal(real_search_path, playlist->entries[i].path,
                &playlist->config))
@@ -545,7 +547,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path)
 {
-   size_t i;
+   size_t i, len;
    char real_search_path[PATH_MAX_LENGTH];
 
    real_search_path[0] = '\0';
@@ -557,7 +559,7 @@ bool playlist_entry_exists(playlist_t *playlist,
    strlcpy(real_search_path, path, sizeof(real_search_path));
    path_resolve_realpath(real_search_path, sizeof(real_search_path), true);
 
-   for (i = 0; i < playlist->size; i++)
+   for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
       if (playlist_path_equal(real_search_path, playlist->entries[i].path,
                &playlist->config))
          return true;
@@ -570,7 +572,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
 {
    struct playlist_entry *entry = NULL;
 
-   if (!playlist || idx > playlist->size)
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return;
 
    entry            = &playlist->entries[idx];
@@ -631,7 +633,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 {
    struct playlist_entry *entry = NULL;
 
-   if (!playlist || idx > playlist->size)
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return;
 
    entry            = &playlist->entries[idx];
@@ -736,7 +738,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 bool playlist_push_runtime(playlist_t *playlist,
       const struct playlist_entry *entry)
 {
-   size_t i;
+   size_t i, len;
    char real_path[PATH_MAX_LENGTH];
    char real_core_path[PATH_MAX_LENGTH];
 
@@ -771,7 +773,8 @@ bool playlist_push_runtime(playlist_t *playlist,
       return false;
    }
 
-   for (i = 0; i < playlist->size; i++)
+   len = RBUF_LEN(playlist->entries);
+   for (i = 0; i < len; i++)
    {
       struct playlist_entry tmp;
       const char *entry_path = playlist->entries[i].path;
@@ -801,19 +804,27 @@ bool playlist_push_runtime(playlist_t *playlist,
       goto success;
    }
 
-   if (playlist->size == playlist->config.capacity)
-   {
-      struct playlist_entry *last_entry = &playlist->entries[playlist->config.capacity - 1];
+   if (playlist->config.capacity == 0)
+      return false;
 
-      if (last_entry)
-         playlist_free_entry(last_entry);
-      playlist->size--;
+   if (len == playlist->config.capacity)
+   {
+      struct playlist_entry *last_entry = &playlist->entries[len - 1];
+      playlist_free_entry(last_entry);
+      len--;
+   }
+   else
+   {
+      /* Allocate memory to fit one more item and resize the buffer */
+      if (!RBUF_TRYFIT(playlist->entries, len + 1))
+         return false; /* out of memory */
+      RBUF_RESIZE(playlist->entries, len + 1);
    }
 
    if (playlist->entries)
    {
       memmove(playlist->entries + 1, playlist->entries,
-            (playlist->config.capacity - 1) * sizeof(struct playlist_entry));
+            len * sizeof(struct playlist_entry));
 
       playlist->entries[0].path            = NULL;
       playlist->entries[0].core_path       = NULL;
@@ -842,8 +853,6 @@ bool playlist_push_runtime(playlist_t *playlist,
       if (!string_is_empty(entry->last_played_str))
          playlist->entries[0].last_played_str = strdup(entry->last_played_str);
    }
-
-   playlist->size++;
 
 success:
    playlist->modified = true;
@@ -904,7 +913,7 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 bool playlist_push(playlist_t *playlist,
       const struct playlist_entry *entry)
 {
-   size_t i;
+   size_t i, len;
    char real_path[PATH_MAX_LENGTH];
    char real_core_path[PATH_MAX_LENGTH];
    const char *core_name = entry->core_name;
@@ -954,7 +963,8 @@ bool playlist_push(playlist_t *playlist,
       }
    }
 
-   for (i = 0; i < playlist->size; i++)
+   len = RBUF_LEN(playlist->entries);
+   for (i = 0; i < len; i++)
    {
       struct playlist_entry tmp;
       const char *entry_path = playlist->entries[i].path;
@@ -1068,20 +1078,27 @@ bool playlist_push(playlist_t *playlist,
       goto success;
    }
 
-   if (playlist->size == playlist->config.capacity)
-   {
-      struct playlist_entry *last_entry =
-         &playlist->entries[playlist->config.capacity - 1];
+   if (playlist->config.capacity == 0)
+      return false;
 
-      if (last_entry)
-         playlist_free_entry(last_entry);
-      playlist->size--;
+   if (len == playlist->config.capacity)
+   {
+      struct playlist_entry *last_entry = &playlist->entries[len - 1];
+      playlist_free_entry(last_entry);
+      len--;
+   }
+   else
+   {
+      /* Allocate memory to fit one more item and resize the buffer */
+      if (!RBUF_TRYFIT(playlist->entries, len + 1))
+         return false; /* out of memory */
+      RBUF_RESIZE(playlist->entries, len + 1);
    }
 
    if (playlist->entries)
    {
       memmove(playlist->entries + 1, playlist->entries,
-            (playlist->config.capacity - 1) * sizeof(struct playlist_entry));
+            len * sizeof(struct playlist_entry));
 
       playlist->entries[0].path               = NULL;
       playlist->entries[0].label              = NULL;
@@ -1132,8 +1149,6 @@ bool playlist_push(playlist_t *playlist,
       }
    }
 
-   playlist->size++;
-
 success:
    playlist->modified = true;
 
@@ -1170,7 +1185,7 @@ static void JSONLogError(JSONContext *pCtx)
 
 void playlist_write_runtime_file(playlist_t *playlist)
 {
-   size_t i;
+   size_t i, len;
    intfstream_t *file  = NULL;
    JSONContext context = {0};
 
@@ -1218,7 +1233,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
    JSON_Writer_WriteStartArray(context.writer);
    JSON_Writer_WriteNewLine(context.writer);
 
-   for (i = 0; i < playlist->size; i++)
+   for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
    {
       JSON_Writer_WriteSpace(context.writer, 4);
       JSON_Writer_WriteStartObject(context.writer);
@@ -1379,7 +1394,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
       JSON_Writer_WriteSpace(context.writer, 4);
       JSON_Writer_WriteEndObject(context.writer);
 
-      if (i < playlist->size - 1)
+      if (i < len - 1)
          JSON_Writer_WriteComma(context.writer);
 
       JSON_Writer_WriteNewLine(context.writer);
@@ -1416,7 +1431,7 @@ static JSON_Status JSON_CALL JSON_Writer_WriteSpace_NULL(JSON_Writer writer, siz
 
 void playlist_write_file(playlist_t *playlist)
 {
-   size_t i;
+   size_t i, len;
    intfstream_t *file = NULL;
    bool compressed    = false;
 
@@ -1457,7 +1472,7 @@ void playlist_write_file(playlist_t *playlist)
 #ifdef RARCH_INTERNAL
    if (playlist->config.old_format)
    {
-      for (i = 0; i < playlist->size; i++)
+      for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
          intfstream_printf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
                playlist->entries[i].path      ? playlist->entries[i].path      : "",
                playlist->entries[i].label     ? playlist->entries[i].label     : "",
@@ -1640,7 +1655,7 @@ void playlist_write_file(playlist_t *playlist)
       JSON_Writer_WriteStartArray(context.writer);
       json_write_new_line(context.writer);
 
-      for (i = 0; i < playlist->size; i++)
+      for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
       {
          json_write_space(context.writer, 4);
          JSON_Writer_WriteStartObject(context.writer);
@@ -1813,7 +1828,7 @@ void playlist_write_file(playlist_t *playlist)
          json_write_space(context.writer, 4);
          JSON_Writer_WriteEndObject(context.writer);
 
-         if (i < playlist->size - 1)
+         if (i < len - 1)
             JSON_Writer_WriteComma(context.writer);
 
          json_write_new_line(context.writer);
@@ -1846,7 +1861,7 @@ end:
  */
 void playlist_free(playlist_t *playlist)
 {
-   size_t i;
+   size_t i, len;
 
    if (!playlist)
       return;
@@ -1865,7 +1880,7 @@ void playlist_free(playlist_t *playlist)
 
    if (playlist->entries)
    {
-      for (i = 0; i < playlist->size; i++)
+      for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
       {
          struct playlist_entry *entry = &playlist->entries[i];
 
@@ -1873,8 +1888,7 @@ void playlist_free(playlist_t *playlist)
             playlist_free_entry(entry);
       }
 
-      free(playlist->entries);
-      playlist->entries = NULL;
+      RBUF_FREE(playlist->entries);
    }
 
    free(playlist);
@@ -1888,18 +1902,18 @@ void playlist_free(playlist_t *playlist)
  **/
 void playlist_clear(playlist_t *playlist)
 {
-   size_t i;
+   size_t i, len;
    if (!playlist)
       return;
 
-   for (i = 0; i < playlist->size; i++)
+   for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
    {
       struct playlist_entry *entry = &playlist->entries[i];
 
       if (entry)
          playlist_free_entry(entry);
    }
-   playlist->size = 0;
+   RBUF_CLEAR(playlist->entries);
 }
 
 /**
@@ -1913,7 +1927,7 @@ size_t playlist_size(playlist_t *playlist)
 {
    if (!playlist)
       return 0;
-   return playlist->size;
+   return RBUF_LEN(playlist->entries);
 }
 
 /**
@@ -1993,8 +2007,19 @@ static JSON_Parser_HandlerResult JSONStartObjectHandler(JSON_Parser parser)
    {
       if ((pCtx->array_depth == 1) && !pCtx->capacity_exceeded)
       {
-         if (pCtx->playlist->size < pCtx->playlist->config.capacity)
-            pCtx->current_entry = &pCtx->playlist->entries[pCtx->playlist->size];
+         size_t len = RBUF_LEN(pCtx->playlist->entries);
+         if (len < pCtx->playlist->config.capacity)
+         {
+            /* Allocate memory to fit one more item but don't resize the
+             * buffer just yet, wait until JSONEndObjectHandler for that */
+            if (!RBUF_TRYFIT(pCtx->playlist->entries, len + 1))
+            {
+               pCtx->out_of_memory     = true;
+               return JSON_Parser_Abort;
+            }
+            pCtx->current_entry = &pCtx->playlist->entries[len];
+            memset(pCtx->current_entry, 0, sizeof(*pCtx->current_entry));
+         }
          else
          {
             /* Hit max item limit.
@@ -2022,7 +2047,8 @@ static JSON_Parser_HandlerResult JSONEndObjectHandler(JSON_Parser parser)
    if (pCtx->in_items && pCtx->object_depth == 2)
    {
       if ((pCtx->array_depth == 1) && !pCtx->capacity_exceeded)
-         pCtx->playlist->size++;
+         RBUF_RESIZE(pCtx->playlist->entries,
+               RBUF_LEN(pCtx->playlist->entries) + 1);
    }
 
    retro_assert(pCtx->object_depth > 0);
@@ -2281,6 +2307,8 @@ static bool playlist_read_file(playlist_t *playlist)
 {
    unsigned i;
    int test_char;
+   bool res = true;
+
 #if defined(HAVE_ZLIB)
       /* Always use RZIP interface when reading playlists
        * > this will automatically handle uncompressed
@@ -2386,6 +2414,12 @@ static bool playlist_read_file(playlist_t *playlist)
          if (!JSON_Parser_Parse(context.parser, chunk,
                   (size_t)length, JSON_False))
          {
+            if (context.out_of_memory)
+            {
+               RARCH_WARN("Ran out of memory while parsing JSON playlist\n");
+               res = false;
+               goto json_cleanup;
+            }
             /* Note: Chunk may not be null-terminated.
              * It is therefore dangerous to print its contents.
              * Setting a size limit here mitigates the issue, but
@@ -2418,6 +2452,7 @@ json_cleanup:
    }
    else
    {
+      size_t len = RBUF_LEN(playlist->entries);
       char line_buf[PLAYLIST_ENTRIES][PATH_MAX_LENGTH] = {{0}};
 
       /* Unnecessary, but harmless */
@@ -2425,8 +2460,7 @@ json_cleanup:
          line_buf[i][0] = '\0';
 
       /* Read playlist entries */
-      playlist->size = 0;
-      while (playlist->size < playlist->config.capacity)
+      while (len < playlist->config.capacity)
       {
          size_t i;
          size_t lines_read = 0;
@@ -2454,11 +2488,17 @@ json_cleanup:
           * is a valid playlist entry */
          if (lines_read >= PLAYLIST_ENTRIES)
          {
-            struct playlist_entry *entry =
-                  &playlist->entries[playlist->size];
+            struct playlist_entry* entry;
 
-            if (!entry)
-               continue;
+            if (!RBUF_TRYFIT(playlist->entries, len + 1))
+            {
+               res = false; /* out of memory */
+               goto end;
+            }
+            RBUF_RESIZE(playlist->entries, len + 1);
+            entry = &playlist->entries[len++];
+
+            memset(entry, 0, sizeof(*entry));
 
             /* path */
             if (!string_is_empty(line_buf[0]))
@@ -2483,8 +2523,6 @@ json_cleanup:
             /* db_name */
             if (!string_is_empty(line_buf[5]))
                entry->db_name   = strdup(line_buf[5]);
-
-            playlist->size++;
          }
          /* If fewer than 'PLAYLIST_ENTRIES' lines were
           * read, then this is metadata */
@@ -2611,7 +2649,7 @@ json_cleanup:
 end:
    intfstream_close(file);
    free(file);
-   return true;
+   return res;
 }
 
 void playlist_free_cached(void)
@@ -2658,18 +2696,8 @@ bool playlist_init_cached(const playlist_config_t *config)
  **/
 playlist_t *playlist_init(const playlist_config_t *config)
 {
-   struct playlist_entry *entries = NULL;
    playlist_t           *playlist = (playlist_t*)malloc(sizeof(*playlist));
-
-   /* Cache configuration parameters */
-   if (!playlist || !playlist_config_copy(config, &playlist->config))
-      goto error;
-
-   /* Create entries array */
-   entries = (struct playlist_entry*)calloc(
-         playlist->config.capacity, sizeof(*entries));
-
-   if (!entries)
+   if (!playlist)
       goto error;
 
    /* Set initial values */
@@ -2677,18 +2705,22 @@ playlist_t *playlist_init(const playlist_config_t *config)
    playlist->old_format             = false;
    playlist->compressed             = false;
    playlist->cached_external        = false;
-   playlist->size                   = 0;
    playlist->default_core_name      = NULL;
    playlist->default_core_path      = NULL;
    playlist->base_content_directory = NULL;
-   playlist->entries                = entries;
+   playlist->entries                = NULL;
    playlist->label_display_mode     = LABEL_DISPLAY_MODE_DEFAULT;
    playlist->right_thumbnail_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    playlist->left_thumbnail_mode    = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    playlist->sort_mode              = PLAYLIST_SORT_MODE_DEFAULT;
 
+   /* Cache configuration parameters */
+   if (!playlist_config_copy(config, &playlist->config))
+      goto error;
+
    /* Attempt to read any existing playlist file */
-   playlist_read_file(playlist);
+   if (!playlist_read_file(playlist))
+      goto error;
 
    /* Try auto-fixing paths if enabled, and playlist
     * base content directory is different */
@@ -2697,11 +2729,10 @@ playlist_t *playlist_init(const playlist_config_t *config)
        !string_is_equal(playlist->base_content_directory,
             playlist->config.base_content_directory))
    {
-      size_t i;
-      size_t j;
+      size_t i, j, len;
       char tmp_entry_path[PATH_MAX_LENGTH];
 
-      for (i = 0; i < playlist->size; i++)
+      for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
       {
          struct playlist_entry *entry = &playlist->entries[i];
 
@@ -2847,10 +2878,11 @@ void playlist_qsort(playlist_t *playlist)
    /* Avoid inadvertent sorting if 'sort mode'
     * has been set explicitly to PLAYLIST_SORT_MODE_OFF */
    if (!playlist ||
-       (playlist->sort_mode == PLAYLIST_SORT_MODE_OFF))
+       (playlist->sort_mode == PLAYLIST_SORT_MODE_OFF) ||
+       !playlist->entries)
       return;
 
-   qsort(playlist->entries, playlist->size,
+   qsort(playlist->entries, RBUF_LEN(playlist->entries),
          sizeof(struct playlist_entry),
          (int (*)(const void *, const void *))playlist_qsort_func);
 }
@@ -2890,7 +2922,7 @@ bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
    if (!playlist)
       return false;
 
-   if (idx >= playlist->size)
+   if (idx >= RBUF_LEN(playlist->entries))
       return false;
 
    return string_is_equal(playlist->entries[idx].path, path) &&
@@ -2944,7 +2976,7 @@ bool playlist_entries_are_equal(
 void playlist_get_crc32(playlist_t *playlist, size_t idx,
       const char **crc32)
 {
-   if (!playlist)
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return;
 
    if (crc32)
@@ -2954,7 +2986,7 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name)
 {
-   if (!playlist)
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return;
 
    if (db_name)

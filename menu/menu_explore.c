@@ -23,21 +23,7 @@
 #include "../libretro-db/libretrodb.h"
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
-
-/* Stretchy buffers, invented (?) by Sean Barrett */
-#define EX_BUF__HDR(b) (((struct ex_buf_hdr *)(b))-1)
-
-#define EX_BUF_LEN(b) ((b) ? EX_BUF__HDR(b)->len : 0)
-#define EX_BUF_CAP(b) ((b) ? EX_BUF__HDR(b)->cap : 0)
-#define EX_BUF_END(b) ((b) + EX_BUF_LEN(b))
-#define EX_BUF_SIZEOF(b) ((b) ? EX_BUF_LEN(b)*sizeof(*b) : 0)
-
-#define EX_BUF_FREE(b) ((b) ? (free(EX_BUF__HDR(b)), (b) = NULL) : 0)
-#define EX_BUF_FIT(b, n) ((size_t)(n) <= EX_BUF_CAP(b) ? 0 : (*(void**)(&(b)) = ex_buf__grow((b), (n), sizeof(*(b)))))
-#define EX_BUF_PUSH(b, val) (EX_BUF_FIT((b), 1 + EX_BUF_LEN(b)), (b)[EX_BUF__HDR(b)->len++] = (val))
-#define EX_BUF_POP(b) (b)[--EX_BUF__HDR(b)->len]
-#define EX_BUF_RESIZE(b, sz) (EX_BUF_FIT((b), (sz)), ((b) ? EX_BUF__HDR(b)->len = (sz) : 0))
-#define EX_BUF_CLEAR(b) ((b) ? EX_BUF__HDR(b)->len = 0 : 0)
+#include <array/rbuf.h>
 
 #define EX_ARENA_ALIGNMENT 8
 #define EX_ARENA_BLOCK_SIZE (64 * 1024)
@@ -68,12 +54,6 @@ enum
    EXPLORE_TYPE_SHOWALL,
    EXPLORE_TYPE_FIRSTCATEGORY,
    EXPLORE_TYPE_FIRSTITEM        = EXPLORE_TYPE_FIRSTCATEGORY + EXPLORE_CAT_COUNT
-};
-
-struct ex_buf_hdr
-{
-   size_t len;
-   size_t cap;
 };
 
 /* Arena allocator */
@@ -147,30 +127,13 @@ explore_by_info[EXPLORE_CAT_COUNT] =
 /* TODO/FIXME - static global */
 static explore_state_t* explore_state;
 
-static void *ex_buf__grow(const void *buf,
-      size_t new_len, size_t elem_size)
-{
-   struct ex_buf_hdr *new_hdr;
-   size_t new_cap  = MAX(2 * EX_BUF_CAP(buf), MAX(new_len, 16));
-   size_t new_size = sizeof(struct ex_buf_hdr) + new_cap*elem_size;
-   if (buf)
-      new_hdr      = (struct ex_buf_hdr *)realloc(EX_BUF__HDR(buf), new_size);
-   else
-   {
-      new_hdr      = (struct ex_buf_hdr *)malloc(new_size);
-      new_hdr->len = 0;
-   }
-   new_hdr->cap    = new_cap;
-   return new_hdr + 1;
-}
-
 static void ex_arena_grow(ex_arena *arena, size_t min_size)
 {
    size_t size = EX_ARENA_ALIGN_UP(
          MAX(min_size, EX_ARENA_BLOCK_SIZE), EX_ARENA_ALIGNMENT);
    arena->ptr  = (char *)malloc(size);
    arena->end  = arena->ptr + size;
-   EX_BUF_PUSH(arena->blocks, arena->ptr);
+   RBUF_PUSH(arena->blocks, arena->ptr);
 }
 
 static void *ex_arena_alloc(ex_arena *arena, size_t size)
@@ -190,10 +153,10 @@ static void ex_arena_free(ex_arena *arena)
 {
    char **it;
 
-   for (it = arena->blocks; it != EX_BUF_END(arena->blocks); it++)
+   for (it = arena->blocks; it != RBUF_END(arena->blocks); it++)
       free(*it);
 
-   EX_BUF_FREE(arena->blocks);
+   RBUF_FREE(arena->blocks);
    arena->ptr    = NULL;
    arena->end    = NULL;
    arena->blocks = NULL;
@@ -459,14 +422,14 @@ static void explore_add_unique_string(
                   sizeof(explore_string_t) + len);
          memcpy(entry->str, str, len);
          entry->str[len]      = '\0';
-         EX_BUF_PUSH(explore->by[cat], entry);
+         RBUF_PUSH(explore->by[cat], entry);
          ex_hashmap32_setptr(&maps[cat], hash, entry);
       }
 
       if (!e->by[cat])
          e->by[cat] = entry;
       else
-         EX_BUF_PUSH(*split_buf, entry);
+         RBUF_PUSH(*split_buf, entry);
 
       if (*p_next == '\0')
          return;
@@ -493,7 +456,7 @@ static void explore_unload_icons(explore_state_t *state)
    unsigned i;
    if (!state)
       return;
-   for (i = 0; i != EX_BUF_LEN(state->icons); i++)
+   for (i = 0; i != RBUF_LEN(state->icons); i++)
       if (state->icons[i])
          video_driver_texture_unload(&state->icons[i]);
 }
@@ -504,16 +467,16 @@ static void explore_free(explore_state_t *state)
    if (!state)
       return;
    for (i = 0; i != EXPLORE_CAT_COUNT; i++)
-      EX_BUF_FREE(state->by[i]);
+      RBUF_FREE(state->by[i]);
 
-   EX_BUF_FREE(state->entries);
+   RBUF_FREE(state->entries);
 
-   for (i = 0; i != EX_BUF_LEN(state->playlists); i++)
+   for (i = 0; i != RBUF_LEN(state->playlists); i++)
       playlist_free(state->playlists[i]);
-   EX_BUF_FREE(state->playlists);
+   RBUF_FREE(state->playlists);
 
    explore_unload_icons(state);
-   EX_BUF_FREE(state->icons);
+   RBUF_FREE(state->icons);
 
    ex_arena_free(&state->arena);
 }
@@ -525,8 +488,14 @@ static void explore_load_icons(explore_state_t *state)
    if (!state)
       return;
 
-   system_count = EX_BUF_LEN(state->by[EXPLORE_BY_SYSTEM]);
-   EX_BUF_RESIZE(state->icons, system_count);
+   system_count = RBUF_LEN(state->by[EXPLORE_BY_SYSTEM]);
+
+   /* unload any icons that could exist from a previous call to this */
+   explore_unload_icons(state);
+
+   /* RBUF_RESIZE leaves memory uninitialised, have to zero it 'manually' */
+   RBUF_RESIZE(state->icons, system_count);
+   memset(state->icons, 0, RBUF_SIZEOF(state->icons));
 
    fill_pathname_application_special(path, sizeof(path),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
@@ -539,7 +508,6 @@ static void explore_load_icons(explore_state_t *state)
    for (i = 0; i != system_count; i++)
    {
       struct texture_image ti;
-      state->icons[i] = 0;
 
       strlcpy(path + pathlen,
             state->by[EXPLORE_BY_SYSTEM][i]->str, sizeof(path) - pathlen);
@@ -689,8 +657,8 @@ static explore_state_t *explore_build_list(void)
                continue;
             }
 
-            EX_BUF_PUSH(rdbs, newrdb);
-            rdb_num = (uintptr_t)EX_BUF_LEN(rdbs);
+            RBUF_PUSH(rdbs, newrdb);
+            rdb_num = (uintptr_t)RBUF_LEN(rdbs);
             ex_hashmap32_setnum(&rdb_indices, rdb_hash, rdb_num);
          }
 
@@ -715,14 +683,14 @@ static explore_state_t *explore_build_list(void)
       }
 
       if (used_entries)
-         EX_BUF_PUSH(explore->playlists, playlist);
+         RBUF_PUSH(explore->playlists, playlist);
       else
          playlist_free(playlist);
    }
 
    /* Loop through all RDBs referenced in the playlists 
     * and load meta data strings */
-   for (i = 0; i != EX_BUF_LEN(rdbs); i++)
+   for (i = 0; i != RBUF_LEN(rdbs); i++)
    {
       struct rmsgpack_dom_value item;
       struct explore_rdb* rdb  = &rdbs[i];
@@ -841,19 +809,19 @@ static explore_state_t *explore_build_list(void)
          }
 #endif
 
-         if (EX_BUF_LEN(split_buf))
+         if (RBUF_LEN(split_buf))
          {
             size_t len;
 
-            EX_BUF_PUSH(split_buf, NULL); /* terminator */
-            len        = EX_BUF_SIZEOF(split_buf);
+            RBUF_PUSH(split_buf, NULL); /* terminator */
+            len        = RBUF_SIZEOF(split_buf);
             e.split    = (explore_string_t **)
                ex_arena_alloc(&explore->arena, len);
             memcpy(e.split, split_buf, len);
-            EX_BUF_CLEAR(split_buf);
+            RBUF_CLEAR(split_buf);
          }
 
-         EX_BUF_PUSH(explore->entries, e);
+         RBUF_PUSH(explore->entries, e);
 
          /* if all entries have found connections, we can leave early */
          if (--rdb->count == 0)
@@ -870,14 +838,14 @@ static explore_state_t *explore_build_list(void)
       ex_hashmap32_free(&rdb->playlist_crcs);
       ex_hashmap32_free(&rdb->playlist_names);
    }
-   EX_BUF_FREE(split_buf);
+   RBUF_FREE(split_buf);
    ex_hashmap32_free(&rdb_indices);
-   EX_BUF_FREE(rdbs);
+   RBUF_FREE(rdbs);
 
    for (i = 0; i != EXPLORE_CAT_COUNT; i++)
    {
       uint32_t idx;
-      size_t len = EX_BUF_LEN(explore->by[i]);
+      size_t len = RBUF_LEN(explore->by[i]);
 
       if (explore->by[i])
          qsort(explore->by[i], len, sizeof(*explore->by[i]),
@@ -889,7 +857,7 @@ static explore_state_t *explore_build_list(void)
       ex_hashmap32_free(&cat_maps[i]);
    }
    qsort(explore->entries,
-         EX_BUF_LEN(explore->entries),
+         RBUF_LEN(explore->entries),
          sizeof(*explore->entries), explore_qsort_func_entries);
    return explore;
 }
@@ -1085,7 +1053,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
          explore_string_t **entries = explore_state->by[cat];
          size_t tmplen;
 
-         if (!EX_BUF_LEN(entries))
+         if (!RBUF_LEN(entries))
             continue;
 
          for (i = 1; i < depth; i++)
@@ -1100,14 +1068,14 @@ unsigned menu_displaylist_explore(file_list_t *list)
             if (explore_by_info[cat].is_numeric)
             {
                snprintf(tmp + tmplen, sizeof(tmp) - tmplen, " (%s - %s)",
-                     entries[0]->str, entries[EX_BUF_LEN(entries) - 1]->str);
+                     entries[0]->str, entries[RBUF_LEN(entries) - 1]->str);
             }
             else
             {
                strlcat(tmp, " (", sizeof(tmp));
                snprintf(tmp + tmplen + 2, sizeof(tmp) - tmplen - 2,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
-                     (unsigned)EX_BUF_LEN(entries));
+                     (unsigned)RBUF_LEN(entries));
                strlcat(tmp, ")", sizeof(tmp));
             }
          }
@@ -1133,7 +1101,7 @@ SKIP_EXPLORE_BY_CATEGORY:;
    {
       /* List all items in a selected explore by category */
       explore_string_t **entries = explore_state->by[current_cat];
-      unsigned i_last            = EX_BUF_LEN(entries) - 1;
+      unsigned i_last            = RBUF_LEN(entries) - 1;
       for (i = 0; i <= i_last; i++)
          explore_menu_entry(list, explore_state,
                entries[i]->str, EXPLORE_TYPE_FIRSTITEM + i);
@@ -1223,7 +1191,7 @@ SKIP_EXPLORE_BY_CATEGORY:;
       }
 
       e                             = explore_state->entries;
-      e_end                         = EX_BUF_END(explore_state->entries);
+      e_end                         = RBUF_END(explore_state->entries);
 
       for (; e != e_end; e++)
       {
@@ -1307,7 +1275,7 @@ SKIP_ENTRY:;
       strlcpy(explore_state->title,
             pl_entry->label, sizeof(explore_state->title));
 
-      for (pl_idx = 0; pl_idx != EX_BUF_LEN(explore_state->playlists); pl_idx++)
+      for (pl_idx = 0; pl_idx != RBUF_LEN(explore_state->playlists); pl_idx++)
       {
          menu_displaylist_info_t          info;
          const struct playlist_entry* pl_first = NULL;
@@ -1348,12 +1316,12 @@ uintptr_t menu_explore_get_entry_icon(unsigned type)
    if (explore_state->show_icons == EXPLORE_ICONS_CONTENT)
    {
       explore_entry_t* e = &explore_state->entries[i];
-      if (e < EX_BUF_END(explore_state->entries))
+      if (e < RBUF_END(explore_state->entries))
          return explore_state->icons[e->by[EXPLORE_BY_SYSTEM]->idx];
    }
    else if (explore_state->show_icons == EXPLORE_ICONS_SYSTEM_CATEGORY)
    {
-      if (i < EX_BUF_LEN(explore_state->icons))
+      if (i < RBUF_LEN(explore_state->icons))
          return explore_state->icons[i];
    }
    return 0;
