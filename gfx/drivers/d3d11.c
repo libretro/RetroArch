@@ -1827,7 +1827,7 @@ static uint32_t d3d11_get_flags(void *data)
    return flags;
 }
 
-#ifdef __WINRT__
+#ifndef __WINRT__
 static void d3d11_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
