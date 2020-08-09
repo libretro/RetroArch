@@ -44,6 +44,7 @@
 - PLAYLISTS/DATABASE/EXPLORE: Show system icons in explore view
 - PS2: Improve FPS Limiter
 - RUNAHEAD: Prevent runahead from being disabled *permanently* when an error occurs
+- SCANNER: Add more region codes for GameCube/Wii game detection
 - SHADERS/SLANG: Increased Slang max Parameters, Textures & Passes
 - VIDEO FILTERS/BLARGG: Make Blargg_snes filter customizable
 - WINDOWS/RAWINPUT: Fix invalid calls to dinput_handle_message when input driver is not set to dinput
