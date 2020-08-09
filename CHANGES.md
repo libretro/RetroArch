@@ -144,7 +144,6 @@
 - X11/XSHM: Fix compatibility with X11 input driver
 - XVIDEO: Fix keyboard input initialization
 - XVIDEO/XWAYLAND: Fix XVideo support on xwayland (by supporting I420 and YZ12)
-- INPUT: Don't report unused input ports to cores
 
 # 1.8.7
 - 3DS: Add IDs for Frodo
