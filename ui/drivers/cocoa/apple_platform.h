@@ -69,12 +69,9 @@ UINavigationControllerDelegate> {
 + (RetroArch_iOS*)get;
 
 - (void)showGameView;
-- (void)toggleUI;
 - (void)supportOtherAudioSessions;
 
 - (void)refreshSystemConfig;
-- (void)mainMenuPushPop: (bool)pushp;
-- (void)mainMenuRefresh;
 @end
 
 #else

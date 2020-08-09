@@ -525,18 +525,6 @@ enum
    [self.window setRootViewController:self];
 }
 
-- (void)toggleUI
-{
-   if (ui_companion_is_on_foreground())
-   {
-      [self showGameView];
-   }
-   else
-   {
-      [self showPauseMenu:self];
-   }
-}
-
 - (void)refreshSystemConfig
 {
 #if TARGET_OS_IOS

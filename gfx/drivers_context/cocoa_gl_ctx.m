@@ -231,8 +231,9 @@ float get_backing_scale_factor(void)
 {
    static float
    backing_scale_def    = 0.0f;
+#if TARGET_OS_OSX
    RAScreen *screen     = NULL;
-
+#endif
    if (backing_scale_def != 0.0f)
       return backing_scale_def;
 

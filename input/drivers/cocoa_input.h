@@ -59,10 +59,4 @@ typedef struct
    const input_device_driver_t *joypad;
 } cocoa_input_data_t;
 
-extern int32_t cocoa_input_find_any_key(void);
-
-extern int32_t cocoa_input_find_any_button(uint32_t port);
-
-extern int32_t cocoa_input_find_any_axis(uint32_t port);
-
 #endif
