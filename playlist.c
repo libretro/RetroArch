@@ -2724,62 +2724,65 @@ playlist_t *playlist_init(const playlist_config_t *config)
 
    /* Try auto-fixing paths if enabled, and playlist
     * base content directory is different */
-   if (playlist->config.autofix_paths &&
-       !string_is_empty(playlist->base_content_directory) &&
-       !string_is_equal(playlist->base_content_directory,
-            playlist->config.base_content_directory))
+   if (config->autofix_paths && !string_is_equal(playlist->base_content_directory, config->base_content_directory))
    {
-      size_t i, j, len;
-      char tmp_entry_path[PATH_MAX_LENGTH];
-
-      for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
+      if (!string_is_empty(playlist->base_content_directory))
       {
-         struct playlist_entry *entry = &playlist->entries[i];
+         size_t playlist_base_content_directory_length = strlen(playlist->base_content_directory);
+         size_t new_base_content_directory_length = strlen(playlist->config.base_content_directory);
+         size_t i, j, len;
+         char tmp_entry_path[PATH_MAX_LENGTH];
 
-         if (!entry || string_is_empty(entry->path))
-            continue;
+         for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
+         {
+            struct playlist_entry* entry = &playlist->entries[i];
 
-         /* Fix entry path */
-         tmp_entry_path[0] = '\0';
-         path_replace_base_path_and_convert_to_local_file_system(
+            if (!entry || string_is_empty(entry->path))
+               continue;
+
+            /* Fix entry path */
+            tmp_entry_path[0] = '\0';
+            path_replace_base_path_and_convert_to_local_file_system(
                tmp_entry_path, entry->path,
                playlist->base_content_directory, playlist->config.base_content_directory,
                sizeof(tmp_entry_path));
 
-         free(entry->path);
-         entry->path = strdup(tmp_entry_path);
+            free(entry->path);
+            entry->path = strdup(tmp_entry_path);
 
-         /* Fix subsystem roms paths*/
-         if (entry->subsystem_roms && (entry->subsystem_roms->size > 0))
-         {
-            struct string_list* subsystem_roms_new_paths = string_list_new();
-            union string_list_elem_attr attributes       = {0};
-
-            if (!subsystem_roms_new_paths)
-               goto error;
-
-            for (j = 0; j < entry->subsystem_roms->size; j++)
+            /* Fix subsystem roms paths*/
+            if (entry->subsystem_roms && (entry->subsystem_roms->size > 0))
             {
-               const char *subsystem_rom_path = entry->subsystem_roms->elems[j].data;
+               struct string_list* subsystem_roms_new_paths = string_list_new();
+               union string_list_elem_attr attributes = { 0 };
 
-               if (string_is_empty(subsystem_rom_path))
-                  continue;
+               if (!subsystem_roms_new_paths)
+                  goto error;
 
-               tmp_entry_path[0] = '\0';
-               path_replace_base_path_and_convert_to_local_file_system(
+               for (j = 0; j < entry->subsystem_roms->size; j++)
+               {
+                  const char* subsystem_rom_path = entry->subsystem_roms->elems[j].data;
+
+                  if (string_is_empty(subsystem_rom_path))
+                     continue;
+
+                  tmp_entry_path[0] = '\0';
+                  path_replace_base_path_and_convert_to_local_file_system(
                      tmp_entry_path, subsystem_rom_path,
                      playlist->base_content_directory, playlist->config.base_content_directory,
                      sizeof(tmp_entry_path));
-               string_list_append(subsystem_roms_new_paths, tmp_entry_path, attributes);
-            }
+                  string_list_append(subsystem_roms_new_paths, tmp_entry_path, attributes);
+               }
 
-            string_list_free(entry->subsystem_roms);
-            entry->subsystem_roms = subsystem_roms_new_paths;
+               string_list_free(entry->subsystem_roms);
+               entry->subsystem_roms = subsystem_roms_new_paths;
+            }
          }
       }
 
       /* Update playlist base content directory*/
-      free(playlist->base_content_directory);
+      if (playlist->base_content_directory)
+         free(playlist->base_content_directory);
       playlist->base_content_directory = strdup(playlist->config.base_content_directory);
 
       /* Save playlist */
