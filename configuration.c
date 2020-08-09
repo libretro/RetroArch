@@ -321,7 +321,7 @@ enum midi_driver_enum
 };
 
 #if defined(HAVE_METAL)
-// iOS supports both the OpenGL and Metal video drivers; default to OpenGL since Metal support is preliminary
+/* iOS supports both the OpenGL and Metal video drivers; default to OpenGL since Metal support is preliminary */
 #if defined(HAVE_COCOATOUCH) && defined(HAVE_OPENGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #else
