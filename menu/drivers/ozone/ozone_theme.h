@@ -68,6 +68,7 @@ extern ozone_theme_t ozone_theme_light;
 extern ozone_theme_t ozone_theme_dark;
 extern ozone_theme_t ozone_theme_nord;
 extern ozone_theme_t ozone_theme_gruvbox_dark;
+extern ozone_theme_t ozone_theme_1987;
 
 extern ozone_theme_t *ozone_themes[];
 
