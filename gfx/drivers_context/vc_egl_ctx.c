@@ -147,6 +147,28 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
    slock_unlock(vc->vsync_condition_mutex);
 }
 
+static bool gfx_ctx_vc_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
+{
+   vc_api = api;
+
+   switch (api)
+   {
+#ifdef HAVE_EGL
+      case GFX_CTX_OPENGL_API:
+         return egl_bind_api(EGL_OPENGL_API);
+      case GFX_CTX_OPENGL_ES_API:
+         return egl_bind_api(EGL_OPENGL_ES_API);
+      case GFX_CTX_OPENVG_API:
+         return egl_bind_api(EGL_OPENVG_API);
+#endif
+      default:
+         break;
+   }
+
+   return false;
+}
+
 static void gfx_ctx_vc_destroy(void *data)
 {
    vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
@@ -454,28 +476,6 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
 static enum gfx_ctx_api gfx_ctx_vc_get_api(void *data)
 {
    return vc_api;
-}
-
-static bool gfx_ctx_vc_bind_api(void *data,
-      enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   vc_api = api;
-
-   switch (api)
-   {
-#ifdef HAVE_EGL
-      case GFX_CTX_OPENGL_API:
-         return egl_bind_api(EGL_OPENGL_API);
-      case GFX_CTX_OPENGL_ES_API:
-         return egl_bind_api(EGL_OPENGL_ES_API);
-      case GFX_CTX_OPENVG_API:
-         return egl_bind_api(EGL_OPENVG_API);
-#endif
-      default:
-         break;
-   }
-
-   return false;
 }
 
 static void gfx_ctx_vc_input_driver(void *data,
