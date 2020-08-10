@@ -1,4 +1,5 @@
 # Future
+- PLAYLISTS/PORTABLE: Fixed first load initialization
 
 # 1.9.0
 - 3DS: Fix sound crackling when paused
