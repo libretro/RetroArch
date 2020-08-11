@@ -18507,6 +18507,22 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 
 #if defined(HAVE_OPENGLES3)
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+#ifndef HAVE_OPENGLES3_2
+         if (major == 3 && minor == 2)
+         {
+            RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
+                  major, minor);
+            return false;
+         }
+#endif
+#if !defined(HAVE_OPENGLES3_2) && !defined(HAVE_OPENGLES3_1)
+         if (major == 3 && minor == 1)
+         {
+            RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
+                  major, minor);
+            return false;
+         }
+#endif
          RARCH_LOG("Requesting OpenGLES%u.%u context.\n",
                major, minor);
          break;
