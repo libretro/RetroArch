@@ -89,8 +89,8 @@ static void rcheevos_memory_register_region(rcheevos_memory_regions_t* regions,
 
    regions->total_size += size;
 
-   CHEEVOS_LOG(RCHEEVOS_TAG "Registered 0x%04X bytes of %s at $%06X (%s)\n", size,
-      rcheevos_memory_type(type), regions->total_size - size, description);
+   CHEEVOS_LOG(RCHEEVOS_TAG "Registered 0x%04X bytes of %s at $%06X (%s)\n", (unsigned)size,
+      rcheevos_memory_type(type), (unsigned)(regions->total_size - size), description);
 }
 
 static void rcheevos_memory_init_without_regions(rcheevos_memory_regions_t* regions)
