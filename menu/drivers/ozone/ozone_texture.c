@@ -468,6 +468,10 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
             input_id = MENU_SETTINGS_INPUT_BEGIN;
             if (type == input_id + 1)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
+#ifdef HAVE_LIBNX
+            // account for the additional split joycon option in Input User # Binds
+            input_id++;
+#endif
             if (type == input_id + 2)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
             if (type == input_id + 3)
