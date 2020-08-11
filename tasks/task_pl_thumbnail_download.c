@@ -174,10 +174,10 @@ void cb_http_task_download_pl_thumbnail(
       void *user_data, const char *err)
 {
    char output_dir[PATH_MAX_LENGTH];
-   output_dir[0]               = '\0';
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
    file_transfer_t *transf     = (file_transfer_t*)user_data;
    pl_thumb_handle_t *pl_thumb = NULL;
+   output_dir[0]               = '\0';
 
    /* Update pl_thumb task status
     * > Do this first, to minimise the risk of hanging
