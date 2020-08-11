@@ -53,29 +53,13 @@ static const uint32_t T_K[64] = {
    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 };
 
-/* SHA256 implementation from bSNES. Written by valditx. */
-
-struct sha256_ctx
-{
-   union
-   {
-      uint8_t u8[64];
-      uint32_t u32[16];
-   } in;
-   unsigned inlen;
-
-   uint32_t w[64];
-   uint32_t h[8];
-   uint64_t len;
-};
-
-static void sha256_init(struct sha256_ctx *p)
+void sha256_init(struct sha256_ctx *p)
 {
    memset(p, 0, sizeof(struct sha256_ctx));
    memcpy(p->h, T_H, sizeof(T_H));
 }
 
-static void sha256_block(struct sha256_ctx *p)
+void sha256_block(struct sha256_ctx *p)
 {
    unsigned i;
    uint32_t s0, s1;
@@ -122,7 +106,7 @@ static void sha256_block(struct sha256_ctx *p)
    p->inlen = 0;
 }
 
-static void sha256_chunk(struct sha256_ctx *p,
+void sha256_chunk(struct sha256_ctx *p,
       const uint8_t *s, unsigned len)
 {
    p->len += len;
@@ -145,7 +129,7 @@ static void sha256_chunk(struct sha256_ctx *p,
    }
 }
 
-static void sha256_final(struct sha256_ctx *p)
+void sha256_final(struct sha256_ctx *p)
 {
    uint64_t len;
    p->in.u8[p->inlen++] = 0x80;
@@ -164,7 +148,7 @@ static void sha256_final(struct sha256_ctx *p)
    sha256_block(p);
 }
 
-static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
+void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
 {
    unsigned i;
    for (i = 0; i < 8; i++)

@@ -65,7 +65,8 @@
       "menu_input_dialog.h": "c",
       "ozone_sidebar.h": "c",
       "menu_thumbnail_path.h": "c",
-      "badges.h": "c"
+      "badges.h": "c",
+      "rhash.h": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

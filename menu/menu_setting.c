@@ -224,6 +224,10 @@
 
 #define MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, str) (*(list))[MENU_SETTINGS_LIST_CURRENT_IDX(list_info)].cmd_trigger_idx = (str)
 
+#define CLOUD_STORAGE_AUTHORIZE_STATUS_LEN 20
+
+static char cloud_storage_authorize_status_str[CLOUD_STORAGE_AUTHORIZE_STATUS_LEN];
+
 #define CONFIG_UINT_CBS(var, label, left, right, msg_enum_base, string_rep, min, max, step) \
       CONFIG_UINT( \
             list, list_info, \
@@ -291,7 +295,9 @@ enum settings_list_type
    SETTINGS_LIST_DIRECTORY,
    SETTINGS_LIST_PRIVACY,
    SETTINGS_LIST_MIDI,
-   SETTINGS_LIST_MANUAL_CONTENT_SCAN
+   SETTINGS_LIST_MANUAL_CONTENT_SCAN,
+   SETTINGS_LIST_CLOUD_STORAGE,
+   SETTINGS_LIST_CLOUD_STORAGE_PROVIDER
 };
 
 struct bool_entry
@@ -3012,6 +3018,35 @@ static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type
          break;
       case 3:
          strcpy_literal(s, "SNES30 8bitdo");
+         break;
+   }
+}
+#endif
+
+#ifdef HAVE_NETWORKING
+static void setting_get_string_representation_uint_cloud_storage_provider(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_GOOGLE), len);
+         break;
+      case 1:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_MICROSOFT), len);
+         break;
+      case 2:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_AWS), len);
          break;
    }
 }
@@ -8795,6 +8830,22 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CLOUD_STORAGE_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_AUTHORIZE,
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
 #ifdef HAVE_LAKKA
          CONFIG_ACTION(
@@ -17939,6 +17990,119 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_CLOUD_STORAGE:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_SETTINGS);
+
+         START_SUB_GROUP(list, list_info,
+               "Cloud Storage",
+               &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_storage_enable,
+               MENU_ENUM_LABEL_CLOUD_STORAGE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.cloud_storage_provider,
+               MENU_ENUM_LABEL_CLOUD_STORAGE_PROVIDER,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER,
+               0,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_cloud_storage_provider;
+         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      case SETTINGS_LIST_CLOUD_STORAGE_PROVIDER:
+         {
+            char *loading_str = "Loading...";
+
+            strcpy(cloud_storage_authorize_status_str, loading_str);
+
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_AUTHORIZE),
+                  parent_group);
+
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE);
+
+            START_SUB_GROUP(list, list_info,
+                  "Authorize",
+                  &group_info, &subgroup_info, parent_group);
+
+            CONFIG_STRING(
+                  list, list_info,
+                  cloud_storage_authorize_status_str,
+                  CLOUD_STORAGE_AUTHORIZE_STATUS_LEN,
+                  MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,
+                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_AUTHORIZE_STATUS,
+                  "Loading...",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_NONE);
+            (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+
+            CONFIG_STRING(
+                  list, list_info,
+                  settings->arrays.cloud_storage_s3_access_key,
+                  sizeof(settings->arrays.cloud_storage_s3_access_key),
+                  MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY,
+                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_S3_ACCESS_KEY,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+            CONFIG_STRING(
+                  list, list_info,
+                  settings->arrays.cloud_storage_s3_secret_access_key,
+                  sizeof(settings->arrays.cloud_storage_s3_secret_access_key),
+                  MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,
+                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+         }
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_LAKKA_SERVICES:
          {
 #if defined(HAVE_LAKKA)
@@ -19106,6 +19270,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CORE_UPDATER,
       SETTINGS_LIST_NETPLAY,
+      SETTINGS_LIST_CLOUD_STORAGE,
+      SETTINGS_LIST_CLOUD_STORAGE_PROVIDER,
       SETTINGS_LIST_LAKKA_SERVICES,
       SETTINGS_LIST_USER,
       SETTINGS_LIST_USER_ACCOUNTS,

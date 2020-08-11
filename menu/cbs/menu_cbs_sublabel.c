@@ -165,6 +165,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_manager_clean_playlist, MEN
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_delete_playlist,               MENU_ENUM_SUBLABEL_DELETE_PLAYLIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_network_settings_list,         MENU_ENUM_SUBLABEL_NETWORK_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_network_on_demand_thumbnails,  MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_settings_list,   MENU_ENUM_SUBLABEL_CLOUD_STORAGE_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_authorize_list,  MENU_ENUM_SUBLABEL_CLOUD_STORAGE_AUTHORIZE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_settings_list,            MENU_ENUM_SUBLABEL_USER_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_recording_settings_list,       MENU_ENUM_SUBLABEL_RECORDING_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_throttle_settings_list,  MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS)
@@ -571,6 +573,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_require_slaves,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_stateless_mode,        MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_check_frames,          MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_nat_traversal,         MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_enable,          MENU_ENUM_SUBLABEL_CLOUD_STORAGE_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_provider,        MENU_ENUM_SUBLABEL_CLOUD_STORAGE_PROVIDER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_authorize_status, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_AUTHORIZE_STATUS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_s3_access_key, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_S3_ACCESS_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_s3_secret_access_key, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_stdin_cmd_enable,              MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mouse_enable,                  MENU_ENUM_SUBLABEL_MOUSE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pointer_enable,                MENU_ENUM_SUBLABEL_POINTER_ENABLE)
@@ -2749,6 +2756,21 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_ip_address);
             break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_enable);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_PROVIDER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_provider);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_authorize_status);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_s3_access_key);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_s3_secret_access_key);
+            break;
          case MENU_ENUM_LABEL_OVERLAY_PRESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_preset);
             break;
@@ -3784,6 +3806,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_network_on_demand_thumbnails);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_settings_list);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_authorize_list);
             break;
          case MENU_ENUM_LABEL_USER_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_settings_list);

@@ -1775,6 +1775,29 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "to use for netplay. A server that is \n"
                              "located closer to you may have less latency. \n");
             break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_ENABLE:
+            snprintf(s, len,
+                     "Whether to enable cloud storage. \n"
+                             " \n"
+                             "If set to true, game states will be read \n"
+                             "and written to a cloud storage account. \n");
+            break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_PROVIDER:
+            snprintf(s, len,
+                     "Cloud storage provider.");
+            break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS:
+            snprintf(s, len,
+                     "Authorization status.");
+            break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY:
+            snprintf(s, len,
+                     "Client ID for the AWS S3 account.");
+            break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY:
+            snprintf(s, len,
+                     "Client secret for the AWS S3 account.");
+            break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             snprintf(s, len,
                      "Maximum amount of swapchain images. This \n"

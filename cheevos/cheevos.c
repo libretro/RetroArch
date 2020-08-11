@@ -2390,12 +2390,22 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 
       for (coro->k = 0; coro->k < 5; coro->k++)
       {
+         struct http_request_t *request;
+         struct http_headers_t *headers;
+         char *user_agent;
+
          if (coro->k != 0)
             CHEEVOS_LOG(RCHEEVOS_TAG "Retrying HTTP request: %u of 5\n", coro->k + 1);
 
          coro->json       = NULL;
-         coro->conn       = net_http_connection_new(
-               coro->url, "GET", NULL);
+
+         request = net_http_request_new();
+         net_http_request_set_url(request, coro->url);
+         net_http_request_set_method(request, "GET");
+         rcheevos_get_user_agent(&rcheevos_locals,
+               buffer, sizeof(buffer));
+         net_http_request_set_header(request, "User-Agent", buffer, true);
+         coro->conn       = net_http_connection_new(request);
 
          if (!coro->conn)
          {
@@ -2409,20 +2419,16 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          /* Error finishing the connection descriptor. */
          if (!net_http_connection_done(coro->conn))
          {
-            net_http_connection_free(coro->conn);
+            net_http_connection_free(coro->conn, true);
             continue;
          }
-
-         rcheevos_get_user_agent(&rcheevos_locals,
-               buffer, sizeof(buffer));
-         net_http_connection_set_user_agent(coro->conn, buffer);
 
          coro->http = net_http_new(coro->conn);
 
          /* Error connecting to the endpoint. */
          if (!coro->http)
          {
-            net_http_connection_free(coro->conn);
+            net_http_connection_free(coro->conn, true);
             CORO_GOSUB(RCHEEVOS_DELAY);
             continue;
          }
@@ -2432,8 +2438,14 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 
          {
             size_t length;
-            uint8_t *data = net_http_data(coro->http,
-                  &length, false);
+            uint8_t *data = NULL;
+            struct http_response_t *response = net_http_get_response(coro->http);
+            if (response)
+            {
+               uint8_t *data = net_http_response_get_data(response, &length, false);
+               net_http_response_release_data(response);
+               net_http_response_free(response);
+            }
 
             if (data)
             {
@@ -2448,13 +2460,13 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 
                coro->k = (unsigned)length;
                net_http_delete(coro->http);
-               net_http_connection_free(coro->conn);
+               net_http_connection_free(coro->conn, true);
                CORO_RET();
             }
          }
 
          net_http_delete(coro->http);
-         net_http_connection_free(coro->conn);
+         net_http_connection_free(coro->conn, true);
       }
 
       CHEEVOS_LOG(RCHEEVOS_TAG "Couldn't connect to server after 5 tries\n");

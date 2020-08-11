@@ -142,6 +142,7 @@
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <cloud-storage/cloud_storage.h>
 #endif
 
 #include <audio/audio_resampler.h>
@@ -13735,6 +13736,13 @@ bool command_event(enum event_command cmd, void *data)
 
             if (!type || !command_event_init_core(settings, p_rarch, *type))
                return false;
+
+#ifdef HAVE_NETWORKING
+            if (settings->bools.cloud_storage_enable)
+            {
+               cloud_storage_sync_files();
+            }
+#endif
          }
          break;
       case CMD_EVENT_VIDEO_APPLY_STATE_CHANGES:

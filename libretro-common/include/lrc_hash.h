@@ -37,6 +37,32 @@
 
 RETRO_BEGIN_DECLS
 
+/* SHA256 implementation from bSNES. Written by valditx. */
+struct sha256_ctx
+{
+   union
+   {
+      uint8_t u8[64];
+      uint32_t u32[16];
+   } in;
+   unsigned inlen;
+
+   uint32_t w[64];
+   uint32_t h[8];
+   uint64_t len;
+};
+
+void sha256_init(struct sha256_ctx *p);
+
+void sha256_block(struct sha256_ctx *p);
+
+void sha256_chunk(struct sha256_ctx *p,
+      const uint8_t *s, unsigned len);
+
+void sha256_final(struct sha256_ctx *p);
+
+void sha256_subhash(struct sha256_ctx *p, uint32_t *t);
+
 /**
  * sha256_hash:
  * @out               : Output.

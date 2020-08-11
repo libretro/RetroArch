@@ -206,6 +206,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_wifi_networks_list,             DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_network_settings_list,          DISPLAYLIST_NETWORK_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_subsystem_settings_list,          DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_network_hosting_settings_list,          DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_cloud_storage_settings_list,    DISPLAYLIST_CLOUD_STORAGE_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_cloud_storage_authorize_list,   DISPLAYLIST_CLOUD_STORAGE_AUTHORIZE_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_services_list,            DISPLAYLIST_LAKKA_SERVICES_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_user_settings_list,             DISPLAYLIST_USER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_directory_settings_list,        DISPLAYLIST_DIRECTORY_SETTINGS_LIST)
@@ -717,6 +719,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST, deferred_push_network_hosting_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST, deferred_push_bluetooth_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST, deferred_push_wifi_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CLOUD_STORAGE_SETTINGS_LIST, deferred_push_cloud_storage_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CLOUD_STORAGE_AUTHORIZE_LIST, deferred_push_cloud_storage_authorize_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST, deferred_push_wifi_networks_list},
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST, deferred_push_lakka_services_list},
       {MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST, deferred_push_user_settings_list},

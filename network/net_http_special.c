@@ -26,12 +26,20 @@ int net_http_get(const char **result, size_t *size,
       const char *url, retro_time_t *timeout)
 {
    size_t length;
-   uint8_t* data                  = NULL;
-   char* res                      = NULL;
-   int ret                        = NET_HTTP_GET_OK;
-   struct http_t* http            = NULL;
-   retro_time_t t0                = cpu_features_get_time_usec();
-   struct http_connection_t *conn = net_http_connection_new(url, "GET", NULL);
+   uint8_t* data                    = NULL;
+   char* res                        = NULL;
+   int ret                          = NET_HTTP_GET_OK;
+   struct http_t* http              = NULL;
+   retro_time_t t0                  = cpu_features_get_time_usec();
+   struct http_request_t *request;
+   struct http_connection_t *conn   = NULL;
+   struct http_response_t *response = NULL;
+
+   request = net_http_request_new();
+   net_http_request_set_url(request, url);
+   net_http_request_set_method(request, "GET");
+
+   conn = net_http_connection_new(request);
 
    *result = NULL;
 
@@ -68,7 +76,13 @@ int net_http_get(const char **result, size_t *size,
       }
    }
 
-   data = net_http_data(http, &length, false);
+   response = net_http_get_response(http);
+   if (response)
+   {
+      data = net_http_response_get_data(response, &length, false);
+      net_http_response_release_data(response);
+      net_http_response_free(response);
+   }
 
    if (data)
    {
@@ -97,7 +111,7 @@ error:
       net_http_delete(http);
 
    if (conn)
-      net_http_connection_free(conn);
+      net_http_connection_free(conn, true);
 
    if (timeout)
    {

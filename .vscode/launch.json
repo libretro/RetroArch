@@ -25,6 +25,26 @@
          ]
       },
       {
+         "name": "(gdb) Launch Unix",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/retroarch",
+         "args": ["-v"],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "externalConsole": true,
+         "MIMode": "gdb",
+         "miDebuggerPath": "/usr/bin/gdb",
+         "setupCommands": [
+             {
+                 "description": "Enable pretty-printing for gdb",
+                 "text": "-enable-pretty-printing",
+                 "ignoreFailures": true
+             }
+         ]
+      },
+      {
          "name": "(gdb) Attach",
          "type": "cppdbg",
          "request": "attach",

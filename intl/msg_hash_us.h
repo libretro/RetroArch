@@ -1139,6 +1139,74 @@ MSG_HASH(
    "Configure server and network settings."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_SETTINGS,
+   "Cloud Storage"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_STORAGE_SETTINGS,
+   "Configure cloud storage settings."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_ENABLE,
+   "Enable Cloud Storage"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_STORAGE_ENABLE,
+   "Whether to enable cloud storage. If set to true, game states will be read and written to a cloud storage account."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER,
+   "Provider"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_STORAGE_PROVIDER,
+   "Cloud storage provider."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_AUTHORIZE,
+   "Authorize"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_STORAGE_AUTHORIZE,
+   "Authorize"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_GOOGLE,
+   "Google"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_MICROSOFT,
+   "Microsoft"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_AWS,
+   "AWS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_AUTHORIZE_STATUS,
+   "Authorization Status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,
+   "Authorization status."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_S3_ACCESS_KEY,
+   "Access Key"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_STORAGE_S3_ACCESS_KEY,
+   "Access Key for the AWS S3 account."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,
+   "Secret Access Key"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,
+   "Secret access key for the AWS S3 account."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
    "Playlists"
    )

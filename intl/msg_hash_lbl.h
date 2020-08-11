@@ -921,6 +921,14 @@ MSG_HASH(
    "deferred_network_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CLOUD_STORAGE_SETTINGS_LIST,
+   "deferred_cloud_storage_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CLOUD_STORAGE_AUTHORIZE_LIST,
+   "deferred_cloud_storage_authorize_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST,
    "deferred_onscreen_display_settings_list"
    )
@@ -1909,6 +1917,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETWORK_SETTINGS,
    "network_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_SETTINGS,
+   "cloud_storage_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_ENABLE,
+   "cloud_storage_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_PROVIDER,
+   "cloud_storage_provider"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE,
+   "cloud_storage_authorize"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,
+   "cloud_storage_authorize_status"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY,
+   "cloud_storage_s3_access_key"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,
+   "cloud_storage_s3_secret_access_key"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,

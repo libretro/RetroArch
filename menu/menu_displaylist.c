@@ -48,6 +48,9 @@
 #include "../../network/netplay/netplay.h"
 #include "../network/netplay/netplay_discovery.h"
 #include "../core_updater_list.h"
+
+#include "../cloud-storage/cloud_storage.h"
+#include <net/open_browser.h>
 #endif
 
 #ifdef HAVE_LAKKA_SWITCH
@@ -5081,6 +5084,35 @@ static unsigned menu_displaylist_populate_subsystem(
    return count;
 }
 
+static void authorize_callback(bool success)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   size_t start;
+   size_t end;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &start);
+   end = file_list_get_size(selection_buf) - 1;
+
+   for (;start <= end;start++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t *)file_list_get_actiondata_at_offset(selection_buf, start);
+
+      switch (cbs->enum_idx)
+      {
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS:
+            setting_set_with_string_representation(cbs->setting, success ? "Complete" : "Failure");
+
+            if (success)
+            {
+               cloud_storage_sync_files();
+            }
+            break;
+         default:
+            break;
+      }
+   }
+}
+
 unsigned menu_displaylist_build_list(
       file_list_t *list,
       enum menu_displaylist_ctl_state type,
@@ -6857,6 +6889,71 @@ unsigned menu_displaylist_build_list(
 #endif
          }
          break;
+      case DISPLAYLIST_CLOUD_STORAGE_SETTINGS_LIST:
+         {
+            settings_t      *settings      = config_get_ptr();
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CLOUD_STORAGE_ENABLE, PARSE_ONLY_BOOL, false) == 0)
+            {
+               count++;
+            }
+
+            if (settings->bools.cloud_storage_enable && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CLOUD_STORAGE_PROVIDER, PARSE_ONLY_UINT, false) == 0)
+            {
+               count++;
+            }
+
+            if (settings->bools.cloud_storage_enable && cloud_storage_need_authorization() &&
+                     MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE,
+                     PARSE_ACTION, false) == 0)
+               count++;
+         }
+         break;
+      case DISPLAYLIST_CLOUD_STORAGE_AUTHORIZE_LIST:
+         {
+            settings_t      *settings     = config_get_ptr();
+
+            cloud_storage_authorize(settings->uints.cloud_storage_provider, authorize_callback);
+
+            switch (settings->uints.cloud_storage_provider)
+            {
+            case 0:
+            case 1:
+               {
+                  menu_displaylist_build_info_t build_list[] = {
+                     {MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,                     PARSE_ONLY_STRING},
+                  };
+
+                  for (i = 0; i < ARRAY_SIZE(build_list); i++)
+                  {
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              build_list[i].enum_idx,  build_list[i].parse_type,
+                              false) == 0)
+                        count++;
+                  }
+               }
+               break;
+            case 2:
+               {
+                  menu_displaylist_build_info_t build_list[] = {
+                     {MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY,                        PARSE_ONLY_STRING},
+                     {MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,                 PARSE_ONLY_STRING},
+                  };
+
+                  for (i = 0; i < ARRAY_SIZE(build_list); i++)
+                  {
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              build_list[i].enum_idx,  build_list[i].parse_type,
+                              false) == 0)
+                        count++;
+                  }
+               }
+               break;
+            }
+         }
+         break;
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
 #ifdef HAVE_CHEATS
          {
@@ -8154,6 +8251,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_WIFI_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_NETWORK_SETTINGS,            PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_CLOUD_STORAGE_SETTINGS,      PARSE_ACTION, true},
                {MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,   PARSE_ACTION, true},
 #endif
                {MENU_ENUM_LABEL_LAKKA_SERVICES,              PARSE_ACTION, true},
@@ -11088,6 +11186,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
+      case DISPLAYLIST_CLOUD_STORAGE_SETTINGS_LIST:
+      case DISPLAYLIST_CLOUD_STORAGE_AUTHORIZE_LIST:
       case DISPLAYLIST_OPTIONS_CHEATS:
       case DISPLAYLIST_NETWORK_INFO:
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:

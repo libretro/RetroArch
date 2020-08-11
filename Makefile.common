@@ -2031,6 +2031,7 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           $(LIBRETRO_COMM_DIR)/net/net_natt.o \
+          $(LIBRETRO_COMM_DIR)/net/open_browser.o \
           core_updater_list.o \
           network/net_http_special.o \
           tasks/task_http.o \
@@ -2074,7 +2075,30 @@ ifeq ($(HAVE_NETWORKING), 1)
 			 network/netplay/netplay_sync.o \
 			 network/netplay/netplay_discovery.o \
 			 network/netplay/netplay_buf.o \
-			 network/netplay/netplay_room_parse.o
+			 network/netplay/netplay_room_parse.o \
+			 cloud-storage/hex.o \
+			 cloud-storage/json.o \
+			 cloud-storage/driver_utils.o \
+			 cloud-storage/rest-lib/rest_api.o \
+			 cloud-storage/cloud_storage.o \
+			 cloud-storage/google/google.o \
+			 cloud-storage/google/authenticate.o \
+			 cloud-storage/google/authorize.o \
+			 cloud-storage/google/create_folder.o \
+			 cloud-storage/google/delete_file.o \
+			 cloud-storage/google/download_file.o \
+			 cloud-storage/google/get_item_metadata.o \
+			 cloud-storage/google/list_files.o \
+			 cloud-storage/google/upload_file.o \
+			 cloud-storage/onedrive/onedrive.o \
+			 cloud-storage/onedrive/authenticate.o \
+			 cloud-storage/onedrive/authorize.o \
+			 cloud-storage/onedrive/create_folder.o \
+			 cloud-storage/onedrive/delete_file.o \
+			 cloud-storage/onedrive/download_file.o \
+			 cloud-storage/onedrive/get_item_metadata.o \
+			 cloud-storage/onedrive/list_files.o \
+			 cloud-storage/onedrive/upload_file.o
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)

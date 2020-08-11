@@ -276,6 +276,8 @@ typedef struct settings
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
       unsigned quit_on_close_content;
+
+      unsigned cloud_storage_provider;
    } uints;
 
    struct
@@ -370,6 +372,15 @@ typedef struct settings
       char facebook_stream_key[PATH_MAX_LENGTH];
       char discord_app_id[PATH_MAX_LENGTH];
       char ai_service_url[PATH_MAX_LENGTH];
+
+      char cloud_storage_google_client_id[255];
+      char cloud_storage_google_client_secret[255];
+      char cloud_storage_google_refresh_token[255];
+      char cloud_storage_google_refresh_token_expiration[32];
+      char cloud_storage_onedrive_client_id[255];
+      char cloud_storage_onedrive_refresh_token[510];
+      char cloud_storage_s3_access_key[255];
+      char cloud_storage_s3_secret_access_key[255];
 
       char crt_switch_timings[255];
    } arrays;
@@ -808,6 +819,8 @@ typedef struct settings
 
       bool ai_service_enable;
       bool ai_service_pause;
+
+      bool cloud_storage_enable;
    } bools;
 
 } settings_t;

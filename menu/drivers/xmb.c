@@ -2744,6 +2744,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
       case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
+      case MENU_ENUM_LABEL_CLOUD_STORAGE_SETTINGS:
+      case MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE:
          return xmb->textures.list[XMB_TEXTURE_NETWORK];
 #endif
       case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
