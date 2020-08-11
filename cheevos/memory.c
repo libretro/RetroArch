@@ -102,20 +102,20 @@ static void rcheevos_memory_init_without_regions(rcheevos_memory_regions_t* regi
 
    meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
    core_get_memory(&meminfo);
-   rcheevos_memory_register_region(regions, RC_MEMORY_TYPE_SYSTEM_RAM, meminfo.data, meminfo.size, description);
+   rcheevos_memory_register_region(regions, RC_MEMORY_TYPE_SYSTEM_RAM, (uint8_t*)meminfo.data, meminfo.size, description);
 
    meminfo.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&meminfo);
-   rcheevos_memory_register_region(regions, RC_MEMORY_TYPE_SAVE_RAM, meminfo.data, meminfo.size, description);
+   rcheevos_memory_register_region(regions, RC_MEMORY_TYPE_SAVE_RAM, (uint8_t*)meminfo.data, meminfo.size, description);
 }
 
 static const rarch_memory_descriptor_t* rcheevos_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned real_address)
 {
-   if (mmap->num_descriptors == 0)
-      return NULL;
-
    const rarch_memory_descriptor_t* desc = mmap->descriptors;
    const rarch_memory_descriptor_t* end = desc + mmap->num_descriptors;
+
+   if (mmap->num_descriptors == 0)
+      return NULL;
 
    for (; desc < end; desc++)
    {
@@ -284,13 +284,13 @@ static void rcheevos_memory_init_from_unmapped_memory(rcheevos_memory_regions_t*
       if (console_region_size > meminfo.size)
       {
          /* want more than what is available, take what we can and null fill the rest */
-         rcheevos_memory_register_region(regions, console_region->type, meminfo.data, meminfo.size, description);
+         rcheevos_memory_register_region(regions, console_region->type, (uint8_t*)meminfo.data, meminfo.size, description);
          rcheevos_memory_register_region(regions, console_region->type, NULL, console_region_size - meminfo.size, "null filler");
       }
       else
       {
          /* only take as much as we need */
-         rcheevos_memory_register_region(regions, console_region->type, meminfo.data, console_region_size, description);
+         rcheevos_memory_register_region(regions, console_region->type, (uint8_t*)meminfo.data, console_region_size, description);
       }
    }
 }
