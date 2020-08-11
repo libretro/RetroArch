@@ -2143,12 +2143,12 @@ struct rarch_state
 
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   int port_map[16];
+   int port_map[MAX_USERS];
 #endif
 #endif
 
 #if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
-   int ai_gamepad_state[16];
+   int ai_gamepad_state[MAX_USERS];
 #endif
 #ifdef HAVE_NETWORKING
    int reannounce;
@@ -14507,8 +14507,8 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
       const char *ident                               = NULL;
       bool set_controller                             = false;
       const struct retro_controller_description *desc = NULL;
-      unsigned max_users                              = p_rarch->input_driver_max_users;
-      unsigned device                                 = (i < max_users) 
+      unsigned num_active_users                       = p_rarch->input_driver_max_users;
+      unsigned device                                 = (i < num_active_users)
          ? input_config_get_device(i)
          : RETRO_DEVICE_NONE;
 
@@ -20064,6 +20064,10 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS:
+         *(unsigned *)data = p_rarch->input_driver_max_users;
+         break;
+
       /* Private environment callbacks.
        *
        * Should all be properly addressed in version 2.
@@ -20090,7 +20094,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             set_save_state_in_background(state);
 
          }
-      break;
+         break;
 
 
       default:
@@ -20643,7 +20647,7 @@ static void remember_controller_port_device(
       struct rarch_state *p_rarch,
       long port, long device)
 {
-   if (port >= 0 && port < 16)
+   if (port >= 0 && port < MAX_USERS)
       p_rarch->port_map[port] = (int)device;
    if (p_rarch->secondary_module && p_rarch->secondary_core.retro_set_controller_port_device)
       p_rarch->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
@@ -20653,7 +20657,7 @@ static void clear_controller_port_map(struct rarch_state *p_rarch)
 {
    unsigned port;
 
-   for (port = 0; port < 16; port++)
+   for (port = 0; port < MAX_USERS; port++)
       p_rarch->port_map[port] = -1;
 }
 
@@ -20843,11 +20847,13 @@ static bool rarch_environment_secondary_core_hook(
 
 static bool secondary_core_create(struct rarch_state *p_rarch)
 {
-   long port, device;
+   unsigned port;
    bool contentless            = false;
    bool is_inited              = false;
    const enum rarch_core_type
       last_core_type           = p_rarch->last_core_type;
+   rarch_system_info_t *info   = &p_rarch->runloop_system;
+   unsigned num_active_users   = p_rarch->input_driver_max_users;
 
    if (   last_core_type != CORE_TYPE_PLAIN          ||
          !p_rarch->load_content_info                 ||
@@ -20913,13 +20919,19 @@ static bool secondary_core_create(struct rarch_state *p_rarch)
    p_rarch->secondary_core.retro_set_input_state(p_rarch->secondary_callbacks.state_cb);
    p_rarch->secondary_core.retro_set_input_poll(p_rarch->secondary_callbacks.poll_cb);
 
-   for (port = 0; port < 16; port++)
-   {
-      device = p_rarch->port_map[port];
-      if (device >= 0)
-         p_rarch->secondary_core.retro_set_controller_port_device(
-               (unsigned)port, (unsigned)device);
-   }
+   if (info)
+      for (port = 0; port < MAX_USERS; port++)
+      {
+         if (port < info->ports.size)
+         {
+            unsigned device = (port < num_active_users) ?
+                  p_rarch->port_map[port] : RETRO_DEVICE_NONE;
+
+            p_rarch->secondary_core.retro_set_controller_port_device(
+                  port, device);
+         }
+      }
+
    clear_controller_port_map(p_rarch);
 
    return true;
@@ -38563,7 +38575,7 @@ static enum runloop_state runloop_check_state(
 
             p_rarch->gamepad_input_override = 0;
 
-            for (i = 0; i < 16; i++)
+            for (i = 0; i < MAX_USERS; i++)
             {
                if (p_rarch->ai_gamepad_state[i] == 2)
                   set_gamepad_input_override(p_rarch, i, true);
