@@ -21020,11 +21020,8 @@ bool driver_bluetooth_device_is_connected(unsigned i)
    struct rarch_state       *p_rarch = &rarch_st;
    if ( (p_rarch->bluetooth_driver_active) &&
         (p_rarch->bluetooth_driver->device_is_connected) )
-   {
       return p_rarch->bluetooth_driver->device_is_connected(p_rarch->bluetooth_data, i);
-   } else {
-      return false;
-   }
+   return false;
 }
 
 void driver_bluetooth_device_get_sublabel(char *s, unsigned i, size_t len)
@@ -21040,8 +21037,7 @@ bool driver_bluetooth_connect_device(unsigned i)
    struct rarch_state       *p_rarch = &rarch_st;
    if (p_rarch->bluetooth_driver_active)
       return p_rarch->bluetooth_driver->connect_device(p_rarch->bluetooth_data, i);
-   else
-      return false;
+   return false;
 }
 
 bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
@@ -21281,8 +21277,10 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
            }
         }
 
-        /*if (wifi_cb.initialized)
-           wifi_cb.initialized();*/
+#if 0
+        if (wifi_cb.initialized)
+           wifi_cb.initialized();
+#endif
         break;
       default:
          break;
@@ -21349,19 +21347,17 @@ static void ui_companion_driver_init_first(
       struct rarch_state *p_rarch)
 {
 #ifdef HAVE_QT
-   bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
-   bool ui_companion_toggle        = settings->bools.ui_companion_toggle;
-#endif
+   bool desktop_menu_enable          = settings->bools.desktop_menu_enable;
+   bool ui_companion_toggle          = settings->bools.ui_companion_toggle;
 
-   p_rarch->ui_companion           = (ui_companion_driver_t*)ui_companion_drivers[0];
-
-#ifdef HAVE_QT
    if (desktop_menu_enable && ui_companion_toggle)
    {
       p_rarch->ui_companion_qt_data  = ui_companion_qt.init();
       p_rarch->qt_is_inited          = true;
    }
 #endif
+
+   p_rarch->ui_companion             = (ui_companion_driver_t*)ui_companion_drivers[0];
 
    if (p_rarch->ui_companion)
    {
