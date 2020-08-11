@@ -1324,7 +1324,9 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS 61
                                            /* unsigned * --
                                             * Unsigned value is the number of active input devices
-                                            * provided by the frontend. This may change at any time.
+                                            * provided by the frontend. This may change between
+                                            * frames, but will remain constant for the duration
+                                            * of each frame.
                                             * If callback returns true, a core need not poll any
                                             * input device with an index greater than or equal to
                                             * the number of active devices.
