@@ -304,7 +304,7 @@ static char* rcheevos_unescape_string(const char* string, size_t length)
    char* buffer    = (char*)malloc(length + 1);
    char* buffer_it = buffer;
 
-   if (buffer == NULL)
+   if (!buffer)
       return NULL;
 
    while (string < end)
@@ -546,12 +546,12 @@ static int rcheevos_read_string(void* userdata,
    else if (ud->is_title)
    {
       ud->patchdata->title = rcheevos_unescape_string(string, length);
-      ud->is_title = 0;
+      ud->is_title         = 0;
    }
    else if (ud->is_richpresence)
    {
       ud->patchdata->richpresence_script = rcheevos_unescape_string(string, length);
-      ud->is_richpresence = 0;
+      ud->is_richpresence                = 0;
    }
 
    return 0;

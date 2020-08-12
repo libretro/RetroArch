@@ -24,7 +24,8 @@
 
 #include <stdio.h>
 
-uint8_t* rcheevos_memory_find(const rcheevos_memory_regions_t* regions, unsigned address)
+uint8_t* rcheevos_memory_find(
+      const rcheevos_memory_regions_t* regions, unsigned address)
 {
    unsigned i;
 
@@ -49,11 +50,17 @@ static const char* rcheevos_memory_type(int type)
 {
    switch (type)
    {
-   case RC_MEMORY_TYPE_SAVE_RAM: return "SRAM";
-   case RC_MEMORY_TYPE_VIDEO_RAM: return "VRAM";
-   case RC_MEMORY_TYPE_UNUSED: return "UNUSED";
-   default: return "SYSTEM RAM";
+      case RC_MEMORY_TYPE_SAVE_RAM:
+         return "SRAM";
+      case RC_MEMORY_TYPE_VIDEO_RAM:
+         return "VRAM";
+      case RC_MEMORY_TYPE_UNUSED:
+         return "UNUSED";
+      default:
+         break;
    }
+
+   return "SYSTEM RAM";
 }
 
 static void rcheevos_memory_register_region(rcheevos_memory_regions_t* regions,
@@ -93,11 +100,13 @@ static void rcheevos_memory_register_region(rcheevos_memory_regions_t* regions,
       rcheevos_memory_type(type), (unsigned)(regions->total_size - size), description);
 }
 
-static void rcheevos_memory_init_without_regions(rcheevos_memory_regions_t* regions)
+static void rcheevos_memory_init_without_regions(
+      rcheevos_memory_regions_t* regions)
 {
    /* no regions specified, assume system RAM followed by save RAM */
    char description[64];
    retro_ctx_memory_info_t meminfo;
+
    sprintf(description, "offset 0x%06x", 0);
 
    meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
@@ -175,15 +184,13 @@ void rcheevos_memory_init_from_memory_map(rcheevos_memory_regions_t* regions, co
 
          if (desc->core.ptr)
          {
-            desc_start = (uint8_t*)desc->core.ptr + desc->core.offset;
+            desc_start   = (uint8_t*)desc->core.ptr + desc->core.offset;
             region_start = desc_start + offset;
          }
          else
-         {
             region_start = NULL;
-         }
 
-         desc_size = desc->core.len - offset;
+         desc_size       = desc->core.len - offset;
 
          if (console_region_size > desc_size)
          {
@@ -218,13 +225,15 @@ static unsigned rcheevos_memory_console_region_to_ram_type(int region_type)
 {
    switch (region_type)
    {
-   case RC_MEMORY_TYPE_SAVE_RAM:
-      return RETRO_MEMORY_SAVE_RAM;
-   case RC_MEMORY_TYPE_VIDEO_RAM:
-      return RETRO_MEMORY_VIDEO_RAM;
-   default:
-      return RETRO_MEMORY_SYSTEM_RAM;
+      case RC_MEMORY_TYPE_SAVE_RAM:
+         return RETRO_MEMORY_SAVE_RAM;
+      case RC_MEMORY_TYPE_VIDEO_RAM:
+         return RETRO_MEMORY_VIDEO_RAM;
+      default:
+         break;
    }
+
+   return RETRO_MEMORY_SYSTEM_RAM;
 }
 
 static void rcheevos_memory_init_from_unmapped_memory(rcheevos_memory_regions_t* regions, const rc_memory_regions_t* console_regions, int console)
@@ -234,19 +243,21 @@ static void rcheevos_memory_init_from_unmapped_memory(rcheevos_memory_regions_t*
 
    for (i = 0; i < console_regions->num_regions; ++i)
    {
-      const rc_memory_region_t* console_region = &console_regions->region[i];
-      const size_t console_region_size = console_region->end_address - console_region->start_address + 1;
-      retro_ctx_memory_info_t meminfo;
       size_t offset;
-      unsigned base_address = 0;
       unsigned j;
+      retro_ctx_memory_info_t meminfo;
+      const rc_memory_region_t* console_region = &console_regions->region[i];
+      const size_t console_region_size         = 
+         console_region->end_address - console_region->start_address + 1;
+      unsigned base_address                    = 0;
 
-      meminfo.id = rcheevos_memory_console_region_to_ram_type(console_region->type);
+      meminfo.id                               = rcheevos_memory_console_region_to_ram_type(console_region->type);
 
       for (j = 0; j <= i; ++j)
       {
          const rc_memory_region_t* console_region2 = &console_regions->region[j];
-         if (rcheevos_memory_console_region_to_ram_type(console_region2->type) == meminfo.id)
+         if (rcheevos_memory_console_region_to_ram_type(
+                  console_region2->type) == meminfo.id)
          {
             base_address = console_region2->start_address;
             break;
@@ -260,15 +271,13 @@ static void rcheevos_memory_init_from_unmapped_memory(rcheevos_memory_regions_t*
       {
          meminfo.size -= offset;
 
-         if (meminfo.data != NULL)
+         if (meminfo.data)
          {
             sprintf(description, "offset 0x%06X", (int)offset);
             meminfo.data = (uint8_t*)meminfo.data + offset;
          }
          else
-         {
             sprintf(description, "null filler");
-         }
       }
       else
       {
@@ -302,12 +311,12 @@ void rcheevos_memory_destroy(rcheevos_memory_regions_t* regions)
 
 bool rcheevos_memory_init(rcheevos_memory_regions_t* regions, int console)
 {
+   unsigned i;
    const rc_memory_regions_t* console_regions = rc_console_memory_regions(console);
    rcheevos_memory_regions_t new_regions;
    bool has_valid_region = false;
-   unsigned i;
 
-   if (regions == NULL)
+   if (!regions)
       return false;
 
    memset(&new_regions, 0, sizeof(new_regions));
@@ -328,7 +337,7 @@ bool rcheevos_memory_init(rcheevos_memory_regions_t* regions, int console)
    /* determine if any valid regions were found */
    for (i = 0; i < new_regions.count; i++)
    {
-      if (new_regions.data[i] != NULL)
+      if (new_regions.data[i])
       {
          has_valid_region = true;
          break;

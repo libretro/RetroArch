@@ -24,7 +24,8 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct {
+typedef struct
+{
   const char* title;
   const char* description;
   const char* badge;
@@ -33,7 +34,8 @@ typedef struct {
   unsigned id;
 } rcheevos_racheevo_t;
 
-typedef struct {
+typedef struct
+{
   const char* title;
   const char* description;
   const char* format;
@@ -41,7 +43,8 @@ typedef struct {
   unsigned id;
 } rcheevos_ralboard_t;
 
-typedef struct {
+typedef struct
+{
    unsigned game_id;
    unsigned console_id;
    char* title;

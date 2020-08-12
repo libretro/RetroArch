@@ -36,7 +36,8 @@ typedef struct
 bool rcheevos_memory_init(rcheevos_memory_regions_t* regions, int console);
 void rcheevos_memory_destroy(rcheevos_memory_regions_t* regions);
 
-uint8_t* rcheevos_memory_find(const rcheevos_memory_regions_t* regions, unsigned address);
+uint8_t* rcheevos_memory_find(const rcheevos_memory_regions_t* regions,
+      unsigned address);
 
 RETRO_END_DECLS
 
