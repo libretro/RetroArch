@@ -1,5 +1,8 @@
 # Future
+- CHEEVOS: Generic memory mapping using rcheevos
+- LIBRETRO: Add API extension for cores to query the number of active inputs provided by the frontend
 - PLAYLISTS/PORTABLE: Fixed first load initialization
+- SWITCH: Fix input bind icons being off by one line
 
 # 1.9.0
 - 3DS: Fix sound crackling when paused
