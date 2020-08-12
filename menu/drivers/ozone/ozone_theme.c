@@ -133,6 +133,34 @@ static float ozone_background_libretro_running_gruvbox_dark[16] = {
    0.1568627f, 0.1568627f, 0.1568627f, 1.0f,
 };
 
+static float ozone_background_libretro_running_boysenberry[16] = {
+      0.27058823529, 0.09803921568, 0.14117647058, 0.75f,
+      0.27058823529, 0.09803921568, 0.14117647058, 0.75f,
+      0.27058823529, 0.09803921568, 0.14117647058, 0.75f,
+      0.27058823529, 0.09803921568, 0.14117647058, 0.75f,
+};
+
+static float ozone_sidebar_background_boysenberry[16] = {
+      0.27058823529, 0.09803921568, 0.14117647058, 1.00,
+      0.27058823529, 0.09803921568, 0.14117647058, 1.00,
+      0.27058823529, 0.09803921568, 0.14117647058, 1.00,
+      0.27058823529, 0.09803921568, 0.14117647058, 1.00,
+};
+
+static float ozone_sidebar_gradient_top_boysenberry[16] = {
+      0.27058823529, 0.09803921568, 0.14117647058, 1.00,
+      0.27058823529, 0.09803921568, 0.14117647058, 1.00,
+      0.19215686274, 0.0, 0.04705882352, 1.00,
+      0.19215686274, 0.0, 0.04705882352, 1.00,     
+};
+
+static float ozone_sidebar_gradient_bottom_boysenberry[16] = {
+      0.19215686274, 0.0, 0.04705882352, 1.00,
+      0.19215686274, 0.0, 0.04705882352, 1.00,
+      0.27058823529, 0.09803921568, 0.14117647058, 1.00,
+      0.27058823529, 0.09803921568, 0.14117647058, 1.00,      
+};
+
 
 static float ozone_border_0_light[16] = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
 static float ozone_border_1_light[16] = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
@@ -145,6 +173,9 @@ static float ozone_border_1_nord[16] = COLOR_HEX_TO_FLOAT(0x88C0D0, 1.0f);
 
 static float ozone_border_0_gruvbox_dark[16] = COLOR_HEX_TO_FLOAT(0xAF3A03, 1.0f);
 static float ozone_border_1_gruvbox_dark[16] = COLOR_HEX_TO_FLOAT(0xFE8019, 1.0f);
+
+static float ozone_border_0_boysenberry[16] = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
+static float ozone_border_1_boysenberry[16] = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
 
 ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),
@@ -272,12 +303,48 @@ ozone_theme_t ozone_theme_gruvbox_dark = {
    "gruvbox_dark"                                  /* name */
 };
 
+ozone_theme_t ozone_theme_boysenberry = {
+   /* Background color */
+   COLOR_HEX_TO_FLOAT(0x31000C, 1.0f),             /* background */
+   ozone_background_libretro_running_boysenberry, /* background_libretro_running */
+
+   /* Float colors for quads and icons */
+   COLOR_HEX_TO_FLOAT(0x85535F, 1.0f),             /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xEBDBB2, 1.0f),             /* text */
+   COLOR_HEX_TO_FLOAT(0x4E2A35, 1.0f),             /* selection */
+   COLOR_HEX_TO_FLOAT(0xD599FF, 1.0f),             /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x73434C, 1.0f),             /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xFEBCFF, 1.0f),             /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0xD599FF, 1.0f),             /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x32302F, 1.0f),             /* message_background */
+
+   /* RGBA colors for text */
+   0xFEBCFFFF,                                     /* text_rgba */
+   0xFEBCFFFF,                                     /* text_selected_rgba */
+   0xD599FFFF,                                     /* text_sublabel_rgba */
+
+   /* Sidebar color */
+   ozone_sidebar_background_boysenberry,          /* sidebar_background */
+   ozone_sidebar_gradient_top_boysenberry,        /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_boysenberry,     /* sidebar_bottom_gradient */
+
+   /* Fancy cursor colors */
+   ozone_border_0_boysenberry,                    /* cursor_border_0 */
+   ozone_border_1_boysenberry,                    /* cursor_border_1 */
+
+   {0},                                            /* textures */
+
+   "boysenberry"                                  /* name */
+};
+
 
 ozone_theme_t *ozone_themes[] = {
    &ozone_theme_light,
    &ozone_theme_dark,
    &ozone_theme_nord,
-   &ozone_theme_gruvbox_dark
+   &ozone_theme_gruvbox_dark,
+   &ozone_theme_boysenberry
+
 };
 
 /* TODO/FIXME - global variables referenced outside */
@@ -310,6 +377,9 @@ void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
       case 3:
          theme = &ozone_theme_gruvbox_dark;
          break;
+      case 4:
+         theme = &ozone_theme_boysenberry;
+         break;         
       default:
          break;
    }
