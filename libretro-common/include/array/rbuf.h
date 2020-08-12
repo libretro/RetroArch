@@ -33,6 +33,9 @@
  * The first time an element is added, memory for 16 elements are allocated.
  * Then every time length is about to exceed capacity, capacity is doubled.
  *
+ * Be careful not to supply modifying statements to the macro arguments.
+ * Something like RBUF_REMOVE(buf, i--); would have unintended results.
+ *
  * Sample usage:
  *
  * mytype_t* buf = NULL;
@@ -74,6 +77,7 @@
 #define RBUF_RESIZE(b, sz) (RBUF_FIT((b), (sz)), ((b) ? RBUF__HDR(b)->len = (sz) : 0))
 #define RBUF_CLEAR(b) ((b) ? RBUF__HDR(b)->len = 0 : 0)
 #define RBUF_TRYFIT(b, n) (RBUF_FIT((b), (n)), (((b) && RBUF_CAP(b) >= (size_t)(n)) || !(n)))
+#define RBUF_REMOVE(b, idx) memmove((b) + (idx), (b) + (idx) + 1, (--RBUF__HDR(b)->len - (idx)) * sizeof(*(b)))
 
 struct rbuf__hdr
 {

@@ -24,12 +24,7 @@
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
 #include <lists/string_list.h>
-
-#define DG_DYNARR_IMPLEMENTATION
-#include <retro_assert.h>
-#define DG_DYNARR_ASSERT(cond, msg)  (void)0
-#include <array/dynarray.h>
-#undef DG_DYNARR_IMPLEMENTATION
+#include <array/rbuf.h>
 
 #include "gfx_animation.h"
 #include "../performance_counters.h"
@@ -50,11 +45,8 @@ struct tween
    bool        deleted;
 };
 
-DA_TYPEDEF(struct tween, tween_array_t)
-
 struct gfx_animation
 {
-   bool initialized;
    bool pending_deletes;
    bool in_update;
    bool animation_is_active;
@@ -69,8 +61,8 @@ struct gfx_animation
 
    float delta_time;
 
-   tween_array_t list;
-   tween_array_t pending;
+   struct tween* list;
+   struct tween* pending;
 };
 
 typedef struct gfx_animation gfx_animation_t;
@@ -1191,17 +1183,10 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (!p_anim->initialized)
-   {
-      da_init(p_anim->list);
-      da_init(p_anim->pending);
-      p_anim->initialized = true;
-   }
-
    if (p_anim->in_update)
-      da_push(p_anim->pending, t);
+      RBUF_PUSH(p_anim->pending, t);
    else
-      da_push(p_anim->list, t);
+      RBUF_PUSH(p_anim->list, t);
 
    return true;
 }
@@ -1347,11 +1332,11 @@ bool gfx_animation_update(
    p_anim->in_update       = true;
    p_anim->pending_deletes = false;
 
-   for (i = 0; i < da_count(p_anim->list); i++)
+   for (i = 0; i < RBUF_LEN(p_anim->list); i++)
    {
-      struct tween *tween   = da_getptr(p_anim->list, i);
+      struct tween *tween   = &p_anim->list[i];
 
-      if (!tween || tween->deleted)
+      if (tween->deleted)
          continue;
 
       tween->running_since += p_anim->delta_time;
@@ -1369,35 +1354,37 @@ bool gfx_animation_update(
          if (tween->cb)
             tween->cb(tween->userdata);
 
-         da_delete(p_anim->list, i);
+         RBUF_REMOVE(p_anim->list, i);
          i--;
       }
    }
 
    if (p_anim->pending_deletes)
    {
-      for (i = 0; i < da_count(p_anim->list); i++)
+      for (i = 0; i < RBUF_LEN(p_anim->list); i++)
       {
-         struct tween *tween = da_getptr(p_anim->list, i);
-         if (!tween)
-            continue;
+         struct tween *tween = &p_anim->list[i];
          if (tween->deleted)
          {
-            da_delete(p_anim->list, i);
+            RBUF_REMOVE(p_anim->list, i);
             i--;
          }
       }
       p_anim->pending_deletes = false;
    }
 
-   if (da_count(p_anim->pending) > 0)
+   if (RBUF_LEN(p_anim->pending) > 0)
    {
-      da_addn(p_anim->list, p_anim->pending.p, da_count(p_anim->pending));
-      da_clear(p_anim->pending);
+      size_t list_len    = RBUF_LEN(p_anim->list);
+      size_t pending_len = RBUF_LEN(p_anim->pending);
+      RBUF_RESIZE(p_anim->list, list_len + pending_len);
+      memcpy(p_anim->list + list_len, p_anim->pending,
+            sizeof(*p_anim->pending) * pending_len);
+      RBUF_CLEAR(p_anim->pending);
    }
 
    p_anim->in_update           = false;
-   p_anim->animation_is_active = da_count(p_anim->list) > 0;
+   p_anim->animation_is_active = RBUF_LEN(p_anim->list) > 0;
 
    return p_anim->animation_is_active;
 }
@@ -2240,11 +2227,11 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
       return false;
 
    /* Scan animation list */
-   for (i = 0; i < da_count(p_anim->list); ++i)
+   for (i = 0; i < RBUF_LEN(p_anim->list); ++i)
    {
-      struct tween *t = da_getptr(p_anim->list, i);
+      struct tween *t = &p_anim->list[i];
 
-      if (!t || t->tag != *tag)
+      if (t->tag != *tag)
          continue;
 
       /* If we are currently inside gfx_animation_update(),
@@ -2259,7 +2246,7 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
       }
       else
       {
-         da_delete(p_anim->list, i);
+         RBUF_REMOVE(p_anim->list, i);
          --i;
       }
    }
@@ -2271,14 +2258,14 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
     * deleted at all, producing utter chaos) */
    if (p_anim->in_update)
    {
-      for (i = 0; i < da_count(p_anim->pending); ++i)
+      for (i = 0; i < RBUF_LEN(p_anim->pending); ++i)
       {
-         struct tween *t = da_getptr(p_anim->pending, i);
+         struct tween *t = &p_anim->pending[i];
 
-         if (!t || t->tag != *tag)
+         if (t->tag != *tag)
             continue;
 
-         da_delete(p_anim->pending, i);
+         RBUF_REMOVE(p_anim->pending, i);
          --i;
       }
    }
@@ -2299,26 +2286,9 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
    switch (state)
    {
       case MENU_ANIMATION_CTL_DEINIT:
-         {
-            size_t i;
-
-            for (i = 0; i < da_count(p_anim->list); i++)
-            {
-               struct tween *t = da_getptr(p_anim->list, i);
-               if (!t)
-                  continue;
-
-               if (t->subject)
-                  t->subject = NULL;
-            }
-
-            da_free(p_anim->list);
-            da_free(p_anim->pending);
-         }
-         p_anim->cur_time            = 0;
-         p_anim->old_time            = 0;
-         p_anim->delta_time          = 0.0f;
-         memset(&p_anim, 0, sizeof(p_anim));
+         RBUF_FREE(p_anim->list);
+         RBUF_FREE(p_anim->pending);
+         memset(p_anim, 0, sizeof(*p_anim));
          break;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          p_anim->animation_is_active = false;
