@@ -52,9 +52,8 @@
 
 #include "badges.h"
 #include "cheevos.h"
-#include "memory.h"
-#include "parser.h"
-#include "hash.h"
+#include "cheevos_memory.h"
+#include "cheevos_parser.h"
 #include "util.h"
 
 #include "../file_path_special.h"

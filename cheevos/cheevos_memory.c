@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "memory.h"
+#include "cheevos_memory.h"
 
 #include "util.h"
 

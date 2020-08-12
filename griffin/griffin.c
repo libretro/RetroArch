@@ -195,9 +195,8 @@ ACHIEVEMENTS
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/badges.c"
-#include "../cheevos/memory.c"
-#include "../cheevos/hash.c"
-#include "../cheevos/parser.c"
+#include "../cheevos/cheevos_memory.c"
+#include "../cheevos/cheevos_parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
 #include "../deps/rcheevos/src/rcheevos/compat.c"
