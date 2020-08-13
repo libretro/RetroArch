@@ -1,7 +1,9 @@
 # Future
 - CHEEVOS: Generic memory mapping using rcheevos
+- CHEEVOS: Ensure badge textures are released before video driver is deinitialized. Should fix crashes with slang shaders.
 - LIBRETRO: Add API extension for cores to query the number of active inputs provided by the frontend
 - PLAYLISTS/PORTABLE: Fixed first load initialization
+- RBUF: Simplify gfx_animation by switching from dynarray to rbuf
 - SWITCH: Fix input bind icons being off by one line
 
 # 1.9.0
