@@ -36,9 +36,6 @@ RETRO_BEGIN_DECLS
 /* M3U file extension */
 #define M3U_FILE_EXT "m3u"
 
-/* Default maximum number of M3U entries */
-#define M3U_FILE_SIZE 2048
-
 /* Prevent direct access to m3u_file_t members */
 typedef struct content_m3u_file m3u_file_t;
 
@@ -70,7 +67,7 @@ enum m3u_file_label_type
  * - Returned m3u_file_t object must be free'd using
  *   m3u_file_free()
  * - Returns NULL in the event of an error */
-m3u_file_t *m3u_file_init(const char *path, size_t size);
+m3u_file_t *m3u_file_init(const char *path);
 
 /* Frees specified M3U file */
 void m3u_file_free(m3u_file_t *m3u_file);
@@ -83,10 +80,6 @@ char *m3u_file_get_path(m3u_file_t *m3u_file);
 /* Returns number of entries in M3U file */
 size_t m3u_file_get_size(m3u_file_t *m3u_file);
 
-/* Returns maximum number of entries permitted
- * in M3U file */
-size_t m3u_file_get_capacity(m3u_file_t *m3u_file);
-
 /* Fetches specified M3U file entry
  * - Returns false if 'idx' is invalid, or internal
  *   entry is NULL */
@@ -96,8 +89,9 @@ bool m3u_file_get_entry(
 /* Setters */
 
 /* Adds specified entry to the M3U file
- * - Returns false if path is invalid, or M3U
- *   file capacity is exceeded */
+ * - Returns false if path is invalid, or
+ *   memory could not be allocated for the
+ *   entry */
 bool m3u_file_add_entry(
       m3u_file_t *m3u_file, const char *path, const char *label);
 

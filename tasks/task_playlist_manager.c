@@ -729,7 +729,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
                task_set_progress(task, (pl_manager->m3u_index * 100) / pl_manager->m3u_list->size);
                
                /* Load M3U file */
-               m3u_file = m3u_file_init(m3u_path, M3U_FILE_SIZE);
+               m3u_file = m3u_file_init(m3u_path);
                
                if (m3u_file)
                {
