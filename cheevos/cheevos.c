@@ -1311,6 +1311,9 @@ bool rcheevos_unload(void)
       CHEEVOS_FREE(rcheevos_locals.richpresence.richpresence);
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
       rcheevos_memory_destroy(&rcheevos_locals.memory);
+#ifdef HAVE_MENU
+      cheevos_reset_menu_badges();
+#endif
 
       rcheevos_locals.core                      = NULL;
       rcheevos_locals.unofficial                = NULL;
