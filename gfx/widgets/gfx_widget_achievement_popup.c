@@ -75,10 +75,8 @@ static bool gfx_widget_achievement_popup_init(bool video_is_threaded, bool fulls
    return true;
 }
 
-static void gfx_widget_achievement_popup_free(void)
+static void gfx_widget_achievement_popup_free_all(gfx_widget_achievement_popup_state_t* state)
 {
-   gfx_widget_achievement_popup_state_t* state = gfx_widget_achievement_popup_get_ptr();
-
    if (state->queue_read_index >= 0)
    {
       SLOCK_LOCK(state->queue_lock);
@@ -88,11 +86,25 @@ static void gfx_widget_achievement_popup_free(void)
 
       SLOCK_UNLOCK(state->queue_lock);
    }
+}
+
+static void gfx_widget_achievement_popup_free(void)
+{
+   gfx_widget_achievement_popup_state_t* state = gfx_widget_achievement_popup_get_ptr();
+
+   gfx_widget_achievement_popup_free_all(state);
 
 #ifdef HAVE_THREADS
    slock_free(state->queue_lock);
    state->queue_lock = NULL;
 #endif
+}
+
+static void gfx_widget_achievement_popup_context_destroy(void)
+{
+   gfx_widget_achievement_popup_state_t* state = gfx_widget_achievement_popup_get_ptr();
+
+   gfx_widget_achievement_popup_free_all(state);
 }
 
 static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
@@ -405,7 +417,7 @@ const gfx_widget_t gfx_widget_achievement_popup = {
    &gfx_widget_achievement_popup_init,
    &gfx_widget_achievement_popup_free,
    NULL, /* context_reset*/
-   NULL, /* context_destroy */
+   &gfx_widget_achievement_popup_context_destroy,
    NULL, /* layout */
    NULL, /* iterate */
    &gfx_widget_achievement_popup_frame
