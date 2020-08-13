@@ -4,6 +4,7 @@
 - LIBRETRO: Add API extension for cores to query the number of active inputs provided by the frontend
 - PLAYLISTS/PORTABLE: Fixed first load initialization
 - RBUF/ANIMATIONS: Simplify gfx_animation by switching from dynarray to rbuf
+- RBUF/M3U: Replace static entries array with dynamic array via RBUF library
 - SWITCH: Fix input bind icons being off by one line
 
 # 1.9.0
