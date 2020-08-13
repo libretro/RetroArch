@@ -561,6 +561,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_directory,                MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_swap_interval,           MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savefiles_enable,         MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savestates_enable,        MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savefiles_by_content_enable,      MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savestates_by_content_enable,     MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_screenshots_by_content_enable,     MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_updater_buildbot_url,     MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_show_physical_inputs,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_show_physical_inputs_port,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT)
@@ -2517,6 +2520,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savestates_enable);
+            break;
+         case MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savefiles_by_content_enable);
+            break;
+         case MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savestates_by_content_enable);
+            break;
+         case MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_screenshots_by_content_enable);
             break;
          case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_swap_interval);

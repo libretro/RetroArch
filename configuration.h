@@ -730,6 +730,9 @@ typedef struct settings
 
       bool sort_savefiles_enable;
       bool sort_savestates_enable;
+      bool sort_savefiles_by_content_enable;
+      bool sort_savestates_by_content_enable;
+      bool sort_screenshots_by_content_enable;
       bool config_save_on_exit;
       bool show_hidden_files;
 

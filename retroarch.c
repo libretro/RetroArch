@@ -11001,6 +11001,7 @@ const char *char_list_new_special(enum string_list_type type, void *data)
 
 static void path_set_redirect(struct rarch_state *p_rarch)
 {
+   char content_dir_name[PATH_MAX_LENGTH];
    char new_savefile_dir[PATH_MAX_LENGTH];
    char new_savestate_dir[PATH_MAX_LENGTH];
    global_t   *global                          = &p_rarch->g_extern;
@@ -11009,15 +11010,28 @@ static void path_set_redirect(struct rarch_state *p_rarch)
    struct retro_system_info *system            = &p_rarch->runloop_system.info;
    settings_t *settings                        = p_rarch->configuration_settings;
    bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
+   bool sort_savefiles_by_content_enable       = settings->bools.sort_savefiles_by_content_enable;
    bool sort_savestates_enable                 = settings->bools.sort_savestates_enable;
+   bool sort_savestates_by_content_enable      = settings->bools.sort_savestates_by_content_enable;
    bool savefiles_in_content_dir               = settings->bools.savefiles_in_content_dir;
    bool savestates_in_content_dir              = settings->bools.savestates_in_content_dir;
-   new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
+
+   content_dir_name[0]  = '\0';
+   new_savefile_dir[0]  = '\0';
+   new_savestate_dir[0] = '\0';
 
    /* Initialize current save directories
     * with the values from the config. */
    strlcpy(new_savefile_dir,  old_savefile_dir,  sizeof(new_savefile_dir));
    strlcpy(new_savestate_dir, old_savestate_dir, sizeof(new_savestate_dir));
+
+   /* Get content directory name, if per-content-directory
+    * saves/states are enabled */
+   if ((sort_savefiles_by_content_enable ||
+         sort_savestates_by_content_enable) &&
+       !string_is_empty(p_rarch->path_main_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            p_rarch->path_main_basename, sizeof(content_dir_name));
 
    if (system && !string_is_empty(system->library_name))
    {
@@ -11026,15 +11040,25 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
       {
-         /* per-core saves: append the library_name to the save location */
-         if (sort_savefiles_enable
+         /* Per-core and/or per-content-directory saves */
+         if ((sort_savefiles_enable || sort_savefiles_by_content_enable)
                && !string_is_empty(old_savefile_dir))
          {
-            fill_pathname_join(
-                  new_savefile_dir,
-                  old_savefile_dir,
-                  system->library_name,
-                  sizeof(new_savefile_dir));
+            /* Append content directory name to save location */
+            if (sort_savefiles_by_content_enable)
+               fill_pathname_join(
+                     new_savefile_dir,
+                     old_savefile_dir,
+                     content_dir_name,
+                     sizeof(new_savefile_dir));
+
+            /* Append library_name to the save location */
+            if (sort_savefiles_enable)
+               fill_pathname_join(
+                     new_savefile_dir,
+                     new_savefile_dir,
+                     system->library_name,
+                     sizeof(new_savefile_dir));
 
             /* If path doesn't exist, try to create it,
              * if everything fails revert to the original path. */
@@ -11049,16 +11073,28 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                }
          }
 
-         /* per-core states: append the library_name to the save location */
-         if (sort_savestates_enable
+         /* Per-core and/or per-content-directory savestates */
+         if ((sort_savestates_enable || sort_savestates_by_content_enable)
                && !string_is_empty(old_savestate_dir))
          {
-            fill_pathname_join(
-                  new_savestate_dir,
-                  old_savestate_dir,
-                  system->library_name,
-                  sizeof(new_savestate_dir));
+            /* Append content directory name to savestate location */
+            if (sort_savestates_by_content_enable)
+               fill_pathname_join(
+                     new_savestate_dir,
+                     old_savestate_dir,
+                     content_dir_name,
+                     sizeof(new_savestate_dir));
 
+            /* Append library_name to the savestate location */
+            if (sort_savestates_enable)
+            {
+               fill_pathname_join(
+                     new_savestate_dir,
+                     new_savestate_dir,
+                     system->library_name,
+                     sizeof(new_savestate_dir));
+            }
+            
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */
             if (!path_is_directory(new_savestate_dir))
@@ -11081,6 +11117,13 @@ static void path_set_redirect(struct rarch_state *p_rarch)
       strlcpy(new_savefile_dir, p_rarch->path_main_basename,
             sizeof(new_savefile_dir));
       path_basedir(new_savefile_dir);
+
+      if (string_is_empty(new_savefile_dir))
+         RARCH_LOG("Cannot resolve save file path.\n",
+            msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
+            new_savefile_dir);
+      else if (sort_savefiles_enable || sort_savefiles_by_content_enable)
+         RARCH_LOG("Saving files in content directory is set. This overrides other save file directory settings.\n");
    }
 
    /* Set savestate directory if empty based on content directory */
@@ -11089,6 +11132,13 @@ static void path_set_redirect(struct rarch_state *p_rarch)
       strlcpy(new_savestate_dir, p_rarch->path_main_basename,
             sizeof(new_savestate_dir));
       path_basedir(new_savestate_dir);
+
+      if (string_is_empty(new_savestate_dir))
+         RARCH_LOG("Cannot resolve save state file path.\n",
+            msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
+            new_savestate_dir);
+      else if (sort_savestates_enable || sort_savestates_by_content_enable)
+         RARCH_LOG("Saving save states in content directory is set. This overrides other save state file directory settings.\n");
    }
 
    if (global)

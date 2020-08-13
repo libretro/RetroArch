@@ -268,7 +268,7 @@ static bool screenshot_dump(
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
    screenshot_task_state_t *state = (screenshot_task_state_t*)
-      calloc(1, sizeof(*state));
+         calloc(1, sizeof(*state));
 
    state->shotname[0]             = '\0';
 
@@ -304,6 +304,36 @@ static bool screenshot_dump(
       }
       else
       {
+         char new_screenshot_dir[PATH_MAX_LENGTH];
+
+         new_screenshot_dir[0] = '\0';
+
+         if (!string_is_empty(screenshot_dir))
+         {
+            const char *content_dir = path_get(RARCH_PATH_BASENAME);
+
+            /* Append content directory name to screenshot
+             * path, if required */
+            if (settings->bools.sort_screenshots_by_content_enable &&
+                !string_is_empty(content_dir))
+            {
+               char content_dir_name[PATH_MAX_LENGTH];
+
+               content_dir_name[0] = '\0';
+
+               fill_pathname_parent_dir_name(content_dir_name,
+                     content_dir, sizeof(content_dir_name));
+               fill_pathname_join(
+                     new_screenshot_dir,
+                     screenshot_dir,
+                     content_dir_name,
+                     sizeof(new_screenshot_dir));
+            }
+            else
+               strlcpy(new_screenshot_dir, screenshot_dir,
+                     sizeof(new_screenshot_dir));
+         }
+
          if (settings->bools.auto_screenshot_filename)
          {
             const char *screenshot_name = NULL;
@@ -334,19 +364,22 @@ static bool screenshot_dump(
             strlcat(state->shotname, ".png", sizeof(state->shotname));
          }
 
-         if (  string_is_empty(screenshot_dir) || 
+         if (  string_is_empty(new_screenshot_dir) || 
                settings->bools.screenshots_in_content_dir)
          {
-            char screenshot_path[PATH_MAX_LENGTH];
-            screenshot_path[0]             = '\0';
-            fill_pathname_basedir(screenshot_path, name_base,
-                  sizeof(screenshot_path));
-            fill_pathname_join(state->filename, screenshot_path,
+            fill_pathname_basedir(new_screenshot_dir, name_base,
+                  sizeof(new_screenshot_dir));
+            fill_pathname_join(state->filename, new_screenshot_dir,
                   state->shotname, sizeof(state->filename));
          }
          else
-            fill_pathname_join(state->filename, screenshot_dir,
+            fill_pathname_join(state->filename, new_screenshot_dir,
                   state->shotname, sizeof(state->filename));
+
+         /* Create screenshot directory, if required */
+         if (!path_is_directory(new_screenshot_dir))
+            if (!path_mkdir(new_screenshot_dir))
+               return false;
       }
    }
 
