@@ -30,21 +30,20 @@
 
 struct queue_elem
 {
+   char *msg;
+   char *title;
    unsigned duration;
    unsigned prio;
-   char *msg;
-
-   char *title;
    enum message_queue_icon icon;
    enum message_queue_category category;
 };
 
 struct msg_queue
 {
+   char *tmp_msg;
    struct queue_elem **elems;
    size_t ptr;
    size_t size;
-   char *tmp_msg;
 };
 
 /**

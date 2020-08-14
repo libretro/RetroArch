@@ -55,24 +55,22 @@ enum
 
 struct http_socket_state_t
 {
+   void *ssl_ctx;
    int fd;
    bool ssl;
-   void *ssl_ctx;
 };
 
 struct http_t
 {
-   int status;
-
-   char part;
-   char bodytype;
-   bool error;
-
+   char *data;
+   struct http_socket_state_t sock_state; /* ptr alignment */
    size_t pos;
    size_t len;
    size_t buflen;
-   char *data;
-   struct http_socket_state_t sock_state;
+   int status;
+   char part;
+   char bodytype;
+   bool error;
 };
 
 struct http_connection_t
@@ -85,8 +83,8 @@ struct http_connection_t
    char *contenttypecopy;
    char *postdatacopy;
    char* useragentcopy;
+   struct http_socket_state_t sock_state; /* ptr alignment */
    int port;
-   struct http_socket_state_t sock_state;
 };
 
 /* URL Encode a string

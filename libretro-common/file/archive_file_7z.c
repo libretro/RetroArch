@@ -48,6 +48,7 @@
 
 struct sevenzip_context_t
 {
+   uint8_t *output;
    CFileInStream archiveStream;
    CLookToRead lookStream;
    ISzAlloc allocImp;
@@ -58,7 +59,6 @@ struct sevenzip_context_t
    uint32_t parse_index;
    uint32_t decompress_index;
    uint32_t packIndex;
-   uint8_t *output;
 };
 
 static void *sevenzip_stream_alloc_impl(void *p, size_t size)
