@@ -55,35 +55,44 @@ enum menu_list_type
    MENU_LIST_TABS
 };
 
+enum menu_entry_type
+{
+   MENU_ENTRY_ACTION = 0,
+   MENU_ENTRY_BOOL,
+   MENU_ENTRY_INT,
+   MENU_ENTRY_UINT,
+   MENU_ENTRY_FLOAT,
+   MENU_ENTRY_PATH,
+   MENU_ENTRY_DIR,
+   MENU_ENTRY_STRING,
+   MENU_ENTRY_HEX,
+   MENU_ENTRY_BIND,
+   MENU_ENTRY_ENUM,
+   MENU_ENTRY_SIZE
+};
+
+
 typedef struct menu_list menu_list_t;
 
 typedef struct menu_ctx_list
 {
-   enum menu_list_type type;
-   const char *path;
-   char       *fullpath;
-   const char *label;
-   unsigned entry_type;
-   unsigned action;
+   const char  *path;
+   char        *fullpath;
+   const char  *label;
+   file_list_t *list;
+   void        *entry;
    size_t idx;
    size_t selection;
    size_t size;
    size_t list_size;
-   void *entry;
-   file_list_t *list;
+   unsigned entry_type;
+   unsigned action;
+   enum menu_list_type type;
 } menu_ctx_list_t;
 
 typedef struct menu_file_list_cbs
 {
-   char action_sublabel_cache[MENU_SUBLABEL_MAX_LENGTH];
-   char action_title_cache   [512];
-
-   enum msg_hash_enums enum_idx;
-
-   bool checked;
-
    rarch_setting_t *setting;
-
    int (*action_iterate)(const char *label, unsigned action);
    int (*action_deferred_push)(menu_displaylist_info_t *info);
    int (*action_select)(const char *path, const char *label, unsigned type,
@@ -119,7 +128,33 @@ typedef struct menu_file_list_cbs
          const char *label, char *s, size_t len,
          const char *path,
          char *path_buf, size_t path_buf_size);
+   enum msg_hash_enums enum_idx;
+   char action_sublabel_cache[MENU_SUBLABEL_MAX_LENGTH];
+   char action_title_cache   [512];
+   bool checked;
 } menu_file_list_cbs_t;
+
+typedef struct menu_entry
+{
+   size_t entry_idx;
+   unsigned idx;
+   unsigned type;
+   unsigned spacing;
+   enum msg_hash_enums enum_idx;
+   char path[255];
+   char label[255];
+   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
+   char rich_label[255];
+   char value[255];
+   char password_value[255];
+   bool checked;
+   bool path_enabled;
+   bool label_enabled;
+   bool rich_label_enabled;
+   bool value_enabled;
+   bool sublabel_enabled;
+} menu_entry_t;
+
 
 int menu_entries_get_title(char *title, size_t title_len);
 
@@ -162,43 +197,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 
 void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
       bool checked);
-
-enum menu_entry_type
-{
-   MENU_ENTRY_ACTION = 0,
-   MENU_ENTRY_BOOL,
-   MENU_ENTRY_INT,
-   MENU_ENTRY_UINT,
-   MENU_ENTRY_FLOAT,
-   MENU_ENTRY_PATH,
-   MENU_ENTRY_DIR,
-   MENU_ENTRY_STRING,
-   MENU_ENTRY_HEX,
-   MENU_ENTRY_BIND,
-   MENU_ENTRY_ENUM,
-   MENU_ENTRY_SIZE
-};
-
-typedef struct menu_entry
-{
-   enum msg_hash_enums enum_idx;
-   unsigned idx;
-   unsigned type;
-   unsigned spacing;
-   size_t entry_idx;
-   char path[255];
-   char label[255];
-   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
-   char rich_label[255];
-   char value[255];
-   char password_value[255];
-   bool checked;
-   bool path_enabled;
-   bool label_enabled;
-   bool rich_label_enabled;
-   bool value_enabled;
-   bool sublabel_enabled;
-} menu_entry_t;
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
