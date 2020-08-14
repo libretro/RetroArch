@@ -27,16 +27,16 @@
 typedef struct
 {
    vk_t *vk;
-   struct vk_texture texture;
-   struct vk_texture texture_optimal;
-   const font_renderer_driver_t *font_driver;
    void *font_data;
    struct font_atlas *atlas;
-   bool needs_update;
-
+   const font_renderer_driver_t *font_driver;
    struct vk_vertex *pv;
+   struct vk_texture texture;
+   struct vk_texture texture_optimal;
    struct vk_buffer_range range;
    unsigned vertices;
+
+   bool needs_update;
 } vulkan_raster_t;
 
 static INLINE void vulkan_raster_font_update_glyph(
