@@ -2089,12 +2089,13 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
-   core_info_state_t core_info_st;     /* ptr alignment */
-   rarch_system_info_t runloop_system; /* ptr alignment */
+   core_info_state_t core_info_st;            /* ptr alignment */
+   rarch_system_info_t runloop_system;        /* ptr alignment */
    struct retro_hw_render_callback hw_render; /* ptr alignment */
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_t     *bsv_movie_state_handle; /* ptr alignment */
+   bsv_movie_t     *bsv_movie_state_handle;   /* ptr alignment */
 #endif
+   gfx_display_t              dispgfx;        /* ptr alignment */
 
    /*************************************/
    /* TODO/FIXME BEGIN - find alignment */
@@ -2160,7 +2161,6 @@ struct rarch_state
 #ifdef HAVE_DISCORD
    discord_state_t            discord_st;
 #endif
-   gfx_display_t              dispgfx;
 
    struct retro_callbacks     retro_ctx;
    struct retro_core_t        current_core;

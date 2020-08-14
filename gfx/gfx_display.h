@@ -153,28 +153,28 @@ struct gfx_display_ctx_draw
    const void *backend_data;
    struct video_coords *coords;
    void *matrix_data;
-   enum gfx_display_prim_type prim_type;
-   bool pipeline_active;
+   uintptr_t texture;
+   size_t vertex_count;
+   size_t backend_data_size;
+   unsigned width;
+   unsigned height;
+   unsigned pipeline_id;
    float x;
    float y;
    float rotation;
    float scale_factor;
-   unsigned width;
-   unsigned height;
-   unsigned pipeline_id;
-   uintptr_t texture;
-   size_t vertex_count;
-   size_t backend_data_size;
+   enum gfx_display_prim_type prim_type;
+   bool pipeline_active;
 };
 
 typedef struct gfx_display_ctx_rotate_draw
 {
-   bool scale_enable;
+   math_matrix_4x4 *matrix;
    float rotation;
    float scale_x;
    float scale_y;
    float scale_z;
-   math_matrix_4x4 *matrix;
+   bool scale_enable;
 } gfx_display_ctx_rotate_draw_t;
 
 typedef struct gfx_display_ctx_coord_draw
@@ -201,22 +201,22 @@ typedef struct gfx_display_ctx_powerstate
 
 struct gfx_display
 {
-   bool has_windowed;
-   bool msg_force;
-   bool framebuf_dirty;
-   
+   gfx_display_ctx_driver_t *dispctx;
+   video_coord_array_t dispca; /* ptr alignment */
+
    /* Width, height and pitch of the display framebuffer */
+   size_t   framebuf_pitch;
    unsigned framebuf_width;
    unsigned framebuf_height;
-   size_t   framebuf_pitch;
 
    /* Height of the display header */
    unsigned header_height;
 
    enum menu_driver_id_type menu_driver_id;
 
-   video_coord_array_t dispca;
-   gfx_display_ctx_driver_t *dispctx;
+   bool has_windowed;
+   bool msg_force;
+   bool framebuf_dirty;
 };
 
 typedef struct gfx_display gfx_display_t;
