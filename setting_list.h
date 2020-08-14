@@ -113,28 +113,6 @@ struct rarch_setting_group_info
 
 struct rarch_setting
 {
-   enum ui_setting_type ui_type;
-   enum setting_type    browser_selection_type;
-   enum msg_hash_enums  enum_idx;
-   enum msg_hash_enums  enum_value_idx;
-   enum setting_type    type;
-
-   bool                 dont_use_enum_idx_representation;
-   bool                 enforce_minrange;
-   bool                 enforce_maxrange;
-
-   uint8_t              index;
-   uint32_t             index_offset;
-   int16_t               offset_by;
-
-   unsigned             bind_type;
-   uint32_t             size;
-
-   float                step;
-
-   uint64_t             flags;
-   uint64_t             free_flags;
-
    double               min;
    /* TODO/FIXME - nasty hack needed for 'suspected' MSVC 2010 x64 Release -
     * split min/max to work around MSVC 2010 x64 bug that 
@@ -144,6 +122,18 @@ struct rarch_setting
    char placeholder;
    double               max;
 
+   uint64_t             flags;
+   uint64_t             free_flags;
+
+   struct
+   {
+      const char     *off_label;
+      const char     *on_label;
+   } boolean;
+   struct
+   {
+      const char     *empty_path;
+   } dir;
    const char           *rounding_fraction;
    const char           *name;
    const char           *short_description;
@@ -164,17 +154,6 @@ struct rarch_setting
    action_select_handler_t       action_select;
    get_string_representation_t   get_string_representation;
 
-   union
-   {
-      bool                       boolean;
-      const char                 *string;
-      int                        integer;
-      unsigned int               unsigned_integer;
-      float                      fraction;
-      const struct retro_keybind *keybind;
-      size_t                     sizet;
-   } default_value;
-
    struct
    {
       union
@@ -189,31 +168,45 @@ struct rarch_setting
       } target;
    } value;
 
+
    union
    {
-      bool           boolean;
+      const char                 *string;
+      const struct retro_keybind *keybind;
+      size_t                     sizet;
+      int                        integer;
+      unsigned int               unsigned_integer;
+      float                      fraction;
+      bool                       boolean;
+   } default_value;
+
+   union
+   {
+      size_t         sizet;
       int            integer;
       unsigned int   unsigned_integer;
       float          fraction;
-      size_t         sizet;
+      bool           boolean;
    } original_value;
 
-   struct
-   {
-      const char     *empty_path;
-   } dir;
+   uint32_t             index_offset;
+   uint32_t             size;
+   unsigned             bind_type;
+   float                step;
+   int16_t              offset_by;
+   uint8_t              index;
 
-   struct
-   {
-      enum           event_command idx;
-      bool           triggered;
-   } cmd_trigger;
+   enum event_command   cmd_trigger_idx;
+   enum ui_setting_type ui_type;
+   enum setting_type    browser_selection_type;
+   enum msg_hash_enums  enum_idx;
+   enum msg_hash_enums  enum_value_idx;
+   enum setting_type    type;
 
-   struct
-   {
-      const char     *off_label;
-      const char     *on_label;
-   } boolean;
+   bool                 cmd_trigger_event_triggered;
+   bool                 dont_use_enum_idx_representation;
+   bool                 enforce_minrange;
+   bool                 enforce_maxrange;
 };
 
 struct rarch_setting_info
