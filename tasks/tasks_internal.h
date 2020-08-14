@@ -42,8 +42,8 @@ RETRO_BEGIN_DECLS
 typedef struct nbio_buf
 {
    void *buf;
-   unsigned bufsize;
    char *path;
+   unsigned bufsize;
 } nbio_buf_t;
 
 #ifdef HAVE_NETWORKING

@@ -37,19 +37,19 @@
 
 struct audio_mixer_userdata
 {
+   unsigned slot_selection_idx;
    enum audio_mixer_stream_type stream_type;
    enum audio_mixer_slot_selection_type slot_selection_type;
-   unsigned slot_selection_idx;
 };
 
 struct audio_mixer_handle
 {
    nbio_buf_t *buffer;
-   bool copy_data_over;
-   bool is_finished;
+   retro_task_callback_t cb;
    enum audio_mixer_type type;
    char path[4095];
-   retro_task_callback_t cb;
+   bool copy_data_over;
+   bool is_finished;
 };
 
 static void task_audio_mixer_load_free(retro_task_t *task)

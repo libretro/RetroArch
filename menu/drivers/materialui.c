@@ -1371,7 +1371,7 @@ enum materialui_entry_value_type
 typedef struct
 {
    font_data_t *font;
-   video_font_raster_block_t raster_block;
+   video_font_raster_block_t raster_block;   /* ptr alignment */
    unsigned glyph_width;
    int line_height;
    int line_ascender;

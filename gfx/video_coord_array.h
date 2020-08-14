@@ -70,8 +70,8 @@ typedef struct video_mut_coords
    float *color;
    float *tex_coord;
    float *lut_tex_coord;
-   unsigned vertices;
    unsigned *index;
+   unsigned vertices;
    unsigned indexes;
 } video_mut_coords_t;
 

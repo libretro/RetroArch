@@ -25,6 +25,15 @@
 
 RETRO_BEGIN_DECLS
 
+enum core_info_list_qsort_type
+{
+   CORE_INFO_LIST_SORT_PATH = 0,
+   CORE_INFO_LIST_SORT_DISPLAY_NAME,
+   CORE_INFO_LIST_SORT_CORE_NAME,
+   CORE_INFO_LIST_SORT_SYSTEM_NAME
+};
+
+
 typedef struct
 {
    char *path;
@@ -120,14 +129,6 @@ typedef struct core_info_ctx_find
    core_info_t *inf;
    const char *path;
 } core_info_ctx_find_t;
-
-enum core_info_list_qsort_type
-{
-   CORE_INFO_LIST_SORT_PATH = 0,
-   CORE_INFO_LIST_SORT_DISPLAY_NAME,
-   CORE_INFO_LIST_SORT_CORE_NAME,
-   CORE_INFO_LIST_SORT_SYSTEM_NAME
-};
 
 struct core_info_state
 {

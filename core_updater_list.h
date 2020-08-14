@@ -52,9 +52,9 @@ typedef struct
    char *display_name;
    char *description;
    struct string_list *licenses_list;
-   bool is_experimental;
+   core_updater_list_date_t date;   /* unsigned alignment */
    uint32_t crc;
-   core_updater_list_date_t date;
+   bool is_experimental;
 } core_updater_list_entry_t;
 
 /* Prevent direct access to core_updater_list_t

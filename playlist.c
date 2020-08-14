@@ -60,7 +60,7 @@ struct content_playlist
 
    struct playlist_entry *entries;
 
-   playlist_config_t config;
+   playlist_config_t config;  /* size_t alignment */
 
    enum playlist_label_display_mode label_display_mode;
    enum playlist_thumbnail_mode right_thumbnail_mode;
@@ -75,18 +75,6 @@ struct content_playlist
 
 typedef struct
 {
-   bool in_items;
-   bool in_subsystem_roms;
-   bool capacity_exceeded;
-   bool out_of_memory;
-
-   unsigned array_depth;
-   unsigned object_depth;
-
-   JSON_Parser parser;
-   JSON_Writer writer;
-   intfstream_t *file;
-   playlist_t *playlist;
    struct playlist_entry *current_entry;
    char *current_meta_string;
    char *current_items_string;
@@ -98,6 +86,19 @@ typedef struct
    enum playlist_label_display_mode *current_meta_label_display_mode_val;
    enum playlist_thumbnail_mode *current_meta_thumbnail_mode_val;
    enum playlist_sort_mode *current_meta_sort_mode_val;
+   intfstream_t *file;
+   playlist_t *playlist;
+
+   unsigned array_depth;
+   unsigned object_depth;
+
+   bool in_items;
+   bool in_subsystem_roms;
+   bool capacity_exceeded;
+   bool out_of_memory;
+
+   JSON_Parser parser;
+   JSON_Writer writer;
 } JSONContext;
 
 /* TODO/FIXME - global state - perhaps move outside this file */
@@ -195,15 +196,15 @@ static void path_replace_base_path_and_convert_to_local_file_system(
             strlen(in_path) - in_oldrefpath_length + 1);
 
 #ifdef USING_WINDOWS_FILE_SYSTEM
-      /* If we are running under a win fs, '/' characters
-       * are not allowed anywhere. we replace with '\' and
-       * hope for the best... */
+      /* If we are running under a Windows filesystem,
+       * '/' characters are not allowed anywhere. 
+       * We replace with '\' and hope for the best... */
       string_replace_all_chars(out_path,
             POSIX_PATH_DELIMITER, WINDOWS_PATH_DELIMITER);
 #endif
 
 #ifdef USING_POSIX_FILE_SYSTEM
-      /* Under posix fs, we replace '\' characters with '/' */
+      /* Under POSIX filesystem, we replace '\' characters with '/' */
       string_replace_all_chars(out_path,
             WINDOWS_PATH_DELIMITER, POSIX_PATH_DELIMITER);
 #endif
@@ -233,7 +234,7 @@ static bool playlist_path_equal(const char *real_path,
    entry_real_path[0] = '\0';
 
    /* Sanity check */
-   if (string_is_empty(real_path) ||
+   if (string_is_empty(real_path)  ||
        string_is_empty(entry_path) ||
        !config)
       return false;
