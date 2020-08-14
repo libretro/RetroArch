@@ -1112,33 +1112,7 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
-   bool widgets_active;
-   bool menu_mouse_enable;
-   bool widgets_is_paused;
-   bool widgets_is_fast_forwarding;
-   bool widgets_is_rewinding;
-   bool input_menu_swap_ok_cancel_buttons;
-   bool input_driver_nonblock_state;
-   bool black_frame_insertion;
-   bool hard_sync;
-   bool fps_show;
-   bool memory_show;
-   bool statistics_show;
-   bool framecount_show;
-   bool core_status_msg_show;
-   bool post_filter_record;
-   bool windowed_fullscreen;
-   bool fullscreen;
-   bool font_enable;
-   bool use_rgba;
-   bool libretro_running;
-   bool xmb_shadows_enable;
-   bool battery_level_enable;
-   bool timedate_enable;
-   bool runloop_is_slowmotion;
-   bool runloop_is_paused;
-   bool menu_is_alive;
-   bool msg_bgcolor_enable;
+   void *userdata;
 
    int custom_vp_x;
    int custom_vp_y;
@@ -1181,7 +1155,6 @@ typedef struct video_frame_info
    float font_msg_color_b;
    float xmb_alpha_factor;
 
-   char stat_text[512];
 
    struct
    {
@@ -1190,18 +1163,47 @@ typedef struct video_frame_info
       float scale;
       /* Drop shadow color multiplier. */
       float drop_mod;
+      /* Drop shadow alpha */
+      float drop_alpha;
+
       /* Drop shadow offset.
        * If both are 0, no drop shadow will be rendered. */
       int drop_x, drop_y;
-      /* Drop shadow alpha */
-      float drop_alpha;
       /* ABGR. Use the macros. */
       uint32_t color;
-      bool full_screen;
       enum text_alignment text_align;
+      bool full_screen;
    } osd_stat_params;
 
-   void *userdata;
+   char stat_text[512];
+
+   bool widgets_active;
+   bool menu_mouse_enable;
+   bool widgets_is_paused;
+   bool widgets_is_fast_forwarding;
+   bool widgets_is_rewinding;
+   bool input_menu_swap_ok_cancel_buttons;
+   bool input_driver_nonblock_state;
+   bool black_frame_insertion;
+   bool hard_sync;
+   bool fps_show;
+   bool memory_show;
+   bool statistics_show;
+   bool framecount_show;
+   bool core_status_msg_show;
+   bool post_filter_record;
+   bool windowed_fullscreen;
+   bool fullscreen;
+   bool font_enable;
+   bool use_rgba;
+   bool libretro_running;
+   bool xmb_shadows_enable;
+   bool battery_level_enable;
+   bool timedate_enable;
+   bool runloop_is_slowmotion;
+   bool runloop_is_paused;
+   bool menu_is_alive;
+   bool msg_bgcolor_enable;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
