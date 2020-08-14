@@ -22,6 +22,8 @@ enum gamepad_pad_axes
    AXIS_LEFT_ANALOG_Y,
    AXIS_RIGHT_ANALOG_X,
    AXIS_RIGHT_ANALOG_Y,
+   AXIS_TOUCH_X,
+   AXIS_TOUCH_Y,
    AXIS_INVALID
 };
 
