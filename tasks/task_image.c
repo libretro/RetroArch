@@ -345,9 +345,9 @@ bool task_image_load_handler(retro_task_t *task)
                                                       (float)min_size;
                unsigned scale_factor_int          = (unsigned)scale_factor;
                struct texture_image img_resampled = {
-                  0,
-                  0,
                   NULL,
+                  0,
+                  0,
                   false
                };
 

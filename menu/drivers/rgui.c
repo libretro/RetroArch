@@ -1896,11 +1896,11 @@ static bool downscale_thumbnail(rgui_t *rgui,
 static void process_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, uint32_t *queue_size, struct texture_image *image_src)
 {
    unsigned x, y;
-   struct texture_image *image = NULL;
+   struct texture_image *image          = NULL;
    struct texture_image image_resampled = {
-      0,
-      0,
       NULL,
+      0,
+      0,
       false
    };
 
