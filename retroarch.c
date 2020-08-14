@@ -2415,6 +2415,7 @@ struct rarch_state
 #endif
 
    struct retro_audio_callback audio_callback;
+   gfx_animation_t anim;
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;
 #endif
@@ -2938,6 +2939,12 @@ struct netplay_room* netplay_get_host_room(void)
    return &p_rarch->netplay_host_room;
 }
 #endif
+
+gfx_animation_t *anim_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->anim;
+}
 
 content_state_t *content_state_get_ptr(void)
 {
@@ -38798,6 +38805,7 @@ static enum runloop_state runloop_check_state(
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
    gfx_animation_update(
+         &p_rarch->anim,
          current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,

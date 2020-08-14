@@ -29,6 +29,8 @@ RETRO_BEGIN_DECLS
 
 #define TICKER_SPACER_DEFAULT "   |   "
 
+#define ANIM_IS_ACTIVE(_p) ((_p)->animation_is_active || (_p)->ticker_is_active)
+
 typedef void  (*tween_cb)  (void*);
 
 typedef void (*update_time_cb) (float *ticker_pixel_increment,
@@ -231,6 +233,7 @@ void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry);
 void gfx_timer_kill(gfx_timer_t *timer);
 
 bool gfx_animation_update(
+      gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
       float ticker_speed,
@@ -246,8 +249,6 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker);
 bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker);
 
 float gfx_animation_get_delta_time(void);
-
-bool gfx_animation_is_active(void);
 
 bool gfx_animation_kill_by_tag(uintptr_t *tag);
 
@@ -268,6 +269,8 @@ uint64_t gfx_animation_get_ticker_pixel_line_idx(void);
 void gfx_animation_set_update_time_cb(update_time_cb cb);
 
 void gfx_animation_unset_update_time_cb(void);
+
+gfx_animation_t *anim_get_ptr(void);
 
 RETRO_END_DECLS
 

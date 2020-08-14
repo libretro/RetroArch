@@ -49,14 +49,6 @@ static update_time_cb update_time_callback = gfx_animation_update_time_default;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
-static gfx_animation_t *anim_get_ptr(void)
-{
-   /* TODO/FIXME - global that gets referenced outside,
-    * needs to be refactored */
-   static gfx_animation_t anim;
-   return &anim;
-}
-
 static float easing_linear(float t, float b, float c, float d)
 {
    return c * t / d + b;
@@ -1276,6 +1268,7 @@ static void gfx_animation_update_time(
 }
 
 bool gfx_animation_update(
+      gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
       float ticker_speed,
@@ -1283,7 +1276,6 @@ bool gfx_animation_update(
       unsigned video_height)
 {
    unsigned i;
-   gfx_animation_t *p_anim = anim_get_ptr();
 
    gfx_animation_update_time(
          p_anim,
@@ -1391,6 +1383,32 @@ static void build_ticker_loop_string(
    }
 }
 
+static void build_line_ticker_string(
+      size_t num_display_lines, size_t line_offset,
+      struct string_list *lines,
+      char *dest_str, size_t dest_str_len)
+{
+   size_t i;
+
+   for (i = 0; i < num_display_lines; i++)
+   {
+      size_t offset     = i + line_offset;
+      size_t line_index = offset % (lines->size + 1);
+      bool line_valid   = true;
+
+      if (line_index >= lines->size)
+         line_valid = false;
+
+      if (line_valid)
+         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
+
+      if (i < num_display_lines - 1)
+         strlcat(dest_str, "\n", dest_str_len);
+   }
+}
+
+
+
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 {
    gfx_animation_t *p_anim = anim_get_ptr();
@@ -1470,9 +1488,10 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 }
 
 /* 'Fixed width' font version of gfx_animation_ticker_smooth() */
-bool gfx_animation_ticker_smooth_fw(gfx_animation_ctx_ticker_smooth_t *ticker)
+static bool gfx_animation_ticker_smooth_fw(
+      gfx_animation_t *p_anim,
+      gfx_animation_ctx_ticker_smooth_t *ticker)
 {
-   gfx_animation_t *p_anim      = anim_get_ptr();
    size_t spacer_len            = 0;
    unsigned glyph_width         = ticker->glyph_width;
    unsigned src_str_width       = 0;
@@ -1645,7 +1664,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    /* If we are using a fixed width font (ticker->font == NULL),
     * switch to optimised code path */
    if (!ticker->font)
-      return gfx_animation_ticker_smooth_fw(ticker);
+      return gfx_animation_ticker_smooth_fw(p_anim, ticker);
 
    /* Find the display width of each character in
     * the src string + total width */
@@ -1856,30 +1875,6 @@ end:
    return is_active;
 }
 
-static void build_line_ticker_string(
-      size_t num_display_lines, size_t line_offset,
-      struct string_list *lines,
-      char *dest_str, size_t dest_str_len)
-{
-   size_t i;
-
-   for (i = 0; i < num_display_lines; i++)
-   {
-      size_t offset     = i + line_offset;
-      size_t line_index = offset % (lines->size + 1);
-      bool line_valid   = true;
-
-      if (line_index >= lines->size)
-         line_valid = false;
-
-      if (line_valid)
-         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
-
-      if (i < num_display_lines - 1)
-         strlcat(dest_str, "\n", dest_str_len);
-   }
-}
-
 bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
@@ -1930,18 +1925,14 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
    switch (line_ticker->type_enum)
    {
       case TICKER_TYPE_LOOP:
-      {
          gfx_animation_line_ticker_loop(
                line_ticker->idx,
                line_ticker->line_len,
                lines->size,
                &line_offset);
-
          break;
-      }
       case TICKER_TYPE_BOUNCE:
       default:
-      {
          gfx_animation_line_ticker_generic(
                line_ticker->idx,
                line_ticker->line_len,
@@ -1950,7 +1941,6 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
                &line_offset);
 
          break;
-      }
    }
 
    /* Build output string from required lines */
@@ -2069,16 +2059,16 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
       if (line_ticker->fade_enabled)
       {
          if (line_ticker->top_fade_str_len > 0)
-            line_ticker->top_fade_str[0] = '\0';
+            line_ticker->top_fade_str[0]    = '\0';
 
          if (line_ticker->bottom_fade_str_len > 0)
             line_ticker->bottom_fade_str[0] = '\0';
 
-         *line_ticker->top_fade_y_offset = 0.0f;
+         *line_ticker->top_fade_y_offset    = 0.0f;
          *line_ticker->bottom_fade_y_offset = 0.0f;
 
-         *line_ticker->top_fade_alpha = 0.0f;
-         *line_ticker->bottom_fade_alpha = 0.0f;
+         *line_ticker->top_fade_alpha       = 0.0f;
+         *line_ticker->bottom_fade_alpha    = 0.0f;
       }
 
       success = true;
@@ -2173,12 +2163,6 @@ end:
    }
 
    return is_active;
-}
-
-bool gfx_animation_is_active(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->animation_is_active || p_anim->ticker_is_active;
 }
 
 bool gfx_animation_kill_by_tag(uintptr_t *tag)

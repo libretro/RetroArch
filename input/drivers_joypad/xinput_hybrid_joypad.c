@@ -47,6 +47,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "dinput_joypad.h"

@@ -1639,7 +1639,8 @@ void gfx_display_set_msg_force(bool state)
 bool gfx_display_get_update_pending(void)
 {
    gfx_display_t *p_disp   = disp_get_ptr();
-   if (gfx_animation_is_active() || p_disp->framebuf_dirty)
+   gfx_animation_t *p_anim = anim_get_ptr();
+   if (ANIM_IS_ACTIVE(p_anim) || p_disp->framebuf_dirty)
       return true;
    return false;
 }
