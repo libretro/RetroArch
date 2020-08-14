@@ -136,7 +136,7 @@ static INLINE uint32_t dword_be(const uint8_t *buf)
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
 }
 
-static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
+static enum png_chunk_type png_chunk_type(char chunk_type[4])
 {
    unsigned i;
    struct
@@ -153,7 +153,7 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 
    for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
-      if (string_is_equal(chunk->type, chunk_map[i].id))
+      if (string_is_equal(chunk_type, chunk_map[i].id))
          return chunk_map[i].type;
    }
 
@@ -857,9 +857,9 @@ static bool png_read_trns(uint8_t *buf, uint32_t *palette, unsigned entries)
    return true;
 }
 
-bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
+bool png_realloc_idat(struct idat_buffer *buf, uint32_t chunk_size)
 {
-   uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
+   uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk_size);
 
    if (!new_buffer)
       return false;
@@ -952,7 +952,8 @@ error:
    return NULL;
 }
 
-static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end, struct png_chunk *chunk)
+static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end,
+      struct png_chunk *chunk)
 {
    unsigned i;
    uint8_t dword[4];
@@ -991,19 +992,18 @@ static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end, struct png_chunk *
 static bool png_parse_ihdr(uint8_t *buf,
       struct png_ihdr *ihdr)
 {
-   buf += 4 + 4;
+   buf               += 4 + 4;
 
-   ihdr->width       = dword_be(buf + 0);
-   ihdr->height      = dword_be(buf + 4);
-   ihdr->depth       = buf[8];
-   ihdr->color_type  = buf[9];
-   ihdr->compression = buf[10];
-   ihdr->filter      = buf[11];
-   ihdr->interlace   = buf[12];
+   ihdr->width        = dword_be(buf + 0);
+   ihdr->height       = dword_be(buf + 4);
+   ihdr->depth        = buf[8];
+   ihdr->color_type   = buf[9];
+   ihdr->compression  = buf[10];
+   ihdr->filter       = buf[11];
+   ihdr->interlace    = buf[12];
 
    if (ihdr->width == 0 || ihdr->height == 0)
       return false;
-
    return true;
 }
 
@@ -1019,41 +1019,32 @@ bool rpng_iterate_image(rpng_t *rpng)
 
    /* Check whether data buffer pointer is valid */
    if (buf > rpng->buff_end)
-      goto error;
+      return false;
 
    if (!read_chunk_header(buf, rpng->buff_end, &chunk))
-      goto error;
+      return false;
 
-#if 0
-#ifdef RPNG_TEST
-   for (i = 0; i < 4; i++)
-   {
-      fprintf(stderr, "chunktype: %c\n", chunk.type[i]);
-   }
-#endif
-#endif
-
-   switch (png_chunk_type(&chunk))
+   switch (png_chunk_type(chunk.type))
    {
       case PNG_CHUNK_NOOP:
       default:
          break;
 
       case PNG_CHUNK_ERROR:
-         goto error;
+         return false;
 
       case PNG_CHUNK_IHDR:
          if (rpng->has_ihdr || rpng->has_idat || rpng->has_iend)
-            goto error;
+            return false;
 
          if (chunk.size != 13)
-            goto error;
+            return false;
 
          if (!png_parse_ihdr(buf, &rpng->ihdr))
-            goto error;
+            return false;
 
          if (!png_process_ihdr(&rpng->ihdr))
-            goto error;
+            return false;
 
          rpng->has_ihdr = true;
          break;
@@ -1063,18 +1054,18 @@ bool rpng_iterate_image(rpng_t *rpng)
             unsigned entries = chunk.size / 3;
 
             if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat || rpng->has_trns)
-               goto error;
+               return false;
 
             if (chunk.size % 3)
-               goto error;
+               return false;
 
             if (entries > 256)
-               goto error;
+               return false;
 
             buf += 8;
 
             if (!png_read_plte(buf, rpng->palette, entries))
-               goto error;
+               return false;
 
             rpng->has_plte = true;
          }
@@ -1082,18 +1073,18 @@ bool rpng_iterate_image(rpng_t *rpng)
 
       case PNG_CHUNK_tRNS:
          if (rpng->has_idat)
-            goto error;
+            return false;
 
          if (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT)
          {
             /* we should compare with the number of palette entries */
             if (chunk.size > 256)
-               goto error;
+               return false;
 
             buf += 8;
 
             if (!png_read_trns(buf, rpng->palette, chunk.size))
-               goto error;
+               return false;
          }
          /* TODO: support colorkey in grayscale and truecolor images */
 
@@ -1102,10 +1093,10 @@ bool rpng_iterate_image(rpng_t *rpng)
 
       case PNG_CHUNK_IDAT:
          if (!(rpng->has_ihdr) || rpng->has_iend || (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT && !(rpng->has_plte)))
-            goto error;
+            return false;
 
-         if (!png_realloc_idat(&chunk, &rpng->idat_buf))
-            goto error;
+         if (!png_realloc_idat(&rpng->idat_buf, chunk.size))
+            return false;
 
          buf += 8;
 
@@ -1119,22 +1110,18 @@ bool rpng_iterate_image(rpng_t *rpng)
 
       case PNG_CHUNK_IEND:
          if (!(rpng->has_ihdr) || !(rpng->has_idat))
-            goto error;
+            return false;
 
          rpng->has_iend = true;
-         goto error;
+         return false;
    }
 
    rpng->buff_data += chunk.size + 12;
 
    /* Check whether data buffer pointer is valid */
    if (rpng->buff_data > rpng->buff_end)
-      goto error;
-
+      return false;
    return true;
-
-error:
-   return false;
 }
 
 int rpng_process_image(rpng_t *rpng,
