@@ -24,72 +24,72 @@
 
 struct gfx_widget_progress_message_state
 {
-   gfx_timer_t timer;
-   float alpha;
-   bool active;
-
    unsigned widget_width;
    unsigned widget_height;
-   float widget_x;
-   float widget_y;
-
    unsigned text_width;
-   float text_x;
-   float text_y;
-
    unsigned bar_bg_width;
    unsigned bar_bg_height;
-   float bar_bg_x;
-   float bar_bg_y;
 
    unsigned bar_max_width;
    unsigned bar_height;
-   float bar_x;
-   float bar_y;
 
    unsigned priority;
-   int8_t progress;
-   char message[256];
 
+   gfx_timer_t timer;      /* float alignment */
+   float alpha;
+   float widget_x;
+   float widget_y;
+   float text_x;
+   float text_y;
+   float bar_bg_x;
+   float bar_bg_y;
+   float bar_x;
+   float bar_y;
    float bar_bg_color[16];
    float bar_color[16];
    float bar_disabled_color[16];
+
+   int8_t progress;
+   char message[256];
+   bool active;
 };
 
 typedef struct gfx_widget_progress_message_state gfx_widget_progress_message_state_t;
 
 static gfx_widget_progress_message_state_t p_w_progress_message_st = {
 
-   0.0f,                               /* timer */
-   0.0f,                               /* alpha */
-   false,                              /* active */
-
    0,                                  /* widget_width */
    0,                                  /* widget_height */
-   0.0f,                               /* widget_x */
-   0.0f,                               /* widget_y */
-
    0,                                  /* text_width */
-   0.0f,                               /* text_x */
-   0.0f,                               /* text_y */
-
    0,                                  /* bar_bg_width */
    0,                                  /* bar_bg_height */
-   0.0f,                               /* float bar_bg_x */
-   0.0f,                               /* float bar_bg_y */
 
    0,                                  /* bar_max_width */
    0,                                  /* bar_height */
-   0.0f,                               /* bar_x */
-   0.0f,                               /* bar_y */
 
    0,                                  /* priority */
-   -1,                                 /* progress */
-   {'\0'},                             /* message */
+
+   0.0f,                               /* timer */
+   0.0f,                               /* alpha */
+   0.0f,                               /* widget_x */
+   0.0f,                               /* widget_y */
+
+   0.0f,                               /* text_x */
+   0.0f,                               /* text_y */
+
+   0.0f,                               /* bar_bg_x */
+   0.0f,                               /* bar_bg_y */
+
+   0.0f,                               /* bar_x */
+   0.0f,                               /* bar_y */
 
    COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f), /* bar_bg_color */
    COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f), /* bar_color */
    COLOR_HEX_TO_FLOAT(0x000000, 1.0f), /* bar_disabled_color */
+
+   -1,                                 /* progress */
+   {'\0'},                             /* message */
+   false,                              /* active */
 };
 
 gfx_widget_progress_message_state_t *gfx_widget_progress_message_get_ptr(void)

@@ -34,20 +34,17 @@
 
 struct gfx_widget_achievement_popup_state
 {
-   gfx_timer_t timer;
-   float unfold;
-   float y;
-
-   unsigned width;
-   unsigned height;
-
-   cheevo_popup queue[CHEEVO_QUEUE_SIZE];
-   int queue_read_index;
-   int queue_write_index;
-
 #ifdef HAVE_THREADS
    slock_t* queue_lock;
 #endif
+   cheevo_popup queue[CHEEVO_QUEUE_SIZE]; /* ptr alignment */
+   int queue_read_index;
+   int queue_write_index;
+   unsigned width;
+   unsigned height;
+   gfx_timer_t timer;   /* float alignment */
+   float unfold;
+   float y;
 };
 
 typedef struct gfx_widget_achievement_popup_state gfx_widget_achievement_popup_state_t;

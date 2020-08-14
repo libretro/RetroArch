@@ -39,9 +39,9 @@ struct item_file
    char *path;
    char *label;
    char *alt;
-   unsigned type;
    size_t directory_ptr;
    size_t entry_idx;
+   unsigned type;
 };
 
 typedef struct file_list

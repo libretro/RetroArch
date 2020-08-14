@@ -50,36 +50,27 @@ enum gfx_widget_load_content_animation_status
 
 struct gfx_widget_load_content_animation_state
 {
-   enum gfx_widget_load_content_animation_status status;
-   gfx_timer_t timer;
-   float alpha;
-   float slide_offset;
-
-   char content_name[512];
-   char system_name[512];
-   char icon_directory[PATH_MAX_LENGTH];
-   char icon_file[PATH_MAX_LENGTH];
-
    uintptr_t icon_texture;
-   bool has_icon;
-
+   unsigned bg_shadow_height;
+   unsigned margin_shadow_width;
+   unsigned icon_size;
+   unsigned content_name_color;
+   unsigned system_name_color;
    unsigned content_name_width;
    unsigned system_name_width;
 
    unsigned bg_width;
    unsigned bg_height;
+
+   gfx_timer_t timer;      /* float alignment */
    float bg_x;
    float bg_y;
-
-   unsigned bg_shadow_height;
+   float alpha;
+   float slide_offset;
    float bg_shadow_top_y;
    float bg_shadow_bottom_y;
-
-   unsigned margin_shadow_width;
    float margin_shadow_left_x;
    float margin_shadow_right_x;
-
-   unsigned icon_size;
    float icon_x_start;
    float icon_x_end;
    float icon_y;
@@ -101,44 +92,41 @@ struct gfx_widget_load_content_animation_state
    float margin_shadow_right_color[16];
    float icon_color[16];
 
-   unsigned content_name_color;
-   unsigned system_name_color;
+   enum gfx_widget_load_content_animation_status status;
+
+   char content_name[512];
+   char system_name[512];
+   char icon_directory[PATH_MAX_LENGTH];
+   char icon_file[PATH_MAX_LENGTH];
+
+   bool has_icon;
 };
 
 typedef struct gfx_widget_load_content_animation_state gfx_widget_load_content_animation_state_t;
 
 static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st = {
 
-   GFX_WIDGET_LOAD_CONTENT_IDLE,       /* status */
-   0.0f,                               /* timer */
-   0.0f,                               /* alpha */
-   0.0f,                               /* slide_offset */
-
-   {'\0'},                             /* content_name */
-   {'\0'},                             /* system_name */
-   {'\0'},                             /* icon_directory */
-   {'\0'},                             /* icon_file */
-
    0,                                  /* icon_texture */
-   false,                              /* has_icon */
-
+   0,                                  /* bg_shadow_height */
+   0,                                  /* margin_shadow_width */
+   0,                                  /* icon_size */
+   0xE0E0E0FF,                         /* content_name_color */
+   0xCFCFCFFF,                         /* system_name_color */
    0,                                  /* content_name_width */
    0,                                  /* system_name_width */
 
    0,                                  /* bg_width */
    0,                                  /* bg_height */
+
+   0.0f,                               /* timer */
    0.0f,                               /* bg_x */
    0.0f,                               /* bg_y */
-
-   0,                                  /* bg_shadow_height */
+   0.0f,                               /* alpha */
+   0.0f,                               /* slide_offset */
    0.0f,                               /* bg_shadow_top_y */
    0.0f,                               /* bg_shadow_bottom_y */
-
-   0,                                  /* margin_shadow_width */
    0.0f,                               /* margin_shadow_left_x */
    0.0f,                               /* margin_shadow_right_x */
-
-   0,                                  /* icon_size */
    0.0f,                               /* icon_x_start */
    0.0f,                               /* icon_x_end */
    0.0f,                               /* icon_y */
@@ -160,8 +148,14 @@ static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st =
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f), /* margin_shadow_right_color */
    COLOR_HEX_TO_FLOAT(0xE0E0E0, 1.0f), /* icon_color */
 
-   0xE0E0E0FF,                         /* content_name_color */
-   0xCFCFCFFF,                         /* system_name_color */
+   GFX_WIDGET_LOAD_CONTENT_IDLE,       /* status */
+
+   {'\0'},                             /* content_name */
+   {'\0'},                             /* system_name */
+   {'\0'},                             /* icon_directory */
+   {'\0'},                             /* icon_file */
+
+   false                               /* has_icon */
 };
 
 gfx_widget_load_content_animation_state_t *gfx_widget_load_content_animation_get_ptr(void)
