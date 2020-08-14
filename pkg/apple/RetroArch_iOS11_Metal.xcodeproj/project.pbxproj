@@ -176,7 +176,6 @@
 		92B9EBA224E0518700E6CFB2 /* config_file_userdata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = config_file_userdata.h; sourceTree = "<group>"; };
 		92B9EBA324E0518700E6CFB2 /* file_path.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = file_path.h; sourceTree = "<group>"; };
 		92B9EBA424E0518700E6CFB2 /* retro_environment.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_environment.h; sourceTree = "<group>"; };
-		92B9EBA624E0518700E6CFB2 /* dynarray.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dynarray.h; sourceTree = "<group>"; };
 		92B9EBA724E0518700E6CFB2 /* rbuf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rbuf.h; sourceTree = "<group>"; };
 		92B9EBA824E0518700E6CFB2 /* retro_dirent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_dirent.h; sourceTree = "<group>"; };
 		92B9EBA924E0518700E6CFB2 /* retro_inline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_inline.h; sourceTree = "<group>"; };
@@ -646,7 +645,6 @@
 		92B9EBA524E0518700E6CFB2 /* array */ = {
 			isa = PBXGroup;
 			children = (
-				92B9EBA624E0518700E6CFB2 /* dynarray.h */,
 				92B9EBA724E0518700E6CFB2 /* rbuf.h */,
 			);
 			path = array;
