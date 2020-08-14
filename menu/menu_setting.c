@@ -5034,9 +5034,10 @@ static unsigned libretro_device_get_size(unsigned *devices, size_t devices_size,
 static int setting_action_left_libretro_device_type(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   bool refresh = false;
    retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
-   types = 0, port = 0;
+            types = 0, port = 0;
 
    if (!setting)
       return -1;
@@ -5064,6 +5065,8 @@ static int setting_action_left_libretro_device_type(
 
    core_set_controller_port_device(&pad);
 
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    return 0;
 }
 
@@ -6580,6 +6583,7 @@ static int setting_action_right_analog_dpad_mode(
 static int setting_action_right_libretro_device_type(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   bool refresh = false;
    retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
@@ -6610,6 +6614,8 @@ static int setting_action_right_libretro_device_type(
 
    core_set_controller_port_device(&pad);
 
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    return 0;
 }
 
