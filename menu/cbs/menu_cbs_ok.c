@@ -4003,7 +4003,7 @@ static int action_ok_core_updater_list(const char *path,
 
    if (!core_list)
    {
-      core_updater_list_init_cached(CORE_UPDATER_LIST_SIZE);
+      core_updater_list_init_cached();
       core_list = core_updater_list_get_cached();
 
       if (!core_list)

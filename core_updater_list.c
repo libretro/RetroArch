@@ -24,6 +24,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <net/net_http.h>
+#include <array/rbuf.h>
 #include <retro_miscellaneous.h>
 
 #include "file_path_special.h"
@@ -34,8 +35,6 @@
 /* Holds all entries in a core updater list */
 struct core_updater_list
 {
-   size_t size;
-   size_t capacity;
    core_updater_list_entry_t *entries;
 };
 
@@ -99,34 +98,17 @@ static void core_updater_list_free_entry(core_updater_list_entry_t *entry)
 /* Creates a new, empty core updater list.
  * Returns a handle to a new core_updater_list_t object
  * on success, otherwise returns NULL. */
-core_updater_list_t *core_updater_list_init(size_t max_size)
+core_updater_list_t *core_updater_list_init(void)
 {
-   core_updater_list_t *core_list     = NULL;
-   core_updater_list_entry_t *entries = NULL;
-
-   /* Sanity check */
-   if (max_size < 1)
-      return NULL;
-
    /* Create core updater list */
-   core_list = (core_updater_list_t*)malloc(sizeof(*core_list));
+   core_updater_list_t *core_list = (core_updater_list_t*)
+         malloc(sizeof(*core_list));
 
    if (!core_list)
       return NULL;
 
-   /* Create entries array */
-   entries = (core_updater_list_entry_t*)calloc(max_size, sizeof(*entries));
-
-   if (!entries)
-   {
-      free(core_list);
-      return NULL;
-   }
-
-   /* Initial configuration */
-   core_list->size     = 0;
-   core_list->capacity = max_size;
-   core_list->entries  = entries;
+   /* Initialise members */
+   core_list->entries = NULL;
 
    return core_list;
 }
@@ -135,41 +117,27 @@ core_updater_list_t *core_updater_list_init(size_t max_size)
  * updater list */
 void core_updater_list_reset(core_updater_list_t *core_list)
 {
-   size_t i;
-
    if (!core_list)
       return;
 
-   for (i = 0; i < core_list->size; i++)
+   if (core_list->entries)
    {
-      core_updater_list_entry_t *entry = &core_list->entries[i];
+      size_t i;
 
-      if (entry)
-         core_updater_list_free_entry(entry);
+      for (i = 0; i < RBUF_LEN(core_list->entries); i++)
+         core_updater_list_free_entry(&core_list->entries[i]);
+
+      RBUF_FREE(core_list->entries);
    }
-
-   core_list->size = 0;
 }
 
 /* Frees specified core updater list */
 void core_updater_list_free(core_updater_list_t *core_list)
 {
-   size_t i;
-
    if (!core_list)
       return;
 
-   for (i = 0; i < core_list->size; i++)
-   {
-      core_updater_list_entry_t *entry = &core_list->entries[i];
-
-      if (entry)
-         core_updater_list_free_entry(entry);
-   }
-
-   free(core_list->entries);
-   core_list->entries = NULL;
-
+   core_updater_list_reset(core_list);
    free(core_list);
 }
 
@@ -180,7 +148,7 @@ void core_updater_list_free(core_updater_list_t *core_list)
 /* Creates a new, empty cached core updater list
  * (i.e. 'global' list).
  * Returns false in the event of an error. */
-bool core_updater_list_init_cached(size_t max_size)
+bool core_updater_list_init_cached(void)
 {
    /* Free any existing cached core updater list */
    if (core_list_cached)
@@ -189,7 +157,7 @@ bool core_updater_list_init_cached(size_t max_size)
       core_list_cached = NULL;
    }
 
-   core_list_cached = core_updater_list_init(max_size);
+   core_list_cached = core_updater_list_init();
 
    if (!core_list_cached)
       return false;
@@ -223,17 +191,7 @@ size_t core_updater_list_size(core_updater_list_t *core_list)
    if (!core_list)
       return 0;
 
-   return core_list->size;
-}
-
-/* Returns maximum allowed number of entries in core
- * updater list */
-size_t core_updater_list_capacity(core_updater_list_t *core_list)
-{
-   if (!core_list)
-      return 0;
-
-   return core_list->capacity;
+   return RBUF_LEN(core_list->entries);
 }
 
 /* Fetches core updater list entry corresponding
@@ -247,11 +205,10 @@ bool core_updater_list_get_index(
    if (!core_list || !entry)
       return false;
 
-   if (idx >= core_list->size)
+   if (idx >= RBUF_LEN(core_list->entries))
       return false;
 
-   if (entry)
-      *entry = &core_list->entries[idx];
+   *entry = &core_list->entries[idx];
 
    return true;
 }
@@ -264,16 +221,19 @@ bool core_updater_list_get_filename(
       const char *remote_filename,
       const core_updater_list_entry_t **entry)
 {
+   size_t num_entries;
    size_t i;
 
-   if (!core_list || string_is_empty(remote_filename))
+   if (!core_list || !entry || string_is_empty(remote_filename))
       return false;
 
-   if (core_list->size < 1)
+   num_entries = RBUF_LEN(core_list->entries);
+
+   if (num_entries < 1)
       return false;
 
    /* Search for specified filename */
-   for (i = 0; i < core_list->size; i++)
+   for (i = 0; i < num_entries; i++)
    {
       core_updater_list_entry_t *current_entry = &core_list->entries[i];
 
@@ -282,9 +242,7 @@ bool core_updater_list_get_filename(
 
       if (string_is_equal(remote_filename, current_entry->remote_filename))
       {
-         if (entry)
-            *entry = current_entry;
-
+         *entry = current_entry;
          return true;
       }
    }
@@ -300,6 +258,7 @@ bool core_updater_list_get_core(
       const char *local_core_path,
       const core_updater_list_entry_t **entry)
 {
+   size_t num_entries;
    size_t i;
    char real_core_path[PATH_MAX_LENGTH];
 
@@ -308,7 +267,9 @@ bool core_updater_list_get_core(
    if (!core_list || !entry || string_is_empty(local_core_path))
       return false;
 
-   if (core_list->size < 1)
+   num_entries = RBUF_LEN(core_list->entries);
+
+   if (num_entries < 1)
       return false;
 
    /* Resolve absolute pathname of local_core_path */
@@ -319,7 +280,7 @@ bool core_updater_list_get_core(
       return false;
 
    /* Search for specified core */
-   for (i = 0; i < core_list->size; i++)
+   for (i = 0; i < num_entries; i++)
    {
       core_updater_list_entry_t *current_entry = &core_list->entries[i];
 
@@ -334,9 +295,7 @@ bool core_updater_list_get_core(
       if (string_is_equal(real_core_path, current_entry->local_core_path))
       {
 #endif
-         if (entry)
-            *entry = current_entry;
-
+         *entry = current_entry;
          return true;
       }
    }
@@ -627,22 +586,25 @@ static bool core_updater_list_push_entry(
       core_updater_list_t *core_list, core_updater_list_entry_t *entry)
 {
    core_updater_list_entry_t *list_entry = NULL;
+   size_t num_entries;
 
    if (!core_list || !entry)
       return false;
 
-   /* Ensure there is enough space for the new entry */
-   if (core_list->capacity <= core_list->size)
+   /* Get current number of list entries */
+   num_entries = RBUF_LEN(core_list->entries);
+
+   /* Attempt to allocate memory for new entry */
+   if (!RBUF_TRYFIT(core_list->entries, num_entries + 1))
       return false;
 
-   /* Get handle of new entry inside list */
-   list_entry = &core_list->entries[core_list->size];
+   /* Allocation successful - increment array size */
+   RBUF_RESIZE(core_list->entries, num_entries + 1);
 
-   if (!list_entry)
-      return false;
-
-   /* Ensure list entry is empty */
-   core_updater_list_free_entry(list_entry);
+   /* Get handle of new entry at end of list, and
+    * zero-initialise members */
+   list_entry = &core_list->entries[num_entries];
+   memset(list_entry, 0, sizeof(*list_entry));
 
    /* Assign paths */
    list_entry->remote_filename  = entry->remote_filename;
@@ -662,9 +624,6 @@ static bool core_updater_list_push_entry(
    /* Copy date */
    memcpy(&list_entry->date, &entry->date, sizeof(core_updater_list_date_t));
 
-   /* Increment list size */
-   core_list->size++;
-
    return true;
 }
 
@@ -678,10 +637,11 @@ static void core_updater_list_add_entry(
       const char *network_buildbot_url,
       struct string_list *network_core_entry_list)
 {
-   const char *date_str             = NULL;
-   const char *crc_str              = NULL;
-   const char *filename_str         = NULL;
-   core_updater_list_entry_t entry  = {0};
+   const char *date_str                          = NULL;
+   const char *crc_str                           = NULL;
+   const char *filename_str                      = NULL;
+   const core_updater_list_entry_t *search_entry = NULL;
+   core_updater_list_entry_t entry               = {0};
 
    if (!core_list || !network_core_entry_list)
       goto error;
@@ -704,7 +664,8 @@ static void core_updater_list_add_entry(
    /* Check whether core file is already included
     * in the list (this is *not* an error condition,
     * it just means we can skip the current listing) */
-   if (core_updater_list_get_filename(core_list, filename_str, NULL))
+   if (core_updater_list_get_filename(core_list,
+         filename_str, &search_entry))
       goto error;
 
    /* Parse individual listing strings */
@@ -742,7 +703,8 @@ error:
     *   (could be the case that the network buffer
     *    wasn't large enough to cache the entire
     *    string, so the last line was truncated)
-    * - The core updater list struct is at capacity
+    * - We had insufficient memory to allocate a new
+    *   entry in the core updater list
     * In either case, the current entry is discarded
     * and we move on to the next one
     * (network transfers are fishy business, so we
@@ -768,18 +730,21 @@ static int core_updater_list_qsort_func(
 /* Sorts core updater list into alphabetical order */
 static void core_updater_list_qsort(core_updater_list_t *core_list)
 {
+   size_t num_entries;
+
    if (!core_list)
       return;
 
-   if (core_list->size < 2)
+   num_entries = RBUF_LEN(core_list->entries);
+
+   if (num_entries < 2)
       return;
 
    qsort(
-         core_list->entries,
-         core_list->size,
+         core_list->entries, num_entries,
          sizeof(core_updater_list_entry_t),
          (int (*)(const void *, const void *))
-         core_updater_list_qsort_func);
+               core_updater_list_qsort_func);
 }
 
 /* Reads the contents of a buildbot core list
@@ -855,7 +820,7 @@ bool core_updater_list_parse_network_data(
    }
 
    /* Sanity check */
-   if (core_list->size < 1)
+   if (RBUF_LEN(core_list->entries) < 1)
       goto error;
 
    /* Clean up */
