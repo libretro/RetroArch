@@ -34,14 +34,14 @@ RETRO_BEGIN_DECLS
 
 struct item_file
 {
+   void *userdata;
+   void *actiondata;
    char *path;
    char *label;
    char *alt;
    unsigned type;
    size_t directory_ptr;
    size_t entry_idx;
-   void *userdata;
-   void *actiondata;
 };
 
 typedef struct file_list
