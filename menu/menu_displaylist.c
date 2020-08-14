@@ -9966,9 +9966,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_NETWORKING
          {
-            core_updater_list_t *core_list = core_updater_list_get_cached();
-            settings_t *settings           = config_get_ptr();
-            bool show_experimental_cores   = settings->bools.network_buildbot_show_experimental_cores;
+            core_updater_list_t *core_list   = core_updater_list_get_cached();
+            struct string_list *search_terms = menu_driver_search_get_terms();
+            settings_t *settings             = config_get_ptr();
+            bool show_experimental_cores     = settings->bools.network_buildbot_show_experimental_cores;
+            size_t selection                 = menu_navigation_get_selection();
 
             if (core_list)
             {
@@ -9990,6 +9992,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               !path_is_valid(entry->local_core_path)))
                         continue;
 
+                     /* If a search is active, skip non-matching
+                      * entries */
+                     if (search_terms)
+                     {
+                        bool entry_valid = true;
+                        size_t j;
+
+                        for (j = 0; j < search_terms->size; j++)
+                        {
+                           const char *search_term = search_terms->elems[j].data;
+
+                           if (!string_is_empty(search_term) &&
+                               !string_is_empty(entry->display_name) &&
+                               !strcasestr(entry->display_name, search_term))
+                           {
+                              entry_valid = false;
+                              break;
+                           }
+                        }
+
+                        if (!entry_valid)
+                           continue;
+                     }
+
                      if (menu_entries_append_enum(info->list,
                            entry->remote_filename,
                            "",
@@ -10005,6 +10031,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
                }
             }
+
+            if (selection >= count)
+               info->need_clear = true;
          }
 #endif
          if (count == 0)
