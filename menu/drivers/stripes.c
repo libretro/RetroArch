@@ -606,7 +606,7 @@ static void stripes_draw_icon(
    draw.matrix_data     = mymat;
    draw.texture         = texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id     = 0;
+   draw.pipeline_id     = 0;
 
    if (xmb_shadows_enable)
    {
@@ -2795,7 +2795,7 @@ static void stripes_draw_bg(
    draw.matrix_data = NULL;
    draw.texture     = gfx_display_white_texture;
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id = 0;
+   draw.pipeline_id = 0;
 
    gfx_display_blend_begin(userdata);
    gfx_display_draw(&draw, userdata,
@@ -2836,7 +2836,7 @@ static void stripes_draw_dark_layer(
    draw.matrix_data = NULL;
    draw.texture     = gfx_display_white_texture;
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id = 0;
+   draw.pipeline_id = 0;
 
    gfx_display_blend_begin(userdata);
    gfx_display_draw(&draw, userdata,

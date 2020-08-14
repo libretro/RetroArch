@@ -137,7 +137,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
    output_size[0]                   = (float)vk->context->swapchain_width;
    output_size[1]                   = (float)vk->context->swapchain_height;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       /* Ribbon */
       default:
@@ -145,8 +145,8 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_2:
          ca = gfx_display_get_coords_array();
          draw->coords                     = (struct video_coords*)&ca->coords;
-         draw->pipeline.backend_data      = ubo_scratch_data;
-         draw->pipeline.backend_data_size = 2 * sizeof(float);
+         draw->backend_data               = ubo_scratch_data;
+         draw->backend_data_size          = 2 * sizeof(float);
 
          /* Match UBO layout in shader. */
          yflip = 1.0f;
@@ -158,8 +158,8 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
-         draw->pipeline.backend_data      = ubo_scratch_data;
-         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) 
+         draw->backend_data               = ubo_scratch_data;
+         draw->backend_data_size          = sizeof(math_matrix_4x4) 
             + 4 * sizeof(float);
 
          /* Match UBO layout in shader. */
@@ -171,7 +171,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
                sizeof(output_size));
 
          /* Shader uses FragCoord, need to fix up. */
-         if (draw->pipeline.id == VIDEO_SHADER_MENU_5)
+         if (draw->pipeline_id == VIDEO_SHADER_MENU_5)
             yflip = -1.0f;
          else
             yflip = 1.0f;
@@ -245,7 +245,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       pv->color.a = *color++;
    }
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
 #ifdef HAVE_SHADERPIPELINE
       case VIDEO_SHADER_MENU:
@@ -257,11 +257,11 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
          struct vk_draw_triangles call;
 
          call.pipeline     = vk->display.pipelines[
-               to_menu_pipeline(draw->prim_type, draw->pipeline.id)];
+               to_menu_pipeline(draw->prim_type, draw->pipeline_id)];
          call.texture      = NULL;
          call.sampler      = VK_NULL_HANDLE;
-         call.uniform      = draw->pipeline.backend_data;
-         call.uniform_size = draw->pipeline.backend_data_size;
+         call.uniform      = draw->backend_data;
+         call.uniform_size = draw->backend_data_size;
          call.vbo          = &range;
          call.vertices     = draw->coords->vertices;
 

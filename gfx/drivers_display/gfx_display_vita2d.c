@@ -131,7 +131,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       vertices[i].a = *color++;
     }
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
      default:
      {

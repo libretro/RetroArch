@@ -67,7 +67,7 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
    if (!d3d11 || !draw || !draw->texture)
       return;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
@@ -75,7 +75,7 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         d3d11_set_shader(d3d11->context, &d3d11->shaders[draw->pipeline.id]);
+         d3d11_set_shader(d3d11->context, &d3d11->shaders[draw->pipeline_id]);
          D3D11Draw(d3d11->context, draw->coords->vertices, 0);
 
          D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
@@ -188,7 +188,7 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
    if (!d3d11 || !draw)
       return;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:

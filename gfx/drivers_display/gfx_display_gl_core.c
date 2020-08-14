@@ -101,7 +101,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
    output_size[0]                = (float)video_width;
    output_size[1]                = (float)video_height;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       /* Ribbon */
       default:
@@ -109,8 +109,8 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_2:
          ca = gfx_display_get_coords_array();
          draw->coords                     = (struct video_coords*)&ca->coords;
-         draw->pipeline.backend_data      = ubo_scratch_data;
-         draw->pipeline.backend_data_size = 2 * sizeof(float);
+         draw->backend_data               = ubo_scratch_data;
+         draw->backend_data_size          = 2 * sizeof(float);
 
          /* Match UBO layout in shader. */
          yflip = -1.0f;
@@ -122,8 +122,8 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
-         draw->pipeline.backend_data      = ubo_scratch_data;
-         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) 
+         draw->backend_data               = ubo_scratch_data;
+         draw->backend_data_size          = sizeof(math_matrix_4x4) 
             + 4 * sizeof(float);
 
          /* Match UBO layout in shader. */
@@ -134,7 +134,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
                output_size,
                sizeof(output_size));
 
-         if (draw->pipeline.id == VIDEO_SHADER_MENU_5)
+         if (draw->pipeline_id == VIDEO_SHADER_MENU_5)
             yflip = 1.0f;
 
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
@@ -182,7 +182,7 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    glActiveTexture(GL_TEXTURE1);
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
@@ -193,7 +193,7 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
          break;
    }
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
 #ifdef HAVE_SHADERPIPELINE
       case VIDEO_SHADER_MENU:
@@ -230,13 +230,13 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
 
    if (loc && loc->flat_ubo_vertex >= 0)
       glUniform4fv(loc->flat_ubo_vertex,
-                   (GLsizei)((draw->pipeline.backend_data_size + 15) / 16),
-                   (const GLfloat*)draw->pipeline.backend_data);
+                   (GLsizei)((draw->backend_data_size + 15) / 16),
+                   (const GLfloat*)draw->backend_data);
 
    if (loc && loc->flat_ubo_fragment >= 0)
       glUniform4fv(loc->flat_ubo_fragment,
-                   (GLsizei)((draw->pipeline.backend_data_size + 15) / 16),
-                   (const GLfloat*)draw->pipeline.backend_data);
+                   (GLsizei)((draw->backend_data_size + 15) / 16),
+                   (const GLfloat*)draw->backend_data);
 
    if (!loc)
    {

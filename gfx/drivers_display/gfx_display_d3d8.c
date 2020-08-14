@@ -125,7 +125,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    const float *tex_coord        = NULL;
    const float *color            = NULL;
 
-   if (!d3d || !draw || draw->pipeline.id)
+   if (!d3d || !draw || draw->pipeline_id)
       return;
    if ((d3d->menu_display.offset + draw->coords->vertices )
          > (unsigned)d3d->menu_display.size)

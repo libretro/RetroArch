@@ -2251,7 +2251,7 @@ static void materialui_draw_icon(
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id     = 0;
+   draw.pipeline_id     = 0;
 
    gfx_display_draw(&draw, userdata,
          video_width, video_height);
@@ -4904,9 +4904,9 @@ static void materialui_render_background(materialui_handle_t *mui,
    draw.vertex                = NULL;
    draw.tex_coord             = NULL;
    draw.vertex_count          = 4;
-   draw.pipeline.id           = 0;
-   draw.pipeline.active       = false;
-   draw.pipeline.backend_data = NULL;
+   draw.pipeline_id           = 0;
+   draw.pipeline_active       = false;
+   draw.backend_data          = NULL;
    draw.color                 = draw_color;
 
    if (mui->textures.bg && !libretro_running)

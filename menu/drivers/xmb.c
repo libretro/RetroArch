@@ -822,7 +822,7 @@ static void xmb_draw_icon(
    draw.matrix_data     = mymat;
    draw.texture         = texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id     = 0;
+   draw.pipeline_id     = 0;
 
    if (xmb_shadows_enable)
    {
@@ -3796,8 +3796,8 @@ static void xmb_draw_bg(
    draw.tex_coord            = NULL;
    draw.vertex_count         = 4;
    draw.prim_type            = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id          = 0;
-   draw.pipeline.active      = xmb_shader_pipeline_active(menu_shader_pipeline);
+   draw.pipeline_id          = 0;
+   draw.pipeline_active      = xmb_shader_pipeline_active(menu_shader_pipeline);
 
    gfx_display_blend_begin(userdata);
    gfx_display_set_viewport(video_width, video_height);
@@ -3821,24 +3821,24 @@ static void xmb_draw_bg(
             menu_wallpaper_opacity
             );
 
-      draw.pipeline.id = VIDEO_SHADER_MENU_2;
+      draw.pipeline_id = VIDEO_SHADER_MENU_2;
 
       switch (menu_shader_pipeline)
       {
          case XMB_SHADER_PIPELINE_RIBBON:
-            draw.pipeline.id  = VIDEO_SHADER_MENU;
+            draw.pipeline_id  = VIDEO_SHADER_MENU;
             break;
          case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_3;
+            draw.pipeline_id  = VIDEO_SHADER_MENU_3;
             break;
          case XMB_SHADER_PIPELINE_SNOW:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_4;
+            draw.pipeline_id  = VIDEO_SHADER_MENU_4;
             break;
          case XMB_SHADER_PIPELINE_BOKEH:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_5;
+            draw.pipeline_id  = VIDEO_SHADER_MENU_5;
             break;
          case XMB_SHADER_PIPELINE_SNOWFLAKE:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_6;
+            draw.pipeline_id  = VIDEO_SHADER_MENU_6;
             break;
          default:
             break;
@@ -3922,7 +3922,7 @@ static void xmb_draw_dark_layer(
    draw.matrix_data = NULL;
    draw.texture     = gfx_display_white_texture;
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id = 0;
+   draw.pipeline_id = 0;
 
    gfx_display_blend_begin(userdata);
    gfx_display_draw(&draw, userdata,

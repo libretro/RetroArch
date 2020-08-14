@@ -147,27 +147,24 @@ typedef struct gfx_display_ctx_driver
 
 struct gfx_display_ctx_draw
 {
-   float x;
-   float y;
    float *color;
    const float *vertex;
    const float *tex_coord;
-   unsigned width;
-   unsigned height;
-   uintptr_t texture;
-   size_t vertex_count;
+   const void *backend_data;
    struct video_coords *coords;
    void *matrix_data;
    enum gfx_display_prim_type prim_type;
-   struct
-   {
-      unsigned id;
-      const void *backend_data;
-      size_t backend_data_size;
-      bool active;
-   } pipeline;
+   bool pipeline_active;
+   float x;
+   float y;
    float rotation;
    float scale_factor;
+   unsigned width;
+   unsigned height;
+   unsigned pipeline_id;
+   uintptr_t texture;
+   size_t vertex_count;
+   size_t backend_data_size;
 };
 
 typedef struct gfx_display_ctx_rotate_draw

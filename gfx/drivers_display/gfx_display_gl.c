@@ -274,7 +274,7 @@ static void gfx_display_gl_draw_pipeline(
    draw->coords                     = (struct video_coords*)(&ca->coords);
    draw->matrix_data                = NULL;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
@@ -285,7 +285,7 @@ static void gfx_display_gl_draw_pipeline(
          break;
    }
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
@@ -293,7 +293,7 @@ static void gfx_display_gl_draw_pipeline(
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         gl->shader->use(gl, gl->shader_data, draw->pipeline.id,
+         gl->shader->use(gl, gl->shader_data, draw->pipeline_id,
                true);
 
          t += 0.01;
@@ -305,7 +305,7 @@ static void gfx_display_gl_draw_pipeline(
 
          uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
          uniform_param.lookup.ident      = "time";
-         uniform_param.lookup.idx        = draw->pipeline.id;
+         uniform_param.lookup.idx        = draw->pipeline_id;
          uniform_param.lookup.add_prefix = true;
          uniform_param.lookup.enable     = true;
 
@@ -316,7 +316,7 @@ static void gfx_display_gl_draw_pipeline(
          break;
    }
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
