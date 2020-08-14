@@ -2096,12 +2096,12 @@ struct rarch_state
    bsv_movie_t     *bsv_movie_state_handle;   /* ptr alignment */
 #endif
    gfx_display_t              dispgfx;        /* ptr alignment */
+   input_keyboard_press_t keyboard_press_cb;  /* ptr alignment */
 
    /*************************************/
    /* TODO/FIXME BEGIN - find alignment */
    videocrt_switch_t crt_switch_st;
    gfx_thumbnail_state_t gfx_thumb_state;
-   input_keyboard_press_t keyboard_press_cb;
 #ifdef HAVE_DYNAMIC
    dylib_t lib_handle;
 #endif
@@ -2582,30 +2582,30 @@ static midi_driver_t *midi_drv                                   = &midi_null;
 static const video_display_server_t *current_display_server      = &dispserv_null;
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
-   { "4:3",           1.3333f },
-   { "16:9",          1.7778f },
-   { "16:10",         1.6f },
-   { "16:15",         16.0f / 15.0f },
-   { "21:9",          21.0f / 9.0f },
-   { "1:1",           1.0f },
-   { "2:1",           2.0f },
-   { "3:2",           1.5f },
-   { "3:4",           0.75f },
-   { "4:1",           4.0f },
-   { "9:16",          0.5625f },
-   { "5:4",           1.25f },
-   { "6:5",           1.2f },
-   { "7:9",           0.7777f },
-   { "8:3",           2.6666f },
-   { "8:7",           1.1428f },
-   { "19:12",         1.5833f },
-   { "19:14",         1.3571f },
-   { "30:17",         1.7647f },
-   { "32:9",          3.5555f },
-   { "Config",        0.0f },
-   { "Square pixel",  1.0f },
-   { "Core provided", 1.0f },
-   { "Custom",        0.0f }
+   { 1.3333f,         "4:3"           },
+   { 1.7778f,         "16:9"          },
+   { 1.6f,            "16:10"         },
+   { 16.0f / 15.0f,   "16:15"         },
+   { 21.0f / 9.0f,    "21:9"          },
+   { 1.0f,            "1:1"           },
+   { 2.0f,            "2:1"           },
+   { 1.5f,            "3:2"           },
+   { 0.75f,           "3:4"           },
+   { 4.0f,            "4:1"           },
+   { 0.5625f,         "9:16"          },
+   { 1.25f,           "5:4"           },
+   { 1.2f,            "6:5"           },
+   { 0.7777f,         "7:9"           },
+   { 2.6666f,         "8:3"           },
+   { 1.1428f,         "8:7"           },
+   { 1.5833f,         "19:12"         },
+   { 1.3571f,         "19:14"         },
+   { 1.7647f,         "30:17"         },
+   { 3.5555f,         "32:9"          },
+   { 0.0f,            "Config"        },
+   { 1.0f,            "Square pixel"  },
+   { 1.0f,            "Core provided" },
+   { 0.0f,            "Custom"        }
 };
 
 static gfx_api_gpu_map gpu_map[] = {
