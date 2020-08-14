@@ -153,7 +153,7 @@ typedef struct menu_input_pointer_hw_state
 
 typedef struct menu_input_pointer
 {
-   retro_time_t press_duration;
+   retro_time_t press_duration;  /* int64_t alignment */
    float y_accel;
    enum menu_pointer_type type;
    enum menu_input_pointer_press_direction press_direction;
@@ -168,7 +168,7 @@ typedef struct menu_input_pointer
 
 typedef struct menu_input
 {
-   menu_input_pointer_t pointer; /* uint64_t alignment */
+   menu_input_pointer_t pointer; /* int64_t alignment */
    unsigned ptr;
    bool select_inhibit;
    bool cancel_inhibit;

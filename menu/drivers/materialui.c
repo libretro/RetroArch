@@ -1169,21 +1169,19 @@ enum materialui_node_icon_type
  * icon data, thumbnail data, etc.) */
 typedef struct
 {
-   enum materialui_node_icon_type icon_type;
+   /* Thumbnail containers */
+   struct
+   {
+      gfx_thumbnail_t primary;   /* uintptr_t alignment */
+      gfx_thumbnail_t secondary; /* uintptr_t alignment */
+   } thumbnails;
    unsigned icon_texture_index;
    float entry_width;
    float entry_height;
    float text_height;
    float x;
    float y;
-
-   /* Thumbnail containers */
-   struct
-   {
-      gfx_thumbnail_t primary;
-      gfx_thumbnail_t secondary;
-   } thumbnails;
-
+   enum materialui_node_icon_type icon_type;
 } materialui_node_t;
 
 /* Defines all standard menu textures */
@@ -1266,9 +1264,9 @@ enum
  * menu entries) */
 typedef struct
 {
-   bool enabled;
    unsigned border_width;
    unsigned entry_margin;
+   bool enabled;
 } materialui_landscape_optimization_t;
 
 /* Maximum number of menu tabs that can be shown on
@@ -1311,8 +1309,8 @@ enum materialui_nav_bar_location_type
  * associated with a navigation bar menu tab */
 typedef struct
 {
-   enum materialui_nav_bar_menu_tab_type type;
    unsigned texture_index;
+   enum materialui_nav_bar_menu_tab_type type;
    bool active;
 } materialui_nav_bar_menu_tab_t;
 
@@ -1320,8 +1318,8 @@ typedef struct
  * associated with a navigation bar action tab */
 typedef struct
 {
-   enum materialui_nav_bar_action_tab_type type;
    unsigned texture_index;
+   enum materialui_nav_bar_action_tab_type type;
    bool enabled;
 } materialui_nav_bar_action_tab_t;
 
@@ -1335,21 +1333,21 @@ typedef struct
    unsigned num_menu_tabs;
    unsigned active_menu_tab_index;
    unsigned last_active_menu_tab_index;
-   bool menu_navigation_wrapped;
+   materialui_nav_bar_action_tab_t back_tab;    /* unsigned alignment */
+   materialui_nav_bar_action_tab_t resume_tab;  /* unsigned alignment */
+   materialui_nav_bar_menu_tab_t menu_tabs[MUI_NAV_BAR_NUM_MENU_TABS_MAX]; /* unsigned alignment */
    enum materialui_nav_bar_location_type location;
-   materialui_nav_bar_action_tab_t back_tab;
-   materialui_nav_bar_action_tab_t resume_tab;
-   materialui_nav_bar_menu_tab_t menu_tabs[MUI_NAV_BAR_NUM_MENU_TABS_MAX];
+   bool menu_navigation_wrapped;
 } materialui_nav_bar_t;
 
 /* This structure holds all runtime parameters for
  * the scrollbar */
 typedef struct
 {
-   unsigned width;
-   unsigned height;
    int x;
    int y;
+   unsigned width;
+   unsigned height;
    bool active;
    bool dragged;
 } materialui_scrollbar_t;
@@ -1388,10 +1386,10 @@ typedef struct
  * performance */
 typedef struct
 {
-   char battery_percent_str[MUI_BATTERY_PERCENT_MAX_LENGTH];
-   char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
    int battery_percent_width;
    int timedate_width;
+   char battery_percent_str[MUI_BATTERY_PERCENT_MAX_LENGTH];
+   char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
 } materialui_sys_bar_cache_t;
 
 /* This structure holds all runtime parameters
@@ -1402,15 +1400,15 @@ typedef struct
  * shown when using the 'desktop'-layout */
 typedef struct
 {
-   bool enabled;
-   bool cached;
    size_t last_selected;
+   unsigned height;
    float delay_timer;
    float alpha;
-   unsigned height;
    char str[MENU_SUBLABEL_MAX_LENGTH];
    char runtime_fallback_str[255];
    char last_played_fallback_str[255];
+   bool enabled;
+   bool cached;
 } materialui_status_bar_t;
 
 /* Defines common positions when referencing
@@ -1439,12 +1437,118 @@ typedef struct
  * playlists */
 typedef struct
 {
-   size_t size;
    materialui_playlist_icon_t *icons;
+   size_t size;
 } materialui_playlist_icons_t;
 
 typedef struct materialui_handle
 {
+   /* Pointer info */
+   menu_input_pointer_t pointer;                      /* int64_t alignment */
+   /* Use common tickers for all text
+    * > Simplifies configuration and
+    *   improves performance */
+   gfx_animation_ctx_ticker_t ticker;                 /* uint64_t alignment */
+   gfx_animation_ctx_ticker_smooth_t ticker_smooth;   /* uint64_t alignment */
+   /* Keeps track of the last time tabs were switched
+    * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
+   retro_time_t last_tab_switch_time;  /* uint64_t alignment */
+
+   playlist_t *playlist;            /* ptr alignment */
+
+   /* Font data */
+   struct
+   {
+      materialui_font_data_t title; /* ptr alignment */
+      materialui_font_data_t list;  /* ptr alignment */
+      materialui_font_data_t hint;  /* ptr alignment */
+   } font_data;
+   /* Thumbnail helpers */
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
+   struct
+   {
+      materialui_playlist_icons_t playlist;  /* ptr alignment */
+      uintptr_t bg;
+      uintptr_t list[MUI_TEXTURE_LAST];
+   } textures;
+
+   /* Status bar */
+   materialui_status_bar_t status_bar; /* size_t alignment */
+   size_t last_stack_size;
+   size_t first_onscreen_entry;
+   size_t last_onscreen_entry;
+   /* Used to track scroll animations */
+   size_t scroll_animation_selection;
+   size_t fullscreen_thumbnail_selection;
+   /* > When viewing 'desktop'-layout playlists,
+    *   need to cache the index of the last
+    *   selected entry so we can keep displaying
+    *   its thumbnails while waiting for next
+    *   to load after the selection has changed */
+   size_t desktop_thumbnail_last_selection;
+   unsigned last_width;
+   unsigned last_height;
+   unsigned sys_bar_height;
+   unsigned title_bar_height;
+   unsigned header_shadow_height;
+   unsigned icon_size;
+   unsigned sys_bar_icon_size;
+   unsigned margin;
+   unsigned sys_bar_margin;
+   unsigned entry_divider_width;
+   unsigned sublabel_gap;
+   unsigned sublabel_padding;
+   /* Navigation bar parameters
+    * Note: layout width and height are convenience
+    * variables used when determining usable width/
+    * height for all other menu elements - e.g. when
+    * navigation bar is at the bottom of the screen
+    * nav_bar_screen_width is zero */
+   unsigned nav_bar_layout_width;
+   unsigned nav_bar_layout_height;
+
+   unsigned ticker_x_offset;
+   unsigned ticker_str_width;
+
+   /* Touch feedback animation parameters */
+   unsigned touch_feedback_selection;
+
+   unsigned thumbnail_width_max;
+   unsigned thumbnail_height_max;
+   materialui_landscape_optimization_t
+         landscape_optimization; /* unsigned alignment */
+   materialui_nav_bar_t nav_bar; /* unsigned alignment */
+   /* Colour theme parameters */
+   materialui_colors_t colors;   /* uint32_t alignment */
+
+   /* Scrollbar parameters */
+   materialui_scrollbar_t scrollbar;   /* int alignment */
+   int cursor_size;
+   /* Cached system bar data */
+   materialui_sys_bar_cache_t sys_bar_cache; /* int alignment */
+   float last_scale_factor;
+   float dip_base_unit_size;
+   /* Y position of the vertical scroll */
+   float scroll_y;
+   float content_height;
+   float pointer_start_scroll_y;
+   float transition_alpha;
+   float transition_x_offset;
+   float thumbnail_stream_delay;
+   float fullscreen_thumbnail_alpha;
+   float touch_feedback_alpha;
+   int16_t pointer_start_x;
+   int16_t pointer_start_y;
+
+   /* Colour theme parameters */
+   enum materialui_color_theme color_theme;
+
+   enum materialui_landscape_layout_optimization_type
+         last_landscape_layout_optimization;
+   enum materialui_list_view_type list_view_type;
+   char msgbox[1024];
+   char menu_title[255];
+   char fullscreen_thumbnail_label[255];
    bool is_portrait;
    bool need_compute;
    bool mouse_show;
@@ -1456,134 +1560,13 @@ typedef struct materialui_handle
    bool last_show_nav_bar;
    bool last_auto_rotate_nav_bar;
    bool menu_stack_flushed;
-
-   /* Keeps track of the last time tabs were switched
-    * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
-   retro_time_t last_tab_switch_time;
-
-   enum materialui_landscape_layout_optimization_type
-         last_landscape_layout_optimization;
-   materialui_landscape_optimization_t
-         landscape_optimization;
-
-   playlist_t *playlist;
-
-   unsigned last_width;
-   unsigned last_height;
-   float last_scale_factor;
-   float dip_base_unit_size;
-
-   int cursor_size;
-
-   unsigned sys_bar_height;
-   unsigned title_bar_height;
-   unsigned header_shadow_height;
-   unsigned icon_size;
-   unsigned sys_bar_icon_size;
-   unsigned margin;
-   unsigned sys_bar_margin;
-   unsigned entry_divider_width;
-   unsigned sublabel_gap;
-   unsigned sublabel_padding;
-
-   /* Navigation bar parameters
-    * Note: layout width and height are convenience
-    * variables used when determining usable width/
-    * height for all other menu elements - e.g. when
-    * navigation bar is at the bottom of the screen
-    * nav_bar_screen_width is zero */
-   unsigned nav_bar_layout_width;
-   unsigned nav_bar_layout_height;
-   materialui_nav_bar_t nav_bar;
-
-   /* Scrollbar parameters */
-   materialui_scrollbar_t scrollbar;
-
-   size_t first_onscreen_entry;
-   size_t last_onscreen_entry;
-
-   /* Y position of the vertical scroll */
-   float scroll_y;
-   float content_height;
-
    /* Used to track scroll animations */
    bool scroll_animation_active;
-   size_t scroll_animation_selection;
-
-   char msgbox[1024];
-
-   char menu_title[255];
-
-   struct
-   {
-      uintptr_t bg;
-      uintptr_t list[MUI_TEXTURE_LAST];
-      materialui_playlist_icons_t playlist;
-   } textures;
-
-   /* Font data */
-   struct
-   {
-      materialui_font_data_t title;
-      materialui_font_data_t list;
-      materialui_font_data_t hint;
-   } font_data;
-
-   /* Pointer info */
-   menu_input_pointer_t pointer;
-   int16_t pointer_start_x;
-   int16_t pointer_start_y;
-   float pointer_start_scroll_y;
-
-   /* Colour theme parameters */
-   enum materialui_color_theme color_theme;
-   materialui_colors_t colors;
-
-   /* Cached system bar data */
-   materialui_sys_bar_cache_t sys_bar_cache;
-
-   /* Use common tickers for all text
-    * > Simplifies configuration and
-    *   improves performance */
    bool use_smooth_ticker;
-   gfx_animation_ctx_ticker_t ticker;
-   gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-   unsigned ticker_x_offset;
-   unsigned ticker_str_width;
-
-   /* Touch feedback animation parameters */
-   unsigned touch_feedback_selection;
-   float touch_feedback_alpha;
    bool touch_feedback_update_selection;
-
-   /* Menu transition animation parameters */
-   float transition_alpha;
-   float transition_x_offset;
-   size_t last_stack_size;
-
-   /* Thumbnail helpers */
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-   float thumbnail_stream_delay;
-   unsigned thumbnail_width_max;
-   unsigned thumbnail_height_max;
    bool primary_thumbnail_available;
    bool secondary_thumbnail_enabled;
    bool show_fullscreen_thumbnails;
-   size_t fullscreen_thumbnail_selection;
-   float fullscreen_thumbnail_alpha;
-   char fullscreen_thumbnail_label[255];
-   /* > When viewing 'desktop'-layout playlists,
-    *   need to cache the index of the last
-    *   selected entry so we can keep displaying
-    *   its thumbnails while waiting for next
-    *   to load after the selection has changed */
-   size_t desktop_thumbnail_last_selection;
-
-   /* Status bar */
-   materialui_status_bar_t status_bar;
-
-   enum materialui_list_view_type list_view_type;
-
 } materialui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
