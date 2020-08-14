@@ -188,6 +188,44 @@ typedef struct gfx_delayed_animation
    gfx_animation_ctx_entry_t entry;
 } gfx_delayed_animation_t;
 
+typedef float (*easing_cb) (float, float, float, float);
+
+struct tween
+{
+   float       duration;
+   float       running_since;
+   float       initial_value;
+   float       target_value;
+   float       *subject;
+   uintptr_t   tag;
+   easing_cb   easing;
+   tween_cb    cb;
+   void        *userdata;
+   bool        deleted;
+};
+
+struct gfx_animation
+{
+   bool pending_deletes;
+   bool in_update;
+   bool animation_is_active;
+   bool ticker_is_active;
+
+   uint64_t ticker_idx;            /* updated every TICKER_SPEED us */
+   uint64_t ticker_slow_idx;       /* updated every TICKER_SLOW_SPEED us */
+   uint64_t ticker_pixel_idx;      /* updated every frame */
+   uint64_t ticker_pixel_line_idx; /* updated every frame */
+   retro_time_t cur_time;
+   retro_time_t old_time;
+
+   float delta_time;
+
+   struct tween* list;
+   struct tween* pending;
+};
+
+typedef struct gfx_animation gfx_animation_t;
+
 void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry);
 
 void gfx_timer_kill(gfx_timer_t *timer);
