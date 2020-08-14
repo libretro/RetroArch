@@ -1422,7 +1422,7 @@ void task_push_update_installed_cores(
    update_installed_handle->path_dir_libretro        = strdup(path_dir_libretro);
    update_installed_handle->path_dir_core_assets     = string_is_empty(path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
-   update_installed_handle->core_list                = core_updater_list_init(CORE_UPDATER_LIST_SIZE);
+   update_installed_handle->core_list                = core_updater_list_init();
    update_installed_handle->list_task                = NULL;
    update_installed_handle->download_task            = NULL;
    update_installed_handle->list_size                = 0;
