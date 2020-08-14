@@ -284,8 +284,8 @@ typedef struct win32_common_state
    unsigned pos_width;
    unsigned pos_height;
    unsigned taskbar_message;
-   bool quit;
    unsigned monitor_count;
+   bool quit;
    bool resized;
 } win32_common_state_t;
 

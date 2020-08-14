@@ -36,11 +36,11 @@ typedef struct
 
 typedef struct
 {
-   bool mouse_grab;
    winraw_keyboard_t keyboard;
    HWND window;
    winraw_mouse_t *mice;
    const input_device_driver_t *joypad;
+   bool mouse_grab;
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
