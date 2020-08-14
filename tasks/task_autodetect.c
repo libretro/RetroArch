@@ -38,13 +38,13 @@
 
 typedef struct
 {
-   unsigned port;
-   input_device_info_t device_info;
-   bool autoconfig_enabled;
-   bool suppress_notifcations;
    char *dir_autoconfig;
    char *dir_driver_autoconfig;
    config_file_t *autoconfig_file;
+   unsigned port;
+   input_device_info_t device_info; /* unsigned alignment */
+   bool autoconfig_enabled;
+   bool suppress_notifcations;
 } autoconfig_handle_t;
 
 /*********************/

@@ -146,22 +146,22 @@ struct retro_keybind
 
 struct rarch_joypad_info
 {
-   uint16_t joy_idx;
    const struct retro_keybind *auto_binds;
    float axis_threshold;
+   uint16_t joy_idx;
 };
 
 typedef struct
 {
+   unsigned name_index;
+   uint16_t vid;
+   uint16_t pid;
+   bool autoconfigured;
+   char joypad_driver[32];
    char name[256];
    char display_name[256];
    char config_path[PATH_MAX_LENGTH];
    char config_name[PATH_MAX_LENGTH];
-   char joypad_driver[32];
-   uint16_t vid;
-   uint16_t pid;
-   bool autoconfigured;
-   unsigned name_index;
 } input_device_info_t;
 
 struct input_driver
