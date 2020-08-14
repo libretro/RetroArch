@@ -130,20 +130,22 @@ enum cdrom_dump_state
 
 typedef struct
 {
-   bool next;
-   enum cdrom_dump_state state;
-   unsigned char cur_track;
    int64_t cur_track_bytes;
    int64_t track_written_bytes;
    int64_t disc_total_bytes;
    int64_t disc_read_bytes;
-   char drive_letter[2];
-   char cdrom_path[64];
-   char title[512];
-   const cdrom_toc_t *toc;
+
    RFILE *file;
    RFILE *output_file;
    libretro_vfs_implementation_file *stream;
+   const cdrom_toc_t *toc;
+
+   enum cdrom_dump_state state;
+   unsigned char cur_track;
+   char drive_letter[2];
+   char cdrom_path[64];
+   char title[512];
+   bool next;
 } task_cdrom_dump_state_t;
 #endif
 
@@ -157,6 +159,22 @@ struct content_stream
 
 struct content_information_ctx
 {
+   char *name_ips;
+   char *name_bps;
+   char *name_ups;
+
+   char *valid_extensions;
+   char *directory_cache;
+   char *directory_system;
+
+   struct string_list *temporary_content;
+
+   struct
+   {
+      struct retro_subsystem_info *data;
+      unsigned size;
+   } subsystem;
+
    bool block_extract;
    bool need_fullpath;
    bool set_supports_no_game_enable;
@@ -168,22 +186,6 @@ struct content_information_ctx
 #endif
    bool bios_is_missing;
    bool check_firmware_before_loading;
-
-   struct
-   {
-      struct retro_subsystem_info *data;
-      unsigned size;
-   } subsystem;
-
-   char *name_ips;
-   char *name_bps;
-   char *name_ups;
-
-   char *valid_extensions;
-   char *directory_cache;
-   char *directory_system;
-
-   struct string_list *temporary_content;
 };
 
 #ifdef HAVE_CDROM
