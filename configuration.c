@@ -58,77 +58,6 @@
 #include "uwp/uwp_func.h"
 #endif
 
-/* All config related settings go here. */
-
-struct config_bool_setting
-{
-   const char *ident;
-   bool *ptr;
-   bool def_enable;
-   bool def;
-   bool handle;
-   enum rarch_override_setting override;
-};
-
-struct config_int_setting
-{
-   const char *ident;
-   int *ptr;
-   bool def_enable;
-   int def;
-   bool handle;
-   enum rarch_override_setting override;
-};
-
-struct config_uint_setting
-{
-   const char *ident;
-   unsigned *ptr;
-   bool def_enable;
-   unsigned def;
-   bool handle;
-   enum rarch_override_setting override;
-};
-
-struct config_size_setting
-{
-   const char *ident;
-   size_t *ptr;
-   bool def_enable;
-   size_t def;
-   bool handle;
-   enum rarch_override_setting override;
-};
-
-struct config_float_setting
-{
-   const char *ident;
-   float *ptr;
-   bool def_enable;
-   float def;
-   bool handle;
-   enum rarch_override_setting override;
-};
-
-struct config_array_setting
-{
-   const char *ident;
-   char *ptr;
-   bool def_enable;
-   const char *def;
-   bool handle;
-   enum rarch_override_setting override;
-};
-
-struct config_path_setting
-{
-   const char *ident;
-   char *ptr;
-   bool def_enable;
-   char *def;
-   bool handle;
-};
-
 enum video_driver_enum
 {
    VIDEO_GL                 = 0,
@@ -608,6 +537,78 @@ static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #endif
 #endif
+
+/* All config related settings go here. */
+
+struct config_bool_setting
+{
+   const char *ident;
+   bool *ptr;
+   enum rarch_override_setting override;
+   bool def_enable;
+   bool def;
+   bool handle;
+};
+
+struct config_int_setting
+{
+   const char *ident;
+   int *ptr;
+   int def;
+   enum rarch_override_setting override;
+   bool def_enable;
+   bool handle;
+};
+
+struct config_uint_setting
+{
+   const char *ident;
+   unsigned *ptr;
+   unsigned def;
+   enum rarch_override_setting override;
+   bool def_enable;
+   bool handle;
+};
+
+struct config_size_setting
+{
+   const char *ident;
+   size_t *ptr;
+   size_t def;
+   enum rarch_override_setting override;
+   bool def_enable;
+   bool handle;
+};
+
+struct config_float_setting
+{
+   const char *ident;
+   float *ptr;
+   float def;
+   enum rarch_override_setting override;
+   bool def_enable;
+   bool handle;
+};
+
+struct config_array_setting
+{
+   const char *ident;
+   const char *def;
+   char *ptr;
+   enum rarch_override_setting override;
+   bool def_enable;
+   bool handle;
+};
+
+struct config_path_setting
+{
+   const char *ident;
+   char *ptr;
+   char *def;
+   bool def_enable;
+   bool handle;
+};
+
 
 #define GENERAL_SETTING(key, configval, default_enable, default_setting, type, handle_setting) \
 { \
