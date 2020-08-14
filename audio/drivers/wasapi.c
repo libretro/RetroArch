@@ -28,16 +28,16 @@
 
 typedef struct
 {
-   bool exclusive;
-   bool nonblock;
-   bool running;
-   size_t frame_size;     /* 4 or 8 only */
-   size_t engine_buffer_size;
    HANDLE write_event;
    IMMDevice          *device;
    IAudioClient       *client;
    IAudioRenderClient *renderer;
    fifo_buffer_t      *buffer; /* NULL in unbuffered shared mode */
+   size_t frame_size;          /* 4 or 8 only */
+   size_t engine_buffer_size;
+   bool exclusive;
+   bool nonblock;
+   bool running;
 } wasapi_t;
 
 static IMMDevice *wasapi_init_device(const char *id)

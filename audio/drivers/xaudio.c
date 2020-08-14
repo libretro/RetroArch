@@ -60,9 +60,9 @@ typedef struct xaudio2 xaudio2_t;
 typedef struct
 {
    xaudio2_t *xa;
+   size_t bufsize;
    bool nonblock;
    bool is_paused;
-   size_t bufsize;
 } xa_t;
 
 /* Forward declarations */
