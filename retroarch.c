@@ -1923,8 +1923,398 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
-   enum osk_type osk_idx;
+   double audio_source_ratio_original;
+   double audio_source_ratio_current;
+
+   retro_time_t frame_limit_minimum_time;
+   retro_time_t frame_limit_last_time;
+   retro_time_t libretro_core_runtime_last;
+   retro_time_t libretro_core_runtime_usec;
+   retro_time_t video_driver_frame_time_samples[
+      MEASURE_FRAME_TIME_SAMPLES_COUNT];
+
+   retro_usec_t runloop_frame_time_last;
+
+   uint64_t audio_driver_free_samples_count;
+
+#ifdef HAVE_RUNAHEAD
+   uint64_t runahead_last_frame_count;
+#endif
+
+   uint64_t video_driver_frame_time_count;
+   uint64_t video_driver_frame_count;
+
+   uint8_t *video_driver_record_gpu_buffer;
+   uint8_t *midi_drv_input_buffer;
+   uint8_t *midi_drv_output_buffer;
+   bool    *load_no_content_hook;
+   float   *audio_driver_input_data;
+   float   *audio_driver_output_samples_buf;
+   char    *osk_grid[45];
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   char    *secondary_library_path;
+#endif
+   retro_ctx_load_content_info_t *load_content_info;
+#endif
+#ifdef HAVE_MENU
+   const char **menu_input_dialog_keyboard_buffer;
+#endif
+   core_option_manager_t *runloop_core_options;
+   msg_queue_t *runloop_msg_queue;
+   struct string_list *subsystem_fullpaths;
+
+   const record_driver_t *recording_driver;
+   void *recording_data;
+
+#ifdef HAVE_THREADS
+   slock_t *runloop_msg_queue_lock;
+   slock_t *display_lock;
+   slock_t *context_lock;
+#endif
+
+   const camera_driver_t *camera_driver;
+   void *camera_data;
+
+   void *midi_drv_data;
+   struct string_list *midi_drv_inputs;
+   struct string_list *midi_drv_outputs;
+
+   const ui_companion_driver_t *ui_companion;
+   void *ui_companion_data;
+
+#ifdef HAVE_QT
+   void *ui_companion_qt_data;
+#endif
+
+   const location_driver_t *location_driver;
+   void *location_data;
+
+   const bluetooth_driver_t *bluetooth_driver;
+   void *bluetooth_data;
+
+   const wifi_driver_t *wifi_driver;
+   void *wifi_data;
+
+   void *current_display_server_data;
+
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_t     *bsv_movie_state_handle;
+#endif
+
+#ifdef HAVE_VIDEO_FILTER
+   rarch_softfilter_t *video_driver_state_filter;
+   void               *video_driver_state_buffer;
+#endif
+
+   const void *frame_cache_data;
+
+   void *video_driver_data;
+   video_driver_t *current_video;
+
+   /* Interface for "poking". */
+   const video_poke_interface_t *video_driver_poke;
+
+   /* Used for 15-bit -> 16-bit conversions that take place before
+    * being passed to video driver. */
+   video_pixel_scaler_t *video_driver_scaler_ptr;
+
+   const struct
+      retro_hw_render_context_negotiation_interface *
+      hw_render_context_negotiation;
+
+   void *video_context_data;
+
+#ifdef HAVE_REWIND
+   int16_t *audio_driver_rewind_buf;
+#endif
+   int16_t *audio_driver_output_samples_conv_buf;
+
+#ifdef HAVE_DSP_FILTER
+   retro_dsp_filter_t *audio_driver_dsp;
+#endif
+   struct string_list *audio_driver_devices_list;
+   const retro_resampler_t *audio_driver_resampler;
+
+   void *audio_driver_resampler_data;
+   const audio_driver_t *current_audio;
+   void *audio_driver_context_audio_data;
+#ifdef HAVE_OVERLAY
+   input_overlay_t *overlay_ptr;
+#endif
+
+   pad_connection_listener_t *pad_connection_listener;
+
+   input_keyboard_line_t *keyboard_line;
+
+   void *keyboard_press_data;
+
+#ifdef HAVE_COMMAND
+   command_t *input_driver_command;
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   input_remote_t *input_driver_remote;
+#endif
+   input_mapper_t *input_driver_mapper;
+   input_driver_t *current_input;
+   void *current_input_data;
+
+#ifdef HAVE_HID
+   const void *hid_data;
+#endif
+   settings_t *configuration_settings;
+#ifdef HAVE_MENU
+   menu_handle_t *menu_driver_data;
+   void *menu_userdata;
+   const menu_ctx_driver_t *menu_driver_ctx;
+#endif
+#ifdef HAVE_NETWORKING
+   /* Used while Netplay is running */
+   netplay_t *netplay_data;
+#endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   struct video_shader *menu_driver_shader;
+#endif
+   frontend_ctx_driver_t *current_frontend_ctx;
+#ifdef HAVE_RUNAHEAD
+   my_list *runahead_save_state_list;
+   my_list *input_state_list;
+#endif
+
+   struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
+   struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
+
+   const struct retro_keybind *libretro_input_binds[MAX_USERS];
+
+   /*************************************/
+   /* TODO/FIXME BEGIN - find alignment */
+   input_device_info_t input_device_info[MAX_INPUT_DEVICES];
+   core_info_state_t core_info_st;
+#ifdef HAVE_GFX_WIDGETS
+   dispgfx_widget_t dispwidget_st;
+#endif
+#ifdef HAVE_MENU
+   menu_dialog_t dialog_st;
+   struct menu_bind_state menu_input_binds;
+#endif
+   videocrt_switch_t crt_switch_st;
+   gfx_thumbnail_state_t gfx_thumb_state;
+   input_keyboard_press_t keyboard_press_cb;
+   turbo_buttons_t input_driver_turbo_btns;
+#ifdef HAVE_DYNAMIC
+   dylib_t lib_handle;
+#endif
+#ifdef HAVE_NETWORKING
+   struct netplay_room netplay_host_room;
+#endif
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   dylib_t secondary_module;
+   struct retro_core_t secondary_core;
+   struct retro_callbacks secondary_callbacks;
+#endif
+#endif
+   struct rarch_dir_list dir_shader_list;
+#ifdef HAVE_MENU
+   menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
+   menu_input_t menu_input_state;
+#endif
+   struct retro_camera_callback camera_cb;
+
+   midi_event_t midi_drv_input_event;
+   midi_event_t midi_drv_output_event;
+
+   gfx_ctx_driver_t current_video_context;
+
+   struct retro_system_av_info video_driver_av_info;
+
+#ifdef HAVE_BSV_MOVIE
+   struct bsv_state bsv_movie_state;
+#endif
+   struct retro_hw_render_callback hw_render;
+
+   retro_input_state_t input_state_callback_original;
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   input_remote_state_t remote_st_ptr;
+#endif
+
+   /**
+    * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
+    * is in the middle of being rebuilt; in these cases we will save flag
+    * data and set this to true.
+    * When the context is reinit, it checks this, reads from
+    * deferred_flag_data and cleans it.
+    *
+    * TODO - Dirty hack, fix it better
+    */
+   gfx_ctx_flags_t deferred_flag_data;
+
+   retro_bits_t has_set_libretro_device;
+
+   rarch_system_info_t runloop_system;
+   struct retro_frame_time_callback runloop_frame_time;
+#ifdef HAVE_AUDIOMIXER
+   struct audio_mixer_stream
+      audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
+#endif
+   struct retro_audio_callback audio_callback;
+   gfx_animation_t anim;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   rarch_timer_t shader_delay_timer;
+#endif
+#ifdef HAVE_MENU
+   struct menu_state menu_driver_state;
+#endif
+#ifdef HAVE_DISCORD
+   discord_state_t            discord_st;
+#endif
+   gfx_display_t              dispgfx;
+
+   struct retro_callbacks     retro_ctx;
+   struct retro_core_t        current_core;
+   struct global              g_extern;
+   content_state_t            content_st;
+
+
+
+#if defined(HAVE_COMMAND)
+#ifdef HAVE_NETWORK_CMD
+   struct sockaddr_storage lastcmd_net_source;
+   socklen_t lastcmd_net_source_len;
+#endif
+#endif
+
+#ifdef HAVE_THREAD_STORAGE
+   sthread_tls_t rarch_tls;
+#endif
+
+   jmp_buf error_sjlj_context;
+
+   struct retro_subsystem_rom_info
+      subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
+      [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
+
+   retro_keyboard_event_t runloop_key_event;
+   retro_keyboard_event_t runloop_frontend_key_event;
+
+   video_driver_frame_t frame_bak;
+
+#ifdef HAVE_RUNAHEAD
+   function_t retro_reset_callback_original;
+   runahead_load_state_function
+      retro_unserialize_callback_original;
+
+   function_t original_retro_deinit;
+   function_t original_retro_unload;
+#endif
+   /* TODO/FIXME END - find alignment   */
+   /*************************************/
+
+   /* Opaque handles to currently running window.
+    * Used by e.g. input drivers which bind to a window.
+    * Drivers are responsible for setting these if an input driver
+    * could potentially make use of this. */
+   uintptr_t video_driver_display_userdata;
+   uintptr_t video_driver_display;
+   uintptr_t video_driver_window;
+
+   size_t runloop_msg_queue_size;
+   size_t recording_gpu_width;
+   size_t recording_gpu_height;
+
+   size_t frame_cache_pitch;
+
+   size_t audio_driver_chunk_size;
+   size_t audio_driver_chunk_nonblock_size;
+   size_t audio_driver_chunk_block_size;
+
+#ifdef HAVE_REWIND
+   size_t audio_driver_rewind_ptr;
+   size_t audio_driver_rewind_size;
+#endif
+   size_t audio_driver_buffer_size;
+   size_t audio_driver_data_ptr;
+
+#ifdef HAVE_RUNAHEAD
+   size_t runahead_save_state_size;
+#endif
+
    int osk_ptr;
+#if defined(HAVE_COMMAND)
+#ifdef HAVE_NETWORK_CMD
+   int lastcmd_net_fd;
+#endif
+#endif
+
+#ifdef HAVE_TRANSLATE
+   int ai_service_auto;
+#endif
+
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   int port_map[MAX_USERS];
+#endif
+#endif
+
+#if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
+   int ai_gamepad_state[MAX_USERS];
+#endif
+#ifdef HAVE_NETWORKING
+   int reannounce;
+#endif
+
+   unsigned runloop_pending_windowed_scale;
+   unsigned runloop_max_frames;
+   unsigned fastforward_after_frames;
+
+#ifdef HAVE_MENU
+   unsigned menu_input_dialog_keyboard_type;
+   unsigned menu_input_dialog_keyboard_idx;
+#endif
+
+   unsigned recording_width;
+   unsigned recording_height;
+
+#ifdef HAVE_VIDEO_FILTER
+   unsigned video_driver_state_scale;
+   unsigned video_driver_state_out_bpp;
+#endif
+   unsigned frame_cache_width;
+   unsigned frame_cache_height;
+   unsigned video_driver_width;
+   unsigned video_driver_height;
+   unsigned osk_last_codepoint;
+   unsigned osk_last_codepoint_len;
+   unsigned input_driver_flushing_input;
+   unsigned input_driver_max_users;
+   unsigned input_hotkey_block_counter;
+#ifdef HAVE_ACCESSIBILITY
+   unsigned gamepad_input_override;
+#endif
+#ifdef HAVE_NETWORKING
+   unsigned server_port_deferred;
+#endif
+
+   unsigned audio_driver_free_samples_buf[
+      AUDIO_BUFFER_FREE_SAMPLES_COUNT];
+   unsigned perf_ptr_rarch;
+   unsigned perf_ptr_libretro;
+
+   float video_driver_core_hz;
+   float video_driver_aspect_ratio;
+
+#ifdef HAVE_AUDIOMIXER
+   float audio_driver_mixer_volume_gain;
+#endif
+
+   float audio_driver_rate_control_delta;
+   float audio_driver_input;
+   float audio_driver_volume_gain;
+
+   float input_driver_axis_threshold;
+
+   enum osk_type osk_idx;
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
    enum rotation initial_screen_orientation;
@@ -1941,6 +2331,50 @@ struct rarch_state
 #ifdef HAVE_OVERLAY
    enum overlay_visibility *overlay_visibility;
 #endif
+
+#ifdef HAVE_MENU
+   unsigned char menu_keyboard_key_state[RETROK_LAST];
+#endif
+
+   char cached_video_driver[32];
+   char video_driver_title_buf[64];
+   char video_driver_gpu_device_string[128];
+   char video_driver_gpu_api_version_string[128];
+   char error_string[255];
+#ifdef HAVE_MENU
+   char menu_input_dialog_keyboard_label_setting[256];
+   char menu_input_dialog_keyboard_label[256];
+#endif
+   char video_driver_window_title[512];
+#ifdef HAVE_NETWORKING
+   char server_address_deferred[512];
+#endif
+   char current_library_name[256];
+   char current_library_version[256];
+   char current_valid_extensions[256];
+   char launch_arguments[4096];
+   char path_main_basename[8192];
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   char cli_shader[PATH_MAX_LENGTH];
+   char runtime_shader_preset[PATH_MAX_LENGTH];
+#endif
+#ifdef HAVE_SCREENSHOTS
+   char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH];
+#endif
+   char runtime_content_path[PATH_MAX_LENGTH];
+   char runtime_core_path[PATH_MAX_LENGTH];
+   char subsystem_path[PATH_MAX_LENGTH];
+   char path_default_shader_preset[PATH_MAX_LENGTH];
+   char path_content[PATH_MAX_LENGTH];
+   char path_libretro[PATH_MAX_LENGTH];
+   char path_config_file[PATH_MAX_LENGTH];
+   char path_config_append_file[PATH_MAX_LENGTH];
+   char path_core_options_file[PATH_MAX_LENGTH];
+   char dir_system[PATH_MAX_LENGTH];
+   char dir_savefile[PATH_MAX_LENGTH];
+   char current_savefile_dir[PATH_MAX_LENGTH];
+   char current_savestate_dir[PATH_MAX_LENGTH];
+   char dir_savestate[PATH_MAX_LENGTH];
 
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active;
@@ -2127,453 +2561,6 @@ struct rarch_state
    bool audio_driver_mixer_mute_enable;
    bool audio_mixer_active;
 #endif
-   bool *load_no_content_hook;
-
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-   int lastcmd_net_fd;
-#endif
-#endif
-
-#ifdef HAVE_TRANSLATE
-   int ai_service_auto;
-#endif
-
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   int port_map[MAX_USERS];
-#endif
-#endif
-
-#if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
-   int ai_gamepad_state[MAX_USERS];
-#endif
-#ifdef HAVE_NETWORKING
-   int reannounce;
-#endif
-
-   uint8_t *video_driver_record_gpu_buffer;
-   uint8_t *midi_drv_input_buffer;
-   uint8_t *midi_drv_output_buffer;
-
-   size_t runloop_msg_queue_size;
-   size_t recording_gpu_width;
-   size_t recording_gpu_height;
-
-   size_t frame_cache_pitch;
-
-   size_t audio_driver_chunk_size;
-   size_t audio_driver_chunk_nonblock_size;
-   size_t audio_driver_chunk_block_size;
-
-#ifdef HAVE_REWIND
-   size_t audio_driver_rewind_ptr;
-   size_t audio_driver_rewind_size;
-#endif
-   size_t audio_driver_buffer_size;
-   size_t audio_driver_data_ptr;
-
-#ifdef HAVE_RUNAHEAD
-   size_t runahead_save_state_size;
-#endif
-
-   unsigned runloop_pending_windowed_scale;
-   unsigned runloop_max_frames;
-   unsigned fastforward_after_frames;
-
-#ifdef HAVE_MENU
-   unsigned menu_input_dialog_keyboard_type;
-   unsigned menu_input_dialog_keyboard_idx;
-#endif
-
-   unsigned recording_width;
-   unsigned recording_height;
-
-#ifdef HAVE_VIDEO_FILTER
-   unsigned video_driver_state_scale;
-   unsigned video_driver_state_out_bpp;
-#endif
-   unsigned frame_cache_width;
-   unsigned frame_cache_height;
-   unsigned video_driver_width;
-   unsigned video_driver_height;
-   unsigned osk_last_codepoint;
-   unsigned osk_last_codepoint_len;
-   unsigned input_driver_flushing_input;
-   unsigned input_driver_max_users;
-   unsigned input_hotkey_block_counter;
-#ifdef HAVE_ACCESSIBILITY
-   unsigned gamepad_input_override;
-#endif
-#ifdef HAVE_NETWORKING
-   unsigned server_port_deferred;
-#endif
-
-#ifdef HAVE_MENU
-   unsigned char menu_keyboard_key_state[RETROK_LAST];
-#endif
-   unsigned audio_driver_free_samples_buf[
-      AUDIO_BUFFER_FREE_SAMPLES_COUNT];
-   unsigned perf_ptr_rarch;
-   unsigned perf_ptr_libretro;
-
-   /* Opaque handles to currently running window.
-    * Used by e.g. input drivers which bind to a window.
-    * Drivers are responsible for setting these if an input driver
-    * could potentially make use of this. */
-   uintptr_t video_driver_display_userdata;
-   uintptr_t video_driver_display;
-   uintptr_t video_driver_window;
-
-   float video_driver_core_hz;
-   float video_driver_aspect_ratio;
-
-#ifdef HAVE_AUDIOMIXER
-   float audio_driver_mixer_volume_gain;
-#endif
-
-   float audio_driver_rate_control_delta;
-   float audio_driver_input;
-   float audio_driver_volume_gain;
-
-   float input_driver_axis_threshold;
-
-   float *audio_driver_input_data;
-   float *audio_driver_output_samples_buf;
-
-   retro_time_t frame_limit_minimum_time;
-   retro_time_t frame_limit_last_time;
-   retro_time_t libretro_core_runtime_last;
-   retro_time_t libretro_core_runtime_usec;
-   retro_time_t video_driver_frame_time_samples[
-      MEASURE_FRAME_TIME_SAMPLES_COUNT];
-
-   retro_usec_t runloop_frame_time_last;
-
-   uint64_t audio_driver_free_samples_count;
-
-#ifdef HAVE_RUNAHEAD
-   uint64_t runahead_last_frame_count;
-#endif
-
-   uint64_t video_driver_frame_time_count;
-   uint64_t video_driver_frame_count;
-
-   double audio_source_ratio_original;
-   double audio_source_ratio_current;
-
-   char cached_video_driver[32];
-   char video_driver_title_buf[64];
-   char video_driver_gpu_device_string[128];
-   char video_driver_gpu_api_version_string[128];
-   char error_string[255];
-#ifdef HAVE_MENU
-   char menu_input_dialog_keyboard_label_setting[256];
-   char menu_input_dialog_keyboard_label[256];
-#endif
-   char video_driver_window_title[512];
-#ifdef HAVE_NETWORKING
-   char server_address_deferred[512];
-#endif
-   char current_library_name[256];
-   char current_library_version[256];
-   char current_valid_extensions[256];
-   char launch_arguments[4096];
-   char path_main_basename[8192];
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   char cli_shader[PATH_MAX_LENGTH];
-   char runtime_shader_preset[PATH_MAX_LENGTH];
-#endif
-#ifdef HAVE_SCREENSHOTS
-   char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH];
-#endif
-   char runtime_content_path[PATH_MAX_LENGTH];
-   char runtime_core_path[PATH_MAX_LENGTH];
-   char subsystem_path[PATH_MAX_LENGTH];
-   char path_default_shader_preset[PATH_MAX_LENGTH];
-   char path_content[PATH_MAX_LENGTH];
-   char path_libretro[PATH_MAX_LENGTH];
-   char path_config_file[PATH_MAX_LENGTH];
-   char path_config_append_file[PATH_MAX_LENGTH];
-   char path_core_options_file[PATH_MAX_LENGTH];
-   char dir_system[PATH_MAX_LENGTH];
-   char dir_savefile[PATH_MAX_LENGTH];
-   char current_savefile_dir[PATH_MAX_LENGTH];
-   char current_savestate_dir[PATH_MAX_LENGTH];
-   char dir_savestate[PATH_MAX_LENGTH];
-
-   input_device_info_t input_device_info[MAX_INPUT_DEVICES];
-
-   char *osk_grid[45];
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   char *secondary_library_path;
-#endif
-#endif
-
-   struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
-   struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
-
-   const struct retro_keybind *libretro_input_binds[MAX_USERS];
-
-   core_info_state_t core_info_st;
-#ifdef HAVE_GFX_WIDGETS
-   dispgfx_widget_t dispwidget_st;
-#endif
-#ifdef HAVE_MENU
-   menu_dialog_t dialog_st;
-   struct menu_bind_state menu_input_binds;
-#endif
-   videocrt_switch_t crt_switch_st;
-
-   gfx_thumbnail_state_t gfx_thumb_state;
-
-   input_keyboard_press_t keyboard_press_cb;
-
-   turbo_buttons_t input_driver_turbo_btns;
-
-#ifdef HAVE_DYNAMIC
-   dylib_t lib_handle;
-#endif
-#ifdef HAVE_NETWORKING
-   struct netplay_room netplay_host_room;
-#endif
-
-#if defined(HAVE_RUNAHEAD)
-   retro_ctx_load_content_info_t *load_content_info;
-
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   dylib_t secondary_module;
-   struct retro_core_t secondary_core;
-   struct retro_callbacks secondary_callbacks;
-#endif
-#endif
-
-   struct rarch_dir_list dir_shader_list;
-
-#ifdef HAVE_MENU
-   menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
-   menu_input_t menu_input_state;
-#endif
-
-   struct retro_camera_callback camera_cb;
-
-   midi_event_t midi_drv_input_event;
-   midi_event_t midi_drv_output_event;
-
-   gfx_ctx_driver_t current_video_context;
-
-   struct retro_system_av_info video_driver_av_info;
-
-#ifdef HAVE_BSV_MOVIE
-   struct bsv_state bsv_movie_state;
-#endif
-
-   struct retro_hw_render_callback hw_render;
-
-   retro_input_state_t input_state_callback_original;
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   input_remote_state_t remote_st_ptr;
-#endif
-
-   /**
-    * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
-    * is in the middle of being rebuilt; in these cases we will save flag
-    * data and set this to true.
-    * When the context is reinit, it checks this, reads from
-    * deferred_flag_data and cleans it.
-    *
-    * TODO - Dirty hack, fix it better
-    */
-   gfx_ctx_flags_t deferred_flag_data;
-
-   retro_bits_t has_set_libretro_device;
-
-   rarch_system_info_t runloop_system;
-   struct retro_frame_time_callback runloop_frame_time;
-
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-   struct sockaddr_storage lastcmd_net_source;
-   socklen_t lastcmd_net_source_len;
-#endif
-#endif
-
-#ifdef HAVE_THREAD_STORAGE
-   sthread_tls_t rarch_tls;
-#endif
-
-#ifdef HAVE_AUDIOMIXER
-   struct audio_mixer_stream
-      audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
-#endif
-
-#ifdef HAVE_MENU
-   const char **menu_input_dialog_keyboard_buffer;
-#endif
-
-   struct retro_audio_callback audio_callback;
-   gfx_animation_t anim;
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   rarch_timer_t shader_delay_timer;
-#endif
-#ifdef HAVE_MENU
-   struct menu_state menu_driver_state;
-#endif
-#ifdef HAVE_DISCORD
-   discord_state_t            discord_st;
-#endif
-   gfx_display_t              dispgfx;
-
-   struct retro_callbacks     retro_ctx;
-   struct retro_core_t        current_core;
-   struct global              g_extern;
-   content_state_t            content_st;
-
-   jmp_buf error_sjlj_context;
-
-   struct retro_subsystem_rom_info
-      subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
-      [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
-
-   retro_keyboard_event_t runloop_key_event;
-   retro_keyboard_event_t runloop_frontend_key_event;
-   core_option_manager_t *runloop_core_options;
-   msg_queue_t *runloop_msg_queue;
-
-   struct string_list *subsystem_fullpaths;
-
-   const record_driver_t *recording_driver;
-   void *recording_data;
-
-#ifdef HAVE_THREADS
-   slock_t *runloop_msg_queue_lock;
-#endif
-
-   const camera_driver_t *camera_driver;
-   void *camera_data;
-
-   void *midi_drv_data;
-   struct string_list *midi_drv_inputs;
-   struct string_list *midi_drv_outputs;
-
-   const ui_companion_driver_t *ui_companion;
-   void *ui_companion_data;
-
-#ifdef HAVE_QT
-   void *ui_companion_qt_data;
-#endif
-
-   const location_driver_t *location_driver;
-   void *location_data;
-
-   const bluetooth_driver_t *bluetooth_driver;
-   void *bluetooth_data;
-
-   const wifi_driver_t *wifi_driver;
-   void *wifi_data;
-
-   void *current_display_server_data;
-
-#ifdef HAVE_BSV_MOVIE
-   bsv_movie_t     *bsv_movie_state_handle;
-#endif
-
-#ifdef HAVE_VIDEO_FILTER
-   rarch_softfilter_t *video_driver_state_filter;
-   void               *video_driver_state_buffer;
-#endif
-
-   const void *frame_cache_data;
-
-   void *video_driver_data;
-   video_driver_t *current_video;
-
-   /* Interface for "poking". */
-   const video_poke_interface_t *video_driver_poke;
-
-   /* Used for 15-bit -> 16-bit conversions that take place before
-    * being passed to video driver. */
-   video_pixel_scaler_t *video_driver_scaler_ptr;
-
-   const struct
-      retro_hw_render_context_negotiation_interface *
-      hw_render_context_negotiation;
-
-   video_driver_frame_t frame_bak;
-
-#ifdef HAVE_THREADS
-   slock_t *display_lock;
-   slock_t *context_lock;
-#endif
-
-   void *video_context_data;
-
-#ifdef HAVE_REWIND
-   int16_t *audio_driver_rewind_buf;
-#endif
-   int16_t *audio_driver_output_samples_conv_buf;
-
-#ifdef HAVE_DSP_FILTER
-   retro_dsp_filter_t *audio_driver_dsp;
-#endif
-   struct string_list *audio_driver_devices_list;
-   const retro_resampler_t *audio_driver_resampler;
-
-   void *audio_driver_resampler_data;
-   const audio_driver_t *current_audio;
-   void *audio_driver_context_audio_data;
-
-#ifdef HAVE_RUNAHEAD
-   my_list *runahead_save_state_list;
-   my_list *input_state_list;
-
-   function_t retro_reset_callback_original;
-   runahead_load_state_function
-      retro_unserialize_callback_original;
-
-   function_t original_retro_deinit;
-   function_t original_retro_unload;
-#endif
-
-#ifdef HAVE_OVERLAY
-   input_overlay_t *overlay_ptr;
-#endif
-
-   pad_connection_listener_t *pad_connection_listener;
-
-   input_keyboard_line_t *keyboard_line;
-
-   void *keyboard_press_data;
-
-#ifdef HAVE_COMMAND
-   command_t *input_driver_command;
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-   input_remote_t *input_driver_remote;
-#endif
-   input_mapper_t *input_driver_mapper;
-   input_driver_t *current_input;
-   void *current_input_data;
-
-#ifdef HAVE_HID
-   const void *hid_data;
-#endif
-   settings_t *configuration_settings;
-#ifdef HAVE_MENU
-   menu_handle_t *menu_driver_data;
-   void *menu_userdata;
-   const menu_ctx_driver_t *menu_driver_ctx;
-#endif
-#ifdef HAVE_NETWORKING
-   /* Used while Netplay is running */
-   netplay_t *netplay_data;
-#endif
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   struct video_shader *menu_driver_shader;
-#endif
-   frontend_ctx_driver_t *current_frontend_ctx;
 };
 
 static struct rarch_state         rarch_st;
