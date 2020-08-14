@@ -63,9 +63,9 @@
 struct nbio_mmap_win32_t
 {
    HANDLE file;
-   bool is_write;
-   size_t len;
    void* ptr;
+   size_t len;
+   bool is_write;
 };
 
 static void *nbio_mmap_win32_open(const char * filename, unsigned mode)

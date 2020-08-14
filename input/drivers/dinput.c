@@ -56,10 +56,10 @@ LPDIRECTINPUT8 g_dinput_ctx;
 
 struct pointer_status
 {
+   struct pointer_status *next;
    int pointer_id;
    int pointer_x;
    int pointer_y;
-   struct pointer_status *next;
 };
 
 struct dinput_input
@@ -68,7 +68,7 @@ struct dinput_input
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
-   uint8_t state[256];
+   struct pointer_status pointer_head;  /* dummy head for easier iteration */
 
    int window_pos_x;
    int window_pos_y;
@@ -76,9 +76,9 @@ struct dinput_input
    int mouse_rel_y;
    int mouse_x;
    int mouse_y;
+   uint8_t state[256];
    bool doubleclick_on_titlebar;
    bool mouse_l, mouse_r, mouse_m, mouse_b4, mouse_b5, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
-   struct pointer_status pointer_head;  /* dummy head for easier iteration */
 };
 
 void dinput_destroy_context(void)
@@ -783,25 +783,24 @@ static void dinput_add_pointer(struct dinput_input *di,
 {
    struct pointer_status *insert_pos = NULL;
 
-   new_pointer->next = NULL;
-   insert_pos = &di->pointer_head;
+   new_pointer->next                 = NULL;
+   insert_pos                        = &di->pointer_head;
 
    while (insert_pos->next)
-      insert_pos = insert_pos->next;
-   insert_pos->next = new_pointer;
+      insert_pos                     = insert_pos->next;
+   insert_pos->next                  = new_pointer;
 }
 
 static void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
 {
-   struct pointer_status *check_pos = &di->pointer_head;
+   struct pointer_status *check_pos  = &di->pointer_head;
 
    while (check_pos && check_pos->next)
    {
       if (check_pos->next->pointer_id == pointer_id)
       {
          struct pointer_status *to_delete = check_pos->next;
-
-         check_pos->next = check_pos->next->next;
+         check_pos->next                  = check_pos->next->next;
          free(to_delete);
       }
       check_pos = check_pos->next;

@@ -40,14 +40,12 @@
 
 struct nbio_linux_t
 {
-   int fd;
-   bool busy;
-
+   void* ptr;
    aio_context_t ctx;
    struct iocb cb;
-
-   void* ptr;
    size_t len;
+   int fd;
+   bool busy;
 };
 
 /* there's also a Unix AIO thingy, but it's not in glibc

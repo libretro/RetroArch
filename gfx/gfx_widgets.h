@@ -117,61 +117,67 @@ typedef struct disp_widget_msg
 {
    char *msg;
    char *msg_new;
-   float msg_transition_animation;
+   retro_task_t *task_ptr;
+   /* Used to detect title change */
+   char *task_title_ptr;
+
+   uint32_t task_ident;
    unsigned msg_len;
    unsigned duration;
-
    unsigned text_height;
+   unsigned width;
 
+   float msg_transition_animation;
    float offset_y;
    float alpha;
+   float unfold;
+   float hourglass_rotation;
+   gfx_timer_t hourglass_timer; /* float alignment */
+   gfx_timer_t expiration_timer; /* float alignment */
 
+   int8_t task_progress;
+   /* How many tasks have used this notification? */
+   uint8_t task_count;
+
+   bool task_finished;
+   bool task_error;
+   bool task_cancelled;
+   bool expiration_timer_started;
    /* Is it currently doing the fade out animation ? */
    bool dying;
    /* Has the timer expired ? if so, should be set to dying */
    bool expired;
-   unsigned width;
-
-   gfx_timer_t expiration_timer;
-   bool expiration_timer_started;
-
-   retro_task_t *task_ptr;
-   /* Used to detect title change */
-   char *task_title_ptr;
-   /* How many tasks have used this notification? */
-   uint8_t task_count;
-
-   int8_t task_progress;
-   bool task_finished;
-   bool task_error;
-   bool task_cancelled;
-   uint32_t task_ident;
-
    /* Unfold animation */
    bool unfolded;
    bool unfolding;
-   float unfold;
-
-   float hourglass_rotation;
-   gfx_timer_t hourglass_timer;
 } disp_widget_msg_t;
 
 typedef struct dispgfx_widget
 {
-   /* There can only be one message animation at a time to 
-    * avoid confusing users */
-   bool widgets_moving;
-   bool widgets_inited;
-   bool msg_queue_has_icons;
+   uint64_t gfx_widgets_frame_count;
+
+#ifdef HAVE_THREADS
+   slock_t* current_msgs_lock;
+#endif
+   fifo_buffer_t *msg_queue;
+   disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
+
+#ifdef HAVE_TRANSLATE
+   uintptr_t ai_service_overlay_texture;
+#endif
+   uintptr_t msg_queue_icon;
+   uintptr_t msg_queue_icon_outline;
+   uintptr_t msg_queue_icon_rect;
+   uintptr_t gfx_widgets_icons_textures[
+   MENU_WIDGETS_ICON_LAST];
+   uintptr_t gfx_widgets_generic_tag;
+
+   size_t current_msgs_size;
 
 #ifdef HAVE_TRANSLATE
    int ai_service_overlay_state;
 #endif
-   float last_scale_factor;
-#ifdef HAVE_TRANSLATE
-   unsigned ai_service_overlay_width;
-   unsigned ai_service_overlay_height;
-#endif
+
    unsigned last_video_width;
    unsigned last_video_height;
    unsigned msg_queue_kill;
@@ -202,26 +208,21 @@ typedef struct dispgfx_widget
    unsigned msg_queue_task_hourglass_x;
    unsigned divider_width_1px;
 
-   uint64_t gfx_widgets_frame_count;
-
+   float last_scale_factor;
 #ifdef HAVE_TRANSLATE
-   uintptr_t ai_service_overlay_texture;
+   unsigned ai_service_overlay_width;
+   unsigned ai_service_overlay_height;
 #endif
-   uintptr_t msg_queue_icon;
-   uintptr_t msg_queue_icon_outline;
-   uintptr_t msg_queue_icon_rect;
-   uintptr_t gfx_widgets_icons_textures[
-   MENU_WIDGETS_ICON_LAST];
+
+   gfx_widget_fonts_t gfx_widget_fonts;
 
    char gfx_widgets_status_text[255];
-   uintptr_t gfx_widgets_generic_tag;
-   gfx_widget_fonts_t gfx_widget_fonts;
-   fifo_buffer_t *msg_queue;
-   disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
-   size_t current_msgs_size;
-#ifdef HAVE_THREADS
-   slock_t* current_msgs_lock;
-#endif
+
+   /* There can only be one message animation at a time to 
+    * avoid confusing users */
+   bool widgets_moving;
+   bool widgets_inited;
+   bool msg_queue_has_icons;
 } dispgfx_widget_t;
 
 
