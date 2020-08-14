@@ -66,10 +66,10 @@ typedef struct ex_arena
 
 typedef struct ex_hashmap32
 {
+   uintptr_t *vals;
    uint32_t len;
    uint32_t cap;
    uint32_t *keys;
-   uintptr_t *vals;
 } ex_hashmap32;
 
 typedef struct
@@ -90,18 +90,18 @@ typedef struct
 
 typedef struct 
 {
-   ex_arena arena;
+   ex_arena arena; /* ptr alignment */
    explore_string_t **by[EXPLORE_CAT_COUNT];
-   bool has_unknown[EXPLORE_CAT_COUNT];
-
-   explore_entry_t* entries;
+   explore_entry_t *entries;
    playlist_t **playlists;
-   uintptr_t* icons;
-   const char* label_explore_item_str;
-   char title[1024];
-   char find_string[1024];
+   uintptr_t *icons;
+   const char *label_explore_item_str;
    unsigned top_depth;
    unsigned show_icons;
+
+   char title[1024];
+   char find_string[1024];
+   bool has_unknown[EXPLORE_CAT_COUNT];
 } explore_state_t;
 
 static const struct

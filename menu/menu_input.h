@@ -140,9 +140,9 @@ enum menu_input_pointer_gesture
  * common to mouse + touchscreen hardware */
 typedef struct menu_input_pointer_hw_state
 {
-   bool active;
    int16_t x;
    int16_t y;
+   bool active;
    bool select_pressed;
    bool cancel_pressed;
    bool up_pressed;
@@ -153,17 +153,17 @@ typedef struct menu_input_pointer_hw_state
 
 typedef struct menu_input_pointer
 {
-   enum menu_pointer_type type;
-   bool active;
-   bool pressed;
-   bool dragged;
    retro_time_t press_duration;
+   float y_accel;
+   enum menu_pointer_type type;
    enum menu_input_pointer_press_direction press_direction;
    int16_t x;
    int16_t y;
    int16_t dx;
    int16_t dy;
-   float y_accel;
+   bool active;
+   bool pressed;
+   bool dragged;
 } menu_input_pointer_t;
 
 typedef struct menu_input

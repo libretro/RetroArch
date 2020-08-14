@@ -67,13 +67,12 @@ typedef unsigned resampler_simd_mask_t;
 
 struct resampler_data
 {
+   double ratio;
    const float *data_in;
    float *data_out;
 
    size_t input_frames;
    size_t output_frames;
-
-   double ratio;
 };
 
 /* Returns true if config key was found. Otherwise,

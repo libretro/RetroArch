@@ -54,11 +54,6 @@ typedef struct
 
 typedef struct
 {
-   bool supports_no_game;
-   bool database_match_archive_member;
-   bool is_experimental;
-   bool is_locked;
-   size_t firmware_count;
    char *path;
    void *config_data;
    char *display_name;
@@ -85,25 +80,30 @@ typedef struct
    struct string_list *licenses_list;
    struct string_list *required_hw_api_list;
    core_info_firmware_t *firmware;
-   core_file_id_t core_file_id;
+   core_file_id_t core_file_id; /* ptr alignment */
    void *userdata;
+   size_t firmware_count;
+   bool supports_no_game;
+   bool database_match_archive_member;
+   bool is_experimental;
+   bool is_locked;
 } core_info_t;
 
 /* A subset of core_info parameters required for
  * core updater tasks */
 typedef struct
 {
-   bool is_experimental;
    char *display_name;
    char *description;
    char *licenses;
+   bool is_experimental;
 } core_updater_info_t;
 
 typedef struct
 {
    core_info_t *list;
-   size_t count;
    char *all_ext;
+   size_t count;
 } core_info_list_t;
 
 typedef struct core_info_ctx_firmware

@@ -394,12 +394,12 @@ typedef struct menu_ctx_pointer
 {
    menu_file_list_cbs_t *cbs;
    menu_entry_t *entry;
-   enum menu_input_pointer_gesture gesture;
    unsigned x;
    unsigned y;
    unsigned ptr;
    unsigned action;
    int retcode;
+   enum menu_input_pointer_gesture gesture;
 } menu_ctx_pointer_t;
 
 typedef struct menu_ctx_bind
@@ -407,9 +407,9 @@ typedef struct menu_ctx_bind
    menu_file_list_cbs_t *cbs;
    const char *path;
    const char *label;
-   unsigned type;
    size_t idx;
    int retcode;
+   unsigned type;
 } menu_ctx_bind_t;
 
 /**

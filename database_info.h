@@ -72,26 +72,14 @@ enum database_query_type
 
 typedef struct
 {
+   struct string_list *list;
+   size_t list_ptr;
    enum database_status status;
    enum database_type type;
-   size_t list_ptr;
-   struct string_list *list;
 } database_info_handle_t;
 
 typedef struct
 {
-   int analog_supported;
-   int rumble_supported;
-   int coop_supported;
-   uint32_t crc32;
-   unsigned size;
-   unsigned famitsu_magazine_rating;
-   unsigned edge_magazine_rating;
-   unsigned edge_magazine_issue;
-   unsigned max_users;
-   unsigned releasemonth;
-   unsigned releaseyear;
-   unsigned tgdb_rating;
    char *name;
    char *rom_name;
    char *serial;
@@ -111,12 +99,24 @@ typedef struct
    char *sha1;
    char *md5;
    void *userdata;
+   int analog_supported;
+   int rumble_supported;
+   int coop_supported;
+   uint32_t crc32;
+   unsigned size;
+   unsigned famitsu_magazine_rating;
+   unsigned edge_magazine_rating;
+   unsigned edge_magazine_issue;
+   unsigned max_users;
+   unsigned releasemonth;
+   unsigned releaseyear;
+   unsigned tgdb_rating;
 } database_info_t;
 
 typedef struct
 {
-   size_t count;
    database_info_t *list;
+   size_t count;
 } database_info_list_t;
 
 database_info_list_t *database_info_list_new(const char *rdb_path,
