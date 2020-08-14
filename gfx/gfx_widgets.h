@@ -90,13 +90,13 @@ enum notification_show_screenshot_flash
 typedef struct
 {
    font_data_t *font;
-   video_font_raster_block_t raster_block;
+   video_font_raster_block_t raster_block; /* ptr alignment */
+   size_t usage_count;
    unsigned glyph_width;
    float line_height;
    float line_ascender;
    float line_descender;
    float line_centre_offset;
-   size_t usage_count;
 } gfx_widget_font_data_t;
 
 /* Font data */
@@ -161,6 +161,7 @@ typedef struct dispgfx_widget
 #endif
    fifo_buffer_t *msg_queue;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
+   gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 
 #ifdef HAVE_TRANSLATE
    uintptr_t ai_service_overlay_texture;
@@ -213,8 +214,6 @@ typedef struct dispgfx_widget
    unsigned ai_service_overlay_width;
    unsigned ai_service_overlay_height;
 #endif
-
-   gfx_widget_fonts_t gfx_widget_fonts;
 
    char gfx_widgets_status_text[255];
 
