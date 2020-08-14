@@ -99,7 +99,6 @@ struct playlist_entry
    char *runtime_str;
    char *last_played_str;
    struct string_list *subsystem_roms;
-   enum playlist_runtime_status runtime_status;
    unsigned runtime_hours;
    unsigned runtime_minutes;
    unsigned runtime_seconds;
@@ -112,19 +111,20 @@ struct playlist_entry
    unsigned last_played_hour;
    unsigned last_played_minute;
    unsigned last_played_second;
+   enum playlist_runtime_status runtime_status;
 };
 
 /* Holds all configuration parameters required
  * when initialising/saving playlists */
 typedef struct
 {
-   char path[PATH_MAX_LENGTH];
-   char base_content_directory[PATH_MAX_LENGTH];
    size_t capacity;
    bool old_format;
    bool compress;
    bool fuzzy_archive_match;
    bool autofix_paths;   
+   char path[PATH_MAX_LENGTH];
+   char base_content_directory[PATH_MAX_LENGTH];
 } playlist_config_t;
 
 /* Convenience function: copies specified playlist

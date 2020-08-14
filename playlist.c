@@ -54,22 +54,23 @@
 
 struct content_playlist
 {
-   bool modified;
-   bool old_format;
-   bool compressed;
-   bool cached_external;
+   char *default_core_path;
+   char *default_core_name;
+   char *base_content_directory;
+
+   struct playlist_entry *entries;
+
+   playlist_config_t config;
 
    enum playlist_label_display_mode label_display_mode;
    enum playlist_thumbnail_mode right_thumbnail_mode;
    enum playlist_thumbnail_mode left_thumbnail_mode;
    enum playlist_sort_mode sort_mode;
 
-   char *default_core_path;
-   char *default_core_name;
-   char *base_content_directory;
-
-   struct playlist_entry *entries;
-   playlist_config_t config;
+   bool modified;
+   bool old_format;
+   bool compressed;
+   bool cached_external;
 };
 
 typedef struct
