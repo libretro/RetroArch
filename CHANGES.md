@@ -11,6 +11,7 @@ Having remaps for many different cores makes finding the active core files cumbe
 - RBUF/CORE UPDATER: Replace static entries array with dynamic array via RBUF library
 - RBUF/M3U: Replace static entries array with dynamic array via RBUF library
 - SWITCH: Fix input bind icons being off by one line
+- WIIU: Fix touchscreen mouse emulation
 
 # 1.9.0
 - 3DS: Fix sound crackling when paused
