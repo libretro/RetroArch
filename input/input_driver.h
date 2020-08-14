@@ -156,12 +156,12 @@ typedef struct
    unsigned name_index;
    uint16_t vid;
    uint16_t pid;
-   bool autoconfigured;
    char joypad_driver[32];
    char name[256];
    char display_name[256];
    char config_path[PATH_MAX_LENGTH];
    char config_name[PATH_MAX_LENGTH];
+   bool autoconfigured;
 } input_device_info_t;
 
 struct input_driver

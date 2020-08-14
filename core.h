@@ -57,33 +57,26 @@ typedef struct rarch_memory_map
 
 typedef struct rarch_system_info
 {
-   struct retro_system_info info;
-
-   unsigned rotation;
-   unsigned performance_level;
-   bool load_no_content;
-
+   struct retro_location_callback location_cb; /* ptr alignment */
+   disk_control_interface_t disk_control; /* ptr alignment */
+   struct retro_system_info info; /* ptr alignment */
+   rarch_memory_map_t mmaps;      /* ptr alignment */
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
-   char valid_extensions[255];
-
-   bool supports_vfs;
-
-   disk_control_interface_t disk_control;
-   struct retro_location_callback location_cb;
-
    struct
    {
       struct retro_subsystem_info *data;
       unsigned size;
    } subsystem;
-
    struct
    {
       struct retro_controller_info *data;
       unsigned size;
    } ports;
-
-   rarch_memory_map_t mmaps;
+   unsigned rotation;
+   unsigned performance_level;
+   char valid_extensions[255];
+   bool load_no_content;
+   bool supports_vfs;
 } rarch_system_info_t;
 
 typedef struct retro_ctx_input_state_info

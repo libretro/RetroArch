@@ -1598,17 +1598,14 @@ struct bsv_state
 struct bsv_movie
 {
    intfstream_t *file;
-
+   uint8_t *state;
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
    size_t *frame_pos;
    size_t frame_mask;
    size_t frame_ptr;
-
    size_t min_file_pos;
-
    size_t state_size;
-   uint8_t *state;
 
    bool playback;
    bool first_rewind;
@@ -1925,6 +1922,7 @@ struct rarch_state
 {
    double audio_source_ratio_original;
    double audio_source_ratio_current;
+   struct retro_system_av_info video_driver_av_info; /* double alignment */
 
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
@@ -1935,6 +1933,13 @@ struct rarch_state
 
    retro_usec_t runloop_frame_time_last;
 
+#ifdef HAVE_GFX_WIDGETS
+   dispgfx_widget_t dispwidget_st; /* uint64_t alignment */
+#endif
+#ifdef HAVE_MENU
+   struct menu_bind_state menu_input_binds; /* uint64_t alignment */
+#endif
+
    uint64_t audio_driver_free_samples_count;
 
 #ifdef HAVE_RUNAHEAD
@@ -1943,6 +1948,8 @@ struct rarch_state
 
    uint64_t video_driver_frame_time_count;
    uint64_t video_driver_frame_count;
+   struct retro_camera_callback camera_cb; /* uint64_t alignment */
+   gfx_animation_t anim; /* uint64_t alignment */
 
    uint8_t *video_driver_record_gpu_buffer;
    uint8_t *midi_drv_input_buffer;
@@ -1997,10 +2004,6 @@ struct rarch_state
    void *wifi_data;
 
    void *current_display_server_data;
-
-#ifdef HAVE_BSV_MOVIE
-   bsv_movie_t     *bsv_movie_state_handle;
-#endif
 
 #ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *video_driver_state_filter;
@@ -2086,21 +2089,18 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
+   core_info_state_t core_info_st;     /* ptr alignment */
+   rarch_system_info_t runloop_system; /* ptr alignment */
+   struct retro_hw_render_callback hw_render; /* ptr alignment */
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_t     *bsv_movie_state_handle; /* ptr alignment */
+#endif
+
    /*************************************/
    /* TODO/FIXME BEGIN - find alignment */
-   input_device_info_t input_device_info[MAX_INPUT_DEVICES];
-   core_info_state_t core_info_st;
-#ifdef HAVE_GFX_WIDGETS
-   dispgfx_widget_t dispwidget_st;
-#endif
-#ifdef HAVE_MENU
-   menu_dialog_t dialog_st;
-   struct menu_bind_state menu_input_binds;
-#endif
    videocrt_switch_t crt_switch_st;
    gfx_thumbnail_state_t gfx_thumb_state;
    input_keyboard_press_t keyboard_press_cb;
-   turbo_buttons_t input_driver_turbo_btns;
 #ifdef HAVE_DYNAMIC
    dylib_t lib_handle;
 #endif
@@ -2119,19 +2119,12 @@ struct rarch_state
    menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
    menu_input_t menu_input_state;
 #endif
-   struct retro_camera_callback camera_cb;
 
    midi_event_t midi_drv_input_event;
    midi_event_t midi_drv_output_event;
 
    gfx_ctx_driver_t current_video_context;
 
-   struct retro_system_av_info video_driver_av_info;
-
-#ifdef HAVE_BSV_MOVIE
-   struct bsv_state bsv_movie_state;
-#endif
-   struct retro_hw_render_callback hw_render;
 
    retro_input_state_t input_state_callback_original;
 
@@ -2152,14 +2145,12 @@ struct rarch_state
 
    retro_bits_t has_set_libretro_device;
 
-   rarch_system_info_t runloop_system;
    struct retro_frame_time_callback runloop_frame_time;
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream
       audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
 #endif
    struct retro_audio_callback audio_callback;
-   gfx_animation_t anim;
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;
 #endif
@@ -2175,9 +2166,6 @@ struct rarch_state
    struct retro_core_t        current_core;
    struct global              g_extern;
    content_state_t            content_st;
-
-
-
 #if defined(HAVE_COMMAND)
 #ifdef HAVE_NETWORK_CMD
    struct sockaddr_storage lastcmd_net_source;
@@ -2240,6 +2228,7 @@ struct rarch_state
    size_t runahead_save_state_size;
 #endif
 
+   turbo_buttons_t input_driver_turbo_btns; /* int32_t alignment */
    int osk_ptr;
 #if defined(HAVE_COMMAND)
 #ifdef HAVE_NETWORK_CMD
@@ -2264,6 +2253,10 @@ struct rarch_state
    int reannounce;
 #endif
 
+   input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
+#ifdef HAVE_MENU
+   menu_dialog_t dialog_st; /* unsigned alignment */
+#endif
    unsigned runloop_pending_windowed_scale;
    unsigned runloop_max_frames;
    unsigned fastforward_after_frames;
@@ -2336,6 +2329,9 @@ struct rarch_state
    unsigned char menu_keyboard_key_state[RETROK_LAST];
 #endif
 
+#ifdef HAVE_BSV_MOVIE
+   struct bsv_state bsv_movie_state; /* char alignment */
+#endif
    char cached_video_driver[32];
    char video_driver_title_buf[64];
    char video_driver_gpu_device_string[128];

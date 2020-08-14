@@ -36,10 +36,10 @@ RETRO_BEGIN_DECLS
  * control interface */
 typedef struct
 {
-   bool record_enabled;
-   disk_index_file_t index_record;
+   struct retro_disk_control_ext_callback cb; /* ptr alignment */
+   disk_index_file_t index_record;            /* unsigned alignment */
    unsigned initial_num_images;
-   struct retro_disk_control_ext_callback cb;
+   bool record_enabled;
 } disk_control_interface_t;
 
 /*****************/
