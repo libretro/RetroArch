@@ -306,6 +306,8 @@ typedef struct menu_ctx_driver
 
 typedef struct
 {
+   uint64_t state;
+
    /* Holds a list of search terms that may be
     * used to filter the currently displayed
     * menu list */
@@ -315,6 +317,7 @@ typedef struct
    void *userdata;
    char *core_buf;
 
+   size_t                     core_len;
    /* This is used for storing intermediary variables
     * that get used later on during menu actions -
     * for instance, selecting a shader pass for a shader
@@ -324,8 +327,6 @@ typedef struct
       unsigned                unsigned_var;
    } scratchpad;
    unsigned rpl_entry_selection_ptr;
-   size_t                     core_len;
-   uint64_t state;
 
    char menu_state_msg[8192];
    /* Scratchpad variables. These are used for instance
