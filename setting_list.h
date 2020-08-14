@@ -193,8 +193,6 @@ struct rarch_setting
    uint32_t             size;
    unsigned             bind_type;
    float                step;
-   int16_t              offset_by;
-   uint8_t              index;
 
    enum event_command   cmd_trigger_idx;
    enum ui_setting_type ui_type;
@@ -202,6 +200,9 @@ struct rarch_setting
    enum msg_hash_enums  enum_idx;
    enum msg_hash_enums  enum_value_idx;
    enum setting_type    type;
+
+   int16_t              offset_by;
+   uint8_t              index;
 
    bool                 cmd_trigger_event_triggered;
    bool                 dont_use_enum_idx_representation;
