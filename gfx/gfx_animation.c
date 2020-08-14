@@ -41,11 +41,7 @@
 #define TICKER_PIXEL_PERIOD (16.666666666666668f)
 
 /* By default, this should be a NOOP */
-static void gfx_animation_update_time_default(
-      float *ticker_pixel_increment,
-      unsigned video_width, unsigned video_height) { }
-
-static update_time_cb update_time_callback = gfx_animation_update_time_default;
+static update_time_cb update_time_callback = NULL;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
@@ -1153,7 +1149,7 @@ void gfx_animation_set_update_time_cb(update_time_cb cb)
 
 void gfx_animation_unset_update_time_cb(void)
 {
-   update_time_callback = gfx_animation_update_time_default;
+   update_time_callback = NULL;
 }
 
 static void gfx_animation_update_time(
@@ -1241,15 +1237,16 @@ static void gfx_animation_update_time(
        *   to handle video scaling as it pleases - a callback
        *   function set by the menu driver is thus used to
        *   perform menu-specific scaling adjustments */
-      update_time_callback(&ticker_pixel_increment,
-            video_width, video_height);
+      if (update_time_callback)
+         update_time_callback(&ticker_pixel_increment,
+               video_width, video_height);
 
       /* > Update accumulators */
-      ticker_pixel_accumulator += ticker_pixel_increment;
-      ticker_pixel_accumulator_uint = (unsigned)ticker_pixel_accumulator;
+      ticker_pixel_accumulator           += ticker_pixel_increment;
+      ticker_pixel_accumulator_uint       = (unsigned)ticker_pixel_accumulator;
 
-      ticker_pixel_line_accumulator += ticker_pixel_line_increment;
-      ticker_pixel_line_accumulator_uint = (unsigned)ticker_pixel_line_accumulator;
+      ticker_pixel_line_accumulator      += ticker_pixel_line_increment;
+      ticker_pixel_line_accumulator_uint  = (unsigned)ticker_pixel_line_accumulator;
 
       /* > Check whether we've accumulated enough
        *   for an idx update */
