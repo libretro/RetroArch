@@ -529,8 +529,8 @@ typedef struct
 
 typedef struct
 {
+   video_viewport_t viewport; /* int alignment */
    unsigned aspect_ratio_idx;
-   video_viewport_t viewport;
 } rgui_video_settings_t;
 
 /* A 'particle' is just 4 float variables that can
@@ -566,6 +566,41 @@ enum rgui_entry_value_type
 
 typedef struct
 {
+   retro_time_t thumbnail_load_trigger_time; /* uint64_t */
+
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
+
+   rgui_video_settings_t menu_video_settings;      /* int alignment */
+   rgui_video_settings_t content_video_settings;   /* int alignment */
+
+   unsigned mini_thumbnail_max_width;
+   unsigned mini_thumbnail_max_height;
+   unsigned last_width;
+   unsigned last_height;
+   unsigned window_width;
+   unsigned window_height;
+   unsigned particle_effect;
+   unsigned color_theme;
+   unsigned menu_aspect_ratio;
+   unsigned menu_aspect_ratio_lock;
+
+   uint32_t thumbnail_queue_size;
+   uint32_t left_thumbnail_queue_size;
+
+   rgui_particle_t particles[RGUI_NUM_PARTICLES]; /* float alignment */
+
+   int16_t scroll_y;
+   rgui_colors_t colors;   /* int16_t alignment */
+
+   struct scaler_ctx image_scaler;
+   menu_input_pointer_t pointer;
+
+   char msgbox[1024];
+   char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
+   char menu_title[255]; /* Must be a fixed length array... */
+   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
+
+   bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
    bool bg_modified;
    bool force_redraw;
    bool mouse_show;
@@ -585,36 +620,6 @@ typedef struct
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_supported;
 #endif
-
-   int16_t scroll_y;
-
-   unsigned mini_thumbnail_max_width;
-   unsigned mini_thumbnail_max_height;
-   unsigned last_width;
-   unsigned last_height;
-   unsigned window_width;
-   unsigned window_height;
-   unsigned particle_effect;
-   unsigned color_theme;
-   unsigned menu_aspect_ratio;
-   unsigned menu_aspect_ratio_lock;
-
-   uint32_t thumbnail_queue_size;
-   uint32_t left_thumbnail_queue_size;
-
-   rgui_colors_t colors;
-   retro_time_t thumbnail_load_trigger_time;
-   rgui_video_settings_t menu_video_settings;
-   rgui_video_settings_t content_video_settings;
-   struct scaler_ctx image_scaler;
-   menu_input_pointer_t pointer;
-   char msgbox[1024];
-   char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
-   char menu_title[255]; /* Must be a fixed length array... */
-   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-   rgui_particle_t particles[RGUI_NUM_PARTICLES];
-   bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
 } rgui_t;
 
 /* Particle effect animations update at a base rate
@@ -887,20 +892,20 @@ static const uint8_t rgui_symbol_data_switch_off_right[FONT_WIDTH * FONT_HEIGHT]
 
 typedef struct
 {
+   uint16_t *data;
    unsigned max_width;
    unsigned max_height;
    unsigned width;
    unsigned height;
-   bool is_valid;
    char path[PATH_MAX_LENGTH];
-   uint16_t *data;
+   bool is_valid;
 } thumbnail_t;
 
 typedef struct
 {
+   uint16_t *data;
    unsigned width;
    unsigned height;
-   uint16_t *data;
 } frame_buf_t;
 
 /* TODO/FIXME - static global variables */
@@ -933,19 +938,19 @@ static thumbnail_t mini_left_thumbnail = {
 };
 
 static frame_buf_t rgui_frame_buf = {
+   NULL,
    0,
-   0,
-   NULL
+   0
 };
 static frame_buf_t rgui_background_buf = {
+   NULL,
    0,
-   0,
-   NULL
+   0
 };
 static frame_buf_t rgui_upscale_buf = {
+   NULL,
    0,
-   0,
-   NULL
+   0
 };
 
 /* ==============================

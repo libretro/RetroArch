@@ -2453,6 +2453,7 @@ typedef struct
 
 typedef struct
 {
+   UINT32 colors[4];
    struct
    {
       float x, y, w, h;
@@ -2461,7 +2462,6 @@ typedef struct
    {
       float u, v, w, h;
    } coords;
-   UINT32 colors[4];
    struct
    {
       float scaling;
