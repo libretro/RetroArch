@@ -1567,9 +1567,9 @@ typedef struct runloop_ctx_msg_info
 
 typedef struct
 {
-   char str[128];
    unsigned priority;
    float duration;
+   char str[128];
    bool set;
 } runloop_core_status_msg_t;
 
@@ -1582,16 +1582,17 @@ struct rarch_dir_list
 #ifdef HAVE_BSV_MOVIE
 struct bsv_state
 {
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+
    bool movie_start_recording;
    bool movie_start_playback;
    bool movie_playback;
    bool eof_exit;
    bool movie_end;
 
-   /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
-   /* Immediate playback/recording. */
-   char movie_start_path[PATH_MAX_LENGTH];
 };
 
 struct bsv_movie
@@ -1638,10 +1639,10 @@ struct remote_message
 
 struct input_remote
 {
-   bool state[RARCH_BIND_LIST_END];
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    int net_fd[MAX_USERS];
 #endif
+   bool state[RARCH_BIND_LIST_END];
 };
 
 #ifdef HAVE_BSV_MOVIE
@@ -1652,18 +1653,18 @@ typedef struct input_remote input_remote_t;
 
 typedef struct input_remote_state
 {
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4][MAX_USERS];
    /* This is a bitmask of (1 << key_bind_id). */
    uint64_t buttons[MAX_USERS];
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4][MAX_USERS];
 } input_remote_state_t;
 
 typedef struct input_list_element_t
 {
+   int16_t *state;
    unsigned port;
    unsigned device;
    unsigned index;
-   int16_t *state;
    unsigned int state_size;
 } input_list_element;
 
@@ -1673,41 +1674,40 @@ typedef void  (*destructor_t )(void*);
 typedef struct my_list_t
 {
    void **data;
-   int capacity;
-   int size;
    constructor_t constructor;
    destructor_t destructor;
+   int capacity;
+   int size;
 } my_list;
 
 #ifdef HAVE_OVERLAY
 typedef struct input_overlay_state
 {
+   uint32_t keys[RETROK_LAST / 32 + 1];
    /* Left X, Left Y, Right X, Right Y */
    int16_t analog[4];
-   uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
    input_bits_t buttons;
 } input_overlay_state_t;
 
 struct input_overlay
 {
+   struct overlay *overlays;
+   const struct overlay *active;
+   void *iface_data;
+   const video_overlay_interface_t *iface;
+   input_overlay_state_t overlay_state;
+
+   size_t index;
+   size_t size;
+
+   unsigned next_index;
+
    enum overlay_status state;
 
    bool enable;
    bool blocked;
    bool alive;
-
-   unsigned next_index;
-
-   size_t index;
-   size_t size;
-
-   struct overlay *overlays;
-   const struct overlay *active;
-   void *iface_data;
-   const video_overlay_interface_t *iface;
-
-   input_overlay_state_t overlay_state;
 };
 #endif
 
@@ -1728,15 +1728,15 @@ struct cmd_action_map
 
 struct command
 {
-   bool stdin_enable;
-   bool state[RARCH_BIND_LIST_END];
+#ifdef HAVE_NETWORK_CMD
+   int net_fd;
+#endif
 #ifdef HAVE_STDIN_CMD
    char stdin_buf[STDIN_BUF_SIZE];
    size_t stdin_buf_ptr;
 #endif
-#ifdef HAVE_NETWORK_CMD
-   int net_fd;
-#endif
+   bool stdin_enable;
+   bool state[RARCH_BIND_LIST_END];
 };
 
 /* Input config. */
@@ -1761,26 +1761,25 @@ typedef struct turbo_buttons turbo_buttons_t;
 /* Turbo support. */
 struct turbo_buttons
 {
-   bool frame_enable[MAX_USERS];
-   uint16_t enable[MAX_USERS];
-   bool mode1_enable[MAX_USERS];
    int32_t turbo_pressed[MAX_USERS];
    unsigned count;
+   uint16_t enable[MAX_USERS];
+   bool frame_enable[MAX_USERS];
+   bool mode1_enable[MAX_USERS];
 };
 
 struct input_keyboard_line
 {
    char *buffer;
-   size_t ptr;
-   size_t size;
-
+   void *userdata;
    /** Line complete callback.
     * Calls back after return is
     * pressed with the completed line.
     * Line can be NULL.
     **/
    input_keyboard_line_complete_t cb;
-   void *userdata;
+   size_t ptr;
+   size_t size;
 };
 
 #ifdef HAVE_RUNAHEAD
@@ -1796,30 +1795,26 @@ typedef struct menu_ctx_load_image
 
 struct menu_list
 {
-   size_t menu_stack_size;
-   size_t selection_buf_size;
    file_list_t **menu_stack;
+   size_t menu_stack_size;
    file_list_t **selection_buf;
+   size_t selection_buf_size;
 };
 
 struct menu_state
 {
-   /* when enabled, on next iteration the 'Quick Menu' list will
-    * be pushed onto the stack */
-   bool pending_quick_menu;
-   bool prevent_populate;
-   /* The menu driver owns the userdata */
-   bool data_own;
+   /* Timers */
+   retro_time_t current_time_us;
+   retro_time_t powerstate_last_time_us;
+   retro_time_t datetime_last_time_us;
 
    struct
    {
-      /* Flagged when menu entries need to be refreshed */
-      bool need_refresh;
-      bool nonblocking_refresh;
-      size_t begin;
       rarch_setting_t *list_settings;
       menu_list_t *list;
+      size_t begin;
    } entries;
+   size_t   selection_ptr;
 
    /* Quick jumping indices with L/R.
     * Rebuilt when parsing directory. */
@@ -1830,24 +1825,27 @@ struct menu_state
       unsigned acceleration;
    } scroll;
 
-   size_t   selection_ptr;
-
-   /* Timers */
-   retro_time_t current_time_us;
-   retro_time_t powerstate_last_time_us;
-   retro_time_t datetime_last_time_us;
-
    /* Storage container for current menu datetime
     * representation string */
    char datetime_cache[255];
+
+   /* when enabled, on next iteration the 'Quick Menu' list will
+    * be pushed onto the stack */
+   bool pending_quick_menu;
+   bool prevent_populate;
+   /* The menu driver owns the userdata */
+   bool data_own;
+   /* Flagged when menu entries need to be refreshed */
+   bool entries_need_refresh;
+   bool entries_nonblocking_refresh;
 };
 
 struct menu_bind_state_port
 {
-   bool mouse_buttons[MENU_MAX_MBUTTONS];
-   bool buttons[MENU_MAX_BUTTONS];
    int16_t axes[MENU_MAX_AXES];
    uint16_t hats[MENU_MAX_HATS];
+   bool mouse_buttons[MENU_MAX_MBUTTONS];
+   bool buttons[MENU_MAX_BUTTONS];
 };
 
 struct menu_bind_axis_state
@@ -1861,21 +1859,22 @@ struct menu_bind_axis_state
 
 struct menu_bind_state
 {
-   bool skip;
+   rarch_timer_t timer_timeout;
+   rarch_timer_t timer_hold;
+
+   struct retro_keybind *output;
+   struct retro_keybind buffer;
+
+   struct menu_bind_state_port state[MAX_USERS];
+   struct menu_bind_axis_state axis_state[MAX_USERS];
 
    unsigned begin;
    unsigned last;
    unsigned user;
    unsigned port;
 
-   struct retro_keybind * output;
-   struct retro_keybind buffer;
+   bool skip;
 
-   rarch_timer_t timer_timeout;
-   rarch_timer_t timer_hold;
-
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
 };
 #endif
 
@@ -1901,22 +1900,22 @@ typedef struct input_mapper
 
 struct discord_state
 {
-   bool ready;
-   bool avatar_ready;
-   bool connecting;
-
-   unsigned status;
-
    int64_t start_time;
    int64_t pause_time;
    int64_t elapsed_time;
+
+   DiscordRichPresence presence;
+
+   unsigned status;
 
    char user_name[344];
    char self_party_id[128];
    char peer_party_id[128];
    char user_avatar[PATH_MAX_LENGTH];
 
-   DiscordRichPresence presence;
+   bool ready;
+   bool avatar_ready;
+   bool connecting;
 };
 
 typedef struct discord_state discord_state_t;
@@ -2585,9 +2584,9 @@ static const void *MAGIC_POINTER                                 = (void*)(uintp
 
 static runloop_core_status_msg_t runloop_core_status_msg         =
 {
-   "",
    0,
    0.0f,
+   "",
    false
 };
 
@@ -6235,9 +6234,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    switch (state)
    {
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
-         if (menu_st->entries.nonblocking_refresh)
+         if (menu_st->entries_nonblocking_refresh)
             return false;
-         if (!menu_st->entries.need_refresh)
+         if (!menu_st->entries_need_refresh)
             return false;
          break;
       case MENU_ENTRIES_CTL_SETTINGS_GET:
@@ -6253,9 +6252,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             bool *nonblocking = (bool*)data;
 
             if (*nonblocking)
-               menu_st->entries.nonblocking_refresh = true;
+               menu_st->entries_nonblocking_refresh = true;
             else
-               menu_st->entries.need_refresh        = true;
+               menu_st->entries_need_refresh        = true;
          }
          break;
       case MENU_ENTRIES_CTL_UNSET_REFRESH:
@@ -6263,9 +6262,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             bool *nonblocking = (bool*)data;
 
             if (*nonblocking)
-               menu_st->entries.nonblocking_refresh = false;
+               menu_st->entries_nonblocking_refresh = false;
             else
-               menu_st->entries.need_refresh        = false;
+               menu_st->entries_need_refresh        = false;
          }
          break;
       case MENU_ENTRIES_CTL_SET_START:
@@ -7541,8 +7540,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             menu_driver_search_clear();
 
-            menu_st->entries.need_refresh        = false;
-            menu_st->entries.nonblocking_refresh = false;
+            menu_st->entries_need_refresh        = false;
+            menu_st->entries_nonblocking_refresh = false;
             menu_st->entries.begin               = 0;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
