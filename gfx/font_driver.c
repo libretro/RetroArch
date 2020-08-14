@@ -72,9 +72,9 @@ int font_renderer_create_default(
          *drv = font_backends[i];
          return 1;
       }
-      else
-         RARCH_ERR("[Font]: Failed to create rendering backend: %s.\n",
-               font_backends[i]->ident);
+
+      RARCH_ERR("[Font]: Failed to create rendering backend: %s.\n",
+            font_backends[i]->ident);
    }
 
    *drv    = NULL;
