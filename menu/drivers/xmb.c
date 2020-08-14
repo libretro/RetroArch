@@ -88,20 +88,6 @@
 #define XMB_DEBUG
 #endif
 
-/* NOTE: If you change this you HAVE to update
- * xmb_alloc_node() and xmb_copy_node() */
-typedef struct
-{
-   float alpha;
-   float label_alpha;
-   float zoom;
-   float x;
-   float y;
-   uintptr_t icon;
-   uintptr_t content_icon;
-   char *fullpath;
-} xmb_node_t;
-
 enum
 {
    XMB_TEXTURE_MAIN_MENU = 0,
@@ -257,32 +243,82 @@ enum
    XMB_SYSTEM_TAB_MAX_LENGTH
 };
 
+/* NOTE: If you change this you HAVE to update
+ * xmb_alloc_node() and xmb_copy_node() */
+typedef struct
+{
+   char *fullpath;
+   uintptr_t icon;
+   uintptr_t content_icon;
+   float alpha;
+   float label_alpha;
+   float zoom;
+   float x;
+   float y;
+} xmb_node_t;
+
 typedef struct xmb_handle
 {
-   bool mouse_show;
-   bool use_ps3_layout;
-   bool last_use_ps3_layout;
-   bool assets_missing;
-   bool is_playlist;
-   bool is_db_manager_list;
-   bool is_file_list;
-   bool is_quick_menu;
+   /* Keeps track of the last time tabs were switched
+    * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
+   retro_time_t last_tab_switch_time; /* uint64_t alignment */
 
-   uint8_t system_tab_end;
-   uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
+   char *box_message;
+   char *bg_file_path;
+
+   file_list_t *selection_buf_old;
+   file_list_t *horizontal_list;
+
+   xmb_node_t main_menu_node;
+#ifdef HAVE_IMAGEVIEWER
+   xmb_node_t images_tab_node;
+#endif
+   xmb_node_t music_tab_node;
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   xmb_node_t video_tab_node;
+#endif
+   xmb_node_t settings_tab_node;
+   xmb_node_t history_tab_node;
+   xmb_node_t favorites_tab_node;
+   xmb_node_t add_tab_node;
+#if defined(HAVE_LIBRETRODB)
+   xmb_node_t explore_tab_node;
+#endif
+   xmb_node_t netplay_tab_node;
+   menu_input_pointer_t pointer;
+
+   font_data_t *font;
+   font_data_t *font2;
+   video_font_raster_block_t raster_block;
+   video_font_raster_block_t raster_block2;
+
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
+   struct {
+      gfx_thumbnail_t right;
+      gfx_thumbnail_t left;
+      gfx_thumbnail_t savestate;
+   } thumbnails;
+
+   struct
+   {
+      uintptr_t bg;
+      uintptr_t list[XMB_TEXTURE_LAST];
+   } textures;
+
+   size_t categories_selection_ptr;
+   size_t categories_selection_ptr_old;
+   size_t selection_ptr_old;
+   size_t fullscreen_thumbnail_selection;
 
    int depth;
    int old_depth;
    int icon_size;
    int cursor_size;
 
-   size_t categories_selection_ptr;
-   size_t categories_selection_ptr_old;
-   size_t selection_ptr_old;
-
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
 
+   float fullscreen_thumbnail_alpha;
    float x;
    float alpha;
    float above_subitem_offset;
@@ -317,64 +353,28 @@ typedef struct xmb_handle
    float categories_active_zoom;
    float categories_active_alpha;
 
+   uint8_t system_tab_end;
+   uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
+
    char title_name[255];
-   char *box_message;
-   char *bg_file_path;
-
-   file_list_t *selection_buf_old;
-   file_list_t *horizontal_list;
-
-   struct
-   {
-      uintptr_t bg;
-      uintptr_t list[XMB_TEXTURE_LAST];
-   } textures;
-
-   xmb_node_t main_menu_node;
-#ifdef HAVE_IMAGEVIEWER
-   xmb_node_t images_tab_node;
-#endif
-   xmb_node_t music_tab_node;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   xmb_node_t video_tab_node;
-#endif
-   xmb_node_t settings_tab_node;
-   xmb_node_t history_tab_node;
-   xmb_node_t favorites_tab_node;
-   xmb_node_t add_tab_node;
-#if defined(HAVE_LIBRETRODB)
-   xmb_node_t explore_tab_node;
-#endif
-   xmb_node_t netplay_tab_node;
-   menu_input_pointer_t pointer;
-
-   font_data_t *font;
-   font_data_t *font2;
-   video_font_raster_block_t raster_block;
-   video_font_raster_block_t raster_block2;
-
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-   struct {
-      gfx_thumbnail_t right;
-      gfx_thumbnail_t left;
-      gfx_thumbnail_t savestate;
-   } thumbnails;
    /* These have to be huge, because global->name.savestate
     * has a hard-coded size of 8192...
     * (the extra space here is required to silence compiler
     * warnings...) */
    char savestate_thumbnail_file_path[8204];
    char prev_savestate_thumbnail_file_path[8204];
-   bool fullscreen_thumbnails_available;
-   bool show_fullscreen_thumbnails;
-   float fullscreen_thumbnail_alpha;
-   size_t fullscreen_thumbnail_selection;
    char fullscreen_thumbnail_label[255];
 
-   /* Keeps track of the last time tabs were switched
-    * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
-   retro_time_t last_tab_switch_time;
-
+   bool fullscreen_thumbnails_available;
+   bool show_fullscreen_thumbnails;
+   bool mouse_show;
+   bool use_ps3_layout;
+   bool last_use_ps3_layout;
+   bool assets_missing;
+   bool is_playlist;
+   bool is_db_manager_list;
+   bool is_file_list;
+   bool is_quick_menu;
 } xmb_handle_t;
 
 float scale_mod[8] = {

@@ -310,17 +310,14 @@ struct ozone_handle
    ozone_copy_node */
 typedef struct ozone_node
 {
-   /* Entries */
-   unsigned height;
-   unsigned position_y;
-   bool wrap;
-   unsigned sublabel_lines;
-   char *fullpath;
-
-   /* Console tabs */
-   char *console_name;
-   uintptr_t icon;
-   uintptr_t content_icon;
+   char *fullpath;            /* Entry fullpath */
+   char *console_name;        /* Console tab name */
+   uintptr_t icon;            /* Console tab icon */
+   uintptr_t content_icon;    /* console content icon */
+   unsigned height;           /* Entry height */
+   unsigned position_y;       /* Entry position Y */
+   unsigned sublabel_lines;   /* Entry sublabel lines */
+   bool wrap;                 /* Wrap entry? */
 } ozone_node_t;
 
 void ozone_draw_entries(
