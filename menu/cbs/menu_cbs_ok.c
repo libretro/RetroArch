@@ -866,12 +866,25 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_REMAP_FILE:
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.directory_input_remapping;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            struct retro_system_info *system     = runloop_get_libretro_system_info();
+            const char *core_name                = system ? system->library_name : NULL;
+
+            if (!string_is_empty(core_name) && !string_is_empty(settings->paths.directory_input_remapping))
+            {
+               fill_pathname_join(tmp,
+                     settings->paths.directory_input_remapping, core_name, sizeof(tmp));
+               if (!path_is_directory(tmp))
+                  tmp[0] = '\0';
+            }
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = !string_is_empty(tmp) ? tmp : settings->paths.directory_input_remapping;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_STREAM_CONFIGFILE:
          {
@@ -1777,12 +1790,33 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_REMAPPING_FILE:
 #ifdef HAVE_CONFIGFILE
          {
-            config_file_t *conf = config_file_new_from_path_to_string(
+            config_file_t     *conf = config_file_new_from_path_to_string(
                   action_path);
-            flush_char          = msg_hash_to_str(flush_id);
+            retro_ctx_controller_info_t pad;
+            unsigned current_device = 0;
+            unsigned port           = 0;
+            int conf_val            = 0;
+            char conf_key[64];
+            flush_char              = msg_hash_to_str(flush_id);
+
+            conf_key[0]             = '\0';
 
             if (conf)
-               input_remapping_load_file(conf, action_path);
+               if (input_remapping_load_file(conf, action_path))
+               {
+                  for (port = 0; port < MAX_USERS; port++)
+                  {
+                     snprintf(conf_key, sizeof(conf_key), "input_libretro_device_p%u", port + 1);
+                     if (!config_get_int(conf, conf_key, &conf_val))
+                        continue;
+
+                     current_device = input_config_get_device(port);
+                     input_config_set_device(port, current_device);
+                     pad.port   = port;
+                     pad.device = current_device;
+                     core_set_controller_port_device(&pad);
+                  }
+               }
          }
 #endif
          break;
