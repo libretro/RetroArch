@@ -89,13 +89,13 @@ struct png_chunk
 
 struct rpng_process
 {
-   bool inflate_initialized;
-   bool adam7_pass_initialized;
-   bool pass_initialized;
+   uint32_t *data;
+   uint32_t *palette;
+   void *stream;
+   const struct trans_stream_backend *stream_backend;
    uint8_t *prev_scanline;
    uint8_t *decoded_scanline;
    uint8_t *inflate_buf;
-   struct png_ihdr ihdr;
    size_t restore_buf_size;
    size_t adam7_restore_buf_size;
    size_t data_restore_buf_size;
@@ -104,31 +104,31 @@ struct rpng_process
    size_t avail_out;
    size_t total_out;
    size_t pass_size;
+   struct png_ihdr ihdr; /* uint32_t alignment */
    unsigned bpp;
    unsigned pitch;
    unsigned h;
    unsigned pass_width;
    unsigned pass_height;
    unsigned pass_pos;
-   uint32_t *data;
-   uint32_t *palette;
-   void *stream;
-   const struct trans_stream_backend *stream_backend;
+   bool inflate_initialized;
+   bool adam7_pass_initialized;
+   bool pass_initialized;
 };
 
 struct rpng
 {
    struct rpng_process *process;
+   uint8_t *buff_data;
+   uint8_t *buff_end;
+   struct idat_buffer idat_buf; /* ptr alignment */
+   struct png_ihdr ihdr; /* uint32 alignment */
+   uint32_t palette[256];
    bool has_ihdr;
    bool has_idat;
    bool has_iend;
    bool has_plte;
    bool has_trns;
-   struct idat_buffer idat_buf;
-   struct png_ihdr ihdr;
-   uint8_t *buff_data;
-   uint8_t *buff_end;
-   uint32_t palette[256];
 };
 
 static INLINE uint32_t dword_be(const uint8_t *buf)
