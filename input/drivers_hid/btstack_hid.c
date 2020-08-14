@@ -1411,8 +1411,9 @@ static int16_t btstack_hid_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
    const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
+   btstack_hid_t         *hid           = (btstack_hid_t*)data;
    uint16_t port_idx                    = joypad_info->joy_idx;
-   const struct dinput_joypad_data *pad = &g_pads[port_idx];
+   const struct dinput_joypad_data *pad = &hid->slots[port_idx];
 
    if (!pad || !pad->joypad)
       return 0;
