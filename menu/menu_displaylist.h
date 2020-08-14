@@ -262,6 +262,23 @@ enum filebrowser_enums
 
 typedef struct menu_displaylist_info
 {
+   char *path;
+   char *path_b;
+   char *path_c;
+   char *exts;
+   char *label;
+   file_list_t *list;
+   file_list_t *menu_list;
+   rarch_setting_t *setting;
+
+   size_t directory_ptr;
+
+   unsigned count;
+
+   unsigned type;
+   unsigned type_default;
+   unsigned flags;
+
    enum msg_hash_enums enum_idx;
    /* should the displaylist be sorted by alphabet? */
    bool need_sort;
@@ -279,31 +296,16 @@ typedef struct menu_displaylist_info
    bool download_core;
    /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
-
-   unsigned count;
-
-   char *path;
-   char *path_b;
-   char *path_c;
-   char *exts;
-   char *label;
-   unsigned type;
-   unsigned type_default;
-   unsigned flags;
-   size_t directory_ptr;
-   file_list_t *list;
-   file_list_t *menu_list;
-   rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
 typedef struct menu_displaylist_ctx_parse_entry
 {
-   enum msg_hash_enums enum_idx;
-   enum menu_displaylist_parse_type parse_type;
-   bool add_empty_entry;
    const char *info_label;
    void *data;
    menu_displaylist_info_t *info;
+   enum msg_hash_enums enum_idx;
+   enum menu_displaylist_parse_type parse_type;
+   bool add_empty_entry;
 } menu_displaylist_ctx_parse_entry_t;
 
 typedef struct menu_displaylist_ctx_entry
