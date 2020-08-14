@@ -74,20 +74,20 @@
    return 1; \
 }
 
-static void action_get_title_fill_playlist_default(
+static void action_get_title_fill_search_filter_default(
       char *s, enum msg_hash_enums lbl, size_t len)
 {
-   /* Copy playlist name */
+   /* Copy label value */
    strlcpy(s, msg_hash_to_str(lbl), len);
 
    /* Add current search terms */
    menu_driver_search_append_terms_string(s, len);
 }
 
-#define DEFAULT_TITLE_PLAYLIST_MACRO(func_name, lbl) \
+#define DEFAULT_TITLE_SEARCH_FILTER_MACRO(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
-   action_get_title_fill_playlist_default(s, lbl, len); \
+   action_get_title_fill_search_filter_default(s, lbl, len); \
    return 0; \
 }
 
@@ -506,7 +506,6 @@ DEFAULT_TITLE_MACRO(action_get_online_updater_list,             MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_netplay_list,                    MENU_ENUM_LABEL_VALUE_NETPLAY)
 DEFAULT_TITLE_MACRO(action_get_online_thumbnails_updater_list,  MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_online_pl_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST)
-DEFAULT_TITLE_MACRO(action_get_core_updater_list,               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_core_manager_list,               MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
 DEFAULT_TITLE_MACRO(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
@@ -671,11 +670,12 @@ DEFAULT_TITLE_MACRO(action_get_title_switch_gpu_profile,          MENU_ENUM_LABE
 DEFAULT_TITLE_MACRO(action_get_title_switch_backlight_control,    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
-DEFAULT_TITLE_PLAYLIST_MACRO(action_get_title_deferred_history_list,   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY)
-DEFAULT_TITLE_PLAYLIST_MACRO(action_get_title_deferred_favorites_list, MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)
-DEFAULT_TITLE_PLAYLIST_MACRO(action_get_title_deferred_images_list,    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES)
-DEFAULT_TITLE_PLAYLIST_MACRO(action_get_title_deferred_music_list,     MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
-DEFAULT_TITLE_PLAYLIST_MACRO(action_get_title_deferred_video_list,     MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_history_list,   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_favorites_list, MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_images_list,    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_music_list,     MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_video_list,     MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 
 static int action_get_title_generic(char *s, size_t len, const char *path,
       const char *text)
@@ -780,7 +780,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
       if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
       {
          if (info_list[i].is_playlist_tab)
-            action_get_title_fill_playlist_default(
+            action_get_title_fill_search_filter_default(
                   s, info_list[i].val, len);
          else
             strlcpy(s, msg_hash_to_str(info_list[i].val), len);

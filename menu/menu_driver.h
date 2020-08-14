@@ -487,6 +487,9 @@ void menu_explore_context_deinit(void);
 void menu_explore_free(void);
 #endif
 
+/* Returns true if search filter is enabled
+ * for the specified menu list */
+bool menu_driver_search_filter_enabled(const char *label, unsigned type);
 bool menu_driver_search_push(const char *search_term);
 bool menu_driver_search_pop(void);
 void menu_driver_search_clear(void);

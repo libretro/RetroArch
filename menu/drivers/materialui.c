@@ -5124,7 +5124,7 @@ static void materialui_render_header(
    int sys_bar_text_y                    = (int)(((float)mui->sys_bar_height / 2.0f) + (float)mui->font_data.hint.line_centre_offset);
    int title_x                           = 0;
    bool show_back_icon                   = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
-   bool show_search_icon                 = mui->is_playlist || mui->is_file_list;
+   bool show_search_icon                 = mui->is_playlist || mui->is_file_list || mui->is_core_updater_list;
    bool show_switch_view_icon            = mui->is_playlist && mui->primary_thumbnail_available;
    bool use_landscape_layout             = !mui->is_portrait &&
          (mui->last_landscape_layout_optimization != MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED);
@@ -9197,9 +9197,9 @@ static int materialui_pointer_up(void *userdata,
             /* Tap/press header: Menu back/cancel, or search/switch view */
             else if (y < header_height)
             {
-               /* If this is a playlist or file list, enable
-                * search functionality */
-               if (mui->is_playlist || mui->is_file_list)
+               /* If this is a playlist, file list or core
+                * updater list, enable search functionality */
+               if (mui->is_playlist || mui->is_file_list || mui->is_core_updater_list)
                {
                   bool switch_view_enabled  =
                         mui->is_playlist && mui->primary_thumbnail_available;

@@ -7271,6 +7271,33 @@ static void menu_driver_list_free(
    }
 }
 
+/* Returns true if search filter is enabled
+ * for the specified menu list */
+bool menu_driver_search_filter_enabled(const char *label, unsigned type)
+{
+   bool filter_enabled = false;
+
+   /* > Check for playlists */
+   filter_enabled = (type == MENU_SETTING_HORIZONTAL_MENU) ||
+                    (type == MENU_HISTORY_TAB) ||
+                    (type == MENU_FAVORITES_TAB) ||
+                    (type == MENU_IMAGES_TAB) ||
+                    (type == MENU_MUSIC_TAB) ||
+                    (type == MENU_VIDEO_TAB) ||
+                    (type == FILE_TYPE_PLAYLIST_COLLECTION);
+
+   if (!filter_enabled && !string_is_empty(label))
+      filter_enabled = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST)) ||
+                       /* > Check for core updater */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST));
+
+   return filter_enabled;
+}
+
 bool menu_driver_search_push(const char *search_term)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -12021,33 +12048,18 @@ static void menu_input_search_cb(void *userdata, const char *str)
 {
    const char *label = NULL;
    unsigned type     = MENU_SETTINGS_NONE;
-   bool is_playlist  = false;
 
    if (string_is_empty(str))
       goto end;
 
    /* Determine whether we are currently
-    * viewing a playlist */
+    * viewing a menu list with 'search
+    * filter' support */
    menu_entries_get_last_stack(NULL,
          &label, &type,
          NULL, NULL);
 
-   is_playlist = (type == MENU_SETTING_HORIZONTAL_MENU) ||
-                 (type == MENU_HISTORY_TAB) ||
-                 (type == MENU_FAVORITES_TAB) ||
-                 (type == MENU_IMAGES_TAB) ||
-                 (type == MENU_MUSIC_TAB) ||
-                 (type == MENU_VIDEO_TAB) ||
-                 (type == FILE_TYPE_PLAYLIST_COLLECTION);
-
-   if (!is_playlist && !string_is_empty(label))
-      is_playlist = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
-                    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
-                    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
-                    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
-                    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
-
-   if (is_playlist)
+   if (menu_driver_search_filter_enabled(label, type))
    {
       /* Add search term */
       if (menu_driver_search_push(str))
