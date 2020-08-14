@@ -57,11 +57,10 @@ struct config_file
    struct config_entry_list *entries;
    struct config_entry_list *tail;
    struct config_entry_list *last;
+   struct config_include_list *includes;
    unsigned include_depth;
    bool guaranteed_no_duplicates;
    bool modified;
-
-   struct config_include_list *includes;
 };
 
 typedef struct config_file config_file_t;
