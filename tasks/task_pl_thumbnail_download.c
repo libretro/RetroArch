@@ -51,29 +51,31 @@ enum pl_thumb_status
 
 typedef struct pl_thumb_handle
 {
-   bool overwrite;
-   bool right_thumbnail_exists;
-   bool left_thumbnail_exists;
-   bool http_task_complete;
-   enum pl_thumb_status status;
+   char *system;
+   char *playlist_path;
+   char *dir_thumbnails;
+   playlist_t *playlist;
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
+   retro_task_t *http_task;
+
+   playlist_config_t playlist_config; /* size_t alignment */
 
    size_t list_size;
    size_t list_index;
    unsigned type_idx;
 
-   char *system;
-   char *playlist_path;
-   char *dir_thumbnails;
-   playlist_t *playlist;
-   playlist_config_t playlist_config;
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-   retro_task_t *http_task;
+   enum pl_thumb_status status;
+
+   bool overwrite;
+   bool right_thumbnail_exists;
+   bool left_thumbnail_exists;
+   bool http_task_complete;
 } pl_thumb_handle_t;
 
 typedef struct pl_entry_id
 {
-   size_t idx;
    char *playlist_path;
+   size_t idx;
 } pl_entry_id_t;
 
 /*********************/

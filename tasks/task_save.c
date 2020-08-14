@@ -73,33 +73,33 @@ struct ram_type
 struct save_state_buf
 {
    void* data;
-   char path[PATH_MAX_LENGTH];
    size_t size;
+   char path[PATH_MAX_LENGTH];
 };
 
 struct sram_block
 {
-   unsigned type;
    void *data;
    size_t size;
+   unsigned type;
 };
 
 typedef struct
 {
    intfstream_t *file;
-   char path[PATH_MAX_LENGTH];
    void *data;
    void *undo_data;
    ssize_t size;
    ssize_t undo_size;
    ssize_t written;
    ssize_t bytes_read;
+   int state_slot;
+   char path[PATH_MAX_LENGTH];
    bool load_to_backup_buffer;
    bool autoload;
    bool autosave;
    bool undo_save;
    bool mute;
-   int state_slot;
    bool thumbnail_enable;
    bool has_valid_framebuffer;
    bool compress_files;
@@ -117,10 +117,6 @@ struct autosave_st
 
 struct autosave
 {
-   volatile bool quit;
-   size_t bufsize;
-   unsigned interval;
-   bool compress_files;
    void *buffer;
    const void *retro_buffer;
    const char *path;
@@ -128,6 +124,10 @@ struct autosave
    slock_t *cond_lock;
    scond_t *cond;
    sthread_t *thread;
+   size_t bufsize;
+   unsigned interval;
+   volatile bool quit;
+   bool compress_files;
 };
 #endif
 

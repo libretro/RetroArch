@@ -61,12 +61,10 @@ typedef struct screenshot_task_state screenshot_task_state_t;
 
 struct screenshot_task_state
 {
-   bool bgr24;
-   bool silence;
-   bool is_idle;
-   bool is_paused;
-   bool history_list_enable;
-   bool widgets_ready;
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
 
    int pitch;
    unsigned width;
@@ -76,11 +74,12 @@ struct screenshot_task_state
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
 
-   struct scaler_ctx scaler;
-
-   uint8_t *out_buffer;
-   const void *frame;
-   void *userbuf;
+   bool bgr24;
+   bool silence;
+   bool is_idle;
+   bool is_paused;
+   bool history_list_enable;
+   bool widgets_ready;
 };
 
 static bool screenshot_dump_direct(screenshot_task_state_t *state)

@@ -49,14 +49,14 @@ enum pl_manager_status
 
 typedef struct pl_manager_handle
 {
-   enum pl_manager_status status;
+   struct string_list *m3u_list;
+   char *playlist_name;
+   playlist_t *playlist;
    size_t list_size;
    size_t list_index;
-   struct string_list *m3u_list;
    size_t m3u_index;
-   char *playlist_name;
-   playlist_config_t playlist_config;
-   playlist_t *playlist;
+   playlist_config_t playlist_config; /* size_t alignment */
+   enum pl_manager_status status;
 } pl_manager_handle_t;
 
 /*********************/

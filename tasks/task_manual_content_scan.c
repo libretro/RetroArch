@@ -53,13 +53,13 @@ enum manual_scan_status
 typedef struct manual_scan_handle
 {
    manual_content_scan_task_config_t *task_config;
-   playlist_config_t playlist_config;
    playlist_t *playlist;
    struct string_list *content_list;
    logiqx_dat_t *dat_file;
+   struct string_list *m3u_list;
+   playlist_config_t playlist_config; /* size_t alignment */
    size_t list_size;
    size_t list_index;
-   struct string_list *m3u_list;
    size_t m3u_index;
    enum manual_scan_status status;
 } manual_scan_handle_t;

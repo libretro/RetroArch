@@ -41,18 +41,18 @@
 
 typedef struct
 {
-   char content_crc[PATH_MAX_LENGTH];
-   char content_path[PATH_MAX_LENGTH];
+   struct string_list *lpl_list;
+   playlist_config_t playlist_config; /* size_t alignment */
    char hostname[512];
    char subsystem_name[512];
+   char content_crc[PATH_MAX_LENGTH];
+   char content_path[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char core_extensions[PATH_MAX_LENGTH];
    bool found;
    bool current;
    bool contentless;
-   struct string_list *lpl_list;
-   playlist_config_t playlist_config;
 } netplay_crc_handle_t;
 
 static void netplay_crc_scan_callback(retro_task_t *task,
