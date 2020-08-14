@@ -39,8 +39,8 @@ struct bintree_node
 struct bintree
 {
    struct bintree_node *root;
-   bintree_cmp_func cmp;
    void *ctx;
+   bintree_cmp_func cmp;
 };
 
 /* TODO/FIXME - static global variable */

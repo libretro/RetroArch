@@ -55,10 +55,10 @@ struct node_iter_ctx
 struct libretrodb
 {
 	RFILE *fd;
+   char *path;
 	uint64_t root;
 	uint64_t count;
 	uint64_t first_index_offset;
-   char *path;
 };
 
 struct libretrodb_index
@@ -81,11 +81,11 @@ typedef struct libretrodb_header
 
 struct libretrodb_cursor
 {
-	int is_valid;
    RFILE *fd;
-	int eof;
 	libretrodb_query_t *query;
 	libretrodb_t *db;
+	int is_valid;
+	int eof;
 };
 
 static int libretrodb_read_metadata(RFILE *fd, libretrodb_metadata_t *md)
