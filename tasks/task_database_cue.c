@@ -50,6 +50,8 @@
 #define MODETEST_VAL    0xffffff00
 #endif
 
+/* TODO/FIXME - reorder this according to CODING-GUIDELINES
+ * and make sure LUT table below conforms */
 struct magic_entry
 {
    int32_t offset;

@@ -41,18 +41,18 @@ enum image_status_enum
 
 struct nbio_image_handle
 {
+   void *handle;
+   transfer_cb_t  cb;
+   struct texture_image ti; /* ptr alignment */
+   size_t size;
+   int processing_final_state;
+   unsigned frame_duration;
+   unsigned upscale_threshold;
    enum image_type_enum type;
    enum image_status_enum status;
    bool is_blocking;
    bool is_blocking_on_processing;
    bool is_finished;
-   int processing_final_state;
-   unsigned frame_duration;
-   size_t size;
-   unsigned upscale_threshold;
-   void *handle;
-   transfer_cb_t  cb;
-   struct texture_image ti;
 };
 
 static int cb_image_upload_generic(void *data, size_t len)

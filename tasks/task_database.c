@@ -45,30 +45,30 @@
 
 typedef struct database_state_handle
 {
-   uint32_t crc;
-   uint32_t archive_crc;
-   size_t list_index;
-   size_t entry_index;
-   uint8_t *buf;
-   char archive_name[511];
-   char serial[4096];
    database_info_list_t *info;
    struct string_list *list;
+   uint8_t *buf;
+   size_t list_index;
+   size_t entry_index;
+   uint32_t crc;
+   uint32_t archive_crc;
+   char archive_name[511];
+   char serial[4096];
 } database_state_handle_t;
 
 typedef struct db_handle
 {
-   playlist_config_t playlist_config;
-   bool is_directory;
-   bool scan_started;
-   bool scan_without_core_match;
-   bool show_hidden_files;
-   unsigned status;
    char *playlist_directory;
    char *content_database_path;
    char *fullpath;
    database_info_handle_t *handle;
    database_state_handle_t state;
+   playlist_config_t playlist_config; /* size_t alignment */
+   unsigned status;
+   bool is_directory;
+   bool scan_started;
+   bool scan_without_core_match;
+   bool show_hidden_files;
 } db_handle_t;
 
 /* Forward declarations */
