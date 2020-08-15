@@ -84,7 +84,6 @@ struct png_chunk
 {
    uint32_t size;
    char type[4];
-   uint8_t *data;
 };
 
 struct rpng_process
@@ -153,7 +152,7 @@ static enum png_chunk_type png_chunk_type(char chunk_type[4])
 
    for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
-      if (string_is_equal(chunk_type, chunk_map[i].id))
+      if (!memcmp(chunk_type, chunk_map[i].id, 4))
          return chunk_map[i].type;
    }
 
@@ -1015,7 +1014,6 @@ bool rpng_iterate_image(rpng_t *rpng)
 
    chunk.size             = 0;
    chunk.type[0]          = 0;
-   chunk.data             = NULL;
 
    /* Check whether data buffer pointer is valid */
    if (buf > rpng->buff_end)
