@@ -2120,6 +2120,15 @@ struct rarch_state
    struct retro_audio_callback audio_callback;           /* ptr alignment */
    retro_keyboard_event_t runloop_key_event;             /* ptr alignment */
    retro_keyboard_event_t runloop_frontend_key_event;    /* ptr alignment */
+   video_driver_frame_t frame_bak;                       /* ptr alignment */
+   struct rarch_dir_list dir_shader_list;                /* ptr alignment */
+#ifdef HAVE_RUNAHEAD
+   function_t retro_reset_callback_original;             /* ptr alignment */
+   function_t original_retro_deinit;                     /* ptr alignment */
+   function_t original_retro_unload;                     /* ptr alignment */
+   runahead_load_state_function
+      retro_unserialize_callback_original;               /* ptr alignment */
+#endif
 
    /*************************************/
    /* TODO/FIXME BEGIN - find alignment */
@@ -2136,7 +2145,6 @@ struct rarch_state
    struct retro_callbacks secondary_callbacks;
 #endif
 #endif
-   struct rarch_dir_list dir_shader_list;
 #ifdef HAVE_MENU
    menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
    menu_input_t menu_input_state;
@@ -2182,16 +2190,6 @@ struct rarch_state
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
 
-   video_driver_frame_t frame_bak;
-
-#ifdef HAVE_RUNAHEAD
-   function_t retro_reset_callback_original;
-   runahead_load_state_function
-      retro_unserialize_callback_original;
-
-   function_t original_retro_deinit;
-   function_t original_retro_unload;
-#endif
    /* TODO/FIXME END - find alignment   */
    /*************************************/
 
