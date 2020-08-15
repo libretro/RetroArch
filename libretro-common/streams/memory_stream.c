@@ -33,10 +33,10 @@ static uint64_t last_file_size = 0;
 
 struct memstream
 {
-   uint8_t *buf;
    uint64_t size;
    uint64_t ptr;
    uint64_t max_ptr;
+   uint8_t *buf;
    unsigned writing;
 };
 

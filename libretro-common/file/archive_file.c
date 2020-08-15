@@ -667,7 +667,7 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 uint32_t file_archive_get_file_crc32(const char *path)
 {
    file_archive_transfer_t state;
-   struct archive_extract_userdata userdata        = {{0}};
+   struct archive_extract_userdata userdata        = {0};
    bool returnerr                                  = false;
    const char *archive_path                        = NULL;
    bool contains_compressed = path_contains_compressed_file(path);

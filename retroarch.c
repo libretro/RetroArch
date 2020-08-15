@@ -1939,7 +1939,7 @@ struct rarch_state
    menu_input_t menu_input_state;               /* retro_time_t alignment */
 #endif
 
-   retro_usec_t runloop_frame_time_last;
+   retro_usec_t runloop_frame_time_last;        /* int64_t alignment */
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
@@ -28996,7 +28996,7 @@ static bool audio_compute_buffer_statistics(
          (unsigned)p_rarch->audio_driver_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
-   if (!stats || samples < 3)
+   if (samples < 3)
       return false;
 
    stats->samples                = (unsigned)
@@ -29049,13 +29049,19 @@ static bool audio_compute_buffer_statistics(
    return true;
 }
 
+#ifdef DEBUG
 static void report_audio_buffer_statistics(struct rarch_state *p_rarch)
 {
-   audio_statistics_t audio_stats = {0.0f};
+   audio_statistics_t audio_stats;
+   audio_stats.samples                   = 0;
+   audio_stats.average_buffer_saturation = 0.0f;
+   audio_stats.std_deviation_percentage  = 0.0f;
+   audio_stats.close_to_underrun         = 0.0f;
+   audio_stats.close_to_blocking         = 0.0f;
+
    if (!audio_compute_buffer_statistics(p_rarch, &audio_stats))
       return;
 
-#ifdef DEBUG
    RARCH_LOG("[Audio]: Average audio buffer saturation: %.2f %%,"
          " standard deviation (percentage points): %.2f %%.\n"
          "[Audio]: Amount of time spent close to underrun: %.2f %%."
@@ -29064,8 +29070,8 @@ static void report_audio_buffer_statistics(struct rarch_state *p_rarch)
          audio_stats.std_deviation_percentage,
          audio_stats.close_to_underrun,
          audio_stats.close_to_blocking);
-#endif
 }
+#endif
 
 /**
  * config_get_audio_driver_options:
@@ -29134,7 +29140,9 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
 #ifdef HAVE_DSP_FILTER
    audio_driver_dsp_filter_free();
 #endif
+#ifdef DEBUG
    report_audio_buffer_statistics(p_rarch);
+#endif
 
    return true;
 }
@@ -32980,13 +32988,19 @@ static void video_driver_frame(const void *data, unsigned width,
 
    if (video_info.statistics_show)
    {
-      audio_statistics_t audio_stats         = {0.0f};
+      audio_statistics_t audio_stats;
       double stddev                          = 0.0;
       struct retro_system_av_info *av_info   = &p_rarch->video_driver_av_info;
       unsigned red                           = 255;
       unsigned green                         = 255;
       unsigned blue                          = 255;
       unsigned alpha                         = 255;
+
+      audio_stats.samples                    = 0;
+      audio_stats.average_buffer_saturation  = 0.0f;
+      audio_stats.std_deviation_percentage   = 0.0f;
+      audio_stats.close_to_underrun          = 0.0f;
+      audio_stats.close_to_blocking          = 0.0f;
 
       video_monitor_fps_statistics(NULL, &stddev, NULL);
 

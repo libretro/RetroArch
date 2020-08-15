@@ -68,15 +68,9 @@ static void *resampler_nearest_init(const struct resampler_config *config,
 {
    rarch_nearest_resampler_t *re = (rarch_nearest_resampler_t*)
       calloc(1, sizeof(rarch_nearest_resampler_t));
-
-   (void)config;
-   (void)mask;
-
    if (!re)
       return NULL;
-
    re->fraction = 0;
-
    return re;
 }
 

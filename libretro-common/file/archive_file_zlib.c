@@ -330,7 +330,7 @@ static int64_t zip_file_read(
 {
    file_archive_transfer_t state            = {ARCHIVE_TRANSFER_INIT};
    decomp_state_t decomp                    = {0};
-   struct archive_extract_userdata userdata = {{0}};
+   struct archive_extract_userdata userdata = {0};
    bool returnerr                           = true;
    int ret                                  = 0;
 

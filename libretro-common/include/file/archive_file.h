@@ -60,49 +60,48 @@ typedef struct file_archive_handle
 
 typedef struct file_archive_transfer
 {
-   enum file_archive_transfer_type type;
-   struct RFILE *archive_file;
    int64_t archive_size;
    void *context;
-   unsigned step_total, step_current;
+   struct RFILE *archive_file;
    const struct file_archive_file_backend *backend;
 #ifdef HAVE_MMAP
-   int archive_mmap_fd;
    uint8_t *archive_mmap_data;
+   int archive_mmap_fd;
 #endif
+   unsigned step_total;
+   unsigned step_current;
+   enum file_archive_transfer_type type;
 } file_archive_transfer_t;
 
 typedef struct
 {
+   file_archive_transfer_t archive;             /* int64_t alignment */
    char *source_file;
    char *subdir;
    char *target_dir;
    char *target_file;
    char *valid_ext;
-
    char *callback_error;
-
-   file_archive_transfer_t archive;
    struct archive_extract_userdata *userdata;
 } decompress_state_t;
 
 struct archive_extract_userdata
 {
    /* These are set or read by the archive processing */
-   char archive_path[PATH_MAX_LENGTH];
-   char current_file_path[PATH_MAX_LENGTH];
    char *first_extracted_file_path;
    const char *extraction_directory;
-   size_t archive_path_size;
    struct string_list *ext;
    struct string_list *list;
-   bool found_file;
-   bool list_only;
-   uint32_t crc;
    file_archive_transfer_t *transfer;
    /* Not used by the processing, free to use outside or in iterate callback */
    decompress_state_t *dec;
    void* cb_data;
+   size_t archive_path_size;
+   uint32_t crc;
+   char archive_path[PATH_MAX_LENGTH];
+   char current_file_path[PATH_MAX_LENGTH];
+   bool found_file;
+   bool list_only;
 };
 
 /* Returns true when parsing should continue. False to stop. */

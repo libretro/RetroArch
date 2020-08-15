@@ -47,10 +47,7 @@
 /* Holds all metadata for an RZIP file stream */
 struct rzipstream
 {
-   bool is_compressed;
-   bool is_writing;
    uint64_t size;
-   uint32_t chunk_size;
    /* virtual_ptr: Used to track how much
     * uncompressed data has been read */
    uint64_t virtual_ptr;
@@ -60,12 +57,15 @@ struct rzipstream
    const struct trans_stream_backend *inflate_backend;
    void *inflate_stream;
    uint8_t *in_buf;
+   uint8_t *out_buf;
    uint32_t in_buf_size;
    uint32_t in_buf_ptr;
-   uint8_t *out_buf;
    uint32_t out_buf_size;
    uint32_t out_buf_ptr;
    uint32_t out_buf_occupancy;
+   uint32_t chunk_size;
+   bool is_compressed;
+   bool is_writing;
 };
 
 /* Header Functions */

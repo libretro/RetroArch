@@ -35,8 +35,6 @@
 
 struct intfstream_internal
 {
-   enum intfstream_type type;
-
    struct
    {
       RFILE *fp;
@@ -44,19 +42,19 @@ struct intfstream_internal
 
    struct
    {
+      memstream_t *fp;
       struct
       {
          uint8_t *data;
          uint64_t size;
       } buf;
-      memstream_t *fp;
       bool writable;
    } memory;
 #ifdef HAVE_CHD
    struct
    {
-      int32_t track;
       chdstream_t *fp;
+      int32_t track;
    } chd;
 #endif
 #if defined(HAVE_ZLIB)
@@ -65,6 +63,7 @@ struct intfstream_internal
       rzipstream_t *fp;
    } rzip;
 #endif
+   enum intfstream_type type;
 };
 
 int64_t intfstream_get_size(intfstream_internal_t *intf)

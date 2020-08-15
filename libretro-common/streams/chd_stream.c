@@ -38,16 +38,8 @@
 struct chdstream
 {
    chd_file *chd;
-   /* Should we swap bytes? */
-   bool swab;
-   /* Size of frame taken from each hunk */
-   uint32_t frame_size;
-   /* Offset of data within frame */
-   uint32_t frame_offset;
-   /* Number of frames per hunk */
-   uint32_t frames_per_hunk;
-   /* First frame of track in chd */
-   uint32_t track_frame;
+   /* Loaded hunk */
+   uint8_t *hunkmem;
    /* Byte offset where track data starts (after pregap) */
    size_t track_start;
    /* Byte offset where track data ends */
@@ -56,16 +48,20 @@ struct chdstream
    size_t offset;
    /* Loaded hunk number */
    int32_t hunknum;
-   /* Loaded hunk */
-   uint8_t *hunkmem;
+   /* Size of frame taken from each hunk */
+   uint32_t frame_size;
+   /* Offset of data within frame */
+   uint32_t frame_offset;
+   /* Number of frames per hunk */
+   uint32_t frames_per_hunk;
+   /* First frame of track in chd */
+   uint32_t track_frame;
+   /* Should we swap bytes? */
+   bool swab;
 };
 
 typedef struct metadata
 {
-   char type[64];
-   char subtype[32];
-   char pgtype[32];
-   char pgsub[32];
    uint32_t frame_offset;
    uint32_t frames;
    uint32_t pad;
@@ -73,6 +69,10 @@ typedef struct metadata
    uint32_t pregap;
    uint32_t postgap;
    uint32_t track;
+   char type[64];
+   char subtype[32];
+   char pgtype[32];
+   char pgsub[32];
 } metadata_t;
 
 static uint32_t padding_frames(uint32_t frames)

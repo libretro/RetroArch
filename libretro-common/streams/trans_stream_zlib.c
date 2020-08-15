@@ -29,9 +29,9 @@
 
 struct zlib_trans_stream
 {
-   bool inited;
-   int ex; /* window_bits or level */
    z_stream z;
+   int ex; /* window_bits or level */
+   bool inited;
 };
 
 static void *zlib_deflate_stream_new(void)
