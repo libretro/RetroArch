@@ -1934,6 +1934,10 @@ struct rarch_state
    retro_time_t libretro_core_runtime_usec;
    retro_time_t video_driver_frame_time_samples[
       MEASURE_FRAME_TIME_SAMPLES_COUNT];
+   struct global              g_extern;         /* retro_time_t alignment */
+#ifdef HAVE_MENU
+   menu_input_t menu_input_state;               /* retro_time_t alignment */
+#endif
 
    retro_usec_t runloop_frame_time_last;
 
@@ -1946,11 +1950,22 @@ struct rarch_state
 #ifdef HAVE_MENU
    struct menu_state menu_driver_state;         /* int64_t alignment */
 #endif
+#if defined(HAVE_COMMAND)
+#ifdef HAVE_NETWORK_CMD
+   struct sockaddr_storage lastcmd_net_source;  /* int64_t alignment */
+#endif
+#endif
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t dispwidget_st;              /* uint64_t alignment */
 #endif
 #ifdef HAVE_MENU
    struct menu_bind_state menu_input_binds;     /* uint64_t alignment */
+#endif
+   struct retro_core_t        current_core;     /* uint64_t alignment */
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   struct retro_core_t secondary_core;          /* uint64_t alignment */
+#endif
 #endif
 
    uint64_t audio_driver_free_samples_count;
@@ -2107,6 +2122,10 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
+   struct retro_subsystem_rom_info
+      subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
+      [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
+   gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    content_state_t            content_st;                /* ptr alignment */
    midi_event_t midi_drv_input_event;                    /* ptr alignment */
    midi_event_t midi_drv_output_event;                   /* ptr alignment */
@@ -2132,69 +2151,28 @@ struct rarch_state
    runahead_load_state_function
       retro_unserialize_callback_original;               /* ptr alignment */
 #endif
-
-   /*************************************/
-   /* TODO/FIXME BEGIN - find alignment */
-#ifdef HAVE_DYNAMIC
-   dylib_t lib_handle;
-#endif
-#ifdef HAVE_NETWORKING
-   struct netplay_room netplay_host_room;
-#endif
+   struct retro_callbacks     retro_ctx;                 /* ptr alignment */
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   dylib_t secondary_module;
-   struct retro_core_t secondary_core;
-   struct retro_callbacks secondary_callbacks;
+   struct retro_callbacks secondary_callbacks;           /* ptr alignment */
 #endif
 #endif
-#ifdef HAVE_MENU
-   menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
-   menu_input_t menu_input_state;
-#endif
-
-   gfx_ctx_driver_t current_video_context;
-
-   /**
-    * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
-    * is in the middle of being rebuilt; in these cases we will save flag
-    * data and set this to true.
-    * When the context is reinit, it checks this, reads from
-    * deferred_flag_data and cleans it.
-    *
-    * TODO - Dirty hack, fix it better
-    */
-   gfx_ctx_flags_t deferred_flag_data;
-
-   retro_bits_t has_set_libretro_device;
-
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream
       audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
+                                                         /* ptr alignment */
 #endif
-
-   struct retro_callbacks     retro_ctx;
-   struct retro_core_t        current_core;
-   struct global              g_extern;
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-   struct sockaddr_storage lastcmd_net_source;
-   socklen_t lastcmd_net_source_len;
+#ifdef HAVE_NETWORKING
+   struct netplay_room netplay_host_room;                /* ptr alignment */
+#endif
+#ifdef HAVE_DYNAMIC
+   dylib_t lib_handle;                                   /* ptr alignment */
+#endif
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   dylib_t secondary_lib_handle;                         /* ptr alignment */
 #endif
 #endif
-
-#ifdef HAVE_THREAD_STORAGE
-   sthread_tls_t rarch_tls;
-#endif
-
-   jmp_buf error_sjlj_context;
-
-   struct retro_subsystem_rom_info
-      subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
-      [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
-
-   /* TODO/FIXME END - find alignment   */
-   /*************************************/
 
    /* Opaque handles to currently running window.
     * Used by e.g. input drivers which bind to a window.
@@ -2225,6 +2203,9 @@ struct rarch_state
    size_t runahead_save_state_size;
 #endif
 
+   jmp_buf error_sjlj_context;              /* 4-byte alignment, 
+                                               put it right before long */
+
    turbo_buttons_t input_driver_turbo_btns; /* int32_t alignment */
    int osk_ptr;
 #if defined(HAVE_COMMAND)
@@ -2250,9 +2231,13 @@ struct rarch_state
    int reannounce;
 #endif
 
-   input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
+   input_device_info_t input_device_info[MAX_INPUT_DEVICES]; 
+                                          /* unsigned alignment */
 #ifdef HAVE_MENU
-   menu_dialog_t dialog_st; /* unsigned alignment */
+   menu_dialog_t dialog_st;               /* unsigned alignment */
+#endif
+#ifdef HAVE_THREAD_STORAGE
+   sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
    unsigned runloop_pending_windowed_scale;
    unsigned runloop_max_frames;
@@ -2323,11 +2308,33 @@ struct rarch_state
 #endif
 
 #ifdef HAVE_MENU
-   unsigned char menu_keyboard_key_state[RETROK_LAST];
+   menu_input_pointer_hw_state_t menu_input_pointer_hw_state;  
+                                                /* int16_t alignment */
 #endif
 
+#ifdef HAVE_MENU
+   unsigned char menu_keyboard_key_state[RETROK_LAST];
+#endif
+   /**
+    * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
+    * is in the middle of being rebuilt; in these cases we will save flag
+    * data and set this to true.
+    * When the context is reinit, it checks this, reads from
+    * deferred_flag_data and cleans it.
+    *
+    * TODO - Dirty hack, fix it better
+    */
+   gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
+#if defined(HAVE_COMMAND)
+#ifdef HAVE_NETWORK_CMD
+   socklen_t lastcmd_net_source_len;            /* uint32_t alignment */
+#endif
+#endif
+   retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
+
+
 #ifdef HAVE_BSV_MOVIE
-   struct bsv_state bsv_movie_state; /* char alignment */
+   struct bsv_state bsv_movie_state;            /* char alignment */
 #endif
    char cached_video_driver[32];
    char video_driver_title_buf[64];
@@ -20606,7 +20613,7 @@ static void strcat_alloc(char **dst, const char *s)
 
 static void secondary_core_destroy(struct rarch_state *p_rarch)
 {
-   if (!p_rarch || !p_rarch->secondary_module)
+   if (!p_rarch || !p_rarch->secondary_lib_handle)
       return;
 
    /* unload game from core */
@@ -20619,8 +20626,8 @@ static void secondary_core_destroy(struct rarch_state *p_rarch)
       p_rarch->secondary_core.retro_deinit();
    memset(&p_rarch->secondary_core, 0, sizeof(struct retro_core_t));
 
-   dylib_close(p_rarch->secondary_module);
-   p_rarch->secondary_module = NULL;
+   dylib_close(p_rarch->secondary_lib_handle);
+   p_rarch->secondary_lib_handle = NULL;
    filestream_delete(p_rarch->secondary_library_path);
    if (p_rarch->secondary_library_path)
       free(p_rarch->secondary_library_path);
@@ -20629,7 +20636,7 @@ static void secondary_core_destroy(struct rarch_state *p_rarch)
 
 static bool secondary_core_ensure_exists(struct rarch_state *p_rarch)
 {
-   if (!p_rarch->secondary_module)
+   if (!p_rarch->secondary_lib_handle)
       if (!secondary_core_create(p_rarch))
          return false;
    return true;
@@ -20653,7 +20660,8 @@ static void remember_controller_port_device(
 {
    if (port >= 0 && port < MAX_USERS)
       p_rarch->port_map[port] = (int)device;
-   if (p_rarch->secondary_module && p_rarch->secondary_core.retro_set_controller_port_device)
+   if (     p_rarch->secondary_lib_handle 
+         && p_rarch->secondary_core.retro_set_controller_port_device)
       p_rarch->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
 }
 
@@ -20875,7 +20883,8 @@ static bool secondary_core_create(struct rarch_state *p_rarch)
    /* Load Core */
    if (!init_libretro_symbols_custom(p_rarch,
             CORE_TYPE_PLAIN, &p_rarch->secondary_core,
-            p_rarch->secondary_library_path, &p_rarch->secondary_module))
+            p_rarch->secondary_library_path, 
+            &p_rarch->secondary_lib_handle))
       return false;
 
    p_rarch->secondary_core.symbols_inited = true;
@@ -38866,14 +38875,14 @@ static enum runloop_state runloop_check_state(
                global->menu.noop_start_time      = current_time;
                global->menu.noop_press_time      = 0;
 
-               if (global->menu.prev_action == old_action)
+               if (global->menu_prev_action == old_action)
                   global->menu.action_start_time = global->menu.prev_start_time;
                else
                   global->menu.action_start_time = current_time;
             }
             else
             {
-               if (  global->menu.prev_action == action &&
+               if (  global->menu_prev_action == action &&
                      global->menu.noop_press_time < 200000) /* 250ms */
                {
                   global->menu.action_start_time = global->menu.prev_start_time;
@@ -38882,7 +38891,7 @@ static enum runloop_state runloop_check_state(
                else
                {
                   global->menu.prev_start_time   = current_time;
-                  global->menu.prev_action       = action;
+                  global->menu_prev_action       = action;
                   global->menu.action_press_time = 0;
                }
             }

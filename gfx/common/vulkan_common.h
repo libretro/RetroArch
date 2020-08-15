@@ -95,16 +95,6 @@ typedef struct vulkan_context
    slock_t *queue_lock;
    retro_vulkan_destroy_device_t destroy_device;   /* ptr alignment */
 
-   uint32_t graphics_queue_index;
-   uint32_t num_swapchain_images;
-   uint32_t current_swapchain_index;
-   uint32_t current_frame_index;
-
-   unsigned swapchain_width;
-   unsigned swapchain_height;
-   unsigned swap_interval;
-   unsigned num_recycled_acquire_semaphores;
-
    VkInstance instance;
    VkPhysicalDevice gpu;
    VkDevice device;
@@ -125,6 +115,16 @@ typedef struct vulkan_context
 #ifdef VULKAN_DEBUG
    VkDebugReportCallbackEXT debug_callback;
 #endif
+   uint32_t graphics_queue_index;
+   uint32_t num_swapchain_images;
+   uint32_t current_swapchain_index;
+   uint32_t current_frame_index;
+
+   unsigned swapchain_width;
+   unsigned swapchain_height;
+   unsigned swap_interval;
+   unsigned num_recycled_acquire_semaphores;
+
    bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
    bool invalid_swapchain;
    /* Used by screenshot to get blits with correct colorspace. */
@@ -189,7 +189,7 @@ struct vk_vertex
 {
    float x, y;
    float tex_x, tex_y;
-   struct vk_color color;
+   struct vk_color color;        /* float alignment */
 };
 
 struct vk_image
@@ -233,7 +233,7 @@ struct vk_buffer
 
 struct vk_buffer_node
 {
-   struct vk_buffer buffer;
+   struct vk_buffer buffer;      /* uint64_t alignment */
    struct vk_buffer_node *next;
 };
 

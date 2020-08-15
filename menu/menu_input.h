@@ -168,7 +168,7 @@ typedef struct menu_input_pointer
 
 typedef struct menu_input
 {
-   menu_input_pointer_t pointer; /* int64_t alignment */
+   menu_input_pointer_t pointer; /* retro_time_t alignment */
    unsigned ptr;
    bool select_inhibit;
    bool cancel_inhibit;

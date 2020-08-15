@@ -13,6 +13,7 @@ For POD-types, try to order structs as follows (first to last):
 * ptrdiff_t       (4 bytes [32bit], 8 bytes [64bit])
 * ssize_t         (4 bytes [32bit], 8 bytes [64bit])
 * size_t          (4 bytes [32bit], 8 bytes [64bit])
+* jmp_buf         (4 bytes)
 * long            (4 bytes [64bit Win], 8 bytes [64bit non-Win], 4 bytes [32bit])
 * int32_t         (4 bytes)
 * float           (4 bytes)

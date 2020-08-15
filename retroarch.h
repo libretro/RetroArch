@@ -226,61 +226,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   bool launched_from_cli;
-   bool cli_load_menu_on_error;
-   struct
-   {
-      char savefile[8192];
-      char savestate[8192];
-      char cheatfile[8192];
-      char ups[8192];
-      char bps[8192];
-      char ips[8192];
-      char label[8192];
-      char *remapfile;
-   } name;
-
-   /* Recording. */
-   struct
-   {
-      bool use_output_dir;
-      char path[8192];
-      char config[8192];
-      char output_dir[8192];
-      char config_dir[8192];
-      unsigned width;
-      unsigned height;
-
-      size_t gpu_width;
-      size_t gpu_height;
-   } record;
-
-   /* Settings and/or global state that is specific to
-    * a console-style implementation. */
-   struct
-   {
-      bool flickerfilter_enable;
-      bool softfilter_enable;
-
-      struct
-      {
-         bool pal_enable;
-         bool pal60_enable;
-         unsigned char soft_filter_index;
-         unsigned      gamma_correction;
-         unsigned int  flicker_filter_index;
-
-         struct
-         {
-            bool check;
-            unsigned count;
-            uint32_t *list;
-            rarch_resolution_t current;
-            rarch_resolution_t initial;
-         } resolutions;
-      } screen;
-   } console;
-   /* Settings and/or global states specific to menus */
 #ifdef HAVE_MENU
    struct
    {
@@ -289,9 +234,65 @@ typedef struct global
       retro_time_t noop_start_time;
       retro_time_t action_start_time;
       retro_time_t action_press_time;
-      enum menu_action prev_action;
    } menu;
 #endif
+   struct
+   {
+      char *remapfile;
+      char savefile[8192];
+      char savestate[8192];
+      char cheatfile[8192];
+      char ups[8192];
+      char bps[8192];
+      char ips[8192];
+      char label[8192];
+   } name;
+
+   /* Recording. */
+   struct
+   {
+      size_t gpu_width;
+      size_t gpu_height;
+      unsigned width;
+      unsigned height;
+      char path[8192];
+      char config[8192];
+      char output_dir[8192];
+      char config_dir[8192];
+      bool use_output_dir;
+   } record;
+
+   /* Settings and/or global state that is specific to
+    * a console-style implementation. */
+   struct
+   {
+      struct
+      {
+         struct
+         {
+            uint32_t *list;
+            unsigned count;
+            rarch_resolution_t current;
+            rarch_resolution_t initial;
+            bool check;
+         } resolutions;
+         unsigned      gamma_correction;
+         unsigned int  flicker_filter_index;
+         unsigned char soft_filter_index;
+         bool pal_enable;
+         bool pal60_enable;
+      } screen;
+
+      bool flickerfilter_enable;
+      bool softfilter_enable;
+
+   } console;
+   /* Settings and/or global states specific to menus */
+#ifdef HAVE_MENU
+   enum menu_action menu_prev_action;
+#endif
+   bool launched_from_cli;
+   bool cli_load_menu_on_error;
 } global_t;
 
 typedef struct content_state

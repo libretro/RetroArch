@@ -58,9 +58,9 @@ typedef struct rarch_memory_map
 typedef struct rarch_system_info
 {
    struct retro_location_callback location_cb; /* ptr alignment */
-   disk_control_interface_t disk_control; /* ptr alignment */
-   struct retro_system_info info; /* ptr alignment */
-   rarch_memory_map_t mmaps;      /* ptr alignment */
+   disk_control_interface_t disk_control;      /* ptr alignment */
+   struct retro_system_info info;              /* ptr alignment */
+   rarch_memory_map_t mmaps;                   /* ptr alignment */
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
    struct
    {

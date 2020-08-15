@@ -36,9 +36,9 @@
 
 typedef struct
 {
-   struct font_line_metrics line_metrics;
-   struct font_atlas atlas;
-   struct font_glyph glyphs[256];
+   struct font_atlas atlas;               /* ptr   alignment */
+   struct font_glyph glyphs[256];         /* unsigned alignment */
+   struct font_line_metrics line_metrics; /* float alignment */
 } stb_font_renderer_t;
 
 static struct font_atlas *font_renderer_stb_get_atlas(void *data)

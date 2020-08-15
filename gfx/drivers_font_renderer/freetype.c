@@ -40,21 +40,21 @@
 
 typedef struct freetype_atlas_slot
 {
-   struct font_glyph glyph;
+   struct freetype_atlas_slot* next;   /* ptr alignment */
+   struct font_glyph glyph;            /* unsigned alignment */
    unsigned charcode;
    unsigned last_used;
-   struct freetype_atlas_slot* next;
 }freetype_atlas_slot_t;
 
 typedef struct freetype_renderer
 {
-   FT_Library lib;
-   FT_Face face;
-   struct font_atlas atlas;
-   freetype_atlas_slot_t atlas_slots[FT_ATLAS_SIZE];
-   freetype_atlas_slot_t* uc_map[0x100];
+   FT_Library lib;                                   /* ptr alignment   */
+   FT_Face face;                                     /* ptr alignment   */
+   struct font_atlas atlas;                          /* ptr alignment   */
+   freetype_atlas_slot_t atlas_slots[FT_ATLAS_SIZE]; /* ptr alignment   */
+   freetype_atlas_slot_t* uc_map[0x100];             /* ptr alignment   */
    unsigned usage_counter;
-   struct font_line_metrics line_metrics;
+   struct font_line_metrics line_metrics;            /* float alignment */
 } ft_font_renderer_t;
 
 static struct font_atlas *font_renderer_ft_get_atlas(void *data)
