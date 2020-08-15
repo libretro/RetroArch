@@ -66,10 +66,10 @@ typedef struct ex_arena
 
 typedef struct ex_hashmap32
 {
+   uint32_t *keys;
    uintptr_t *vals;
    uint32_t len;
    uint32_t cap;
-   uint32_t *keys;
 } ex_hashmap32;
 
 typedef struct
@@ -106,22 +106,22 @@ typedef struct
 
 static const struct
 {
-   enum msg_hash_enums name_enum, by_enum;
    const char* rdbkey;
+   enum msg_hash_enums name_enum, by_enum;
    bool use_split, is_company, is_numeric;
 }
 explore_by_info[EXPLORE_CAT_COUNT] = 
 {
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,    "developer",   true,  true,  false },
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,    "publisher",   true,  true,  false },
-   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR, MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR, "releaseyear", false, false, true  },
-   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT, MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT, "users",       false, false, true  },
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,               MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,        "genre",       true,  false, false },
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,              MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,       "origin",      false, false, false },
-   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,       MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,       "region",      false, false, false },
-   { MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,    "franchise",   false, false, false },
-   { MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,          MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,          "tags",        true,  false, false },
-   { MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,         MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,  "system",      false, false, false },
+   { "developer",   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,    true,  true,  false },
+   { "publisher",   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,    true,  true,  false },
+   { "releaseyear", MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR, MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR, false, false, true  },
+   { "users",       MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT, MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT, false, false, true  },
+   { "genre",       MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,               MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,        true,  false, false },
+   { "origin",      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,              MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,       false, false, false },
+   { "region",      MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,       MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,       false, false, false },
+   { "franchise",   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,    false, false, false },
+   { "tags",        MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,          MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,          true,  false, false },
+   { "system",      MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,         MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,  false, false, false },
 };
 
 /* TODO/FIXME - static global */
@@ -538,9 +538,9 @@ static explore_state_t *explore_build_list(void)
    struct explore_rdb
    {
       libretrodb_t *handle;
+      ex_hashmap32 playlist_crcs;  /* ptr alignment */
+      ex_hashmap32 playlist_names; /* ptr alignment */
       size_t count;
-      ex_hashmap32 playlist_crcs;
-      ex_hashmap32 playlist_names;
       char systemname[256];
    }
    *rdbs                                    = NULL;
