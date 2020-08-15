@@ -42,8 +42,8 @@
  * an image load */
 typedef struct
 {
-   gfx_thumbnail_t *thumbnail;
    uint64_t list_id;
+   gfx_thumbnail_t *thumbnail;
 } gfx_thumbnail_tag_t;
 
 /* Setters */

@@ -40,6 +40,8 @@
  * each individual entry by hand... */
 struct gfx_thumbnail_path_data
 {
+   enum playlist_thumbnail_mode playlist_right_mode;
+   enum playlist_thumbnail_mode playlist_left_mode;
    char system[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
    char content_label[PATH_MAX_LENGTH];
@@ -48,8 +50,6 @@ struct gfx_thumbnail_path_data
    char content_img[PATH_MAX_LENGTH];
    char right_path[PATH_MAX_LENGTH];
    char left_path[PATH_MAX_LENGTH];
-   enum playlist_thumbnail_mode playlist_right_mode;
-   enum playlist_thumbnail_mode playlist_left_mode;
 };
 
 /* Resets thumbnail path data
