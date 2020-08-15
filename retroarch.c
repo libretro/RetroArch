@@ -26580,6 +26580,21 @@ static int16_t input_joypad_analog_axis(
    const struct retro_keybind *bind_y_minus = NULL;
    const struct retro_keybind *bind_y_plus  = NULL;
 
+   /* Skip analog input with analog_dpad_mode */
+   switch (settings->uints.input_analog_dpad_mode[port])
+   {
+      case ANALOG_DPAD_LSTICK:
+         if (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+            return 0;
+         break;
+      case ANALOG_DPAD_RSTICK:
+         if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            return 0;
+         break;
+      default:
+         break;
+   }
+
    input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus);
 
    bind_minus                             = &binds[ident_minus];
