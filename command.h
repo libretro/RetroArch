@@ -29,14 +29,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct command command_t;
-
-typedef struct command_handle
-{
-   command_t *handle;
-   unsigned id;
-} command_handle_t;
-
 enum event_command
 {
    CMD_EVENT_NONE = 0,
@@ -213,6 +205,14 @@ enum event_command
    CMD_EVENT_AI_SERVICE_CALL,
    CMD_EVENT_SAVE_FILES
 };
+
+typedef struct command command_t;
+
+typedef struct command_handle
+{
+   command_t *handle;
+   unsigned id;
+} command_handle_t;
 
 /**
  * command_event:

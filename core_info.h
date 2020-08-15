@@ -33,7 +33,6 @@ enum core_info_list_qsort_type
    CORE_INFO_LIST_SORT_SYSTEM_NAME
 };
 
-
 typedef struct
 {
    char *path;

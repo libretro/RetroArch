@@ -72,7 +72,7 @@ typedef struct
 typedef struct
 {
    char *backup_path;
-   core_backup_list_date_t date;
+   core_backup_list_date_t date;       /* unsigned alignment */
    uint32_t crc;
    enum core_backup_mode backup_mode;
 } core_backup_list_entry_t;

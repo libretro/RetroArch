@@ -33,10 +33,10 @@ RETRO_BEGIN_DECLS
 
 typedef struct content_ctx_info
 {
-   int argc;                       /* Argument count. */
    char **argv;                    /* Argument variable list. */
    void *args;                     /* Arguments passed from callee */
    environment_get_t environ_get;  /* Function passed for environment_get function */
+   int argc;                       /* Argument count. */
 } content_ctx_info_t;
 
 /* Load a RAM state from disk to memory. */

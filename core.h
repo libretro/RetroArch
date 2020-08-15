@@ -45,7 +45,7 @@ enum
 
 typedef struct rarch_memory_descriptor
 {
-   struct retro_memory_descriptor core;
+   struct retro_memory_descriptor core;        /* uint64_t alignment */
    size_t disconnect_mask;
 } rarch_memory_descriptor_t;
 
@@ -86,9 +86,9 @@ typedef struct retro_ctx_input_state_info
 
 typedef struct retro_ctx_cheat_info
 {
+   const char *code;
    unsigned index;
    bool enabled;
-   const char *code;
 } retro_ctx_cheat_info_t;
 
 typedef struct retro_ctx_api_info
