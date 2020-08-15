@@ -31,9 +31,9 @@ static struct hidpad_retrode_data* port_device[4];
 struct hidpad_retrode_data
 {
    struct pad_connection* connection;
-   uint8_t data[64];
    uint32_t slot;
    uint32_t buttons;
+   uint8_t data[64];
 };
 
 static void* hidpad_retrode_init(void *data, uint32_t slot, hid_driver_t *driver)

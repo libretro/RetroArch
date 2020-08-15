@@ -29,6 +29,8 @@ RETRO_BEGIN_DECLS
 
 typedef struct videocrt_switch
 {
+   double p_clock;
+
    int center_adjust;
    int porch_adjust;
    int tmp_porch_adjust;
@@ -44,7 +46,6 @@ typedef struct videocrt_switch
    float ra_tmp_core_hz;
    float fly_aspect;
 
-   double p_clock;
 } videocrt_switch_t;
 
 void crt_switch_res_core(

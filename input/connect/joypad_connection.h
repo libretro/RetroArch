@@ -55,9 +55,9 @@
 
 struct joypad_connection
 {
-    bool connected;
     struct pad_connection_interface *iface;
     void* data;
+    bool connected;
 };
 
 typedef struct pad_connection_interface

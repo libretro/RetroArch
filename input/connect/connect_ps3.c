@@ -27,11 +27,11 @@ struct hidpad_ps3_data
 {
    struct pad_connection* connection;
    hid_driver_t *driver;
-   uint8_t data[512];
    uint32_t slot;
    uint32_t buttons;
-   bool have_led;
    uint16_t motors[2];
+   uint8_t data[512];
+   bool have_led;
 };
 
 /*

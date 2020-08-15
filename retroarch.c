@@ -1901,7 +1901,7 @@ struct discord_state
    int64_t pause_time;
    int64_t elapsed_time;
 
-   DiscordRichPresence presence;
+   DiscordRichPresence presence;       /* int64_t alignment */
 
    unsigned status;
 
@@ -1923,6 +1923,7 @@ struct rarch_state
    double audio_source_ratio_original;
    double audio_source_ratio_current;
    struct retro_system_av_info video_driver_av_info; /* double alignment */
+   videocrt_switch_t crt_switch_st;                  /* double alignment */
 
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
@@ -1933,11 +1934,20 @@ struct rarch_state
 
    retro_usec_t runloop_frame_time_last;
 
-#ifdef HAVE_GFX_WIDGETS
-   dispgfx_widget_t dispwidget_st; /* uint64_t alignment */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   rarch_timer_t shader_delay_timer;            /* int64_t alignment */
+#endif
+#ifdef HAVE_DISCORD
+   discord_state_t discord_st;                  /* int64_t alignment */
 #endif
 #ifdef HAVE_MENU
-   struct menu_bind_state menu_input_binds; /* uint64_t alignment */
+   struct menu_state menu_driver_state;         /* int64_t alignment */
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   dispgfx_widget_t dispwidget_st;              /* uint64_t alignment */
+#endif
+#ifdef HAVE_MENU
+   struct menu_bind_state menu_input_binds;     /* uint64_t alignment */
 #endif
 
    uint64_t audio_driver_free_samples_count;
@@ -1948,8 +1958,13 @@ struct rarch_state
 
    uint64_t video_driver_frame_time_count;
    uint64_t video_driver_frame_count;
-   struct retro_camera_callback camera_cb; /* uint64_t alignment */
-   gfx_animation_t anim; /* uint64_t alignment */
+   struct retro_camera_callback camera_cb;    /* uint64_t alignment */
+   gfx_animation_t anim;                      /* uint64_t alignment */
+   gfx_thumbnail_state_t gfx_thumb_state;     /* uint64_t alignment */
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
+#endif
+
 
    uint8_t *video_driver_record_gpu_buffer;
    uint8_t *midi_drv_input_buffer;
@@ -2089,19 +2104,25 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
-   core_info_state_t core_info_st;            /* ptr alignment */
-   rarch_system_info_t runloop_system;        /* ptr alignment */
-   struct retro_hw_render_callback hw_render; /* ptr alignment */
+   content_state_t            content_st;                /* ptr alignment */
+   midi_event_t midi_drv_input_event;                    /* ptr alignment */
+   midi_event_t midi_drv_output_event;                   /* ptr alignment */
+   core_info_state_t core_info_st;                       /* ptr alignment */
+   rarch_system_info_t runloop_system;                   /* ptr alignment */
+   struct retro_hw_render_callback hw_render;            /* ptr alignment */
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_t     *bsv_movie_state_handle;   /* ptr alignment */
+   bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
 #endif
-   gfx_display_t              dispgfx;        /* ptr alignment */
-   input_keyboard_press_t keyboard_press_cb;  /* ptr alignment */
+   gfx_display_t              dispgfx;                   /* ptr alignment */
+   input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
+   struct retro_frame_time_callback runloop_frame_time;  /* ptr alignment */
+   retro_input_state_t input_state_callback_original;    /* ptr alignment */
+   struct retro_audio_callback audio_callback;           /* ptr alignment */
+   retro_keyboard_event_t runloop_key_event;             /* ptr alignment */
+   retro_keyboard_event_t runloop_frontend_key_event;    /* ptr alignment */
 
    /*************************************/
    /* TODO/FIXME BEGIN - find alignment */
-   videocrt_switch_t crt_switch_st;
-   gfx_thumbnail_state_t gfx_thumb_state;
 #ifdef HAVE_DYNAMIC
    dylib_t lib_handle;
 #endif
@@ -2121,17 +2142,7 @@ struct rarch_state
    menu_input_t menu_input_state;
 #endif
 
-   midi_event_t midi_drv_input_event;
-   midi_event_t midi_drv_output_event;
-
    gfx_ctx_driver_t current_video_context;
-
-
-   retro_input_state_t input_state_callback_original;
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   input_remote_state_t remote_st_ptr;
-#endif
 
    /**
     * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
@@ -2146,26 +2157,14 @@ struct rarch_state
 
    retro_bits_t has_set_libretro_device;
 
-   struct retro_frame_time_callback runloop_frame_time;
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream
       audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
-#endif
-   struct retro_audio_callback audio_callback;
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   rarch_timer_t shader_delay_timer;
-#endif
-#ifdef HAVE_MENU
-   struct menu_state menu_driver_state;
-#endif
-#ifdef HAVE_DISCORD
-   discord_state_t            discord_st;
 #endif
 
    struct retro_callbacks     retro_ctx;
    struct retro_core_t        current_core;
    struct global              g_extern;
-   content_state_t            content_st;
 #if defined(HAVE_COMMAND)
 #ifdef HAVE_NETWORK_CMD
    struct sockaddr_storage lastcmd_net_source;
@@ -2182,9 +2181,6 @@ struct rarch_state
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
-
-   retro_keyboard_event_t runloop_key_event;
-   retro_keyboard_event_t runloop_frontend_key_event;
 
    video_driver_frame_t frame_bak;
 
