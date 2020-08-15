@@ -1415,7 +1415,7 @@ static int16_t btstack_hid_joypad_state(
    uint16_t port_idx                     = joypad_info->joy_idx;
    joypad_connection_t              *pad = &slots[port_idx];
 
-   if (!pad || !pad->joypad)
+   if (!pad)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
