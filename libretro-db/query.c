@@ -65,25 +65,25 @@ typedef struct rmsgpack_dom_value (*rarch_query_func)(
 
 struct invocation
 {
+   struct argument *argv;
    rarch_query_func func;
    unsigned argc;
-   struct argument *argv;
 };
 
 struct argument
 {
-   enum argument_type type;
    union
    {
       struct rmsgpack_dom_value value;
       struct invocation invocation;
    } a;
+   enum argument_type type;
 };
 
 struct query
 {
+   struct invocation root; /* ptr alignment */
    unsigned ref_count;
-   struct invocation root;
 };
 
 struct registered_func
