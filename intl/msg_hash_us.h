@@ -3673,7 +3673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Allows the menu to be controlled with a touchscreen." 
+   "Allows the menu to be controlled with a touchscreen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
@@ -8328,7 +8328,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Removes the system names from the playlists. For example, 'Sony - PlayStation' becomes 'PlayStation'. (Restart Required)"
+   "Removes the vendor names from the playlists. For example, 'Sony - PlayStation' becomes 'PlayStation'. (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
