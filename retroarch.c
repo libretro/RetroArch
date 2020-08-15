@@ -1186,8 +1186,8 @@ static const camera_driver_t *camera_drivers[] = {
 #define MAX_VISIBILITY 32
 #endif
 
-#define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
-#define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
+#define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
+#define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
@@ -1621,8 +1621,8 @@ typedef struct video_pixel_scaler
 
 typedef struct
 {
-   enum gfx_ctx_api api;
    struct string_list *list;
+   enum gfx_ctx_api api;
 } gfx_api_gpu_map;
 
 struct remote_message
@@ -1725,12 +1725,14 @@ struct cmd_action_map
 
 struct command
 {
+#ifdef HAVE_STDIN_CMD
+   size_t stdin_buf_ptr;
+#endif
 #ifdef HAVE_NETWORK_CMD
    int net_fd;
 #endif
 #ifdef HAVE_STDIN_CMD
    char stdin_buf[STDIN_BUF_SIZE];
-   size_t stdin_buf_ptr;
 #endif
    bool stdin_enable;
    bool state[RARCH_BIND_LIST_END];
@@ -1739,7 +1741,9 @@ struct command
 /* Input config. */
 struct input_bind_map
 {
-   bool valid;
+   const char *base;
+
+   enum msg_hash_enums desc;
 
    /* Meta binds get input as prefix, not input_playerN".
     * 0 = libretro related.
@@ -1748,9 +1752,9 @@ struct input_bind_map
     */
    uint8_t meta;
 
-   const char *base;
-   enum msg_hash_enums desc;
    uint8_t retro_key;
+
+   bool valid;
 };
 
 typedef struct turbo_buttons turbo_buttons_t;
@@ -1871,7 +1875,6 @@ struct menu_bind_state
    unsigned port;
 
    bool skip;
-
 };
 #endif
 
@@ -2603,10 +2606,10 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 };
 
 static gfx_api_gpu_map gpu_map[] = {
-   { GFX_CTX_VULKAN_API,     NULL },
-   { GFX_CTX_DIRECT3D10_API, NULL },
-   { GFX_CTX_DIRECT3D11_API, NULL },
-   { GFX_CTX_DIRECT3D12_API, NULL }
+   { NULL,                   GFX_CTX_VULKAN_API     },
+   { NULL,                   GFX_CTX_DIRECT3D10_API },
+   { NULL,                   GFX_CTX_DIRECT3D11_API },
+   { NULL,                   GFX_CTX_DIRECT3D12_API }
 };
 
 static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
