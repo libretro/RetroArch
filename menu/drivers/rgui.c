@@ -5241,7 +5241,7 @@ static void rgui_populate_entries(void *data,
       {
          /* Make sure that any changes made while accessing
           * the video settings menu are preserved */
-         rgui_video_settings_t current_video_settings = {0};
+         rgui_video_settings_t current_video_settings = {{0}};
          rgui_get_video_config(&current_video_settings);
          if (rgui_is_video_config_equal(&current_video_settings,
                   &rgui->menu_video_settings))
@@ -5579,7 +5579,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
          /* Restore content video settings *if* user
           * has not changed video settings since menu was
           * last toggled on */
-         rgui_video_settings_t current_video_settings = {0};
+         rgui_video_settings_t current_video_settings = {{0}};
          rgui_get_video_config(&current_video_settings);
          
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
