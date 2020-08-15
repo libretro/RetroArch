@@ -2730,8 +2730,6 @@ playlist_t *playlist_init(const playlist_config_t *config)
    {
       if (!string_is_empty(playlist->base_content_directory))
       {
-         size_t playlist_base_content_directory_length = strlen(playlist->base_content_directory);
-         size_t new_base_content_directory_length = strlen(playlist->config.base_content_directory);
          size_t i, j, len;
          char tmp_entry_path[PATH_MAX_LENGTH];
 
