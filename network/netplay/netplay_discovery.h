@@ -35,7 +35,8 @@ struct netplay_host
 {
    struct sockaddr addr;
    socklen_t addrlen;
-
+   int  content_crc;
+   int  port;
    char address[NETPLAY_HOST_STR_LEN];
    char nick[NETPLAY_HOST_STR_LEN];
    char frontend[NETPLAY_HOST_STR_LEN];
@@ -44,8 +45,6 @@ struct netplay_host
    char retroarch_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_LONGSTR_LEN];
    char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
-   int  content_crc;
-   int  port;
 };
 
 struct netplay_host_list
@@ -65,27 +64,27 @@ enum netplay_host_method
 
 struct netplay_room
 {
+   struct netplay_room *next;
    int id;
-   char nickname    [2048];
-   char address     [2048];
-   char mitm_address[2048];
    int  port;
    int  mitm_port;
-   char corename    [2048];
-   char frontend    [2048];
-   char coreversion [2048];
-   char gamename    [2048];
    int  gamecrc;
    int  timestamp;
    int  host_method;
+   char retroarch_version [2048];
+   char subsystem_name    [2048];
+   char country           [2048];
+   char nickname          [2048];
+   char address           [2048];
+   char mitm_address      [2048];
+   char corename          [2048];
+   char frontend          [2048];
+   char coreversion       [2048];
+   char gamename          [2048];
    bool has_password;
    bool has_spectate_password;
    bool lan;
    bool fixed;
-   char retroarch_version [2048];
-   char subsystem_name    [2048];
-   char country[2048];
-   struct netplay_room *next;
 };
 
 extern struct netplay_room *netplay_room_list;

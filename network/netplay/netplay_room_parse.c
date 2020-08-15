@@ -44,9 +44,9 @@ struct netplay_rooms
 typedef struct tag_Context
 {
    JSON_Parser parser;
-   enum parse_state state;
    char *cur_field;
    void *cur_member;
+   enum parse_state state;
 } Context;
 
 /* TODO/FIXME - static global variable */
