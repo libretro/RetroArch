@@ -88,6 +88,8 @@ typedef struct
    enum playlist_sort_mode *current_meta_sort_mode_val;
    intfstream_t *file;
    playlist_t *playlist;
+   JSON_Parser parser;     /* ptr alignment */
+   JSON_Writer writer;     /* ptr alignment */
 
    unsigned array_depth;
    unsigned object_depth;
@@ -96,9 +98,6 @@ typedef struct
    bool in_subsystem_roms;
    bool capacity_exceeded;
    bool out_of_memory;
-
-   JSON_Parser parser;
-   JSON_Writer writer;
 } JSONContext;
 
 /* TODO/FIXME - global state - perhaps move outside this file */

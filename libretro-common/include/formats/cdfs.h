@@ -41,18 +41,19 @@ typedef struct cdfs_track_t
 
 typedef struct cdfs_file_t
 {
+   struct cdfs_track_t* track;
    int first_sector;
    int current_sector;
-   unsigned int current_sector_offset;
    int sector_buffer_valid;
+   unsigned int current_sector_offset;
    unsigned int size;
    unsigned int pos;
    uint8_t sector_buffer[2048];
-   struct cdfs_track_t* track;
 } cdfs_file_t;
 
 /* opens the specified file within the CD or virtual CD.
- * if path is NULL, will open the raw CD (useful for reading CD without having to worry about sector sizes,
+ * if path is NULL, will open the raw CD (useful for 
+ * reading CD without having to worry about sector sizes,
  * headers, or checksum data)
  */
 int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* stream, const char* path);

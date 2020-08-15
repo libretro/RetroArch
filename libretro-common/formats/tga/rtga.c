@@ -45,15 +45,13 @@ struct rtga
 
 typedef struct
 {
-   uint32_t img_x, img_y;
-   int img_n, img_out_n;
-
-   int buflen;
-   uint8_t buffer_start[128];
-
    uint8_t *img_buffer;
    uint8_t *img_buffer_end;
    uint8_t *img_buffer_original;
+   int buflen;
+   int img_n, img_out_n;
+   uint32_t img_x, img_y;
+   uint8_t buffer_start[128];
 } rtga_context;
 
 static INLINE uint8_t rtga_get8(rtga_context *s)
