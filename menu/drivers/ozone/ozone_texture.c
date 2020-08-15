@@ -458,7 +458,7 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 
    if (
          (type >= MENU_SETTINGS_INPUT_BEGIN) &&
-         (type <= MENU_SETTINGS_INPUT_DESC_END)
+         (type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
       )
       {
          /* This part is only utilized by Input User # Binds */
@@ -492,9 +492,18 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          else
          {
             /* Quickmenu controls repeats the same icons for all users*/
-            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-            while (type > (input_id + 23))
-               input_id = (input_id + 24);
+            if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+            {
+               input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
+               while (type > (input_id + 23))
+                  input_id = (input_id + 24);
+            }
+            else
+            {
+               input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+               while (type > (input_id + 15))
+                  input_id = (input_id + 16);
+            }
          }
          /* This is utilized for both Input Binds and Quickmenu controls*/
          if (type == input_id )

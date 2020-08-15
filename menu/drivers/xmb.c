@@ -2889,7 +2889,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
    if (
          (type >= MENU_SETTINGS_INPUT_BEGIN) &&
-         (type <= MENU_SETTINGS_INPUT_DESC_END)
+         (type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
       )
       {
          unsigned input_id;
@@ -2923,10 +2923,17 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          else
          {
             /* Quickmenu controls repeats the same icons for all users */
-            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-            while (type > (input_id + 23))
+            if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
             {
-               input_id = (input_id + 24) ;
+               input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
+               while (type > (input_id + 23))
+                  input_id = (input_id + 24);
+            }
+            else
+            {
+               input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+               while (type > (input_id + 15))
+                  input_id = (input_id + 16);
             }
          }
          /* This is utilized for both Input # Binds and Quickmenu controls */
