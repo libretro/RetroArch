@@ -6657,11 +6657,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
-   "Albanian - Shqiptar"
+   "Albanian - Shqip"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabic - عربى (Restart Required)"
+   "Arabic - العربية (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
@@ -6669,11 +6669,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
-   "Azerbaijani - Azərbaycan"
+   "Azerbaijani - Azərbaycan dili"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
-   "Basque - Euskal"
+   "Basque - Euskara"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
@@ -6681,7 +6681,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
-   "Bulgarian - български"
+   "Bulgarian - Български"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
@@ -6721,11 +6721,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
-   "Estonian - Eestlane"
+   "Estonian - Eesti keel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
-   "Filipino - Pilipino"
+   "Filipino - Wikang Filipino"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
@@ -6741,7 +6741,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
-   "Georgian - ქართული (Restart Required)"
+   "Georgian - ქართული ენა (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
@@ -6761,7 +6761,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
-   "Hebrew - עִברִית"
+   "Hebrew - עִבְרִית‎"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HINDI,
@@ -6769,11 +6769,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
-   "Hungarian - Magyar nyelv"
+   "Hungarian - Magyar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
-   "Icelandic - Íslensku"
+   "Icelandic - Íslenska"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
@@ -6801,7 +6801,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LATIN,
-   "Latin - Latine"
+   "Latin - Lingua Latina"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
@@ -6809,11 +6809,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
-   "Lithuanian - Lietuvis"
+   "Lithuanian - Lietuvių kalba"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
-   "Macedonian - Македонски"
+   "Macedonian - македонски"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_MALAY,
@@ -6845,19 +6845,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
-   "Romanian - Română"
+   "Romanian - Limba Română"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
-   "Russian - Русский"
+   "Russian - Русский язык"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
-   "Serbian - Српски"
+   "Serbian - Cрпски / Srpski"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
-   "Slovak - Slovenský"
+   "Slovak - Slovenčina"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
@@ -6869,7 +6869,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
-   "Swahili - Kiswahili"
+   "Swahili - KiSwahili"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
@@ -6877,7 +6877,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
-   "Tamil - தமிழ் மொழி (Restart Required)"
+   "Tamil - தமிழ் (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
@@ -6893,11 +6893,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
-   "Ukrainian - українська мова"
+   "Ukrainian - Українська мова"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_URDU,
-   "Urdu - اردو (Restart Required)"
+   "Urdu - اُردُو (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
@@ -6909,7 +6909,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
-   "Yiddish - יידיש"
+   "Yiddish - ײִדיש"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_UNKNOWN_COMPILER,
