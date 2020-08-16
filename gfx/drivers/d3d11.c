@@ -64,13 +64,26 @@
 
 /* Temporary workaround for d3d11 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d11_fake_context;
-static uint32_t d3d11_get_flags(void *data);
 
 static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context;
 
-static void d3d11_clear_scissor(d3d11_video_t *d3d11, unsigned video_width, unsigned video_height)
+static uint32_t d3d11_get_flags(void *data)
+{
+   uint32_t flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+
+   return flags;
+}
+
+static void d3d11_clear_scissor(
+      d3d11_video_t *d3d11,
+      unsigned video_width, unsigned video_height)
 {
    D3D11_RECT scissor_rect;
 
@@ -93,8 +106,9 @@ static void d3d11_free_overlays(d3d11_video_t* d3d11)
    Release(d3d11->overlays.vbo);
 }
 
-   static void
-d3d11_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
+static void d3d11_overlay_vertex_geom(
+      void* data, unsigned index,
+      float x, float y, float w, float h)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    d3d11_video_t*           d3d11 = (d3d11_video_t*)data;
@@ -114,7 +128,9 @@ d3d11_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
 }
 
-static void d3d11_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
+static void d3d11_overlay_tex_geom(
+      void* data, unsigned index,
+      float u, float v, float w, float h)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    d3d11_video_t*           d3d11 = (d3d11_video_t*)data;
@@ -240,7 +256,8 @@ static void d3d11_overlay_full_screen(void* data, bool enable)
    d3d11->overlays.fullscreen = enable;
 }
 
-static void d3d11_get_overlay_interface(void* data, const video_overlay_interface_t** iface)
+static void d3d11_get_overlay_interface(
+      void* data, const video_overlay_interface_t** iface)
 {
    static const video_overlay_interface_t overlay_interface = {
       d3d11_overlay_enable,      d3d11_overlay_load,        d3d11_overlay_tex_geom,
@@ -251,7 +268,8 @@ static void d3d11_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-static void d3d11_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
+static void d3d11_set_filtering(void* data, unsigned index,
+      bool smooth, bool ctx_scaling)
 {
    unsigned       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
@@ -1045,11 +1063,11 @@ static void *d3d11_gfx_init(const video_info_t* video,
          FONT_DRIVER_RENDER_D3D11_API);
 
    {
-      d3d11_fake_context.get_flags = d3d11_get_flags;
+      d3d11_fake_context.get_flags   = d3d11_get_flags;
       d3d11_fake_context.get_metrics = win32_get_metrics;
       video_context_driver_set(&d3d11_fake_context); 
-      const char *shader_preset   = retroarch_get_shader_preset();
-      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+      const char *shader_preset      = retroarch_get_shader_preset();
+      enum rarch_shader_type type    = video_shader_parse_type(shader_preset);
       d3d11_gfx_set_shader(d3d11, type, shader_preset);
    }
 
@@ -1813,18 +1831,6 @@ static bool d3d11_get_hw_render_interface(
    *iface               = (const struct retro_hw_render_interface*)
       &d3d11->hw.iface;
    return d3d11->hw.enable;
-}
-
-static uint32_t d3d11_get_flags(void *data)
-{
-   uint32_t flags = 0;
-
-   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-
-   return flags;
 }
 
 #ifndef __WINRT__
