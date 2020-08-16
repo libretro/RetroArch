@@ -1000,9 +1000,11 @@ void Pass::set_pass_info(const gl_core_filter_chain_pass_info &info)
    pass_info = info;
 }
 
-Size2D Pass::get_output_size(const Size2D &original, const Size2D &source) const
+Size2D Pass::get_output_size(const Size2D &original,
+      const Size2D &source) const
 {
-   float width, height;
+   float width  = 0.0f;
+   float height = 0.0f;
    switch (pass_info.scale_type_x)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
@@ -1022,7 +1024,7 @@ Size2D Pass::get_output_size(const Size2D &original, const Size2D &source) const
          break;
 
       default:
-         width = 0.0f;
+         break;
    }
 
    switch (pass_info.scale_type_y)
@@ -1044,7 +1046,7 @@ Size2D Pass::get_output_size(const Size2D &original, const Size2D &source) const
          break;
 
       default:
-         height = 0.0f;
+         break;
    }
 
    return { unsigned(roundf(width)), unsigned(roundf(height)) };

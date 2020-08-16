@@ -1465,7 +1465,8 @@ void Pass::set_shader(VkShaderStageFlags stage,
 Size2D Pass::get_output_size(const Size2D &original,
       const Size2D &source) const
 {
-   float width, height;
+   float width  = 0.0f;
+   float height = 0.0f;
    switch (pass_info.scale_type_x)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
@@ -1485,7 +1486,7 @@ Size2D Pass::get_output_size(const Size2D &original,
          break;
 
       default:
-         width = 0.0f;
+         break;
    }
 
    switch (pass_info.scale_type_y)
@@ -1507,7 +1508,7 @@ Size2D Pass::get_output_size(const Size2D &original,
          break;
 
       default:
-         height = 0.0f;
+         break;
    }
 
    return { unsigned(roundf(width)), unsigned(roundf(height)) };
@@ -2689,7 +2690,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
 
-      pass_info.mip_filter = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
+      pass_info.mip_filter = 
+         (pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1)
          ? GLSLANG_FILTER_CHAIN_LINEAR 
          : GLSLANG_FILTER_CHAIN_NEAREST;
 

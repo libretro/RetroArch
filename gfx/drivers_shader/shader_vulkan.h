@@ -43,23 +43,23 @@ struct vulkan_filter_chain_texture
 
 struct vulkan_filter_chain_pass_info
 {
+   /* Maximum number of mip-levels to use. */
+   unsigned max_levels;
+
+   float scale_x;
+   float scale_y;
+
+   /* Ignored for the last pass, swapchain info 
+    * will be used instead. */
+   VkFormat rt_format;
    /* For the last pass, make sure VIEWPORT scale
     * with scale factors of 1 are used. */
    enum glslang_filter_chain_scale scale_type_x;
    enum glslang_filter_chain_scale scale_type_y;
-   float scale_x;
-   float scale_y;
-
-   /* Ignored for the last pass, swapchain info will be used instead. */
-   VkFormat rt_format;
-
    /* The filter to use for source in this pass. */
    enum glslang_filter_chain_filter source_filter;
    enum glslang_filter_chain_filter mip_filter;
    enum glslang_filter_chain_address address;
-
-   /* Maximum number of mip-levels to use. */
-   unsigned max_levels;
 };
 
 struct vulkan_filter_chain_swapchain_info
