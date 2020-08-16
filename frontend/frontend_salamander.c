@@ -118,12 +118,12 @@ static void find_and_set_first_file(char *s, size_t len,
 static void salamander_init(char *s, size_t len)
 {
    /* normal executable loading path */
-   bool config_exists = config_file_exists(g_defaults.path.config);
+   bool config_exists = config_file_exists(g_defaults.path_config);
 
    if (config_exists)
    {
       char tmp_str[PATH_MAX_LENGTH] = {0};
-      config_file_t * conf          = config_file_new(g_defaults.path.config);
+      config_file_t * conf          = config_file_new(g_defaults.path_config);
 
       if (conf)
       {
@@ -161,7 +161,7 @@ static void salamander_init(char *s, size_t len)
       if (conf)
       {
          config_set_string(conf, "libretro_path", s);
-         config_file_write(conf, g_defaults.path.config, true);
+         config_file_write(conf, g_defaults.path_config, true);
          config_file_free(conf);
       }
    }

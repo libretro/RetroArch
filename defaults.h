@@ -65,46 +65,6 @@ enum default_dirs
 
 struct defaults
 {
-#ifdef HAVE_MENU
-   struct
-   {
-      struct
-      {
-         bool menu_color_theme_enable;
-         unsigned menu_color_theme;
-      } materialui;
-
-      struct
-      {
-         bool set;
-         unsigned menu_btn_ok;
-         unsigned menu_btn_cancel;
-      } controls;
-   } menu;
-#endif
-
-   struct
-   {
-      bool set;
-      bool enable;
-   } overlay;
-
-   char dirs [DEFAULT_DIR_LAST + 1][PATH_MAX_LENGTH];
-
-   struct
-   {
-      char config[PATH_MAX_LENGTH];
-      char core[PATH_MAX_LENGTH];
-      char buildbot_server_url[255];
-   } path;
-
-   struct
-   {
-      int out_latency;
-      float video_refresh_rate;
-      char menu[32];
-   } settings;
-
 #ifndef IS_SALAMANDER
    playlist_t *content_history;
    playlist_t *content_favorites;
@@ -116,6 +76,27 @@ struct defaults
    playlist_t *video_history;
 #endif
 #endif
+   int settings_out_latency;
+#ifdef HAVE_MENU
+   unsigned menu_materialui_menu_color_theme;
+#endif
+
+   float settings_video_refresh_rate;
+
+   char dirs [DEFAULT_DIR_LAST + 1][PATH_MAX_LENGTH];
+   char path_config[PATH_MAX_LENGTH];
+   char path_core  [PATH_MAX_LENGTH];
+   char path_buildbot_server_url[255];
+   char settings_menu[32];
+
+#ifdef HAVE_MENU
+   bool menu_materialui_menu_color_theme_enable;
+   bool menu_controls_menu_btn_ok;
+   bool menu_controls_menu_btn_cancel;
+   bool menu_controls_set;
+#endif
+   bool overlay_set;
+   bool overlay_enable;
 };
 
 bool dir_set_defaults(enum default_dirs dir_type, const char *dirpath);

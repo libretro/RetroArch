@@ -83,8 +83,8 @@ static void create_path_names(void)
    /* history and main config */
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
-   fill_pathname_join(g_defaults.path.config, user_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.path_config, user_path,
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
 }
 
 static void poweroffCallback(void *arg)

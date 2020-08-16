@@ -1131,8 +1131,8 @@ const char *config_get_default_menu(void)
 #ifdef HAVE_MENU
    enum menu_driver_enum default_driver = MENU_DEFAULT_DRIVER;
 
-   if (!string_is_empty(g_defaults.settings.menu))
-      return g_defaults.settings.menu;
+   if (!string_is_empty(g_defaults.settings_menu))
+      return g_defaults.settings_menu;
 
    switch (default_driver)
    {
@@ -1178,8 +1178,8 @@ const char *config_get_midi_driver_options(void)
 
 bool config_overlay_enable_default(void)
 {
-   if (g_defaults.overlay.set)
-      return g_defaults.overlay.enable;
+   if (g_defaults.overlay_set)
+      return g_defaults.overlay_enable;
    return true;
 }
 
@@ -2234,8 +2234,8 @@ void config_set_defaults(void *data)
 
 
 #ifdef HAVE_MATERIALUI
-   if (g_defaults.menu.materialui.menu_color_theme_enable)
-      settings->uints.menu_materialui_color_theme = g_defaults.menu.materialui.menu_color_theme;
+   if (g_defaults.menu_materialui_menu_color_theme_enable)
+      settings->uints.menu_materialui_color_theme = g_defaults.menu_materialui_menu_color_theme;
 #endif
 #endif
 
@@ -2247,19 +2247,19 @@ void config_set_defaults(void *data)
    settings->floats.video_msg_color_g          = ((message_color >>  8) & 0xff) / 255.0f;
    settings->floats.video_msg_color_b          = ((message_color >>  0) & 0xff) / 255.0f;
 
-   if (g_defaults.settings.video_refresh_rate > 0.0 &&
-         g_defaults.settings.video_refresh_rate != DEFAULT_REFRESH_RATE)
-      settings->floats.video_refresh_rate      = g_defaults.settings.video_refresh_rate;
+   if (g_defaults.settings_video_refresh_rate > 0.0 &&
+         g_defaults.settings_video_refresh_rate != DEFAULT_REFRESH_RATE)
+      settings->floats.video_refresh_rate      = g_defaults.settings_video_refresh_rate;
 
    if (DEFAULT_AUDIO_DEVICE)
       configuration_set_string(settings,
             settings->arrays.audio_device,
             DEFAULT_AUDIO_DEVICE);
 
-   if (!g_defaults.settings.out_latency)
-      g_defaults.settings.out_latency          = DEFAULT_OUT_LATENCY;
+   if (!g_defaults.settings_out_latency)
+      g_defaults.settings_out_latency          = DEFAULT_OUT_LATENCY;
 
-   settings->uints.audio_latency               = g_defaults.settings.out_latency;
+   settings->uints.audio_latency               = g_defaults.settings_out_latency;
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 #ifdef HAVE_AUDIOMIXER
@@ -2444,12 +2444,12 @@ void config_set_defaults(void *data)
             g_defaults.dirs[DEFAULT_DIR_SHADER],
             sizeof(settings->paths.directory_video_shader));
 
-   if (!string_is_empty(g_defaults.path.buildbot_server_url))
+   if (!string_is_empty(g_defaults.path_buildbot_server_url))
       configuration_set_string(settings,
             settings->paths.network_buildbot_url,
-            g_defaults.path.buildbot_server_url);
-   if (!string_is_empty(g_defaults.path.core))
-      path_set(RARCH_PATH_CORE, g_defaults.path.core);
+            g_defaults.path_buildbot_server_url);
+   if (!string_is_empty(g_defaults.path_core))
+      path_set(RARCH_PATH_CORE, g_defaults.path_core);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_DATABASE]))
       configuration_set_string(settings,
             settings->paths.path_content_database,
@@ -2546,14 +2546,14 @@ void config_set_defaults(void *data)
             settings->paths.log_dir,
             g_defaults.dirs[DEFAULT_DIR_LOGS]);
 
-   if (!string_is_empty(g_defaults.path.config))
+   if (!string_is_empty(g_defaults.path_config))
    {
       char *temp_str = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       temp_str[0] = '\0';
 
       fill_pathname_expand_special(temp_str,
-            g_defaults.path.config,
+            g_defaults.path_config,
             PATH_MAX_LENGTH * sizeof(char));
       path_set(RARCH_PATH_CONFIG, temp_str);
       free(temp_str);

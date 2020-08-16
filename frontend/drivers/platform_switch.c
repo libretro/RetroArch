@@ -272,10 +272,10 @@ static void frontend_switch_get_environment_settings(
          path_mkdir(dir_path);
    }
 
-   fill_pathname_join(g_defaults.path.config,
+   fill_pathname_join(g_defaults.path_config,
          g_defaults.dirs[DEFAULT_DIR_PORT],
          file_path_str(FILE_PATH_MAIN_CONFIG),
-         sizeof(g_defaults.path.config));
+         sizeof(g_defaults.path_config));
 }
 
 static void frontend_switch_deinit(void *data)

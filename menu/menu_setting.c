@@ -11144,8 +11144,8 @@ static bool setting_append_list(
                &settings->uints.audio_latency,
                MENU_ENUM_LABEL_AUDIO_LATENCY,
                MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-               g_defaults.settings.out_latency ?
-               g_defaults.settings.out_latency : DEFAULT_OUT_LATENCY,
+               g_defaults.settings_out_latency ?
+               g_defaults.settings_out_latency : DEFAULT_OUT_LATENCY,
                &group_info,
                &subgroup_info,
                parent_group,
