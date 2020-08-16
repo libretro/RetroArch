@@ -781,8 +781,9 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 
    vk->filter_chain           = vulkan_filter_chain_create_default(
          &info,
-         vk->video.smooth ?
-         VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
+         vk->video.smooth 
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!vk->filter_chain)
    {
@@ -814,8 +815,9 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 
    vk->filter_chain           = vulkan_filter_chain_create_from_preset(
          &info, shader_path,
-         vk->video.smooth ?
-         VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
+         vk->video.smooth
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!vk->filter_chain)
    {

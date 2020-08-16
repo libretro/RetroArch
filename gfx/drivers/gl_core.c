@@ -957,8 +957,9 @@ static bool gl_core_init_default_filter_chain(gl_core_t *gl)
       return false;
 
    gl->filter_chain = gl_core_filter_chain_create_default(
-         gl->video_info.smooth ?
-         GL_CORE_FILTER_CHAIN_LINEAR : GL_CORE_FILTER_CHAIN_NEAREST);
+         gl->video_info.smooth 
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!gl->filter_chain)
    {
@@ -973,8 +974,9 @@ static bool gl_core_init_filter_chain_preset(gl_core_t *gl, const char *shader_p
 {
    gl->filter_chain = gl_core_filter_chain_create_from_preset(
          shader_path,
-         gl->video_info.smooth ?
-         GL_CORE_FILTER_CHAIN_LINEAR : GL_CORE_FILTER_CHAIN_NEAREST);
+         gl->video_info.smooth
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!gl->filter_chain)
    {
