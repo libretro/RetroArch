@@ -98,23 +98,8 @@ static INLINE bool string_is_equal_case_insensitive(const char *a,
    return (result == 0);
 }
 
-static INLINE bool string_is_equal_noncase(const char *a, const char *b)
-{
-   int result              = 0;
-   const unsigned char *p1 = (const unsigned char*)a;
-   const unsigned char *p2 = (const unsigned char*)b;
-
-   if (!a || !b)
-      return false;
-   if (p1 == p2)
-      return false;
-
-   while ((result = tolower (*p1) - tolower (*p2++)) == 0)
-      if (*p1++ == '\0')
-         break;
-
-   return (result == 0);
-}
+/* Deprecated alias, all callers should use string_is_equal_case_insensitive instead */
+#define string_is_equal_noncase string_is_equal_case_insensitive
 
 char *string_to_upper(char *s);
 
