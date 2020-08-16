@@ -19,14 +19,14 @@ enum kbStatus
 
 struct video_buffer
 {
+   int64_t head;
+   int64_t tail;
    video_decoder_context_t *buffer;
    enum kbStatus *status;
-   size_t capacity;
    slock_t *lock;
    scond_t *open_cond;
    scond_t *finished_cond;
-   int64_t head;
-   int64_t tail;
+   size_t capacity;
 };
 
 video_buffer_t *video_buffer_create(

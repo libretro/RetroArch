@@ -193,10 +193,9 @@ static GLint mix_loc;
 
 static struct
 {
+   double interpolate_fps;
    unsigned width;
    unsigned height;
-
-   double interpolate_fps;
    unsigned sample_rate;
 
    float aspect;
