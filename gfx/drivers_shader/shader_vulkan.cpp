@@ -507,8 +507,9 @@ static VkFormat glslang_format_to_vk(glslang_format fmt)
       FMT(R32G32B32A32_SFLOAT);
 
       default:
-         return VK_FORMAT_UNDEFINED;
+         break;
    }
+   return VK_FORMAT_UNDEFINED;
 }
 
 static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
