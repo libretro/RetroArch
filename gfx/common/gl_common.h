@@ -159,11 +159,77 @@ typedef struct gl gl_t;
 
 struct gl
 {
+   const shader_backend_t *shader;
+   void *shader_data;
+   void *renderchain_data;
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
+   void *empty_buf;
+   void *conv_buffer;
+   void *readback_buffer_screenshot;
+   const float *vertex_ptr;
+   const float *white_color_ptr;
+   float *overlay_vertex_coord;
+   float *overlay_tex_coord;
+   float *overlay_color_coord;
+
+   int version_major;
+   int version_minor;
+
+   GLuint tex_mag_filter;
+   GLuint tex_min_filter;
+   GLuint fbo_feedback;
+   GLuint fbo_feedback_texture;
+   GLuint pbo;
+   GLuint *overlay_tex;
+   GLuint menu_texture;
+   GLuint pbo_readback[4];
+   GLuint texture[GFX_MAX_TEXTURES];
+   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
+
+#ifdef HAVE_VIDEO_LAYOUT
+   GLuint video_layout_fbo;
+   GLuint video_layout_fbo_texture;
+   GLuint video_layout_white_texture;
+#endif
+
+   unsigned video_width;
+   unsigned video_height;
+
+   unsigned tex_index; /* For use with PREV. */
+   unsigned textures;
+   unsigned fbo_feedback_pass;
+   unsigned rotation;
+   unsigned vp_out_width;
+   unsigned vp_out_height;
+   unsigned tex_w;
+   unsigned tex_h;
+   unsigned base_size; /* 2 or 4 */
+   unsigned overlays;
+   unsigned pbo_readback_index;
+   unsigned last_width[GFX_MAX_TEXTURES];
+   unsigned last_height[GFX_MAX_TEXTURES];
+
+   float menu_texture_alpha;
+
    GLenum internal_fmt;
    GLenum texture_type; /* RGB565 or ARGB */
    GLenum texture_fmt;
    GLenum wrap_mode;
 
+   struct scaler_ctx pbo_readback_scaler;
+   struct video_viewport vp;                          /* int alignment */
+   math_matrix_4x4 mvp, mvp_no_rot;
+   struct video_coords coords;                        /* ptr alignment */
+   struct scaler_ctx scaler;
+   video_info_t video_info;
+   struct video_tex_info tex_info;                    /* unsigned int alignment */
+   struct video_tex_info prev_info[GFX_MAX_TEXTURES]; /* unsigned alignment */
+   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];   /* unsigned alignment */
+
+#ifdef HAVE_VIDEO_LAYOUT
+   bool video_layout_resize;
+#endif
    bool vsync;
    bool tex_mipmap;
    bool fbo_inited;
@@ -190,71 +256,6 @@ struct gl
    bool have_sync;
    bool pbo_readback_valid[4];
    bool pbo_readback_enable;
-
-   int version_major;
-   int version_minor;
-
-   GLuint tex_mag_filter;
-   GLuint tex_min_filter;
-   GLuint fbo_feedback;
-   GLuint fbo_feedback_texture;
-   GLuint pbo;
-   GLuint *overlay_tex;
-   GLuint menu_texture;
-   GLuint pbo_readback[4];
-   GLuint texture[GFX_MAX_TEXTURES];
-   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
-
-#ifdef HAVE_VIDEO_LAYOUT
-   bool   video_layout_resize;
-   GLuint video_layout_fbo;
-   GLuint video_layout_fbo_texture;
-   GLuint video_layout_white_texture;
-#endif
-
-   unsigned video_width;
-   unsigned video_height;
-
-   unsigned tex_index; /* For use with PREV. */
-   unsigned textures;
-   unsigned fbo_feedback_pass;
-   unsigned rotation;
-   unsigned vp_out_width;
-   unsigned vp_out_height;
-   unsigned tex_w;
-   unsigned tex_h;
-   unsigned base_size; /* 2 or 4 */
-   unsigned overlays;
-   unsigned pbo_readback_index;
-   unsigned last_width[GFX_MAX_TEXTURES];
-   unsigned last_height[GFX_MAX_TEXTURES];
-
-   float menu_texture_alpha;
-
-   void *empty_buf;
-   void *conv_buffer;
-   void *readback_buffer_screenshot;
-   const float *vertex_ptr;
-   const float *white_color_ptr;
-   float *overlay_vertex_coord;
-   float *overlay_tex_coord;
-   float *overlay_color_coord;
-
-   struct video_tex_info tex_info;
-   struct scaler_ctx pbo_readback_scaler;
-   struct video_viewport vp;
-   math_matrix_4x4 mvp, mvp_no_rot;
-   struct video_coords coords;
-   struct scaler_ctx scaler;
-   video_info_t video_info;
-   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
-   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
-
-   const shader_backend_t *shader;
-   void *shader_data;
-   void *renderchain_data;
-   void *ctx_data;
-   const gfx_ctx_driver_t *ctx_driver;
 };
 
 static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
