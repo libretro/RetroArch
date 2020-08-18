@@ -51,10 +51,10 @@ using namespace Windows::Foundation::Collections;
 using namespace Windows::Graphics::Display;
 using namespace Windows::Devices::Enumeration;
 
-char uwp_dir_install[PATH_MAX_LENGTH];
-char uwp_dir_data[PATH_MAX_LENGTH];
-char uwp_device_family[128];
-char win32_cpu_model_name[128] = { 0 };
+char uwp_dir_install[PATH_MAX_LENGTH] = { 0 };
+char uwp_dir_data[PATH_MAX_LENGTH]    = { 0 };
+char uwp_device_family[128]           = { 0 };
+char win32_cpu_model_name[128]        = { 0 };
 
 // Some keys are unavailable in the VirtualKey enum (wtf) but the old-style constants work
 const struct rarch_key_map rarch_key_map_uwp[] = {
@@ -172,31 +172,34 @@ const struct rarch_key_map rarch_key_map_uwp[] = {
 };
 
 #define MAX_TOUCH 16
-struct input_pointer {
+struct input_pointer
+{
 	int id;
+	short x;
+   short y;
+	short full_x;
+   short full_y;
 	bool isInContact;
-	short x, y;
-	short full_x, full_y;
 };
 
-struct uwp_input_state_t {
+struct uwp_input_state_t
+{
+   struct input_pointer touch[MAX_TOUCH]; /* int alignment */
+   unsigned touch_count;
    short mouse_screen_x;
    short mouse_screen_y;
    short mouse_rel_x;
    short mouse_rel_y;
+   short mouse_wheel_left;
+   short mouse_wheel_up;
    bool mouse_left;
    bool mouse_right;
    bool mouse_middle;
    bool mouse_button4;
    bool mouse_button5;
-   short mouse_wheel_left;
-   short mouse_wheel_up;
-   unsigned touch_count;
-   struct input_pointer touch[MAX_TOUCH];
 };
 
 struct uwp_input_state_t uwp_current_input, uwp_next_input;
-
 
 // Taken from DirectX UWP samples - on Xbox, everything is scaled 200% so getting the DPI calculation correct is crucial
 static inline float ConvertDipsToPixels(float dips, float dpi)
@@ -210,11 +213,13 @@ static inline float ConvertDipsToPixels(float dips, float dpi)
 int main(Platform::Array<Platform::String^>^)
 {
 	Platform::String^ install_dir = Windows::ApplicationModel::Package::Current->InstalledLocation->Path + L"\\";
-	wcstombs(uwp_dir_install, install_dir->Data(), PATH_MAX_LENGTH);
+	wcstombs(uwp_dir_install, install_dir->Data(), sizeof(upw_dir_install));
 	Platform::String^ data_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\";
-	wcstombs(uwp_dir_data, data_dir->Data(), PATH_MAX_LENGTH);
+	wcstombs(uwp_dir_data, data_dir->Data(), sizeof(uwp_dir_data));
 
-	wcstombs(uwp_device_family, AnalyticsInfo::VersionInfo->DeviceFamily->Data(), 128);
+	wcstombs(uwp_device_family,
+         AnalyticsInfo::VersionInfo->DeviceFamily->Data(),
+         sizeof(uwp_device_family));
 
 	RARCH_LOG("Data dir: %ls\n", data_dir->Data());
 	RARCH_LOG("Install dir: %ls\n", install_dir->Data());
@@ -525,11 +530,11 @@ void App::OnPointer(CoreWindow^ sender, PointerEventArgs^ args)
 		struct video_viewport vp;
 
 		/* convert from event coordinates to core and screen coordinates */
-		vp.x = 0;
-		vp.y = 0;
-		vp.width = 0;
-		vp.height = 0;
-		vp.full_width = 0;
+		vp.x           = 0;
+		vp.y           = 0;
+		vp.width       = 0;
+		vp.height      = 0;
+		vp.full_width  = 0;
 		vp.full_height = 0;
 
 		video_driver_translate_coord_viewport_wrap(
@@ -626,35 +631,35 @@ extern "C" {
 	bool win32_get_metrics(void* data,
 		enum display_metric_types type, float* value)
 	{
-		int pixels_x = DisplayInformation::GetForCurrentView()->ScreenWidthInRawPixels;
-		int pixels_y = DisplayInformation::GetForCurrentView()->ScreenHeightInRawPixels;
-		int raw_dpi_x = DisplayInformation::GetForCurrentView()->RawDpiX;
-		int raw_dpi_y = DisplayInformation::GetForCurrentView()->RawDpiY;
-		int physical_width = pixels_x / raw_dpi_x;
+		int pixels_x        = DisplayInformation::GetForCurrentView()->ScreenWidthInRawPixels;
+		int pixels_y        = DisplayInformation::GetForCurrentView()->ScreenHeightInRawPixels;
+		int raw_dpi_x       = DisplayInformation::GetForCurrentView()->RawDpiX;
+		int raw_dpi_y       = DisplayInformation::GetForCurrentView()->RawDpiY;
+		int physical_width  = pixels_x / raw_dpi_x;
 		int physical_height = pixels_y / raw_dpi_y;
 
 		switch (type)
 		{
 		case DISPLAY_METRIC_PIXEL_WIDTH:
-			*value = pixels_x;
+			*value           = pixels_x;
 			return true;
 		case DISPLAY_METRIC_PIXEL_HEIGHT:
-			*value = pixels_y;
+			*value           = pixels_y;
 			return true;
 		case DISPLAY_METRIC_MM_WIDTH:
 			/* 25.4 mm in an inch. */
-			*value = 254 * physical_width / 10;
+			*value           = 254 * physical_width / 10;
 			return true;
 		case DISPLAY_METRIC_MM_HEIGHT:
 			/* 25.4 mm in an inch. */
-			*value = 254 * physical_height / 10;
+			*value           = 254 * physical_height / 10;
 			return true;
 		case DISPLAY_METRIC_DPI:
-			*value = raw_dpi_x;
+			*value           = raw_dpi_x;
 			return true;
 		case DISPLAY_METRIC_NONE:
 		default:
-			*value = 0;
+			*value           = 0;
 			break;
 		}
 		return false;
@@ -716,41 +721,41 @@ extern "C" {
    }
 
 	int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen)
-	{
-		int16_t state = 0;
+   {
+      int16_t state = 0;
 
-		switch (id)
-		{
-		case RETRO_DEVICE_ID_MOUSE_X:
-			return screen 
-            ? uwp_current_input.mouse_screen_x 
-            : uwp_current_input.mouse_rel_x;
-		case RETRO_DEVICE_ID_MOUSE_Y:
-			return screen 
-            ? uwp_current_input.mouse_screen_y 
-            : uwp_current_input.mouse_rel_y;
-		case RETRO_DEVICE_ID_MOUSE_LEFT:
-			return uwp_current_input.mouse_left;
-		case RETRO_DEVICE_ID_MOUSE_RIGHT:
-			return uwp_current_input.mouse_right;
-		case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-			return uwp_current_input.mouse_wheel_up > WHEEL_DELTA;
-		case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-			return uwp_current_input.mouse_wheel_up < -WHEEL_DELTA;
-		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-			return uwp_current_input.mouse_wheel_left > WHEEL_DELTA;
-		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-			return uwp_current_input.mouse_wheel_left < -WHEEL_DELTA;
-		case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-			return uwp_current_input.mouse_middle;
-		case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-			return uwp_current_input.mouse_button4;
-		case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-			return uwp_current_input.mouse_button5;
-		}
+      switch (id)
+      {
+         case RETRO_DEVICE_ID_MOUSE_X:
+            return screen 
+               ? uwp_current_input.mouse_screen_x 
+               : uwp_current_input.mouse_rel_x;
+         case RETRO_DEVICE_ID_MOUSE_Y:
+            return screen 
+               ? uwp_current_input.mouse_screen_y 
+               : uwp_current_input.mouse_rel_y;
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+            return uwp_current_input.mouse_left;
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+            return uwp_current_input.mouse_right;
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+            return uwp_current_input.mouse_wheel_up > WHEEL_DELTA;
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+            return uwp_current_input.mouse_wheel_up < -WHEEL_DELTA;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+            return uwp_current_input.mouse_wheel_left > WHEEL_DELTA;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            return uwp_current_input.mouse_wheel_left < -WHEEL_DELTA;
+         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+            return uwp_current_input.mouse_middle;
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+            return uwp_current_input.mouse_button4;
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+            return uwp_current_input.mouse_button5;
+      }
 
-		return 0;
-	}
+      return 0;
+   }
 
 	int16_t uwp_pointer_state(unsigned idx, unsigned id, bool screen)
 	{
@@ -787,10 +792,10 @@ extern "C" {
 		char lang_bcp[16]  = { 0 };
 		char lang_iso[16]  = { 0 };
 
-		wcstombs(lang_bcp, lang->Data(), 16);
+		wcstombs(lang_bcp, lang->Data(), sizeof(lang_bcp));
 
 		/* Trying to convert BCP 47 language codes to ISO 639 ones */
-		split = string_split(lang_bcp, "-");
+		split              = string_split(lang_bcp, "-");
 
 		strlcat(lang_iso, split->elems[0].data, sizeof(lang_iso));
 
@@ -843,7 +848,7 @@ extern "C" {
 		if (!cpu_name)
          return "Unknown";
 
-      wcstombs(win32_cpu_model_name, cpu_name->Data(), 128);
+      wcstombs(win32_cpu_model_name, cpu_name->Data(), sizeof(win32_cpu_model_name));
       return win32_cpu_model_name;
 	}
 }
