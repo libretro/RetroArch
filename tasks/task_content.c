@@ -978,7 +978,7 @@ static bool content_file_load(
             }
 
             fill_pathname_join(new_path, new_basedir,
-                  path_basename(path), new_path_size);
+                  path_basename(path), sizeof(new_path));
 
             /* TODO: This may fail on very large files...
              * but copying large files is not a good idea anyway */

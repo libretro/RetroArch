@@ -3250,23 +3250,18 @@ static unsigned menu_displaylist_parse_cores(
 #endif
 
    {
-      char *out_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char out_dir[PATH_MAX_LENGTH];
 
       out_dir[0] = '\0';
 
-      fill_pathname_parent_dir(out_dir, path,
-            PATH_MAX_LENGTH * sizeof(char));
+      fill_pathname_parent_dir(out_dir, path, sizeof(out_dir));
 
       if (string_is_empty(out_dir))
-      {
          menu_entries_prepend(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
                path,
                MENU_ENUM_LABEL_PARENT_DIRECTORY,
                FILE_TYPE_PARENT_DIRECTORY, 0, 0);
-      }
-
-      free(out_dir);
    }
 
    if (!str_list)
@@ -3388,20 +3383,16 @@ static unsigned menu_displaylist_parse_cores(
 
          if (type == FILE_TYPE_CORE)
          {
-            size_t path_size   = PATH_MAX_LENGTH * sizeof(char);
-            char *core_path    = (char*)malloc(path_size);
-            char *display_name = (char*)malloc(path_size);
+            char core_path[PATH_MAX_LENGTH];
+            char display_name[PATH_MAX_LENGTH];
             core_path[0]       =
             display_name[0]    = '\0';
 
-            fill_pathname_join(core_path, dir, path, path_size);
+            fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
             if (core_info_list_get_display_name(list,
-                     core_path, display_name, path_size))
+                     core_path, display_name, sizeof(display_name)))
                file_list_set_alt_at_offset(info->list, i, display_name);
-
-            free(core_path);
-            free(display_name);
          }
       }
       info->need_sort = true;

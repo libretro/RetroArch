@@ -6013,7 +6013,11 @@ bool menu_entries_append_enum(
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)malloc(sizeof(menu_file_list_cbs_t));
+   cbs                             = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return false;
 
    cbs->action_sublabel_cache[0]   = '\0';
    cbs->action_title_cache[0]      = '\0';
@@ -6098,7 +6102,8 @@ void menu_entries_prepend(file_list_t *list,
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)malloc(sizeof(menu_file_list_cbs_t));
+   cbs                             = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t));
 
    if (!cbs)
       return;
@@ -37051,23 +37056,18 @@ void retroarch_menu_running_finished(bool quit)
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   size_t game_path_size = PATH_MAX_LENGTH * sizeof(char);
-   char *game_path       = (char*)malloc(game_path_size);
+   char game_path[PATH_MAX_LENGTH];
 
    game_path[0] ='\0';
 
    if (!retroarch_validate_game_options(game_path,
-            game_path_size, false) || !path_is_valid(game_path))
-   {
-      free(game_path);
+            sizeof(game_path), false) || !path_is_valid(game_path))
       return false;
-   }
 
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
          game_path);
    *output = strdup(game_path);
-   free(game_path);
    return true;
 }
 
@@ -37642,8 +37642,7 @@ static bool retroarch_load_shader_preset_internal(
       const char *special_name)
 {
    unsigned i;
-   char               *shader_path       = (char*)
-      malloc(PATH_MAX_LENGTH);
+   char shader_path[PATH_MAX_LENGTH];
 
    static enum rarch_shader_type types[] =
    {
@@ -37663,16 +37662,17 @@ static bool retroarch_load_shader_preset_internal(
                shader_directory, core_name,
                special_name,
                video_shader_get_preset_extension(types[i]),
-               PATH_MAX_LENGTH);
+               sizeof(shader_path));
       else
       {
          if (string_is_empty(special_name))
             break;
 
-         fill_pathname_join(shader_path, shader_directory, special_name, PATH_MAX_LENGTH);
+         fill_pathname_join(shader_path, shader_directory,
+               special_name, sizeof(shader_path));
          strlcat(shader_path,
                video_shader_get_preset_extension(types[i]),
-               PATH_MAX_LENGTH);
+               sizeof(shader_path));
       }
 
       if (!path_is_valid(shader_path))
@@ -37682,12 +37682,9 @@ static bool retroarch_load_shader_preset_internal(
       RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
             shader_path);
       retroarch_set_runtime_shader_preset(p_rarch, shader_path);
-
-      free(shader_path);
       return true;
    }
 
-   free(shader_path);
    return false;
 }
 

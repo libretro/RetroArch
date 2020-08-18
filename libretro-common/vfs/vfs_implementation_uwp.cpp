@@ -305,7 +305,8 @@ struct libretro_vfs_implementation_file
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       const char *path, unsigned mode, unsigned hints)
 {
-   char *dirpath, *filename;
+   char dirpath[PATH_MAX_LENGTH];
+   char filename[PATH_MAX_LENGTH];
    wchar_t *dirpath_wide;
    wchar_t *filename_wide;
    Platform::String^ filename_str;
@@ -322,20 +323,18 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 	if (PATH_CHAR_IS_SLASH(path[strlen(path) - 1]))
 		return NULL;
 
-	dirpath               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-	fill_pathname_basedir(dirpath, path, PATH_MAX_LENGTH);
+   dirpath[0] = filename[0] = '\0';
+
+	fill_pathname_basedir(dirpath, path, sizeof(dirpath));
 	dirpath_wide          = utf8_to_utf16_string_alloc(dirpath);
 	windowsize_path(dirpath_wide);
 	dirpath_str           = ref new Platform::String(dirpath_wide);
 	free(dirpath_wide);
-	free(dirpath);
 
-	filename              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-	fill_pathname_base(filename, path, PATH_MAX_LENGTH);
+	fill_pathname_base(filename, path, sizeof(filename));
 	filename_wide         = utf8_to_utf16_string_alloc(filename);
 	filename_str          = ref new Platform::String(filename_wide);
 	free(filename_wide);
-	free(filename);
 
 	retro_assert(!dirpath_str->IsEmpty() && !filename_str->IsEmpty());
 
