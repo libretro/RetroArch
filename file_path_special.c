@@ -214,44 +214,43 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS:
          {
 #ifdef HAVE_MENU
+            char s1[PATH_MAX_LENGTH];
             settings_t *settings   = config_get_ptr();
             const char *menu_ident = settings->arrays.menu_driver;
             const char *dir_assets = settings->paths.directory_assets;
-            char               *s1 = (char*)calloc(
-                  1, PATH_MAX_LENGTH * sizeof(char));
+
+            s1[0]                  = '\0';
 
             if (string_is_equal(menu_ident, "xmb"))
             {
-               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
+               fill_pathname_application_special(s1, sizeof(s1),
+                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
 
                if (!string_is_empty(s1))
-                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+                  strlcat(s1, "/sounds", sizeof(s1));
             }
             else if (string_is_equal(menu_ident, "glui"))
             {
-               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+               fill_pathname_application_special(s1, sizeof(s1),
+                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
 
                if (!string_is_empty(s1))
-                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+                  strlcat(s1, "/sounds", sizeof(s1));
             }
             else if (string_is_equal(menu_ident, "ozone"))
             {
-               fill_pathname_application_special(s1, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE);
+               fill_pathname_application_special(s1, sizeof(s1),
+                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE);
 
                if (!string_is_empty(s1))
-                  strlcat(s1, "/sounds", PATH_MAX_LENGTH * sizeof(char));
+                  strlcat(s1, "/sounds", sizeof(s1));
             }
 
             if (string_is_empty(s1))
-            {
                fill_pathname_join(
-                     s1, dir_assets, "sounds",
-                     PATH_MAX_LENGTH * sizeof(char)
-               );
-            }
+                     s1, dir_assets, "sounds", sizeof(s1));
 
             strlcpy(s, s1, len);
-            free(s1);
 #endif
          }
 

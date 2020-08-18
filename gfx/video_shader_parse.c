@@ -602,8 +602,8 @@ bool video_shader_write_preset(const char *path,
       "presets",
       sizeof(preset_dir));
 
-   strlcpy(clean_shader_path, shader->path, PATH_MAX_LENGTH);
-   path_resolve_realpath(clean_shader_path, PATH_MAX_LENGTH, false);
+   strlcpy(clean_shader_path, shader->path, sizeof(clean_shader_path));
+   path_resolve_realpath(clean_shader_path, sizeof(clean_shader_path),  false);
 
    if (string_is_empty(shader->path))
       reference = false;
@@ -627,8 +627,8 @@ bool video_shader_write_preset(const char *path,
       size_t       len = STRLEN_CONST("#reference \"");
       char *preset_ref = buf + len;
 
-      strlcpy(clean_path, path, PATH_MAX_LENGTH);
-      path_resolve_realpath(clean_path, PATH_MAX_LENGTH, false);
+      strlcpy(clean_path, path, sizeof(clean_path));
+      path_resolve_realpath(clean_path, sizeof(clean_path), false);
 
       path_relative_to(preset_ref, clean_shader_path, clean_path, PATH_MAX_LENGTH);
       len += strlen(preset_ref);
