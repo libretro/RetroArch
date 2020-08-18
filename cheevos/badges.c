@@ -36,7 +36,8 @@ void cheevos_reset_menu_badges(void)
          video_driver_texture_unload(&cheevos_badge_menu_texture_list[index]);
    }
 
-   memset(&cheevos_badge_menu_texture_list, 0, sizeof(cheevos_badge_menu_texture_list));
+   memset(&cheevos_badge_menu_texture_list, 0,
+         sizeof(cheevos_badge_menu_texture_list));
 }
 
 void cheevos_set_menu_badge(int index, const char *badge, bool locked)
@@ -49,7 +50,8 @@ void cheevos_set_menu_badge(int index, const char *badge, bool locked)
    if (!settings || !settings->bools.cheevos_badges_enable)
       cheevos_badge_menu_texture_list[index] = 0;
    else
-      cheevos_badge_menu_texture_list[index] = cheevos_get_badge_texture(badge, locked);
+      cheevos_badge_menu_texture_list[index] = 
+         cheevos_get_badge_texture(badge, locked);
 }
 
 uintptr_t cheevos_get_menu_badge_texture(int index)
@@ -71,13 +73,14 @@ uintptr_t cheevos_get_badge_texture(const char *badge, bool locked)
    if (!badge)
       return 0;
 
+   fullpath[0]   = badge_file[0] = '\0';
+
    strlcpy(badge_file, badge, sizeof(badge_file));
    if (locked)
       strlcat(badge_file, "_lock", sizeof(badge_file));
    strlcat(badge_file, ".png", sizeof(badge_file));
 
-   fill_pathname_application_special(fullpath,
-      PATH_MAX_LENGTH * sizeof(char),
+   fill_pathname_application_special(fullpath, sizeof(fullpath),
       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
    if (!gfx_display_reset_textures_list(badge_file, fullpath,
