@@ -201,15 +201,13 @@ static void gfx_thumbnail_handle_upload(
    fade_enabled = true;
 
    /* Check we have a valid image */
-   if (!img)
-      goto end;
-
-   if ((img->width < 1) || (img->height < 1))
+   if (!img || (img->width < 1) || (img->height < 1))
       goto end;
 
    /* Upload texture to GPU */
    if (!video_driver_texture_load(
-            img, TEXTURE_FILTER_MIPMAP_LINEAR, &thumbnail_tag->thumbnail->texture))
+            img, TEXTURE_FILTER_MIPMAP_LINEAR,
+            &thumbnail_tag->thumbnail->texture))
       goto end;
 
    /* Cache dimensions */
