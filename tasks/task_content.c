@@ -742,22 +742,21 @@ static bool load_content_from_compressed_archive(
       const char *path,
       char **error_string)
 {
-   union string_list_elem_attr attributes;
+   union string_list_elem_attr attr;
    int64_t new_path_len              = 0;
-   size_t new_basedir_size           = PATH_MAX_LENGTH * sizeof(char);
-   size_t new_path_size              = PATH_MAX_LENGTH * sizeof(char);
-   char *new_basedir                 = (char*)malloc(new_basedir_size);
-   char *new_path                    = (char*)malloc(new_path_size);
+   char new_basedir[PATH_MAX_LENGTH];
+   char new_path[PATH_MAX_LENGTH];
 
    new_path[0]                       = '\0';
    new_basedir[0]                    = '\0';
-   attributes.i                      = 0;
+   attr.i                            = 0;
 
    RARCH_LOG("[CONTENT LOAD]: Compressed file in case of need_fullpath."
          " Now extracting to temporary directory.\n");
 
    if (!string_is_empty(content_ctx->directory_cache))
-      strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
+      strlcpy(new_basedir, content_ctx->directory_cache,
+            sizeof(new_basedir));
 
    if (!path_is_directory(new_basedir))
    {
@@ -765,15 +764,11 @@ static bool load_content_from_compressed_archive(
             "cache directory was not set or found. "
             "Setting cache directory to directory "
             "derived by basename...\n");
-      fill_pathname_basedir(new_basedir, path, new_basedir_size);
+      fill_pathname_basedir(new_basedir, path, sizeof(new_basedir));
    }
 
-   new_path[0]    = '\0';
-   new_basedir[0] = '\0';
-
    fill_pathname_join(new_path, new_basedir,
-         path_basename(path), new_path_size);
-   free(new_basedir);
+         path_basename(path), sizeof(new_path));
 
    if (!file_archive_compressed_read(path,
          NULL, new_path, &new_path_len) || new_path_len < 0)
@@ -785,24 +780,15 @@ static bool load_content_from_compressed_archive(
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
             path);
       *error_string = strdup(str);
-      free(new_path);
       return false;
    }
 
-   string_list_append(additional_path_allocs, new_path, attributes);
+   string_list_append(additional_path_allocs, new_path, attr);
    info[i].path =
       additional_path_allocs->elems[additional_path_allocs->size - 1].data;
 
-
-   if (!string_list_append(content_ctx->temporary_content,
-            new_path, attributes))
-   {
-      free(new_path);
-      return false;
-   }
-
-   free(new_path);
-   return true;
+   return string_list_append(content_ctx->temporary_content,
+            new_path, attr);
 }
 
 /* Try to extract all content we're going to load if appropriate. */
@@ -816,7 +802,6 @@ static bool content_file_init_extract(
       )
 {
    unsigned i;
-   char *new_path = NULL;
 
    for (i = 0; i < content->size; i++)
    {
@@ -833,28 +818,25 @@ static bool content_file_init_extract(
          continue;
 
       {
-         size_t temp_content_size = PATH_MAX_LENGTH * sizeof(char);
-         size_t new_path_size     = PATH_MAX_LENGTH * sizeof(char);
-         char *temp_content       = (char*)malloc(temp_content_size);
+         char temp_content[PATH_MAX_LENGTH];
+         char new_path    [PATH_MAX_LENGTH];
          const char *valid_ext    = special ?
             special->roms[i].valid_extensions :
             content_ctx->valid_extensions;
 
-         new_path                 = (char*)malloc(new_path_size);
-
          temp_content[0]          = new_path[0] = '\0';
 
          if (!string_is_empty(path))
-            strlcpy(temp_content, path, temp_content_size);
+            strlcpy(temp_content, path, sizeof(temp_content));
 
          if (!valid_ext || !file_archive_extract_file(
                   temp_content,
-                  temp_content_size,
+                  sizeof(temp_content),
                   valid_ext,
                   !string_is_empty(content_ctx->directory_cache) ?
                   content_ctx->directory_cache : NULL,
                   new_path,
-                  new_path_size
+                  sizeof(new_path) 
                   ))
          {
             char str[1024];
@@ -866,25 +848,15 @@ static bool content_file_init_extract(
                      MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
                   temp_content);
             *error_string = strdup(str);
-            free(temp_content);
-            free(new_path);
             return false;
          }
 
          string_list_set(content, i, new_path);
 
-         free(temp_content);
-
-         {
-            bool append_success = string_list_append(
+         if (!string_list_append(
                   content_ctx->temporary_content,
-                  new_path, *attr);
-
-            free(new_path);
-
-            if (!append_success)
-               return false;
-         }
+                  new_path, *attr))
+            return false;
       }
    }
 
@@ -981,33 +953,32 @@ static bool content_file_load(
             /* Fallback to a file copy into an accessible directory */
             char* buf;
             int64_t len;
-            union string_list_elem_attr attributes;
-            size_t new_basedir_size = PATH_MAX_LENGTH * sizeof(char);
-            size_t new_path_size    = PATH_MAX_LENGTH * sizeof(char);
-            char *new_basedir       = (char*)malloc(new_basedir_size);
-            char *new_path          = (char*)malloc(new_path_size);
+            union string_list_elem_attr attr;
+            char new_basedir[PATH_MAX_LENGTH];
+            char new_path[PATH_MAX_LENGTH];
 
             new_path[0]             = '\0';
             new_basedir[0]          = '\0';
-            attributes.i            = 0;
+            attr.i                  = 0;
 
             RARCH_LOG("[CONTENT LOAD]: Core does not support VFS - copying to cache directory\n");
 
             if (!string_is_empty(content_ctx->directory_cache))
-               strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
-            if (string_is_empty(new_basedir) || !path_is_directory(new_basedir) || !is_path_accessible_using_standard_io(new_basedir))
+               strlcpy(new_basedir, content_ctx->directory_cache, sizeof(new_basedir));
+            if (   string_is_empty(new_basedir)   || 
+                  !path_is_directory(new_basedir) || 
+                  !is_path_accessible_using_standard_io(new_basedir))
             {
                RARCH_WARN("[CONTENT LOAD]: Tried copying to cache directory"
                      ", but "
                      "cache directory was not set or found. "
                      "Setting cache directory to root of "
                      "writable app directory...\n");
-               strlcpy(new_basedir, uwp_dir_data, new_basedir_size);
+               strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
             }
 
             fill_pathname_join(new_path, new_basedir,
                   path_basename(path), new_path_size);
-            free(new_basedir);
 
             /* TODO: This may fail on very large files...
              * but copying large files is not a good idea anyway */
@@ -1042,14 +1013,12 @@ static bool content_file_load(
 
             free(buf);
 
-            string_list_append(additional_path_allocs, new_path, attributes);
+            string_list_append(additional_path_allocs, new_path, attr);
             info[i].path =
                additional_path_allocs->elems[additional_path_allocs->size - 1].data;
 
             string_list_append(content_ctx->temporary_content,
-                  new_path, attributes);
-
-            free(new_path);
+                  new_path, attr);
 
             used_vfs_fallback_copy = true;
          }
@@ -1299,20 +1268,19 @@ static void task_push_to_history_list(
    /* Push entry to top of history playlist */
    if (is_inited || contentless)
    {
-      size_t tmp_size                = PATH_MAX_LENGTH * sizeof(char);
-      char *tmp                      = (char*)malloc(tmp_size);
+      char tmp[PATH_MAX_LENGTH];
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
       struct retro_system_info *info = runloop_get_libretro_system_info();
 
       tmp[0] = '\0';
 
       if (!string_is_empty(path_content))
-         strlcpy(tmp, path_content, tmp_size);
+         strlcpy(tmp, path_content, sizeof(tmp));
 
       /* Path can be relative here.
        * Ensure we're pushing absolute path. */
       if (!launched_from_menu && !string_is_empty(tmp))
-         path_resolve_realpath(tmp, tmp_size, true);
+         path_resolve_realpath(tmp, sizeof(tmp), true);
 
 #ifdef HAVE_MENU
       /* Push quick menu onto menu stack */
@@ -1414,7 +1382,8 @@ static void task_push_to_history_list(
 
             content_get_subsystem_friendly_name(path_get(RARCH_PATH_SUBSYSTEM), subsystem_name, sizeof(subsystem_name));
 
-            /* the push function reads our entry as const, so these casts are safe */
+            /* The push function reads our entry as const, 
+             * so these casts are safe */
             entry.path            = (char*)tmp;
             entry.label           = (char*)label;
             entry.core_path       = (char*)core_path;
@@ -1428,8 +1397,6 @@ static void task_push_to_history_list(
             command_playlist_push_write(playlist_hist, &entry);
          }
       }
-
-      free(tmp);
    }
 }
 
@@ -1473,26 +1440,24 @@ static bool command_event_cmd_exec(
 static bool firmware_update_status(
       content_information_ctx_t *content_ctx)
 {
+   char s[PATH_MAX_LENGTH];
    core_info_ctx_firmware_t firmware_info;
    bool set_missing_firmware  = false;
    core_info_t *core_info     = NULL;
-   size_t s_size              = PATH_MAX_LENGTH * sizeof(char);
-   char *s                    = NULL;
    
    core_info_get_current_core(&core_info);
 
    if (!core_info)
       return false;
 
-   s                          = (char*)malloc(s_size);
-
+   s[0]                       = '\0';
    firmware_info.path         = core_info->path;
 
    if (!string_is_empty(content_ctx->directory_system))
       firmware_info.directory.system = content_ctx->directory_system;
    else
    {
-      strlcpy(s, path_get(RARCH_PATH_CONTENT), s_size);
+      strlcpy(s, path_get(RARCH_PATH_CONTENT), sizeof(s));
       path_basedir_wrapper(s);
       firmware_info.directory.system = s;
    }
@@ -1505,8 +1470,6 @@ static bool firmware_update_status(
 
    core_info_list_update_missing_firmware(&firmware_info,
          &set_missing_firmware);
-
-   free(s);
 
    if (set_missing_firmware)
       rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
@@ -2421,7 +2384,7 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
    return;
 }
 
-/* Add a rom to the subsystem rom buffer */
+/* Add a rom to the subsystem ROM buffer */
 void content_add_subsystem(const char* path)
 {
    content_state_t *p_content = content_state_get_ptr();
