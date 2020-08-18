@@ -108,6 +108,7 @@ typedef struct
    uint32_t header_shadow;
    uint32_t landscape_border_shadow;
    uint32_t status_bar_shadow;
+   uint32_t selection_marker_shadow;
    uint32_t scrollbar;
    uint32_t divider;
    uint32_t screen_fade;
@@ -115,6 +116,7 @@ typedef struct
    float header_shadow_opacity;
    float landscape_border_shadow_opacity;
    float status_bar_shadow_opacity;
+   float selection_marker_shadow_opacity;
    float screen_fade_opacity;
 } materialui_theme_t;
 
@@ -151,6 +153,7 @@ static const materialui_theme_t materialui_theme_blue = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x0069c0, /* scrollbar */
    0x9ea7aa, /* divider */
    0x000000, /* screen_fade */
@@ -158,6 +161,7 @@ static const materialui_theme_t materialui_theme_blue = {
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.45f,    /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -194,6 +198,7 @@ static const materialui_theme_t materialui_theme_blue_grey = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x34515e, /* scrollbar */
    0xc2c2c2, /* divider */
    0x000000, /* screen_fade */
@@ -201,6 +206,7 @@ static const materialui_theme_t materialui_theme_blue_grey = {
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.45f,    /* status_bar_shadow_opacity */
+   0.2f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -237,6 +243,7 @@ static const materialui_theme_t materialui_theme_dark_blue = {
    0x000000, /* header_shadow */
    0x3B3B3B, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x3B3B3B, /* selection_marker_shadow */
    0x90caf9, /* scrollbar */
    0x607d8b, /* divider */
    0x000000, /* screen_fade */
@@ -244,6 +251,7 @@ static const materialui_theme_t materialui_theme_dark_blue = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.8f,     /* status_bar_shadow_opacity */
+   0.2f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -280,6 +288,7 @@ static const materialui_theme_t materialui_theme_green = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x087f23, /* scrollbar */
    0xaabb97, /* divider */
    0x000000, /* screen_fade */
@@ -287,6 +296,7 @@ static const materialui_theme_t materialui_theme_green = {
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.45f,    /* status_bar_shadow_opacity */
+   0.15f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -323,6 +333,7 @@ static const materialui_theme_t materialui_theme_red = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0xba000d, /* scrollbar */
    0xbf5f82, /* divider */
    0x000000, /* screen_fade */
@@ -330,6 +341,7 @@ static const materialui_theme_t materialui_theme_red = {
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.45f,    /* status_bar_shadow_opacity */
+   0.15f,    /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -366,6 +378,7 @@ static const materialui_theme_t materialui_theme_yellow = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x33311A, /* selection_marker_shadow */
    0xc6a700, /* scrollbar */
    0xcbba83, /* divider */
    0x000000, /* screen_fade */
@@ -373,6 +386,7 @@ static const materialui_theme_t materialui_theme_yellow = {
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.45f,    /* status_bar_shadow_opacity */
+   0.15f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -409,6 +423,7 @@ static const materialui_theme_t materialui_theme_nvidia_shield = {
    0x000000, /* header_shadow */
    0x3B3B3B, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x3B3B3B, /* selection_marker_shadow */
    0x7ab547, /* scrollbar */
    0x498515, /* divider */
    0x000000, /* screen_fade */
@@ -416,6 +431,7 @@ static const materialui_theme_t materialui_theme_nvidia_shield = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.8f,     /* status_bar_shadow_opacity */
+   0.2f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -452,6 +468,7 @@ static const materialui_theme_t materialui_theme_materialui = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x018786, /* scrollbar */
    0x018786, /* divider */
    0x000000, /* screen_fade */
@@ -459,6 +476,7 @@ static const materialui_theme_t materialui_theme_materialui = {
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.45f,    /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -495,6 +513,7 @@ static const materialui_theme_t materialui_theme_materialui_dark = {
    0x000000, /* header_shadow */
    0x3B3B3B, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x3B3B3B, /* selection_marker_shadow */
    0xC89EFC, /* scrollbar */
    0x03DAC6, /* divider */
    0x000000, /* screen_fade */
@@ -502,6 +521,7 @@ static const materialui_theme_t materialui_theme_materialui_dark = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.8f,     /* status_bar_shadow_opacity */
+   0.2f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -538,6 +558,7 @@ static const materialui_theme_t materialui_theme_ozone_dark = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x9F9F9F, /* scrollbar */
    0xFFFFFF, /* divider */
    0x000000, /* screen_fade */
@@ -545,6 +566,7 @@ static const materialui_theme_t materialui_theme_ozone_dark = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.8f,     /* status_bar_shadow_opacity */
+   0.05f,    /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -581,6 +603,7 @@ static const materialui_theme_t materialui_theme_nord = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0xA0A5AD, /* scrollbar */
    0x81A1C1, /* divider */
    0x000000, /* screen_fade */
@@ -588,6 +611,7 @@ static const materialui_theme_t materialui_theme_nord = {
    0.4f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.8f,     /* status_bar_shadow_opacity */
+   0.35f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -624,6 +648,7 @@ static const materialui_theme_t materialui_theme_gruvbox_dark = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x7C6F64, /* scrollbar */
    0xD5C4A1, /* divider */
    0x000000, /* screen_fade */
@@ -631,6 +656,7 @@ static const materialui_theme_t materialui_theme_gruvbox_dark = {
    0.4f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.8f,     /* status_bar_shadow_opacity */
+   0.35f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -667,6 +693,7 @@ static const materialui_theme_t materialui_theme_solarized_dark = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x586E75, /* scrollbar */
    0x2AA198, /* divider */
    0x000000, /* screen_fade */
@@ -674,6 +701,7 @@ static const materialui_theme_t materialui_theme_solarized_dark = {
    0.4f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.8f,     /* status_bar_shadow_opacity */
+   0.35f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -710,6 +738,7 @@ static const materialui_theme_t materialui_theme_cutie_blue = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
@@ -717,6 +746,7 @@ static const materialui_theme_t materialui_theme_cutie_blue = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.9f,     /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -753,6 +783,7 @@ static const materialui_theme_t materialui_theme_cutie_cyan = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
@@ -760,6 +791,7 @@ static const materialui_theme_t materialui_theme_cutie_cyan = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.9f,     /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -796,6 +828,7 @@ static const materialui_theme_t materialui_theme_cutie_green = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
@@ -803,6 +836,7 @@ static const materialui_theme_t materialui_theme_cutie_green = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.9f,     /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -839,6 +873,7 @@ static const materialui_theme_t materialui_theme_cutie_orange = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
@@ -846,6 +881,7 @@ static const materialui_theme_t materialui_theme_cutie_orange = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.9f,     /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -882,6 +918,7 @@ static const materialui_theme_t materialui_theme_cutie_pink = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
@@ -889,6 +926,7 @@ static const materialui_theme_t materialui_theme_cutie_pink = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.9f,     /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -925,6 +963,7 @@ static const materialui_theme_t materialui_theme_cutie_purple = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
@@ -932,6 +971,7 @@ static const materialui_theme_t materialui_theme_cutie_purple = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.9f,     /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -968,6 +1008,7 @@ static const materialui_theme_t materialui_theme_cutie_red = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0x000000, /* selection_marker_shadow */
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
@@ -975,6 +1016,7 @@ static const materialui_theme_t materialui_theme_cutie_red = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.9f,     /* status_bar_shadow_opacity */
+   0.1f,     /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -1011,6 +1053,7 @@ static const materialui_theme_t materialui_theme_virtual_boy = {
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
    0x000000, /* status_bar_shadow */
+   0xE60000, /* selection_marker_shadow */
    0xA10000, /* scrollbar */
    0xE60000, /* divider */
    0x000000, /* screen_fade */
@@ -1018,6 +1061,7 @@ static const materialui_theme_t materialui_theme_virtual_boy = {
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.7f,     /* status_bar_shadow_opacity */
+   0.35f,    /* selection_marker_shadow_opacity */
    0.75f     /* screen_fade_opacity */
 };
 
@@ -1059,6 +1103,8 @@ typedef struct
    float landscape_border_shadow_left[16];
    float landscape_border_shadow_right[16];
    float status_bar_shadow[16];
+   float selection_marker_shadow_top[16];
+   float selection_marker_shadow_bottom[16];
    float scrollbar[16];
    float divider[16];
    float entry_divider[16];
@@ -1066,6 +1112,7 @@ typedef struct
    float missing_thumbnail_icon[16];
    float landscape_border_shadow_opacity;
    float status_bar_shadow_opacity;
+   float selection_marker_shadow_opacity;
    float screen_fade_opacity;
 } materialui_colors_t;
 
@@ -1491,6 +1538,7 @@ typedef struct materialui_handle
    unsigned sys_bar_height;
    unsigned title_bar_height;
    unsigned header_shadow_height;
+   unsigned selection_marker_shadow_height;
    unsigned icon_size;
    unsigned sys_bar_icon_size;
    unsigned margin;
@@ -1567,6 +1615,7 @@ typedef struct materialui_handle
    bool primary_thumbnail_available;
    bool secondary_thumbnail_enabled;
    bool show_fullscreen_thumbnails;
+   bool show_selection_marker_shadow;
 } materialui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
@@ -1725,6 +1774,12 @@ static void materialui_prepare_colors(
             current_theme->status_bar_shadow,
             mui->colors.status_bar_shadow, 0.0f);
    hex32_to_rgba_normalized(
+            current_theme->selection_marker_shadow,
+            mui->colors.selection_marker_shadow_top, 0.0f);
+   hex32_to_rgba_normalized(
+            current_theme->selection_marker_shadow,
+            mui->colors.selection_marker_shadow_bottom, 0.0f);
+   hex32_to_rgba_normalized(
             current_theme->scrollbar,
             mui->colors.scrollbar, 1.0f);
    hex32_to_rgba_normalized(
@@ -1757,6 +1812,11 @@ static void materialui_prepare_colors(
    mui->colors.status_bar_shadow[11]             = current_theme->status_bar_shadow_opacity;
    mui->colors.status_bar_shadow[15]             = current_theme->status_bar_shadow_opacity;
    mui->colors.status_bar_shadow_opacity         = current_theme->status_bar_shadow_opacity;
+   mui->colors.selection_marker_shadow_top[11]   = current_theme->selection_marker_shadow_opacity;
+   mui->colors.selection_marker_shadow_top[15]   = current_theme->selection_marker_shadow_opacity;
+   mui->colors.selection_marker_shadow_bottom[3] = current_theme->selection_marker_shadow_opacity;
+   mui->colors.selection_marker_shadow_bottom[7] = current_theme->selection_marker_shadow_opacity;
+   mui->colors.selection_marker_shadow_opacity   = current_theme->selection_marker_shadow_opacity;
 }
 
 static const char *materialui_texture_path(unsigned id)
@@ -4975,7 +5035,8 @@ static void materialui_render_selection_highlight(
       materialui_handle_t *mui, void *userdata,
       unsigned video_width, unsigned video_height,
       unsigned header_height, int x_offset,
-      size_t selection, float *color)
+      size_t selection, float *highlight_color,
+      float *shadow_top_colour, float *shadow_bottom_colour)
 {
    /* Only draw highlight if selection is onscreen */
    if (materialui_entry_onscreen(mui, selection))
@@ -5017,7 +5078,36 @@ static void materialui_render_selection_highlight(
             (unsigned)highlight_height,
             video_width,
             video_height,
-            color);
+            highlight_color);
+
+      /* Draw shadow, if required */
+      if (mui->show_selection_marker_shadow)
+      {
+         gfx_display_draw_quad(
+               userdata,
+               video_width,
+               video_height,
+               highlight_x,
+               highlight_y,
+               (unsigned)highlight_width,
+               mui->selection_marker_shadow_height,
+               video_width,
+               video_height,
+               shadow_top_colour);
+
+         gfx_display_draw_quad(
+               userdata,
+               video_width,
+               video_height,
+               highlight_x,
+               highlight_y + highlight_height -
+                     (int)mui->selection_marker_shadow_height,
+               (unsigned)highlight_width,
+               mui->selection_marker_shadow_height,
+               video_width,
+               video_height,
+               shadow_bottom_colour);
+      }
    }
 }
 
@@ -5078,17 +5168,40 @@ static void materialui_render_entry_touch_feedback(
    if (mui->touch_feedback_alpha > 0.0f)
    {
       float higlight_color[16];
+      float shadow_top_color[16];
+      float shadow_bottom_color[16];
 
       /* Set highlight colour */
-      memcpy(higlight_color, mui->colors.list_highlighted_background, sizeof(higlight_color));
-      gfx_display_set_alpha(higlight_color, mui->transition_alpha * mui->touch_feedback_alpha);
+      memcpy(higlight_color, mui->colors.list_highlighted_background,
+            sizeof(higlight_color));
+      gfx_display_set_alpha(higlight_color,
+            mui->transition_alpha * mui->touch_feedback_alpha);
+
+      /* Set shadow colour (if required) */
+      if (mui->show_selection_marker_shadow)
+      {
+         float selection_marker_shadow_alpha =
+               mui->colors.selection_marker_shadow_opacity *
+                     mui->transition_alpha * mui->touch_feedback_alpha;
+
+         memcpy(shadow_top_color, mui->colors.selection_marker_shadow_top,
+               sizeof(shadow_top_color));
+         shadow_top_color[11]   = selection_marker_shadow_alpha;
+         shadow_top_color[15]   = selection_marker_shadow_alpha;
+
+         memcpy(shadow_bottom_color, mui->colors.selection_marker_shadow_bottom,
+               sizeof(shadow_bottom_color));
+         shadow_bottom_color[3] = selection_marker_shadow_alpha;
+         shadow_bottom_color[7] = selection_marker_shadow_alpha;
+      }
 
       /* Draw highlight */
       materialui_render_selection_highlight(
             mui, userdata, video_width, video_height,
             header_height, x_offset,
             mui->touch_feedback_selection,
-            higlight_color);
+            higlight_color,
+            shadow_top_color, shadow_bottom_color);
    }
 }
 
@@ -6263,6 +6376,20 @@ static void materialui_colors_set_transition_alpha(materialui_handle_t *mui)
          mui->colors.status_bar_shadow[11] = status_bar_shadow_alpha;
          mui->colors.status_bar_shadow[15] = status_bar_shadow_alpha;
       }
+
+      /* Selection marker shadow only fades if
+       * it is enabled (i.e. content running +
+       * semi-transparent background) */
+      if (mui->show_selection_marker_shadow)
+      {
+         float selection_marker_shadow_alpha =
+               mui->colors.selection_marker_shadow_opacity * alpha;
+
+         mui->colors.selection_marker_shadow_top[11]   = selection_marker_shadow_alpha;
+         mui->colors.selection_marker_shadow_top[15]   = selection_marker_shadow_alpha;
+         mui->colors.selection_marker_shadow_bottom[3] = selection_marker_shadow_alpha;
+         mui->colors.selection_marker_shadow_bottom[7] = selection_marker_shadow_alpha;
+      }
    }
 }
 
@@ -6315,6 +6442,20 @@ static void materialui_colors_reset_transition_alpha(materialui_handle_t *mui)
 
          mui->colors.status_bar_shadow[11] = status_bar_shadow_alpha;
          mui->colors.status_bar_shadow[15] = status_bar_shadow_alpha;
+      }
+
+      /* Selection marker shadow only fades if
+       * it is enabled (i.e. content running +
+       * semi-transparent background) */
+      if (mui->show_selection_marker_shadow)
+      {
+         float selection_marker_shadow_alpha =
+               mui->colors.selection_marker_shadow_opacity;
+
+         mui->colors.selection_marker_shadow_top[11]   = selection_marker_shadow_alpha;
+         mui->colors.selection_marker_shadow_top[15]   = selection_marker_shadow_alpha;
+         mui->colors.selection_marker_shadow_bottom[3] = selection_marker_shadow_alpha;
+         mui->colors.selection_marker_shadow_bottom[7] = selection_marker_shadow_alpha;
       }
    }
 }
@@ -6406,6 +6547,13 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       mui->ticker.type_enum        = menu_ticker_type;
    }
 
+   /* Determine whether a selection marker 'shadow'
+    * should be drawn
+    * > Improves selection marker visibility when
+    *   running with a transparent background */
+   mui->show_selection_marker_shadow = libretro_running &&
+         (menu_framebuffer_opacity < 1.0f);
+
    /* Handle any transparency adjustments required
     * by menu transition animations */
    materialui_colors_set_transition_alpha(mui);
@@ -6427,16 +6575,18 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_width, video_height,
          header_height, list_x_offset);
 
-   /* Draw 'highlighted entry' selection box */
-   materialui_render_selection_highlight(
-         mui, userdata, video_width, video_height,
-         header_height, list_x_offset, selection,
-         mui->colors.list_highlighted_background);
-
    /* Draw 'short press' touch feedback highlight */
    materialui_render_entry_touch_feedback(
          mui, userdata, video_width, video_height,
          header_height, list_x_offset, selection);
+
+   /* Draw 'highlighted entry' selection box */
+   materialui_render_selection_highlight(
+         mui, userdata, video_width, video_height,
+         header_height, list_x_offset, selection,
+         mui->colors.list_highlighted_background,
+         mui->colors.selection_marker_shadow_top,
+         mui->colors.selection_marker_shadow_bottom);
 
    /* Draw menu list
     * > Must update scrollbar draw position before
@@ -7176,6 +7326,7 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    hint_font_size            = mui->dip_base_unit_size / 11;
 
    mui->header_shadow_height = mui->dip_base_unit_size / 36;
+   mui->selection_marker_shadow_height = mui->dip_base_unit_size / 30;
 
    mui->margin               = mui->dip_base_unit_size / 9;
    mui->icon_size            = mui->dip_base_unit_size / 3;
