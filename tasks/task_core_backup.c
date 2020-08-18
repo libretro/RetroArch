@@ -322,12 +322,11 @@ static void task_core_backup_handler(retro_task_t *task)
          break;
       case CORE_BACKUP_ITERATE:
          {
-            int64_t data_read    = 0;
             int64_t data_written = 0;
             uint8_t buffer[CORE_BACKUP_CHUNK_SIZE];
 
             /* Read a single chunk from the core file */
-            data_read = intfstream_read(backup_handle->core_file, buffer, sizeof(buffer));
+            int64_t data_read    = intfstream_read(backup_handle->core_file, buffer, sizeof(buffer));
 
             if (data_read < 0)
             {
