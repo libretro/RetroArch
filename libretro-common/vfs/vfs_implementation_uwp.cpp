@@ -576,8 +576,8 @@ int retro_vfs_file_remove_impl(const char *path)
 /* TODO: this may not work if trying to move a directory */
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 {
-   char *new_file_name;
-   char *new_dir_path;
+   char new_file_name[PATH_MAX_LENGTH];
+   char new_dir_path[PATH_MAX_LENGTH];
    wchar_t *new_file_name_wide;
    wchar_t *old_path_wide, *new_dir_path_wide;
    Platform::String^ old_path_str;
@@ -587,24 +587,23 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
    if (!old_path || !*old_path || !new_path || !*new_path)
 		return -1;
 
+   new_file_name[0] = '\0';
+   new_dir_path [0] = '\0';
+
 	old_path_wide = utf8_to_utf16_string_alloc(old_path);
 	old_path_str  = ref new Platform::String(old_path_wide);
 	free(old_path_wide);
 
-	new_dir_path      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-	fill_pathname_basedir(new_dir_path, new_path, PATH_MAX_LENGTH);
+	fill_pathname_basedir(new_dir_path, new_path, sizeof(new_dir_path));
 	new_dir_path_wide = utf8_to_utf16_string_alloc(new_dir_path);
 	windowsize_path(new_dir_path_wide);
 	new_dir_path_str  = ref new Platform::String(new_dir_path_wide);
 	free(new_dir_path_wide);
-	free(new_dir_path);
 
-	new_file_name      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-	fill_pathname_base(new_file_name, new_path, PATH_MAX_LENGTH);
+	fill_pathname_base(new_file_name, new_path, sizeof(new_file_name));
 	new_file_name_wide = utf8_to_utf16_string_alloc(new_file_name);
 	new_file_name_str  = ref new Platform::String(new_file_name_wide);
 	free(new_file_name_wide);
-	free(new_file_name);
 
 	retro_assert(!old_path_str->IsEmpty() && !new_dir_path_str->IsEmpty() && !new_file_name_str->IsEmpty());
 
@@ -666,9 +665,13 @@ int retro_vfs_mkdir_impl(const char *dir)
    Platform::String^ parent_path_str;
    Platform::String^ dir_name_str;
    wchar_t *dir_name_wide, *parent_path_wide;
-   char *dir_local, *tmp, *dir_name, *parent_path;
+   char *dir_local, *tmp, *dir_name;
+   char parent_path[PATH_MAX_LENGTH];
+   char dir_name[PATH_MAX_LENGTH];
 	if (!dir || !*dir)
 		return -1;
+
+   dir_name[0]      = '\0';
 
    /* If the path ends with a slash, we have to remove 
     * it for basename to work */
@@ -678,20 +681,16 @@ int retro_vfs_mkdir_impl(const char *dir)
 	if (PATH_CHAR_IS_SLASH(*tmp))
 		*tmp          = 0;
 
-	dir_name         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-	fill_pathname_base(dir_name, dir_local, PATH_MAX_LENGTH);
+	fill_pathname_base(dir_name, dir_local, sizeof(dir_name));
 	dir_name_wide    = utf8_to_utf16_string_alloc(dir_name);
 	dir_name_str     = ref new Platform::String(dir_name_wide);
 	free(dir_name_wide);
-	free(dir_name);
 
-	parent_path      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-	fill_pathname_parent_dir(parent_path, dir_local, PATH_MAX_LENGTH);
+	fill_pathname_parent_dir(parent_path, dir_local, sizeof(parent_path));
 	parent_path_wide = utf8_to_utf16_string_alloc(parent_path);
 	windowsize_path(parent_path_wide);
 	parent_path_str  = ref new Platform::String(parent_path_wide);
 	free(parent_path_wide);
-	free(parent_path);
 
 	retro_assert(!dir_name_str->IsEmpty() 
          && !parent_path_str->IsEmpty());
