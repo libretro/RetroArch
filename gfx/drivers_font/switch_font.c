@@ -140,7 +140,7 @@ static void switch_font_render_line(
 
       for (i = 0; i < msg_len; i++)
       {
-         int off_x, off_y, tex_x, tex_y, width, height, y;
+         int off_x, off_y, tex_x, tex_y, width, height;
          const char *msg_tmp = &msg[i];
          unsigned code       = utf8_walk(&msg_tmp);
          unsigned skip       = msg_tmp - &msg[i];
@@ -157,9 +157,9 @@ static void switch_font_render_line(
          if (!glyph)
             continue;
 
-         off_x = x + glyph->draw_offset_x + delta_x;
-         off_y = y + glyph->draw_offset_y + delta_y;
-         width = glyph->width;
+         off_x  = x + glyph->draw_offset_x + delta_x;
+         off_y  = y + glyph->draw_offset_y + delta_y;
+         width  = glyph->width;
          height = glyph->height;
 
          tex_x = glyph->atlas_offset_x;
@@ -197,7 +197,7 @@ static void switch_font_render_message(
    int lines                              = 0;
    float line_height;
 
-   if (!msg || !*msg)
+   if (!msg || !*msg || !sw)
       return;
 
    /* If font line metrics are not supported just draw as usual */
@@ -218,33 +218,20 @@ static void switch_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
+      unsigned msg_len  = delim ?
+         (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if (delim)
-      {
-         unsigned msg_len = delim - msg;
-         if (msg_len <= AVG_GLPYH_LIMIT)
-         {
-            if (sw)
-               switch_font_render_line(sw, font, msg, msg_len,
-                     scale, color, pos_x, pos_y - (float)lines * line_height,
-                     text_align);
-         }
-         msg += msg_len + 1;
-         lines++;
-      }
-      else
-      {
-         unsigned msg_len = strlen(msg);
-         if (msg_len <= AVG_GLPYH_LIMIT)
-         {
-            if (sw)
-               switch_font_render_line(sw, font, msg, msg_len,
-                     scale, color, pos_x, pos_y - (float)lines * line_height,
-                     text_align);
-         }
+      if (msg_len <= AVG_GLPYH_LIMIT)
+         switch_font_render_line(sw, font, msg, msg_len,
+               scale, color, pos_x, pos_y - (float)lines * line_height,
+               text_align);
+
+      if (!delim)
          break;
-      }
+
+      msg += msg_len + 1;
+      lines++;
    }
 }
 

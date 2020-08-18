@@ -142,6 +142,11 @@ static bool xenon360_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
+static const input_device_driver_t *xenon360_get_joypad_driver(void *data)
+{
+   return NULL;
+}
+
 input_driver_t input_xenon360 = {
    xenon360_input_init,
    xenon360_input_poll,
@@ -155,6 +160,7 @@ input_driver_t input_xenon360 = {
    xenon360_input_grab_mouse,
    NULL,
    xenon360_input_set_rumble,
+   xenon360_get_joypad_driver,
    NULL,
    false
 };

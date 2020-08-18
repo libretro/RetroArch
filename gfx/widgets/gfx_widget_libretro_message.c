@@ -22,20 +22,19 @@
 
 struct gfx_widget_libretro_message_state
 {
-   gfx_timer_t timer;
-   char message[512];
-
    unsigned width;
+   gfx_timer_t timer;   /* float alignment */
    float alpha;
+   char message[512];
 };
 
 typedef struct gfx_widget_libretro_message_state gfx_widget_libretro_message_state_t;
 
 static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
-   0.0f,
-   {'\0'},
    0,
-   0.0f
+   0.0f,
+   0.0f,
+   {'\0'}
 };
 
 static gfx_widget_libretro_message_state_t* gfx_widget_libretro_message_get_state(void)

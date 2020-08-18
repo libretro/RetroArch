@@ -22,7 +22,7 @@
 
 struct gfx_widget_generic_message_state
 {
-   gfx_timer_t timer;
+   gfx_timer_t timer;   /* float alignment */
    float alpha;
    char message[256];
 };

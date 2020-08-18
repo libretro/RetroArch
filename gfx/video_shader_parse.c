@@ -602,8 +602,8 @@ bool video_shader_write_preset(const char *path,
       "presets",
       sizeof(preset_dir));
 
-   strlcpy(clean_shader_path, shader->path, PATH_MAX_LENGTH);
-   path_resolve_realpath(clean_shader_path, PATH_MAX_LENGTH, false);
+   strlcpy(clean_shader_path, shader->path, sizeof(clean_shader_path));
+   path_resolve_realpath(clean_shader_path, sizeof(clean_shader_path),  false);
 
    if (string_is_empty(shader->path))
       reference = false;
@@ -627,8 +627,8 @@ bool video_shader_write_preset(const char *path,
       size_t       len = STRLEN_CONST("#reference \"");
       char *preset_ref = buf + len;
 
-      strlcpy(clean_path, path, PATH_MAX_LENGTH);
-      path_resolve_realpath(clean_path, PATH_MAX_LENGTH, false);
+      strlcpy(clean_path, path, sizeof(clean_path));
+      path_resolve_realpath(clean_path, sizeof(clean_path), false);
 
       path_relative_to(preset_ref, clean_shader_path, clean_path, PATH_MAX_LENGTH);
       len += strlen(preset_ref);
@@ -715,11 +715,11 @@ char *video_shader_read_reference_path(const char *path)
       char *ref_path = line + STRLEN_CONST("#reference");
 
       /* have at least 1 whitespace */
-      if (!isspace(*ref_path))
+      if (!isspace((unsigned char)*ref_path))
          goto end;
       ref_path++;
 
-      while (isspace(*ref_path))
+      while (isspace((unsigned char)*ref_path))
          ref_path++;
 
       if (*ref_path == '\"')
@@ -738,7 +738,7 @@ char *video_shader_read_reference_path(const char *path)
          {
             /* if there's no second ", remove whitespace at the end */
             p--;
-            while (isspace(*p))
+            while (isspace((unsigned char)*p))
                *p-- = '\0';
          }
       }
@@ -746,7 +746,7 @@ char *video_shader_read_reference_path(const char *path)
       {
          /* remove whitespace at the end (e.g. carriage return) */
          char *end = ref_path + strlen(ref_path) - 1;
-         while (isspace(*end))
+         while (isspace((unsigned char)*end))
             *end-- = '\0';
       }
 

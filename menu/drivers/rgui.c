@@ -529,8 +529,8 @@ typedef struct
 
 typedef struct
 {
+   video_viewport_t viewport; /* int alignment */
    unsigned aspect_ratio_idx;
-   video_viewport_t viewport;
 } rgui_video_settings_t;
 
 /* A 'particle' is just 4 float variables that can
@@ -550,8 +550,57 @@ typedef struct
    float d;
 } rgui_particle_t;
 
+/* Defines all possible entry value types
+ * > Note: These are not necessarily 'values',
+ *   but they correspond to the object drawn in
+ *   the 'value' location when rendering
+ *   menu lists */
+enum rgui_entry_value_type
+{
+   RGUI_ENTRY_VALUE_NONE = 0,
+   RGUI_ENTRY_VALUE_TEXT,
+   RGUI_ENTRY_VALUE_SWITCH_ON,
+   RGUI_ENTRY_VALUE_SWITCH_OFF,
+   RGUI_ENTRY_VALUE_CHECKMARK
+};
+
 typedef struct
 {
+   retro_time_t thumbnail_load_trigger_time; /* uint64_t */
+
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
+
+   rgui_video_settings_t menu_video_settings;      /* int alignment */
+   rgui_video_settings_t content_video_settings;   /* int alignment */
+
+   unsigned mini_thumbnail_max_width;
+   unsigned mini_thumbnail_max_height;
+   unsigned last_width;
+   unsigned last_height;
+   unsigned window_width;
+   unsigned window_height;
+   unsigned particle_effect;
+   unsigned color_theme;
+   unsigned menu_aspect_ratio;
+   unsigned menu_aspect_ratio_lock;
+
+   uint32_t thumbnail_queue_size;
+   uint32_t left_thumbnail_queue_size;
+
+   rgui_particle_t particles[RGUI_NUM_PARTICLES]; /* float alignment */
+
+   int16_t scroll_y;
+   rgui_colors_t colors;   /* int16_t alignment */
+
+   struct scaler_ctx image_scaler;
+   menu_input_pointer_t pointer;
+
+   char msgbox[1024];
+   char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
+   char menu_title[255]; /* Must be a fixed length array... */
+   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
+
+   bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
    bool bg_modified;
    bool force_redraw;
    bool mouse_show;
@@ -571,36 +620,6 @@ typedef struct
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_supported;
 #endif
-
-   int16_t scroll_y;
-
-   unsigned mini_thumbnail_max_width;
-   unsigned mini_thumbnail_max_height;
-   unsigned last_width;
-   unsigned last_height;
-   unsigned window_width;
-   unsigned window_height;
-   unsigned particle_effect;
-   unsigned color_theme;
-   unsigned menu_aspect_ratio;
-   unsigned menu_aspect_ratio_lock;
-
-   uint32_t thumbnail_queue_size;
-   uint32_t left_thumbnail_queue_size;
-
-   rgui_colors_t colors;
-   retro_time_t thumbnail_load_trigger_time;
-   rgui_video_settings_t menu_video_settings;
-   rgui_video_settings_t content_video_settings;
-   struct scaler_ctx image_scaler;
-   menu_input_pointer_t pointer;
-   char msgbox[1024];
-   char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
-   char menu_title[255]; /* Must be a fixed length array... */
-   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-   rgui_particle_t particles[RGUI_NUM_PARTICLES];
-   bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
 } rgui_t;
 
 /* Particle effect animations update at a base rate
@@ -625,7 +644,13 @@ enum rgui_symbol_type
    RGUI_SYMBOL_BATTERY_60,
    RGUI_SYMBOL_BATTERY_40,
    RGUI_SYMBOL_BATTERY_20,
-   RGUI_SYMBOL_CHECKMARK
+   RGUI_SYMBOL_CHECKMARK,
+   RGUI_SYMBOL_SWITCH_ON_LEFT,
+   RGUI_SYMBOL_SWITCH_ON_CENTRE,
+   RGUI_SYMBOL_SWITCH_ON_RIGHT,
+   RGUI_SYMBOL_SWITCH_OFF_LEFT,
+   RGUI_SYMBOL_SWITCH_OFF_CENTRE,
+   RGUI_SYMBOL_SWITCH_OFF_RIGHT
 };
 
 /* All custom symbols must have dimensions
@@ -789,71 +814,143 @@ static const uint8_t rgui_symbol_data_checkmark[FONT_WIDTH * FONT_HEIGHT] = {
       0, 1, 1, 0, 0,
       0, 0, 0, 0, 0};
 
+static const uint8_t rgui_symbol_data_switch_on_left[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_switch_on_centre[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      1, 1, 1, 1, 0,
+      1, 1, 1, 1, 0,
+      1, 1, 1, 1, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_switch_on_right[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 1, 1, 1, 0,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      0, 1, 1, 1, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_switch_off_left[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 1, 1, 1, 0,
+      1, 0, 0, 0, 1,
+      1, 0, 0, 0, 1,
+      1, 0, 0, 0, 1,
+      1, 0, 0, 0, 1,
+      1, 0, 0, 0, 1,
+      0, 1, 1, 1, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_switch_off_centre[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 0,
+      0, 1, 1, 1, 1,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_switch_off_right[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      1, 1, 1, 1, 0,
+      0, 0, 0, 0, 1,
+      1, 1, 1, 1, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
 /* ==============================
  * Custom Symbols (glyphs) END
  * ============================== */
 
 typedef struct
 {
+   uint16_t *data;
    unsigned max_width;
    unsigned max_height;
    unsigned width;
    unsigned height;
-   bool is_valid;
    char path[PATH_MAX_LENGTH];
-   uint16_t *data;
+   bool is_valid;
 } thumbnail_t;
 
 typedef struct
 {
+   uint16_t *data;
    unsigned width;
    unsigned height;
-   uint16_t *data;
 } frame_buf_t;
 
 /* TODO/FIXME - static global variables */
 static thumbnail_t fs_thumbnail = {
+   NULL,
    0,
    0,
    0,
    0,
-   false,
    {0},
-   NULL
+   false
 };
 static thumbnail_t mini_thumbnail = {
+   NULL,
    0,
    0,
    0,
    0,
-   false,
    {0},
-   NULL
+   false
 };
 static thumbnail_t mini_left_thumbnail = {
+   NULL,
    0,
    0,
    0,
    0,
-   false,
    {0},
-   NULL
+   false
 };
 
 static frame_buf_t rgui_frame_buf = {
+   NULL,
    0,
-   0,
-   NULL
+   0
 };
 static frame_buf_t rgui_background_buf = {
+   NULL,
    0,
-   0,
-   NULL
+   0
 };
 static frame_buf_t rgui_upscale_buf = {
+   NULL,
    0,
-   0,
-   NULL
+   0
 };
 
 /* ==============================
@@ -1799,11 +1896,11 @@ static bool downscale_thumbnail(rgui_t *rgui,
 static void process_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, uint32_t *queue_size, struct texture_image *image_src)
 {
    unsigned x, y;
-   struct texture_image *image = NULL;
+   struct texture_image *image          = NULL;
    struct texture_image image_resampled = {
-      0,
-      0,
       NULL,
+      0,
+      0,
       false
    };
 
@@ -2638,6 +2735,18 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
          return rgui_symbol_data_battery_20;
       case RGUI_SYMBOL_CHECKMARK:
          return rgui_symbol_data_checkmark;
+      case RGUI_SYMBOL_SWITCH_ON_LEFT:
+         return rgui_symbol_data_switch_on_left;
+      case RGUI_SYMBOL_SWITCH_ON_CENTRE:
+         return rgui_symbol_data_switch_on_centre;
+      case RGUI_SYMBOL_SWITCH_ON_RIGHT:
+         return rgui_symbol_data_switch_on_right;
+      case RGUI_SYMBOL_SWITCH_OFF_LEFT:
+         return rgui_symbol_data_switch_off_left;
+      case RGUI_SYMBOL_SWITCH_OFF_CENTRE:
+         return rgui_symbol_data_switch_off_centre;
+      case RGUI_SYMBOL_SWITCH_OFF_RIGHT:
+         return rgui_symbol_data_switch_off_right;
       default:
          break;
    }
@@ -3228,6 +3337,58 @@ static void rgui_render_osk(
    }
 }
 
+static void rgui_render_toggle_switch(unsigned fb_width, int x, int y,
+      bool on, uint16_t color, uint16_t shadow_color)
+{
+   int x_current = x;
+
+   /* Toggle switch is just 3 adjacent symbols
+    * > Note that we indent the left/right symbols
+    *   by 1 pixel, to avoid the gap that is normally
+    *   present between symbols/characters */
+   blit_symbol(fb_width, x_current + 1, y,
+         on ? RGUI_SYMBOL_SWITCH_ON_LEFT : RGUI_SYMBOL_SWITCH_OFF_LEFT,
+         color, shadow_color);
+   x_current += FONT_WIDTH_STRIDE;
+
+   blit_symbol(fb_width, x_current, y,
+         on ? RGUI_SYMBOL_SWITCH_ON_CENTRE : RGUI_SYMBOL_SWITCH_OFF_CENTRE,
+         color, shadow_color);
+   x_current += FONT_WIDTH_STRIDE;
+
+   blit_symbol(fb_width, x_current - 1, y,
+         on ? RGUI_SYMBOL_SWITCH_ON_RIGHT : RGUI_SYMBOL_SWITCH_OFF_RIGHT,
+         color, shadow_color);
+}
+
+static enum rgui_entry_value_type rgui_get_entry_value_type(
+      const char *entry_value, bool entry_checked,
+      bool switch_icons_enabled)
+{
+   enum rgui_entry_value_type value_type = RGUI_ENTRY_VALUE_NONE;
+
+   if (!string_is_empty(entry_value))
+   {
+      value_type = RGUI_ENTRY_VALUE_TEXT;
+
+      if (switch_icons_enabled)
+      {
+         /* Toggle switch off */
+         if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+             string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+            value_type = RGUI_ENTRY_VALUE_SWITCH_OFF;
+         /* Toggle switch on */
+         else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+                  string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+            value_type = RGUI_ENTRY_VALUE_SWITCH_ON;
+      }
+   }
+   else if (entry_checked)
+      value_type = RGUI_ENTRY_VALUE_CHECKMARK;
+
+   return value_type;
+}
+
 #if defined(GEKKO)
 /* Need to forward declare this for the Wii build
  * (I'm not going to reorder the functions and mess
@@ -3262,6 +3423,7 @@ static void rgui_render(void *data,
    bool use_smooth_ticker         = settings->bools.menu_ticker_smooth;
    bool rgui_swap_thumbnails      = settings->bools.menu_rgui_swap_thumbnails;
    bool rgui_full_width_layout    = settings->bools.menu_rgui_full_width_layout;
+   bool rgui_switch_icons         = settings->bools.menu_rgui_switch_icons;
    bool menu_show_sublabels       = settings->bools.menu_show_sublabels;
    bool video_fullscreen          = settings->bools.video_fullscreen;
    bool menu_mouse_enable         = settings->bools.menu_mouse_enable;
@@ -3656,12 +3818,13 @@ static void rgui_render(void *data,
          char entry_title_buf[255];
          char type_str_buf[255];
          menu_entry_t entry;
-         const char *entry_label               = NULL;
-         const char *entry_value               = NULL;
-         size_t entry_title_max_len            = 0;
-         unsigned entry_value_len              = 0;
-         bool entry_selected                   = (i == selection);
-         uint16_t entry_color                  = entry_selected ?
+         const char *entry_label                     = NULL;
+         const char *entry_value                     = NULL;
+         size_t entry_title_max_len                  = 0;
+         unsigned entry_value_len                    = 0;
+         enum rgui_entry_value_type entry_value_type = RGUI_ENTRY_VALUE_NONE;
+         bool entry_selected                         = (i == selection);
+         uint16_t entry_color                        = entry_selected ?
                rgui->colors.hover_color : rgui->colors.normal_color;
 
          if (i > (selection + 100))
@@ -3721,23 +3884,45 @@ static void rgui_render(void *data,
             entry_title_max_len -= (thumbnail_width / FONT_WIDTH_STRIDE) + 1;
          }
 
-         /* Determine whether entry has a value component */
-         if (!string_is_empty(entry_value))
-         {
-            if (rgui_full_width_layout)
-            {
-               /* Resize fields according to actual length of value string */
-               entry_value_len = (unsigned)strlen(entry_value);
-               entry_value_len = (entry_value_len 
-                     > rgui_term_layout.value_maxlen) 
-                  ? rgui_term_layout.value_maxlen 
-                  : entry_value_len;
-            }
-            else /* Use classic fixed width layout */
-               entry_value_len = entry.spacing;
+         /* Get 'type' of entry value component */
+         entry_value_type = rgui_get_entry_value_type(
+               entry_value, entry.checked, rgui_switch_icons);
 
-            /* Update width of entry title field */
-            entry_title_max_len -= entry_value_len + 2;
+         switch (entry_value_type)
+         {
+            case RGUI_ENTRY_VALUE_TEXT:
+               /* Resize fields according to actual length
+                * of value string */
+               if (rgui_full_width_layout)
+               {
+                  entry_value_len = (unsigned)strlen(entry_value);
+                  entry_value_len = (entry_value_len
+                        > rgui_term_layout.value_maxlen) ?
+                           rgui_term_layout.value_maxlen :
+                           entry_value_len;
+               }
+               /* Use classic fixed width layout */
+               else
+                  entry_value_len = entry.spacing;
+
+               /* Update width of entry title field */
+               entry_title_max_len -= entry_value_len + 2;
+               break;
+            case RGUI_ENTRY_VALUE_SWITCH_ON:
+            case RGUI_ENTRY_VALUE_SWITCH_OFF:
+               /* Switch icon is 3 characters wide
+                * (if using classic fixed width layout,
+                *  set maximum width to ensure icon is
+                *  aligned with left hand edge of values
+                *  column) */
+               entry_value_len = rgui_full_width_layout ?
+                     3 : RGUI_ENTRY_VALUE_MAXLEN;
+
+               /* Update width of entry title field */
+               entry_title_max_len -= entry_value_len + 2;
+               break;
+            default:
+               break;
          }
 
          /* Format entry title string */
@@ -3769,41 +3954,59 @@ static void rgui_render(void *data,
                entry_color, rgui->colors.shadow_color);
 
          /* Print entry value, if required */
-         if (entry_value_len > 0)
+         switch (entry_value_type)
          {
-            /* Format entry value string */
-            if (use_smooth_ticker)
-            {
-               ticker_smooth.field_width = entry_value_len * FONT_WIDTH_STRIDE;
-               ticker_smooth.src_str     = entry_value;
-               ticker_smooth.dst_str     = type_str_buf;
-               ticker_smooth.dst_str_len = sizeof(type_str_buf);
-               ticker_smooth.x_offset    = &ticker_x_offset;
+            case RGUI_ENTRY_VALUE_TEXT:
+               /* Format entry value string */
+               if (use_smooth_ticker)
+               {
+                  ticker_smooth.field_width = entry_value_len * FONT_WIDTH_STRIDE;
+                  ticker_smooth.src_str     = entry_value;
+                  ticker_smooth.dst_str     = type_str_buf;
+                  ticker_smooth.dst_str_len = sizeof(type_str_buf);
+                  ticker_smooth.x_offset    = &ticker_x_offset;
 
-               gfx_animation_ticker_smooth(&ticker_smooth);
-            }
-            else
-            {
-               ticker.s        = type_str_buf;
-               ticker.len      = entry_value_len;
-               ticker.str      = entry_value;
+                  gfx_animation_ticker_smooth(&ticker_smooth);
+               }
+               else
+               {
+                  ticker.s        = type_str_buf;
+                  ticker.len      = entry_value_len;
+                  ticker.str      = entry_value;
 
-               gfx_animation_ticker(&ticker);
-            }
+                  gfx_animation_ticker(&ticker);
+               }
 
-            /* Print entry value */
-            blit_line(rgui,
-                  fb_width,
-                  ticker_x_offset + term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE),
-                  y,
-                  type_str_buf,
-                  entry_color, rgui->colors.shadow_color);
+               /* Print entry value */
+               blit_line(rgui,
+                     fb_width,
+                     ticker_x_offset + term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE),
+                     y,
+                     type_str_buf,
+                     entry_color, rgui->colors.shadow_color);
+               break;
+            case RGUI_ENTRY_VALUE_SWITCH_ON:
+               rgui_render_toggle_switch(fb_width,
+                     term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
+                     true,
+                     entry_color, rgui->colors.shadow_color);
+               break;
+            case RGUI_ENTRY_VALUE_SWITCH_OFF:
+               rgui_render_toggle_switch(fb_width,
+                     term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
+                     false,
+                     entry_color, rgui->colors.shadow_color);
+               break;
+            case RGUI_ENTRY_VALUE_CHECKMARK:
+               /* Print marker for currently selected
+                * item in drop-down lists */
+               blit_symbol(fb_width, x + FONT_WIDTH_STRIDE, y,
+                     RGUI_SYMBOL_CHECKMARK,
+                     entry_color, rgui->colors.shadow_color);
+               break;
+            default:
+               break;
          }
-         /* Print marker for currently selected item in
-          * drop down lists, if required */
-         else if (entry.checked)
-            blit_symbol(fb_width, x + FONT_WIDTH_STRIDE, y, RGUI_SYMBOL_CHECKMARK,
-                  entry_color, rgui->colors.shadow_color);
 
          /* Print selection marker, if required */
          if (entry_selected)
@@ -4761,13 +4964,29 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    rgui->entry_has_thumbnail         = false;
    rgui->entry_has_left_thumbnail    = false;
    rgui->thumbnail_load_pending      = false;
-   
+
    /* Update thumbnail content/path */
    if ((rgui->show_fs_thumbnail || rgui_inline_thumbnails) 
          && rgui->is_playlist)
    {
+      size_t selection      = menu_navigation_get_selection();
+      size_t list_size      = menu_entries_get_size();
+      file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
+      bool playlist_valid   = false;
+      size_t playlist_index = selection;
+
+      /* Get playlist index corresponding
+       * to the selected entry */
+      if (list &&
+          (selection < list_size) &&
+          (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+      {
+         playlist_valid = true;
+         playlist_index = list->list[selection].entry_idx;
+      }
+
       if (gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
-            playlist_get_cached(), menu_navigation_get_selection()))
+            playlist_valid ? playlist_get_cached() : NULL, playlist_index))
       {
          if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
             has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
@@ -4778,7 +4997,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
                             has_thumbnail;
       }
    }
-   
+
    /* Check whether thumbnails should be loaded */
    if (has_thumbnail)
    {
@@ -5022,7 +5241,7 @@ static void rgui_populate_entries(void *data,
       {
          /* Make sure that any changes made while accessing
           * the video settings menu are preserved */
-         rgui_video_settings_t current_video_settings = {0};
+         rgui_video_settings_t current_video_settings = {{0}};
          rgui_get_video_config(&current_video_settings);
          if (rgui_is_video_config_equal(&current_video_settings,
                   &rgui->menu_video_settings))
@@ -5360,7 +5579,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
          /* Restore content video settings *if* user
           * has not changed video settings since menu was
           * last toggled on */
-         rgui_video_settings_t current_video_settings = {0};
+         rgui_video_settings_t current_video_settings = {{0}};
          rgui_get_video_config(&current_video_settings);
          
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
@@ -5495,6 +5714,5 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* update_savestate_thumbnail_image */
    NULL,                               /* pointer_down */
    rgui_pointer_up,
-   NULL,                               /* get_load_content_animation_data */
    rgui_menu_entry_action
 };

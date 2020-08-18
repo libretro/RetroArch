@@ -46,30 +46,10 @@ extern "C" {
 #endif
 
 /**
- * \brief           Entropy poll callback that provides 0 entropy.
- */
-#if defined(MBEDTLS_TEST_NULL_ENTROPY)
-    int mbedtls_null_entropy_poll( void *data,
-                                unsigned char *output, size_t len, size_t *olen );
-#endif
-
-#if !defined(MBEDTLS_NO_PLATFORM_ENTROPY)
-/**
  * \brief           Platform-specific entropy poll callback
  */
 int mbedtls_platform_entropy_poll( void *data,
                            unsigned char *output, size_t len, size_t *olen );
-#endif
-
-#if defined(MBEDTLS_HAVEGE_C)
-/**
- * \brief           HAVEGE based entropy poll callback
- *
- * Requires an HAVEGE state as its data pointer.
- */
-int mbedtls_havege_poll( void *data,
-                 unsigned char *output, size_t len, size_t *olen );
-#endif
 
 #if defined(MBEDTLS_TIMING_C)
 /**
@@ -90,16 +70,6 @@ int mbedtls_hardclock_poll( void *data,
  */
 int mbedtls_hardware_poll( void *data,
                            unsigned char *output, size_t len, size_t *olen );
-#endif
-
-#if defined(MBEDTLS_ENTROPY_NV_SEED)
-/**
- * \brief           Entropy poll callback for a non-volatile seed file
- *
- * \note            This must accept NULL as its first argument.
- */
-int mbedtls_nv_seed_poll( void *data,
-                          unsigned char *output, size_t len, size_t *olen );
 #endif
 
 #ifdef __cplusplus

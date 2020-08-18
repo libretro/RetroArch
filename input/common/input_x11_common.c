@@ -18,6 +18,7 @@
 
 #include "input_x11_common.h"
 
+/* TODO/FIXME - static globals */
 static bool x11_mouse_wu;
 static bool x11_mouse_wd;
 static bool x11_mouse_hwu;

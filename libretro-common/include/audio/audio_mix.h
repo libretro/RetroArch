@@ -40,19 +40,19 @@ RETRO_BEGIN_DECLS
 
 typedef struct
 {
+   double ratio;
    void *buf;
    int16_t *upsample_buf;
    float *float_buf;
    float *float_resample_buf;
    int16_t *resample_buf;
-   ssize_t len;
-   size_t resample_len;
-   rwav_t *rwav;
-   int sample_rate;
-   bool resample;
    const retro_resampler_t *resampler;
    void *resampler_data;
-   double ratio;
+   rwav_t *rwav;
+   ssize_t len;
+   size_t resample_len;
+   int sample_rate;
+   bool resample;
 } audio_chunk_t;
 
 #if defined(__SSE2__)

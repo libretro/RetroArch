@@ -238,8 +238,7 @@ struct string_list *manual_content_scan_get_content_list(manual_content_scan_tas
 void manual_content_scan_add_content_to_playlist(
       manual_content_scan_task_config_t *task_config,
       playlist_t *playlist, const char *content_path,
-      int content_type, logiqx_dat_t *dat_file,
-      bool fuzzy_archive_match);
+      int content_type, logiqx_dat_t *dat_file);
 
 RETRO_END_DECLS
 

@@ -172,7 +172,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
         unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive      = video_info->menu_is_alive;
+#endif
 
    if (unlikely(!frame))
       return true;
@@ -186,7 +188,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (likely(!vid->menu_active))
    {
-      blit((uint32_t*)vid->screen->pixels, (uint32_t*)frame, vid->rgb ? width : width/2, height, pitch);
+      blit((uint32_t*)vid->screen->pixels,
+            (uint32_t*)frame,
+            vid->rgb ? width : width/2, height, pitch);
       if (unlikely(vid->was_in_menu))
          vid->was_in_menu = false;
    }
@@ -248,24 +252,9 @@ static bool sdl_dingux_gfx_alive(void *data)
    return !vid->quitting;
 }
 
-static bool sdl_dingux_gfx_focus(void *data)
-{
-    (void)data;
-    return true;
-}
-
-static bool sdl_dingux_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool sdl_dingux_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
+static bool sdl_dingux_gfx_focus(void *data) { return true; }
+static bool sdl_dingux_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool sdl_dingux_gfx_has_windowed(void *data) { return false; }
 
 static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
@@ -276,21 +265,9 @@ static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->screen->h;
 }
 
-static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
-{
-    (void)data;
-}
-
-static void sdl_dingux_apply_state_changes(void *data)
-{
-   (void)data;
-}
-
-static uint32_t sdl_dingux_get_flags(void *data)
-{
-    (void)data;
-    return 0;
-}
+static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling) { }
+static void sdl_dingux_apply_state_changes(void *data) { }
+static uint32_t sdl_dingux_get_flags(void *data) { return 0; }
 
 static const video_poke_interface_t sdl_dingux_poke_interface = {
    sdl_dingux_get_flags,
@@ -316,20 +293,9 @@ static const video_poke_interface_t sdl_dingux_poke_interface = {
    NULL                          /* get_hw_render_interface */
 };
 
-static void sdl_dingux_get_poke_interface(void *data, const video_poke_interface_t **iface)
-{
-   (void)data;
-   *iface = &sdl_dingux_poke_interface;
-}
-
+static void sdl_dingux_get_poke_interface(void *data, const video_poke_interface_t **iface) { *iface = &sdl_dingux_poke_interface; }
 static bool sdl_dingux_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-   return false;
-}
+      enum rarch_shader_type type, const char *path) { return false; }
 
 video_driver_t video_sdl_dingux = {
    sdl_dingux_gfx_init,

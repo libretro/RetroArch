@@ -31,8 +31,8 @@ extern "C" {
 
 void MainWindow::onThumbnailDownloadNetworkError(QNetworkReply::NetworkError code)
 {
-   QNetworkReply *reply = m_thumbnailDownloadReply.data();
    QByteArray errorStringArray;
+   QNetworkReply        *reply = m_thumbnailDownloadReply.data();
    const char *errorStringData = NULL;
 
    m_thumbnailDownloadProgressDialog->cancel();
@@ -43,9 +43,11 @@ void MainWindow::onThumbnailDownloadNetworkError(QNetworkReply::NetworkError cod
    errorStringArray = reply->errorString().toUtf8();
    errorStringData = errorStringArray.constData();
 
-   RARCH_ERR("[Qt]: Network error code %d received: %s\n", code, errorStringData);
+   RARCH_ERR("[Qt]: Network error code %d received: %s\n",
+         code, errorStringData);
 
-   /* Deleting the reply here seems to cause a strange heap-use-after-free crash. */
+   /* Deleting the reply here seems to cause a strange 
+    * heap-use-after-free crash. */
    /*
    reply->disconnect();
    reply->abort();
@@ -53,7 +55,8 @@ void MainWindow::onThumbnailDownloadNetworkError(QNetworkReply::NetworkError cod
    */
 }
 
-void MainWindow::onThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors)
+void MainWindow::onThumbnailDownloadNetworkSslErrors(
+      const QList<QSslError> &errors)
 {
    QNetworkReply *reply = m_thumbnailDownloadReply.data();
    int i;
@@ -64,7 +67,11 @@ void MainWindow::onThumbnailDownloadNetworkSslErrors(const QList<QSslError> &err
    for (i = 0; i < errors.count(); i++)
    {
       const QSslError &error = errors.at(i);
-      QString string = QString("Ignoring SSL error code ") + QString::number(error.error()) + ": " + error.errorString();
+      QString         string = 
+           QString("Ignoring SSL error code ") 
+         + QString::number(error.error()) 
+         + ": " 
+         + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
       RARCH_ERR("[Qt]: %s\n", stringData);
@@ -81,34 +88,41 @@ void MainWindow::onThumbnailDownloadCanceled()
 
 void MainWindow::onThumbnailDownloadFinished()
 {
+   int code;
    QString system;
    QString title;
    QString downloadType;
-   QNetworkReply *reply = m_thumbnailDownloadReply.data();
    QNetworkReply::NetworkError error;
-   int code;
+   QNetworkReply *reply = m_thumbnailDownloadReply.data();
 
    m_thumbnailDownloadProgressDialog->cancel();
 
-   /* At least on Linux, the progress dialog will refuse to hide itself and will stay on screen in a corrupted way if we happen to show an error message in this function. processEvents() will sometimes fix it, other times not... seems random. */
+   /* At least on Linux, the progress dialog will refuse 
+    * to hide itself and will stay on screen in a corrupted 
+    * way if we happen to show an error message in this 
+    * function. processEvents() will sometimes fix it, 
+    * other times not... seems random. */
    qApp->processEvents();
 
    if (!reply)
       return;
 
-   system = reply->property("system").toString();
-   title = reply->property("title").toString();
+   system       = reply->property("system").toString();
+   title        = reply->property("title").toString();
    downloadType = reply->property("download_type").toString();
 
-   error = reply->error();
-   code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+   error        = reply->error();
+   code         = reply->attribute(
+         QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
    if (m_thumbnailDownloadFile.isOpen())
       m_thumbnailDownloadFile.close();
 
    if (code != 200)
    {
-      QUrl redirectUrl = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
+      QUrl redirectUrl               = 
+         reply->attribute(
+               QNetworkRequest::RedirectionTargetAttribute).toUrl();
 
       if (!redirectUrl.isEmpty())
       {
@@ -127,27 +141,28 @@ void MainWindow::onThumbnailDownloadFinished()
 
          return;
       }
-      else
-      {
-         /*emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code));*/
-         m_thumbnailDownloadFile.remove();
 
-         RARCH_ERR("[Qt]: Thumbnail download failed with HTTP status code: %d\n", code);
+#if 0
+      emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code));
+#endif
+      m_thumbnailDownloadFile.remove();
 
-         reply->disconnect();
-         reply->abort();
-         reply->deleteLater();
+      RARCH_ERR("[Qt]: Thumbnail download failed with HTTP status code: %d\n", code);
 
-         if (!m_pendingThumbnailDownloadTypes.isEmpty())
-            downloadThumbnail(system, title);
+      reply->disconnect();
+      reply->abort();
+      reply->deleteLater();
 
-         return;
-      }
+      if (!m_pendingThumbnailDownloadTypes.isEmpty())
+         downloadThumbnail(system, title);
+
+      return;
    }
 
    if (error == QNetworkReply::NoError)
    {
-      int index = m_thumbnailDownloadFile.fileName().lastIndexOf(PARTIAL_EXTENSION);
+      int index           = m_thumbnailDownloadFile.fileName().
+         lastIndexOf(PARTIAL_EXTENSION);
       QString newFileName = m_thumbnailDownloadFile.fileName().left(index);
       QFile newFile(newFileName);
 
@@ -179,7 +194,12 @@ void MainWindow::onThumbnailDownloadFinished()
       m_thumbnailDownloadFile.remove();
 
       RARCH_ERR("[Qt]: Thumbnail download ended prematurely: %s\n", errorData);
-      emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": Code " + QString::number(code) + ": " + errorData);
+      emit showErrorMessageDeferred(
+              QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) 
+            + ": Code " 
+            + QString::number(code) 
+            + ": " 
+            + errorData);
    }
 
    reply->disconnect();
@@ -195,10 +215,11 @@ void MainWindow::onDownloadThumbnail(QString system, QString title)
    downloadThumbnail(system, title);
 }
 
-void MainWindow::onThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+void MainWindow::onThumbnailDownloadProgress(
+      qint64 bytesReceived, qint64 bytesTotal)
 {
    QNetworkReply *reply = m_thumbnailDownloadReply.data();
-   int progress = (bytesReceived / (float)bytesTotal) * 100.0f;
+   int         progress = (bytesReceived / (float)bytesTotal) * 100.0f;
 
    if (!reply)
       return;
@@ -224,8 +245,8 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    QString downloadType;
    QString systemUnderscore = system;
    QNetworkReply *reply     = NULL;
-   settings_t *settings     = config_get_ptr();
    const char *urlData      = NULL;
+   settings_t *settings     = config_get_ptr();
 
    if (!settings || m_pendingThumbnailDownloadTypes.isEmpty())
       return;

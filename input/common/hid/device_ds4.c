@@ -18,7 +18,8 @@
 
 extern pad_connection_interface_t ds4_pad_connection;
 
-typedef struct ds4_instance {
+typedef struct ds4_instance
+{
    void *handle;
    joypad_connection_t *pad;
    int slot;
@@ -37,43 +38,40 @@ typedef struct ds4_instance {
  */
 static void *ds4_init(void *handle)
 {
-   ds4_instance_t *instance;
-   instance = (ds4_instance_t *)calloc(1, sizeof(ds4_instance_t));
-   if(!instance)
-      goto error;
+   ds4_instance_t *instance = (ds4_instance_t *)
+      malloc(sizeof(ds4_instance_t));
+   if (!instance)
+      return NULL;
 
    memset(instance, 0, sizeof(ds4_instance_t));
    instance->handle = handle;
-   instance->pad = hid_pad_register(instance, &ds4_pad_connection);
-   if(!instance->pad)
-      goto error;
+   instance->pad    = hid_pad_register(instance, &ds4_pad_connection);
 
-   RARCH_LOG("[ds4]: init complete.\n");
-   return instance;
-
-   error:
-      RARCH_ERR("[ds4]: init failed.\n");
-      if(instance)
-         free(instance);
-
+   if (!instance->pad)
+   {
+      free(instance);
       return NULL;
+   }
+
+   return instance;
 }
 
 static void ds4_free(void *data)
 {
    ds4_instance_t *instance = (ds4_instance_t *)data;
 
-   if(instance) {
-      hid_pad_deregister(instance->pad);
-      free(instance);
-   }
+   if (!instance)
+      return;
+
+   hid_pad_deregister(instance->pad);
+   free(instance);
 }
 
 static void ds4_handle_packet(void *data, uint8_t *buffer, size_t size)
 {
    ds4_instance_t *instance = (ds4_instance_t *)data;
 
-   if(instance && instance->pad)
+   if (instance && instance->pad)
       instance->pad->iface->packet_handler(instance->pad->data, buffer, size);
 }
 
@@ -94,53 +92,28 @@ static void *ds4_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
    ds4_instance_t *instance = (ds4_instance_t *)data;
 
-   if(!instance)
+   if (!instance)
       return NULL;
 
    instance->slot = slot;
    return instance;
 }
 
-static void ds4_pad_deinit(void *data)
-{
-}
-
-static void ds4_get_buttons(void *data, input_bits_t *state)
-{
-   ds4_instance_t *instance = (ds4_instance_t *)data;
-   if(!instance)
-      return;
-
-   /* TODO: get buttons */
-}
-
 static void ds4_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
    ds4_instance_t *instance = (ds4_instance_t *)data;
-   if(!instance)
+   if (!instance)
       return;
 
    RARCH_LOG_BUFFER(packet, size);
 }
 
-static void ds4_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
-{
-}
-
-static int16_t ds4_get_axis(void *data, unsigned axis)
-{
-   return 0;
-}
-
-static const char *ds4_get_name(void *data)
-{
-   return "Sony DualShock 4";
-}
-
-static bool ds4_button(void *data, uint16_t joykey)
-{
-  return false;
-}
+static void ds4_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength) { }
+static int16_t ds4_get_axis(void *data, unsigned axis) { return 0; }
+static const char *ds4_get_name(void *data) { return "Sony DualShock 4"; }
+static int16_t ds4_button(void *data, uint16_t joykey) { return 0; }
+static void ds4_pad_deinit(void *data) { }
+static void ds4_get_buttons(void *data, input_bits_t *state) { }
 
 pad_connection_interface_t ds4_pad_connection = {
    ds4_pad_init,

@@ -27,6 +27,11 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "../../../config.h"
+#endif
+
+#include "../../../configuration.h"
 #include "../../../msg_hash.h"
 
 #ifndef CXX_BUILD
@@ -92,11 +97,11 @@ private:
 
       if (inner)
       {
-         int        fw = frameWidth() * 2;
-         QSize minSize = inner->minimumSizeHint();
+         int        fw                = frameWidth() * 2;
+         QSize minSize                = inner->minimumSizeHint();
 
-         minSize += QSize(fw, fw);
-         minSize += QSize(scrollBarWidth(), 0);
+         minSize                     += QSize(fw, fw);
+         minSize                     += QSize(scrollBarWidth(), 0);
          minSize.setWidth(qMin(minSize.width(), max_min_width));
          minSize.setHeight(qMin(minSize.height(), max_min_height));
          return minSize;
@@ -169,7 +174,10 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    addCategory(new UserCategory(this));
    addCategory(new DirectoryCategory(this));
 
-   width = m_optionsList->sizeHintForColumn(0) + m_optionsList->frameWidth() * 2 + 5;
+   width  = 
+        m_optionsList->sizeHintForColumn(0) 
+      + m_optionsList->frameWidth() * 2 
+      + 5;
    width += m_optionsList->verticalScrollBar()->sizeHint().width();
 
    m_optionsList->setMaximumWidth(width);
@@ -281,7 +289,6 @@ void ViewOptionsDialog::onRejected()
 {
 #ifdef HAVE_MENU
    int i;
-
    for (i = 0; i < m_categoryList.size(); i++)
       m_categoryList.at(i)->apply();
 #endif
@@ -308,7 +315,7 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    /* ,m_allPlaylistsGridMaxCountSpinBox(new QSpinBox(this)) */
 {
    QVBoxLayout *layout = new QVBoxLayout;
-   QFormLayout *form = new QFormLayout;
+   QFormLayout *form   = new QFormLayout;
 
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT), MainWindow::THEME_SYSTEM_DEFAULT);
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK), MainWindow::THEME_DARK);
@@ -413,10 +420,14 @@ void ViewOptionsWidget::loadViewOptions()
    int i;
    int themeIndex    = 0;
    int playlistIndex = 0;
-   QColor highlightColor = m_settings->value("highlight_color", QApplication::palette().highlight().color()).value<QColor>();
+   QColor highlightColor                       = 
+      m_settings->value("highlight_color",
+            QApplication::palette().highlight().color()).value<QColor>();
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
    QVector<QPair<QString, QString> > playlists = m_mainwindow->getPlaylists();
-   QString initialPlaylist = m_settings->value("initial_playlist", m_mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
+   QString initialPlaylist = m_settings->value("initial_playlist",
+         m_mainwindow->getSpecialPlaylistPath(
+            SPECIAL_PLAYLIST_HISTORY)).toString();
 
    m_saveGeometryCheckBox->setChecked(m_settings->value("save_geometry", false).toBool());
    m_saveDockPositionsCheckBox->setChecked(m_settings->value("save_dock_positions", false).toBool());
@@ -453,7 +464,8 @@ void ViewOptionsWidget::loadViewOptions()
       m_startupPlaylistComboBox->addItem(pair.first, pair.second);
    }
 
-   playlistIndex = m_startupPlaylistComboBox->findData(initialPlaylist, Qt::UserRole, Qt::MatchFixedString);
+   playlistIndex = m_startupPlaylistComboBox->findData(
+         initialPlaylist, Qt::UserRole, Qt::MatchFixedString);
 
    if (playlistIndex >= 0)
       m_startupPlaylistComboBox->setCurrentIndex(playlistIndex);

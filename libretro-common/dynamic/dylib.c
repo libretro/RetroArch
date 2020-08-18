@@ -78,35 +78,36 @@ dylib_t dylib_load(const char *path)
    int prevmode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
 #endif
 #ifdef __WINRT__
+   dylib_t lib;
    /* On UWP, you can only load DLLs inside your install directory, using a special function that takes a relative path */
+   char relative_path_abbrev[PATH_MAX_LENGTH];
+   char *relative_path = relative_path_abbrev;
+   wchar_t *path_wide  = NULL;
+
+   relative_path_abbrev[0] = '\0';
 
    if (!path_is_absolute(path))
       RARCH_WARN("Relative path in dylib_load! This is likely an attempt to load a system library that will fail\n");
 
-   char *relative_path_abbrev = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   fill_pathname_abbreviate_special(relative_path_abbrev, path, PATH_MAX_LENGTH * sizeof(char));
+   fill_pathname_abbreviate_special(relative_path_abbrev, path, sizeof(relative_path_abbrev));
 
-   char *relative_path = relative_path_abbrev;
-   if (relative_path[0] != ':' || !path_char_is_slash(relative_path[1]))
-   {
-      /* Path to dylib_load is not inside app install directory.
-       * Loading will probably fail. */
-   }
+   /* Path to dylib_load is not inside app install directory.
+    * Loading will probably fail. */
+   if (relative_path[0] != ':' || !PATH_CHAR_IS_SLASH(relative_path[1])) { }
    else
       relative_path += 2;
 
-
-   wchar_t *pathW = utf8_to_utf16_string_alloc(relative_path);
-   dylib_t lib = LoadPackagedLibrary(pathW, 0);
-   free(pathW);
+   path_wide = utf8_to_utf16_string_alloc(relative_path);
+   lib       = LoadPackagedLibrary(path_wide, 0);
+   free(path_wide);
 
    free(relative_path_abbrev);
 #elif defined(LEGACY_WIN32)
-   dylib_t lib  = LoadLibrary(path);
+   dylib_t lib        = LoadLibrary(path);
 #else
-   wchar_t *pathW = utf8_to_utf16_string_alloc(path);
-   dylib_t lib  = LoadLibraryW(pathW);
-   free(pathW);
+   wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+   dylib_t lib        = LoadLibraryW(path_wide);
+   free(path_wide);
 #endif
 
 #ifndef __WINRT__

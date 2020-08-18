@@ -35,8 +35,6 @@
 
 struct intfstream_internal
 {
-   enum intfstream_type type;
-
    struct
    {
       RFILE *fp;
@@ -44,19 +42,19 @@ struct intfstream_internal
 
    struct
    {
+      memstream_t *fp;
       struct
       {
          uint8_t *data;
          uint64_t size;
       } buf;
-      memstream_t *fp;
       bool writable;
    } memory;
 #ifdef HAVE_CHD
    struct
    {
-      int32_t track;
       chdstream_t *fp;
+      int32_t track;
    } chd;
 #endif
 #if defined(HAVE_ZLIB)
@@ -65,6 +63,7 @@ struct intfstream_internal
       rzipstream_t *fp;
    } rzip;
 #endif
+   enum intfstream_type type;
 };
 
 int64_t intfstream_get_size(intfstream_internal_t *intf)
@@ -221,12 +220,24 @@ void *intfstream_init(intfstream_info_t *info)
    if (!info)
       goto error;
 
-   intf = (intfstream_internal_t*)calloc(1, sizeof(*intf));
+   intf = (intfstream_internal_t*)malloc(sizeof(*intf));
 
    if (!intf)
       goto error;
 
-   intf->type = info->type;
+   intf->type            = info->type;
+   intf->file.fp         = NULL;
+   intf->memory.buf.data = NULL;
+   intf->memory.buf.size = 0;
+   intf->memory.fp       = NULL;
+   intf->memory.writable = false;
+#ifdef HAVE_CHD
+   intf->chd.track       = 0;
+   intf->chd.fp          = NULL;
+#endif
+#ifdef HAVE_ZLIB
+   intf->rzip.fp         = NULL;
+#endif
 
    switch (intf->type)
    {
@@ -256,7 +267,8 @@ error:
    return NULL;
 }
 
-int64_t intfstream_seek(intfstream_internal_t *intf, int64_t offset, int whence)
+int64_t intfstream_seek(
+      intfstream_internal_t *intf, int64_t offset, int whence)
 {
    if (!intf)
       return -1;
@@ -426,7 +438,7 @@ char *intfstream_gets(intfstream_internal_t *intf,
 #endif
       case INTFSTREAM_RZIP:
 #if defined(HAVE_ZLIB)
-         return rzipstream_gets(intf->rzip.fp, buffer, len);
+         return rzipstream_gets(intf->rzip.fp, buffer, (size_t)len);
 #else
          break;
 #endif

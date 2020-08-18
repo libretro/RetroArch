@@ -68,7 +68,7 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
    if (!d3d10 || !draw || !draw->texture)
       return;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
@@ -76,7 +76,7 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         d3d10_set_shader(d3d10->device, &d3d10->shaders[draw->pipeline.id]);
+         d3d10_set_shader(d3d10->device, &d3d10->shaders[draw->pipeline_id]);
          D3D10Draw(d3d10->device, draw->coords->vertices, 0);
 
          D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
@@ -189,7 +189,7 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
    if (!d3d10 || !draw)
       return;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:

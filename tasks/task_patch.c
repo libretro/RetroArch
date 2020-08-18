@@ -60,6 +60,9 @@ enum patch_error
 
 struct bps_data
 {
+   const uint8_t *modify_data;
+   const uint8_t *source_data;
+   uint8_t *target_data;
    size_t modify_length;
    size_t source_length;
    size_t target_length;
@@ -72,13 +75,13 @@ struct bps_data
    uint32_t modify_checksum;
    uint32_t source_checksum;
    uint32_t target_checksum;
-   const uint8_t *modify_data;
-   const uint8_t *source_data;
-   uint8_t *target_data;
 };
 
 struct ups_data
 {
+   const uint8_t *patch_data;
+   const uint8_t *source_data;
+   uint8_t *target_data;
    unsigned patch_length;
    unsigned source_length;
    unsigned target_length;
@@ -88,9 +91,6 @@ struct ups_data
    unsigned patch_checksum;
    unsigned source_checksum;
    unsigned target_checksum;
-   const uint8_t *patch_data;
-   const uint8_t *source_data;
-   uint8_t *target_data;
 };
 
 typedef enum patch_error (*patch_func_t)(const uint8_t*, uint64_t,

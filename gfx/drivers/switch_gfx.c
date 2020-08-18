@@ -152,7 +152,14 @@ static bool switch_frame(void *data, const void *frame,
    int xsf                = 1280 / width;
    int ysf                = 720  / height;
    int sf                 = xsf;
+#ifdef HAVE_MENU
    bool menu_is_alive     = video_info->menu_is_alive;
+#endif
+   bool statistics_show   = video_info->statistics_show;
+   struct font_params 
+      *osd_params         = (struct font_params*)
+      &video_info->osd_stat_params;
+
 
    if (ysf < sf)
       sf = ysf;
@@ -223,14 +230,11 @@ static bool switch_frame(void *data, const void *frame,
 #endif
       }
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
          font_driver_render_msg(sw, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+               osd_params, NULL);
    }
 #endif
 
@@ -241,9 +245,6 @@ static bool switch_frame(void *data, const void *frame,
       exit(0);
    }
 #endif
-
-   if (msg && strlen(msg) > 0)
-      RARCH_LOG("message: %s\n", msg);
 
    r = surface_dequeue_buffer(&sw->surface, &out_buffer);
    if(r != RESULT_OK)
@@ -269,30 +270,10 @@ static void switch_set_nonblock_state(void *data, bool toggle, bool c, unsigned 
    sw->vsync          = !toggle;
 }
 
-static bool switch_alive(void *data)
-{
-	(void) data;
-	return true;
-}
-
-static bool switch_focus(void *data)
-{
-	(void) data;
-	return true;
-}
-
-static bool switch_suppress_screensaver(void *data, bool enable)
-{
-	(void) data;
-	(void) enable;
-	return false;
-}
-
-static bool switch_has_windowed(void *data)
-{
-	(void) data;
-	return false;
-}
+static bool switch_alive(void *data) { return true; }
+static bool switch_focus(void *data) { return true; }
+static bool switch_suppress_screensaver(void *data, bool enable) { return false; }
+static bool switch_has_windowed(void *data) { return false; }
 
 static void switch_free(void *data)
 {

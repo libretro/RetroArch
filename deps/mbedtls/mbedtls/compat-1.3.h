@@ -24,12 +24,6 @@
  *  This file is part of mbed TLS (https://tls.mbed.org)
  */
 
-#if ! defined(MBEDTLS_DEPRECATED_REMOVED)
-
-#if defined(MBEDTLS_DEPRECATED_WARNING)
-#warning "Including compat-1.3.h is deprecated"
-#endif
-
 #ifndef MBEDTLS_COMPAT13_H
 #define MBEDTLS_COMPAT13_H
 
@@ -44,9 +38,6 @@
 #endif
 #if defined MBEDTLS_AES_C
 #define POLARSSL_AES_C MBEDTLS_AES_C
-#endif
-#if defined MBEDTLS_AES_ROM_TABLES
-#define POLARSSL_AES_ROM_TABLES MBEDTLS_AES_ROM_TABLES
 #endif
 #if defined MBEDTLS_ARC4_ALT
 #define POLARSSL_ARC4_ALT MBEDTLS_ARC4_ALT
@@ -116,15 +107,6 @@
 #endif
 #if defined MBEDTLS_CTR_DRBG_C
 #define POLARSSL_CTR_DRBG_C MBEDTLS_CTR_DRBG_C
-#endif
-#if defined MBEDTLS_DEBUG_C
-#define POLARSSL_DEBUG_C MBEDTLS_DEBUG_C
-#endif
-#if defined MBEDTLS_DEPRECATED_REMOVED
-#define POLARSSL_DEPRECATED_REMOVED MBEDTLS_DEPRECATED_REMOVED
-#endif
-#if defined MBEDTLS_DEPRECATED_WARNING
-#define POLARSSL_DEPRECATED_WARNING MBEDTLS_DEPRECATED_WARNING
 #endif
 #if defined MBEDTLS_DES_ALT
 #define POLARSSL_DES_ALT MBEDTLS_DES_ALT
@@ -204,9 +186,6 @@
 #if defined MBEDTLS_ENTROPY_FORCE_SHA256
 #define POLARSSL_ENTROPY_FORCE_SHA256 MBEDTLS_ENTROPY_FORCE_SHA256
 #endif
-#if defined MBEDTLS_ERROR_C
-#define POLARSSL_ERROR_C MBEDTLS_ERROR_C
-#endif
 #if defined MBEDTLS_ERROR_STRERROR_DUMMY
 #define POLARSSL_ERROR_STRERROR_DUMMY MBEDTLS_ERROR_STRERROR_DUMMY
 #endif
@@ -219,17 +198,11 @@
 #if defined MBEDTLS_GENPRIME
 #define POLARSSL_GENPRIME MBEDTLS_GENPRIME
 #endif
-#if defined MBEDTLS_HAVEGE_C
-#define POLARSSL_HAVEGE_C MBEDTLS_HAVEGE_C
-#endif
 #if defined MBEDTLS_HAVE_ASM
 #define POLARSSL_HAVE_ASM MBEDTLS_HAVE_ASM
 #endif
 #if defined MBEDTLS_HAVE_SSE2
 #define POLARSSL_HAVE_SSE2 MBEDTLS_HAVE_SSE2
-#endif
-#if defined MBEDTLS_HAVE_TIME
-#define POLARSSL_HAVE_TIME MBEDTLS_HAVE_TIME
 #endif
 #if defined MBEDTLS_HMAC_DRBG_C
 #define POLARSSL_HMAC_DRBG_C MBEDTLS_HMAC_DRBG_C
@@ -276,24 +249,6 @@
 #if defined MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED
 #define POLARSSL_KEY_EXCHANGE_RSA_PSK_ENABLED MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED
 #endif
-#if defined MBEDTLS_MD2_ALT
-#define POLARSSL_MD2_ALT MBEDTLS_MD2_ALT
-#endif
-#if defined MBEDTLS_MD2_C
-#define POLARSSL_MD2_C MBEDTLS_MD2_C
-#endif
-#if defined MBEDTLS_MD2_PROCESS_ALT
-#define POLARSSL_MD2_PROCESS_ALT MBEDTLS_MD2_PROCESS_ALT
-#endif
-#if defined MBEDTLS_MD4_ALT
-#define POLARSSL_MD4_ALT MBEDTLS_MD4_ALT
-#endif
-#if defined MBEDTLS_MD4_C
-#define POLARSSL_MD4_C MBEDTLS_MD4_C
-#endif
-#if defined MBEDTLS_MD4_PROCESS_ALT
-#define POLARSSL_MD4_PROCESS_ALT MBEDTLS_MD4_PROCESS_ALT
-#endif
 #if defined MBEDTLS_MD5_ALT
 #define POLARSSL_MD5_ALT MBEDTLS_MD5_ALT
 #endif
@@ -309,15 +264,6 @@
 #if defined MBEDTLS_MEMORY_ALIGN_MULTIPLE
 #define POLARSSL_MEMORY_ALIGN_MULTIPLE MBEDTLS_MEMORY_ALIGN_MULTIPLE
 #endif
-#if defined MBEDTLS_MEMORY_BACKTRACE
-#define POLARSSL_MEMORY_BACKTRACE MBEDTLS_MEMORY_BACKTRACE
-#endif
-#if defined MBEDTLS_MEMORY_BUFFER_ALLOC_C
-#define POLARSSL_MEMORY_BUFFER_ALLOC_C MBEDTLS_MEMORY_BUFFER_ALLOC_C
-#endif
-#if defined MBEDTLS_MEMORY_DEBUG
-#define POLARSSL_MEMORY_DEBUG MBEDTLS_MEMORY_DEBUG
-#endif
 #if defined MBEDTLS_MPI_MAX_SIZE
 #define POLARSSL_MPI_MAX_SIZE MBEDTLS_MPI_MAX_SIZE
 #endif
@@ -326,12 +272,6 @@
 #endif
 #if defined MBEDTLS_NET_C
 #define POLARSSL_NET_C MBEDTLS_NET_C
-#endif
-#if defined MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
-#define POLARSSL_NO_DEFAULT_ENTROPY_SOURCES MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES
-#endif
-#if defined MBEDTLS_NO_PLATFORM_ENTROPY
-#define POLARSSL_NO_PLATFORM_ENTROPY MBEDTLS_NO_PLATFORM_ENTROPY
 #endif
 #if defined MBEDTLS_OID_C
 #define POLARSSL_OID_C MBEDTLS_OID_C
@@ -344,9 +284,6 @@
 #endif
 #if defined MBEDTLS_PEM_WRITE_C
 #define POLARSSL_PEM_WRITE_C MBEDTLS_PEM_WRITE_C
-#endif
-#if defined MBEDTLS_PKCS11_C
-#define POLARSSL_PKCS11_C MBEDTLS_PKCS11_C
 #endif
 #if defined MBEDTLS_PKCS12_C
 #define POLARSSL_PKCS12_C MBEDTLS_PKCS12_C
@@ -375,9 +312,6 @@
 #if defined MBEDTLS_PK_WRITE_C
 #define POLARSSL_PK_WRITE_C MBEDTLS_PK_WRITE_C
 #endif
-#if defined MBEDTLS_PLATFORM_C
-#define POLARSSL_PLATFORM_C MBEDTLS_PLATFORM_C
-#endif
 #if defined MBEDTLS_PLATFORM_EXIT_ALT
 #define POLARSSL_PLATFORM_EXIT_ALT MBEDTLS_PLATFORM_EXIT_ALT
 #endif
@@ -396,9 +330,6 @@
 #if defined MBEDTLS_PLATFORM_MEMORY
 #define POLARSSL_PLATFORM_MEMORY MBEDTLS_PLATFORM_MEMORY
 #endif
-#if defined MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
-#define POLARSSL_PLATFORM_NO_STD_FUNCTIONS MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
-#endif
 #if defined MBEDTLS_PLATFORM_PRINTF_ALT
 #define POLARSSL_PLATFORM_PRINTF_ALT MBEDTLS_PLATFORM_PRINTF_ALT
 #endif
@@ -411,17 +342,11 @@
 #if defined MBEDTLS_PLATFORM_SNPRINTF_MACRO
 #define POLARSSL_PLATFORM_SNPRINTF_MACRO MBEDTLS_PLATFORM_SNPRINTF_MACRO
 #endif
-#if defined MBEDTLS_PLATFORM_STD_EXIT
-#define POLARSSL_PLATFORM_STD_EXIT MBEDTLS_PLATFORM_STD_EXIT
-#endif
 #if defined MBEDTLS_PLATFORM_STD_FPRINTF
 #define POLARSSL_PLATFORM_STD_FPRINTF MBEDTLS_PLATFORM_STD_FPRINTF
 #endif
 #if defined MBEDTLS_PLATFORM_STD_FREE
 #define POLARSSL_PLATFORM_STD_FREE MBEDTLS_PLATFORM_STD_FREE
-#endif
-#if defined MBEDTLS_PLATFORM_STD_MEM_HDR
-#define POLARSSL_PLATFORM_STD_MEM_HDR MBEDTLS_PLATFORM_STD_MEM_HDR
 #endif
 #if defined MBEDTLS_PLATFORM_STD_PRINTF
 #define POLARSSL_PLATFORM_STD_PRINTF MBEDTLS_PLATFORM_STD_PRINTF
@@ -446,12 +371,6 @@
 #endif
 #if defined MBEDTLS_RSA_C
 #define POLARSSL_RSA_C MBEDTLS_RSA_C
-#endif
-#if defined MBEDTLS_RSA_NO_CRT
-#define POLARSSL_RSA_NO_CRT MBEDTLS_RSA_NO_CRT
-#endif
-#if defined MBEDTLS_SELF_TEST
-#define POLARSSL_SELF_TEST MBEDTLS_SELF_TEST
 #endif
 #if defined MBEDTLS_SHA1_ALT
 #define POLARSSL_SHA1_ALT MBEDTLS_SHA1_ALT
@@ -576,17 +495,11 @@
 #if defined MBEDTLS_THREADING_PTHREAD
 #define POLARSSL_THREADING_PTHREAD MBEDTLS_THREADING_PTHREAD
 #endif
-#if defined MBEDTLS_TIMING_ALT
-#define POLARSSL_TIMING_ALT MBEDTLS_TIMING_ALT
-#endif
 #if defined MBEDTLS_TIMING_C
 #define POLARSSL_TIMING_C MBEDTLS_TIMING_C
 #endif
 #if defined MBEDTLS_VERSION_C
 #define POLARSSL_VERSION_C MBEDTLS_VERSION_C
-#endif
-#if defined MBEDTLS_VERSION_FEATURES
-#define POLARSSL_VERSION_FEATURES MBEDTLS_VERSION_FEATURES
 #endif
 #if defined MBEDTLS_X509_ALLOW_EXTENSIONS_NON_V3
 #define POLARSSL_X509_ALLOW_EXTENSIONS_NON_V3 MBEDTLS_X509_ALLOW_EXTENSIONS_NON_V3
@@ -632,9 +545,6 @@
 #endif
 #if defined MBEDTLS_XTEA_C
 #define POLARSSL_XTEA_C MBEDTLS_XTEA_C
-#endif
-#if defined MBEDTLS_ZLIB_SUPPORT
-#define POLARSSL_ZLIB_SUPPORT MBEDTLS_ZLIB_SUPPORT
 #endif
 
 /*
@@ -1943,7 +1853,7 @@
 #define entropy_update_manual mbedtls_entropy_update_manual
 #define entropy_update_seed_file mbedtls_entropy_update_seed_file
 #define entropy_write_seed_file mbedtls_entropy_write_seed_file
-#define error_strerror mbedtls_strerror
+#define error_strerror strerror
 #define f_source_ptr mbedtls_entropy_f_source_ptr
 #define gcm_auth_decrypt mbedtls_gcm_auth_decrypt
 #define gcm_context mbedtls_gcm_context
@@ -2175,15 +2085,15 @@
 #define platform_set_fprintf mbedtls_platform_set_fprintf
 #define platform_set_printf mbedtls_platform_set_printf
 #define platform_set_snprintf mbedtls_platform_set_snprintf
-#define polarssl_exit mbedtls_exit
-#define polarssl_fprintf mbedtls_fprintf
-#define polarssl_free mbedtls_free
+#define polarssl_exit exit
+#define polarssl_fprintf fprintf
+#define polarssl_free free
 #define polarssl_mutex_free mbedtls_mutex_free
 #define polarssl_mutex_init mbedtls_mutex_init
 #define polarssl_mutex_lock mbedtls_mutex_lock
 #define polarssl_mutex_unlock mbedtls_mutex_unlock
-#define polarssl_printf mbedtls_printf
-#define polarssl_snprintf mbedtls_snprintf
+#define polarssl_printf printf
+#define polarssl_snprintf snprintf
 #define polarssl_strerror mbedtls_strerror
 #define ripemd160 mbedtls_ripemd160
 #define ripemd160_context mbedtls_ripemd160_context
@@ -2520,4 +2430,3 @@
 #define xtea_setup mbedtls_xtea_setup
 
 #endif /* compat-1.3.h */
-#endif /* MBEDTLS_DEPRECATED_REMOVED */

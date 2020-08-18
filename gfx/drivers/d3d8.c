@@ -82,6 +82,13 @@ typedef struct d3d8_renderchain
    uint64_t frame_count;
 } d3d8_renderchain_t;
 
+struct d3d8_texture_info
+{
+   void *userdata;
+   void *data;
+   enum texture_filter_type type;
+};
+
 void d3d8_set_mvp(void *data, const void *mat_data)
 {
    struct d3d_matrix matrix;
@@ -1046,9 +1053,7 @@ static bool d3d8_alive(void *data)
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-#ifndef _XBOX
-   win32_check_window(&quit, &resize, &temp_width, &temp_height);
-#endif
+   win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
 
    if (quit)
       d3d->quitting = quit;
@@ -1489,9 +1494,9 @@ static bool d3d8_frame(void *data, const void *frame,
    const char *stat_text               = video_info->stat_text;
    bool statistics_show                = video_info->statistics_show;
    bool black_frame_insertion          = video_info->black_frame_insertion;
+#ifdef HAVE_MENU
    bool menu_is_alive                  = video_info->menu_is_alive;
-
-   (void)i;
+#endif
 
    if (!frame)
       return true;
@@ -1694,13 +1699,6 @@ static void d3d8_set_menu_texture_enable(void *data,
    d3d->menu->fullscreen         = full_screen;
 }
 
-struct d3d8_texture_info
-{
-   void *userdata;
-   void *data;
-   enum texture_filter_type type;
-};
-
 static void d3d8_video_texture_load_d3d(
       struct d3d8_texture_info *info,
       uintptr_t *id)
@@ -1751,7 +1749,7 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    struct d3d8_texture_info info;
-   uintptr_t id = 0;
+   uintptr_t id  = 0;
 
    info.userdata = video_data;
    info.data     = data;
@@ -1765,7 +1763,8 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void d3d8_unload_texture(void *data, uintptr_t id)
+static void d3d8_unload_texture(void *data, bool threaded,
+      uintptr_t id)
 {
    LPDIRECT3DTEXTURE8 texid;
    if (!id)
@@ -1827,18 +1826,14 @@ static const video_poke_interface_t d3d_poke_interface = {
 static void d3d8_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &d3d_poke_interface;
 }
 
-static bool d3d8_has_windowed(void *data)
-{
 #ifdef _XBOX
-   return false;
+static bool d3d8_has_windowed(void *data) { return false; }
 #else
-   return true;
+static bool d3d8_has_windowed(void *data) { return true; }
 #endif
-}
 
 video_driver_t video_d3d8 = {
    d3d8_init,

@@ -300,36 +300,16 @@ static int16_t psp_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (binds[port][i].valid)
-               {
-                  if (
-                        button_is_pressed(psp->joypad, joypad_info, binds[port],
-                           port, i))
-                     ret |= (1 << i);
-               }
-            }
+            return psp->joypad->state(
+                  joypad_info, binds[port], port);
 
-            return ret;
-         }
-         else
-         {
-            if (binds[port][id].valid)
-            {
-               if (
-                     button_is_pressed(psp->joypad, joypad_info, binds[port],
-                        port, id))
-                  return 1;
-            }
-         }
+         if (binds[port][id].valid)
+            if (
+                  button_is_pressed(psp->joypad, joypad_info, binds[port],
+                     port, id))
+               return 1;
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(psp->joypad, joypad_info, port, idx, id, binds[port]);
          break;
 #ifdef VITA
       case RETRO_DEVICE_KEYBOARD:
@@ -430,33 +410,31 @@ static bool psp_input_set_sensor_state(void *data, unsigned port,
    if(!psp)
       return false;
   
-   switch(action)
+   switch (action)
    {
-      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
-         return false;
-
       case RETRO_SENSOR_ILLUMINANCE_DISABLE:
          return true;
-		 
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
          if(psp->sensors_enabled)
          {
-           psp->sensors_enabled = false;
-           sceMotionMagnetometerOff();
-           sceMotionStopSampling();
+            psp->sensors_enabled = false;
+            sceMotionMagnetometerOff();
+            sceMotionStopSampling();
          }
          return true;
-
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
          if(!psp->sensors_enabled)
          {
-           psp->sensors_enabled = true;
-           sceMotionStartSampling();
-           sceMotionMagnetometerOn();
+            psp->sensors_enabled = true;
+            sceMotionStartSampling();
+            sceMotionMagnetometerOn();
          }
          return true;
+      case RETRO_SENSOR_DUMMY:
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+         break;
    }
    
    return false;

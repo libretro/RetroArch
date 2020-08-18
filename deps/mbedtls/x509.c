@@ -48,21 +48,10 @@
 #include "mbedtls/pem.h"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdio.h>
 #include <stdlib.h>
-#define mbedtls_free      free
-#define mbedtls_calloc    calloc
-#define mbedtls_printf    printf
-#define mbedtls_snprintf  snprintf
-#endif
 
-
-#if defined(MBEDTLS_HAVE_TIME)
-#include "mbedtls/platform_time.h"
-#endif
+#include <time.h>
 
 #if defined(_WIN32) && !defined(EFIX64) && !defined(EFI32)
 #include <windows.h>
@@ -457,7 +446,8 @@ int mbedtls_x509_get_name( unsigned char **p, const unsigned char *end,
             /* Mark this item as being no the only one in a set */
             cur->next_merged = 1;
 
-            cur->next = mbedtls_calloc( 1, sizeof( mbedtls_x509_name ) );
+            cur->next        = (mbedtls_asn1_named_data*)
+               calloc( 1, sizeof( mbedtls_x509_name ) );
 
             if( cur->next == NULL )
                 return( MBEDTLS_ERR_X509_ALLOC_FAILED );
@@ -471,7 +461,8 @@ int mbedtls_x509_get_name( unsigned char **p, const unsigned char *end,
         if( *p == end )
             return( 0 );
 
-        cur->next = mbedtls_calloc( 1, sizeof( mbedtls_x509_name ) );
+        cur->next = (mbedtls_asn1_named_data*)
+           calloc( 1, sizeof( mbedtls_x509_name ) );
 
         if( cur->next == NULL )
             return( MBEDTLS_ERR_X509_ALLOC_FAILED );
@@ -664,10 +655,10 @@ int mbedtls_x509_get_sig_alg( const mbedtls_x509_buf *sig_oid, const mbedtls_x50
 #if defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT)
     if( *pk_alg == MBEDTLS_PK_RSASSA_PSS )
     {
-        mbedtls_pk_rsassa_pss_options *pss_opts;
-
-        pss_opts = mbedtls_calloc( 1, sizeof( mbedtls_pk_rsassa_pss_options ) );
-        if( pss_opts == NULL )
+        mbedtls_pk_rsassa_pss_options *pss_opts = 
+           (mbedtls_pk_rsassa_pss_options *)
+           calloc( 1, sizeof( mbedtls_pk_rsassa_pss_options ) );
+        if (!pss_opts)
             return( MBEDTLS_ERR_X509_ALLOC_FAILED );
 
         ret = mbedtls_x509_get_rsassa_pss_params( sig_params,
@@ -676,7 +667,7 @@ int mbedtls_x509_get_sig_alg( const mbedtls_x509_buf *sig_oid, const mbedtls_x50
                                           &pss_opts->expected_salt_len );
         if( ret != 0 )
         {
-            mbedtls_free( pss_opts );
+            free( pss_opts );
             return( ret );
         }
 
@@ -764,16 +755,16 @@ int mbedtls_x509_dn_gets( char *buf, size_t size, const mbedtls_x509_name *dn )
 
         if( name != dn )
         {
-            ret = mbedtls_snprintf( p, n, merge ? " + " : ", " );
+            ret = snprintf( p, n, merge ? " + " : ", " );
             MBEDTLS_X509_SAFE_SNPRINTF;
         }
 
         ret = mbedtls_oid_get_attr_short_name( &name->oid, &short_name );
 
         if( ret == 0 )
-            ret = mbedtls_snprintf( p, n, "%s=", short_name );
+            ret = snprintf( p, n, "%s=", short_name );
         else
-            ret = mbedtls_snprintf( p, n, "\?\?=" );
+            ret = snprintf( p, n, "\?\?=" );
         MBEDTLS_X509_SAFE_SNPRINTF;
 
         for( i = 0; i < name->val.len; i++ )
@@ -787,7 +778,7 @@ int mbedtls_x509_dn_gets( char *buf, size_t size, const mbedtls_x509_name *dn )
             else s[i] = c;
         }
         s[i] = '\0';
-        ret = mbedtls_snprintf( p, n, "%s", s );
+        ret = snprintf( p, n, "%s", s );
         MBEDTLS_X509_SAFE_SNPRINTF;
 
         merge = name->next_merged;
@@ -818,14 +809,14 @@ int mbedtls_x509_serial_gets( char *buf, size_t size, const mbedtls_x509_buf *se
         if( i == 0 && nr > 1 && serial->p[i] == 0x0 )
             continue;
 
-        ret = mbedtls_snprintf( p, n, "%02X%s",
+        ret = snprintf( p, n, "%02X%s",
                 serial->p[i], ( i < nr - 1 ) ? ":" : "" );
         MBEDTLS_X509_SAFE_SNPRINTF;
     }
 
     if( nr != serial->len )
     {
-        ret = mbedtls_snprintf( p, n, "...." );
+        ret = snprintf( p, n, "...." );
         MBEDTLS_X509_SAFE_SNPRINTF;
     }
 
@@ -846,9 +837,9 @@ int mbedtls_x509_sig_alg_gets( char *buf, size_t size, const mbedtls_x509_buf *s
 
     ret = mbedtls_oid_get_sig_alg_desc( sig_oid, &desc );
     if( ret != 0 )
-        ret = mbedtls_snprintf( p, n, "???"  );
+        ret = snprintf( p, n, "???"  );
     else
-        ret = mbedtls_snprintf( p, n, "%s", desc );
+        ret = snprintf( p, n, "%s", desc );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
 #if defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT)
@@ -862,7 +853,7 @@ int mbedtls_x509_sig_alg_gets( char *buf, size_t size, const mbedtls_x509_buf *s
         md_info = mbedtls_md_info_from_type( md_alg );
         mgf_md_info = mbedtls_md_info_from_type( pss_opts->mgf1_hash_id );
 
-        ret = mbedtls_snprintf( p, n, " (%s, MGF1-%s, 0x%02X)",
+        ret = snprintf( p, n, " (%s, MGF1-%s, 0x%02X)",
                               md_info ? mbedtls_md_get_name( md_info ) : "???",
                               mgf_md_info ? mbedtls_md_get_name( mgf_md_info ) : "???",
                               pss_opts->expected_salt_len );
@@ -882,11 +873,9 @@ int mbedtls_x509_sig_alg_gets( char *buf, size_t size, const mbedtls_x509_buf *s
  */
 int mbedtls_x509_key_size_helper( char *buf, size_t buf_size, const char *name )
 {
-    char *p = buf;
+    char *p  = buf;
     size_t n = buf_size;
-    int ret;
-
-    ret = mbedtls_snprintf( p, n, "%s key size", name );
+    int ret  = snprintf( p, n, "%s key size", name );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
     return( 0 );
@@ -917,7 +906,7 @@ static int x509_get_current_time( mbedtls_x509_time *now )
 static int x509_get_current_time( mbedtls_x509_time *now )
 {
     struct tm *lt;
-    mbedtls_time_t tt;
+    time_t tt;
     int ret = 0;
 
 #if defined(MBEDTLS_THREADING_C)
@@ -925,7 +914,7 @@ static int x509_get_current_time( mbedtls_x509_time *now )
         return( MBEDTLS_ERR_THREADING_MUTEX_ERROR );
 #endif
 
-    tt = mbedtls_time( NULL );
+    tt = time( NULL );
     lt = gmtime( &tt );
 
     if( lt == NULL )
@@ -1024,75 +1013,5 @@ int mbedtls_x509_time_is_future( const mbedtls_x509_time *from )
     return( 0 );
 }
 #endif /* MBEDTLS_HAVE_TIME_DATE */
-
-#if defined(MBEDTLS_SELF_TEST)
-
-#include "mbedtls/x509_crt.h"
-#include "mbedtls/certs.h"
-
-/*
- * Checkup routine
- */
-int mbedtls_x509_self_test( int verbose )
-{
-#if defined(MBEDTLS_CERTS_C) && defined(MBEDTLS_SHA256_C)
-    int ret;
-    uint32_t flags;
-    mbedtls_x509_crt cacert;
-    mbedtls_x509_crt clicert;
-
-    if( verbose != 0 )
-        mbedtls_printf( "  X.509 certificate load: " );
-
-    mbedtls_x509_crt_init( &clicert );
-
-    ret = mbedtls_x509_crt_parse( &clicert, (const unsigned char *) mbedtls_test_cli_crt,
-                           mbedtls_test_cli_crt_len );
-    if( ret != 0 )
-    {
-        if( verbose != 0 )
-            mbedtls_printf( "failed\n" );
-
-        return( ret );
-    }
-
-    mbedtls_x509_crt_init( &cacert );
-
-    ret = mbedtls_x509_crt_parse( &cacert, (const unsigned char *) mbedtls_test_ca_crt,
-                          mbedtls_test_ca_crt_len );
-    if( ret != 0 )
-    {
-        if( verbose != 0 )
-            mbedtls_printf( "failed\n" );
-
-        return( ret );
-    }
-
-    if( verbose != 0 )
-        mbedtls_printf( "passed\n  X.509 signature verify: ");
-
-    ret = mbedtls_x509_crt_verify( &clicert, &cacert, NULL, NULL, &flags, NULL, NULL );
-    if( ret != 0 )
-    {
-        if( verbose != 0 )
-            mbedtls_printf( "failed\n" );
-
-        return( ret );
-    }
-
-    if( verbose != 0 )
-        mbedtls_printf( "passed\n\n");
-
-    mbedtls_x509_crt_free( &cacert  );
-    mbedtls_x509_crt_free( &clicert );
-
-    return( 0 );
-#else
-    ((void) verbose);
-    return( 0 );
-#endif /* MBEDTLS_CERTS_C && MBEDTLS_SHA1_C */
-}
-
-#endif /* MBEDTLS_SELF_TEST */
 
 #endif /* MBEDTLS_X509_USE_C */

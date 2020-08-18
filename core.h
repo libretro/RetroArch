@@ -45,7 +45,7 @@ enum
 
 typedef struct rarch_memory_descriptor
 {
-   struct retro_memory_descriptor core;
+   struct retro_memory_descriptor core;        /* uint64_t alignment */
    size_t disconnect_mask;
 } rarch_memory_descriptor_t;
 
@@ -57,33 +57,26 @@ typedef struct rarch_memory_map
 
 typedef struct rarch_system_info
 {
-   struct retro_system_info info;
-
-   unsigned rotation;
-   unsigned performance_level;
-   bool load_no_content;
-
+   struct retro_location_callback location_cb; /* ptr alignment */
+   disk_control_interface_t disk_control;      /* ptr alignment */
+   struct retro_system_info info;              /* ptr alignment */
+   rarch_memory_map_t mmaps;                   /* ptr alignment */
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
-   char valid_extensions[255];
-
-   bool supports_vfs;
-
-   disk_control_interface_t disk_control;
-   struct retro_location_callback location_cb;
-
    struct
    {
       struct retro_subsystem_info *data;
       unsigned size;
    } subsystem;
-
    struct
    {
       struct retro_controller_info *data;
       unsigned size;
    } ports;
-
-   rarch_memory_map_t mmaps;
+   unsigned rotation;
+   unsigned performance_level;
+   char valid_extensions[255];
+   bool load_no_content;
+   bool supports_vfs;
 } rarch_system_info_t;
 
 typedef struct retro_ctx_input_state_info
@@ -93,9 +86,9 @@ typedef struct retro_ctx_input_state_info
 
 typedef struct retro_ctx_cheat_info
 {
+   const char *code;
    unsigned index;
    bool enabled;
-   const char *code;
 } retro_ctx_cheat_info_t;
 
 typedef struct retro_ctx_api_info
@@ -156,7 +149,9 @@ typedef struct retro_callbacks
 
 bool core_set_default_callbacks(struct retro_callbacks *cbs);
 
+#ifdef HAVE_REWIND
 bool core_set_rewind_callbacks(void);
+#endif
 
 #ifdef HAVE_NETWORKING
 bool core_set_netplay_callbacks(void);

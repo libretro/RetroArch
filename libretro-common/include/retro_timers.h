@@ -83,30 +83,30 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
  *
  * Sleeps for a specified amount of milliseconds (@msec).
  **/
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#define retro_sleep(msec) (sys_timer_usleep(1000 * (msec)))
+#elif defined(PSP) || defined(VITA)
+#define retro_sleep(msec) (sceKernelDelayThread(1000 * (msec)))
+#elif defined(_3DS)
+#define retro_sleep(msec) (svcSleepThread(1000000 * (s64)(msec)))
+#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define retro_sleep(msec) (SleepEx((msec), FALSE))
+#elif defined(_WIN32)
+#define retro_sleep(msec) (Sleep((msec)))
+#elif defined(XENON)
+#define retro_sleep(msec) (udelay(1000 * (msec)))
+#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
+#define retro_sleep(msec) (usleep(1000 * (msec)))
+#elif defined(WIIU)
+#define retro_sleep(msec) (OSSleepTicks(ms_to_ticks((msec))))
+#else
 static INLINE void retro_sleep(unsigned msec)
 {
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   sys_timer_usleep(1000 * msec);
-#elif defined(PSP) || defined(VITA)
-   sceKernelDelayThread(1000 * msec);
-#elif defined(_3DS)
-   svcSleepThread(1000000 * (s64)msec);
-#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-   SleepEx(msec, FALSE);
-#elif defined(_WIN32)
-   Sleep(msec);
-#elif defined(XENON)
-   udelay(1000 * msec);
-#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
-   usleep(1000 * msec);
-#elif defined(WIIU)
-   OSSleepTicks(ms_to_ticks(msec));
-#else
    struct timespec tv = {0};
-   tv.tv_sec = msec / 1000;
-   tv.tv_nsec = (msec % 1000) * 1000000;
+   tv.tv_sec          = msec / 1000;
+   tv.tv_nsec         = (msec % 1000) * 1000000;
    nanosleep(&tv, NULL);
-#endif
 }
+#endif
 
 #endif

@@ -19,12 +19,8 @@
 #ifndef _PLATFORM_WIN32_H
 #define _PLATFORM_WIN32_H
 
-#if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
-#if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
 unsigned short win32_get_langid_from_retro_lang(enum retro_language lang);
 
 enum retro_language win32_get_retro_lang_from_langid(unsigned short langid);
-#endif
-#endif
 
 #endif

@@ -531,6 +531,12 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
+					"-DHAVE_PATCH",
+					"-DHAVE_DSP_FILTER",
+					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_REWIND",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
                "-DHAVE_GFX_WIDGETS",
 					"-DOSX",
@@ -565,6 +571,7 @@
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
 				);
 				PREBINDING = NO;
@@ -606,6 +613,12 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
+					"-DHAVE_PATCH",
+					"-DHAVE_DSP_FILTER",
+					"-DHAVE_VIDEO_FILTER",
+					"-DHAVE_REWIND",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
                "-DHAVE_GFX_WIDGETS",
 					"-DOSX",
@@ -640,6 +653,7 @@
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
+					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
 				);
 				PREBINDING = NO;

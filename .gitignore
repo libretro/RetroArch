@@ -8,6 +8,7 @@
 *.dol
 *.map
 *.swp
+*.cache
 .tmp
 .tmp.c
 .tmp.cxx
@@ -76,7 +77,9 @@ convert_rumble.awk
 *~
 assets
 info
+content_history.lpl
 content_image_history.lpl
+content_music_history.lpl
 saves
 screenshots
 

@@ -39,6 +39,9 @@ enum
    OZONE_SYSTEM_TAB_NETPLAY,
 #endif
    OZONE_SYSTEM_TAB_ADD,
+#if defined(HAVE_LIBRETRODB)
+   OZONE_SYSTEM_TAB_EXPLORE,
+#endif
 
    /* End of this enum - use the last one to determine num of possible tabs */
    OZONE_SYSTEM_TAB_LAST

@@ -65,7 +65,6 @@
 struct state_manager
 {
    uint8_t *data;
-   size_t capacity;
    /* Reading and writing is done here here. */
    uint8_t *head;
    /* If head comes close to this, discard a frame. */
@@ -73,10 +72,14 @@ struct state_manager
 
    uint8_t *thisblock;
    uint8_t *nextblock;
+#if STRICT_BUF_SIZE
+   uint8_t *debugblock;
+   size_t debugsize;
+#endif
 
+   size_t capacity;
    /* This one is rounded up from reset::blocksize. */
    size_t blocksize;
-
    /* size_t + (blocksize + 131071) / 131072 *
     * (blocksize + u16 + u16) + u16 + u32 + size_t
     * (yes, the math is a bit ugly). */
@@ -84,10 +87,6 @@ struct state_manager
 
    unsigned entries;
    bool thisblock_valid;
-#if STRICT_BUF_SIZE
-   size_t debugsize;
-   uint8_t *debugblock;
-#endif
 };
 
 struct state_manager_rewind_state
@@ -737,7 +736,9 @@ bool state_manager_check_rewind(bool pressed,
 
          core_unserialize(&serial_info);
 
+#ifdef HAVE_BSV_MOVIE
          bsv_movie_frame_rewind();
+#endif
       }
       else
       {

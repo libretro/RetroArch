@@ -25,59 +25,54 @@
 
 #include "linux_common.h"
 
-static struct termios oldTerm, newTerm;
-static long oldKbmd                = 0xffff;
+/* TODO/FIXME - static globals */
+static struct termios old_term, new_term;
+static long old_kbmd               = 0xffff;
 static bool linux_stdin_claimed    = false;
-
-void linux_terminal_flush(void)
-{
-   tcsetattr(0, TCSAFLUSH, &oldTerm);
-}
 
 void linux_terminal_restore_input(void)
 {
-   if (oldKbmd == 0xffff)
+   if (old_kbmd == 0xffff)
       return;
 
-   if (ioctl(0, KDSKBMODE, oldKbmd) < 0)
+   if (ioctl(0, KDSKBMODE, old_kbmd) < 0)
       return;
 
-   linux_terminal_flush();
-   oldKbmd = 0xffff;
+   tcsetattr(0, TCSAFLUSH, &old_term);
+   old_kbmd = 0xffff;
 
    linux_stdin_claimed = false;
 }
 
 /* Disables input */
-
-bool linux_terminal_init(void)
+static bool linux_terminal_init(void)
 {
-   if (oldKbmd != 0xffff)
+   if (old_kbmd != 0xffff)
       return false;
 
-   if (tcgetattr(0, &oldTerm) < 0)
+   if (tcgetattr(0, &old_term) < 0)
       return false;
 
-   newTerm              = oldTerm;
-   newTerm.c_lflag     &= ~(ECHO | ICANON | ISIG);
-   newTerm.c_iflag     &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
-   newTerm.c_cc[VMIN]   = 0;
-   newTerm.c_cc[VTIME]  = 0;
+   new_term              = old_term;
+   new_term.c_lflag     &= ~(ECHO | ICANON | ISIG);
+   new_term.c_iflag     &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
+   new_term.c_cc[VMIN]   = 0;
+   new_term.c_cc[VTIME]  = 0;
 
    /* Be careful about recovering the terminal. */
-   if (ioctl(0, KDGKBMODE, &oldKbmd) < 0)
+   if (ioctl(0, KDGKBMODE, &old_kbmd) < 0)
       return false;
 
-   if (tcsetattr(0, TCSAFLUSH, &newTerm) < 0)
+   if (tcsetattr(0, TCSAFLUSH, &new_term) < 0)
       return false;
 
    return true;
 }
 
+/* We need to disable use of stdin command interface if
+ * stdin is supposed to be used for input. */
 void linux_terminal_claim_stdin(void)
 {
-   /* We need to disable use of stdin command interface if
-    * stdin is supposed to be used for input. */
    linux_stdin_claimed = true;
 }
 
@@ -105,7 +100,7 @@ bool linux_terminal_disable_input(void)
 
    if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) < 0)
    {
-      linux_terminal_flush();
+      tcsetattr(0, TCSAFLUSH, &old_term);
       return false;
    }
 

@@ -45,15 +45,13 @@ struct rtga
 
 typedef struct
 {
-   uint32_t img_x, img_y;
-   int img_n, img_out_n;
-
-   int buflen;
-   uint8_t buffer_start[128];
-
    uint8_t *img_buffer;
    uint8_t *img_buffer_end;
    uint8_t *img_buffer_original;
+   int buflen;
+   int img_n, img_out_n;
+   uint32_t img_x, img_y;
+   uint8_t buffer_start[128];
 } rtga_context;
 
 static INLINE uint8_t rtga_get8(rtga_context *s)
@@ -357,18 +355,21 @@ static uint8_t *rtga_tga_load(rtga_context *s,
       /*   do I need to invert the image? */
       if (tga_inverted)
       {
-         for (j = 0; j*2 < tga_height; ++j)
+         if (tga_data)
          {
-            int index1 = j * tga_width * tga_comp;
-            int index2 = (tga_height - 1 - j) * tga_width * tga_comp;
-
-            for (i = tga_width * tga_comp; i > 0; --i)
+            for (j = 0; j*2 < tga_height; ++j)
             {
-               unsigned char temp = tga_data[index1];
-               tga_data[index1] = tga_data[index2];
-               tga_data[index2] = temp;
-               ++index1;
-               ++index2;
+               int index1 = j * tga_width * tga_comp;
+               int index2 = (tga_height - 1 - j) * tga_width * tga_comp;
+
+               for (i = tga_width * tga_comp; i > 0; --i)
+               {
+                  unsigned char temp = tga_data[index1];
+                  tga_data[index1]   = tga_data[index2];
+                  tga_data[index2]   = temp;
+                  ++index1;
+                  ++index2;
+               }
             }
          }
       }
@@ -431,7 +432,7 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
    size_tex              = (*width) * (*height);
 
    /* Convert RGBA to ARGB */
-   while(size_tex--)
+   while (size_tex--)
    {
       unsigned int texel = rtga->output_image[size_tex];
       unsigned int A     = texel & 0xFF000000;

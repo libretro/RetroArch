@@ -36,10 +36,10 @@ RETRO_BEGIN_DECLS
  * control interface */
 typedef struct
 {
-   bool modified;
    unsigned image_index;
    char image_path[PATH_MAX_LENGTH];
    char file_path[PATH_MAX_LENGTH];
+   bool modified;
 } disk_index_file_t;
 
 /******************/

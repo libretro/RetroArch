@@ -158,7 +158,7 @@ static void ctr_update_viewport(
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   if(ctr->rotation & 0x1)
+   if (ctr->rotation & 0x1)
       desired_aspect = 1.0 / desired_aspect;
 
    if (video_scale_integer)
@@ -227,10 +227,10 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
 {
    ctr_video_t *ctr  = (ctr_video_t*)param;
 
-   if(!ctr)
+   if (!ctr)
       return;
 
-   if(hook == APTHOOK_ONRESTORE)
+   if (hook == APTHOOK_ONRESTORE)
    {
       GPUCMD_SetBufferOffset(0);
       shaderProgramUse(&ctr->shader);
@@ -269,7 +269,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       ctr->p3d_event_pending = false;
    }
 
-   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_2D_400X240))
+   if ((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_2D_400X240))
    {
       memcpy(gfxTopRightFramebuffers[ctr->current_buffer_top],
             gfxTopLeftFramebuffers[ctr->current_buffer_top],
@@ -280,7 +280,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
    if ((hook == APTHOOK_ONSUSPEND) && ctr->supports_parallax_disable)
       ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
 
-   if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
+   if ((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
    {
       Handle lcd_handle;
       u8 not_2DS;
@@ -293,6 +293,19 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
          svcSendSyncRequest(lcd_handle);
          svcCloseHandle(lcd_handle);
       }
+   }
+   
+   if (menu_driver_is_alive())
+   {
+      return;
+   }
+   else if ((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONSLEEP))
+   {
+      command_event(CMD_EVENT_AUDIO_STOP, NULL);
+   }
+   else if ((hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
+   {
+      command_event(CMD_EVENT_AUDIO_START, NULL);
    }
 }
 
@@ -545,7 +558,9 @@ static bool ctr_frame(void* data, const void* frame,
    int custom_vp_y                = video_info->custom_vp_y;
    unsigned custom_vp_width       = video_info->custom_vp_width;
    unsigned custom_vp_height      = video_info->custom_vp_height;
+#ifdef HAVE_MENU
    bool menu_is_alive             = video_info->menu_is_alive;
+#endif
 
    if (!width || !height || !settings)
    {
@@ -582,7 +597,7 @@ static bool ctr_frame(void* data, const void* frame,
 #if 0
       ctr->vsync_event_pending = true;
 #endif
-      while(ctr->vsync_event_pending)
+      while (ctr->vsync_event_pending)
       {
          task_queue_check();
          svcSleepThread(0);
@@ -1103,31 +1118,36 @@ static void ctr_viewport_info(void* data, struct video_viewport* vp)
 static uintptr_t ctr_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   ctr_video_t* ctr = (ctr_video_t*)video_data;
-   struct texture_image *image = (struct texture_image*)data;
-   int size = image->width * image->height * sizeof(uint32_t);
-
-   if((size * 3) > linearSpaceFree())
-      return 0;
-
-   if(!ctr || !image || image->width > 2048 || image->height > 2048)
-      return 0;
-
-   ctr_texture_t* texture = calloc(1, sizeof(ctr_texture_t));
-
    void* tmpdata;
-   texture->width = next_pow2(image->width);
-   texture->height = next_pow2(image->height);
-   texture->active_width = image->width;
-   texture->active_height = image->height;
-   texture->data = linearAlloc(texture->width * texture->height * sizeof(uint32_t));
-   texture->type = filter_type;
+   ctr_texture_t *texture      = NULL;
+   ctr_video_t            *ctr = (ctr_video_t*)video_data;
+   struct texture_image *image = (struct texture_image*)data;
+   int size                    = image->width 
+      * image->height * sizeof(uint32_t);
+
+   if ((size * 3) > linearSpaceFree())
+      return 0;
+
+   if (!ctr || !image || image->width > 2048 || image->height > 2048)
+      return 0;
+
+   texture                     = (ctr_texture_t*)
+      calloc(1, sizeof(ctr_texture_t));
+
+   texture->width              = next_pow2(image->width);
+   texture->height             = next_pow2(image->height);
+   texture->active_width       = image->width;
+   texture->active_height      = image->height;
+   texture->data               = linearAlloc(
+         texture->width * texture->height * sizeof(uint32_t));
+   texture->type               = filter_type;
 
    if (!texture->data)
    {
       free(texture);
       return 0;
    }
+
    if ((image->width <= 32) || (image->height <= 32))
    {
       int i, j;
@@ -1136,34 +1156,51 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
       for (j = 0; j < image->height; j++)
          for (i = 0; i < image->width; i++)
          {
-            ((uint32_t*)texture->data)[ctrgu_swizzle_coords(i, j, texture->width)] =
-                  ((*src >> 8) & 0x00FF00) | ((*src >> 24) & 0xFF)| ((*src << 8) & 0xFF0000)| ((*src << 24) & 0xFF000000);
+            ((uint32_t*)texture->data)[ctrgu_swizzle_coords(i, j,
+               texture->width)] =
+                    ((*src >> 8)  & 0x00FF00) 
+                  | ((*src >> 24) & 0xFF)
+                  | ((*src << 8)  & 0xFF0000)
+                  | ((*src << 24) & 0xFF000000);
             src++;
          }
-      GSPGPU_FlushDataCache(texture->data, texture->width  * texture->height * sizeof(uint32_t));
+      GSPGPU_FlushDataCache(texture->data, texture->width 
+            * texture->height * sizeof(uint32_t));
    }
    else
    {
-      tmpdata = linearAlloc(image->width * image->height * sizeof(uint32_t));
+      int i;
+      uint32_t *src = NULL;
+      uint32_t *dst = NULL;
+
+      tmpdata = linearAlloc(image->width 
+            * image->height * sizeof(uint32_t));
       if (!tmpdata)
       {
          free(texture->data);
          free(texture);
          return 0;
       }
-      int i;
-      uint32_t* src = (uint32_t*)image->pixels;
-      uint32_t* dst = (uint32_t*)tmpdata;
+
+      src = (uint32_t*)image->pixels;
+      dst = (uint32_t*)tmpdata;
+
       for (i = 0; i < image->width * image->height; i++)
       {
-         *dst = ((*src >> 8) & 0x00FF00) | ((*src >> 24) & 0xFF)| ((*src << 8) & 0xFF0000)| ((*src << 24) & 0xFF000000);
+         *dst = 
+              ((*src >> 8)  & 0x00FF00) 
+            | ((*src >> 24) & 0xFF)
+            | ((*src << 8)  & 0xFF0000)
+            | ((*src << 24) & 0xFF000000);
          dst++;
          src++;
       }
 
-      GSPGPU_FlushDataCache(tmpdata, image->width  * image->height * sizeof(uint32_t));
-      ctrGuCopyImage(true, tmpdata, image->width, image->height, CTRGU_RGBA8, false,
-                     texture->data, texture->width, CTRGU_RGBA8,  true);
+      GSPGPU_FlushDataCache(tmpdata,
+            image->width * image->height * sizeof(uint32_t));
+      ctrGuCopyImage(true, tmpdata,
+            image->width, image->height, CTRGU_RGBA8, false,
+            texture->data, texture->width, CTRGU_RGBA8,  true);
 #if 0
       gspWaitForEvent(GSPGPU_EVENT_PPF, false);
       ctr->ppf_event_pending = false;
@@ -1176,7 +1213,8 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void ctr_unload_texture(void *data, uintptr_t handle)
+static void ctr_unload_texture(void *data, bool threaded,
+      uintptr_t handle)
 {
    struct ctr_texture *texture   = (struct ctr_texture*)handle;
 
@@ -1185,7 +1223,7 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
 
    if (texture->data)
    {
-      if(((u32)texture->data & 0xFF000000) == 0x1F000000)
+      if (((u32)texture->data & 0xFF000000) == 0x1F000000)
          vramFree(texture->data);
       else
          linearFree(texture->data);

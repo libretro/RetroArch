@@ -45,6 +45,7 @@
 #include "../../defines/ps3_defines.h"
 
 #include <rsx/rsx.h>
+#include <rsx/nv40.h>
 #include <ppu-types.h>
 
 #define CB_SIZE		0x100000
@@ -193,7 +194,13 @@ static gcmContextData *gcm_init_screen(gcm_video_t* gcm)
 
       /* Initialise Reality, which sets up the 
        * command buffer and shared I/O memory */
+#ifdef NV40TCL_RENDER_ENABLE
+      /* There was an api breakage on 2020-07-10, let's
+       * workaround this by using one of the new defines */
+      rsxInit (&context, CB_SIZE, HOST_SIZE, host_addr);
+#else
       context = rsxInit (CB_SIZE, HOST_SIZE, host_addr);
+#endif
       if (!context)
          goto error;
       saved_context = context;
@@ -261,7 +268,7 @@ waitFinish(gcmContextData *context, u32 sLabelVal)
 
   rsxFlushBuffer (context);
 
-  while(*(vu32 *) gcmGetLabelAddress (GCM_LABEL_INDEX) != sLabelVal)
+  while (*(vu32 *) gcmGetLabelAddress (GCM_LABEL_INDEX) != sLabelVal)
     usleep(30);
 
   sLabelVal++;
@@ -459,7 +466,12 @@ static bool gcm_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
-   gcm_video_t       *gcm  = (gcm_video_t*)data;
+   gcm_video_t       *gcm         = (gcm_video_t*)data;
+#ifdef HAVE_MENU
+   bool statistics_show           = video_info->statistics_show;
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
+#endif
 
    if(frame && width && height)
    {
@@ -477,17 +489,11 @@ static bool gcm_frame(void* data, const void* frame,
    return true;
 
 #ifdef HAVE_MENU
-   if (video_info->statistics_show)
-   {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
+   if (statistics_show)
       if (osd_params)
-      {
-         font_driver_render_msg(gcm, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
-      }
-   }
+         font_driver_render_msg(gcm,
+               video_info->stat_text,
+               osd_params, NULL);
 #endif
 
    if (msg)
@@ -639,8 +645,8 @@ static uint32_t gcm_get_flags(void *data)
 
 static const video_poke_interface_t gcm_poke_interface = {
    gcm_get_flags,
-   NULL, /* load_texture */
-   NULL, /* unload_texture */
+   NULL,                                  /* load_texture */
+   NULL,                                  /* unload_texture */
    NULL,
    NULL,
    gcm_set_filtering,

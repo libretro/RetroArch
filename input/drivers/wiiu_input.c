@@ -136,37 +136,19 @@ static int16_t wiiu_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
+            return wiiu->joypad->state(
+                  joypad_info, binds[port], port);
 
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (binds[port][i].valid)
-                  if (button_is_pressed(
-                           wiiu->joypad,
-                           joypad_info, binds[port], port, i))
-                     ret |= (1 << i);
-            }
-
-            return ret;
-         }
-         else
-         {
-            if (binds[port][id].valid)
-               return button_is_pressed(
-                     wiiu->joypad,
-                     joypad_info, binds[port], port, id);
-         }
+         if (binds[port][id].valid)
+            return button_is_pressed(
+                  wiiu->joypad,
+                  joypad_info, binds[port], port, id);
          break;
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST && keyboard_state[id] && (keyboard_channel > 0))
             return 1;
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(wiiu->joypad,
-                  joypad_info, port, idx, id, binds[port]);
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:

@@ -46,15 +46,8 @@
 #include "mbedtls/pem.h"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
 #include <stdio.h>
-#define mbedtls_free       free
-#define mbedtls_calloc    calloc
-#define mbedtls_snprintf   snprintf
-#endif
 
 #if defined(MBEDTLS_FS_IO) || defined(EFIX64) || defined(EFI32)
 #include <stdio.h>
@@ -109,9 +102,9 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
     /*
      * first copy the raw DER data
      */
-    p = mbedtls_calloc( 1, len = buflen );
+    p = (unsigned char*)calloc( 1, len = buflen );
 
-    if( p == NULL )
+    if (!p)
         return( MBEDTLS_ERR_X509_ALLOC_FAILED );
 
     memcpy( p, buf, buflen );
@@ -323,7 +316,7 @@ int mbedtls_x509_csr_parse_file( mbedtls_x509_csr *csr, const char *path )
     ret = mbedtls_x509_csr_parse( csr, buf, n );
 
     mbedtls_zeroize( buf, n );
-    mbedtls_free( buf );
+    free( buf );
 
     return( ret );
 }
@@ -338,24 +331,19 @@ int mbedtls_x509_csr_parse_file( mbedtls_x509_csr *csr, const char *path )
 int mbedtls_x509_csr_info( char *buf, size_t size, const char *prefix,
                    const mbedtls_x509_csr *csr )
 {
-    int ret;
-    size_t n;
-    char *p;
     char key_size_str[BEFORE_COLON];
-
-    p = buf;
-    n = size;
-
-    ret = mbedtls_snprintf( p, n, "%sCSR version   : %d",
+    char *p  = buf;
+    size_t n = size;
+    int ret  = snprintf( p, n, "%sCSR version   : %d",
                                prefix, csr->version );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
-    ret = mbedtls_snprintf( p, n, "\n%ssubject name  : ", prefix );
+    ret = snprintf( p, n, "\n%ssubject name  : ", prefix );
     MBEDTLS_X509_SAFE_SNPRINTF;
     ret = mbedtls_x509_dn_gets( p, n, &csr->subject );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
-    ret = mbedtls_snprintf( p, n, "\n%ssigned using  : ", prefix );
+    ret = snprintf( p, n, "\n%ssigned using  : ", prefix );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
     ret = mbedtls_x509_sig_alg_gets( p, n, &csr->sig_oid, csr->sig_pk, csr->sig_md,
@@ -368,7 +356,7 @@ int mbedtls_x509_csr_info( char *buf, size_t size, const char *prefix,
         return( ret );
     }
 
-    ret = mbedtls_snprintf( p, n, "\n%s%-" BC "s: %d bits\n", prefix, key_size_str,
+    ret = snprintf( p, n, "\n%s%-" BC "s: %d bits\n", prefix, key_size_str,
                           (int) mbedtls_pk_get_bitlen( &csr->pk ) );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
@@ -397,7 +385,7 @@ void mbedtls_x509_csr_free( mbedtls_x509_csr *csr )
     mbedtls_pk_free( &csr->pk );
 
 #if defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT)
-    mbedtls_free( csr->sig_opts );
+    free( csr->sig_opts );
 #endif
 
     name_cur = csr->subject.next;
@@ -406,13 +394,13 @@ void mbedtls_x509_csr_free( mbedtls_x509_csr *csr )
         name_prv = name_cur;
         name_cur = name_cur->next;
         mbedtls_zeroize( name_prv, sizeof( mbedtls_x509_name ) );
-        mbedtls_free( name_prv );
+        free( name_prv );
     }
 
     if( csr->raw.p != NULL )
     {
         mbedtls_zeroize( csr->raw.p, csr->raw.len );
-        mbedtls_free( csr->raw.p );
+        free( csr->raw.p );
     }
 
     mbedtls_zeroize( csr, sizeof( mbedtls_x509_csr ) );

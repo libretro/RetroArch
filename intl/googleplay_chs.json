@@ -1,0 +1,4 @@
+{
+   "main-desc": "RetroArch是一个开源项目，它使用了一个强大的开发界面，叫做Libret。 Libretro 是一个接口，允许您制作可以使用诸如OpenGL等丰富功能的跨平台应用程序。 跨平台相机支持、 定位支持以及更多的未来支持。\n\n它有自己内置的应用程序集合，为您提供一个“一站式”娱乐服务。\n\nLibretro and RetroArch完全适合创建游戏、仿真器和多媒体程序。 如果您想要了解更多信息，请访问我们的网站 (下面列出)。\n重要！！！\n\nRetroArch是一个多功能程序，意味着为了做任何事情，你需要我们称之为“核心”的模块程序。 这些核心不会输出。 您需要从应用程序内到“在线更新器 -> 核心更新器”来下载它们。\n\nFEATURES：\n* Eye-candy menus 可从中选择！\n* 扫描文件/目录并将它们添加到游戏系统收藏中 ！\n* 一旦添加到集合中即查看每个游戏的数据库信息！\n* 在线下载程序('核心')\n* 每件事都更新！\n* 下载游戏和观看游戏，与我们独家的游戏和观看仿真者一起玩！\n* 内置输入重映\n* 重新映射控制的能力\n* 输入和装载作弊的能力\n* 多语言支持！\n* 现在已超过 80 个程序('核心') 计数！\n* 与Netplay玩多人游戏！\n* 进行屏幕截图，保存状态和更多！\n\n* 无 DRM\n* 不限制使用\n* 开放源代码\n* 无推送广告\n* 无间谍\n* 无广告期限\n\n加入我们的不和以获得支持和netplay匹配\nhttps://discord。 g/C4amCeV\n\n访问我们的Youtube 频道以获取教程、游戏播放、新闻和发展进度！\nhttps://www.youtube.com/user/libretro\nhttps://www.youtube om/RetroArchOffice\n\n关于信息和帮助，请参阅我们的文档网站 -\nhttps://docs.libret.com/\n\n访问我们的网站！\nhttps://www.retroarch.com/\n\nwww.libret.com。",
+   "short-desc": "在手机和平板上畅玩经典怀旧游戏！"
+}

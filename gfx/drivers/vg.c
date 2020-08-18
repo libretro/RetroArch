@@ -108,12 +108,11 @@ static INLINE bool vg_query_extension(const char *ext)
 static void *vg_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   gfx_ctx_mode_t mode;
-   gfx_ctx_input_t inp;
-   gfx_ctx_aspect_t aspect_data;
    unsigned win_width, win_height;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
    int interval                    = 0;
+   unsigned mode_width             = 0;
+   unsigned mode_height            = 0;
    unsigned temp_width             = 0;
    unsigned temp_height            = 0;
    void *ctx_data                  = NULL;
@@ -139,12 +138,12 @@ static void *vg_init(const video_info_t *video,
    vg->ctx_driver = ctx;
    video_context_driver_set((void*)ctx);
 
-   video_context_driver_get_video_size(&mode);
+   if (vg->ctx_driver->get_video_size)
+      vg->ctx_driver->get_video_size(vg->ctx_data,
+               &mode_width, &mode_height);
 
-   temp_width  = mode.width;
-   temp_height = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
+   temp_width  = mode_width;
+   temp_height = mode_height;
 
    RARCH_LOG("[VG]: Detecting screen resolution %ux%u.\n", temp_width, temp_height);
 
@@ -174,26 +173,24 @@ static void *vg_init(const video_info_t *video,
       win_height = temp_height;
    }
 
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
-
-   if (!video_context_driver_set_video_mode(&mode))
+   if (     !vg->ctx_driver->set_video_mode
+         || !vg->ctx_driver->set_video_mode(vg->ctx_data,
+            win_width, win_height, video->fullscreen))
       goto error;
 
    video_driver_get_size(&temp_width, &temp_height);
 
    temp_width        = 0;
    temp_height       = 0;
-   mode.width        = 0;
-   mode.height       = 0;
+   mode_width        = 0;
+   mode_height       = 0;
 
-   video_context_driver_get_video_size(&mode);
+   if (vg->ctx_driver->get_video_size)
+      vg->ctx_driver->get_video_size(vg->ctx_data,
+               &mode_width, &mode_height);
 
-   temp_width        = mode.width;
-   temp_height       = mode.height;
-   mode.width        = 0;
-   mode.height       = 0;
+   temp_width        = mode_width;
+   temp_height       = mode_height;
 
    vg->should_resize = true;
 
@@ -208,11 +205,9 @@ static void *vg_init(const video_info_t *video,
 
    vg->mScreenAspect = (float)temp_width / temp_height;
 
-   aspect_data.aspect   = &vg->mScreenAspect;
-   aspect_data.width    = temp_width;
-   aspect_data.height   = temp_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
+   if (vg->ctx_driver->translate_aspect)
+      vg->mScreenAspect = vg->ctx_driver->translate_aspect(
+            vg->ctx_data, temp_width, temp_height);
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
@@ -226,10 +221,13 @@ static void *vg_init(const video_info_t *video,
          : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync, adaptive_vsync_enabled, interval);
 
-   inp.input      = input;
-   inp.input_data = input_data;
-
-   video_context_driver_input_driver(&inp);
+   if (vg->ctx_driver->input_driver)
+   {
+      const char *joypad_name = settings->arrays.input_joypad_driver;
+      vg->ctx_driver->input_driver(
+            vg->ctx_data, joypad_name,
+            input, input_data);
+   }
 
    if (     video->font_enable
          && font_renderer_create_default(
@@ -313,6 +311,8 @@ static void vg_free(void *data)
       vgDestroyPaint(vg->mPaintBg);
    }
 
+   if (vg->ctx_driver && vg->ctx_driver->destroy)
+      vg->ctx_driver->destroy(vg->ctx_data);
    video_context_driver_free();
 
    free(vg);
@@ -376,19 +376,16 @@ static void vg_copy_frame(void *data, const void *frame,
 
    if (vg->mEglImageBuf)
    {
-      gfx_ctx_image_t img_info;
       EGLImageKHR img = 0;
       bool new_egl    = false;
 
-      img_info.frame  = frame;
-      img_info.width  = width;
-      img_info.height = height;
-      img_info.pitch  = pitch;
-      img_info.rgb32  = (vg->mTexType == VG_sXRGB_8888);
-      img_info.index  = 0;
-      img_info.handle = &img;
-
-      new_egl         = video_context_driver_write_to_image_buffer(&img_info);
+      if (vg->ctx_driver->image_buffer_write)
+         new_egl      = vg->ctx_driver->image_buffer_write(
+               vg->ctx_data,
+               frame, width, height, pitch,
+               (vg->mTexType == VG_sXRGB_8888),
+               0,
+               &img);
 
       retro_assert(img != EGL_NO_IMAGE_KHR);
 
@@ -418,7 +415,9 @@ static bool vg_frame(void *data, const void *frame,
    vg_t                           *vg = (vg_t*)data;
    unsigned width                     = video_info->width;
    unsigned height                    = video_info->height;
+#ifdef HAVE_MENU
    bool menu_is_alive                 = video_info->menu_is_alive;
+#endif
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
@@ -456,9 +455,10 @@ static bool vg_frame(void *data, const void *frame,
 #endif
 
    if (vg->ctx_driver->update_window_title)
-      vg->ctx_driver->update_window_title(video_info->context_data);
+      vg->ctx_driver->update_window_title(vg->ctx_data);
 
-   vg->ctx_driver->swap_buffers(video_info->context_data);
+   if (vg->ctx_driver->swap_buffers)
+      vg->ctx_driver->swap_buffers(vg->ctx_data);
 
    return true;
 }
@@ -490,20 +490,24 @@ static bool vg_suppress_screensaver(void *data, bool enable)
 }
 
 static bool vg_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
+      enum rarch_shader_type type, const char *path) { return false; }
+static void vg_get_poke_interface(void *data,
+      const video_poke_interface_t **iface) { }
 
+static bool vg_has_windowed(void *data)
+{
+   vg_t            *vg  = (vg_t*)data;
+   if (vg && vg->ctx_driver)
+      return vg->ctx_driver->has_windowed;
    return false;
 }
 
-static void vg_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
+static bool vg_focus(void *data)
 {
-   (void)data;
-   (void)iface;
+   vg_t            *vg  = (vg_t*)data;
+   if (vg && vg->ctx_driver && vg->ctx_driver->has_focus)
+      return vg->ctx_driver->has_focus(vg->ctx_data);
+   return true;
 }
 
 video_driver_t video_vg = {
@@ -511,9 +515,9 @@ video_driver_t video_vg = {
    vg_frame,
    vg_set_nonblock_state,
    vg_alive,
-   NULL,                      /* focused */
+   vg_focus,
    vg_suppress_screensaver,
-   NULL,                      /* has_windowed */
+   vg_has_windowed,
    vg_set_shader,
    vg_free,
    "vg",

@@ -213,13 +213,11 @@
 		05A8C55020DB72F000FF7857 /* menu_input.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_input.h; sourceTree = "<group>"; };
 		05A8C55120DB72F000FF7857 /* menu_setting.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_setting.h; sourceTree = "<group>"; };
 		05A8C55320DB72F000FF7857 /* menu_input_bind_dialog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_input_bind_dialog.h; sourceTree = "<group>"; };
-		05A8C55420DB72F000FF7857 /* menu_filebrowser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_filebrowser.c; sourceTree = "<group>"; };
 		05A8C55520DB72F000FF7857 /* menu_entry.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_entry.c; sourceTree = "<group>"; };
 		05A8C55620DB72F000FF7857 /* menu_dialog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_dialog.h; sourceTree = "<group>"; };
 		05A8C55720DB72F000FF7857 /* menu_input_dialog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_input_dialog.h; sourceTree = "<group>"; };
 		05A8C55820DB72F000FF7857 /* menu_osk.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_osk.c; sourceTree = "<group>"; };
 		05A8C55920DB72F000FF7857 /* menu_entry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_entry.h; sourceTree = "<group>"; };
-		05A8C55A20DB72F000FF7857 /* menu_filebrowser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_filebrowser.h; sourceTree = "<group>"; };
 		05A8C55B20DB72F000FF7857 /* menu_input_dialog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_input_dialog.c; sourceTree = "<group>"; };
 		05A8C55C20DB72F000FF7857 /* menu_dialog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_dialog.c; sourceTree = "<group>"; };
 		05A8C55D20DB72F000FF7857 /* menu_input_bind_dialog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_input_bind_dialog.c; sourceTree = "<group>"; };
@@ -276,7 +274,6 @@
 		05A8C5BA20DB72F000FF7857 /* ui_cocoa.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa.m; sourceTree = "<group>"; };
 		05A8C5BC20DB72F000FF7857 /* ui_cocoa_msg_window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_msg_window.m; sourceTree = "<group>"; };
 		05A8C5BD20DB72F000FF7857 /* cocoa_common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = cocoa_common.m; sourceTree = "<group>"; };
-		05A8C5BE20DB72F000FF7857 /* cocoatouch_menu.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = cocoatouch_menu.m; sourceTree = "<group>"; };
 		05A8C5BF20DB72F000FF7857 /* ui_cocoa_browser_window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_browser_window.m; sourceTree = "<group>"; };
 		05A8C5C020DB72F000FF7857 /* ui_cocoa_window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_window.m; sourceTree = "<group>"; };
 		05A8C5C120DB72F000FF7857 /* ui_cocoa_application.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_application.m; sourceTree = "<group>"; };
@@ -526,6 +523,7 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		509F0C9C1AA23AFC00619ECC /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
+		686201AB24B823A800EBDD95 /* RetroArch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArch.entitlements; sourceTree = "<group>"; };
 		840222FB1A889EE2009AB261 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		84DD5EA61A89E406007336C1 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = /System/Library/Frameworks/CoreLocation.framework; sourceTree = "<absolute>"; };
@@ -821,13 +819,11 @@
 			isa = PBXGroup;
 			children = (
 				05A8C55320DB72F000FF7857 /* menu_input_bind_dialog.h */,
-				05A8C55420DB72F000FF7857 /* menu_filebrowser.c */,
 				05A8C55520DB72F000FF7857 /* menu_entry.c */,
 				05A8C55620DB72F000FF7857 /* menu_dialog.h */,
 				05A8C55720DB72F000FF7857 /* menu_input_dialog.h */,
 				05A8C55820DB72F000FF7857 /* menu_osk.c */,
 				05A8C55920DB72F000FF7857 /* menu_entry.h */,
-				05A8C55A20DB72F000FF7857 /* menu_filebrowser.h */,
 				05A8C55B20DB72F000FF7857 /* menu_input_dialog.c */,
 				05A8C55C20DB72F000FF7857 /* menu_dialog.c */,
 				05A8C55D20DB72F000FF7857 /* menu_input_bind_dialog.c */,
@@ -949,7 +945,6 @@
 				A9020AF14B9A73364C6CDDA5 /* cocoa_common_metal.m */,
 				05A8C5C220DB72F000FF7857 /* cocoa_common.h */,
 				05A8C5BD20DB72F000FF7857 /* cocoa_common.m */,
-				05A8C5BE20DB72F000FF7857 /* cocoatouch_menu.m */,
 				A9020F2EEF870903107B0EA7 /* ui_cocoa_application_metal.m */,
 				05A8C5C120DB72F000FF7857 /* ui_cocoa_application.m */,
 				A9020F48BA562B13D4789292 /* ui_cocoa_browser_window_metal.m */,
@@ -1420,6 +1415,7 @@
 		29B97314FDCFA39411CA2CEA /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				686201AB24B823A800EBDD95 /* RetroArch.entitlements */,
 				05D7753120A55D2700646447 /* BaseConfig.xcconfig */,
 				05422E5C2140CFC500F09961 /* Metal.xcconfig */,
 				A90207489289602F593626D5 /* QTConfig.xcconfig */,
@@ -1606,7 +1602,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_CONFIGFILE=1 HAVE_GFX_WIDGETS=1 HAVE_QT=1 HAVE_SLANG=1 MOC=${QT_INSTALL}/bin/moc generate\n";
+			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_CONFIGFILE=1 HAVE_PATCH=1 HAVE_DSP_FILTER=1 HAVE_REWIND=1 HAVE_SCREENSHOTS=1 HAVE_CHEATS=1 HAVE_GFX_WIDGETS=1 HAVE_QT=1 HAVE_SLANG=1 MOC=${QT_INSTALL}/bin/moc generate\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1664,6 +1660,7 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1702,6 +1699,7 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1739,6 +1737,7 @@
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1775,6 +1774,7 @@
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;

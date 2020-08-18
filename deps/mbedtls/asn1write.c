@@ -30,14 +30,7 @@
 #include "mbedtls/asn1write.h"
 
 #include <string.h>
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
 
 int mbedtls_asn1_write_len( unsigned char **p, unsigned char *start, size_t len )
 {
@@ -334,27 +327,27 @@ mbedtls_asn1_named_data *mbedtls_asn1_store_named_data( mbedtls_asn1_named_data 
     if( ( cur = mbedtls_asn1_find_named_data( *head, oid, oid_len ) ) == NULL )
     {
         /* Add new entry if not present yet based on OID */
-        cur = (mbedtls_asn1_named_data*)mbedtls_calloc( 1,
+        cur = (mbedtls_asn1_named_data*)calloc( 1,
                                             sizeof(mbedtls_asn1_named_data) );
         if( cur == NULL )
             return( NULL );
 
         cur->oid.len = oid_len;
-        cur->oid.p   = (unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)mbedtls_calloc( 1, oid_len );
+        cur->oid.p   = (unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)(unsigned char*)calloc( 1, oid_len );
         if( cur->oid.p == NULL )
         {
-            mbedtls_free( cur );
+            free( cur );
             return( NULL );
         }
 
         memcpy( cur->oid.p, oid, oid_len );
 
         cur->val.len = val_len;
-        cur->val.p   = (unsigned char*)mbedtls_calloc( 1, val_len );
+        cur->val.p   = (unsigned char*)calloc( 1, val_len );
         if( cur->val.p == NULL )
         {
-            mbedtls_free( cur->oid.p );
-            mbedtls_free( cur );
+            free( cur->oid.p );
+            free( cur );
             return( NULL );
         }
 
@@ -368,11 +361,11 @@ mbedtls_asn1_named_data *mbedtls_asn1_store_named_data( mbedtls_asn1_named_data 
          * Preserve old data until the allocation succeeded, to leave list in
          * a consistent state in case allocation fails.
          */
-        void *p = mbedtls_calloc( 1, val_len );
+        void *p = calloc( 1, val_len );
         if( p == NULL )
             return( NULL );
 
-        mbedtls_free( cur->val.p );
+        free( cur->val.p );
         cur->val.p   = (unsigned char*)p;
         cur->val.len = val_len;
     }

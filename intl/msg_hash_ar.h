@@ -96,14 +96,6 @@ MSG_HASH(
    "سيظهر هنا أي محتوى تعرض للتحليل و طابق قاعدة بيانات الألعاب المعروفة."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "تحليل محتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "يحلل المحتوى و يضيفه لقاعدة بيانات الألعاب المعروفة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "إظهار قائمة المكتب"
    )
@@ -457,6 +449,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
    "إزالة هذا النواة من القرص."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   "[تلقائي]"
+   )
 
 /* Main Menu > Information > System Information */
 
@@ -542,7 +538,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "دعم Gamrpad على الشبكة"
+   "دعم Gamepad على الشبكة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
@@ -1485,7 +1481,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "إزاحة العرض المخصصة المستخدمة لتحديد موقع المحور X-axis للمشاهدة. يتم تجاهل هذه إذا تم تمكين \"مقياس عدد صحيح\". سيتم التركيز عليها تلقائياً حينئذ."
+   "إزاحة العرض المخصصة المستخدمة لتحديد موقع المحور X-محور للمشاهدة. يتم تجاهل هذه إذا تم تمكين \"مقياس عدد صحيح\". سيتم التركيز عليها تلقائياً حينئذ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1576,7 +1572,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   "لا يوجد انحراف عن التوقيت الأساسي المطلوب. استخدم لشاشة معدل التحديث المتغير، GSync، FreeSync.s"
+   "لا يوجد انحراف عن التوقيت الأساسي المطلوب. استخدم لشاشة معدل التحديث المتغير، GSync، FreeSync، HDMI 2.1 VRR."
    )
 
 /* Settings > Audio */
@@ -1963,10 +1959,6 @@ MSG_HASH(
    "تغيير إعدادات التحكم في القائمة."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   "Input Hotkey Binds"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
    "تهيئة إعدادات المفتاح الساخن."
    )
@@ -2141,7 +2133,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "&مفاتيح الاختصار"
+   "مفاتيح الاختصار"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
@@ -2396,6 +2388,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "تحقق مما إذا كانت جميع البرامج الثابتة المطلوبة موجودة قبل محاولة تحميل المحتوى."
    )
+#ifndef HAVE_DYNAMIC
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "السماح بالتدوير"
@@ -2615,7 +2609,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-   "عدادات الأداء لـ RetroArch (والنماذج).\nيمكن أن تساعد بيانات العداد في تحديد اختناقات النظام وضبط أداء النظام والتطبيقات"
+   "عدادات الأداء لـ RetroArch (والنماذج).\nيمكن أن تساعد بيانات العداد في تحديد اختناقات النظام وضبط أداء النظام والتطبيقات."
    )
 
 /* Settings > File Browser */
@@ -2903,6 +2897,8 @@ MSG_HASH(
    "عتامة جميع عناصر واجهة المستخدم للتراكب."
    )
 
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(
@@ -3009,16 +3005,8 @@ MSG_HASH(
    "تضمين تفاصيل الذاكرة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MEMORY_SHOW,
-   "يشمل استخدام الذاكرة الحالية/المجموع على الشاشة مع الإطارات الإطارية."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "خط الإشعارات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
-   "حدد خط مختلف للإشعارات على الشاشة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -3080,14 +3068,6 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "المشاهدات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "إظهار أو إخفاء العناصر على شاشة القائمة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "المظهر"
    )
@@ -3098,10 +3078,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "إظهار الإعدادات المتقدمة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-   "إظهار الإعدادات المتقدمة لمستخدمي الطاقة (مخفية بشكل افتراضي)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
@@ -3128,10 +3104,6 @@ MSG_HASH(
    "تغلق الشاشة للبدء و/أو النهاية إذا تم الوصول إلى حدود القائمة أفقياً أو عمودياً."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "الإيقاف المؤقت عند تنشيط القائمة"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
    "في حالة التعطيل، سيبقى المحتوى قيد التشغيل في الخلفية عند تبديل قائمة RetroArch."
    )
@@ -3140,32 +3112,16 @@ MSG_HASH(
    "استئناف المحتوى بعد استخدام حفظ الدول"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "إغلاق القائمة تلقائياً واستئناف المحتوى الحالي بعد تحديد 'حفظ الدولة' أو 'تحميل الدولة' من القائمة السريعة. تعطيل هذا يمكن أن يحفظ أداء الحالة على الأجهزة البطيئة جداً."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
    "استئناف المحتوى بعد تغيير الأقراص"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "إغلاق القائمة تلقائياً واستئناف المحتوى الحالي بعد تحديد \"إدراج القرص\" أو \"تحميل قرص جديد\" من قائمة التحكم في القرص."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "دعم الفأرة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "يسمح للقائمة بالتحكم بها بواسطة الفأر."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    "المس الدعم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "يسمح للقائمة بالتحكم في اللمسات على الشاشة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
@@ -3174,10 +3130,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
    "تنفيذ المهام على موضوع منفصل."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "عدم التشغيل في الخلفية"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
@@ -3204,20 +3156,8 @@ MSG_HASH(
    "مرفقة واجهة المستخدم"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-   "تشغيل مرافقة واجهة المستخدم عند الإقلاع"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    "شريط القائمة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "قائمة سطح المكتب (إعادة التشغيل)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
-   "إظهار قائمة سطح المكتب عند بدء التشغيل"
    )
 
 /* Settings > User Interface > Views */
@@ -3227,16 +3167,8 @@ MSG_HASH(
    "القائمة السريعة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
-   "إظهار أو إخفاء العناصر على شاشة القائمة السريعة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "الإعدادات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
-   "إظهار أو إخفاء العناصر على شاشة الإعدادات."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
@@ -3337,10 +3269,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
    "إظهار تبويب الإعدادات داخل القائمة الرئيسية."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "تعيين كلمة المرور لتمكين تبويب الإعدادات"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -3453,10 +3381,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    "إظهار التسميات الفرعية للقائمة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
-   "يعرض معلومات إضافية لإدخال القائمة المحددة حاليا."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
@@ -3824,24 +3748,8 @@ MSG_HASH(
    "عامل حجم القائمة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
-   "تطبيق عامل قياس عام عند رسم القائمة. يمكن استخدامه لزيادة أو تقليل حجم واجهة المستخدم."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
-   "الخلفية"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "حدد صورة لتعيينها كخلفية للقائمة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "شفافية الخلفية"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "تعديل شفافية الخلفية الخلفية."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -3880,24 +3788,12 @@ MSG_HASH(
    "حركة نص المؤشر"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
-   "حدد طريقة التمرير الأفقي المستخدمة لعرض سلاسل نص القائمة الطويلة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
    "سرعة نص المؤشر"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
-   "سرعة الرسوم المتحركة عند تمرير سلاسل نص القائمة الطويلة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    "نص المؤشر السلس"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
-   "استخدام حركة تمرير سلسة عند عرض سلسلة نص قائمة طويلة. له تأثير صغير على الأداء."
    )
 
 /* Settings > AI Service */
@@ -3927,10 +3823,6 @@ MSG_HASH(
    "تمكين خدمة الذكاء الاصطناعي للتشغيل عند الضغط على مفتاح خدمة الذكاء الاصطناعي."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
-   "تبديل إيقاف خدمة AI المؤقت"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
    "إيقاف مؤقت للنواة بينما تتم ترجمة الشاشة."
    )
@@ -3957,18 +3849,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
    "تمكين إمكانية الوصول"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
-   "تشغيل/إيقاف سرد إمكانية الوصول للتنقل في القائمة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-   "سرعة خطاب المشرف"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-   "تعيين سرعة الكلام للمرآب، من السرعة إلى البطء"
-   )
 
 /* Settings > Power Management */
 
@@ -3977,10 +3857,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "الإنجازات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "تنافس للحصول على منجزات مصممة خصيصا في الألعاب الكلاسيكية.\nلمزيد من المعلومات، قم بزيارة http://retroachievements.org"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -3993,10 +3869,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "لوائح المتصدرين"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "لوحات المتصدرين الخاصة باللعبة.\nليس له أي تأثير إذا تم تعطيل وضع الهرنق."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -4033,10 +3905,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "لقطة شاشة تلقائية"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
-   "التقاط لقطة شاشة تلقائياً عند تشغيل إنجاز."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
@@ -4094,56 +3962,28 @@ MSG_HASH(
    "كلمة مرور الخادم"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-   "كلمة المرور للاتصال بمضيف الشبكة. تستخدم فقط في وضع المضيف."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
    "خادم Spectate-فقط كلمة المرور"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "كلمة المرور للاتصال بمضيف الشبكة مع امتيازات المشاهدة فقط. تستخدم فقط في وضع المضيف."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    "وضع مشاهدة الشبكة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "ما إذا كان سيتم بدء تشغيل الشبكة في وضع المشاهدة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
    "السماح للعملاء في وضع الرق"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "سواء سمحت بالاتصالات في وضع العبيد. يحتاج عملاء وضع الرق إلى قدر ضئيل جداً من قوة المعالجة على أي من الجانبين، ولكن سيعاني كثيراً من تأخر الشبكة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
    "عدم السماح للعملاء في وضع غير الرق"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "سواء أكان عدم السماح بالاتصالات غير في وضع العبيد. لا يوصى بها إلا للشبكات السريعة جداً مع آلات ضعيفة جداً."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
    "وضع عديم الجنسية للشبكة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "ما إذا كان سيتم تشغيل netplay في وضع لا يتطلب حفظ الحالات. إذا تم تعيينها إلى الحقيقة، يتطلب الأمر شبكة سريعة جداً، ولكن لن يتم إجراء أي تصفيف، لذلك لن يكون هناك جهاز شبكة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "إطارات التحقق من الشبكة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "التردد في الأطر التي ستتحقق الشبكة من أن المضيف والعميل في تزامن معها."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -4190,18 +4030,6 @@ MSG_HASH(
    "منفذ أمر الشبكة"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
-   "Gamepad الشبكة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
-   "منفذ قاعدة الشبكة البعيدة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
-   "المستخدم %d عن بعد"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
    "أوامر ستدين"
    )
@@ -4212,10 +4040,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
    "التنزيلات المصغرة عند الطلب"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-   "تحميل الصور المصغرة المفقودة تلقائياً أثناء تصفح قوائم التشغيل. له تأثير قوي على الأداء."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -4260,10 +4084,6 @@ MSG_HASH(
 /* Settings > Playlists */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "قائمة المحفوظات"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
    "الاحتفاظ بقائمة تشغيل للألعاب والصور والموسيقى والفيديوهات المستخدمة مؤخرا."
    )
@@ -4274,14 +4094,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
    "الحد من عدد المدخلات في قائمة التشغيل الحديثة للألعاب والصور والموسيقى والفيديو."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   "حجم قائمة المفضلة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "الحد من عدد الإدخالات في قائمة التشغيل المفضلة. بمجرد الوصول إلى الحد الأقصى، سيتم منع الإضافات الجديدة حتى تتم إزالة الإدخالات القديمة. تحديد قيمة -1 يسمح للمدخلات 'غير محدودة' (99999). تحذير: تخفيض القيمة سيؤدي إلى حذف المدخلات الموجودة!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -4304,16 +4116,8 @@ MSG_HASH(
    "ترتيب قوائم التشغيل بالأبجدية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-   "ترتيب قوائم تشغيل المحتوى بالترتيب الأبجدي. لاحظ أن قوائم تشغيل \"التاريخ\" للألعاب والصور والموسيقى والفيديوهات المستخدمة مؤخرا."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
    "حفظ قوائم التشغيل باستخدام التنسيق القديم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
-   "كتابة قوائم التشغيل باستخدام تنسيق نص عادي مستهلك. عند التعطيل، يتم تنسيق قوائم التشغيل باستخدام JSON."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
@@ -4344,10 +4148,6 @@ MSG_HASH(
    "النواة"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
-   "وقت اللعب:"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "آخر لعب:"
    )
@@ -4358,14 +4158,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "يحدد نوع سجل وقت التشغيل لعرضه على قائمة التشغيل Sblabels. (لاحظ أنه يجب تمكين سجل وقت التشغيل المقابل من خلال قائمة خيارات \"التوفير )"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "تنسيق \"آخر تشغيل\" لقائمة التشغيل الفرعية"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "يحدد نمط تنسيق التاريخ/الوقت المستخدم عند عرض سجل سجل التشغيل 'آخر تشغيل' معلومات الطابع الزمني. ملاحظة: خيارات '(AM/PM)' سيكون لها تأثير صغير على الأداء على بعض المنصات."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -4382,14 +4174,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
    "عند التعطيل، يتم إضافة المحتوى فقط إلى قوائم التشغيل إذا كان لديك أساس مثبت يدعم ملحقه. بتمكين هذا، سيضيف إلى قائمة التشغيل بغض النظر عن ذلك. بهذه الطريقة، يمكنك تثبيت النواة التي تحتاجها في وقت لاحق بعد المسح."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
-   "إدارة قائمة التشغيل"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
-   "تنفيذ مهام الصيانة في قائمة التشغيل المحددة (على سبيل المثال تعيين/إعادة تعيين الروابط الأساسية الافتراضية)."
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -4423,16 +4207,8 @@ MSG_HASH(
    "طريقة الفرز"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
-   "تغيير كيفية فرز المدخلات في قائمة التشغيل هذه."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    "تنظيف قائمة التشغيل"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
-   "إزالة الإدخالات الغير صحيحة/المكررة والتحقق من صحة الروابط الأساسية."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -4473,10 +4249,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
    "اللّغة"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
-   "تعيين لغة الواجهة."
-   )
 
 /* Settings > User > Privacy */
 
@@ -4512,10 +4284,6 @@ MSG_HASH(
    "الإنجازات التراجعية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "خدمة الإنجازات التراجعية: للحصول على مزيد من المعلومات، يرجى زيارة http://retroachievements.org"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
    "يوتيوب"
    )
@@ -4529,10 +4297,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
    "اسم المستخدم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-   "أدخل اسم المستخدم لحساب RetroAchievements الخاص بك."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -4580,10 +4344,6 @@ MSG_HASH(
    "مصادر"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-   "يتم الاستعلام عن هذا الموقع بشكل افتراضي عندما تحاول واجهات القائمة البحث عن الأصول القابلة للتحميل، إلخ."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
    "خلفيات ديناميكية"
    )
@@ -4602,10 +4362,6 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "مستعرض الملفات"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "تعيين دليل البدء لمتصفح الملف."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
@@ -4692,16 +4448,8 @@ MSG_HASH(
    "إعدادات التسجيل"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
-   "سيتم الاحتفاظ بإعدادات التسجيل هنا."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    "الطبقات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
-   "يحدد الدليل حيث يتم حفظ ملفات شريط الفيديو المستندة إلى GPU، لتيسير الوصول إليها."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
@@ -4724,16 +4472,8 @@ MSG_HASH(
    "إدخال التكوين التلقائي"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-   "إذا تم توصيل لوحة المروح، فسيتم تكوين لوحة المروحة هذه تلقائياً إذا كان ملف التكوين المقابل موجود داخل هذا الدليل."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    "إعادة تعيين الإدخال"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
-   "حفظ جميع الضوابط المجددة في هذا الدليل."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -4827,14 +4567,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
    "قطع اتصال الشبكة النشطة."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "تحديث غرفة  القائمة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "البحث عن غرف جديدة."
-   )
 
 /* Netplay > Host */
 
@@ -4920,20 +4652,12 @@ MSG_HASH(
    "حدد 'اسم النظام' يدويا للمحتوى الذي تم مسحه. يستخدم فقط عندما يتم تعيين 'اسم النظام' إلى '<Custom>'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "نواة"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
    "حدد نواة افتراضية لاستخدامها عند بدء تشغيل المحتوى الممسوح."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
    "ملحقات الملف"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
-   "قائمة محددة بالفضاء بأنواع الملفات لتضمينها في المسح. إذا كان فارغاً، يشمل جميع الملفات - أو إذا تم تحديد النواة الأساسية، جميع الملفات التي يدعمها النواة الأساسية."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
@@ -4975,6 +4699,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
    "مسح المحتوى المحدد."
    )
+
+/* Explore tab */
 
 /* Playlist > Playlist Item */
 
@@ -5037,10 +4763,6 @@ MSG_HASH(
 
 /* Playlist Item > Set Core Association */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-   "النواة الحالية"
-   )
 
 /* Playlist Item > Information */
 
@@ -5320,18 +5042,6 @@ MSG_HASH(
    "حفظ شفرات الغش الحالية كملف حفظ."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
-   "إضافة شفرة جديدة إلى الأعلى"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
-   "إضافة شفرة جديدة إلى الأسفل"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
-   "حذف جميع الشفرات"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
    "تطبيق تلقائي للغش أثناء فتح اللعبة"
    )
@@ -5375,16 +5085,8 @@ MSG_HASH(
    "ترميز الطرف الأكبر"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "طريقة تخزين القيم في الذاكرة.\nمثلا 258 تخزن 0x0201 بالطرف الأصغر \nو 0x0102 بالطرف الأكبر."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "إبحث في الذاكرة عن القيم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
-   "غير القيمة بأزرار اليسار / اليمين"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
@@ -5520,10 +5222,6 @@ MSG_HASH(
    "معالج"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
-   "حجم البحث في الذاكرة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
    "النوع"
    )
@@ -5552,52 +5250,12 @@ MSG_HASH(
    "عدد التكريرات"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "عدد المرات التي سيتم فيها تطبيق الغش.\nاستخدم مع خياري التعديل الآخرين للتأثير على مساحات كبيرة من الذاكرة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
    "عنوان زيادة كل تغيير"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
-   "بعد كل 'عدد التغييرات' سيتم زيادة عنوان الذاكرة بهذا العدد مرات 'حجم البحث في الذاكرة'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
    "زيادة القيمة لكل تغيير"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
-   "بعد كل \"عدد من التعديلات\" سيتم زيادة القيمة بهذا المبلغ."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
-   "الرماد عندما تكون الذاكرة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
-   "قيمة Rumble"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
-   "منفذ Rumble"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
-   "قوة الدمدمة الأولية"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
-   "المدة الأولية البطيئة (مللي ثانية)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
-   "قوة ثانوية خفيفة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
-   "المدة الثانوية البطيئة (مللي ثانية)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
@@ -5619,10 +5277,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
    "نسخ هذه الغش قبل"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
-   "حذف هذه الغش"
-   )
 
 /* Quick Menu > Disc Control */
 
@@ -5631,16 +5285,8 @@ MSG_HASH(
    "إخراج القرص"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "يفتح صالة القرص الظاهري ويزيل القرص المحمل حاليا. ملاحظة: إذا تم تكوين RetroArch للإيقاف المؤقت أثناء نشاط القائمة، قد لا تسجل بعض النواة التغييرات ما لم يستأنف المحتوى لبضع ثوان بعد كل إجراء للتحكم في القرص."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "ادخل القرص"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "يدرج القرص المقابل لـ 'فهرس القرص الحالي' ويغلق صالة القرص الافتراضي. ملاحظة: إذا تم تكوين RetroArch للإيقاف المؤقت أثناء نشاط القائمة، قد لا تسجل بعض النواة التغييرات ما لم يستأنف المحتوى لبضع ثوان بعد كل إجراء للتحكم في القرص."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -5668,10 +5314,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    "مشاهدة ملفات شاهر للتغييرات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-   "تطبيق تلقائي للتغييرات التي أجريت على ملفات المشهد على القرص."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -5718,10 +5360,6 @@ MSG_HASH(
    "تصاريح الشريط"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-   "زيادة أو تقليل كمية تصاريح خطوط أنابيب الهزل. يمكنك ربط حمام منفصل لكل تمرير من خطوط الأنابيب وتكوين حجمه وتصفيته."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
    "شيدر الظلال"
    )
@@ -5757,16 +5395,8 @@ MSG_HASH(
    "حفظ تجهيز نواة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-   "يحفظ إعدادات شيدر الظلال، بمثابة الإعداد الافتراضي لهذا التطبيق أو النواة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
    "حفظ تجهيز مجلد المحتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "يحفظ إعدادات شيدر الظلال، بمثابة الإعداد الافتراضي لجميع الملفات في نفس مجلد المحتوى الحالي."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -6078,10 +5708,6 @@ MSG_HASH(
    "يجري الاستهلاك"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
-   "لا يوجد مصدر"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
    "<استخدم هذا الدليل>"
    )
@@ -6184,22 +5810,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
    "تقليل القيمة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "تشغيل الغش التالي إذا كانت القيمة = الذاكرة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-   "تشغيل الغش التالي إذا القيمة != الذاكرة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-   "تشغيل الغش التالي إذا كانت القيمة < الذاكرة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-   "تشغيل الغش التالي إذا كانت القيمة > الذاكرة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
@@ -6408,22 +6018,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
    "الماوس 5"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
-   "عجلة أعلى"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
-   "عجلة أسفل"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
-   "عجلة اليسار"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-   "عجلة اليمين"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
@@ -6947,10 +6541,6 @@ MSG_HASH(
    "ظل الأيقونة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "ارسم ظلال إسقاط لجميع الرموز.\nهذا سيكون له تأثير طفيف على الأداء."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    "خط أنابيب عرض القائمة"
    )
@@ -6986,20 +6576,12 @@ MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "تبويب الإعدادات"
    )
-MSG_HASH( /* FIXME Unused? */
-   MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "تمكين علامة تبويب الإعدادات. إعادة التشغيل مطلوبة حتى يظهر التبويب."
-   )
 
 /* XMB: Settings Options */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
    "الشريط"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
-   "الشريط (مبسط)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
@@ -7161,16 +6743,8 @@ MSG_HASH(
    "اقتطاع أسماء قائمة التشغيل"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "عند التمكين، سيتم إزالة أسماء النظام من قوائم التشغيل. على سبيل المثال، عرض \"PlayStation\" بدلاً من \"Sony - PlayStation\". التغييرات تتطلب إعادة تشغيل لتصبح نافذة المفعول."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "فرز قوائم التشغيل بعد تعقب الاسم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "عند التمكين، سيتم إعادة فرز قوائم التشغيل بالترتيب الأبجدي بعد إزالة مكون \"النظام\" من أسمائهم. التغييرات تتطلب إعادة تشغيل لتصبح سارية المفعول."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
@@ -7197,10 +6771,6 @@ MSG_HASH(
    "الصورة المصغرة الثانية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "استبدال لوحة البيانات الوصفية للمحتوى بصورة مصغرة أخرى."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
    "استخدام نص المؤشر للبيانات الوصفية للمحتوى"
    )
@@ -7214,10 +6784,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
    "أيقونات القائمة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "إظهار الرموز في يسار إدخالات القائمة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
@@ -7234,10 +6800,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
    "عرض اختصارات التنقل الدائمة على الشاشة. تمكين التبديل السريع بين فئات القائمة. مستحسن لأجهزة شاشة اللمس."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   "تدوير شريط التنقل التلقائي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
@@ -7278,10 +6840,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "إظهار الصورة المصغرة الثانوية في قائمة المشاهدات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "تمكين عرض الصورة المصغرة الثانوية عند استخدام \"قائمة\" نوع أوضاع عرض المصغرة لقائمة التشغيل. لاحظ أن هذا الإعداد ينطبق فقط عندما يكون للشاشة عرض فعلي كافٍ لإظهار مصغرتين."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -8125,10 +7683,6 @@ MSG_HASH(
    "المستخدم"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "استخدام عارض الصور المدمجة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "ماكس صور المبادلة"
    )
@@ -8174,10 +7728,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
    "نسبة الجوانب التلقائية"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
-   "الإسم المستعار (lan):٪ s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATUS,
@@ -8282,10 +7832,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
    "استكشاف الأخطاء في الصوت/الفيديو"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
-   "تغيير تراكب لوحة اللعبة الظاهرية"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
@@ -8474,10 +8020,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "الإعدادات"
    )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "التنزيلات"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
    "إعدادات الشبكة"
@@ -8651,10 +8193,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UPNP_FAILED,
    "فشل تخطيط المنفذ"
-   )
-MSG_HASH(
-   MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-   "لم يتم تقديم أي حجج ولم يتم بناء قائمة، عرض المساعدة..."
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
@@ -9019,14 +8557,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "فصل الجهاز من منفذ صالح."
-   )
-MSG_HASH(
-   MSG_DISK_CLOSED,
-   "مغلق"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "مخرج"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -9693,14 +9223,6 @@ MSG_HASH(
    "فشل حساب حجم العرض! سوف يستمر في استخدام البيانات الخام. ربما لن يعمل هذا بشكل صحيح..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "صورة القرص الافتراضي."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "غلق"
-   )
-MSG_HASH(
    MSG_FAILED,
    "فشل"
    )
@@ -10011,10 +9533,6 @@ MSG_HASH(
    "تجاوز مقياس شرائط الرسوم البيانية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "تطبيق تجاوز عامل القياس اليدوي عند رسم أدوات العرض. يطبق فقط عندما يتم تعطيل \"مصغرات الرسومات التلقائية\". يمكن استخدامه لزيادة أو تقليل حجم الإشعارات المزخرفة والمؤشرات والضوابط بشكل مستقل عن القائمة نفسها."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "دقة الشاشة"
    )
@@ -10101,14 +9619,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "المس"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
-   "خريطة لوحة المفاتيح"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
-   "نوع رسم خريطة لوحة المفاتيح"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,

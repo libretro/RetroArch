@@ -31,9 +31,9 @@ static struct hidpad_retrode_data* port_device[4];
 struct hidpad_retrode_data
 {
    struct pad_connection* connection;
-   uint8_t data[64];
    uint32_t slot;
    uint32_t buttons;
+   uint8_t data[64];
 };
 
 static void* hidpad_retrode_init(void *data, uint32_t slot, hid_driver_t *driver)
@@ -97,15 +97,17 @@ static int16_t hidpad_retrode_get_axis(void *data, unsigned axis)
 
    /* map Retrode values to a known gamepad (VID=0x0079, PID=0x0011) */
    if (val == 0x9C)
-       val = 0x00; /* axis=0 left, axis=1 up */
+      val = 0x00; /* axis=0 left, axis=1 up */
    else if (val == 0x64)
-       val = 0xFF; /* axis=0 right, axis=1 down */
+      val = 0xFF; /* axis=0 right, axis=1 down */
    else
-       val = 0x7F; /* no button pressed */
+      val = 0x7F; /* no button pressed */
 
    val = (val << 8) - 0x8000;
 
-   return (abs(val) > 0x1000) ? val : 0;
+   if (abs(val) > 0x1000)
+      return val;
+   return 0;
 }
 
 static void hidpad_retrode_packet_handler(void *data, uint8_t *packet, uint16_t size)

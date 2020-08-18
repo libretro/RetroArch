@@ -26,6 +26,7 @@
 #include <retro_timers.h>
 
 #include "cocoa/cocoa_common.h"
+#include "cocoa/apple_platform.h"
 #include "../ui_companion_driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
@@ -39,7 +40,7 @@
 
 #import <AVFoundation/AVFoundation.h>
 
-#ifdef HAVE_COCOA_METAL
+#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 id<ApplePlatform> apple_platform;
 #else
 static id apple_platform;
@@ -124,11 +125,10 @@ static void handle_touch_event(NSArray* touches)
       CGPoint       coord;
       UITouch      *touch = [touches objectAtIndex:i];
 
-      if (touch.view != [CocoaView get].view)
-         continue;
+//      if (touch.view != [CocoaView get].view)
+//         continue;
 
       coord = [touch locationInView:[touch view]];
-
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
          apple->touches[apple->touch_count   ].screen_x = coord.x * scale;
@@ -138,7 +138,7 @@ static void handle_touch_event(NSArray* touches)
 }
 
 #ifndef HAVE_APPLE_STORE
-// iO7 Keyboard support
+// iOS7 Keyboard support
 @interface UIEvent(iOS7Keyboard)
 @property(readonly, nonatomic) long long _keyCode;
 @property(readonly, nonatomic) _Bool _isKeyDown;
@@ -317,6 +317,86 @@ enum
 
 @implementation RetroArch_iOS
 
+#pragma mark - ApplePlatform
+-(id)renderView {
+    return _renderView;
+}
+-(bool)hasFocus {
+    return YES;
+}
+- (void)setViewType:(apple_view_type_t)vt {
+   if (vt == _vt)
+      return;
+
+   RARCH_LOG("[Cocoa]: change view type: %d ? %d\n", _vt, vt);
+
+   _vt = vt;
+   if (_renderView != nil)
+   {
+      [_renderView removeFromSuperview];
+      _renderView = nil;
+   }
+
+   switch (vt) {
+#ifdef HAVE_COCOA_METAL
+      case APPLE_VIEW_TYPE_VULKAN:
+      case APPLE_VIEW_TYPE_METAL:
+      {
+         MetalView *v = [MetalView new];
+         v.paused = YES;
+         v.enableSetNeedsDisplay = NO;
+#if TARGET_OS_IOS
+         v.multipleTouchEnabled = YES;
+#endif
+         _renderView = v;
+      }
+      break;
+#endif
+      case APPLE_VIEW_TYPE_OPENGL_ES:
+      {
+         _renderView = (BRIDGE GLKView*)glkitview_init();
+         break;
+      }
+
+      case APPLE_VIEW_TYPE_NONE:
+      default:
+         return;
+   }
+
+    _renderView.translatesAutoresizingMaskIntoConstraints = NO;
+    UIView *rootView = [CocoaView get].view;
+    [rootView addSubview:_renderView];
+    [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
+    [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
+    [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
+    [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+}
+
+- (apple_view_type_t)viewType {
+   return _vt;
+}
+
+- (void)setVideoMode:(gfx_ctx_mode_t)mode {
+#ifdef HAVE_COCOA_METAL
+    MetalView *metalView = (MetalView*) _renderView;
+    CGFloat scale = [[UIScreen mainScreen] scale];
+    [metalView setDrawableSize:CGSizeMake(
+                                          _renderView.bounds.size.width * scale,
+                                          _renderView.bounds.size.height * scale
+                                          )
+    ];
+#endif
+}
+
+- (void)setCursorVisible:(bool)v {
+    // no-op for iOS
+}
+
+- (bool)setDisableDisplaySleep:(bool)disable {
+    // no-op for iOS
+    return NO;
+}
+
 + (RetroArch_iOS*)get
 {
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
@@ -348,12 +428,6 @@ enum
    /* Setup window */
    self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
-
-#if TARGET_OS_IOS
-   self.mainmenu = [RAMainMenu new];
-   self.mainmenu.last_menu = self.mainmenu;
-   [self pushViewController:self.mainmenu animated:NO];
-#endif
 
    NSError *error;
    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
@@ -451,18 +525,6 @@ enum
    [self.window setRootViewController:self];
 }
 
-- (void)toggleUI
-{
-   if (ui_companion_is_on_foreground())
-   {
-      [self showGameView];
-   }
-   else
-   {
-      [self showPauseMenu:self];
-   }
-}
-
 - (void)refreshSystemConfig
 {
 #if TARGET_OS_IOS
@@ -477,48 +539,8 @@ enum
 #endif
 }
 
-- (void)mainMenuRefresh
-{
-#if TARGET_OS_IOS
-  [self.mainmenu reloadData];
-#endif
-}
-
-- (void)mainMenuPushPop: (bool)pushp
-{
-#if TARGET_OS_IOS
-  if (pushp)
-  {
-     self.menu_count++;
-     RAMenuBase* next_menu = [RAMainMenu new];
-     next_menu.last_menu = self.mainmenu;
-     self.mainmenu = next_menu;
-     [self pushViewController:self.mainmenu animated:YES];
-  }
-  else
-  {
-     if (self.menu_count == 0)
-        [self.mainmenu reloadData];
-     else
-     {
-        self.menu_count--;
-
-        [self popViewControllerAnimated:YES];
-        self.mainmenu = self.mainmenu.last_menu;
-     }
-  }
-#endif
-}
-
 - (void)supportOtherAudioSessions
 {
-}
-
-- (void)mainMenuRenderMessageBox:(NSString *)msg
-{
-#if TARGET_OS_IOS
-  [self.mainmenu renderMessageBox:msg];
-#endif
 }
 
 @end
@@ -538,131 +560,3 @@ static void apple_rarch_exited(void)
         return;
     [ap showPauseMenu:ap];
 }
-
-typedef struct ui_companion_cocoatouch
-{
-   void *empty;
-} ui_companion_cocoatouch_t;
-
-static void ui_companion_cocoatouch_notify_content_loaded(void *data)
-{
-   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-
-   (void)data;
-
-   if (ap)
-      [ap showGameView];
-}
-
-static void ui_companion_cocoatouch_toggle(void *data, bool force)
-{
-   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
-
-   (void)data;
-
-   if (ap)
-      [ap toggleUI];
-}
-
-static void ui_companion_cocoatouch_deinit(void *data)
-{
-   ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)data;
-
-   apple_rarch_exited();
-
-   if (handle)
-      free(handle);
-}
-
-static void *ui_companion_cocoatouch_init(void)
-{
-   ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)
-    calloc(1, sizeof(*handle));
-
-   if (!handle)
-      return NULL;
-
-   rarch_enable_ui();
-
-   return handle;
-}
-
-static void ui_companion_cocoatouch_notify_list_pushed(void *data,
-   file_list_t *list, file_list_t *menu_list)
-{
-   static size_t old_size = 0;
-   RetroArch_iOS *ap      = (RetroArch_iOS *)apple_platform;
-   bool pushp             = false;
-   size_t new_size        = file_list_get_size(menu_list);
-
-   /* FIXME workaround for the double call */
-   if (old_size == 0)
-   {
-      old_size = new_size;
-      return;
-   }
-
-   if (old_size == new_size)
-      pushp = false;
-   else if (old_size < new_size)
-      pushp = true;
-   else if (old_size > new_size)
-      printf("notify_list_pushed: old size should not be larger\n" );
-
-   old_size = new_size;
-
-   if (ap)
-      [ap mainMenuPushPop: pushp];
-}
-
-static void ui_companion_cocoatouch_notify_refresh(void *data)
-{
-   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
-
-   if (ap)
-     [ap mainMenuRefresh];
-}
-
-static void ui_companion_cocoatouch_render_messagebox(const char *msg)
-{
-   static char msg_old[PATH_MAX_LENGTH];
-   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
-
-   if (ap && !string_is_equal(msg, msg_old))
-   {
-      [ap mainMenuRenderMessageBox: [NSString stringWithUTF8String:msg]];
-      strlcpy(msg_old, msg, sizeof(msg_old));
-   }
-}
-
-static void ui_companion_cocoatouch_msg_queue_push(void *data, const char *msg,
-   unsigned priority, unsigned duration, bool flush)
-{
-   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
-
-   if (ap && msg)
-   {
-#if TARGET_OS_IOS
-      [ap.mainmenu msgQueuePush: [NSString stringWithUTF8String:msg]];
-#endif
-   }
-}
-
-ui_companion_driver_t ui_companion_cocoatouch = {
-   ui_companion_cocoatouch_init,
-   ui_companion_cocoatouch_deinit,
-   ui_companion_cocoatouch_toggle,
-   ui_companion_cocoatouch_event_command,
-   ui_companion_cocoatouch_notify_content_loaded,
-   ui_companion_cocoatouch_notify_list_pushed,
-   ui_companion_cocoatouch_notify_refresh,
-   ui_companion_cocoatouch_msg_queue_push,
-   ui_companion_cocoatouch_render_messagebox,
-   NULL, /* get_main_window */
-   NULL, /* log_msg */
-   NULL, /* ui_browser_window_null */
-   NULL, /* ui_msg_window_null */
-   NULL, /* ui_window_null */
-   NULL, /* ui_application_null */
-   "cocoatouch",
-};

@@ -274,15 +274,17 @@ enum frontend_architecture frontend_uwp_get_architecture(void)
 static int frontend_uwp_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
+   char home_dir[PATH_MAX_LENGTH];
    file_list_t            *list = (file_list_t*)data;
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
          MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
    char drive[]                 = " :\\";
-   char *home_dir               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    bool have_any_drives         = false;
 
-   fill_pathname_home_dir(home_dir, PATH_MAX_LENGTH * sizeof(char));
+   home_dir[0]                  = '\0';
+
+   fill_pathname_home_dir(home_dir, sizeof(home_dir));
 
    for (drive[0] = 'A'; drive[0] <= 'Z'; drive[0]++)
    {
@@ -320,8 +322,6 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
             MENU_SETTING_ACTION, 0, 0);
       }
    }
-
-   free(home_dir);
 #endif
 
    return 0;
@@ -391,15 +391,11 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    if (string_is_equal(uwp_device_family, "Windows.Mobile"))
-   {
-      snprintf(g_defaults.settings.menu,
-         sizeof(g_defaults.settings.menu), "glui");
-   }
+      snprintf(g_defaults.settings_menu,
+            sizeof(g_defaults.settings_menu), "glui");
    else
-   {
-      snprintf(g_defaults.settings.menu,
-         sizeof(g_defaults.settings.menu), "xmb");
-   }
+      snprintf(g_defaults.settings_menu,
+            sizeof(g_defaults.settings_menu), "xmb");
 #endif
 #endif
 }

@@ -36,7 +36,7 @@
    fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
    ret = false; \
    goto end; \
-} while(0)
+} while (0)
 
 double DEFLATE_PADDING = 1.1;
 int PNG_ROUGH_HEADER = 100;
@@ -424,7 +424,7 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
 
    *bytes = intfstream_get_ptr(intf_s);
    intfstream_rewind(intf_s);
-   output = (uint8_t*)malloc((*bytes)*sizeof(uint8_t));
+   output = (uint8_t*)malloc((size_t)((*bytes)*sizeof(uint8_t)));
    if (!output)
       GOTO_END_ERROR();
    intfstream_read(intf_s, output, *bytes);

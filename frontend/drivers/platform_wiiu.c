@@ -67,7 +67,9 @@
  * The Wii U frontend driver, along with the main() method.
  */
 
+#ifndef IS_SALAMANDER
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
+#endif
 static const char *elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 
 static bool exists(char *path)
@@ -131,8 +133,8 @@ static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
          "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_CORE],
          "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
@@ -341,7 +343,9 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
 
 static void main_setup(void);
 static void get_arguments(int *argc, char ***argv);
+#ifndef IS_SALAMANDER
 static void main_loop(void);
+#endif
 static void main_teardown(void);
 
 static void init_network(void);
@@ -354,7 +358,6 @@ static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_
 static void init_pad_libraries(void);
 static void deinit_pad_libraries(void);
 static void SaveCallback(void);
-static bool swap_is_pending(void *start_time);
 
 static struct sockaddr_in broadcast;
 static int wiiu_log_socket = -1;
@@ -439,6 +442,16 @@ static void main_teardown(void)
    deinit_network();
 }
 
+#ifndef IS_SALAMANDER
+static bool swap_is_pending(void *start_time)
+{
+   uint32_t swap_count, flip_count;
+   OSTime last_flip, last_vsync;
+
+   GX2GetSwapStatus(&swap_count, &flip_count, &last_flip, &last_vsync);
+   return last_vsync < *(OSTime *)start_time;
+}
+
 static void main_loop(void)
 {
    OSTime start_time;
@@ -460,20 +473,13 @@ static void main_loop(void)
          break;
    }
 }
+#endif
 
 static void SaveCallback(void)
 {
    OSSavesDone_ReadyToRelease();
 }
 
-static bool swap_is_pending(void *start_time)
-{
-   uint32_t swap_count, flip_count;
-   OSTime last_flip, last_vsync;
-
-   GX2GetSwapStatus(&swap_count, &flip_count, &last_flip, &last_vsync);
-   return last_vsync < *(OSTime *)start_time;
-}
 
 static void init_network(void)
 {
@@ -606,28 +612,32 @@ void net_print_exp(const char *str)
    sendto(wiiu_log_socket, str, strlen(str), 0, (struct sockaddr *)&broadcast, sizeof(broadcast));
 }
 
-/* RFC 791 specifies that any IP host must be able to receive a datagram of 576 bytes.
- * Since we're generally never logging more than a line or two's worth of data (~100 bytes)
+/* RFC 791 specifies that any IP host must be able 
+ * to receive a datagram of 576 bytes.
+ * Since we're generally never logging more than a 
+ * line or two's worth of data (~100 bytes)
  * this is a reasonable size for our use. */
 #define DGRAM_SIZE 576
 
-static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
+static ssize_t wiiu_log_write(struct _reent *r,
+      void *fd, const char *ptr, size_t len)
 {
+   int remaining;
    if (wiiu_log_socket < 0)
       return len;
 
-   while(wiiu_log_lock)
+   while (wiiu_log_lock)
       OSSleepTicks(((248625000 / 4)) / 1000);
 
    wiiu_log_lock = 1;
 
-   int sent;
-   int remaining = len;
+   remaining     = len;
 
-   while(remaining > 0)
+   while (remaining > 0)
    {
       int block = remaining < DGRAM_SIZE ? remaining : DGRAM_SIZE;
-      sent = sendto(wiiu_log_socket, ptr, block, 0, (struct sockaddr *)&broadcast, sizeof(broadcast));
+      int sent  = sendto(wiiu_log_socket, ptr, block, 0,
+            (struct sockaddr *)&broadcast, sizeof(broadcast));
 
       if (sent < 0)
          break;

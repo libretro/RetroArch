@@ -26,6 +26,7 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
+#include <array/rbuf.h>
 
 #include <formats/m3u_file.h>
 
@@ -50,8 +51,6 @@
 struct content_m3u_file
 {
    char *path;
-   size_t size;
-   size_t capacity;
    m3u_file_entry_t *entries;
 };
 
@@ -66,6 +65,7 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
    int64_t file_len          = 0;
    uint8_t *file_buf         = NULL;
    struct string_list *lines = NULL;
+   bool success              = false;
    size_t i;
    char entry_path[PATH_MAX_LENGTH];
    char entry_label[PATH_MAX_LENGTH];
@@ -74,27 +74,28 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
    entry_label[0] = '\0';
 
    if (!m3u_file)
-      return false;
+      goto end;
 
    /* Check whether file exists
     * > If path is empty, then an error
     *   has occurred... */
    if (string_is_empty(m3u_file->path))
-      return false;
+      goto end;
 
    /* > File must have the correct extension */
    file_ext = path_get_extension(m3u_file->path);
 
-   if (string_is_empty(file_ext))
-      return false;
-
-   if (!string_is_equal_noncase(file_ext, M3U_FILE_EXT))
-      return false;
+   if (string_is_empty(file_ext) ||
+       !string_is_equal_noncase(file_ext, M3U_FILE_EXT))
+      goto end;
 
    /* > If file does not exist, no action
     *   is required */
    if (!path_is_valid(m3u_file->path))
-      return true;
+   {
+      success = true;
+      goto end;
+   }
 
    /* Read file from disk */
    if (filestream_read_file(m3u_file->path, (void**)&file_buf, &file_len) >= 0)
@@ -105,58 +106,56 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
 
       /* File buffer no longer required */
       if (file_buf)
+      {
          free(file_buf);
+         file_buf = NULL;
+      }
    }
+   /* File IO error... */
    else
-   {
-      /* File IO error... */
-      if (file_buf)
-         free(file_buf);
-      return false;
-   }
+      goto end;
 
    /* If file was empty, no action is required */
    if (!lines)
-      return true;
+   {
+      success = true;
+      goto end;
+   }
 
    /* Parse lines of file */
    for (i = 0; i < lines->size; i++)
    {
-      size_t m3u_size;
       const char *line = lines->elems[i].data;
 
       if (string_is_empty(line))
          continue;
 
       /* Determine line 'type' */
-      m3u_size = strlen(M3U_FILE_NONSTD_LABEL);
 
       /* > '#LABEL:' */
-      if (!strncmp(
-            line, M3U_FILE_NONSTD_LABEL,
-            m3u_size))
+      if (string_starts_with_size(line, M3U_FILE_NONSTD_LABEL,
+            STRLEN_CONST(M3U_FILE_NONSTD_LABEL)))
       {
          /* Label is the string to the right
           * of '#LABEL:' */
-         const char *label = line + m3u_size;
+         const char *label = line + STRLEN_CONST(M3U_FILE_NONSTD_LABEL);
 
          if (!string_is_empty(label))
          {
             strlcpy(
-                  entry_label, line + m3u_size,
+                  entry_label, line + STRLEN_CONST(M3U_FILE_NONSTD_LABEL),
                   sizeof(entry_label));
             string_trim_whitespace(entry_label);
          }
       }
       /* > '#EXTINF:' */
-      else if (!strncmp(
-            line, M3U_FILE_EXTSTD_LABEL,
-            strlen(M3U_FILE_EXTSTD_LABEL)))
+      else if (string_starts_with_size(line, M3U_FILE_EXTSTD_LABEL,
+            STRLEN_CONST(M3U_FILE_EXTSTD_LABEL)))
       {
          /* Label is the string to the right
           * of the first comma */
          const char* label_ptr = strchr(
-               line + strlen(M3U_FILE_EXTSTD_LABEL),
+               line + STRLEN_CONST(M3U_FILE_EXTSTD_LABEL),
                M3U_FILE_EXTSTD_LABEL_TOKEN);
 
          if (!string_is_empty(label_ptr))
@@ -210,9 +209,13 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
          }
 
          /* Add entry to file
-          * > Ignore errors here - invalid entries
-          *   will just be omitted */
-         m3u_file_add_entry(m3u_file, entry_path, entry_label);
+          * > Note: The only way that m3u_file_add_entry()
+          *   can fail here is if we run out of memory.
+          *   This is a critical error, and m3u_file must
+          *   be considered invalid in this case */
+         if (!string_is_empty(entry_path) &&
+             !m3u_file_add_entry(m3u_file, entry_path, entry_label))
+            goto end;
 
          /* Reset entry_path/entry_label */
          entry_path[0]  = '\0';
@@ -220,6 +223,9 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
       }
    }
 
+   success = true;
+
+end:
    /* Clean up */
    if (lines)
    {
@@ -227,7 +233,13 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
       lines = NULL;
    }
 
-   return true;
+   if (file_buf)
+   {
+      free(file_buf);
+      file_buf = NULL;
+   }
+
+   return success;
 }
 
 /* Creates and initialises an M3U file
@@ -238,16 +250,15 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
  * - Returned m3u_file_t object must be free'd using
  *   m3u_file_free()
  * - Returns NULL in the event of an error */
-m3u_file_t *m3u_file_init(const char *path, size_t size)
+m3u_file_t *m3u_file_init(const char *path)
 {
-   m3u_file_entry_t *entries = NULL;
-   m3u_file_t *m3u_file      = NULL;
+   m3u_file_t *m3u_file = NULL;
    char m3u_path[PATH_MAX_LENGTH];
 
    m3u_path[0] = '\0';
 
    /* Sanity check */
-   if (string_is_empty(path) || (size < 1))
+   if (string_is_empty(path))
       return NULL;
 
    /* Get 'real' file path */
@@ -258,27 +269,17 @@ m3u_file_t *m3u_file_init(const char *path, size_t size)
       return NULL;
 
    /* Create m3u_file_t object */
-   m3u_file = (m3u_file_t*)calloc(1, sizeof(*m3u_file));
+   m3u_file = (m3u_file_t*)malloc(sizeof(*m3u_file));
 
    if (!m3u_file)
       return NULL;
 
-   /* Create m3u_file_entry_t array */
-   entries = (m3u_file_entry_t*)calloc(size, sizeof(*entries));
-
-   if (!entries)
-   {
-      free(m3u_file);
-      return NULL;
-   }
+   /* Initialise members */
+   m3u_file->path    = NULL;
+   m3u_file->entries = NULL;
 
    /* Copy file path */
-   m3u_file->path = strdup(m3u_path);
-
-   /* Set remaining values */
-   m3u_file->size     = 0;
-   m3u_file->capacity = size;
-   m3u_file->entries  = entries;
+   m3u_file->path    = strdup(m3u_path);
 
    /* Read existing file contents from
     * disk, if required */
@@ -327,15 +328,14 @@ void m3u_file_free(m3u_file_t *m3u_file)
    /* Free entries */
    if (m3u_file->entries)
    {
-      for (i = 0; i < m3u_file->size; i++)
+      for (i = 0; i < RBUF_LEN(m3u_file->entries); i++)
       {
          m3u_file_entry_t *entry = &m3u_file->entries[i];
          m3u_file_free_entry(entry);
       }
 
-      free(m3u_file->entries);
+      RBUF_FREE(m3u_file->entries);
    }
-   m3u_file->entries = NULL;
 
    free(m3u_file);
 }
@@ -357,17 +357,7 @@ size_t m3u_file_get_size(m3u_file_t *m3u_file)
    if (!m3u_file)
       return 0;
 
-   return m3u_file->size;
-}
-
-/* Returns maximum number of entries permitted
- * in M3U file */
-size_t m3u_file_get_capacity(m3u_file_t *m3u_file)
-{
-   if (!m3u_file)
-      return 0;
-
-   return m3u_file->capacity;
+   return RBUF_LEN(m3u_file->entries);
 }
 
 /* Fetches specified M3U file entry
@@ -378,8 +368,7 @@ bool m3u_file_get_entry(
 {
    if (!m3u_file ||
        !entry ||
-       (idx >= m3u_file->size) ||
-       !m3u_file->entries)
+       (idx >= RBUF_LEN(m3u_file->entries)))
       return false;
 
    *entry = &m3u_file->entries[idx];
@@ -393,30 +382,35 @@ bool m3u_file_get_entry(
 /* Setters */
 
 /* Adds specified entry to the M3U file
- * - Returns false if path is invalid, or M3U
- *   file capacity is exceeded */
+ * - Returns false if path is invalid, or
+ *   memory could not be allocated for the
+ *   entry */
 bool m3u_file_add_entry(
       m3u_file_t *m3u_file, const char *path, const char *label)
 {
    m3u_file_entry_t *entry = NULL;
+   size_t num_entries;
    char full_path[PATH_MAX_LENGTH];
 
    full_path[0] = '\0';
 
-   if (!m3u_file ||
-       !m3u_file->entries ||
-       (m3u_file->size >= m3u_file->capacity) ||
-       string_is_empty(path))
+   if (!m3u_file || string_is_empty(path))
       return false;
 
-   /* Get new entry at end of list */
-   entry = &m3u_file->entries[m3u_file->size];
+   /* Get current number of file entries */
+   num_entries = RBUF_LEN(m3u_file->entries);
 
-   if (!entry)
+   /* Attempt to allocate memory for new entry */
+   if (!RBUF_TRYFIT(m3u_file->entries, num_entries + 1))
       return false;
 
-   /* Ensure entry is free'd */
-   m3u_file_free_entry(entry);
+   /* Allocation successful - increment array size */
+   RBUF_RESIZE(m3u_file->entries, num_entries + 1);
+
+   /* Fetch entry at end of list, and zero-initialise
+    * members */
+   entry = &m3u_file->entries[num_entries];
+   memset(entry, 0, sizeof(*entry));
 
    /* Copy path and label */
    entry->path = strdup(path);
@@ -444,9 +438,6 @@ bool m3u_file_add_entry(
 
    entry->full_path = strdup(full_path);
 
-   /* Increment size counter */
-   m3u_file->size++;
-
    return true;
 }
 
@@ -460,14 +451,14 @@ void m3u_file_clear(m3u_file_t *m3u_file)
 
    if (m3u_file->entries)
    {
-      for (i = 0; i < m3u_file->size; i++)
+      for (i = 0; i < RBUF_LEN(m3u_file->entries); i++)
       {
          m3u_file_entry_t *entry = &m3u_file->entries[i];
          m3u_file_free_entry(entry);
       }
-   }
 
-   m3u_file->size = 0;
+      RBUF_FREE(m3u_file->entries);
+   }
 }
 
 /* Saving */
@@ -510,7 +501,7 @@ bool m3u_file_save(
       return false;
 
    /* Loop over entries */
-   for (i = 0; i < m3u_file->size; i++)
+   for (i = 0; i < RBUF_LEN(m3u_file->entries); i++)
    {
       m3u_file_entry_t *entry = &m3u_file->entries[i];
       char entry_path[PATH_MAX_LENGTH];
@@ -593,13 +584,18 @@ static int m3u_file_qsort_func(
 /* Sorts M3U file entries in alphabetical order */
 void m3u_file_qsort(m3u_file_t *m3u_file)
 {
-   if (!m3u_file ||
-       !m3u_file->entries ||
-       (m3u_file->size < 2))
+   size_t num_entries;
+
+   if (!m3u_file)
+      return;
+
+   num_entries = RBUF_LEN(m3u_file->entries);
+
+   if (num_entries < 2)
       return;
 
    qsort(
-         m3u_file->entries, m3u_file->size,
+         m3u_file->entries, num_entries,
          sizeof(m3u_file_entry_t),
          (int (*)(const void *, const void *))m3u_file_qsort_func);
 }

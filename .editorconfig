@@ -15,6 +15,11 @@ charset = utf-8
 indent_style = space
 indent_size = 3
 
+# 2 space indentation
+[*.{json,xml,yaml,yml}]
+indent_style = space
+indent_size = 2
+
 # Tab indentation
 [Makefile*]
 indent_style = tab

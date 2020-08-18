@@ -1,0 +1,56 @@
+Struct ordering
+---------------
+
+For POD-types, try to order structs as follows (first to last):
+
+* long double     (16 bytes [64bit x86], 12 bytes [32bit x86], 8 bytes)
+* double          (8 bytes)
+* int64_t         (8 bytes, 8 bytes [32bit ARM], 4 bytes [32bit x86])
+* uint64_t        (4 bytes [32bit], 8 bytes [32bit ARM], 8 bytes [64bit])
+* pointer         (4 bytes [32bit], 8 bytes [64bit])
+* intptr_t        (4 bytes [32bit], 8 bytes [64bit])
+* uintptr_t       (4 bytes [32bit], 8 bytes [64bit])
+* ptrdiff_t       (4 bytes [32bit], 8 bytes [64bit])
+* ssize_t         (4 bytes [32bit], 8 bytes [64bit])
+* size_t          (4 bytes [32bit], 8 bytes [64bit])
+* jmp_buf         (4 bytes)
+* long            (4 bytes [64bit Win], 8 bytes [64bit non-Win], 4 bytes [32bit])
+* int32_t         (4 bytes)
+* float           (4 bytes)
+* int             (4 bytes)
+* enum            (4 bytes)
+* int16_t         (2 bytes)
+* char            (1 byte)
+* bool            (1 byte)
+
+Struct members should be sorted by alignment. Therefore, structs
+should be sorted by the largest type inside them.
+
+For example, take a struct like this:
+
+typedef struct
+{
+   size_t capacity;
+   bool old_format;
+   bool compress;
+   bool fuzzy_archive_match;
+   bool autofix_paths;   
+   char path[PATH_MAX_LENGTH];
+   char base_content_directory[PATH_MAX_LENGTH];
+} playlist_config_t;
+
+size_t has the biggest alignment here, so 'struct playlist_config_t' inside a struct should come before or after size_t.
+
+*** BEST PRACTICES ***
+
+* If we have pointers and size variable pairs, it's best to interleave them to increase the probability they go in the same cacheline. It also makes the code more readable, that these two variables are connected.
+
+Example:
+
+struct a
+{
+   char* b;
+   size_t b_len;
+   char* c;
+   size_t c_len;
+};

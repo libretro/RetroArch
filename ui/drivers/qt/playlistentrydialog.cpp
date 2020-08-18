@@ -46,13 +46,13 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    ,m_databaseComboBox(new QComboBox(this))
    ,m_extensionArchiveCheckBox(new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES), this))
 {
-   QFormLayout *form = new QFormLayout();
-   QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-   QVBoxLayout *databaseVBoxLayout = new QVBoxLayout();
-   QHBoxLayout *pathHBoxLayout = new QHBoxLayout();
+   QFormLayout *form                = new QFormLayout();
+   QDialogButtonBox *buttonBox      = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+   QVBoxLayout *databaseVBoxLayout  = new QVBoxLayout();
+   QHBoxLayout *pathHBoxLayout      = new QHBoxLayout();
    QHBoxLayout *extensionHBoxLayout = new QHBoxLayout();
-   QLabel *databaseLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS), this);
-   QToolButton *pathPushButton = new QToolButton(this);
+   QLabel *databaseLabel            = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS), this);
+   QToolButton *pathPushButton      = new QToolButton(this);
 
    pathPushButton->setText(QStringLiteral("..."));
 
@@ -121,8 +121,13 @@ void PlaylistEntryDialog::loadPlaylistOptions()
    m_coreComboBox->clear();
    m_databaseComboBox->clear();
 
-   m_coreComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK));
-   m_databaseComboBox->addItem(QString("<") + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) + ">", QFileInfo(m_mainwindow->getCurrentPlaylistPath()).fileName().remove(".lpl"));
+   m_coreComboBox->addItem(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK));
+   m_databaseComboBox->addItem(
+           QString("<") 
+         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) 
+         + ">",
+         QFileInfo(m_mainwindow->getCurrentPlaylistPath()).fileName().remove(".lpl"));
 
    core_info_get_list(&core_info_list);
 
@@ -206,17 +211,19 @@ void PlaylistEntryDialog::setEntryValues(
 
    if (contentHash.isEmpty())
    {
-      m_nameLineEdit->setText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE));
-      m_pathLineEdit->setText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE));
+      m_nameLineEdit->setText(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE));
+      m_pathLineEdit->setText(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE));
       m_nameLineEdit->setEnabled(false);
       m_pathLineEdit->setEnabled(false);
    }
    else
    {
-      m_nameLineEdit->setEnabled(true);
-      m_pathLineEdit->setEnabled(true);
       m_nameLineEdit->setText(contentHash.value("label"));
       m_pathLineEdit->setText(contentHash.value("path"));
+      m_nameLineEdit->setEnabled(true);
+      m_pathLineEdit->setEnabled(true);
    }
 
    for (i = 0; i < m_coreComboBox->count(); i++)
@@ -291,7 +298,6 @@ bool PlaylistEntryDialog::showDialog(const QHash<QString, QString> &hash)
 
    if (exec() == QDialog::Accepted)
       return true;
-
    return false;
 }
 

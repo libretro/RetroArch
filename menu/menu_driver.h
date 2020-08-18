@@ -28,6 +28,7 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
+#include <lists/string_list.h>
 
 #include "menu_defines.h"
 #include "menu_input.h"
@@ -66,6 +67,7 @@ enum menu_settings_type
    MENU_VIDEO_TAB,
    MENU_IMAGES_TAB,
    MENU_NETPLAY_TAB,
+   MENU_EXPLORE_TAB,
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
@@ -81,6 +83,8 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD,
    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM,
@@ -121,6 +125,7 @@ enum menu_settings_type
    MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
    MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
    MENU_SETTING_PLAYLIST_MANAGER_SORT_MODE,
+   MENU_BLUETOOTH,
    MENU_WIFI,
    MENU_ROOM,
    MENU_ROOM_LAN,
@@ -294,7 +299,6 @@ typedef struct menu_ctx_driver
          enum menu_input_pointer_gesture gesture,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
-   bool (*get_load_content_animation_data)(void *userdata, uintptr_t *icon, char **playlist_name);
    /* This will be invoked whenever a menu entry action
     * (menu_entry_action()) is performed */
    int (*entry_action)(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
@@ -302,12 +306,29 @@ typedef struct menu_ctx_driver
 
 typedef struct
 {
-   unsigned rpl_entry_selection_ptr;
-   size_t                     core_len;
    uint64_t state;
 
+   /* Holds a list of search terms that may be
+    * used to filter the currently displayed
+    * menu list */
+   struct string_list *search_terms;
+
+   const menu_ctx_driver_t *driver_ctx;
+   void *userdata;
    char *core_buf;
-   char menu_state_msg[1024];
+
+   size_t                     core_len;
+   /* This is used for storing intermediary variables
+    * that get used later on during menu actions -
+    * for instance, selecting a shader pass for a shader
+    * slot */
+   struct
+   {
+      unsigned                unsigned_var;
+   } scratchpad;
+   unsigned rpl_entry_selection_ptr;
+
+   char menu_state_msg[8192];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -318,17 +339,6 @@ typedef struct
    char db_playlist_file[PATH_MAX_LENGTH];
    char filebrowser_label[PATH_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
-
-   /* This is used for storing intermediary variables
-    * that get used later on during menu actions -
-    * for instance, selecting a shader pass for a shader
-    * slot */
-   struct
-   {
-      unsigned                unsigned_var;
-   } scratchpad;
-   const menu_ctx_driver_t *driver_ctx;
-   void *userdata;
 } menu_handle_t;
 
 typedef struct menu_content_ctx_defer_info
@@ -377,30 +387,30 @@ typedef struct menu_ctx_iterate
 
 typedef struct menu_ctx_environment
 {
-   enum menu_environ_cb type;
    void *data;
+   enum menu_environ_cb type;
 } menu_ctx_environment_t;
 
 typedef struct menu_ctx_pointer
 {
+   menu_file_list_cbs_t *cbs;
+   menu_entry_t *entry;
    unsigned x;
    unsigned y;
    unsigned ptr;
    unsigned action;
-   enum menu_input_pointer_gesture gesture;
    int retcode;
-   menu_file_list_cbs_t *cbs;
-   menu_entry_t *entry;
+   enum menu_input_pointer_gesture gesture;
 } menu_ctx_pointer_t;
 
 typedef struct menu_ctx_bind
 {
+   menu_file_list_cbs_t *cbs;
    const char *path;
    const char *label;
-   unsigned type;
    size_t idx;
    int retcode;
-   menu_file_list_cbs_t *cbs;
+   unsigned type;
 } menu_ctx_bind_t;
 
 /**
@@ -419,9 +429,6 @@ const char *menu_driver_ident(void);
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info);
-
-bool menu_driver_get_load_content_animation_data(
-      uintptr_t *icon, char **playlist_name);
 
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
       retro_time_t current_time);
@@ -473,6 +480,24 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
+
+#if defined(HAVE_LIBRETRODB)
+uintptr_t menu_explore_get_entry_icon(unsigned type);
+void menu_explore_context_init(void);
+void menu_explore_context_deinit(void);
+void menu_explore_free(void);
+#endif
+
+/* Returns true if search filter is enabled
+ * for the specified menu list */
+bool menu_driver_search_filter_enabled(const char *label, unsigned type);
+bool menu_driver_search_push(const char *search_term);
+bool menu_driver_search_pop(void);
+void menu_driver_search_clear(void);
+struct string_list *menu_driver_search_get_terms(void);
+/* Convenience function: Appends list of current
+ * search terms to specified string */
+void menu_driver_search_append_terms_string(char *s, size_t len);
 
 menu_handle_t *menu_driver_get_ptr(void);
 

@@ -211,8 +211,6 @@ typedef struct
 
 void input_overlay_free_overlay(struct overlay *overlay);
 
-bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
-
 void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
 
 RETRO_END_DECLS

@@ -29,7 +29,7 @@
 RETRO_BEGIN_DECLS
 
 /* Default maximum playlist size */
-#define COLLECTION_SIZE 99999
+#define COLLECTION_SIZE 0x7FFFFFFF
 
 typedef struct content_playlist playlist_t;
 
@@ -99,7 +99,6 @@ struct playlist_entry
    char *runtime_str;
    char *last_played_str;
    struct string_list *subsystem_roms;
-   enum playlist_runtime_status runtime_status;
    unsigned runtime_hours;
    unsigned runtime_minutes;
    unsigned runtime_seconds;
@@ -112,18 +111,48 @@ struct playlist_entry
    unsigned last_played_hour;
    unsigned last_played_minute;
    unsigned last_played_second;
+   enum playlist_runtime_status runtime_status;
 };
+
+/* Holds all configuration parameters required
+ * when initialising/saving playlists */
+typedef struct
+{
+   size_t capacity;
+   bool old_format;
+   bool compress;
+   bool fuzzy_archive_match;
+   bool autofix_paths;   
+   char path[PATH_MAX_LENGTH];
+   char base_content_directory[PATH_MAX_LENGTH];
+} playlist_config_t;
+
+/* Convenience function: copies specified playlist
+ * path to specified playlist configuration object */
+void playlist_config_set_path(playlist_config_t *config, const char *path);
+
+/* Convenience function: copies base content directory
+ * path to specified playlist configuration object */
+void playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
+
+/* Creates a copy of the specified playlist configuration.
+ * Returns false in the event of an error */
+bool playlist_config_copy(const playlist_config_t *src, playlist_config_t *dst);
+
+/* Returns internal playlist configuration object
+ * of specified playlist.
+ * Returns NULL it the event of an error. */
+playlist_config_t *playlist_get_config(playlist_t *playlist);
 
 /**
  * playlist_init:
- * @path            	   : Path to playlist contents file.
- * @size                : Maximum capacity of playlist size.
+ * @config            	: Playlist configuration object.
  *
  * Creates and initializes a playlist.
  *
  * Returns: handle to new playlist if successful, otherwise NULL
  **/
-playlist_t *playlist_init(const char *path, size_t size);
+playlist_t *playlist_init(const playlist_config_t *config);
 
 /**
  * playlist_free:
@@ -189,8 +218,7 @@ void playlist_delete_index(playlist_t *playlist,
  * matching 'search_path'
  **/
 void playlist_delete_by_path(playlist_t *playlist,
-      const char *search_path,
-      bool fuzzy_archive_match);
+      const char *search_path);
 
 /**
  * playlist_resolve_path:
@@ -205,24 +233,19 @@ void playlist_delete_by_path(playlist_t *playlist,
  * install (iOS)
  **/
 void playlist_resolve_path(enum playlist_file_mode mode,
-      char *path, size_t size);
+      char *path, size_t len);
 
 /**
  * playlist_push:
  * @playlist        	   : Playlist handle.
- * @path                : Path of new playlist entry.
- * @core_path           : Core path of new playlist entry.
- * @core_name           : Core name of new playlist entry.
  *
  * Push entry to top of playlist.
  **/
 bool playlist_push(playlist_t *playlist,
-      const struct playlist_entry *entry,
-      bool fuzzy_archive_match);
+      const struct playlist_entry *entry);
 
 bool playlist_push_runtime(playlist_t *playlist,
-      const struct playlist_entry *entry,
-      bool fuzzy_archive_match);
+      const struct playlist_entry *entry);
 
 void playlist_update(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry);
@@ -238,19 +261,16 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
-      const struct playlist_entry **entry,
-      bool fuzzy_archive_match);
+      const struct playlist_entry **entry);
 
 bool playlist_entry_exists(playlist_t *playlist,
-      const char *path, bool fuzzy_archive_match);
+      const char *path);
 
 char *playlist_get_conf_path(playlist_t *playlist);
 
 uint32_t playlist_get_size(playlist_t *playlist);
 
-void playlist_write_file(
-      playlist_t *playlist,
-      bool use_old_format, bool compress);
+void playlist_write_file(playlist_t *playlist);
 
 void playlist_write_runtime_file(playlist_t *playlist);
 
@@ -261,30 +281,23 @@ void playlist_free_cached(void);
 playlist_t *playlist_get_cached(void);
 
 /* If current on-disk playlist file referenced
- * by 'path' does not match requested 'old format'
- * or 'compression' state, file will be updated
- * automatically
+ * by 'config->path' does not match requested
+ * 'old format' or 'compression' state, file will
+ * be updated automatically
  * > Since this function is called whenever a
  *   playlist is browsed via the menu, this is
  *   a simple method for ensuring that files
  *   are always kept synced with user settings */
-bool playlist_init_cached(
-      const char *path, size_t size,
-      bool use_old_format, bool compress);
+bool playlist_init_cached(const playlist_config_t *config);
 
 void command_playlist_push_write(
       playlist_t *playlist,
-      const struct playlist_entry *entry,
-      bool fuzzy_archive_match,
-      bool use_old_format,
-      bool compress);
+      const struct playlist_entry *entry);
 
 void command_playlist_update_write(
       playlist_t *playlist,
       size_t idx,
-      const struct playlist_entry *entry,
-      bool use_old_format,
-      bool compress);
+      const struct playlist_entry *entry);
 
 /* Returns true if specified playlist index matches
  * specified content/core paths */
@@ -296,7 +309,7 @@ bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
 bool playlist_entries_are_equal(
       const struct playlist_entry *entry_a,
       const struct playlist_entry *entry_b,
-      bool fuzzy_archive_match);
+      const playlist_config_t *config);
 
 void playlist_get_crc32(playlist_t *playlist, size_t idx,
       const char **crc32);
@@ -337,6 +350,8 @@ core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry);
  * Returns NULL if playlist does not have a valid
  * default core association */
 core_info_t *playlist_get_default_core_info(playlist_t* playlist);
+
+void playlist_set_cached_external(playlist_t* pl);
 
 RETRO_END_DECLS
 

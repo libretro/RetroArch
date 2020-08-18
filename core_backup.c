@@ -293,9 +293,8 @@ bool core_backup_get_backup_crc(char *backup_path, uint32_t *crc)
             string_list_free(metadata_list);
             metadata_list = NULL;
 
-            return true;
          }
-         break;
+         return true;
       case CORE_BACKUP_TYPE_LIB:
          {
             intfstream_t *backup_file = NULL;
@@ -536,23 +535,27 @@ core_backup_list_t *core_backup_list_init(
    dir_list_sort(dir_list, true);
 
    /* Create core backup list */
-   backup_list = (core_backup_list_t*)calloc(1, sizeof(*backup_list));
+   backup_list = (core_backup_list_t*)malloc(sizeof(*backup_list));
 
    if (!backup_list)
       goto error;
+
+   backup_list->entries  = NULL;
+   backup_list->capacity = 0;
+   backup_list->size     = 0;
 
    /* Create entries array
     * (Note: Set this to the full size of the directory
     * list - this may be larger than we need, but saves
     * many inefficiencies later)   */
-   entries = (core_backup_list_entry_t*)calloc(dir_list->size, sizeof(*entries));
+   entries               = (core_backup_list_entry_t*)
+      calloc(dir_list->size, sizeof(*entries));
 
    if (!entries)
       goto error;
 
    backup_list->entries  = entries;
    backup_list->capacity = dir_list->size;
-   backup_list->size     = 0;
 
    /* Loop over backup files and parse file names */
    for (i = 0; i < dir_list->size; i++)

@@ -28,7 +28,7 @@
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
-#define gl_raster_font_emit(c, vx, vy) do { \
+#define GL_RASTER_FONT_EMIT(c, vx, vy) \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
@@ -38,8 +38,7 @@
    font_color[      4 * (6 * i + c) + 2] = color[2]; \
    font_color[      4 * (6 * i + c) + 3] = color[3]; \
    font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]; \
-} while(0)
+   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -91,9 +90,8 @@ static bool gl_raster_font_upload_atlas_components_4(gl_raster_t *font)
    GLint  gl_internal                   = GL_RGBA;
    GLenum gl_format                     = GL_RGBA;
    size_t ncomponents                   = 4;
-   uint8_t       *tmp                   = NULL;
-
-   tmp = (uint8_t*)calloc(font->tex_height, font->tex_width * ncomponents);
+   uint8_t       *tmp                   = (uint8_t*)
+      calloc(font->tex_height, font->tex_width * ncomponents);
 
    for (i = 0; i < font->atlas->height; ++i)
    {
@@ -110,7 +108,8 @@ static bool gl_raster_font_upload_atlas_components_4(gl_raster_t *font)
       break;
    }
 
-   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal, font->tex_width, font->tex_height,
+   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
+         font->tex_width, font->tex_height,
          0, gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
@@ -129,9 +128,9 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font)
 #if defined(GL_VERSION_3_0)
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
 
-    if (font->gl->core_context_in_use ||
-        (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
-         hwr->version_major >= 3))
+   if ((font->gl && font->gl->core_context_in_use) ||
+         (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
+          hwr->version_major >= 3))
    {
       GLint swizzle[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
       glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
@@ -170,7 +169,8 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font)
          break;
    }
 
-   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal, font->tex_width, font->tex_height,
+   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
+         font->tex_width, font->tex_height,
          0, gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
@@ -218,7 +218,8 @@ static void *gl_raster_font_init_font(void *data,
 
    font->atlas->dirty = false;
 
-   glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+   if (font->gl)
+      glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
    return font;
 
@@ -268,9 +269,12 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font,
       font->atlas->dirty   = false;
    }
 
-   font->gl->shader->set_coords(font->gl->shader_data, coords);
-   font->gl->shader->set_mvp(font->gl->shader_data,
-         &font->gl->mvp_no_rot);
+   if (font->gl && font->gl->shader)
+   {
+      font->gl->shader->set_coords(font->gl->shader_data, coords);
+      font->gl->shader->set_mvp(font->gl->shader_data,
+            &font->gl->mvp_no_rot);
+   }
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
@@ -330,13 +334,13 @@ static void gl_raster_font_render_line(
          width  = glyph->width;
          height = glyph->height;
 
-         gl_raster_font_emit(0, 0, 1); /* Bottom-left */
-         gl_raster_font_emit(1, 1, 1); /* Bottom-right */
-         gl_raster_font_emit(2, 0, 0); /* Top-left */
+         GL_RASTER_FONT_EMIT(0, 0, 1); /* Bottom-left */
+         GL_RASTER_FONT_EMIT(1, 1, 1); /* Bottom-right */
+         GL_RASTER_FONT_EMIT(2, 0, 0); /* Top-left */
 
-         gl_raster_font_emit(3, 1, 0); /* Top-right */
-         gl_raster_font_emit(4, 0, 0); /* Top-left */
-         gl_raster_font_emit(5, 1, 1); /* Bottom-right */
+         GL_RASTER_FONT_EMIT(3, 1, 0); /* Top-right */
+         GL_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
+         GL_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
 
          i++;
 
@@ -408,7 +412,7 @@ static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
 
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
-   if (font->gl->shader && font->gl->shader->use)
+   if (font->gl && font->gl->shader && font->gl->shader->use)
       font->gl->shader->use(font->gl,
             font->gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 }
@@ -482,36 +486,38 @@ static void gl_raster_font_render_msg(
    else
       gl_raster_font_setup_viewport(width, height, font, full_screen);
 
-   if (!string_is_empty(msg) && font->gl
-         && font->font_data  && font->font_driver)
+   if (font->gl)
    {
-      if (drop_x || drop_y)
+      if (    !string_is_empty(msg)
+            && font->font_data  
+            && font->font_driver)
       {
-         GLfloat color_dark[4];
+         if (drop_x || drop_y)
+         {
+            GLfloat color_dark[4];
 
-         color_dark[0] = color[0] * drop_mod;
-         color_dark[1] = color[1] * drop_mod;
-         color_dark[2] = color[2] * drop_mod;
-         color_dark[3] = color[3] * drop_alpha;
+            color_dark[0] = color[0] * drop_mod;
+            color_dark[1] = color[1] * drop_mod;
+            color_dark[2] = color[2] * drop_mod;
+            color_dark[3] = color[3] * drop_alpha;
 
-         if (font->gl)
             gl_raster_font_render_message(font, msg, scale, color_dark,
                   x + scale * drop_x / font->gl->vp.width, y +
-                  scale * drop_y / font->gl->vp.height, text_align);
-      }
+                      scale * drop_y / font->gl->vp.height, text_align);
+         }
 
-      if (font->gl)
          gl_raster_font_render_message(font, msg, scale, color,
                x, y, text_align);
-   }
+      }
 
-   if (!font->block && font->gl)
-   {
-      /* restore viewport */
-      glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
-
-      glDisable(GL_BLEND);
-      video_driver_set_viewport(width, height, false, true);
+      if (!font->block)
+      {
+         /* restore viewport */
+         glBindTexture(GL_TEXTURE_2D,
+               font->gl->texture[font->gl->tex_index]);
+         glDisable(GL_BLEND);
+         video_driver_set_viewport(width, height, false, true);
+      }
    }
 }
 

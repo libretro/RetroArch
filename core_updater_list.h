@@ -32,10 +32,6 @@
 
 RETRO_BEGIN_DECLS
 
-/* Default maximum number of entries in
- * a core updater list */
-#define CORE_UPDATER_LIST_SIZE 9999
-
 /* Holds all date info for a core file
  * on the buildbot */
 typedef struct
@@ -56,9 +52,9 @@ typedef struct
    char *display_name;
    char *description;
    struct string_list *licenses_list;
-   bool is_experimental;
+   core_updater_list_date_t date;   /* unsigned alignment */
    uint32_t crc;
-   core_updater_list_date_t date;
+   bool is_experimental;
 } core_updater_list_entry_t;
 
 /* Prevent direct access to core_updater_list_t
@@ -69,11 +65,10 @@ typedef struct core_updater_list core_updater_list_t;
 /* Initialisation / De-Initialisation */
 /**************************************/
 
-/* Creates a new, empty core updater list with a
- * maximum number of 'max_size' entries.
+/* Creates a new, empty core updater list.
  * Returns a handle to a new core_updater_list_t object
  * on success, otherwise returns NULL. */
-core_updater_list_t *core_updater_list_init(size_t max_size);
+core_updater_list_t *core_updater_list_init(void);
 
 /* Resets (removes all entries of) specified core
  * updater list */
@@ -89,7 +84,7 @@ void core_updater_list_free(core_updater_list_t *core_list);
 /* Creates a new, empty cached core updater list
  * (i.e. 'global' list).
  * Returns false in the event of an error. */
-bool core_updater_list_init_cached(size_t max_size);
+bool core_updater_list_init_cached(void);
 
 /* Fetches cached core updater list */
 core_updater_list_t *core_updater_list_get_cached(void);
@@ -103,10 +98,6 @@ void core_updater_list_free_cached(void);
 
 /* Returns number of entries in core updater list */
 size_t core_updater_list_size(core_updater_list_t *core_list);
-
-/* Returns maximum allowed number of entries in core
- * updater list */
-size_t core_updater_list_capacity(core_updater_list_t *core_list);
 
 /* Fetches core updater list entry corresponding
  * to the specified entry index.

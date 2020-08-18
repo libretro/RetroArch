@@ -138,7 +138,9 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
 {
    unsigned y;
    xshm_t      *xshm  = (xshm_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive = video_info->menu_is_alive;
+#endif
 
    for (y = 0; y < height; y++)
       memcpy(xshm->fbptr + sizeof(uint32_t)*xshm->width*y,
@@ -160,70 +162,23 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
 }
 
 static void xshm_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
-
-static bool xshm_gfx_alive(void *data)
-{
-   return true;
-}
-
-static bool xshm_gfx_focus(void *data)
-{
-   return true;
-}
-
-static bool xshm_gfx_suppress_screensaver(void *data, bool enable)
-{
-   return false;
-}
-
-static void xshm_gfx_free(void *data)
-{
-
-}
-
-static void xshm_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
-{
-
-}
-
-static void xshm_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
-{
-
-}
-
-static void xshm_poke_apply_state_changes(void *data)
-{
-
-}
-
+static bool xshm_gfx_alive(void *data) { return true; }
+static bool xshm_gfx_focus(void *data) { return true; }
+static bool xshm_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static void xshm_gfx_free(void *data) { }
+static void xshm_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling) { }
+static void xshm_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx) { }
+static void xshm_poke_apply_state_changes(void *data) { }
 static void xshm_poke_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
-{
-
-}
-
+      unsigned width, unsigned height, float alpha) { }
 static void xshm_poke_texture_enable(void *data,
-      bool enable, bool full_screen)
-{
-
-}
-
+      bool enable, bool full_screen) { }
 static void xshm_poke_set_osd_msg(void *data,
       const char *msg,
-      const void *params, void *font)
-{
-}
-
-static void xshm_show_mouse(void *data, bool state)
-{
-
-}
-
-static void xshm_grab_mouse_toggle(void *data)
-{
-
-}
+      const void *params, void *font) { }
+static void xshm_show_mouse(void *data, bool state) { }
+static void xshm_grab_mouse_toggle(void *data) { }
 
 static video_poke_interface_t xshm_video_poke_interface = {
    NULL, /* get_flags */
@@ -249,21 +204,9 @@ static video_poke_interface_t xshm_video_poke_interface = {
    NULL                    /* get_hw_render_interface */
 };
 
-static void xshm_gfx_poke_interface(void *data, const video_poke_interface_t **iface)
-{
-   (void)data;
-   *iface = &xshm_video_poke_interface;
-}
-
+static void xshm_gfx_poke_interface(void *data, const video_poke_interface_t **iface) { *iface = &xshm_video_poke_interface; }
 static bool xshm_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+      enum rarch_shader_type type, const char *path) { return false; }
 
 video_driver_t video_xshm = {
    xshm_gfx_init,

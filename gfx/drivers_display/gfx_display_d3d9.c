@@ -125,7 +125,7 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
    const float *tex_coord        = NULL;
    const float *color            = NULL;
 
-   if (!d3d || !draw || draw->pipeline.id)
+   if (!d3d || !draw || draw->pipeline_id)
       return;
 
    dev                           = d3d->dev;
@@ -233,7 +233,7 @@ static void gfx_display_d3d9_draw_pipeline(gfx_display_ctx_draw_t *draw,
    if (ca)
       draw->coords                   = (struct video_coords*)&ca->coords;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
@@ -247,7 +247,7 @@ static void gfx_display_d3d9_draw_pipeline(gfx_display_ctx_draw_t *draw,
             uniform_param.enabled              = true;
             uniform_param.lookup.enable        = true;
             uniform_param.lookup.add_prefix    = true;
-            uniform_param.lookup.idx           = draw->pipeline.id;
+            uniform_param.lookup.idx           = draw->pipeline_id;
             uniform_param.lookup.type          = SHADER_PROGRAM_VERTEX;
             uniform_param.type                 = UNIFORM_1F;
             uniform_param.lookup.ident         = "time";

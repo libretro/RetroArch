@@ -146,7 +146,6 @@ static float ozone_border_1_nord[16] = COLOR_HEX_TO_FLOAT(0x88C0D0, 1.0f);
 static float ozone_border_0_gruvbox_dark[16] = COLOR_HEX_TO_FLOAT(0xAF3A03, 1.0f);
 static float ozone_border_1_gruvbox_dark[16] = COLOR_HEX_TO_FLOAT(0xFE8019, 1.0f);
 
-
 ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),
    ozone_background_libretro_running_light,
@@ -281,15 +280,11 @@ ozone_theme_t *ozone_themes[] = {
    &ozone_theme_gruvbox_dark
 };
 
-/* TODO/FIXME - all of the public global variables below are
- * referenced outside */
-
+/* TODO/FIXME - global variables referenced outside */
 unsigned ozone_themes_count                 = sizeof(ozone_themes) / sizeof(ozone_themes[0]);
 unsigned last_color_theme                   = 0;
-
 bool last_use_preferred_system_color_theme  = false;
 ozone_theme_t *ozone_default_theme          = &ozone_theme_dark; /* also used as a tag for cursor animation */
-
 /* Enable runtime configuration of framebuffer
  * opacity */
 float last_framebuffer_opacity               = -1.0f;
@@ -362,7 +357,8 @@ void ozone_set_background_running_opacity(
    if (!ozone || !ozone->theme->background_libretro_running)
       return;
 
-   background = ozone->theme->background_libretro_running;
+   background                      = 
+      ozone->theme->background_libretro_running;
 
    /* When content is running, background is a
     * gradient that from top to bottom transitions
@@ -371,8 +367,8 @@ void ozone_set_background_running_opacity(
     *   is 0.900. At this setting:
     *   - Background top has an alpha of 1.0
     *   - Background bottom has an alpha of 0.75 */
-   background_running_alpha_top = framebuffer_opacity / 0.9f;
-   background_running_alpha_top = (background_running_alpha_top > 1.0f) ?
+   background_running_alpha_top    = framebuffer_opacity / 0.9f;
+   background_running_alpha_top    = (background_running_alpha_top > 1.0f) ?
          1.0f : (background_running_alpha_top < 0.0f) ?
                0.0f : background_running_alpha_top;
 
@@ -381,10 +377,10 @@ void ozone_set_background_running_opacity(
          1.0f : (background_running_alpha_bottom < 0.0f) ?
                0.0f : background_running_alpha_bottom;
 
-   background[11] = background_running_alpha_top;
-   background[15] = background_running_alpha_top;
-   background[3]  = background_running_alpha_bottom;
-   background[7]  = background_running_alpha_bottom;
+   background[11]                  = background_running_alpha_top;
+   background[15]                  = background_running_alpha_top;
+   background[3]                   = background_running_alpha_bottom;
+   background[7]                   = background_running_alpha_bottom;
 
-   last_framebuffer_opacity = framebuffer_opacity;
+   last_framebuffer_opacity        = framebuffer_opacity;
 }

@@ -41,7 +41,7 @@
    { \
       char *pos = NULL; \
       strlcpy(s, label, len); \
-      while((pos = strchr(s, '_'))) \
+      while ((pos = strchr(s, '_'))) \
          *pos = ' '; \
    }
 
@@ -72,6 +72,23 @@
 { \
    strlcpy(s, msg_hash_to_str(lbl), len); \
    return 1; \
+}
+
+static void action_get_title_fill_search_filter_default(
+      char *s, enum msg_hash_enums lbl, size_t len)
+{
+   /* Copy label value */
+   strlcpy(s, msg_hash_to_str(lbl), len);
+
+   /* Add current search terms */
+   menu_driver_search_append_terms_string(s, len);
+}
+
+#define DEFAULT_TITLE_SEARCH_FILTER_MACRO(func_name, lbl) \
+  static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
+{ \
+   action_get_title_fill_search_filter_default(s, lbl, len); \
+   return 0; \
 }
 
 static int action_get_title_action_generic(
@@ -169,7 +186,7 @@ static int action_get_title_dropdown_item(
    if (string_is_empty(path))
       return 0;
 
-   if (string_starts_with(path, "core_option_"))
+   if (string_starts_with_size(path, "core_option_", STRLEN_CONST("core_option_")))
    {
       /* This is a core options item */
       struct string_list *tmp_str_list = string_split(path, "_");
@@ -328,6 +345,9 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
    else
       strlcpy(s, playlist_file, len);
 
+   /* Add current search terms */
+   menu_driver_search_append_terms_string(s, len);
+
    return 0;
 }
 
@@ -420,6 +440,61 @@ error:
    return 0;
 }
 
+static int action_get_title_dropdown_input_description_common(
+      const char *input_name, unsigned port, char *s, size_t len)
+{
+   const char *input_label_ptr = input_name;
+   char input_label[256];
+
+   input_label[0] = '\0';
+
+   if (!string_is_empty(input_label_ptr))
+   {
+      /* Strip off 'Auto:' prefix, if required */
+      if (string_starts_with_size(input_label_ptr, "Auto:",
+            STRLEN_CONST("Auto:")))
+         input_label_ptr += STRLEN_CONST("Auto:");
+
+      strlcpy(input_label, input_label_ptr,
+            sizeof(input_label));
+
+      string_trim_whitespace_left(input_label);
+   }
+
+   /* Sanity check */
+   if (string_is_empty(input_label))
+      strlcpy(input_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+            sizeof(input_label));
+
+   /* Build title string */
+   snprintf(s, len, "%s #%u -  %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+         port + 1,
+         input_label);
+
+   return 1;
+}
+
+static int action_get_title_dropdown_input_description(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   unsigned port = (menu_type - MENU_SETTINGS_INPUT_DESC_BEGIN) /
+         (RARCH_FIRST_CUSTOM_BIND + 8);
+
+   return action_get_title_dropdown_input_description_common(
+      path, port, s, len);
+}
+
+static int action_get_title_dropdown_input_description_kbd(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   unsigned port = (menu_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) /
+         RARCH_FIRST_CUSTOM_BIND;
+
+   return action_get_title_dropdown_input_description_common(
+      path, port, s, len);
+}
+
 DEFAULT_TITLE_MACRO(action_get_quick_menu_override_options,     MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_user_accounts_cheevos_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS)
 DEFAULT_TITLE_MACRO(action_get_user_accounts_youtube_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE)
@@ -431,12 +506,10 @@ DEFAULT_TITLE_MACRO(action_get_online_updater_list,             MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_netplay_list,                    MENU_ENUM_LABEL_VALUE_NETPLAY)
 DEFAULT_TITLE_MACRO(action_get_online_thumbnails_updater_list,  MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_online_pl_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST)
-DEFAULT_TITLE_MACRO(action_get_core_updater_list,               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_core_manager_list,               MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
 DEFAULT_TITLE_MACRO(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
 DEFAULT_TITLE_MACRO(action_get_core_options_list,               MENU_ENUM_LABEL_VALUE_CORE_OPTIONS)
-DEFAULT_TITLE_MACRO(action_get_load_recent_list,                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY)
 DEFAULT_TITLE_MACRO(action_get_quick_menu_list,                 MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_input_remapping_options_list,    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_shader_options_list,             MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS)
@@ -470,6 +543,7 @@ DEFAULT_TITLE_MACRO(action_get_cheat_details_settings_list,     MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_cheat_search_settings_list,      MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_display_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_views_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS)
 #ifdef HAVE_VIDEO_LAYOUT
 DEFAULT_TITLE_MACRO(action_get_onscreen_video_layout_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS)
@@ -485,6 +559,7 @@ DEFAULT_TITLE_MACRO(action_get_power_management_settings_list,  MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_menu_sounds_list,                MENU_ENUM_LABEL_VALUE_MENU_SOUNDS)
 DEFAULT_TITLE_MACRO(action_get_menu_file_browser_settings_list, MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_retro_achievements_settings_list,MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_bluetooth_settings_list,         MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_wifi_settings_list,              MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_network_hosting_settings_list,           MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_subsystem_settings_list,           MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS)
@@ -518,10 +593,6 @@ DEFAULT_TITLE_MACRO(action_get_network_information_list,        MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_settings_list,                   MENU_ENUM_LABEL_VALUE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_title_information_list,          MENU_ENUM_LABEL_VALUE_INFORMATION_LIST)
 DEFAULT_TITLE_MACRO(action_get_title_information,               MENU_ENUM_LABEL_VALUE_INFORMATION)
-DEFAULT_TITLE_MACRO(action_get_title_goto_favorites,            MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)
-DEFAULT_TITLE_MACRO(action_get_title_goto_image,                MENU_ENUM_LABEL_VALUE_GOTO_IMAGES)
-DEFAULT_TITLE_MACRO(action_get_title_goto_music,                MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
-DEFAULT_TITLE_MACRO(action_get_title_goto_video,                MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
 DEFAULT_TITLE_MACRO(action_get_title_collection,                MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
 DEFAULT_TITLE_MACRO(action_get_title_deferred_core_list,        MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
 DEFAULT_TITLE_MACRO(action_get_title_dropdown_resolution_item,  MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION)
@@ -598,6 +669,13 @@ DEFAULT_TITLE_MACRO(action_get_title_switch_cpu_profile,          MENU_ENUM_LABE
 DEFAULT_TITLE_MACRO(action_get_title_switch_gpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE)
 DEFAULT_TITLE_MACRO(action_get_title_switch_backlight_control,    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL)
 #endif
+
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_history_list,   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_favorites_list, MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_images_list,    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_music_list,     MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_video_list,     MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 
 static int action_get_title_generic(char *s, size_t len, const char *path,
       const char *text)
@@ -676,27 +754,36 @@ static int action_get_title_group_settings(const char *path, const char *label,
    {
       enum msg_hash_enums type;
       enum msg_hash_enums val;
+      bool is_playlist_tab;
    } title_info_list_t;
 
+   /* Note: MENU_ENUM_LABEL_HORIZONTAL_MENU *is* a playlist
+    * tab, but its actual title is set elsewhere - so treat
+    * it as a generic top-level item */
    title_info_list_t info_list[] = {
-      {MENU_ENUM_LABEL_MAIN_MENU,         MENU_ENUM_LABEL_VALUE_MAIN_MENU}       ,
-      {MENU_ENUM_LABEL_HISTORY_TAB,       MENU_ENUM_LABEL_VALUE_HISTORY_TAB}     ,
-      {MENU_ENUM_LABEL_FAVORITES_TAB,     MENU_ENUM_LABEL_VALUE_FAVORITES_TAB}   ,
-      {MENU_ENUM_LABEL_IMAGES_TAB,        MENU_ENUM_LABEL_VALUE_IMAGES_TAB   }   ,
-      {MENU_ENUM_LABEL_MUSIC_TAB,         MENU_ENUM_LABEL_VALUE_MUSIC_TAB    }   ,
-      {MENU_ENUM_LABEL_VIDEO_TAB,         MENU_ENUM_LABEL_VALUE_VIDEO_TAB    }   ,
-      {MENU_ENUM_LABEL_SETTINGS_TAB,      MENU_ENUM_LABEL_VALUE_SETTINGS_TAB }   ,
-      {MENU_ENUM_LABEL_PLAYLISTS_TAB,     MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB}   ,
-      {MENU_ENUM_LABEL_ADD_TAB,           MENU_ENUM_LABEL_VALUE_ADD_TAB      }   ,
-      {MENU_ENUM_LABEL_NETPLAY_TAB,       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB  }   ,
-      {MENU_ENUM_LABEL_HORIZONTAL_MENU,   MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU },
+      {MENU_ENUM_LABEL_MAIN_MENU,         MENU_ENUM_LABEL_VALUE_MAIN_MENU,       false },
+      {MENU_ENUM_LABEL_HISTORY_TAB,       MENU_ENUM_LABEL_VALUE_HISTORY_TAB,     true  },
+      {MENU_ENUM_LABEL_FAVORITES_TAB,     MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,   true  },
+      {MENU_ENUM_LABEL_IMAGES_TAB,        MENU_ENUM_LABEL_VALUE_IMAGES_TAB,      true  },
+      {MENU_ENUM_LABEL_MUSIC_TAB,         MENU_ENUM_LABEL_VALUE_MUSIC_TAB,       true  },
+      {MENU_ENUM_LABEL_VIDEO_TAB,         MENU_ENUM_LABEL_VALUE_VIDEO_TAB,       true  },
+      {MENU_ENUM_LABEL_SETTINGS_TAB,      MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,    false },
+      {MENU_ENUM_LABEL_PLAYLISTS_TAB,     MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,   false },
+      {MENU_ENUM_LABEL_ADD_TAB,           MENU_ENUM_LABEL_VALUE_ADD_TAB,         false },
+      {MENU_ENUM_LABEL_EXPLORE_TAB,       MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,     false },
+      {MENU_ENUM_LABEL_NETPLAY_TAB,       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,     false },
+      {MENU_ENUM_LABEL_HORIZONTAL_MENU,   MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU, false },
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
       if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
       {
-         strlcpy(s, msg_hash_to_str(info_list[i].val), len);
+         if (info_list[i].is_playlist_tab)
+            action_get_title_fill_search_filter_default(
+                  s, info_list[i].val, len);
+         else
+            strlcpy(s, msg_hash_to_str(info_list[i].val), len);
          return 0;
       }
    }
@@ -768,6 +855,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST,           action_get_cheat_search_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST,       action_get_onscreen_display_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST, action_get_onscreen_notifications_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST, action_get_onscreen_notifications_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST,       action_get_onscreen_overlay_settings_list},
 #ifdef HAVE_VIDEO_LAYOUT
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,  action_get_onscreen_video_layout_settings_list},
@@ -783,6 +871,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST,                     action_get_menu_sounds_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST,      action_get_menu_file_browser_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST,     action_get_retro_achievements_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST,              action_get_bluetooth_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,                   action_get_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST,                action_get_updater_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST,                action_get_network_hosting_settings_list},
@@ -798,10 +887,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_MIDI_SETTINGS_LIST,                   action_get_midi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST,               action_get_download_core_content_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST,        action_get_download_core_content_list},
-      {MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST,                       action_get_title_goto_favorites},
-      {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST,                          action_get_title_goto_image},
-      {MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST,                           action_get_title_goto_music},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,                           action_get_title_goto_video},
+      {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,                          action_get_title_deferred_history_list},
+      {MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST,                       action_get_title_deferred_favorites_list},
+      {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST,                          action_get_title_deferred_images_list},
+      {MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST,                           action_get_title_deferred_music_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,                           action_get_title_deferred_video_list},
       {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,                 action_get_driver_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,                  action_get_audio_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST,                  action_get_audio_resampler_settings_list},
@@ -942,8 +1032,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_add_content_list},
       {MENU_ENUM_LABEL_CORE_OPTIONS,
          action_get_core_options_list},
-      {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
-         action_get_load_recent_list},
       {MENU_ENUM_LABEL_CONTENT_SETTINGS,
          action_get_quick_menu_list},
       {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
@@ -1041,7 +1129,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *parent_group   = cbs->setting->parent_group;
 
       if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
-            && setting_get_type(cbs->setting) == ST_GROUP)
+            && cbs->setting->type == ST_GROUP)
       {
          BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
          return 0;
@@ -1245,7 +1333,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_core_options_list);
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_load_recent_list);
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_history_list);
             break;
          case MENU_ENUM_LABEL_CONTENT_SETTINGS:
             BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_list);
@@ -1482,6 +1570,8 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,          action_get_title_dropdown_manual_content_scan_system_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,            action_get_title_dropdown_manual_content_scan_core_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,                               action_get_title_dropdown_disk_index},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,                        action_get_title_dropdown_input_description},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,                    action_get_title_dropdown_input_description_kbd},
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,                                          action_get_quick_menu_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,                                              action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS,                                  action_get_title_deferred_playlist_list},

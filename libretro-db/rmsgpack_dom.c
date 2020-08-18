@@ -102,12 +102,12 @@ static int dom_read_uint(uint64_t value, void *data)
 static int dom_read_string(char *value, uint32_t len, void *data)
 {
    struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
-   struct rmsgpack_dom_value *v =
+   struct rmsgpack_dom_value *v       =
       (struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
 
-   v->type = RDT_STRING;
-   v->val.string.len = len;
-   v->val.string.buff = value;
+   v->type                            = RDT_STRING;
+   v->val.string.len                  = len;
+   v->val.string.buff                 = value;
    return 0;
 }
 
@@ -181,17 +181,6 @@ static int dom_read_array_start(uint32_t len, void *data)
 	return 0;
 }
 
-static struct rmsgpack_read_callbacks dom_reader_callbacks = {
-	dom_read_nil,
-	dom_read_bool,
-	dom_read_int,
-	dom_read_uint,
-	dom_read_string,
-	dom_read_bin,
-	dom_read_map_start,
-	dom_read_array_start
-};
-
 void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
 {
    unsigned i;
@@ -247,12 +236,10 @@ int rmsgpack_dom_value_cmp(
       const struct rmsgpack_dom_value *b
 )
 {
-   int rv;
    unsigned i;
 
    if (a == b)
       return 1;
-
    if (a->type != b->type)
       return 1;
 
@@ -281,6 +268,7 @@ int rmsgpack_dom_value_cmp(
             return 1;
          for (i = 0; i < a->val.map.len; i++)
          {
+            int rv;
             if ((rv = rmsgpack_dom_value_cmp(&a->val.map.items[i].key,
                         &b->val.map.items[i].key)) != 0)
                return rv;
@@ -294,6 +282,7 @@ int rmsgpack_dom_value_cmp(
             return 1;
          for (i = 0; i < a->val.array.len; i++)
          {
+            int rv;
             if ((rv = rmsgpack_dom_value_cmp(&a->val.array.items[i],
                         &b->val.array.items[i])) != 0)
                return rv;
@@ -407,6 +396,17 @@ int rmsgpack_dom_write(RFILE *fd, const struct rmsgpack_dom_value *obj)
    return written;
 }
 
+static struct rmsgpack_read_callbacks dom_reader_callbacks = {
+	dom_read_nil,
+	dom_read_bool,
+	dom_read_int,
+	dom_read_uint,
+	dom_read_string,
+	dom_read_bin,
+	dom_read_map_start,
+	dom_read_array_start
+};
+
 int rmsgpack_dom_read(RFILE *fd, struct rmsgpack_dom_value *out)
 {
    struct dom_reader_state s;
@@ -415,7 +415,7 @@ int rmsgpack_dom_read(RFILE *fd, struct rmsgpack_dom_value *out)
    s.i        = 0;
    s.stack[0] = out;
 
-   rv = rmsgpack_read(fd, &dom_reader_callbacks, &s);
+   rv         = rmsgpack_read(fd, &dom_reader_callbacks, &s);
 
    if (rv < 0)
       rmsgpack_dom_value_free(out);
@@ -436,13 +436,10 @@ int rmsgpack_dom_read_into(RFILE *fd, ...)
    int *bool_value;
    char *buff_value;
    uint64_t min_len;
-   int value_type = 0;
 
    va_start(ap, fd);
 
    rv             = rmsgpack_dom_read(fd, &map);
-
-   (void)value_type;
 
    if (rv < 0)
    {

@@ -53,48 +53,6 @@
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
-#if defined(ANDROID)
-#define DEFAULT_MAX_PADS 8
-#define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
-#elif defined(_3DS)
-#define DEFAULT_MAX_PADS 1
-#elif defined(SWITCH) || defined(HAVE_LIBNX)
-#define DEFAULT_MAX_PADS 8
-#elif defined(WIIU)
-#ifdef WIIU_HID
-#define DEFAULT_MAX_PADS 16
-#else
-#define DEFAULT_MAX_PADS 5
-#endif
-#elif defined(DJGPP)
-#define DEFAULT_MAX_PADS 1
-#define DOS_KEYBOARD_PORT DEFAULT_MAX_PADS
-#elif defined(XENON)
-#define DEFAULT_MAX_PADS 4
-#elif defined(VITA) || defined(SN_TARGET_PSP2)
-#define DEFAULT_MAX_PADS 4
-#elif defined(PSP)
-#define DEFAULT_MAX_PADS 1
-#elif defined(PS2)
-#define DEFAULT_MAX_PADS 2
-#elif defined(GEKKO) || defined(HW_RVL)
-#define DEFAULT_MAX_PADS 4
-#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
-#define DEFAULT_MAX_PADS 8
-#elif defined(__QNX__)
-#define DEFAULT_MAX_PADS 8
-#elif defined(__CELLOS_LV2__)
-#define DEFAULT_MAX_PADS 7
-#elif defined(_XBOX)
-#define DEFAULT_MAX_PADS 4
-#elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
-#define DEFAULT_MAX_PADS 4
-#elif defined(DINGUX)
-#define DEFAULT_MAX_PADS 2
-#else
-#define DEFAULT_MAX_PADS 16
-#endif
-
 #if defined(GEKKO)
 #define DEFAULT_MOUSE_SCALE 1
 #endif
@@ -118,6 +76,8 @@
 #ifdef HAVE_MATERIALUI
 /* Show icons to the left of each menu entry */
 #define DEFAULT_MATERIALUI_ICONS_ENABLE true
+/* Show system-specific icons in the playlists tab */
+#define DEFAULT_MATERIALUI_PLAYLIST_ICONS_ENABLE true
 #endif
 
 /* Material UI colour theme */
@@ -174,6 +134,8 @@
 #define DEFAULT_CRT_SWITCH_RESOLUTION_SUPER 2560
 
 #define DEFAULT_CRT_SWITCH_CENTER_ADJUST 0
+
+#define DEFAULT_CRT_SWITCH_PORCH_ADJUST 0
 
 #define DEFAULT_HISTORY_LIST_ENABLE true
 
@@ -257,6 +219,18 @@
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
 #define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
+
+/* Specifies whether to 'reload' (fork and quit)
+ * RetroArch when launching content with the
+ * currently loaded core
+ * > Only relevant on platforms without dynamic core
+ *   loading support
+ * > Setting this to 'false' will decrease loading
+ *   times when required core is already running,
+ *   but may cause stability issues (if core misbehaves) */
+#ifndef HAVE_DYNAMIC
+#define DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT true
+#endif
 
 /* Forcibly disable composition.
  * Only valid on Windows Vista/7/8 for now. */
@@ -550,8 +524,18 @@ static const bool content_show_netplay      = true;
 #endif
 #endif
 static const bool content_show_history      = true;
-static const bool content_show_add     	    = true;
+
+/* Specifies 'add content' visibility when using
+ * menus WITH a dedicated 'Import Content' tab */
+#define DEFAULT_MENU_CONTENT_SHOW_ADD true
+/* Specifies 'add content' visibility when using
+ * menus WITHOUT a dedicated 'Import Content' tab */
+#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+
 static const bool content_show_playlists    = true;
+#if defined(HAVE_LIBRETRODB)
+#define DEFAULT_MENU_CONTENT_SHOW_EXPLORE true
+#endif
 
 #ifdef HAVE_XMB
 static const unsigned xmb_alpha_factor      = 75;
@@ -603,6 +587,7 @@ static const bool rgui_shadows = false;
 static const unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 #define DEFAULT_RGUI_PARTICLE_EFFECT_SPEED 1.0f
 static const bool rgui_extended_ascii = false;
+#define DEFAULT_RGUI_SWITCH_ICONS true
 #endif
 
 #ifdef HAVE_MENU
@@ -646,6 +631,8 @@ static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 static const unsigned input_backtouch_enable       = false;
 static const unsigned input_backtouch_toggle       = false;
 #endif
+
+#define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
 
 #define DEFAULT_SHOW_PHYSICAL_INPUTS true
 
@@ -757,6 +744,56 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_MENU_ENABLE_WIDGETS false
 #endif
 
+/* Display an animation when loading content
+ * > Currently implemented only as a widget */
+#define DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION DEFAULT_MENU_ENABLE_WIDGETS
+
+/* Display a notification when successfully
+ * connecting/disconnecting an autoconfigured
+ * controller
+ * > Disabled by default on the Switch */
+#if defined(HAVE_LIBNX) && defined(HAVE_GFX_WIDGETS)
+#define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG false
+#else
+#define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG true
+#endif
+
+#if defined(HAVE_SCREENSHOTS)
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN true
+#else
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN false
+#endif
+
+/* Display a notification when cheats are being
+ * applied */
+#define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
+
+/* Display a notification when loading an
+ * input remap file */
+#define DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD true
+
+/* Display a notification when loading a
+ * configuration override file */
+#define DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD true
+
+/* Display a notification when automatically restoring
+ * at launch the last used disk of multi-disk content */
+#define DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK true
+
+/* Display a notification when fast forwarding
+ * content */
+#define DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD true
+
+/*Display a notification when taking a screenshot*/
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT true
+
+/*Desired duration of the screenshot notification*/
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION 0
+
+/* Display a white flashing effect with the desired 
+ * duration when taking a screenshot*/
+#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH 0
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
@@ -821,6 +858,9 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* FPS display will be updated at the set interval (in frames) */
 #define DEFAULT_FPS_UPDATE_INTERVAL 256
+
+/* Memory status display will be updated at the set interval (in frames) */
+#define DEFAULT_MEMORY_UPDATE_INTERVAL 256
 
 /* Enables displaying the current frame count. */
 #define DEFAULT_FRAMECOUNT_SHOW false
@@ -1031,6 +1071,8 @@ static const int default_content_favorites_size = 200;
 #endif
 
 #define DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH false
+
+#define DEFAULT_PLAYLIST_PORTABLE_PATHS false
 
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
@@ -1287,5 +1329,19 @@ static const bool enable_device_vibration    = false;
 #define DEFAULT_AI_SERVICE_MODE 1
 
 #define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE true
+#else
+#define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE false
+#endif
+
+#if defined(HAVE_IMAGEVIEWER)
+#define DEFAULT_BUILTIN_IMAGEVIEWER_ENABLE true
+#else
+#define DEFAULT_BUILTIN_IMAGEVIEWER_ENABLE false
+#endif
+
+#define DEFAULT_FILTER_BY_CURRENT_CORE false
 
 #endif

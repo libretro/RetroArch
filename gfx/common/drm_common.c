@@ -21,20 +21,19 @@
 
 #include "drm_common.h"
 
+/* TODO/FIXME - globals */
+drmEventContext g_drm_evctx;
 struct pollfd g_drm_fds;
-
 uint32_t g_connector_id               = 0;
 int g_drm_fd                          = 0;
 uint32_t g_crtc_id                    = 0;
-
 drmModeCrtc *g_orig_crtc              = NULL;
-
-static drmModeRes *g_drm_resources    = NULL;
 drmModeConnector *g_drm_connector     = NULL;
-static drmModeEncoder *g_drm_encoder  = NULL;
 drmModeModeInfo *g_drm_mode           = NULL;
 
-drmEventContext g_drm_evctx;
+/* TODO/FIXME - static globals */
+static drmModeRes *g_drm_resources    = NULL;
+static drmModeEncoder *g_drm_encoder  = NULL;
 
 /* Restore the original CRTC. */
 void drm_restore_crtc(void)

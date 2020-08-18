@@ -42,21 +42,14 @@ typedef struct
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
+   int initial_width;
+   int initial_height;
    unsigned fb_width;
    unsigned fb_height;
 } emscripten_ctx_data_t;
 
-/* TODO/FIXME - would like to move these to emscripten_ctx_data_t - 
- * see the TODO/FIXME note down below */
-static int emscripten_initial_width;
-static int emscripten_initial_height;
-
-static enum gfx_ctx_api emscripten_api = GFX_CTX_NONE;
-
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 {
-   (void)data;
-
    if (interval == 0)
       emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
    else
@@ -105,8 +98,8 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
    if (input_width == 0 || input_height == 0)
    {
-      input_width          = emscripten_initial_width;
-      input_height         = emscripten_initial_height;
+      input_width          = emscripten->initial_width;
+      input_height         = emscripten->initial_height;
       emscripten->fb_width = emscripten->fb_height = 0;
    }
 
@@ -207,9 +200,11 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 
    /* TODO/FIXME - why is this conditional here - shouldn't these always
     * be grabbed? */
-   if (emscripten_initial_width == 0 || emscripten_initial_height == 0)
+   if (  emscripten->initial_width  == 0 || 
+         emscripten->initial_height == 0)
       emscripten_get_canvas_element_size("#canvas",
-         &emscripten_initial_width, &emscripten_initial_height);
+         &emscripten->initial_width,
+         &emscripten->initial_height);
 
 #ifdef HAVE_EGL
    if (g_egl_inited)
@@ -259,29 +254,15 @@ static bool gfx_ctx_emscripten_set_video_mode(void *data,
    return true;
 }
 
-static enum gfx_ctx_api gfx_ctx_emscripten_get_api(void *data)
-{
-   return emscripten_api;
-}
+static enum gfx_ctx_api gfx_ctx_emscripten_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }
 
 static bool gfx_ctx_emscripten_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-   (void)major;
-   (void)minor;
-
-   emscripten_api = api;
-
-   switch (api)
-   {
 #ifdef HAVE_EGL
-      case GFX_CTX_OPENGL_ES_API:
-         return egl_bind_api(EGL_OPENGL_ES_API);
+   if (api == GFX_CTX_OPENGL_ES_API)
+      return egl_bind_api(EGL_OPENGL_ES_API);
 #endif
-      default:
-         break;
-   }
 
    return false;
 }
@@ -296,53 +277,19 @@ static void gfx_ctx_emscripten_input_driver(void *data,
    *input_data = rwebinput;
 }
 
-static bool gfx_ctx_emscripten_has_focus(void *data)
-{
-   (void)data;
+static bool gfx_ctx_emscripten_has_focus(void *data) { return g_egl_inited; }
 
-   return g_egl_inited;
-}
-
-static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
+static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable) { return false; }
 
 static float gfx_ctx_emscripten_translate_aspect(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-
-   return (float)width / height;
-}
+      unsigned width, unsigned height) { return (float)width / height; }
 
 static bool gfx_ctx_emscripten_init_egl_image_buffer(void *data,
-      const video_info_t *video)
-{
-   (void)data;
-
-   return false;
-}
+      const video_info_t *video) { return false; }
 
 static bool gfx_ctx_emscripten_write_egl_image(void *data,
       const void *frame, unsigned width, unsigned height, unsigned pitch,
-      bool rgb32, unsigned index, void **image_handle)
-{
-   (void)data;
-   return false;
-}
-
-static gfx_ctx_proc_t gfx_ctx_emscripten_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#else
-   return NULL;
-#endif
-}
+      bool rgb32, unsigned index, void **image_handle) { return false; }
 
 static void gfx_ctx_emscripten_bind_hw_render(void *data, bool enable)
 {
@@ -360,10 +307,7 @@ static uint32_t gfx_ctx_emscripten_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_emscripten_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_emscripten_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_init,
@@ -387,11 +331,15 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    false,
    gfx_ctx_emscripten_swap_buffers,
    gfx_ctx_emscripten_input_driver,
-   gfx_ctx_emscripten_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    gfx_ctx_emscripten_init_egl_image_buffer,
    gfx_ctx_emscripten_write_egl_image,
    NULL,
-   "emscripten",
+   "egl_emscripten",
    gfx_ctx_emscripten_get_flags,
    gfx_ctx_emscripten_set_flags,
    gfx_ctx_emscripten_bind_hw_render,

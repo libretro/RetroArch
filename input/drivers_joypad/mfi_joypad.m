@@ -31,17 +31,16 @@
 #define MAX_MFI_CONTROLLERS 4
 #endif
 
-static uint32_t mfi_buttons[MAX_USERS];
-static int16_t  mfi_axes[MAX_USERS][4];
-
-static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
-
-static NSMutableArray *mfiControllers;
-
 enum
 {
     GCCONTROLLER_PLAYER_INDEX_UNSET = -1,
 };
+
+/* TODO/FIXME - static globals */
+static uint32_t mfi_buttons[MAX_USERS];
+static int16_t  mfi_axes[MAX_USERS][4];
+static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
+static NSMutableArray *mfiControllers;
 
 static bool apple_gamecontroller_available(void)
 {
@@ -331,71 +330,89 @@ bool apple_gamecontroller_joypad_init(void *data)
     return true;
 }
 
-static void apple_gamecontroller_joypad_destroy(void)
-{
-}
+static void apple_gamecontroller_joypad_destroy(void) { }
 
-static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
+static int16_t apple_gamecontroller_joypad_button(
+      unsigned port, uint16_t joykey)
 {
-    /* Check hat. */
-    if (GET_HAT_DIR(joykey))
-        return false;
-    /* Check the button. */
-    if ((port < MAX_USERS) && (joykey < 32))
-        return ((mfi_buttons[port] & (1 << joykey)) != 0);
-
-    return false;
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   /* Check hat. */
+   else if (GET_HAT_DIR(joykey))
+      return 0;
+   else if (joykey < 32)
+      return ((mfi_buttons[port] & (1 << joykey)) != 0);
+   return 0;
 }
 
 static void apple_gamecontroller_joypad_get_buttons(unsigned port,
-                                                    input_bits_t *state)
+      input_bits_t *state)
 {
     BITS_COPY16_PTR(state, mfi_buttons[port]);
 }
 
-static int16_t apple_gamecontroller_joypad_axis(unsigned port, uint32_t joyaxis)
+static int16_t apple_gamecontroller_joypad_axis(
+      unsigned port, uint32_t joyaxis)
 {
-    int16_t val   = 0;
+    int16_t val  = 0;
     int16_t axis = -1;
     bool is_neg  = false;
     bool is_pos  = false;
 
-    if (joyaxis == AXIS_NONE)
-        return 0;
-
     if (AXIS_NEG_GET(joyaxis) < 4)
     {
-        axis  = AXIS_NEG_GET(joyaxis);
-        is_neg = true;
+        axis     = AXIS_NEG_GET(joyaxis);
+        is_neg   = true;
     }
     else if(AXIS_POS_GET(joyaxis) < 4)
     {
-        axis  = AXIS_POS_GET(joyaxis);
-        is_pos = true;
+        axis     = AXIS_POS_GET(joyaxis);
+        is_pos   = true;
     }
+    else
+       return 0;
 
-    switch (axis)
-    {
-        case 0:
-            val = mfi_axes[port][0];
-            break;
-        case 1:
-            val = mfi_axes[port][1];
-            break;
-        case 2:
-            val = mfi_axes[port][2];
-            break;
-        case 3:
-            val = mfi_axes[port][3];
-            break;
-    }
-
+    if (axis >= 0 && axis < 4)
+       val  = mfi_axes[port][axis];
     if (is_neg && val > 0)
-        val = 0;
+       return 0;
     else if (is_pos && val < 0)
-        val = 0;
-
+       return 0;
     return val;
+}
+
+static int16_t apple_gamecontroller_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
+
+   if (port_idx >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (     (uint16_t)joykey != NO_BTN 
+            && !GET_HAT_DIR(i)
+            && (i < 32)
+            && ((mfi_buttons[port_idx] & (1 << i)) != 0)
+         )
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(apple_gamecontroller_joypad_axis(port_idx, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static bool apple_gamecontroller_joypad_query_pad(unsigned pad)
@@ -416,6 +433,7 @@ input_device_driver_t mfi_joypad = {
     apple_gamecontroller_joypad_query_pad,
     apple_gamecontroller_joypad_destroy,
     apple_gamecontroller_joypad_button,
+    apple_gamecontroller_joypad_state,
     apple_gamecontroller_joypad_get_buttons,
     apple_gamecontroller_joypad_axis,
     apple_gamecontroller_joypad_poll,

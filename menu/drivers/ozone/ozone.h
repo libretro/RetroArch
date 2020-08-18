@@ -23,6 +23,7 @@ typedef struct ozone_handle ozone_handle_t;
 #include "ozone_sidebar.h"
 
 #include <retro_miscellaneous.h>
+#include <retro_inline.h>
 
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
@@ -208,6 +209,7 @@ struct ozone_handle
 
    bool is_playlist;
    bool is_playlist_old;
+   size_t num_search_terms_old;
 
    bool empty_playlist;
 
@@ -308,17 +310,14 @@ struct ozone_handle
    ozone_copy_node */
 typedef struct ozone_node
 {
-   /* Entries */
-   unsigned height;
-   unsigned position_y;
-   bool wrap;
-   unsigned sublabel_lines;
-   char *fullpath;
-
-   /* Console tabs */
-   char *console_name;
-   uintptr_t icon;
-   uintptr_t content_icon;
+   char *fullpath;            /* Entry fullpath */
+   char *console_name;        /* Console tab name */
+   uintptr_t icon;            /* Console tab icon */
+   uintptr_t content_icon;    /* console content icon */
+   unsigned height;           /* Entry height */
+   unsigned position_y;       /* Entry position Y */
+   unsigned sublabel_lines;   /* Entry sublabel lines */
+   bool wrap;                 /* Wrap entry? */
 } ozone_node_t;
 
 void ozone_draw_entries(
@@ -393,12 +392,23 @@ void ozone_draw_thumbnail_bar(
 void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate);
 void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone);
 
-unsigned ozone_count_lines(const char *str);
+static INLINE unsigned ozone_count_lines(const char *str)
+{
+   unsigned c     = 0;
+   unsigned lines = 1;
+
+   for (c = 0; str[c]; c++)
+      lines += (str[c] == '\n');
+   return lines;
+}
+
 
 void ozone_update_content_metadata(ozone_handle_t *ozone);
 
 void ozone_font_flush(
       unsigned video_width, unsigned video_height,
       ozone_font_data_t *font_data);
+
+void ozone_toggle_metadata_override(ozone_handle_t *ozone);
 
 #endif

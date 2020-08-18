@@ -66,7 +66,7 @@ static void alsa_worker_thread(void *data)
       size_t fifo_size;
       snd_pcm_sframes_t frames;
       slock_lock(alsa->fifo_lock);
-      avail = fifo_read_avail(alsa->buffer);
+      avail     = FIFO_READ_AVAIL(alsa->buffer);
       fifo_size = MIN(alsa->period_size, avail);
       fifo_read(alsa->buffer, buf, fifo_size);
       scond_signal(alsa->cond);
@@ -256,7 +256,7 @@ static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
       size_t write_amt;
 
       slock_lock(alsa->fifo_lock);
-      avail           = fifo_write_avail(alsa->buffer);
+      avail           = FIFO_WRITE_AVAIL(alsa->buffer);
       write_amt       = MIN(avail, size);
 
       fifo_write(alsa->buffer, buf, write_amt);
@@ -271,7 +271,7 @@ static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
       {
          size_t avail;
          slock_lock(alsa->fifo_lock);
-         avail = fifo_write_avail(alsa->buffer);
+         avail = FIFO_WRITE_AVAIL(alsa->buffer);
 
          if (avail == 0)
          {
@@ -334,7 +334,7 @@ static size_t alsa_thread_write_avail(void *data)
    if (alsa->thread_dead)
       return 0;
    slock_lock(alsa->fifo_lock);
-   val = fifo_write_avail(alsa->buffer);
+   val = FIFO_WRITE_AVAIL(alsa->buffer);
    slock_unlock(alsa->fifo_lock);
    return val;
 }

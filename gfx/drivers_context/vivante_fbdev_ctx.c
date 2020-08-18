@@ -43,8 +43,6 @@ typedef struct
    unsigned width, height;
 } vivante_ctx_data_t;
 
-static enum gfx_ctx_api viv_api = GFX_CTX_NONE;
-
 static void gfx_ctx_vivante_destroy(void *data)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
@@ -188,32 +186,20 @@ static void gfx_ctx_vivante_input_driver(void *data,
 
 static enum gfx_ctx_api gfx_ctx_vivante_get_api(void *data)
 {
-   return viv_api;
+   return GFX_CTX_OPENGL_ES_API;
 }
 
 static bool gfx_ctx_vivante_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-
-   viv_api = api;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
    return false;
 }
 
-static bool gfx_ctx_vivante_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gfx_ctx_vivante_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static void gfx_ctx_vivante_set_flags(void *data, uint32_t flags) { }
+static bool gfx_ctx_vivante_has_focus(void *data) { return true; }
+static bool gfx_ctx_vivante_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void gfx_ctx_vivante_set_swap_interval(void *data, int swap_interval)
 {
@@ -233,15 +219,6 @@ static void gfx_ctx_vivante_swap_buffers(void *data)
 #endif
 }
 
-static gfx_ctx_proc_t gfx_ctx_vivante_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
-#else
-   return NULL;
-#endif
-}
-
 static void gfx_ctx_vivante_bind_hw_render(void *data, bool enable)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
@@ -258,11 +235,6 @@ static uint32_t gfx_ctx_vivante_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 
    return flags;
-}
-
-static void gfx_ctx_vivante_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
 }
 
 const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
@@ -287,11 +259,15 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    false, /* has_windowed */
    gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
-   gfx_ctx_vivante_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,
-   "vivante-fbdev",
+   "fbdev_vivante",
    gfx_ctx_vivante_get_flags,
    gfx_ctx_vivante_set_flags,
    gfx_ctx_vivante_bind_hw_render,

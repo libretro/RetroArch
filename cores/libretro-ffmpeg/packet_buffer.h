@@ -6,7 +6,13 @@
 #include <boolean.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <libavcodec/avcodec.h>
+#ifdef __cplusplus
+}
+#endif
 
 #include <retro_miscellaneous.h>
 

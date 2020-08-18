@@ -196,7 +196,6 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                icon_size, icon_size,
                volume_icon,
                0, 0,
-               video_width, video_height,
                0, 1, pure_white
                );
          gfx_display_blend_end(userdata);

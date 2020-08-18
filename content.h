@@ -33,10 +33,10 @@ RETRO_BEGIN_DECLS
 
 typedef struct content_ctx_info
 {
-   int argc;                       /* Argument count. */
    char **argv;                    /* Argument variable list. */
    void *args;                     /* Arguments passed from callee */
    environment_get_t environ_get;  /* Function passed for environment_get function */
+   int argc;                       /* Argument count. */
 } content_ctx_info_t;
 
 /* Load a RAM state from disk to memory. */
@@ -51,8 +51,8 @@ bool content_load_state(const char* path, bool load_to_backup_buffer, bool autol
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk, bool autosave);
 
-/* Returns true if a save state task is in progress */
-bool content_save_state_in_progress(void);
+/* Waits for any in-progress save state tasks to finish */
+void content_wait_for_save_state_task(void);
 
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);

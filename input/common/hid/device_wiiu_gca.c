@@ -37,67 +37,118 @@ typedef struct hid_wiiu_gca_instance
 
 typedef struct gca_pad_data
 {
-   void *gca_handle;     // instance handle for the GCA adapter
-   hid_driver_t *driver; // HID system driver interface
-   uint8_t data[9];      // pad data
-   uint32_t slot;        // slot this pad occupies
-   uint32_t buttons;     // digital button state
-   int16_t analog_state[3][2]; // analog state
+   void *gca_handle;     /* instance handle for the GCA adapter */
+   hid_driver_t *driver; /* HID system driver interface */
+   uint8_t data[9];      /* pad data */
+   uint32_t slot;        /* slot this pad occupies */
+   uint32_t buttons;     /* digital button state */
+   int16_t analog_state[3][2]; /* analog state */
 } gca_pad_t;
-
-static void wiiu_gca_update_pad_state(hid_wiiu_gca_instance_t *instance);
-static void wiiu_gca_unregister_pad(hid_wiiu_gca_instance_t *instance, int port);
 
 extern pad_connection_interface_t wiiu_gca_pad_connection;
 
+static void wiiu_gca_unregister_pad(hid_wiiu_gca_instance_t *instance, int slot)
+{
+   joypad_connection_t *pad = NULL;
+   if (!instance || slot < 0 || slot >= 4 || !instance->pads[slot])
+      return;
+
+   pad                      = instance->pads[slot];
+   instance->pads[slot]     = NULL;
+
+   hid_pad_deregister(pad);
+}
+
+static void wiiu_gca_update_pad_state(hid_wiiu_gca_instance_t *instance)
+{
+   int i, port;
+   unsigned char port_connected;
+   joypad_connection_t *pad;
+
+   if (!instance || !instance->online)
+      return;
+
+   /* process each pad */
+   for (i = 1; i < 37; i += 9)
+   {
+      port           = i / 9;
+      pad            = instance->pads[port];
+      port_connected = instance->device_state[i];
+
+      if (port_connected > GCA_PORT_POWERED)
+      {
+         if (!pad)
+         {
+            RARCH_LOG("[gca]: Gamepad at port %d connected.\n", port+1);
+            instance->pads[port] = hid_pad_register(
+                  instance, &wiiu_gca_pad_connection);
+            pad                  = instance->pads[port];
+            if (!pad)
+            {
+               RARCH_ERR("[gca]: Failed to register pad.\n");
+               break;
+            }
+         }
+
+         pad->iface->packet_handler(pad->data, &instance->device_state[i], 9);
+      }
+      else
+      {
+         if (pad)
+         {
+            RARCH_LOG("[gca]: Gamepad at port %d disconnected.\n", port+1);
+            wiiu_gca_unregister_pad(instance, port);
+         }
+      }
+   }
+}
+
 static void *wiiu_gca_init(void *handle)
 {
-   hid_wiiu_gca_instance_t *instance = calloc(1, sizeof(hid_wiiu_gca_instance_t));
+   unsigned i;
+   hid_wiiu_gca_instance_t *instance = (hid_wiiu_gca_instance_t*)
+      malloc(sizeof(hid_wiiu_gca_instance_t));
+
    if (!instance)
       return NULL;
-   memset(instance, 0, sizeof(hid_wiiu_gca_instance_t));
-   instance->handle = handle;
+
+   instance->handle             = handle;
+   instance->online             = true;
+   
+   for (i = 0; i < 37; i++)
+      instance->device_state[i] = 0;
+   for (i = 0; i < 4; i++)
+      instance->pads[i]         = NULL;
 
    hid_instance.os_driver->send_control(handle, activation_packet, sizeof(activation_packet));
    hid_instance.os_driver->read(handle, instance->device_state, sizeof(instance->device_state));
-   instance->online = true;
 
-   RARCH_LOG("[gca]: init done\n");
    return instance;
-
-   error:
-      RARCH_ERR("[gca]: init failed\n");
-      if(instance)
-         free(instance);
-      return NULL;
 }
 
 static void wiiu_gca_free(void *data)
 {
-   hid_wiiu_gca_instance_t *instance = (hid_wiiu_gca_instance_t *)data;
    int i;
+   hid_wiiu_gca_instance_t *instance = (hid_wiiu_gca_instance_t *)data;
 
-   if(instance)
-   {
-      instance->online = false;
+   if (!instance)
+      return;
 
-      for (i = 0; i < 4; i++)
-         wiiu_gca_unregister_pad(instance, i);
+   instance->online = false;
 
-      free(instance);
-   }
+   for (i = 0; i < 4; i++)
+      wiiu_gca_unregister_pad(instance, i);
+
+   free(instance);
 }
 
 static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
 {
    hid_wiiu_gca_instance_t *instance = (hid_wiiu_gca_instance_t *)data;
-   if(!instance || !instance->online)
-   {
-      RARCH_WARN("[gca]: instance null or not ready yet.\n");
+   if (!instance || !instance->online)
       return;
-   }
 
-   if(size > sizeof(instance->device_state))
+   if (size > sizeof(instance->device_state))
    {
       RARCH_WARN("[gca]: packet size %d is too big for buffer of size %d\n",
          size, sizeof(instance->device_state));
@@ -108,61 +159,8 @@ static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
    wiiu_gca_update_pad_state(instance);
 }
 
-static void wiiu_gca_update_pad_state(hid_wiiu_gca_instance_t *instance)
+static bool wiiu_gca_detect(uint16_t vendor_id, uint16_t product_id)
 {
-   int i, port;
-   unsigned char port_connected;
-
-   if(!instance || !instance->online)
-      return;
-
-   joypad_connection_t *pad;
-
-   /* process each pad */
-   for (i = 1; i < 37; i += 9)
-   {
-      port = i / 9;
-      pad = instance->pads[port];
-
-      port_connected = instance->device_state[i];
-
-      if(port_connected > GCA_PORT_POWERED)
-      {
-         if (!pad)
-         {
-            RARCH_LOG("[gca]: Gamepad at port %d connected.\n", port+1);
-            instance->pads[port] = hid_pad_register(instance, &wiiu_gca_pad_connection);
-            pad = instance->pads[port];
-            if (!pad)
-            {
-               RARCH_ERR("[gca]: Failed to register pad.\n");
-               break;
-            }
-         }
-
-         pad->iface->packet_handler(pad->data, &instance->device_state[i], 9);
-      } else {
-         if(pad != NULL) {
-            RARCH_LOG("[gca]: Gamepad at port %d disconnected.\n", port+1);
-            wiiu_gca_unregister_pad(instance, port);
-         }
-      }
-   }
-}
-
-static void wiiu_gca_unregister_pad(hid_wiiu_gca_instance_t *instance, int slot)
-{
-   joypad_connection_t *pad = NULL;
-   if(!instance || slot < 0 || slot >= 4 || !instance->pads[slot])
-      return;
-
-   pad                      = instance->pads[slot];
-   instance->pads[slot]     = NULL;
-
-   hid_pad_deregister(pad);
-}
-
-static bool wiiu_gca_detect(uint16_t vendor_id, uint16_t product_id) {
    return vendor_id == VID_NINTENDO && product_id == PID_NINTENDO_GCA;
 }
 
@@ -181,16 +179,16 @@ hid_device_t wiiu_gca_hid_device = {
 
 static void *wiiu_gca_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-   gca_pad_t *pad = (gca_pad_t *)calloc(1, sizeof(gca_pad_t));
+   gca_pad_t *pad = (gca_pad_t *)malloc(sizeof(gca_pad_t));
 
-   if(!pad)
+   if (!pad)
       return NULL;
 
    memset(pad, 0, sizeof(gca_pad_t));
 
    pad->gca_handle = data;
-   pad->driver = driver;
-   pad->slot = slot;
+   pad->driver     = driver;
+   pad->slot       = slot;
 
    return pad;
 }
@@ -199,20 +197,23 @@ static void wiiu_gca_pad_deinit(void *data)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
 
-   if(pad)
-   {
-      input_autoconfigure_disconnect(pad->slot, wiiu_gca_pad_connection.get_name(pad));
-      free(pad);
-   }
+   if (!pad)
+      return;
+
+   input_autoconfigure_disconnect(pad->slot,
+         wiiu_gca_pad_connection.get_name(pad));
+   free(pad);
 }
 
 static void wiiu_gca_get_buttons(void *data, input_bits_t *state)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
-   if(pad)
+   if (pad)
    {
       BITS_COPY16_PTR(state, pad->buttons);
-   } else {
+   }
+   else
+   {
       BIT256_CLEAR_ALL_PTR(state);
    }
 }
@@ -237,25 +238,16 @@ static void update_buttons(gca_pad_t *pad)
       RETRO_DEVICE_ID_JOYPAD_L,
    };
 
-   if(!pad)
+   if (!pad)
       return;
 
-   pressed_keys = pad->data[1] | (pad->data[2] << 8);
-   pad->buttons = 0;
+   pressed_keys     = pad->data[1] | (pad->data[2] << 8);
+   pad->buttons     = 0;
 
    for (i = 0; i < 12; i++)
       pad->buttons |= (pressed_keys & (1 << i)) ?
          (1 << button_mapping[i]) : 0;
 }
-
-#if 0
-const char *axes[] = {
-  "left x",
-  "left y",
-  "right x",
-  "right y"
-};
-#endif
 
 static void wiiu_gca_update_analog_state(gca_pad_t *pad)
 {
@@ -268,8 +260,8 @@ static void wiiu_gca_update_analog_state(gca_pad_t *pad)
     * by 256 to get the 16-bit range RetroArch expects. */
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      axis = pad_axis % 2 ? 0 : 1;
-      stick = pad_axis / 2;
+      axis         = (pad_axis % 2) ? 0 : 1;
+      stick        = pad_axis / 2;
       interpolated = pad->data[3 + pad_axis];
       /* libretro requires "up" to be negative, so we invert the y axis */
       interpolated = (axis) ?
@@ -295,9 +287,8 @@ static void wiiu_gca_update_analog_state(gca_pad_t *pad)
 static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
-   uint32_t i, pressed_keys;
 
-   if(!pad || !packet || size > sizeof(pad->data))
+   if (!pad || !packet || size > sizeof(pad->data))
       return;
 
    memcpy(pad->data, packet, size);
@@ -305,12 +296,7 @@ static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
    wiiu_gca_update_analog_state(pad);
 }
 
-static void wiiu_gca_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
-{
-   (void)data;
-   (void)effect;
-   (void)strength;
-}
+static void wiiu_gca_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength) { }
 
 static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 {
@@ -320,7 +306,7 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 
    gamepad_read_axis_data(axis, &axis_data);
 
-   if(!pad || axis_data.axis >= 4)
+   if (!pad || axis_data.axis >= 4)
       return 0;
 
    return gamepad_get_axis_value(pad->analog_state, &axis_data);
@@ -328,8 +314,6 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 
 static const char *wiiu_gca_get_name(void *data)
 {
-   gca_pad_t *pad = (gca_pad_t *)data;
-
    return "GameCube Controller";
 }
 
@@ -341,14 +325,12 @@ static const char *wiiu_gca_get_name(void *data)
  * 0x0008 - Y   0x0080 - up      0x0800 - L
  */
 
-static bool wiiu_gca_button(void *data, uint16_t joykey)
+static int16_t wiiu_gca_button(void *data, uint16_t joykey)
 {
-  gca_pad_t *pad = (gca_pad_t *)data;
-
-  if(!pad || joykey > 31)
-    return false;
-
-  return pad->buttons & (1 << joykey);
+   gca_pad_t *pad = (gca_pad_t *)data;
+   if(!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
 }
 
 pad_connection_interface_t wiiu_gca_pad_connection = {

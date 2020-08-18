@@ -22,6 +22,8 @@
 
 #include "../drivers_shader/slang_process.h"
 
+#define D3D10_MAX_GPU_COUNT 16
+
 typedef const ID3D10SamplerState*       D3D10SamplerStateRef;
 
 typedef ID3D10InputLayout*       D3D10InputLayout;
@@ -1210,9 +1212,13 @@ typedef struct
 
    struct video_shader* shader_preset;
    d3d10_texture_t      luts[GFX_MAX_TEXTURES];
+   struct string_list *gpu_list;
+   IDXGIAdapter1 *adapters[D3D10_MAX_GPU_COUNT];
+   IDXGIAdapter1 *current_adapter;
 } d3d10_video_t;
 
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture);
+
 static INLINE void d3d10_release_texture(d3d10_texture_t* texture)
 {
    Release(texture->handle);

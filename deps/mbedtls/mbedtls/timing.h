@@ -29,7 +29,6 @@
 #include MBEDTLS_CONFIG_FILE
 #endif
 
-#if !defined(MBEDTLS_TIMING_ALT)
 /* Regular implementation */
 
 #include <stdint.h>
@@ -116,21 +115,8 @@ int mbedtls_timing_get_delay( void *data );
 }
 #endif
 
-#else  /* MBEDTLS_TIMING_ALT */
-#include "timing_alt.h"
-#endif /* MBEDTLS_TIMING_ALT */
-
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#if defined(MBEDTLS_SELF_TEST)
-/**
- * \brief          Checkup routine
- *
- * \return         0 if successful, or 1 if a test failed
- */
-int mbedtls_timing_self_test( int verbose );
 #endif
 
 #ifdef __cplusplus

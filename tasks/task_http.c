@@ -39,23 +39,23 @@ enum http_status_enum
 
 struct http_transfer_info
 {
-   char url[255];
    int progress;
+   char url[255];
 };
 
 struct http_handle
 {
+   struct http_t *handle;
+   transfer_cb_t  cb;
    struct
    {
       struct http_connection_t *handle;
       transfer_cb_t  cb;
-      char elem1[255];
-      char url[255];
    } connection;
-   struct http_t *handle;
-   transfer_cb_t  cb;
    unsigned status;
    bool error;
+   char connection_elem[255];
+   char connection_url[255];
 };
 
 typedef struct http_transfer_info http_transfer_info_t;
@@ -197,7 +197,7 @@ task_finished:
       }
       else
       {
-         data = (http_transfer_data_t*)calloc(1, sizeof(*data));
+         data       = (http_transfer_data_t*)malloc(sizeof(*data));
          data->data = tmp;
          data->len  = len;
 
@@ -225,7 +225,7 @@ static bool task_http_finder(retro_task_t *task, void *user_data)
    if (!http)
       return false;
 
-   return string_is_equal(http->connection.url, (const char*)user_data);
+   return string_is_equal(http->connection_url, (const char*)user_data);
 }
 
 static bool task_http_retriever(retro_task_t *task, void *data)
@@ -238,7 +238,7 @@ static bool task_http_retriever(retro_task_t *task, void *data)
       return false;
 
    /* Fill HTTP info link */
-   strlcpy(info->url, http->connection.url, sizeof(info->url));
+   strlcpy(info->url, http->connection_url, sizeof(info->url));
    info->progress = task_get_progress(task);
    return true;
 }
@@ -275,18 +275,24 @@ static void* task_push_http_transfer_generic(
    if (!conn)
       return NULL;
 
-   http                    = (http_handle_t*)calloc(1, sizeof(*http));
+   http                    = (http_handle_t*)malloc(sizeof(*http));
 
    if (!http)
       goto error;
 
-   http->connection.handle = conn;
-   http->connection.cb     = &cb_http_conn_default;
+   http->connection.handle   = conn;
+   http->connection.cb       = &cb_http_conn_default;
+   http->connection_elem[0] = '\0';
+   http->connection_url[0]   = '\0';
+   http->handle              = NULL;
+   http->cb                  = NULL;
+   http->status              = 0;
+   http->error               = false;
 
    if (type)
-      strlcpy(http->connection.elem1, type, sizeof(http->connection.elem1));
+      strlcpy(http->connection_elem, type, sizeof(http->connection_elem));
 
-   strlcpy(http->connection.url, url, sizeof(http->connection.url));
+   strlcpy(http->connection_url, url, sizeof(http->connection_url));
 
    http->status            = HTTP_STATUS_CONNECTION_TRANSFER;
    t                       = task_init();
@@ -353,7 +359,8 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
    strlcat(tmp, " ", sizeof(tmp));
 
-   if (string_ends_with(s, ".index"))
+   if (string_ends_with_size(s, ".index",
+            strlen(s), STRLEN_CONST(".index")))
       strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));
    else
       strlcat(tmp, s, sizeof(tmp));

@@ -136,6 +136,7 @@ typedef struct ui_companion_driver
    void (*render_messagebox)(const char *msg);
    void *(*get_main_window)(void *data);
    void (*log_msg)(void *data, const char *msg);
+   bool (*is_active)(void *data);
    ui_browser_window_t *browser_window;
    ui_msg_window_t     *msg_window;
    ui_window_t         *window;
@@ -163,8 +164,6 @@ extern ui_companion_driver_t ui_companion_cocoa;
 extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;
 extern ui_companion_driver_t ui_companion_win32;
-
-void ui_companion_driver_init_first(void *data);
 
 bool ui_companion_is_on_foreground(void);
 

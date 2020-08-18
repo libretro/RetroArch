@@ -172,11 +172,11 @@ SlangProcess::SlangProcess()
       const char *value_str = strtok(0, delims);
       int             value = (int)strtoul(value_str, nullptr, 0);
 
-      if (string_starts_with(token, "Max"))
+      if (string_starts_with_size(token, "Max", STRLEN_CONST("Max")))
       {
-         if (string_starts_with(token, "MaxCompute"))
+         if (string_starts_with_size(token, "MaxCompute", STRLEN_CONST("MaxCompute")))
          {
-            if (string_starts_with(token, "MaxComputeWork"))
+            if (string_starts_with_size(token, "MaxComputeWork", STRLEN_CONST("MaxComputeWork")))
             {
                if (string_is_equal(token, "MaxComputeWorkGroupCountX"))
                   Resources.maxComputeWorkGroupCountX = value;
@@ -202,7 +202,7 @@ SlangProcess::SlangProcess()
             else if (string_is_equal(token, "MaxComputeAtomicCounterBuffers"))
                Resources.maxComputeAtomicCounterBuffers = value;
          }
-         else if (string_starts_with(token, "MaxVertex"))
+         else if (string_starts_with_size(token, "MaxVertex", STRLEN_CONST("MaxVertex")))
          {
             if (string_is_equal(token, "MaxVertexAttribs"))
                Resources.maxVertexAttribs = value;
@@ -223,9 +223,9 @@ SlangProcess::SlangProcess()
             else if (string_is_equal(token, "MaxVertexAtomicCounterBuffers"))
                Resources.maxVertexAtomicCounterBuffers = value;
          }
-         else if (string_starts_with(token, "MaxTess"))
+         else if (string_starts_with_size(token, "MaxTess", STRLEN_CONST("MaxTess")))
          {
-            if (string_starts_with(token, "MaxTessEvaluation"))
+            if (string_starts_with_size(token, "MaxTessEvaluation", STRLEN_CONST("MaxTessEvaluation")))
             {
                if (string_is_equal(token, "MaxTessEvaluationInputComponents"))
                   Resources.maxTessEvaluationInputComponents = value;
@@ -242,7 +242,7 @@ SlangProcess::SlangProcess()
                else if (string_is_equal(token, "MaxTessEvaluationImageUniforms"))
                   Resources.maxTessEvaluationImageUniforms = value;
             }
-            else if (string_starts_with(token, "MaxTessControl"))
+            else if (string_starts_with_size(token, "MaxTessControl", STRLEN_CONST("MaxTessControl")))
             {
                if (string_is_equal(token, "MaxTessControlInputComponents"))
                   Resources.maxTessControlInputComponents = value;
@@ -266,7 +266,7 @@ SlangProcess::SlangProcess()
             else if (string_is_equal(token, "MaxTessGenLevel"))
                Resources.maxTessGenLevel = value;
          }
-         else if (string_starts_with(token, "MaxFragment"))
+         else if (string_starts_with_size(token, "MaxFragment", STRLEN_CONST("MaxFragment")))
          {
             if (string_is_equal(token, "MaxFragmentUniformComponents"))
                Resources.maxFragmentUniformComponents = value;
@@ -360,7 +360,7 @@ SlangProcess::SlangProcess()
          else if (string_is_equal(token, "MaxSamples"))
             Resources.maxSamples = value;
       }
-      else if (string_starts_with(token, "general"))
+      else if (string_starts_with_size(token, "general", STRLEN_CONST("general")))
       {
          if (string_is_equal(token, "generalUniformIndexing"))
             Resources.limits.generalUniformIndexing = (value != 0);

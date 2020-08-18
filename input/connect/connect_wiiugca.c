@@ -95,7 +95,9 @@ static int16_t hidpad_wiiugca_get_axis(void *data, unsigned axis)
    else
       val = (val << 8) - 0x8000;
 
-   return (abs(val) > 0x1000) ? val : 0;
+   if (abs(val) > 0x1000)
+      return val;
+   return 0;
 }
 
 static void hidpad_wiiugca_packet_handler(void *data, uint8_t *packet, uint16_t size)

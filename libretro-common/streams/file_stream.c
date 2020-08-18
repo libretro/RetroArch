@@ -31,11 +31,22 @@
 #include "config.h"
 #endif
 
+#ifdef _MSC_VER
+#include <compat/msvc.h>
+#endif
+
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
 
-static const int64_t vfs_error_return_value      = -1;
+#define VFS_ERROR_RETURN_VALUE -1
+
+struct RFILE
+{
+   struct retro_vfs_file_handle *hfile;
+	bool error_flag;
+	bool eof_flag;
+};
 
 static retro_vfs_get_path_t filestream_get_path_cb = NULL;
 static retro_vfs_open_t filestream_open_cb         = NULL;
@@ -50,18 +61,12 @@ static retro_vfs_flush_t filestream_flush_cb       = NULL;
 static retro_vfs_remove_t filestream_remove_cb     = NULL;
 static retro_vfs_rename_t filestream_rename_cb     = NULL;
 
-struct RFILE
-{
-   struct retro_vfs_file_handle *hfile;
-	bool error_flag;
-	bool eof_flag;
-};
-
 /* VFS Initialization */
 
 void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
-   const struct retro_vfs_interface* vfs_iface;
+   const struct retro_vfs_interface *
+      vfs_iface           = vfs_info->iface;
 
    filestream_get_path_cb = NULL;
    filestream_open_cb     = NULL;
@@ -76,9 +81,9 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_remove_cb   = NULL;
    filestream_rename_cb   = NULL;
 
-   vfs_iface              = vfs_info->iface;
-
-   if (vfs_info->required_interface_version < FILESTREAM_REQUIRED_VFS_VERSION
+   if (
+             (vfs_info->required_interface_version < 
+             FILESTREAM_REQUIRED_VFS_VERSION)
          || !vfs_iface)
       return;
 
@@ -99,19 +104,24 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 /* Callback wrappers */
 bool filestream_exists(const char *path)
 {
-   RFILE *dummy              = NULL;
+   RFILE *dummy           = NULL;
 
    if (!path || !*path)
       return false;
 
-   dummy = filestream_open(path,
+   dummy                  = filestream_open(
+         path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!dummy)
       return false;
 
-   filestream_close(dummy);
+   if (filestream_close(dummy) != 0)
+      if (dummy)
+         free(dummy);
+
+   dummy = NULL;
    return true;
 }
 
@@ -122,9 +132,10 @@ int64_t filestream_get_size(RFILE *stream)
    if (filestream_size_cb)
       output = filestream_size_cb(stream->hfile);
    else
-      output = retro_vfs_file_size_impl((libretro_vfs_implementation_file*)stream->hfile);
+      output = retro_vfs_file_size_impl(
+            (libretro_vfs_implementation_file*)stream->hfile);
 
-   if (output == vfs_error_return_value)
+   if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
 
    return output;
@@ -137,9 +148,10 @@ int64_t filestream_truncate(RFILE *stream, int64_t length)
    if (filestream_truncate_cb)
       output = filestream_truncate_cb(stream->hfile, length);
    else
-      output = retro_vfs_file_truncate_impl((libretro_vfs_implementation_file*)stream->hfile, length);
+      output = retro_vfs_file_truncate_impl(
+            (libretro_vfs_implementation_file*)stream->hfile, length);
 
-   if (output == vfs_error_return_value)
+   if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
 
    return output;
@@ -203,9 +215,7 @@ char* filestream_gets(RFILE *stream, char *s, size_t len)
 int filestream_getc(RFILE *stream)
 {
    char c = 0;
-   if (!stream)
-      return EOF;
-   if (filestream_read(stream, &c, 1) == 1)
+   if (stream && filestream_read(stream, &c, 1) == 1)
       return (int)(unsigned char)c;
    return EOF;
 }
@@ -215,10 +225,9 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
    char buf[4096];
    char subfmt[64];
    va_list args;
-
    const char * bufiter = buf;
-   int64_t startpos     = filestream_tell(stream);
    int        ret       = 0;
+   int64_t startpos     = filestream_tell(stream);
    int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
 
    if (maxlen <= 0)
@@ -233,7 +242,6 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
       if (*format == '%')
       {
          int sublen;
-
          char* subfmtiter = subfmt;
          bool asterisk    = false;
 
@@ -243,19 +251,25 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
 
          if (*format == '*')
          {
-            asterisk = true;
+            asterisk      = true;
             *subfmtiter++ = *format++;
          }
 
-         while (isdigit(*format)) *subfmtiter++ = *format++; /* width */
+         while (isdigit((unsigned char)*format))
+            *subfmtiter++ = *format++; /* width */
 
          /* length */
          if (*format == 'h' || *format == 'l')
          {
-            if (format[1] == format[0]) *subfmtiter++ = *format++;
-            *subfmtiter++ = *format++;
+            if (format[1] == format[0])
+               *subfmtiter++ = *format++;
+            *subfmtiter++    = *format++;
          }
-         else if (*format == 'j' || *format == 'z' || *format == 't' || *format == 'L')
+         else if (
+               *format == 'j' || 
+               *format == 'z' || 
+               *format == 't' || 
+               *format == 'L')
          {
             *subfmtiter++ = *format++;
          }
@@ -263,37 +277,44 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
          /* specifier - always a single character (except ]) */
          if (*format == '[')
          {
-            while (*format != ']') *subfmtiter++ = *format++;
-            *subfmtiter++ = *format++;
+            while (*format != ']')
+               *subfmtiter++ = *format++;
+            *subfmtiter++    = *format++;
          }
-         else *subfmtiter++ = *format++;
+         else
+            *subfmtiter++    = *format++;
 
-         *subfmtiter++ = '%';
-         *subfmtiter++ = 'n';
-         *subfmtiter++ = '\0';
+         *subfmtiter++       = '%';
+         *subfmtiter++       = 'n';
+         *subfmtiter++       = '\0';
 
-         if (sizeof(void*) != sizeof(long*)) abort(); /* all pointers must have the same size */
+         if (sizeof(void*) != sizeof(long*))
+            abort(); /* all pointers must have the same size */
+
          if (asterisk)
          {
             int v = sscanf(bufiter, subfmt, &sublen);
             if (v == EOF)
                return EOF;
-            if (v != 0) break;
+            if (v != 0)
+               break;
          }
          else
          {
             int v = sscanf(bufiter, subfmt, va_arg(args, void*), &sublen);
             if (v == EOF)
                return EOF;
-            if (v != 1) break;
+            if (v != 1)
+               break;
          }
 
          ret++;
          bufiter += sublen;
       }
-      else if (isspace(*format))
+      else if (isspace((unsigned char)*format))
       {
-         while (isspace(*bufiter)) bufiter++;
+         while (isspace((unsigned char)*bufiter))
+            bufiter++;
          format++;
       }
       else
@@ -306,7 +327,8 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
    }
 
    va_end(args);
-   filestream_seek(stream, startpos+(bufiter-buf), RETRO_VFS_SEEK_POSITION_START);
+   filestream_seek(stream, startpos+(bufiter-buf),
+         RETRO_VFS_SEEK_POSITION_START);
 
    return ret;
 }
@@ -318,11 +340,14 @@ int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
    if (filestream_seek_cb)
       output = filestream_seek_cb(stream->hfile, offset, seek_position);
    else
-      output = retro_vfs_file_seek_impl((libretro_vfs_implementation_file*)stream->hfile, offset, seek_position);
+      output = retro_vfs_file_seek_impl(
+            (libretro_vfs_implementation_file*)stream->hfile,
+            offset, seek_position);
 
-   if (output == vfs_error_return_value)
+   if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
-   stream->eof_flag = false;
+
+   stream->eof_flag      = false;
 
    return output;
 }
@@ -339,9 +364,10 @@ int64_t filestream_tell(RFILE *stream)
    if (filestream_size_cb)
       output = filestream_tell_cb(stream->hfile);
    else
-      output = retro_vfs_file_tell_impl((libretro_vfs_implementation_file*)stream->hfile);
+      output = retro_vfs_file_tell_impl(
+            (libretro_vfs_implementation_file*)stream->hfile);
 
-   if (output == vfs_error_return_value)
+   if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
 
    return output;
@@ -353,7 +379,7 @@ void filestream_rewind(RFILE *stream)
       return;
    filestream_seek(stream, 0L, RETRO_VFS_SEEK_POSITION_START);
    stream->error_flag = false;
-   stream->eof_flag = false;
+   stream->eof_flag   = false;
 }
 
 int64_t filestream_read(RFILE *stream, void *s, int64_t len)
@@ -366,10 +392,10 @@ int64_t filestream_read(RFILE *stream, void *s, int64_t len)
       output = retro_vfs_file_read_impl(
             (libretro_vfs_implementation_file*)stream->hfile, s, len);
 
-   if (output == vfs_error_return_value)
+   if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
    if (output < len)
-      stream->eof_flag = true;
+      stream->eof_flag   = true;
 
    return output;
 }
@@ -381,9 +407,10 @@ int filestream_flush(RFILE *stream)
    if (filestream_flush_cb)
       output = filestream_flush_cb(stream->hfile);
    else
-      output = retro_vfs_file_flush_impl((libretro_vfs_implementation_file*)stream->hfile);
+      output = retro_vfs_file_flush_impl(
+            (libretro_vfs_implementation_file*)stream->hfile);
 
-   if (output == vfs_error_return_value)
+   if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
 
    return output;
@@ -410,7 +437,8 @@ const char* filestream_get_path(RFILE *stream)
    if (filestream_get_path_cb)
       return filestream_get_path_cb(stream->hfile);
 
-   return retro_vfs_file_get_path_impl((libretro_vfs_implementation_file*)stream->hfile);
+   return retro_vfs_file_get_path_impl(
+         (libretro_vfs_implementation_file*)stream->hfile);
 }
 
 int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
@@ -420,9 +448,10 @@ int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
    if (filestream_write_cb)
       output = filestream_write_cb(stream->hfile, s, len);
    else
-      output = retro_vfs_file_write_impl((libretro_vfs_implementation_file*)stream->hfile, s, len);
+      output = retro_vfs_file_write_impl(
+            (libretro_vfs_implementation_file*)stream->hfile, s, len);
 
-   if (output == vfs_error_return_value)
+   if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
 
    return output;
@@ -433,13 +462,16 @@ int filestream_putc(RFILE *stream, int c)
    char c_char = (char)c;
    if (!stream)
       return EOF;
-   return filestream_write(stream, &c_char, 1)==1 ? (int)(unsigned char)c : EOF;
+   return filestream_write(stream, &c_char, 1) == 1 
+      ? (int)(unsigned char)c 
+      : EOF;
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
    static char buffer[8 * 1024];
-   int64_t num_chars = vsprintf(buffer, format, args);
+   int64_t num_chars = vsnprintf(buffer, sizeof(buffer),
+         format, args);
 
    if (num_chars < 0)
       return -1;
@@ -474,7 +506,8 @@ int filestream_close(RFILE *stream)
    if (filestream_close_cb)
       output = filestream_close_cb(fp);
    else
-      output = retro_vfs_file_close_impl((libretro_vfs_implementation_file*)fp);
+      output = retro_vfs_file_close_impl(
+            (libretro_vfs_implementation_file*)fp);
 
    if (output == 0)
       free(stream);
@@ -523,7 +556,9 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    if (ret < 0)
       goto error;
 
-   filestream_close(file);
+   if (filestream_close(file) != 0)
+      if (file)
+         free(file);
 
    *buf    = content_buf;
 
@@ -538,7 +573,8 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
 error:
    if (file)
-      filestream_close(file);
+      if (filestream_close(file) != 0)
+         free(file);
    if (content_buf)
       free(content_buf);
    if (len)
@@ -567,7 +603,9 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
       return false;
 
    ret = filestream_write(file, data, size);
-   filestream_close(file);
+   if (filestream_close(file) != 0)
+      if (file)
+         free(file);
 
    if (ret != size)
       return false;

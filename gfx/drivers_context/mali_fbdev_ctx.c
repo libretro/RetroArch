@@ -57,8 +57,6 @@ typedef struct
    float refresh_rate;
 } mali_ctx_data_t;
 
-static enum gfx_ctx_api mali_api           = GFX_CTX_NONE;
-
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
    int fd;
@@ -213,33 +211,20 @@ static void gfx_ctx_mali_fbdev_input_driver(void *data,
 
 static enum gfx_ctx_api gfx_ctx_mali_fbdev_get_api(void *data)
 {
-   return mali_api;
+   return GFX_CTX_OPENGL_ES_API;
 }
 
 static bool gfx_ctx_mali_fbdev_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-   mali_api = api;
-
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
-
    return false;
 }
 
-static bool gfx_ctx_mali_fbdev_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool gfx_ctx_mali_fbdev_has_focus(void *data) { return true; }
 
-static bool gfx_ctx_mali_fbdev_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool gfx_ctx_mali_fbdev_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void gfx_ctx_mali_fbdev_set_swap_interval(void *data,
       int swap_interval)
@@ -257,13 +242,6 @@ static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
 
 #ifdef HAVE_EGL
    egl_swap_buffers(&mali->egl);
-#endif
-}
-
-static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-   return egl_get_proc_address(symbol);
 #endif
 }
 
@@ -285,10 +263,7 @@ static uint32_t gfx_ctx_mali_fbdev_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_mali_fbdev_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_mali_fbdev_set_flags(void *data, uint32_t flags) { }
 
 static float gfx_ctx_mali_fbdev_get_refresh_rate(void *data)
 {
@@ -319,11 +294,15 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    false, /* has_windowed */
    gfx_ctx_mali_fbdev_swap_buffers,
    gfx_ctx_mali_fbdev_input_driver,
-   gfx_ctx_mali_fbdev_get_proc_address,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,
-   "mali-fbdev",
+   "fbdev_mali",
    gfx_ctx_mali_fbdev_get_flags,
    gfx_ctx_mali_fbdev_set_flags,
    gfx_ctx_mali_fbdev_bind_hw_render,

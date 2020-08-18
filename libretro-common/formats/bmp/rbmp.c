@@ -41,17 +41,15 @@
 
 typedef struct
 {
-   uint32_t img_x;
-   uint32_t img_y;
-   int img_n;
-   int img_out_n;
-
-   int buflen;
-   unsigned char buffer_start[128];
-
    unsigned char *img_buffer;
    unsigned char *img_buffer_end;
    unsigned char *img_buffer_original;
+   int img_n;
+   int img_out_n;
+   int buflen;
+   uint32_t img_x;
+   uint32_t img_y;
+   unsigned char buffer_start[128];
 } rbmp_context;
 
 struct rbmp
@@ -735,7 +733,7 @@ static void rbmp_convert_frame(uint32_t *frame, unsigned width, unsigned height)
 {
    uint32_t *end = frame + (width * height * sizeof(uint32_t))/4;
 
-   while(frame < end)
+   while (frame < end)
    {
       uint32_t pixel = *frame;
       *frame = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);

@@ -17,11 +17,15 @@
 
 #include <retro_inline.h>
 
+#include <lists/string_list.h>
+
 #include "dxgi_common.h"
 #ifdef CINTERFACE
 #define D3D11_NO_HELPERS
 #endif
 #include <d3d11.h>
+
+#define D3D11_MAX_GPU_COUNT 16
 
 typedef const ID3D11ShaderResourceView* D3D11ShaderResourceViewRef;
 typedef const ID3D11SamplerState*       D3D11SamplerStateRef;
@@ -2449,6 +2453,7 @@ typedef struct
 
 typedef struct
 {
+   UINT32 colors[4];
    struct
    {
       float x, y, w, h;
@@ -2457,7 +2462,6 @@ typedef struct
    {
       float u, v, w, h;
    } coords;
-   UINT32 colors[4];
    struct
    {
       float scaling;
@@ -2585,6 +2589,9 @@ typedef struct
    } pass[GFX_MAX_SHADERS];
 
    struct video_shader* shader_preset;
+   struct string_list *gpu_list;
+   IDXGIAdapter1 *current_adapter;
+   IDXGIAdapter1 *adapters[D3D11_MAX_GPU_COUNT];
    d3d11_texture_t      luts[GFX_MAX_TEXTURES];
 } d3d11_video_t;
 

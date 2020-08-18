@@ -25,15 +25,17 @@
 
 #define PANIC_BUTTON_MASK (VPAD_BUTTON_R | VPAD_BUTTON_L | VPAD_BUTTON_STICK_R | VPAD_BUTTON_STICK_L)
 
+#define WPAD_INVALID_CHANNEL -1
+
 typedef struct _drc_state drc_state;
 struct _drc_state
 {
    uint64_t button_state;
    int16_t  analog_state[3][2];
 };
-static drc_state gamepads[WIIU_GAMEPAD_CHANNELS] = { 0 };
 
-#define WPAD_INVALID_CHANNEL -1
+/* TODO/FIXME - static global variables */
+static drc_state gamepads[WIIU_GAMEPAD_CHANNELS]   = { 0 };
 static int channel_slot_map[WIIU_GAMEPAD_CHANNELS] = { WPAD_INVALID_CHANNEL, WPAD_INVALID_CHANNEL };
 
 static VPADChan to_gamepad_channel(unsigned pad)
@@ -268,41 +270,36 @@ static bool wpad_init(void *data)
    return true;
 }
 
-static bool wpad_query_pad(unsigned pad)
+static bool wpad_query_pad(unsigned port)
 {
-   return pad < MAX_USERS && (to_gamepad_channel(pad) != WPAD_INVALID_CHANNEL);
+   return port < MAX_USERS && 
+      (to_gamepad_channel(port) != WPAD_INVALID_CHANNEL);
 }
 
-static void wpad_destroy(void)
-{
+static void wpad_destroy(void) { }
 
-}
-
-static bool wpad_button(unsigned pad, uint16_t button_bit)
+static int16_t wpad_button(unsigned port, uint16_t joykey)
 {
    VPADChan channel;
-
-   if (!wpad_query_pad(pad))
-      return false;
-
-   channel = to_gamepad_channel(pad);
+   if (!wpad_query_pad(port))
+      return 0;
+   channel = to_gamepad_channel(port);
    if (channel < 0)
-      return false;
-
-   return gamepads[channel].button_state & (UINT64_C(1) << button_bit);
+      return 0;
+   return (gamepads[channel].button_state & (UINT64_C(1) << joykey));
 }
 
-static void wpad_get_buttons(unsigned pad, input_bits_t *state)
+static void wpad_get_buttons(unsigned port, input_bits_t *state)
 {
    VPADChan channel;
 
-   if (!wpad_query_pad(pad))
+   if (!wpad_query_pad(port))
    {
       BIT256_CLEAR_ALL_PTR(state);
       return;
    }
 
-   channel = to_gamepad_channel(pad);
+   channel = to_gamepad_channel(port);
    if (channel < 0)
    {
       BIT256_CLEAR_ALL_PTR(state);
@@ -312,23 +309,53 @@ static void wpad_get_buttons(unsigned pad, input_bits_t *state)
    BITS_COPY32_PTR(state, gamepads[channel].button_state);
 }
 
-static int16_t wpad_axis(unsigned pad, uint32_t axis)
+static int16_t wpad_axis(unsigned port, uint32_t axis)
 {
    axis_data data;
    VPADChan channel;
 
-   if (!wpad_query_pad(pad) || axis == AXIS_NONE)
+   if (!wpad_query_pad(port))
       return 0;
 
-   channel = to_gamepad_channel(pad);
+   channel = to_gamepad_channel(port);
    if (channel < 0)
       return 0;
 
    pad_functions.read_axis_data(axis, &data);
-   return pad_functions.get_axis_value(data.axis, gamepads[channel].analog_state, data.is_negative);
+   return pad_functions.get_axis_value(data.axis,
+         gamepads[channel].analog_state, data.is_negative);
 }
 
-static const char *wpad_name(unsigned pad)
+static int16_t wpad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && wpad_button(port_idx, (uint16_t)joykey))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(wpad_axis(port_idx, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
+}
+
+static const char *wpad_name(unsigned port)
 {
    return PAD_NAME_WIIU_GAMEPAD;
 }
@@ -339,6 +366,7 @@ input_device_driver_t wpad_driver =
   wpad_query_pad,
   wpad_destroy,
   wpad_button,
+  wpad_state,
   wpad_get_buttons,
   wpad_axis,
   wpad_poll,

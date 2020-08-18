@@ -25,9 +25,9 @@
 struct hidpad_psxadapter_data
 {
    struct pad_connection* connection;
-   uint8_t data[64];
    uint32_t slot;
    uint32_t buttons;
+   uint8_t data[64];
 };
 
 static void* hidpad_psxadapter_init(void *data, uint32_t slot, hid_driver_t *driver)
@@ -99,7 +99,10 @@ static int16_t hidpad_psxadapter_get_axis(void *data, unsigned axis)
 
    val = (val << 8) - 0x8000;
 
-   return (abs(val) > 0x1000) ? val : 0; /* hard coded deadzone */
+   /* hard coded deadzone */
+   if (abs(val) > 0x1000)
+      return val;
+   return 0;
 }
 
 #define PSX_H_GET(a) (a & 0x0F) /*HAT MASK = 0x0F */

@@ -60,9 +60,9 @@ typedef struct xaudio2 xaudio2_t;
 typedef struct
 {
    xaudio2_t *xa;
+   size_t bufsize;
    bool nonblock;
    bool is_paused;
-   size_t bufsize;
 } xa_t;
 
 /* Forward declarations */
@@ -410,16 +410,12 @@ static void xa_set_nonblock_state(void *data, bool state)
 
 static bool xa_start(void *data, bool is_shutdown)
 {
-   xa_t *xa = (xa_t*)data;
+   xa_t *xa      = (xa_t*)data;
    xa->is_paused = false;
    return true;
 }
 
-static bool xa_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool xa_use_float(void *data) { return true; }
 
 static void xa_free(void *data)
 {

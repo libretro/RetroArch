@@ -30,7 +30,7 @@ RETRO_BEGIN_DECLS
 
 #define AUDIO_MIXER_MAX_STREAMS        16
 
-#define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 4)
+#define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 5)
 
 /* do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
 enum audio_mixer_system_slot
@@ -38,7 +38,8 @@ enum audio_mixer_system_slot
    AUDIO_MIXER_SYSTEM_SLOT_OK = AUDIO_MIXER_MAX_STREAMS,
    AUDIO_MIXER_SYSTEM_SLOT_CANCEL,
    AUDIO_MIXER_SYSTEM_SLOT_NOTICE,
-   AUDIO_MIXER_SYSTEM_SLOT_BGM
+   AUDIO_MIXER_SYSTEM_SLOT_BGM,
+   AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK
 };
 
 enum audio_action
@@ -76,11 +77,11 @@ enum audio_mixer_state
 
 typedef struct audio_statistics
 {
+   unsigned samples;
    float average_buffer_saturation;
    float std_deviation_percentage;
    float close_to_underrun;
    float close_to_blocking;
-   unsigned samples;
 } audio_statistics_t;
 
 RETRO_END_DECLS

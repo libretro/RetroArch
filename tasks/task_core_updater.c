@@ -50,18 +50,6 @@ enum core_updater_list_status
    CORE_UPDATER_LIST_END
 };
 
-typedef struct core_updater_list_handle
-{
-   core_updater_list_t* core_list;
-   bool refresh_menu;
-   retro_task_t *http_task;
-   bool http_task_finished;
-   bool http_task_complete;
-   bool http_task_success;
-   http_transfer_data_t *http_data;
-   enum core_updater_list_status status;
-} core_updater_list_handle_t;
-
 /* Download core */
 enum core_updater_download_status
 {
@@ -74,31 +62,6 @@ enum core_updater_download_status
    CORE_UPDATER_DOWNLOAD_END
 };
 
-typedef struct core_updater_download_handle
-{
-   bool auto_backup;
-   size_t auto_backup_history_size;
-   char *path_dir_libretro;
-   char *path_dir_core_assets;
-   char *remote_filename;
-   char *remote_core_path;
-   char *local_download_path;
-   char *local_core_path;
-   char *display_name;
-   uint32_t local_crc;
-   uint32_t remote_crc;
-   bool crc_match;
-   retro_task_t *http_task;
-   bool http_task_finished;
-   bool http_task_complete;
-   retro_task_t *decompress_task;
-   bool decompress_task_finished;
-   bool decompress_task_complete;
-   bool backup_enabled;
-   retro_task_t *backup_task;
-   enum core_updater_download_status status;
-} core_updater_download_handle_t;
-
 /* Update installed cores */
 enum update_installed_cores_status
 {
@@ -110,21 +73,58 @@ enum update_installed_cores_status
    UPDATE_INSTALLED_CORES_END
 };
 
+typedef struct core_updater_list_handle
+{
+   core_updater_list_t* core_list;
+   retro_task_t *http_task;
+   http_transfer_data_t *http_data;
+   enum core_updater_list_status status;
+   bool refresh_menu;
+   bool http_task_finished;
+   bool http_task_complete;
+   bool http_task_success;
+} core_updater_list_handle_t;
+
+typedef struct core_updater_download_handle
+{
+   char *path_dir_libretro;
+   char *path_dir_core_assets;
+   char *remote_filename;
+   char *remote_core_path;
+   char *local_download_path;
+   char *local_core_path;
+   char *display_name;
+   retro_task_t *http_task;
+   retro_task_t *decompress_task;
+   retro_task_t *backup_task;
+   size_t auto_backup_history_size;
+   uint32_t local_crc;
+   uint32_t remote_crc;
+   enum core_updater_download_status status;
+   bool crc_match;
+   bool http_task_finished;
+   bool http_task_complete;
+   bool auto_backup;
+   bool decompress_task_finished;
+   bool decompress_task_complete;
+   bool backup_enabled;
+} core_updater_download_handle_t;
+
 typedef struct update_installed_cores_handle
 {
-   bool auto_backup;
-   size_t auto_backup_history_size;
    char *path_dir_libretro;
    char *path_dir_core_assets;
    core_updater_list_t* core_list;
    retro_task_t *list_task;
    retro_task_t *download_task;
+   size_t auto_backup_history_size;
    size_t list_size;
    size_t list_index;
    size_t installed_index;
    unsigned num_updated;
    unsigned num_locked;
    enum update_installed_cores_status status;
+   bool auto_backup;
 } update_installed_cores_handle_t;
 
 /*********************/
@@ -1421,7 +1421,7 @@ void task_push_update_installed_cores(
    update_installed_handle->path_dir_libretro        = strdup(path_dir_libretro);
    update_installed_handle->path_dir_core_assets     = string_is_empty(path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
-   update_installed_handle->core_list                = core_updater_list_init(CORE_UPDATER_LIST_SIZE);
+   update_installed_handle->core_list                = core_updater_list_init();
    update_installed_handle->list_task                = NULL;
    update_installed_handle->download_task            = NULL;
    update_installed_handle->list_size                = 0;

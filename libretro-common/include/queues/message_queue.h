@@ -47,12 +47,12 @@ typedef struct msg_queue msg_queue_t;
 
 typedef struct
 {
-   char msg[1024];
-   char title[1024];
    unsigned duration;
    unsigned prio;
    enum message_queue_icon icon;
    enum message_queue_category category;
+   char msg[1024];
+   char title[1024];
 } msg_queue_entry_t;
 
 /**

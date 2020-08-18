@@ -67,6 +67,13 @@ enum sinc_window
 
 typedef struct rarch_sinc_resampler
 {
+   /* A buffer for phase_table, buffer_l and buffer_r
+    * are created in a single calloc().
+    * Ensure that we get as good cache locality as we can hope for. */
+   float *main_buffer;
+   float *phase_table;
+   float *buffer_l;
+   float *buffer_r;
    unsigned enable_avx;
    unsigned phase_bits;
    unsigned subphase_bits;
@@ -77,14 +84,6 @@ typedef struct rarch_sinc_resampler
    float subphase_mod;
    float kaiser_beta;
    enum sinc_window window_type;
-
-   /* A buffer for phase_table, buffer_l and buffer_r
-    * are created in a single calloc().
-    * Ensure that we get as good cache locality as we can hope for. */
-   float *main_buffer;
-   float *phase_table;
-   float *buffer_l;
-   float *buffer_r;
 } rarch_sinc_resampler_t;
 
 #if defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)

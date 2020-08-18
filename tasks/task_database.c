@@ -45,32 +45,30 @@
 
 typedef struct database_state_handle
 {
-   uint32_t crc;
-   uint32_t archive_crc;
-   size_t list_index;
-   size_t entry_index;
-   uint8_t *buf;
-   char archive_name[511];
-   char serial[4096];
    database_info_list_t *info;
    struct string_list *list;
+   uint8_t *buf;
+   size_t list_index;
+   size_t entry_index;
+   uint32_t crc;
+   uint32_t archive_crc;
+   char archive_name[511];
+   char serial[4096];
 } database_state_handle_t;
 
 typedef struct db_handle
 {
-   bool pl_fuzzy_archive_match;
-   bool pl_use_old_format;
-   bool pl_compression;
-   bool is_directory;
-   bool scan_started;
-   bool scan_without_core_match;
-   bool show_hidden_files;
-   unsigned status;
    char *playlist_directory;
    char *content_database_path;
    char *fullpath;
    database_info_handle_t *handle;
    database_state_handle_t state;
+   playlist_config_t playlist_config; /* size_t alignment */
+   unsigned status;
+   bool is_directory;
+   bool scan_started;
+   bool scan_without_core_match;
+   bool show_hidden_files;
 } db_handle_t;
 
 /* Forward declarations */
@@ -252,60 +250,48 @@ error:
 
 static int task_database_cue_get_serial(const char *name, char* serial)
 {
-   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
-         * sizeof(char));
-   int ret                          = 0;
+   char track_path[PATH_MAX_LENGTH];
    uint64_t offset                  = 0;
    uint64_t size                    = 0;
    int rv                           = 0;
 
    track_path[0]                    = '\0';
 
-   rv = cue_find_track(name, true, &offset, &size, track_path, PATH_MAX_LENGTH);
+   rv = cue_find_track(name, true, &offset, &size, track_path, sizeof(track_path));
 
    if (rv < 0)
    {
       RARCH_LOG("%s: %s\n",
             msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
             strerror(-rv));
-      free(track_path);
       return 0;
    }
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   ret = intfstream_file_get_serial(track_path, offset, size, serial);
-   free(track_path);
-
-   return ret;
+   return intfstream_file_get_serial(track_path, offset, size, serial);
 }
 
 static int task_database_gdi_get_serial(const char *name, char* serial)
 {
-   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
-         * sizeof(char));
-   int ret                          = 0;
+   char track_path[PATH_MAX_LENGTH];
    int rv                           = 0;
 
    track_path[0]                    = '\0';
 
-   rv = gdi_find_track(name, true, track_path, PATH_MAX_LENGTH);
+   rv = gdi_find_track(name, true, track_path, sizeof(track_path));
 
    if (rv < 0)
    {
       RARCH_LOG("%s: %s\n",
             msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
             strerror(-rv));
-      free(track_path);
       return 0;
    }
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   ret = intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial);
-   free(track_path);
-
-   return ret;
+   return intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial);
 }
 
 static int task_database_chd_get_serial(const char *name, char* serial)
@@ -386,7 +372,7 @@ error:
 
 static int task_database_cue_get_crc(const char *name, uint32_t *crc)
 {
-   char *track_path = (char *)malloc(PATH_MAX_LENGTH);
+   char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
    uint64_t size    = 0;
    int rv           = 0;
@@ -394,14 +380,13 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
    track_path[0]    = '\0';
 
    rv = cue_find_track(name, false, &offset, &size,
-         track_path, PATH_MAX_LENGTH);
+         track_path, sizeof(track_path));
 
    if (rv < 0)
    {
       RARCH_LOG("%s: %s\n",
             msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
             strerror(-rv));
-      free(track_path);
       return 0;
    }
 
@@ -414,24 +399,22 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
    {
       RARCH_LOG("CUE '%s' crc: %x\n", name, *crc);
    }
-   free(track_path);
    return rv;
 }
 
 static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 {
-   char *track_path = (char *)malloc(PATH_MAX_LENGTH);
+   char track_path[PATH_MAX_LENGTH];
    int rv           = 0;
 
    track_path[0] = '\0';
 
-   rv = gdi_find_track(name, true, track_path, PATH_MAX_LENGTH);
+   rv = gdi_find_track(name, true, track_path, sizeof(track_path));
 
    if (rv < 0)
    {
       RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
                 strerror(-rv));
-      free(track_path);
       return 0;
    }
 
@@ -444,7 +427,6 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
    {
       RARCH_LOG("GDI '%s' crc: %x\n", name, *crc);
    }
-   free(track_path);
    return rv;
 }
 
@@ -476,14 +458,16 @@ static void task_database_cue_prune(database_info_handle_t *db,
       const char *name)
 {
    size_t i;
-   char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
+   char path[PATH_MAX_LENGTH];
    intfstream_t *fd = intfstream_open_file(name,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
-      goto end;
+      return;
 
-   while (cue_next_file(fd, name, path, PATH_MAX_LENGTH))
+   path[0] = '\0';
+
+   while (cue_next_file(fd, name, path, sizeof(path)))
    {
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
@@ -497,26 +481,23 @@ static void task_database_cue_prune(database_info_handle_t *db,
       }
    }
 
-end:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   free(path);
+   intfstream_close(fd);
+   free(fd);
 }
 
 static void gdi_prune(database_info_handle_t *db, const char *name)
 {
    size_t i;
-   char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
+   char path[PATH_MAX_LENGTH];
    intfstream_t *fd = intfstream_open_file(name,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
-      goto end;
+      return;
 
-   while (gdi_next_file(fd, name, path, PATH_MAX_LENGTH))
+   path[0] = '\0';
+
+   while (gdi_next_file(fd, name, path, sizeof(path)))
    {
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
@@ -530,9 +511,7 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
       }
    }
 
-end:
    free(fd);
-   free(path);
 }
 
 static enum msg_file_type extension_to_file_type(const char *ext)
@@ -667,14 +646,12 @@ static int database_info_list_iterate_end_no_match(
 
          for (i = 0; i < archive_list->size; i++)
          {
-            char *new_path   = (char*)malloc(
-               PATH_MAX_LENGTH * sizeof(char));
-            size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+            char new_path[PATH_MAX_LENGTH];
             size_t path_len  = strlen(path);
 
             new_path[0] = '\0';
 
-            strlcpy(new_path, path, path_size);
+            strlcpy(new_path, path, sizeof(new_path));
 
             if (path_len + strlen(archive_list->elems[i].data)
                      + 1 < PATH_MAX_LENGTH)
@@ -682,13 +659,11 @@ static int database_info_list_iterate_end_no_match(
                new_path[path_len] = '#';
                strlcpy(new_path + path_len + 1,
                   archive_list->elems[i].data,
-                  path_size - path_len);
+                  sizeof(new_path) - path_len);
             }
 
             string_list_append(db->list, new_path,
                archive_list->elems[i].attr);
-
-            free(new_path);
          }
 
          string_list_free(archive_list);
@@ -733,10 +708,11 @@ static int database_info_list_iterate_found_match(
       const char *archive_name
       )
 {
-   char *db_crc                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *db_playlist_base_str     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *db_playlist_path         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *entry_path_str           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char db_crc[PATH_MAX_LENGTH];
+   char db_playlist_base_str[PATH_MAX_LENGTH];
+   char db_playlist_path[PATH_MAX_LENGTH];
+   char entry_path_str[PATH_MAX_LENGTH];
+   char *hash                     = NULL;
    playlist_t   *playlist         = NULL;
    const char         *db_path    =
       database_info_get_current_name(db_state);
@@ -744,7 +720,6 @@ static int database_info_list_iterate_found_match(
       database_info_get_current_element_name(db);
    database_info_t *db_info_entry =
       &db_state->info->list[db_state->entry_index];
-   char *hash;
 
    db_crc[0]                      = '\0';
    db_playlist_path[0]            = '\0';
@@ -752,28 +727,25 @@ static int database_info_list_iterate_found_match(
    entry_path_str[0]              = '\0';
 
    fill_short_pathname_representation_noext(db_playlist_base_str,
-         db_path, PATH_MAX_LENGTH * sizeof(char));
+         db_path, sizeof(db_playlist_base_str));
 
-   strlcat(db_playlist_base_str,
-         ".lpl",
-         PATH_MAX_LENGTH * sizeof(char));
+   strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
 
    if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join(db_playlist_path, _db->playlist_directory,
-            db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
+            db_playlist_base_str, sizeof(db_playlist_path));
 
-   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
+   playlist_config_set_path(&_db->playlist_config, db_playlist_path);
+   playlist = playlist_init(&_db->playlist_config);
 
-   snprintf(db_crc, PATH_MAX_LENGTH * sizeof(char),
-         "%08X|crc", db_info_entry->crc32);
+   snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
 
    if (entry_path)
-      strlcpy(entry_path_str, entry_path, PATH_MAX_LENGTH * sizeof(char));
+      strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
 
    if (!string_is_empty(archive_name))
       fill_pathname_join_delim(entry_path_str,
-            entry_path_str, archive_name,
-            '#', PATH_MAX_LENGTH * sizeof(char));
+            entry_path_str, archive_name, '#', sizeof(entry_path_str));
 
    if (core_info_database_match_archive_member(
          db_state->list->elems[db_state->list_index].data) &&
@@ -804,8 +776,7 @@ static int database_info_list_iterate_found_match(
    fprintf(stderr, "entry path str: %s\n", entry_path_str);
 #endif
 
-   if (!playlist_entry_exists(playlist, entry_path_str,
-            _db->pl_fuzzy_archive_match))
+   if (!playlist_entry_exists(playlist, entry_path_str))
    {
       struct playlist_entry entry;
 
@@ -830,11 +801,10 @@ static int database_info_list_iterate_found_match(
       entry.last_played_minute= 0;
       entry.last_played_second= 0;
 
-      playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
+      playlist_push(playlist, &entry);
    }
 
-   playlist_write_file(
-         playlist, _db->pl_use_old_format, _db->pl_compression);
+   playlist_write_file(playlist);
    playlist_free(playlist);
 
    database_info_list_free(db_state->info);
@@ -843,11 +813,6 @@ static int database_info_list_iterate_found_match(
    db_state->info        = NULL;
    db_state->crc         = 0;
    db_state->archive_crc = 0;
-
-   free(entry_path_str);
-   free(db_playlist_path);
-   free(db_playlist_base_str);
-   free(db_crc);
 
    /* Move database to start since we are likely to match against it
       again */
@@ -982,7 +947,7 @@ static int task_database_iterate_playlist_lutro(
       database_info_handle_t *db,
       const char *path)
 {
-   char *db_playlist_path  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char db_playlist_path[PATH_MAX_LENGTH];
    playlist_t   *playlist  = NULL;
 
    db_playlist_path[0]     = '\0';
@@ -990,24 +955,20 @@ static int task_database_iterate_playlist_lutro(
    if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join(db_playlist_path,
             _db->playlist_directory,
-            "Lutro.lpl",
-            PATH_MAX_LENGTH * sizeof(char));
+            "Lutro.lpl", sizeof(db_playlist_path));
 
-   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
+   playlist_config_set_path(&_db->playlist_config, db_playlist_path);
+   playlist = playlist_init(&_db->playlist_config);
 
-   free(db_playlist_path);
-
-   if (!playlist_entry_exists(playlist, path,
-            _db->pl_fuzzy_archive_match))
+   if (!playlist_entry_exists(playlist, path))
    {
       struct playlist_entry entry;
-      char *game_title            = (char*)
-         malloc(PATH_MAX_LENGTH * sizeof(char));
+      char game_title[PATH_MAX_LENGTH];
 
       game_title[0]               = '\0';
 
       fill_short_pathname_representation_noext(game_title,
-            path, PATH_MAX_LENGTH * sizeof(char));
+            path, sizeof(game_title));
 
       /* the push function reads our entry as const, 
        * so these casts are safe */
@@ -1030,13 +991,10 @@ static int task_database_iterate_playlist_lutro(
       entry.last_played_minute    = 0;
       entry.last_played_second    = 0;
 
-      playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
-
-      free(game_title);
+      playlist_push(playlist, &entry);
    }
 
-   playlist_write_file(
-         playlist, _db->pl_use_old_format, _db->pl_compression);
+   playlist_write_file(playlist);
    playlist_free(playlist);
 
    return 0;
@@ -1255,6 +1213,8 @@ static void task_database_handler(retro_task_t *task)
          {
             const char *name     = database_info_get_current_element_name(
                   dbinfo);
+            if (name == NULL)
+               goto task_finished;
 
             if (dbinfo->type == DATABASE_TYPE_ITERATE)
                if (path_contains_compressed_file(name))
@@ -1347,39 +1307,42 @@ bool task_push_dbscan(
       bool db_dir_show_hidden_files,
       retro_task_callback_t cb)
 {
-   retro_task_t *t             = task_init();
+   retro_task_t *t                         = task_init();
 #ifdef RARCH_INTERNAL
-   settings_t *settings        = config_get_ptr();
+   settings_t *settings                    = config_get_ptr();
 #endif
-   db_handle_t *db             = (db_handle_t*)calloc(1, sizeof(db_handle_t));
+   db_handle_t *db                         = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
    if (!t || !db)
       goto error;
 
-   t->handler                  = task_database_handler;
-   t->state                    = db;
-   t->callback                 = cb;
-   t->title                    = strdup(msg_hash_to_str(
+   t->handler                              = task_database_handler;
+   t->state                                = db;
+   t->callback                             = cb;
+   t->title                                = strdup(msg_hash_to_str(
             MSG_PREPARING_FOR_CONTENT_SCAN));
-   t->alternative_look         = true;
+   t->alternative_look                     = true;
 
 #ifdef RARCH_INTERNAL
-   t->progress_cb              = task_database_progress_cb;
-   db->scan_without_core_match = settings->bools.scan_without_core_match;
-   db->pl_fuzzy_archive_match  = settings->bools.playlist_fuzzy_archive_match;
-   db->pl_use_old_format       = settings->bools.playlist_use_old_format;
-   db->pl_compression          = settings->bools.playlist_compression;
+   t->progress_cb                          = task_database_progress_cb;
+   db->scan_without_core_match             = settings->bools.scan_without_core_match;
+   db->playlist_config.capacity            = COLLECTION_SIZE;
+   db->playlist_config.old_format          = settings->bools.playlist_use_old_format;
+   db->playlist_config.compress            = settings->bools.playlist_compression;
+   db->playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&db->playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 #else
-   db->pl_fuzzy_archive_match  = false;
-   db->pl_use_old_format       = false;
-   db->pl_compression          = false;
+   db->playlist_config.capacity            = COLLECTION_SIZE;
+   db->playlist_config.old_format          = false;
+   db->playlist_config.compress            = false;
+   db->playlist_config.fuzzy_archive_match = false;
+   playlist_config_set_base_content_directory(&db->playlist_config, NULL);
 #endif
-   db->show_hidden_files       = db_dir_show_hidden_files;
-   db->is_directory            = directory;
-   db->playlist_directory      = NULL;
-   db->fullpath                = strdup(fullpath);
-   db->playlist_directory      = strdup(playlist_directory);
-   db->content_database_path   = strdup(content_database);
+   db->show_hidden_files                   = db_dir_show_hidden_files;
+   db->is_directory                        = directory;
+   db->fullpath                            = strdup(fullpath);
+   db->playlist_directory                  = strdup(playlist_directory);
+   db->content_database_path               = strdup(content_database);
 
    task_queue_push(t);
 

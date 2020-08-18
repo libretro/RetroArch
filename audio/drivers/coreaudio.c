@@ -103,7 +103,7 @@ static OSStatus audio_write_cb(void *userdata,
 
    slock_lock(dev->lock);
 
-   if (fifo_read_avail(dev->buffer) < write_avail)
+   if (FIFO_READ_AVAIL(dev->buffer) < write_avail)
    {
       *action_flags = kAudioUnitRenderAction_OutputIsSilence;
 
@@ -356,14 +356,14 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 
       slock_lock(dev->lock);
 
-      write_avail = fifo_write_avail(dev->buffer);
+      write_avail = FIFO_WRITE_AVAIL(dev->buffer);
       if (write_avail > size)
          write_avail = size;
 
       fifo_write(dev->buffer, buf, write_avail);
-      buf += write_avail;
+      buf     += write_avail;
       written += write_avail;
-      size -= write_avail;
+      size    -= write_avail;
 
       if (dev->nonblock)
       {
@@ -430,7 +430,7 @@ static size_t coreaudio_write_avail(void *data)
    coreaudio_t *dev = (coreaudio_t*)data;
 
    slock_lock(dev->lock);
-   avail = fifo_write_avail(dev->buffer);
+   avail = FIFO_WRITE_AVAIL(dev->buffer);
    slock_unlock(dev->lock);
 
    return avail;

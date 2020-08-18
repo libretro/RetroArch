@@ -34,8 +34,6 @@ typedef struct gdi
    unsigned video_height;
    unsigned screen_width;
    unsigned screen_height;
-   void *ctx_data;
-   const gfx_ctx_driver_t *ctx_driver;
 
    unsigned menu_width;
    unsigned menu_height;
@@ -50,6 +48,9 @@ typedef struct gdi
    bool lte_win98;
    unsigned short *temp_buf;
    unsigned char *menu_frame;
+
+   bool menu_enable;
+   bool menu_full_screen;
 } gdi_t;
 
 typedef struct gdi_texture

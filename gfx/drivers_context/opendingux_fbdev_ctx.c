@@ -42,8 +42,6 @@ typedef struct
    unsigned width, height;
 } opendingux_ctx_data_t;
 
-static enum gfx_ctx_api opendingux_api = GFX_CTX_NONE;
-
 static void gfx_ctx_opendingux_destroy(void *data)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
@@ -182,33 +180,18 @@ static void gfx_ctx_opendingux_input_driver(void *data,
 
 static enum gfx_ctx_api gfx_ctx_opendingux_get_api(void *data)
 {
-   return opendingux_api;
+   return GFX_CTX_OPENGL_ES_API;
 }
 
 static bool gfx_ctx_opendingux_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-
-   opendingux_api = api;
-
-   if (api == GFX_CTX_OPENGL_ES_API)
-      return true;
-   return false;
+   return (api == GFX_CTX_OPENGL_ES_API);
 }
 
-static bool gfx_ctx_opendingux_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gfx_ctx_opendingux_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static void gfx_ctx_opendingux_set_flags(void *data, uint32_t flags) { }
+static bool gfx_ctx_opendingux_has_focus(void *data) { return true; }
+static bool gfx_ctx_opendingux_suppress_screensaver(void *data, bool enable) { return false; } 
 
 static void gfx_ctx_opendingux_swap_buffers(void *data)
 {
@@ -229,13 +212,6 @@ static void gfx_ctx_opendingux_set_swap_interval(
 #endif
 }
 
-#ifdef HAVE_EGL
-static gfx_ctx_proc_t gfx_ctx_opendingux_get_proc_address(const char *symbol)
-{
-   return egl_get_proc_address(symbol);
-}
-#endif
-
 static void gfx_ctx_opendingux_bind_hw_render(void *data, bool enable)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
@@ -252,11 +228,6 @@ static uint32_t gfx_ctx_opendingux_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 
    return flags;
-}
-
-static void gfx_ctx_opendingux_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
 }
 
 const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
@@ -282,14 +253,14 @@ const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    gfx_ctx_opendingux_swap_buffers,
    gfx_ctx_opendingux_input_driver,
 #ifdef HAVE_EGL
-   gfx_ctx_opendingux_get_proc_address,
+   egl_get_proc_address,
 #else
    NULL,
 #endif
    NULL,
    NULL,
    NULL,
-   "opendingux-fbdev",
+   "fbdev_opendingux",
    gfx_ctx_opendingux_get_flags,
    gfx_ctx_opendingux_set_flags,
    gfx_ctx_opendingux_bind_hw_render,

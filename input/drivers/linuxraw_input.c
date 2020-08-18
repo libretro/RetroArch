@@ -119,18 +119,14 @@ static int16_t linuxraw_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = linuxraw->joypad->state(
+                  joypad_info, binds[port], port);
+
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
                {
                   if (
-                        button_is_pressed(
-                           linuxraw->joypad, joypad_info, binds[port],
-                           port, i)
-                     )
-                     ret |= (1 << i);
-                  else if (
                         linuxraw->state[rarch_keysym_lut[
                         (enum retro_key)binds[port][i].key]]
                         )
@@ -162,13 +158,9 @@ static int16_t linuxraw_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = input_joypad_analog(linuxraw->joypad,
-                  joypad_info, port, idx, id, binds[port]);
-            if (!ret)
-               ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
-            return ret;
-         }
+            return linuxraw_analog_pressed(
+                  linuxraw, binds[port], idx, id);
+         break;
    }
 
    return 0;

@@ -54,14 +54,10 @@ typedef struct
    bool should_reset_mode;
 } xegl_ctx_data_t;
 
+/* TODO/FIXME - static globals */
 static enum gfx_ctx_api xegl_api = GFX_CTX_NONE;
 
-static int xegl_nul_handler(Display *dpy, XErrorEvent *event)
-{
-   (void)dpy;
-   (void)event;
-   return 0;
-}
+static int xegl_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
 
 static void gfx_ctx_xegl_destroy(void *data)
 {
@@ -468,8 +464,6 @@ static void gfx_ctx_xegl_input_driver(void *data,
 
 static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
-
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
@@ -478,10 +472,7 @@ static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
    return true;
 }
 
-static enum gfx_ctx_api gfx_ctx_xegl_get_api(void *data)
-{
-   return xegl_api;
-}
+static enum gfx_ctx_api gfx_ctx_xegl_get_api(void *data) { return xegl_api; }
 
 static bool gfx_ctx_xegl_bind_api(void *video_driver,
    enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -517,7 +508,6 @@ static bool gfx_ctx_xegl_bind_api(void *video_driver,
 
 static void gfx_ctx_xegl_show_mouse(void *data, bool state)
 {
-   (void)data;
    x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
@@ -525,55 +515,27 @@ static void gfx_ctx_xegl_swap_buffers(void *data)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
-   switch (xegl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
-         egl_swap_buffers(&xegl->egl);
+   egl_swap_buffers(&xegl->egl);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
-   switch (xegl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_bind_hw_render(&xegl->egl, enable);
+   egl_bind_hw_render(&xegl->egl, enable);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static void gfx_ctx_xegl_set_swap_interval(void *data, int swap_interval)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
-   switch (xegl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
-         egl_set_swap_interval(&xegl->egl, swap_interval);
+   egl_set_swap_interval(&xegl->egl, swap_interval);
 #endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
@@ -615,10 +577,7 @@ static uint32_t gfx_ctx_xegl_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_xegl_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_xegl_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_x_egl =
 {
@@ -647,7 +606,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL,
    NULL,
    gfx_ctx_xegl_show_mouse,
-   "x-egl",
+   "egl_x",
    gfx_ctx_xegl_get_flags,
    gfx_ctx_xegl_set_flags,
    gfx_ctx_xegl_bind_hw_render,

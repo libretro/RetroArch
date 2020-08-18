@@ -20,8 +20,8 @@ int gzclose(gzFile file)
       return Z_STREAM_ERROR;
    state = (gz_statep)file;
 
-   return state->mode == GZ_READ ? gzclose_r(file) : gzclose_w(file);
-#else
-   return gzclose_r(file);
+   if (state->mode != GZ_READ)
+      return gzclose_w(file);
 #endif
+   return gzclose_r(file);
 }

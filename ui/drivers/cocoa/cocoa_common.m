@@ -29,6 +29,7 @@
 #ifdef HAVE_COCOATOUCH
 #import "GCDWebUploader.h"
 #import "WebServer.h"
+#include "apple_platform.h"
 #endif
 
 
@@ -46,13 +47,13 @@ void *glkitview_init(void);
 
 @implementation CocoaView
 
-#if defined(HAVE_COCOA_METAL)
+#if !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
 - (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window {
    return YES;
 }
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
 - (void)scrollWheel:(NSEvent *)theEvent {
     cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
     (void)apple;
@@ -74,7 +75,7 @@ void *glkitview_init(void);
 {
    self = [super init];
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 #endif
 
@@ -83,10 +84,14 @@ void *glkitview_init(void);
    cocoa_view.data = (CocoaView*)self;
 
    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
-#elif defined(HAVE_COCOA_METAL)
+#elif !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
    [self registerForDraggedTypes:@[NSColorPboardType, NSFilenamesPboardType]];
 #elif defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA_METAL)
+    self.view = [UIView new];
+#else
    self.view = (BRIDGE GLKView*)glkitview_init();
+#endif
 #if TARGET_OS_IOS
     UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
     swipe.numberOfTouchesRequired = 4;
@@ -108,7 +113,7 @@ void *glkitview_init(void);
    return self;
 }
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
@@ -169,18 +174,13 @@ void *glkitview_init(void);
 #elif TARGET_OS_IOS
 -(void) showNativeMenu {
     dispatch_async(dispatch_get_main_queue(), ^{
-        [[RetroArch_iOS get] toggleUI];
+        command_event(CMD_EVENT_MENU_TOGGLE, NULL);
     });
-}
-
-- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
-{
-    return UIRectEdgeBottom;
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden
 {
-    return NO;
+    return YES;
 }
 
 -(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {

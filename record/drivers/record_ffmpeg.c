@@ -1121,7 +1121,7 @@ static bool ffmpeg_push_video(void *data,
       unsigned avail;
 
       slock_lock(handle->lock);
-      avail = fifo_write_avail(handle->attr_fifo);
+      avail = FIFO_WRITE_AVAIL(handle->attr_fifo);
       slock_unlock(handle->lock);
 
       if (!handle->alive)
@@ -1183,7 +1183,7 @@ static bool ffmpeg_push_audio(void *data,
       unsigned avail;
 
       slock_lock(handle->lock);
-      avail = fifo_write_avail(handle->audio_fifo);
+      avail = FIFO_WRITE_AVAIL(handle->audio_fifo);
       slock_unlock(handle->lock);
 
       if (!handle->alive)
@@ -1548,15 +1548,15 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
       size_t write_frames    = write_left > can_write ? can_write : write_left;
       size_t write_size      = write_frames *
          handle->params.channels * handle->audio.sample_size;
-
       size_t bytes_in_buffer = handle->audio.frames_in_buffer *
          handle->params.channels * handle->audio.sample_size;
       size_t written_bytes   = written_frames *
          handle->params.channels * handle->audio.sample_size;
 
-      memcpy(handle->audio.buffer + bytes_in_buffer,
-            (const uint8_t*)aud->data + written_bytes,
-            write_size);
+      if (handle->audio.buffer)
+         memcpy(handle->audio.buffer + bytes_in_buffer,
+               (const uint8_t*)aud->data + written_bytes,
+               write_size);
 
       written_frames                 += write_frames;
       handle->audio.frames_in_buffer += write_frames;
@@ -1578,7 +1578,7 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
 static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
       size_t audio_buf_size)
 {
-   size_t avail = fifo_read_avail(handle->audio_fifo);
+   size_t avail = FIFO_READ_AVAIL(handle->audio_fifo);
 
    if (avail)
    {
@@ -1624,20 +1624,20 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
       if (handle->config.audio_enable)
       {
-         if (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
+         if (FIFO_READ_AVAIL(handle->audio_fifo) >= audio_buf_size)
          {
             struct record_audio_data aud = {0};
 
             fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
             aud.frames = handle->audio.codec->frame_size;
-            aud.data = audio_buf;
+            aud.data   = audio_buf;
             ffmpeg_push_audio_thread(handle, &aud, true);
 
             did_work = true;
          }
       }
 
-      if (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
+      if (FIFO_READ_AVAIL(handle->attr_fifo) >= sizeof(attr_buf))
       {
          fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
          fifo_read(handle->video_fifo, video_buf,
@@ -1647,7 +1647,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
          did_work = true;
       }
-   }while(did_work);
+   }while (did_work);
 
    /* Flush out last audio. */
    if (handle->config.audio_enable)
@@ -1705,11 +1705,11 @@ static void ffmpeg_thread(void *data)
       bool avail_audio = false;
 
       slock_lock(ff->lock);
-      if (fifo_read_avail(ff->attr_fifo) >= sizeof(attr_buf))
+      if (FIFO_READ_AVAIL(ff->attr_fifo) >= sizeof(attr_buf))
          avail_video = true;
 
       if (ff->config.audio_enable)
-         if (fifo_read_avail(ff->audio_fifo) >= audio_buf_size)
+         if (FIFO_READ_AVAIL(ff->audio_fifo) >= audio_buf_size)
             avail_audio = true;
       slock_unlock(ff->lock);
 
@@ -1751,7 +1751,7 @@ static void ffmpeg_thread(void *data)
          scond_signal(ff->cond);
 
          aud.frames = ff->audio.codec->frame_size;
-         aud.data = audio_buf;
+         aud.data   = audio_buf;
 
          ffmpeg_push_audio_thread(ff, &aud, true);
       }

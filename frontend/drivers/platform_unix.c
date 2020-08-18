@@ -119,6 +119,14 @@ static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
 static char unix_cpu_model_name[64] = {0};
 #endif
 
+/* /proc/meminfo parameters */
+#define PROC_MEMINFO_PATH              "/proc/meminfo"
+#define PROC_MEMINFO_MEM_AVAILABLE_TAG "MemAvailable:"
+#define PROC_MEMINFO_MEM_FREE_TAG      "MemFree:"
+#define PROC_MEMINFO_BUFFERS_TAG       "Buffers:"
+#define PROC_MEMINFO_CACHED_TAG        "Cached:"
+#define PROC_MEMINFO_SHMEM_TAG         "Shmem:"
+
 #if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
 static int speak_pid                            = 0;
 #endif
@@ -189,6 +197,33 @@ error:
 #ifdef ANDROID
 /* forward declaration */
 bool android_run_events(void *data);
+
+void android_dpi_get_density(char *s, size_t len)
+{
+   static bool inited_once             = false;
+   static bool inited2_once            = false;
+   static char string[PROP_VALUE_MAX]  = {0};
+   static char string2[PROP_VALUE_MAX] = {0};
+   if (!inited_once)
+   {
+      system_property_get("getprop", "ro.sf.lcd_density", string);
+      inited_once = true;
+   }
+
+   if (!string_is_empty(string))
+   {
+      strlcpy(s, string, len);
+      return;
+   }
+
+   if (!inited2_once)
+   {
+      system_property_get("wm", "density", string2);
+      inited2_once = true;
+   }
+
+   strlcpy(s, string2, len);
+}
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
@@ -1652,29 +1687,29 @@ static void frontend_unix_get_env(int *argc,
 
    /* Set automatic default values per device */
    if (device_is_xperia_play(device_model))
-      g_defaults.settings.out_latency = 128;
+      g_defaults.settings_out_latency = 128;
    else if (strstr(device_model, "GAMEMID_BT"))
-      g_defaults.settings.out_latency = 160;
+      g_defaults.settings_out_latency = 160;
    else if (strstr(device_model, "SHIELD"))
    {
-      g_defaults.settings.video_refresh_rate = 60.0;
+      g_defaults.settings_video_refresh_rate = 60.0;
 #ifdef HAVE_MENU
 #ifdef HAVE_MATERIALUI
-      g_defaults.menu.materialui.menu_color_theme_enable = true;
-      g_defaults.menu.materialui.menu_color_theme        = MATERIALUI_THEME_NVIDIA_SHIELD;
+      g_defaults.menu_materialui_menu_color_theme_enable = true;
+      g_defaults.menu_materialui_menu_color_theme        = MATERIALUI_THEME_NVIDIA_SHIELD;
 #endif
 #endif
 
 #if 0
       /* Set the OK/cancel menu buttons to the default
        * ones used for Shield */
-      g_defaults.menu.controls.set = true;
-      g_defaults.menu.controls.menu_btn_ok     = RETRO_DEVICE_ID_JOYPAD_B;
-      g_defaults.menu.controls.menu_btn_cancel = RETRO_DEVICE_ID_JOYPAD_A;
+      g_defaults.menu_controls_set = true;
+      g_defaults.menu_controls_menu_btn_ok     = RETRO_DEVICE_ID_JOYPAD_B;
+      g_defaults.menu_controls_menu_btn_cancel = RETRO_DEVICE_ID_JOYPAD_A;
 #endif
    }
    else if (strstr(device_model, "JSS15J"))
-      g_defaults.settings.video_refresh_rate = 59.65;
+      g_defaults.settings_video_refresh_rate = 59.65;
 
    /* For gamepad-like/console devices:
     *
@@ -1685,10 +1720,10 @@ static void frontend_unix_get_env(int *argc,
 
    if (device_is_game_console(device_model) || device_is_android_tv())
    {
-      g_defaults.overlay.set    = true;
-      g_defaults.overlay.enable = false;
-      strlcpy(g_defaults.settings.menu, "ozone",
-            sizeof(g_defaults.settings.menu));
+      g_defaults.overlay_set    = true;
+      g_defaults.overlay_enable = false;
+      strlcpy(g_defaults.settings_menu, "ozone",
+            sizeof(g_defaults.settings_menu));
    }
 #else
    char base_path[PATH_MAX] = {0};
@@ -2104,35 +2139,85 @@ static uint64_t frontend_unix_get_mem_total(void)
 
 static uint64_t frontend_unix_get_mem_free(void)
 {
-#if defined(ANDROID) || (!defined(__linux__) && !defined(__OpenBSD__))
    char line[256];
-   uint64_t total    = 0;
-   uint64_t freemem  = 0;
-   uint64_t buffers  = 0;
-   uint64_t cached   = 0;
-   FILE* data = fopen("/proc/meminfo", "r");
-   if (!data)
+   unsigned long mem_available = 0;
+   unsigned long mem_free      = 0;
+   unsigned long buffers       = 0;
+   unsigned long cached        = 0;
+   unsigned long shmem         = 0;
+   bool mem_available_found    = false;
+   bool mem_free_found         = false;
+   bool buffers_found          = false;
+   bool cached_found           = false;
+   bool shmem_found            = false;
+   FILE* meminfo_file          = NULL;
+
+   line[0] = '\0';
+
+   /* Open /proc/meminfo */
+   meminfo_file = fopen(PROC_MEMINFO_PATH, "r");
+
+   if (!meminfo_file)
       return 0;
 
-   while (fgets(line, sizeof(line), data))
+   /* Parse lines
+    * (Note: virtual filesystem, so don't have to
+    *  worry about buffering file reads) */
+   while (fgets(line, sizeof(line), meminfo_file))
    {
-      if (sscanf(line, "MemTotal: " STRING_REP_USIZE " kB", (size_t*)&total)  == 1)
-         total   *= 1024;
-      if (sscanf(line, "MemFree: " STRING_REP_USIZE " kB", (size_t*)&freemem) == 1)
-         freemem *= 1024;
-      if (sscanf(line, "Buffers: " STRING_REP_USIZE " kB", (size_t*)&buffers) == 1)
-         buffers *= 1024;
-      if (sscanf(line, "Cached: " STRING_REP_USIZE " kB", (size_t*)&cached)   == 1)
-         cached  *= 1024;
+      /* If 'MemAvailable' is found, we can return immediately */
+      if (!mem_available_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_MEM_AVAILABLE_TAG,
+               STRLEN_CONST(PROC_MEMINFO_MEM_AVAILABLE_TAG)))
+         {
+            mem_available_found = true;
+            sscanf(line, PROC_MEMINFO_MEM_AVAILABLE_TAG " %lu kB", &mem_available);
+            break;
+         }
+
+      if (!mem_free_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_MEM_FREE_TAG,
+               STRLEN_CONST(PROC_MEMINFO_MEM_FREE_TAG)))
+         {
+            mem_free_found = true;
+            sscanf(line, PROC_MEMINFO_MEM_FREE_TAG " %lu kB", &mem_free);
+         }
+
+      if (!buffers_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_BUFFERS_TAG,
+               STRLEN_CONST(PROC_MEMINFO_BUFFERS_TAG)))
+         {
+            buffers_found = true;
+            sscanf(line, PROC_MEMINFO_BUFFERS_TAG " %lu kB", &buffers);
+         }
+
+      if (!cached_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_CACHED_TAG,
+               STRLEN_CONST(PROC_MEMINFO_CACHED_TAG)))
+         {
+            cached_found = true;
+            sscanf(line, PROC_MEMINFO_CACHED_TAG " %lu kB", &cached);
+         }
+
+      if (!shmem_found)
+         if (string_starts_with_size(line, PROC_MEMINFO_SHMEM_TAG,
+               STRLEN_CONST(PROC_MEMINFO_SHMEM_TAG)))
+         {
+            shmem_found = true;
+            sscanf(line, PROC_MEMINFO_SHMEM_TAG " %lu kB", &shmem);
+         }
    }
 
-   fclose(data);
-   return freemem - buffers - cached;
-#else
-   unsigned long long ps = sysconf(_SC_PAGESIZE);
-   unsigned long long pn = sysconf(_SC_AVPHYS_PAGES);
-   return ps * pn;
-#endif
+   /* Close /proc/meminfo */
+   fclose(meminfo_file);
+   meminfo_file = NULL;
+
+   /* Use 'accurate' free memory value, if available */
+   if (mem_available_found)
+      return (uint64_t)mem_available * 1024;
+
+   /* ...Otherwise, use estimate */
+   return (uint64_t)((mem_free + buffers + cached) - shmem) * 1024;
 }
 
 /*#include <valgrind/valgrind.h>*/

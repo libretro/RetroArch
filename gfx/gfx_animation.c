@@ -24,83 +24,26 @@
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
 #include <lists/string_list.h>
-
-#define DG_DYNARR_IMPLEMENTATION
-#include <retro_assert.h>
-#define DG_DYNARR_ASSERT(cond, msg)  (void)0
-#include <array/dynarray.h>
-#undef DG_DYNARR_IMPLEMENTATION
+#include <array/rbuf.h>
 
 #include "gfx_animation.h"
 #include "../performance_counters.h"
-
-typedef float (*easing_cb) (float, float, float, float);
-
-struct tween
-{
-   float       duration;
-   float       running_since;
-   float       initial_value;
-   float       target_value;
-   float       *subject;
-   uintptr_t   tag;
-   easing_cb   easing;
-   tween_cb    cb;
-   void        *userdata;
-   bool        deleted;
-};
-
-DA_TYPEDEF(struct tween, tween_array_t)
-
-struct gfx_animation
-{
-   bool initialized;
-   bool pending_deletes;
-   bool in_update;
-   bool animation_is_active;
-   bool ticker_is_active;
-
-   uint64_t ticker_idx;            /* updated every TICKER_SPEED us */
-   uint64_t ticker_slow_idx;       /* updated every TICKER_SLOW_SPEED us */
-   uint64_t ticker_pixel_idx;      /* updated every frame */
-   uint64_t ticker_pixel_line_idx; /* updated every frame */
-   retro_time_t cur_time;
-   retro_time_t old_time;
-
-   float delta_time;
-
-   tween_array_t list;
-   tween_array_t pending;
-};
-
-typedef struct gfx_animation gfx_animation_t;
 
 #define TICKER_SPEED       333333
 #define TICKER_SLOW_SPEED  1666666
 
 /* Pixel ticker nominally increases by one after each
- * ticker_pixel_period ms (actual increase depends upon
- * ticker speed setting and display resolution) */
-static const float ticker_pixel_period = (1.0f / 60.0f) * 1000.0f;
+ * TICKER_PIXEL_PERIOD ms (actual increase depends upon
+ * ticker speed setting and display resolution) 
+ *
+ * Formula is: (1.0f / 60.0f) * 1000.0f
+ * */
+#define TICKER_PIXEL_PERIOD (16.666666666666668f)
 
-static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
- 
-/* Forward declarations */
-static void gfx_animation_update_time_default(
-      float *dst,
-      unsigned video_width, unsigned video_height);
-
-static update_time_cb update_time_callback = gfx_animation_update_time_default;
+/* By default, this should be a NOOP */
+static update_time_cb update_time_callback = NULL;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
-
-static gfx_animation_t *anim_get_ptr(void)
-{
-   /* TODO/FIXME - global that gets referenced outside,
-    * needs to be refactored */
-   static gfx_animation_t anim;
-   return &anim;
-}
 
 static float easing_linear(float t, float b, float c, float d)
 {
@@ -857,10 +800,10 @@ static size_t get_line_smooth_scroll_ticks(size_t line_len)
    float cpm            = 1000.0f;
    /* Base time for which a line should be shown, in ms */
    float line_duration  = (line_len * 60.0f * 1000.0f) / cpm;
-   /* Ticker updates (nominally) once every ticker_pixel_period ms
+   /* Ticker updates (nominally) once every TICKER_PIXEL_PERIOD ms
     * > Return base number of ticks for which text should scroll
     *   from one line to the next */
-   return (size_t)(line_duration / ticker_pixel_period);
+   return (size_t)(line_duration / TICKER_PIXEL_PERIOD);
 }
 
 static void set_line_smooth_fade_parameters(
@@ -1191,26 +1134,12 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (!p_anim->initialized)
-   {
-      da_init(p_anim->list);
-      da_init(p_anim->pending);
-      p_anim->initialized = true;
-   }
-
    if (p_anim->in_update)
-      da_push(p_anim->pending, t);
+      RBUF_PUSH(p_anim->pending, t);
    else
-      da_push(p_anim->list, t);
+      RBUF_PUSH(p_anim->list, t);
 
    return true;
-}
-
-static void gfx_animation_update_time_default(
-      float *ticker_pixel_increment,
-      unsigned video_width, unsigned video_height)
-{
-   /* By default, this should be a NOOP */
 }
 
 void gfx_animation_set_update_time_cb(update_time_cb cb)
@@ -1220,7 +1149,7 @@ void gfx_animation_set_update_time_cb(update_time_cb cb)
 
 void gfx_animation_unset_update_time_cb(void)
 {
-   update_time_callback = gfx_animation_update_time_default;
+   update_time_callback = NULL;
 }
 
 static void gfx_animation_update_time(
@@ -1288,8 +1217,8 @@ static void gfx_animation_update_time(
        * every frame (regardless of time delta), so require
        * special handling */
 
-      /* > Get base increment size (+1 every ticker_pixel_period ms) */
-      ticker_pixel_increment = p_anim->delta_time / ticker_pixel_period;
+      /* > Get base increment size (+1 every TICKER_PIXEL_PERIOD ms) */
+      ticker_pixel_increment = p_anim->delta_time / TICKER_PIXEL_PERIOD;
 
       /* > Apply ticker speed adjustment */
       ticker_pixel_increment *= speed_factor;
@@ -1308,15 +1237,16 @@ static void gfx_animation_update_time(
        *   to handle video scaling as it pleases - a callback
        *   function set by the menu driver is thus used to
        *   perform menu-specific scaling adjustments */
-      update_time_callback(&ticker_pixel_increment,
-            video_width, video_height);
+      if (update_time_callback)
+         update_time_callback(&ticker_pixel_increment,
+               video_width, video_height);
 
       /* > Update accumulators */
-      ticker_pixel_accumulator += ticker_pixel_increment;
-      ticker_pixel_accumulator_uint = (unsigned)ticker_pixel_accumulator;
+      ticker_pixel_accumulator           += ticker_pixel_increment;
+      ticker_pixel_accumulator_uint       = (unsigned)ticker_pixel_accumulator;
 
-      ticker_pixel_line_accumulator += ticker_pixel_line_increment;
-      ticker_pixel_line_accumulator_uint = (unsigned)ticker_pixel_line_accumulator;
+      ticker_pixel_line_accumulator      += ticker_pixel_line_increment;
+      ticker_pixel_line_accumulator_uint  = (unsigned)ticker_pixel_line_accumulator;
 
       /* > Check whether we've accumulated enough
        *   for an idx update */
@@ -1335,6 +1265,7 @@ static void gfx_animation_update_time(
 }
 
 bool gfx_animation_update(
+      gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
       float ticker_speed,
@@ -1342,7 +1273,6 @@ bool gfx_animation_update(
       unsigned video_height)
 {
    unsigned i;
-   gfx_animation_t *p_anim = anim_get_ptr();
 
    gfx_animation_update_time(
          p_anim,
@@ -1354,11 +1284,11 @@ bool gfx_animation_update(
    p_anim->in_update       = true;
    p_anim->pending_deletes = false;
 
-   for (i = 0; i < da_count(p_anim->list); i++)
+   for (i = 0; i < RBUF_LEN(p_anim->list); i++)
    {
-      struct tween *tween   = da_getptr(p_anim->list, i);
+      struct tween *tween   = &p_anim->list[i];
 
-      if (!tween || tween->deleted)
+      if (tween->deleted)
          continue;
 
       tween->running_since += p_anim->delta_time;
@@ -1376,35 +1306,37 @@ bool gfx_animation_update(
          if (tween->cb)
             tween->cb(tween->userdata);
 
-         da_delete(p_anim->list, i);
+         RBUF_REMOVE(p_anim->list, i);
          i--;
       }
    }
 
    if (p_anim->pending_deletes)
    {
-      for (i = 0; i < da_count(p_anim->list); i++)
+      for (i = 0; i < RBUF_LEN(p_anim->list); i++)
       {
-         struct tween *tween = da_getptr(p_anim->list, i);
-         if (!tween)
-            continue;
+         struct tween *tween = &p_anim->list[i];
          if (tween->deleted)
          {
-            da_delete(p_anim->list, i);
+            RBUF_REMOVE(p_anim->list, i);
             i--;
          }
       }
       p_anim->pending_deletes = false;
    }
 
-   if (da_count(p_anim->pending) > 0)
+   if (RBUF_LEN(p_anim->pending) > 0)
    {
-      da_addn(p_anim->list, p_anim->pending.p, da_count(p_anim->pending));
-      da_clear(p_anim->pending);
+      size_t list_len    = RBUF_LEN(p_anim->list);
+      size_t pending_len = RBUF_LEN(p_anim->pending);
+      RBUF_RESIZE(p_anim->list, list_len + pending_len);
+      memcpy(p_anim->list + list_len, p_anim->pending,
+            sizeof(*p_anim->pending) * pending_len);
+      RBUF_CLEAR(p_anim->pending);
    }
 
    p_anim->in_update           = false;
-   p_anim->animation_is_active = da_count(p_anim->list) > 0;
+   p_anim->animation_is_active = RBUF_LEN(p_anim->list) > 0;
 
    return p_anim->animation_is_active;
 }
@@ -1448,13 +1380,39 @@ static void build_ticker_loop_string(
    }
 }
 
+static void build_line_ticker_string(
+      size_t num_display_lines, size_t line_offset,
+      struct string_list *lines,
+      char *dest_str, size_t dest_str_len)
+{
+   size_t i;
+
+   for (i = 0; i < num_display_lines; i++)
+   {
+      size_t offset     = i + line_offset;
+      size_t line_index = offset % (lines->size + 1);
+      bool line_valid   = true;
+
+      if (line_index >= lines->size)
+         line_valid = false;
+
+      if (line_valid)
+         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
+
+      if (i < num_display_lines - 1)
+         strlcat(dest_str, "\n", dest_str_len);
+   }
+}
+
+
+
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 {
    gfx_animation_t *p_anim = anim_get_ptr();
    size_t str_len          = utf8len(ticker->str);
 
    if (!ticker->spacer)
-      ticker->spacer = ticker_spacer_default;
+      ticker->spacer       = TICKER_SPACER_DEFAULT;
 
    if ((size_t)str_len <= ticker->len)
    {
@@ -1527,9 +1485,10 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 }
 
 /* 'Fixed width' font version of gfx_animation_ticker_smooth() */
-bool gfx_animation_ticker_smooth_fw(gfx_animation_ctx_ticker_smooth_t *ticker)
+static bool gfx_animation_ticker_smooth_fw(
+      gfx_animation_t *p_anim,
+      gfx_animation_ctx_ticker_smooth_t *ticker)
 {
-   gfx_animation_t *p_anim      = anim_get_ptr();
    size_t spacer_len            = 0;
    unsigned glyph_width         = ticker->glyph_width;
    unsigned src_str_width       = 0;
@@ -1582,8 +1541,8 @@ bool gfx_animation_ticker_smooth_fw(gfx_animation_ctx_ticker_smooth_t *ticker)
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = (num_chars * glyph_width) + suffix_width;
-      *ticker->x_offset = 0;
-      success = true;
+      *ticker->x_offset         = 0;
+      success                   = true;
       goto end;
    }
 
@@ -1592,14 +1551,14 @@ bool gfx_animation_ticker_smooth_fw(gfx_animation_ctx_ticker_smooth_t *ticker)
 
    /* Use default spacer, if none is provided */
    if (!ticker->spacer)
-      ticker->spacer = ticker_spacer_default;
+      ticker->spacer     = TICKER_SPACER_DEFAULT;
 
    /* Get length + width of spacer */
-   spacer_len = utf8len(ticker->spacer);
+   spacer_len            = utf8len(ticker->spacer);
    if (spacer_len < 1)
       goto end;
 
-   spacer_width = spacer_len * glyph_width;
+   spacer_width          = spacer_len * glyph_width;
 
    /* Determine animation type */
    switch (ticker->type_enum)
@@ -1702,7 +1661,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    /* If we are using a fixed width font (ticker->font == NULL),
     * switch to optimised code path */
    if (!ticker->font)
-      return gfx_animation_ticker_smooth_fw(ticker);
+      return gfx_animation_ticker_smooth_fw(p_anim, ticker);
 
    /* Find the display width of each character in
     * the src string + total width */
@@ -1763,7 +1722,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
       if (period_width < 0)
          goto end;
 
-      if (ticker->field_width < (3 * period_width))
+      if (ticker->field_width < (3 * (unsigned)period_width))
          goto end;
 
       /* Determine number of characters to copy */
@@ -1801,7 +1760,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
 
    /* Use default spacer, if none is provided */
    if (!ticker->spacer)
-      ticker->spacer = ticker_spacer_default;
+      ticker->spacer = TICKER_SPACER_DEFAULT;
 
    /* Find the display width of each character in
     * the spacer */
@@ -1913,30 +1872,6 @@ end:
    return is_active;
 }
 
-static void build_line_ticker_string(
-      size_t num_display_lines, size_t line_offset,
-      struct string_list *lines,
-      char *dest_str, size_t dest_str_len)
-{
-   size_t i;
-
-   for (i = 0; i < num_display_lines; i++)
-   {
-      size_t offset     = i + line_offset;
-      size_t line_index = offset % (lines->size + 1);
-      bool line_valid   = true;
-
-      if (line_index >= lines->size)
-         line_valid = false;
-
-      if (line_valid)
-         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
-
-      if (i < num_display_lines - 1)
-         strlcat(dest_str, "\n", dest_str_len);
-   }
-}
-
 bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
@@ -1987,18 +1922,14 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
    switch (line_ticker->type_enum)
    {
       case TICKER_TYPE_LOOP:
-      {
          gfx_animation_line_ticker_loop(
                line_ticker->idx,
                line_ticker->line_len,
                lines->size,
                &line_offset);
-
          break;
-      }
       case TICKER_TYPE_BOUNCE:
       default:
-      {
          gfx_animation_line_ticker_generic(
                line_ticker->idx,
                line_ticker->line_len,
@@ -2007,7 +1938,6 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
                &line_offset);
 
          break;
-      }
    }
 
    /* Build output string from required lines */
@@ -2126,16 +2056,16 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
       if (line_ticker->fade_enabled)
       {
          if (line_ticker->top_fade_str_len > 0)
-            line_ticker->top_fade_str[0] = '\0';
+            line_ticker->top_fade_str[0]    = '\0';
 
          if (line_ticker->bottom_fade_str_len > 0)
             line_ticker->bottom_fade_str[0] = '\0';
 
-         *line_ticker->top_fade_y_offset = 0.0f;
+         *line_ticker->top_fade_y_offset    = 0.0f;
          *line_ticker->bottom_fade_y_offset = 0.0f;
 
-         *line_ticker->top_fade_alpha = 0.0f;
-         *line_ticker->bottom_fade_alpha = 0.0f;
+         *line_ticker->top_fade_alpha       = 0.0f;
+         *line_ticker->bottom_fade_alpha    = 0.0f;
       }
 
       success = true;
@@ -2232,12 +2162,6 @@ end:
    return is_active;
 }
 
-bool gfx_animation_is_active(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->animation_is_active || p_anim->ticker_is_active;
-}
-
 bool gfx_animation_kill_by_tag(uintptr_t *tag)
 {
    unsigned i;
@@ -2247,11 +2171,11 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
       return false;
 
    /* Scan animation list */
-   for (i = 0; i < da_count(p_anim->list); ++i)
+   for (i = 0; i < RBUF_LEN(p_anim->list); ++i)
    {
-      struct tween *t = da_getptr(p_anim->list, i);
+      struct tween *t = &p_anim->list[i];
 
-      if (!t || t->tag != *tag)
+      if (t->tag != *tag)
          continue;
 
       /* If we are currently inside gfx_animation_update(),
@@ -2266,7 +2190,7 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
       }
       else
       {
-         da_delete(p_anim->list, i);
+         RBUF_REMOVE(p_anim->list, i);
          --i;
       }
    }
@@ -2278,14 +2202,14 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
     * deleted at all, producing utter chaos) */
    if (p_anim->in_update)
    {
-      for (i = 0; i < da_count(p_anim->pending); ++i)
+      for (i = 0; i < RBUF_LEN(p_anim->pending); ++i)
       {
-         struct tween *t = da_getptr(p_anim->pending, i);
+         struct tween *t = &p_anim->pending[i];
 
-         if (!t || t->tag != *tag)
+         if (t->tag != *tag)
             continue;
 
-         da_delete(p_anim->pending, i);
+         RBUF_REMOVE(p_anim->pending, i);
          --i;
       }
    }
@@ -2306,26 +2230,9 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
    switch (state)
    {
       case MENU_ANIMATION_CTL_DEINIT:
-         {
-            size_t i;
-
-            for (i = 0; i < da_count(p_anim->list); i++)
-            {
-               struct tween *t = da_getptr(p_anim->list, i);
-               if (!t)
-                  continue;
-
-               if (t->subject)
-                  t->subject = NULL;
-            }
-
-            da_free(p_anim->list);
-            da_free(p_anim->pending);
-         }
-         p_anim->cur_time            = 0;
-         p_anim->old_time            = 0;
-         p_anim->delta_time          = 0.0f;
-         memset(&p_anim, 0, sizeof(p_anim));
+         RBUF_FREE(p_anim->list);
+         RBUF_FREE(p_anim->pending);
+         memset(p_anim, 0, sizeof(*p_anim));
          break;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          p_anim->animation_is_active = false;

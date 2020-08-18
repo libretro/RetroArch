@@ -102,4 +102,4 @@ float sqrtf_neon_sfp(float x)
 #else
 	return sqrtf_c(x);
 #endif
-};
+}

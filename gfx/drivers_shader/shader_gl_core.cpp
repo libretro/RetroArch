@@ -39,22 +39,6 @@
 
 using namespace std;
 
-template <typename P>
-static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m,
-      const string &name, const P &p)
-{
-   auto itr = m.find(name);
-   if (itr != end(m))
-   {
-      RARCH_ERR("[slang]: Alias \"%s\" already exists.\n",
-            name.c_str());
-      return false;
-   }
-
-   m[name] = p;
-   return true;
-}
-
 GLuint gl_core_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,
@@ -280,72 +264,33 @@ static const uint32_t opaque_frag[] =
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 ;
 
-static unsigned num_miplevels(unsigned width, unsigned height)
-{
-   unsigned size = MAX(width, height);
-   unsigned levels = 0;
-   while (size)
-   {
-      levels++;
-      size >>= 1;
-   }
-   return levels;
-}
-
-
-static void build_vec4(float *data, unsigned width, unsigned height)
-{
-   data[0] = float(width);
-   data[1] = float(height);
-   data[2] = 1.0f / float(width);
-   data[3] = 1.0f / float(height);
-}
-
 struct Texture
 {
    gl_core_filter_chain_texture texture;
-   gl_core_filter_chain_filter filter;
-   gl_core_filter_chain_filter mip_filter;
-   gl_core_filter_chain_address address;
+   glslang_filter_chain_filter filter;
+   glslang_filter_chain_filter mip_filter;
+   glslang_filter_chain_address address;
 };
 
-static gl_core_filter_chain_address wrap_to_address(gfx_wrap_type type)
-{
-   switch (type)
-   {
-      case RARCH_WRAP_BORDER:
-         return GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER;
-      case RARCH_WRAP_REPEAT:
-         return GL_CORE_FILTER_CHAIN_ADDRESS_REPEAT;
-      case RARCH_WRAP_MIRRORED_REPEAT:
-         return GL_CORE_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT;
-      case RARCH_WRAP_EDGE:
-      default:
-         break;
-   }
-
-   return GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
-}
-
-static GLenum address_to_gl(gl_core_filter_chain_address type)
+static GLenum address_to_gl(glslang_filter_chain_address type)
 {
    switch (type)
    {
 #ifdef HAVE_OPENGLES3
-      case GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
 #if 0
          RARCH_WARN("[GLCore]: No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
 #endif
          return GL_CLAMP_TO_EDGE;
 #else
-      case GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
          return GL_CLAMP_TO_BORDER;
 #endif
-      case GL_CORE_FILTER_CHAIN_ADDRESS_REPEAT:
+      case GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT:
          return GL_REPEAT;
-      case GL_CORE_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
+      case GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
          return GL_MIRRORED_REPEAT;
-      case GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
+      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
       default:
          break;
    }
@@ -353,13 +298,13 @@ static GLenum address_to_gl(gl_core_filter_chain_address type)
    return GL_CLAMP_TO_EDGE;
 }
 
-static GLenum convert_filter_to_mag_gl(gl_core_filter_chain_filter filter)
+static GLenum convert_filter_to_mag_gl(glslang_filter_chain_filter filter)
 {
    switch (filter)
    {
-      case GL_CORE_FILTER_CHAIN_LINEAR:
+      case GLSLANG_FILTER_CHAIN_LINEAR:
          return GL_LINEAR;
-      case GL_CORE_FILTER_CHAIN_NEAREST:
+      case GLSLANG_FILTER_CHAIN_NEAREST:
       default:
          break;
    }
@@ -367,13 +312,15 @@ static GLenum convert_filter_to_mag_gl(gl_core_filter_chain_filter filter)
    return GL_NEAREST;
 }
 
-static GLenum convert_filter_to_min_gl(gl_core_filter_chain_filter filter, gl_core_filter_chain_filter mipfilter)
+static GLenum convert_filter_to_min_gl(glslang_filter_chain_filter filter, glslang_filter_chain_filter mipfilter)
 {
-   if (filter == GL_CORE_FILTER_CHAIN_LINEAR && mipfilter == GL_CORE_FILTER_CHAIN_LINEAR)
+   if (     (filter    == GLSLANG_FILTER_CHAIN_LINEAR)
+         && (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
+      )
       return GL_LINEAR_MIPMAP_LINEAR;
-   else if (filter == GL_CORE_FILTER_CHAIN_LINEAR)
+   else if (filter == GLSLANG_FILTER_CHAIN_LINEAR)
       return GL_LINEAR_MIPMAP_NEAREST;
-   else if (mipfilter == GL_CORE_FILTER_CHAIN_LINEAR)
+   else if (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
       return GL_NEAREST_MIPMAP_LINEAR;
    return GL_NEAREST_MIPMAP_NEAREST;
 }
@@ -431,7 +378,7 @@ public:
                  unsigned width, unsigned height,
                  bool linear,
                  bool mipmap,
-                 gl_core_filter_chain_address address);
+                 glslang_filter_chain_address address);
    ~StaticTexture();
 
    StaticTexture(StaticTexture&&) = delete;
@@ -449,13 +396,13 @@ private:
 
 StaticTexture::StaticTexture(string id_, GLuint image_,
       unsigned width, unsigned height, bool linear, bool mipmap,
-      gl_core_filter_chain_address address)
+      glslang_filter_chain_address address)
    : id(std::move(id_)), image(image_)
 {
    GLenum gl_address      = address_to_gl(address);
 
-   texture.filter         = GL_CORE_FILTER_CHAIN_NEAREST;
-   texture.mip_filter     = GL_CORE_FILTER_CHAIN_NEAREST;
+   texture.filter         = GLSLANG_FILTER_CHAIN_NEAREST;
+   texture.mip_filter     = GLSLANG_FILTER_CHAIN_NEAREST;
    texture.address        = address;
    texture.texture.width  = width;
    texture.texture.height = height;
@@ -463,9 +410,9 @@ StaticTexture::StaticTexture(string id_, GLuint image_,
    texture.texture.image  = image;
 
    if (linear)
-      texture.filter      = GL_CORE_FILTER_CHAIN_LINEAR;
+      texture.filter      = GLSLANG_FILTER_CHAIN_LINEAR;
    if (mipmap && linear)
-      texture.mip_filter  = GL_CORE_FILTER_CHAIN_LINEAR;
+      texture.mip_filter  = GLSLANG_FILTER_CHAIN_LINEAR;
 
    glBindTexture(GL_TEXTURE_2D, image);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl_address);
@@ -609,7 +556,7 @@ void Framebuffer::init()
    if (size.height == 0)
       size.height = 1;
 
-   levels = num_miplevels(size.width, size.height);
+   levels = glslang_num_miplevels(size.width, size.height);
    if (max_levels < levels)
       levels = max_levels;
    if (levels == 0)
@@ -650,7 +597,7 @@ void Framebuffer::init()
                glGenTextures(1, &image);
                glBindTexture(GL_TEXTURE_2D, image);
 
-               levels = num_miplevels(size.width, size.height);
+               levels = glslang_num_miplevels(size.width, size.height);
                if (max_levels < levels)
                   levels = max_levels;
                glTexStorage2D(GL_TEXTURE_2D, levels,
@@ -750,17 +697,17 @@ public:
       return pass_name;
    }
 
-   gl_core_filter_chain_filter get_source_filter() const
+   glslang_filter_chain_filter get_source_filter() const
    {
       return pass_info.source_filter;
    }
 
-   gl_core_filter_chain_filter get_mip_filter() const
+   glslang_filter_chain_filter get_mip_filter() const
    {
       return pass_info.mip_filter;
    }
 
-   gl_core_filter_chain_address get_address_mode() const
+   glslang_filter_chain_address get_address_mode() const
    {
       return pass_info.address;
    }
@@ -875,7 +822,7 @@ bool Pass::build()
 
    for (i = 0; i < parameters.size(); i++)
    {
-      if (!gl_core_shader_set_unique_map(semantic_map, parameters[i].id,
+      if (!slang_set_unique_map(semantic_map, parameters[i].id,
                slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
          return false;
       j++;
@@ -1053,51 +1000,53 @@ void Pass::set_pass_info(const gl_core_filter_chain_pass_info &info)
    pass_info = info;
 }
 
-Size2D Pass::get_output_size(const Size2D &original, const Size2D &source) const
+Size2D Pass::get_output_size(const Size2D &original,
+      const Size2D &source) const
 {
-   float width, height;
+   float width  = 0.0f;
+   float height = 0.0f;
    switch (pass_info.scale_type_x)
    {
-      case GL_CORE_FILTER_CHAIN_SCALE_ORIGINAL:
+      case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
          width = float(original.width) * pass_info.scale_x;
          break;
 
-      case GL_CORE_FILTER_CHAIN_SCALE_SOURCE:
+      case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
          width = float(source.width) * pass_info.scale_x;
          break;
 
-      case GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT:
+      case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
          width = current_viewport.width * pass_info.scale_x;
          break;
 
-      case GL_CORE_FILTER_CHAIN_SCALE_ABSOLUTE:
+      case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
          width = pass_info.scale_x;
          break;
 
       default:
-         width = 0.0f;
+         break;
    }
 
    switch (pass_info.scale_type_y)
    {
-      case GL_CORE_FILTER_CHAIN_SCALE_ORIGINAL:
+      case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
          height = float(original.height) * pass_info.scale_y;
          break;
 
-      case GL_CORE_FILTER_CHAIN_SCALE_SOURCE:
+      case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
          height = float(source.height) * pass_info.scale_y;
          break;
 
-      case GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT:
+      case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
          height = current_viewport.height * pass_info.scale_y;
          break;
 
-      case GL_CORE_FILTER_CHAIN_SCALE_ABSOLUTE:
+      case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
          height = pass_info.scale_y;
          break;
 
       default:
-         height = 0.0f;
+         break;
    }
 
    return { unsigned(roundf(width)), unsigned(roundf(height)) };
@@ -1119,14 +1068,14 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       if (refl->location.ubo_vertex >= 0 || refl->location.ubo_fragment >= 0)
       {
          float v4[4];
-         build_vec4(v4, width, height);
+         glslang_build_vec4(v4, width, height);
          if (refl->location.ubo_vertex >= 0)
             glUniform4fv(refl->location.ubo_vertex, 1, v4);
          if (refl->location.ubo_fragment >= 0)
             glUniform4fv(refl->location.ubo_fragment, 1, v4);
       }
       else
-         build_vec4(
+         glslang_build_vec4(
                reinterpret_cast<float *>(data + refl->ubo_offset),
                width,
                height);
@@ -1138,14 +1087,14 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             refl->location.push_fragment >= 0)
       {
          float v4[4];
-         build_vec4(v4, width, height);
+         glslang_build_vec4(v4, width, height);
          if (refl->location.push_vertex >= 0)
             glUniform4fv(refl->location.push_vertex, 1, v4);
          if (refl->location.push_fragment >= 0)
             glUniform4fv(refl->location.push_fragment, 1, v4);
       }
       else
-         build_vec4(
+         glslang_build_vec4(
                reinterpret_cast<float *>
                (push_constant_buffer.data() + refl->push_constant_offset),
                width,
@@ -1270,14 +1219,14 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       if (refl[index].location.ubo_vertex >= 0 || refl[index].location.ubo_fragment >= 0)
       {
          float v4[4];
-         build_vec4(v4, width, height);
+         glslang_build_vec4(v4, width, height);
          if (refl[index].location.ubo_vertex >= 0)
             glUniform4fv(refl[index].location.ubo_vertex, 1, v4);
          if (refl[index].location.ubo_fragment >= 0)
             glUniform4fv(refl[index].location.ubo_fragment, 1, v4);
       }
       else
-         build_vec4(
+         glslang_build_vec4(
                reinterpret_cast<float *>(data + refl[index].ubo_offset),
                width,
                height);
@@ -1288,14 +1237,14 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       if (refl[index].location.push_vertex >= 0 || refl[index].location.push_fragment >= 0)
       {
          float v4[4];
-         build_vec4(v4, width, height);
+         glslang_build_vec4(v4, width, height);
          if (refl[index].location.push_vertex >= 0)
             glUniform4fv(refl[index].location.push_vertex, 1, v4);
          if (refl[index].location.push_fragment >= 0)
             glUniform4fv(refl[index].location.push_fragment, 1, v4);
       }
       else
-         build_vec4(
+         glslang_build_vec4(
                reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset),
                width,
                height);
@@ -1919,21 +1868,21 @@ bool gl_core_filter_chain::init_alias()
 
       j = &passes[i] - passes.data();
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map, name,
+      if (!slang_set_unique_map(common.texture_semantic_map, name,
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
                name + "Size",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map,
+      if (!slang_set_unique_map(common.texture_semantic_map,
                name + "Feedback",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
                name + "FeedbackSize",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
@@ -1942,12 +1891,12 @@ bool gl_core_filter_chain::init_alias()
    for (i = 0; i < common.luts.size(); i++)
    {
       j = &common.luts[i] - common.luts.data();
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map,
+      if (!slang_set_unique_map(common.texture_semantic_map,
                common.luts[i]->get_id(),
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
                common.luts[i]->get_id() + "Size",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
@@ -2111,7 +2060,7 @@ static unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
    if (!image_texture_load(&image, shader->path))
       return {};
 
-   unsigned levels = shader->mipmap ? gl_core_shader::num_miplevels(image.width, image.height) : 1;
+   unsigned levels = shader->mipmap ? glslang_num_miplevels(image.width, image.height) : 1;
 
    glGenTextures(1, &tex);
    glBindTexture(GL_TEXTURE_2D, tex);
@@ -2136,7 +2085,7 @@ static unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
             tex, image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             levels > 1,
-            gl_core_shader::wrap_to_address(shader->wrap)));
+            rarch_wrap_to_address(shader->wrap)));
 }
 
 static bool gl_core_filter_chain_load_luts(
@@ -2160,7 +2109,7 @@ static bool gl_core_filter_chain_load_luts(
 }
 
 gl_core_filter_chain_t *gl_core_filter_chain_create_default(
-      gl_core_filter_chain_filter filter)
+      glslang_filter_chain_filter filter)
 {
    struct gl_core_filter_chain_pass_info pass_info;
 
@@ -2168,14 +2117,14 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_default(
    if (!chain)
       return nullptr;
 
-   pass_info.scale_type_x  = GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT;
-   pass_info.scale_type_y  = GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT;
+   pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+   pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_x       = 1.0f;
    pass_info.scale_y       = 1.0f;
    pass_info.rt_format     = 0;
    pass_info.source_filter = filter;
-   pass_info.mip_filter    = GL_CORE_FILTER_CHAIN_NEAREST;
-   pass_info.address       = GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+   pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_NEAREST;
+   pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
    pass_info.max_levels    = 0;
 
    chain->set_pass_info(0, pass_info);
@@ -2194,7 +2143,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_default(
 }
 
 gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
-      const char *path, gl_core_filter_chain_filter filter)
+      const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
    config_file_t *conf            = NULL;
@@ -2230,14 +2179,14 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       const video_shader_pass *next_pass =
          i + 1 < shader->passes ? &shader->pass[i + 1] : nullptr;
 
-      pass_info.scale_type_x  = GL_CORE_FILTER_CHAIN_SCALE_ORIGINAL;
-      pass_info.scale_type_y  = GL_CORE_FILTER_CHAIN_SCALE_ORIGINAL;
+      pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+      pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
       pass_info.scale_x       = 0.0f;
       pass_info.scale_y       = 0.0f;
       pass_info.rt_format     = 0;
-      pass_info.source_filter = GL_CORE_FILTER_CHAIN_LINEAR;
-      pass_info.mip_filter    = GL_CORE_FILTER_CHAIN_LINEAR;
-      pass_info.address       = GL_CORE_FILTER_CHAIN_ADDRESS_REPEAT;
+      pass_info.source_filter = GLSLANG_FILTER_CHAIN_LINEAR;
+      pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_LINEAR;
+      pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
       pass_info.max_levels    = 0;
 
       if (!glslang_compile_shader(pass->source.path, &output))
@@ -2316,10 +2265,11 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       else
       {
          pass_info.source_filter =
-            pass->filter == RARCH_FILTER_LINEAR ? GL_CORE_FILTER_CHAIN_LINEAR :
-            GL_CORE_FILTER_CHAIN_NEAREST;
+            pass->filter == RARCH_FILTER_LINEAR 
+            ? GLSLANG_FILTER_CHAIN_LINEAR 
+            : GLSLANG_FILTER_CHAIN_NEAREST;
       }
-      pass_info.address    = gl_core_shader::wrap_to_address(pass->wrap);
+      pass_info.address    = rarch_wrap_to_address(pass->wrap);
       pass_info.max_levels = 1;
 
       /* TODO: Expose max_levels in slangp.
@@ -2330,7 +2280,8 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          pass_info.max_levels = ~0u;
 
       pass_info.mip_filter = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
-         ? GL_CORE_FILTER_CHAIN_LINEAR : GL_CORE_FILTER_CHAIN_NEAREST;
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST;
 
       bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -2341,11 +2292,11 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       if (!pass->fbo.valid)
       {
          pass_info.scale_type_x = i + 1 == shader->passes
-            ? GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT
-            : GL_CORE_FILTER_CHAIN_SCALE_SOURCE;
+            ? GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT
+            : GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
          pass_info.scale_type_y = i + 1 == shader->passes
-            ? GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT
-            : GL_CORE_FILTER_CHAIN_SCALE_SOURCE;
+            ? GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT
+            : GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
          pass_info.scale_x = 1.0f;
          pass_info.scale_y = 1.0f;
 
@@ -2381,17 +2332,17 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          {
             case RARCH_SCALE_INPUT:
                pass_info.scale_x = pass->fbo.scale_x;
-               pass_info.scale_type_x = GL_CORE_FILTER_CHAIN_SCALE_SOURCE;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
                pass_info.scale_x = float(pass->fbo.abs_x);
-               pass_info.scale_type_x = GL_CORE_FILTER_CHAIN_SCALE_ABSOLUTE;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
             case RARCH_SCALE_VIEWPORT:
                pass_info.scale_x = pass->fbo.scale_x;
-               pass_info.scale_type_x = GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
          }
 
@@ -2399,17 +2350,17 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          {
             case RARCH_SCALE_INPUT:
                pass_info.scale_y = pass->fbo.scale_y;
-               pass_info.scale_type_y = GL_CORE_FILTER_CHAIN_SCALE_SOURCE;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
                pass_info.scale_y = float(pass->fbo.abs_y);
-               pass_info.scale_type_y = GL_CORE_FILTER_CHAIN_SCALE_ABSOLUTE;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
             case RARCH_SCALE_VIEWPORT:
                pass_info.scale_y = pass->fbo.scale_y;
-               pass_info.scale_type_y = GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
          }
       }
@@ -2421,16 +2372,16 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    {
       struct gl_core_filter_chain_pass_info pass_info;
 
-      pass_info.scale_type_x  = GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT;
-      pass_info.scale_type_y  = GL_CORE_FILTER_CHAIN_SCALE_VIEWPORT;
+      pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+      pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
       pass_info.scale_x       = 1.0f;
       pass_info.scale_y       = 1.0f;
 
       pass_info.rt_format     = 0;
 
       pass_info.source_filter = filter;
-      pass_info.mip_filter    = GL_CORE_FILTER_CHAIN_NEAREST;
-      pass_info.address       = GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+      pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_NEAREST;
+      pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
 
       pass_info.max_levels    = 0;
 

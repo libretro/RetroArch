@@ -185,6 +185,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_cheat_details_settings_list,    DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_cheat_search_settings_list,     DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_onscreen_display_settings_list, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_onscreen_notifications_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_onscreen_notifications_views_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_onscreen_overlay_settings_list, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST)
 #ifdef HAVE_VIDEO_LAYOUT
 GENERIC_DEFERRED_PUSH(deferred_push_onscreen_video_layout_settings_list, DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST)
@@ -198,6 +199,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_user_interface_settings_list,   DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_power_management_settings_list, DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_retro_achievements_settings_list,DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_updater_settings_list,          DISPLAYLIST_UPDATER_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_bluetooth_settings_list,        DISPLAYLIST_BLUETOOTH_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_network_settings_list,          DISPLAYLIST_NETWORK_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_subsystem_settings_list,          DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST)
@@ -415,7 +417,7 @@ end:
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   char                      *newstring2      = NULL;
+   char newstring2[PATH_MAX_LENGTH];
    core_info_list_t           *list           = NULL;
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_driver_get_ptr();
@@ -471,8 +473,6 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   newstring2                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
    newstring2[0]                  = '\0';
 
    switch (id)
@@ -482,11 +482,9 @@ static int general_push(menu_displaylist_info_t *info,
             struct retro_system_info *system = 
                runloop_get_libretro_system_info();
             if (system)
-            {
                if (!string_is_empty(system->valid_extensions))
                   strlcpy(newstring2, system->valid_extensions,
-                        PATH_MAX_LENGTH * sizeof(char));
-            }
+                        sizeof(newstring2));
          }
          break;
       case PUSH_DEFAULT:
@@ -494,9 +492,8 @@ static int general_push(menu_displaylist_info_t *info,
             bool new_exts_allocated               = false;
             char *new_exts                        = NULL;
 
-            if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
-            {
-            }
+            if (menu_setting_get_browser_selection_type(info->setting) 
+                  == ST_DIR) { }
             else
             {
                struct retro_system_info *system = 
@@ -513,19 +510,15 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!string_is_empty(new_exts))
             {
-               size_t path_size               = PATH_MAX_LENGTH * sizeof(char);
                struct string_list *str_list3  = string_split(new_exts, "|");
-
 #ifdef HAVE_IBXM
-               {
-                  union string_list_elem_attr attr;
-                  attr.i = 0;
-                  string_list_append(str_list3, "s3m", attr);
-                  string_list_append(str_list3, "mod", attr);
-                  string_list_append(str_list3, "xm", attr);
-               }
+               union string_list_elem_attr attr;
+               attr.i = 0;
+               string_list_append(str_list3, "s3m", attr);
+               string_list_append(str_list3, "mod", attr);
+               string_list_append(str_list3, "xm", attr);
 #endif
-               string_list_join_concat(newstring2, path_size,
+               string_list_join_concat(newstring2, sizeof(newstring2),
                      str_list3, "|");
                string_list_free(str_list3);
 
@@ -544,8 +537,7 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_DETECT_CORE_LIST:
          {
             union string_list_elem_attr attr;
-            size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
-            char *newstring                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            char newstring[PATH_MAX_LENGTH];
             struct string_list *str_list2    = string_list_new();
             struct retro_system_info *system = runloop_get_libretro_system_info();
 
@@ -591,7 +583,7 @@ static int general_push(menu_displaylist_info_t *info,
                }
             }
 
-            string_list_join_concat(newstring, path_size,
+            string_list_join_concat(newstring, sizeof(newstring),
                   str_list2, "|");
 
             {
@@ -606,11 +598,10 @@ static int general_push(menu_displaylist_info_t *info,
                   string_list_append(str_list3, "xm", attr);
                }
 #endif
-               string_list_join_concat(newstring2, path_size,
+               string_list_join_concat(newstring2, sizeof(newstring2),
                      str_list3, "|");
                string_list_free(str_list3);
             }
-            free(newstring);
             string_list_free(str_list2);
          }
          break;
@@ -630,18 +621,17 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
          libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-         strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
-         strlcat(newstring2, sysinfo.valid_extensions,
-               PATH_MAX_LENGTH * sizeof(char));
+         strlcat(newstring2, "|", sizeof(newstring2));
+         strlcat(newstring2, sysinfo.valid_extensions, sizeof(newstring2));
       }
 #endif
 #ifdef HAVE_IMAGEVIEWER
       if (multimedia_builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
+         strlcat(newstring2, "|", sizeof(newstring2));
          strlcat(newstring2, sysinfo.valid_extensions,
-               PATH_MAX_LENGTH * sizeof(char));
+               sizeof(newstring2));
       }
 #endif
    }
@@ -652,7 +642,6 @@ static int general_push(menu_displaylist_info_t *info,
          free(info->exts);
       info->exts = strdup(newstring2);
    }
-   free(newstring2);
 
    return deferred_push_dlist(info, state);
 }
@@ -667,6 +656,7 @@ GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_playlist_list, PUSH_DEFAULT, DISPLA
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_music_history_list, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY)
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_explore_list, PUSH_DEFAULT, DISPLAYLIST_EXPLORE)
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
@@ -681,6 +671,8 @@ GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_sor
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_system_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
 GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
+GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -709,6 +701,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, deferred_push_dropdown_box_list_playlist_left_thumbnail_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE, deferred_push_dropdown_box_list_playlist_sort_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, deferred_push_dropdown_box_list_disk_index},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION, deferred_push_dropdown_box_list_input_description},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD, deferred_push_dropdown_box_list_input_description_kbd},
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST, deferred_push_browse_url_list},
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START, deferred_push_browse_url_start},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST, deferred_push_core_settings_list},
@@ -724,6 +718,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST, deferred_push_cheat_search_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST, deferred_push_onscreen_display_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST, deferred_push_onscreen_notifications_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST, deferred_push_onscreen_notifications_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST, deferred_push_onscreen_overlay_settings_list},
 #ifdef HAVE_VIDEO_LAYOUT
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST, deferred_push_onscreen_video_layout_settings_list},
@@ -741,6 +736,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST, deferred_push_network_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST, deferred_push_subsystem_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST, deferred_push_network_hosting_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST, deferred_push_bluetooth_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST, deferred_push_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST, deferred_push_lakka_services_list},
       {MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST, deferred_push_user_settings_list},
@@ -760,6 +756,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST, deferred_playlist_list},
       {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST, deferred_image_history_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST, deferred_video_history_list},
+      {MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST, deferred_explore_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST, deferred_push_input_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST, deferred_push_input_menu_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST, deferred_push_input_haptic_feedback_settings_list},

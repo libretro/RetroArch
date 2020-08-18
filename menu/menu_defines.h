@@ -122,6 +122,17 @@ enum menu_timedate_date_separator_type
    MENU_TIMEDATE_DATE_SEPARATOR_LAST
 };
 
+/* Specifies location of the 'Scan Content' menu
+ * entry when using menu drivers without a
+ * dedicated 'Import Content' (horizontal) tab */
+enum menu_add_content_entry_display_type
+{
+   MENU_ADD_CONTENT_ENTRY_DISPLAY_HIDDEN = 0,
+   MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   MENU_ADD_CONTENT_ENTRY_DISPLAY_LAST
+};
+
 enum rgui_color_theme
 {
    RGUI_THEME_CUSTOM = 0,

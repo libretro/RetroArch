@@ -39,8 +39,8 @@
 #include <xgraphics.h>
 #endif
 
+/* TODO/FIXME - static globals */
 static UINT d3d9_SDKVersion = 0;
-
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d9_dll;
 #ifdef HAVE_D3DX

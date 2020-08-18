@@ -29,6 +29,7 @@
 #include <streams/chd_stream.h>
 #include <retro_endianness.h>
 #include <libchdr/chd.h>
+#include <string/stdstring.h>
 
 #define SECTOR_SIZE 2352
 #define SUBCODE_SIZE 96
@@ -37,16 +38,8 @@
 struct chdstream
 {
    chd_file *chd;
-   /* Should we swap bytes? */
-   bool swab;
-   /* Size of frame taken from each hunk */
-   uint32_t frame_size;
-   /* Offset of data within frame */
-   uint32_t frame_offset;
-   /* Number of frames per hunk */
-   uint32_t frames_per_hunk;
-   /* First frame of track in chd */
-   uint32_t track_frame;
+   /* Loaded hunk */
+   uint8_t *hunkmem;
    /* Byte offset where track data starts (after pregap) */
    size_t track_start;
    /* Byte offset where track data ends */
@@ -55,15 +48,20 @@ struct chdstream
    size_t offset;
    /* Loaded hunk number */
    int32_t hunknum;
-   /* Loaded hunk */
-   uint8_t *hunkmem;
+   /* Size of frame taken from each hunk */
+   uint32_t frame_size;
+   /* Offset of data within frame */
+   uint32_t frame_offset;
+   /* Number of frames per hunk */
+   uint32_t frames_per_hunk;
+   /* First frame of track in chd */
+   uint32_t track_frame;
+   /* Should we swap bytes? */
+   bool swab;
 };
 
-typedef struct metadata {
-   char type[64];
-   char subtype[32];
-   char pgtype[32];
-   char pgsub[32];
+typedef struct metadata
+{
    uint32_t frame_offset;
    uint32_t frames;
    uint32_t pad;
@@ -71,6 +69,10 @@ typedef struct metadata {
    uint32_t pregap;
    uint32_t postgap;
    uint32_t track;
+   char type[64];
+   char subtype[32];
+   char pgtype[32];
+   char pgsub[32];
 } metadata_t;
 
 static uint32_t padding_frames(uint32_t frames)
@@ -165,7 +167,8 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
             *meta = iter;
             return true;
          }
-         else if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0)
+
+         if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0)
             return chdstream_find_track_number(fd, largest_track, meta);
 
          return false;
@@ -183,7 +186,7 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
          case CHDSTREAM_TRACK_PRIMARY:
             if (strcmp(iter.type, "AUDIO") && iter.frames > largest_size)
             {
-               largest_size = iter.frames;
+               largest_size  = iter.frames;
                largest_track = iter.track;
             }
             break;
@@ -204,62 +207,64 @@ chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
 chdstream_t *chdstream_open(const char *path, int32_t track)
 {
    metadata_t meta;
-   uint32_t pregap      = 0;
-   const chd_header *hd = NULL;
-   chdstream_t *stream  = NULL;
-   chd_file *chd        = NULL;
-   chd_error err        = chd_open(path, CHD_OPEN_READ, NULL, &chd);
+   uint32_t pregap         = 0;
+   uint8_t *hunkmem        = NULL;
+   const chd_header *hd    = NULL;
+   chdstream_t *stream     = NULL;
+   chd_file *chd           = NULL;
+   chd_error err           = chd_open(path, CHD_OPEN_READ, NULL, &chd);
 
    if (err != CHDERR_NONE)
-      goto error;
+      return NULL;
 
    if (!chdstream_find_track(chd, track, &meta))
       goto error;
 
-   stream = (chdstream_t*)calloc(1, sizeof(*stream));
+   stream                  = (chdstream_t*)malloc(sizeof(*stream));
    if (!stream)
       goto error;
 
-   hd              = chd_get_header(chd);
-   stream->hunkmem = (uint8_t*)malloc(hd->hunkbytes);
-   if (!stream->hunkmem)
+   stream->chd             = NULL;
+   stream->swab            = false;
+   stream->frame_size      = 0;
+   stream->frame_offset    = 0;
+   stream->frames_per_hunk = 0;
+   stream->track_frame     = 0;
+   stream->track_start     = 0;
+   stream->track_end       = 0;
+   stream->offset          = 0;
+   stream->hunkmem         = NULL;
+   stream->hunknum         = -1;
+
+   hd                      = chd_get_header(chd);
+   hunkmem                 = (uint8_t*)malloc(hd->hunkbytes);
+   if (!hunkmem)
       goto error;
 
-   if (!strcmp(meta.type, "MODE1_RAW"))
+   stream->hunkmem         = hunkmem;
+
+   if (string_is_equal(meta.type, "MODE1_RAW"))
+      stream->frame_size   = SECTOR_SIZE;
+   else if (string_is_equal(meta.type, "MODE2_RAW"))
+      stream->frame_size   = SECTOR_SIZE;
+   else if (string_is_equal(meta.type, "AUDIO"))
    {
-      stream->frame_size = SECTOR_SIZE;
-      stream->frame_offset = 0;
-   }
-   else if (!strcmp(meta.type, "MODE2_RAW"))
-   {
-      stream->frame_size = SECTOR_SIZE;
-      stream->frame_offset = 0;
-   }
-   else if (!strcmp(meta.type, "AUDIO"))
-   {
-      stream->frame_size = SECTOR_SIZE;
-      stream->frame_offset = 0;
-      stream->swab = true;
+      stream->frame_size   = SECTOR_SIZE;
+      stream->swab         = true;
    }
    else
-   {
-      stream->frame_size = hd->unitbytes;
-      stream->frame_offset = 0;
-   }
+      stream->frame_size   = hd->unitbytes;
 
    /* Only include pregap data if it was in the track file */
    if (meta.pgtype[0] != 'V')
-      pregap = meta.pregap;
-   else
-      pregap = 0;
+      pregap               = meta.pregap;
 
    stream->chd             = chd;
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
    stream->track_frame     = meta.frame_offset;
    stream->track_start     = (size_t)pregap * stream->frame_size;
-   stream->track_end       = stream->track_start + (size_t)meta.frames * stream->frame_size;
-   stream->offset          = 0;
-   stream->hunknum         = -1;
+   stream->track_end       = stream->track_start + 
+                             (size_t)meta.frames * stream->frame_size;
 
    return stream;
 
@@ -275,35 +280,32 @@ error:
 
 void chdstream_close(chdstream_t *stream)
 {
-   if (stream)
-   {
-      if (stream->hunkmem)
-         free(stream->hunkmem);
-      if (stream->chd)
-         chd_close(stream->chd);
-      free(stream);
-   }
+   if (!stream)
+      return;
+
+   if (stream->hunkmem)
+      free(stream->hunkmem);
+   if (stream->chd)
+      chd_close(stream->chd);
+   free(stream);
 }
 
 static bool
 chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
 {
-   chd_error err;
    uint16_t *array;
-   uint32_t i;
-   uint32_t count;
 
    if (hunknum == stream->hunknum)
       return true;
 
-   err = chd_read(stream->chd, hunknum, stream->hunkmem);
-   if (err != CHDERR_NONE)
+   if (chd_read(stream->chd, hunknum, stream->hunkmem) != CHDERR_NONE)
       return false;
 
    if (stream->swab)
    {
-      count = chd_get_header(stream->chd)->hunkbytes / 2;
-      array = (uint16_t*) stream->hunkmem;
+      uint32_t i;
+      uint32_t count = chd_get_header(stream->chd)->hunkbytes / 2;
+      array          = (uint16_t*)stream->hunkmem;
       for (i = 0; i < count; ++i)
          array[i] = SWAP16(array[i]);
    }
@@ -315,23 +317,20 @@ chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
 ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
 {
    size_t end;
-   uint32_t frame_offset;
-   uint32_t hunk_offset;
-   uint32_t chd_frame;
-   uint32_t hunk;
-   uint32_t amount;
    size_t data_offset   = 0;
    const chd_header *hd = chd_get_header(stream->chd);
    uint8_t         *out = (uint8_t*)data;
 
    if (stream->track_end - stream->offset < bytes)
-      bytes = stream->track_end - stream->offset;
+      bytes             = stream->track_end - stream->offset;
 
-   end = stream->offset + bytes;
+   end                  = stream->offset + bytes;
+
    while (stream->offset < end)
    {
-      frame_offset = stream->offset % stream->frame_size;
-      amount = stream->frame_size - frame_offset;
+      uint32_t frame_offset = stream->offset % stream->frame_size;
+      uint32_t amount       = stream->frame_size - frame_offset;
+
       if (amount > end - stream->offset)
          amount = (uint32_t)(end - stream->offset);
 
@@ -340,15 +339,15 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
          memset(out + data_offset, 0, amount);
       else
       {
-         chd_frame = (uint32_t)(stream->track_frame +
+         uint32_t chd_frame   = (uint32_t)(stream->track_frame +
             (stream->offset - stream->track_start) / stream->frame_size);
-         hunk = chd_frame / stream->frames_per_hunk;
-         hunk_offset = (chd_frame % stream->frames_per_hunk) * hd->unitbytes;
+         uint32_t hunk        = chd_frame / stream->frames_per_hunk;
+         uint32_t hunk_offset = (chd_frame % stream->frames_per_hunk) 
+            * hd->unitbytes;
 
          if (!chdstream_load_hunk(stream, hunk))
-         {
             return -1;
-         }
+
          memcpy(out + data_offset,
                 stream->hunkmem + frame_offset
                 + hunk_offset + stream->frame_offset, amount);
@@ -381,7 +380,7 @@ char *chdstream_gets(chdstream_t *stream, char *buffer, size_t len)
       buffer[offset++] = c;
 
    if (offset < len)
-      buffer[offset] = '\0';
+      buffer[offset]   = '\0';
 
    return buffer;
 }
@@ -432,9 +431,9 @@ ssize_t chdstream_get_size(chdstream_t *stream)
 
 uint32_t chdstream_get_track_start(chdstream_t *stream)
 {
+   uint32_t i;
    metadata_t meta;
    uint32_t frame_offset = 0;
-   uint32_t i;
 
    for (i = 0; chdstream_get_meta(stream->chd, i, &meta); ++i)
    {

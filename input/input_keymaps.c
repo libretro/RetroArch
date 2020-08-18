@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2020      - neil4 (reverse LUT keyboard)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1902,7 +1903,12 @@ const struct rarch_key_map rarch_key_map_winraw[] = {
  * so they can't be placed in a C source file */
 #endif
 
+/* TODO/FIXME - global */
 enum retro_key rarch_keysym_lut[RETROK_LAST];
+
+/* TODO/FIXME - static globals */
+static unsigned *rarch_keysym_rlut           = NULL;
+static unsigned rarch_keysym_rlut_size       = 0;
 
 /**
  * input_keymaps_init_keyboard_lut:
@@ -1912,10 +1918,29 @@ enum retro_key rarch_keysym_lut[RETROK_LAST];
  **/
 void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map)
 {
+   const struct rarch_key_map *map_start = map;
    memset(rarch_keysym_lut, 0, sizeof(rarch_keysym_lut));
+   rarch_keysym_rlut_size = 0;
 
    for (; map->rk != RETROK_UNKNOWN; map++)
+   {
       rarch_keysym_lut[map->rk] = (enum retro_key)map->sym;
+      if (map->sym > rarch_keysym_rlut_size)
+         rarch_keysym_rlut_size = map->sym;
+   }
+
+   if (rarch_keysym_rlut_size < 65536)
+   {
+      if (rarch_keysym_rlut)
+         free(rarch_keysym_rlut);
+
+      rarch_keysym_rlut = (unsigned*)calloc(++rarch_keysym_rlut_size, sizeof(unsigned));
+
+      for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
+         rarch_keysym_rlut[map->sym] = (enum retro_key)map->rk;
+   }
+   else
+      rarch_keysym_rlut_size = 0;
 }
 
 /**
@@ -1931,6 +1956,11 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
 {
    unsigned i;
 
+   /* Fast path */
+   if (rarch_keysym_rlut && sym < rarch_keysym_rlut_size)
+      return (enum retro_key)rarch_keysym_rlut[sym];
+
+   /* Slow path */
    for (i = 0; i < ARRAY_SIZE(rarch_keysym_lut); i++)
    {
       if (rarch_keysym_lut[i] != sym)

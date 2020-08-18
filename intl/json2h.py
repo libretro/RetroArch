@@ -59,12 +59,8 @@ def update(messages, template, source_messages):
    new_translation = template
    template_messages = parse_messages(template)
    for tp_msg in template_messages:
-      if tp_msg['key'] in messages:
-         old_msg = tp_msg['msg']
-         # Remove English duplicates
-         if messages[tp_msg['key']] == source_messages[tp_msg['key']]:
-            new_translation = new_translation.replace(old_msg + '\n', '')
-            continue
+      old_msg = tp_msg['msg']
+      if tp_msg['key'] in messages and messages[tp_msg['key']] != source_messages[tp_msg['key']]:
          tp_msg_val = tp_msg['val']
          tl_msg_val = messages[tp_msg['key']]
          tl_msg_val = tl_msg_val.replace('"', '\\\"').replace('\n', '') # escape
@@ -73,6 +69,9 @@ def update(messages, template, source_messages):
          # Replace last match, incase the key contains the value string
          new_msg = old_msg[::-1].replace(tp_msg_val[::-1], tl_msg_val[::-1], 1)[::-1]
          new_translation = new_translation.replace(old_msg, new_msg)
+      # Remove English duplicates and non-translateable strings
+      else:
+         new_translation = new_translation.replace(old_msg + '\n', '')
    return new_translation
 
 

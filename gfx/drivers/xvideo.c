@@ -1010,7 +1010,9 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive        = video_info->menu_is_alive;
+#endif
 
    if (!frame)
       return true;
@@ -1045,8 +1047,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 
 static bool xv_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
-
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
@@ -1091,12 +1091,7 @@ static void xv_viewport_info(void *data, struct video_viewport *vp)
    *vp = xv->vp;
 }
 
-static uint32_t xv_get_flags(void *data)
-{
-   uint32_t flags = 0;
-
-   return flags;
-}
+static uint32_t xv_get_flags(void *data) { return 0; }
 
 static video_poke_interface_t xv_video_poke_interface = {
    xv_get_flags,

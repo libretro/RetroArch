@@ -61,6 +61,7 @@ struct gx_mousedata
    bool valid;
 };
 
+/* TODO/FIXME - static global */
 static struct gx_mousedata gx_mouse[2];
 #endif
 
@@ -119,14 +120,14 @@ enum
 #define GC_JOYSTICK_THRESHOLD (48 * 256)
 #define WII_JOYSTICK_THRESHOLD (40 * 256)
 
+/* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
+
+/* TODO/FIXME - static globals */
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static uint32_t pad_type[DEFAULT_MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 static bool g_menu = false;
-
-static bool gx_joypad_query_pad(unsigned pad);
-
 #ifdef HW_RVL
 static bool g_quit = false;
 
@@ -243,11 +244,11 @@ static void check_port0_active(uint8_t pad_count)
    }
 }
 
-static bool gx_joypad_button(unsigned port, uint16_t key)
+static int16_t gx_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
-      return false;
-   return (pad_state[port] & (UINT64_C(1) << key));
+      return 0;
+   return (pad_state[port] & (UINT64_C(1) << joykey));
 }
 
 static void gx_joypad_get_buttons(unsigned port, input_bits_t *state)
@@ -260,49 +261,85 @@ static void gx_joypad_get_buttons(unsigned port, input_bits_t *state)
 		BIT256_CLEAR_ALL_PTR(state);
 }
 
-static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
+static int16_t gx_joypad_axis_state(unsigned port, uint32_t joyaxis)
 {
    int val     = 0;
    int axis    = -1;
    bool is_neg = false;
    bool is_pos = false;
 
-   if (joyaxis == AXIS_NONE || port >= DEFAULT_MAX_PADS)
-      return 0;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      axis     = AXIS_NEG_GET(joyaxis);
+      is_neg   = true;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      axis     = AXIS_POS_GET(joyaxis);
+      is_pos   = true;
    }
 
    switch (axis)
    {
       case 0:
-         val = analog_state[port][0][0];
+         val   = analog_state[port][0][0];
          break;
       case 1:
-         val = analog_state[port][0][1];
+         val   = analog_state[port][0][1];
          break;
       case 2:
-         val = analog_state[port][1][0];
+         val   = analog_state[port][1][0];
          break;
       case 3:
-         val = analog_state[port][1][1];
+         val   = analog_state[port][1][1];
          break;
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      val      = 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      val      = 0;
    return val;
+}
+
+static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
+{
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   return gx_joypad_axis_state(port, joyaxis);
+}
+
+static int16_t gx_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
+
+   if (port_idx >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+            (uint16_t)joykey != NO_BTN && 
+            (pad_state[port_idx] & (UINT64_C(1) << joykey))
+         )
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(gx_joypad_axis_state(port_idx, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 #ifdef HW_RVL
@@ -399,13 +436,18 @@ static int16_t WPAD_StickY(WPADData *data, u8 right)
 }
 #endif
 
+static bool gx_joypad_query_pad(unsigned pad)
+{
+   return pad < MAX_USERS && pad_type[pad] != WPAD_EXP_NOCONTROLLER;
+}
+
 static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
-   uint8_t pad_count = 0;
-   uint8_t gcpad = 0;
-   uint64_t state_p1;
-   uint64_t check_menu_toggle;
+   uint64_t state_p1          = 0;
+   uint64_t check_menu_toggle = 0;
+   uint8_t pad_count          = 0;
+   uint8_t gcpad              = 0;
 
    pad_state[0] = 0;
    pad_state[1] = 0;
@@ -601,11 +643,6 @@ static bool gx_joypad_init(void *data)
    return true;
 }
 
-static bool gx_joypad_query_pad(unsigned pad)
-{
-   return pad < MAX_USERS && pad_type[pad] != WPAD_EXP_NOCONTROLLER;
-}
-
 static void gx_joypad_destroy(void)
 {
 #ifdef HW_RVL
@@ -628,6 +665,7 @@ input_device_driver_t gx_joypad = {
    gx_joypad_query_pad,
    gx_joypad_destroy,
    gx_joypad_button,
+   gx_joypad_state,
    gx_joypad_get_buttons,
    gx_joypad_axis,
    gx_joypad_poll,

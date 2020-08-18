@@ -39,6 +39,9 @@ extern snes_ntsc_setup_t const retroarch_snes_ntsc_svideo;    /* color bleeding 
 extern snes_ntsc_setup_t const retroarch_snes_ntsc_rgb;       /* crisp image */
 extern snes_ntsc_setup_t const retroarch_snes_ntsc_monochrome;/* desaturated + artifacts */
 
+/* Do hires blitting when set to 1, assuming 512 width for any res >256. Made for SNES 512 mode. */
+extern int hires_blit;
+
 /* Initializes and adjusts parameters. Can be called multiple times on the same
 snes_ntsc_t object. Can pass NULL for either parameter. */
 typedef struct snes_ntsc_t snes_ntsc_t;

@@ -16,12 +16,15 @@
 
 #include "../../retroarch.h"
 #include "../../command.h"
+/* TODO/FIXME - weird header include */
 #include "string.h"
 
-static uint16_t pad_state[DEFAULT_MAX_PADS];
-static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
+/* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
 
+/* TODO/FIXME - static globals */
+static uint16_t pad_state[DEFAULT_MAX_PADS];
+static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 #ifdef HAVE_LIBNX
 static u32 vibration_handles[DEFAULT_MAX_PADS][2];
 static u32 vibration_handleheld[2];
@@ -83,11 +86,11 @@ static bool switch_joypad_init(void *data)
    return true;
 }
 
-static bool switch_joypad_button(unsigned port_num, uint16_t key)
+static int16_t switch_joypad_button(unsigned port_num, uint16_t joykey)
 {
    if (port_num >= DEFAULT_MAX_PADS)
-      return false;
-   return (pad_state[port_num] & (1 << key));
+      return 0;
+   return (pad_state[port_num] & (1 << joykey));
 }
 
 static void switch_joypad_get_buttons(unsigned port_num, input_bits_t *state)
@@ -102,51 +105,81 @@ static void switch_joypad_get_buttons(unsigned port_num, input_bits_t *state)
    }
 }
 
-static int16_t switch_joypad_axis(unsigned port_num, uint32_t joyaxis)
+static int16_t switch_joypad_axis_state(unsigned port, uint32_t joyaxis)
 {
    int val     = 0;
    int axis    = -1;
    bool is_neg = false;
    bool is_pos = false;
 
-#if 0
-   /* TODO/FIXME - implement */
-   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS) { }
-#endif
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis = AXIS_NEG_GET(joyaxis);
+      axis   = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis = AXIS_POS_GET(joyaxis);
+      axis   = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
 
    switch(axis)
    {
       case 0:
-         val = analog_state[port_num][0][0];
-         break;
       case 1:
-         val = analog_state[port_num][0][1];
+         val = analog_state[port][0][axis];
          break;
       case 2:
-         val = analog_state[port_num][1][0];
-         break;
       case 3:
-         val = analog_state[port_num][1][1];
+         val = analog_state[port][1][axis - 2];
          break;
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    return val;
+}
+
+static int16_t switch_joypad_axis(unsigned port, uint32_t joyaxis)
+{
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   return switch_joypad_axis_state(port, joyaxis);
+}
+
+static int16_t switch_joypad_state(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   uint16_t port_idx                    = joypad_info->joy_idx;
+
+   if (port_idx >= DEFAULT_MAX_PADS)
+      return 0;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && (pad_state[port_idx] & (1 << (uint16_t)joykey))
+         )
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(switch_joypad_axis_state(port_idx, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static bool switch_joypad_query_pad(unsigned pad)
@@ -389,6 +422,7 @@ input_device_driver_t switch_joypad = {
 	switch_joypad_query_pad,
 	switch_joypad_destroy,
 	switch_joypad_button,
+   switch_joypad_state,
 	switch_joypad_get_buttons,
 	switch_joypad_axis,
 	switch_joypad_poll,

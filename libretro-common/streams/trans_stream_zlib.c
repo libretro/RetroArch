@@ -29,27 +29,67 @@
 
 struct zlib_trans_stream
 {
-   bool inited;
-   int ex; /* window_bits or level */
    z_stream z;
+   int ex; /* window_bits or level */
+   bool inited;
 };
 
 static void *zlib_deflate_stream_new(void)
 {
-   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
+   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)
+      malloc(sizeof(*ret));
    if (!ret)
       return NULL;
-   ret->ex = 9;
-   return (void *) ret;
+   ret->inited      = false;
+   ret->ex          = 9;
+
+   ret->z.next_in   = NULL;
+   ret->z.avail_in  = 0;
+   ret->z.total_in  = 0;
+   ret->z.next_out  = NULL;
+   ret->z.avail_out = 0;
+   ret->z.total_out = 0;
+
+   ret->z.msg       = NULL;
+   ret->z.state     = NULL;
+
+   ret->z.zalloc    = NULL;
+   ret->z.zfree     = NULL;
+   ret->z.opaque    = NULL;
+
+   ret->z.data_type = 0;
+   ret->z.adler     = 0;
+   ret->z.reserved  = 0;
+   return (void *)ret;
 }
 
 static void *zlib_inflate_stream_new(void)
 {
-   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
+   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)
+      malloc(sizeof(*ret));
    if (!ret)
       return NULL;
-   ret->ex = MAX_WBITS;
-   return (void *) ret;
+   ret->inited      = false;
+   ret->ex          = MAX_WBITS;
+
+   ret->z.next_in   = NULL;
+   ret->z.avail_in  = 0;
+   ret->z.total_in  = 0;
+   ret->z.next_out  = NULL;
+   ret->z.avail_out = 0;
+   ret->z.total_out = 0;
+
+   ret->z.msg       = NULL;
+   ret->z.state     = NULL;
+
+   ret->z.zalloc    = NULL;
+   ret->z.zfree     = NULL;
+   ret->z.opaque    = NULL;
+
+   ret->z.data_type = 0;
+   ret->z.adler     = 0;
+   ret->z.reserved  = 0;
+   return (void *)ret;
 }
 
 static void zlib_deflate_stream_free(void *data)
@@ -222,9 +262,9 @@ static bool zlib_inflate_trans(
       zt->inited = true;
    }
 
-   pre_avail_in = z->avail_in;
+   pre_avail_in  = z->avail_in;
    pre_avail_out = z->avail_out;
-   zret = inflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
+   zret          = inflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
 
    if (zret == Z_OK)
    {

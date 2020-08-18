@@ -41,17 +41,18 @@
 
 typedef struct
 {
-   char content_crc[PATH_MAX_LENGTH];
-   char content_path[PATH_MAX_LENGTH];
+   struct string_list *lpl_list;
+   playlist_config_t playlist_config; /* size_t alignment */
    char hostname[512];
    char subsystem_name[512];
+   char content_crc[PATH_MAX_LENGTH];
+   char content_path[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char core_extensions[PATH_MAX_LENGTH];
    bool found;
    bool current;
    bool contentless;
-   struct string_list *lpl_list;
 } netplay_crc_handle_t;
 
 static void netplay_crc_scan_callback(retro_task_t *task,
@@ -266,11 +267,14 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          const char *lpl_path   = state->lpl_list->elems[i].data;
 
          /* skip files without .lpl file extension */
-         if (!string_ends_with(lpl_path, ".lpl"))
+         if (!string_ends_with_size(lpl_path, ".lpl",
+                  strlen(lpl_path),
+                  STRLEN_CONST(".lpl")))
             continue;
 
          RARCH_LOG("[Lobby]: Searching playlist: %s\n", lpl_path);
-         playlist      = playlist_init(lpl_path, COLLECTION_SIZE);
+         playlist_config_set_path(&state->playlist_config, lpl_path);
+         playlist      = playlist_init(&state->playlist_config);
          playlist_size = playlist_get_size(playlist);
 
          for (j = 0; j < playlist_size; j++)
@@ -340,11 +344,14 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             const char *lpl_path   = state->lpl_list->elems[j].data;
 
             /* skip files without .lpl file extension */
-            if (!string_ends_with(lpl_path, ".lpl"))
+            if (!string_ends_with_size(lpl_path, ".lpl",
+                     strlen(lpl_path),
+                     STRLEN_CONST(".lpl")))
                continue;
 
             RARCH_LOG("[Lobby]: Searching content %d/%d (%s) in playlist: %s\n", i + 1, game_list->size, game_list->elems[i].data, lpl_path);
-            playlist      = playlist_init(lpl_path, COLLECTION_SIZE);
+            playlist_config_set_path(&state->playlist_config, lpl_path);
+            playlist      = playlist_init(&state->playlist_config);
             playlist_size = playlist_get_size(playlist);
 
             for (k = 0; k < playlist_size && !found[i]; k++)
@@ -425,6 +432,12 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
 
    if (!task || !state)
       goto error;
+
+   state->playlist_config.capacity            = COLLECTION_SIZE;
+   state->playlist_config.old_format          = settings->bools.playlist_use_old_format;
+   state->playlist_config.compress            = settings->bools.playlist_compression;
+   state->playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&state->playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
    state->content_crc[0]    = '\0';
    state->content_path[0]   = '\0';

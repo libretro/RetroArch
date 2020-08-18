@@ -174,6 +174,10 @@ chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
 	else
 		err = CHDERR_NONE;
 
+   /* handle an error */
+   if (err != CHDERR_NONE)
+      free(data);
+
 	return err;
 }
 
@@ -225,7 +229,7 @@ chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 
 	/* do it */
 	zerr = inflate(&data->inflater, Z_FINISH);
-    (void)zerr;
+   (void)zerr;
 	if (data->inflater.total_out != destlen)
 		return CHDERR_DECOMPRESSION_ERROR;
 
@@ -259,7 +263,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 	}
 
 	/* alloc a new one */
-	ptr = (UINT32 *)malloc(size + sizeof(UINT32));
+	ptr = (UINT32 *)malloc(size + sizeof(uintptr_t));
 	if (!ptr)
 		return NULL;
 
@@ -273,7 +277,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 
 	/* set the low bit of the size so we don't match next time */
 	*ptr = size | 1;
-	return ptr + 1;
+   return ptr + (sizeof(uint32_t) == sizeof(uintptr_t) ? 1 : 2);
 }
 
 /*-------------------------------------------------
@@ -284,7 +288,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 void zlib_fast_free(voidpf opaque, voidpf address)
 {
 	zlib_allocator *alloc = (zlib_allocator *)opaque;
-	UINT32 *ptr = (UINT32 *)address - 1;
+   UINT32 *ptr = (UINT32 *)address - (sizeof(uint32_t) == sizeof(uintptr_t) ? 1 : 2);
 	int i;
 
 	/* find the hunk */

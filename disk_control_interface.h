@@ -36,10 +36,10 @@ RETRO_BEGIN_DECLS
  * control interface */
 typedef struct
 {
-   bool record_enabled;
-   disk_index_file_t index_record;
+   struct retro_disk_control_ext_callback cb; /* ptr alignment */
+   disk_index_file_t index_record;            /* unsigned alignment */
    unsigned initial_num_images;
-   struct retro_disk_control_ext_callback cb;
+   bool record_enabled;
 } disk_control_interface_t;
 
 /*****************/
@@ -167,11 +167,14 @@ bool disk_control_set_initial_index(
  *   if functionality is supported by core
  * NOTE: Must be called immediately after
  * loading content */
-bool disk_control_verify_initial_index(disk_control_interface_t *disk_control);
+bool disk_control_verify_initial_index(
+      disk_control_interface_t *disk_control,
+      bool verbosity);
 
 /* Saves current disk index to file, if supported
  * by current core */
-bool disk_control_save_image_index(disk_control_interface_t *disk_control);
+bool disk_control_save_image_index(
+      disk_control_interface_t *disk_control);
 
 RETRO_END_DECLS
 

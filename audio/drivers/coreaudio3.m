@@ -31,8 +31,8 @@ typedef struct ringbuffer
    float *buffer;
    size_t cap;
    atomic_int len;
-   size_t writePtr;
-   size_t readPtr;
+   size_t write_ptr;
+   size_t read_ptr;
 } ringbuffer_t;
 
 typedef ringbuffer_t * ringbuffer_h;
@@ -44,7 +44,7 @@ static inline size_t rb_len(ringbuffer_h r)
 
 static inline size_t rb_cap(ringbuffer_h r)
 {
-   return (r->readPtr + r->cap - r->writePtr) % r->cap;
+   return (r->read_ptr + r->cap - r->write_ptr) % r->cap;
 }
 
 static inline size_t rb_avail(ringbuffer_h r)
@@ -54,17 +54,17 @@ static inline size_t rb_avail(ringbuffer_h r)
 
 static inline void rb_advance_write(ringbuffer_h r)
 {
-   r->writePtr = (r->writePtr + 1) % r->cap;
+   r->write_ptr = (r->write_ptr + 1) % r->cap;
 }
 
 static inline void rb_advance_write_n(ringbuffer_h r, size_t n)
 {
-   r->writePtr = (r->writePtr + n) % r->cap;
+   r->write_ptr = (r->write_ptr + n) % r->cap;
 }
 
 static inline void rb_advance_read(ringbuffer_h r)
 {
-   r->readPtr = (r->readPtr + 1) % r->cap;
+   r->read_ptr = (r->read_ptr + 1) % r->cap;
 }
 
 static inline void rb_len_add(ringbuffer_h r, int n)
@@ -79,11 +79,11 @@ static inline void rb_len_sub(ringbuffer_h r, int n)
 
 static void rb_init(ringbuffer_h r, size_t cap)
 {
-   r->buffer   = malloc(cap * sizeof(float));
-   r->cap      = cap;
+   r->buffer     = malloc(cap * sizeof(float));
+   r->cap        = cap;
    atomic_init(&r->len, 0);
-   r->writePtr = 0;
-   r->readPtr  = 0;
+   r->write_ptr  = 0;
+   r->read_ptr   = 0;
 }
 
 static void rb_free(ringbuffer_h r)
@@ -102,13 +102,13 @@ static void rb_write_data(ringbuffer_h r, const float *data, size_t len)
    size_t first_write = n;
    size_t rest_write  = 0;
 
-   if (r->writePtr + n > r->cap)
+   if (r->write_ptr + n > r->cap)
    {
-      first_write = r->cap - r->writePtr;
-      rest_write  = n - first_write;
+      first_write     = r->cap - r->write_ptr;
+      rest_write      = n - first_write;
    }
 
-   memcpy(r->buffer + r->writePtr, data, first_write*sizeof(float));
+   memcpy(r->buffer + r->write_ptr, data, first_write*sizeof(float));
    memcpy(r->buffer, data + first_write, rest_write*sizeof(float));
 
    rb_advance_write_n(r, n);
@@ -126,9 +126,9 @@ static void rb_read_data(ringbuffer_h r,
       int i       = 0;
       for (; i < n/2; i++)
       {
-         d0[i] = r->buffer[r->readPtr];
+         d0[i] = r->buffer[r->read_ptr];
          rb_advance_read(r);
-         d1[i] = r->buffer[r->readPtr];
+         d1[i] = r->buffer[r->read_ptr];
          rb_advance_read(r);
       }
 

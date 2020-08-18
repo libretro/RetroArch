@@ -103,13 +103,6 @@ static void fpga_gfx_create(fpga_t *fpga)
 static void *fpga_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   unsigned full_x, full_y;
-   gfx_ctx_input_t inp;
-   gfx_ctx_mode_t mode;
-   const gfx_ctx_driver_t *ctx_driver   = NULL;
-   unsigned win_width = 0, win_height   = 0;
-   unsigned temp_width = 0, temp_height = 0;
-   settings_t *settings                 = config_get_ptr();
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    *input                               = NULL;
@@ -128,71 +121,11 @@ static void *fpga_gfx_init(const video_info_t *video,
 
    fpga_gfx_create(fpga);
 
-   ctx_driver = video_context_driver_init_first(fpga,
-         settings->arrays.video_context_driver,
-         GFX_CTX_FPGA_API, 1, 0, false);
-   if (!ctx_driver)
-      goto error;
-
-   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
-
-   RARCH_LOG("[FPGA]: Found FPGA context: %s\n", ctx_driver->ident);
-
-   video_context_driver_get_video_size(&mode);
-
-   full_x      = mode.width;
-   full_y      = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
-
-   RARCH_LOG("[FPGA]: Detecting screen resolution %ux%u.\n", full_x, full_y);
-
-   win_width   = video->width;
-   win_height  = video->height;
-
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      win_width  = full_x;
-      win_height = full_y;
-   }
-
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
-
-   if (!video_context_driver_set_video_mode(&mode))
-      goto error;
-
-   mode.width     = 0;
-   mode.height    = 0;
-
-   video_context_driver_get_video_size(&mode);
-
-   temp_width     = mode.width;
-   temp_height    = mode.height;
-   mode.width     = 0;
-   mode.height    = 0;
-
-   /* Get real known video size, which might have been altered by context. */
-
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
-
-   video_driver_get_size(&temp_width, &temp_height);
-
-   RARCH_LOG("[FPGA]: Using resolution %ux%u\n", temp_width, temp_height);
-
-   inp.input      = input;
-   inp.input_data = input_data;
-
-   video_context_driver_input_driver(&inp);
-
    RARCH_LOG("[FPGA]: Init complete.\n");
 
    return fpga;
 
 error:
-   video_context_driver_destroy();
    if (fpga)
       free(fpga);
    return NULL;
@@ -202,14 +135,15 @@ static bool fpga_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   gfx_ctx_mode_t mode;
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;
    bool draw                 = true;
    fpga_t *fpga              = (fpga_t*)data;
    unsigned bits             = fpga->video_bits;
+#ifdef HAVE_MENU
    bool menu_is_alive        = video_info->menu_is_alive;
+#endif
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -230,7 +164,8 @@ static bool fpga_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (fpga->menu_frame && video_info->menu_is_alive)
+#ifdef HAVE_MENU
+   if (fpga->menu_frame && menu_is_alive)
    {
       frame_to_copy = fpga->menu_frame;
       width         = fpga->menu_width;
@@ -239,6 +174,7 @@ static bool fpga_gfx_frame(void *data, const void *frame,
       bits          = fpga->menu_bits;
    }
    else
+#endif
    {
       width         = fpga->video_width;
       height        = fpga->video_height;
@@ -247,11 +183,11 @@ static bool fpga_gfx_frame(void *data, const void *frame,
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
 
-      if (video_info->menu_is_alive)
+#ifdef HAVE_MENU
+      if (menu_is_alive)
          draw = false;
+#endif
    }
-
-   video_context_driver_get_video_size(&mode);
 
    if (draw)
    {
@@ -317,46 +253,12 @@ static void fpga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool fpga_gfx_alive(void *data)
 {
-   gfx_ctx_size_t size_data;
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
-   bool quit            = false;
-   bool resize          = false;
- 
-   /* Needed because some context drivers don't track their sizes */
-   video_driver_get_size(&temp_width, &temp_height);
-
-   size_data.quit       = &quit;
-   size_data.resize     = &resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
-
-   video_context_driver_check_window(&size_data);
-
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
-
    return true;
 }
 
-static bool fpga_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool fpga_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool fpga_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool fpga_gfx_focus(void *data) { return true; }
+static bool fpga_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool fpga_gfx_has_windowed(void *data) { return true; }
 
 static void fpga_gfx_free(void *data)
 {
@@ -368,8 +270,6 @@ static void fpga_gfx_free(void *data)
    if (fpga->menu_frame)
       free(fpga->menu_frame);
    fpga->menu_frame = NULL;
-
-   video_context_driver_free();
 
    free(fpga);
 
@@ -449,34 +349,13 @@ static void fpga_set_osd_msg(void *data,
 }
 
 static void fpga_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   gfx_ctx_size_t size_data;
-   size_data.width  = width;
-   size_data.height = height;
-   video_context_driver_get_video_output_size(&size_data);
-}
-
-static void fpga_get_video_output_prev(void *data)
-{
-   video_context_driver_get_video_output_prev();
-}
-
-static void fpga_get_video_output_next(void *data)
-{
-   video_context_driver_get_video_output_next();
-}
+      unsigned *width, unsigned *height) { }
+static void fpga_get_video_output_prev(void *data) { }
+static void fpga_get_video_output_next(void *data) { }
 
 static void fpga_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gfx_ctx_mode_t mode;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
 }
 
 static const video_poke_interface_t fpga_poke_interface = {

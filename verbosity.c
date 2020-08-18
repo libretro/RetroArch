@@ -39,9 +39,17 @@
 #include <android/log.h>
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
+
+#if defined(_XBOX)
+#include <Xtl.h>
+#else
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
+#endif
+
 #endif
 
 #include <file/file_path.h>
@@ -258,13 +266,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
       FILE *fp = (FILE*)g_verbosity->fp;
 #if defined(HAVE_QT) || defined(__WINRT__)
-      int ret;
       char buffer[256];
       buffer[0] = '\0';
-      ret = vsnprintf(buffer, sizeof(buffer), fmt, ap);
 
-      /* ensure null termination and line break in error case */
-      if (ret < 0)
+      /* Ensure null termination and line break in error case */
+      if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
       {
          int end;
          buffer[sizeof(buffer) - 1]  = '\0';

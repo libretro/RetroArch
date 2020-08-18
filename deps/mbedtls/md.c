@@ -34,14 +34,7 @@
 #include "mbedtls/md.h"
 #include "mbedtls/md_internal.h"
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
-
 #include <string.h>
 
 #if defined(MBEDTLS_FS_IO)
@@ -77,14 +70,6 @@ static const int supported_digests[] = {
         MBEDTLS_MD_MD5,
 #endif
 
-#if defined(MBEDTLS_MD4_C)
-        MBEDTLS_MD_MD4,
-#endif
-
-#if defined(MBEDTLS_MD2_C)
-        MBEDTLS_MD_MD2,
-#endif
-
         MBEDTLS_MD_NONE
 };
 
@@ -99,14 +84,6 @@ const mbedtls_md_info_t *mbedtls_md_info_from_string( const char *md_name )
         return( NULL );
 
     /* Get the appropriate digest information */
-#if defined(MBEDTLS_MD2_C)
-    if( !strcmp( "MD2", md_name ) )
-        return mbedtls_md_info_from_type( MBEDTLS_MD_MD2 );
-#endif
-#if defined(MBEDTLS_MD4_C)
-    if( !strcmp( "MD4", md_name ) )
-        return mbedtls_md_info_from_type( MBEDTLS_MD_MD4 );
-#endif
 #if defined(MBEDTLS_MD5_C)
     if( !strcmp( "MD5", md_name ) )
         return mbedtls_md_info_from_type( MBEDTLS_MD_MD5 );
@@ -138,14 +115,6 @@ const mbedtls_md_info_t *mbedtls_md_info_from_type( mbedtls_md_type_t md_type )
 {
     switch( md_type )
     {
-#if defined(MBEDTLS_MD2_C)
-        case MBEDTLS_MD_MD2:
-            return( &mbedtls_md2_info );
-#endif
-#if defined(MBEDTLS_MD4_C)
-        case MBEDTLS_MD_MD4:
-            return( &mbedtls_md4_info );
-#endif
 #if defined(MBEDTLS_MD5_C)
         case MBEDTLS_MD_MD5:
             return( &mbedtls_md5_info );
@@ -191,7 +160,7 @@ void mbedtls_md_free( mbedtls_md_context_t *ctx )
     if( ctx->hmac_ctx != NULL )
     {
         mbedtls_zeroize( ctx->hmac_ctx, 2 * ctx->md_info->block_size );
-        mbedtls_free( ctx->hmac_ctx );
+        free( ctx->hmac_ctx );
     }
 
     mbedtls_zeroize( ctx, sizeof( mbedtls_md_context_t ) );
@@ -212,13 +181,6 @@ int mbedtls_md_clone( mbedtls_md_context_t *dst,
     return( 0 );
 }
 
-#if ! defined(MBEDTLS_DEPRECATED_REMOVED)
-int mbedtls_md_init_ctx( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_info )
-{
-    return mbedtls_md_setup( ctx, md_info, 1 );
-}
-#endif
-
 int mbedtls_md_setup( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_info, int hmac )
 {
     if( md_info == NULL || ctx == NULL )
@@ -229,7 +191,7 @@ int mbedtls_md_setup( mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_inf
 
     if( hmac != 0 )
     {
-        ctx->hmac_ctx = mbedtls_calloc( 2, md_info->block_size );
+        ctx->hmac_ctx = calloc( 2, md_info->block_size );
         if( ctx->hmac_ctx == NULL )
         {
             md_info->ctx_free_func( ctx->md_ctx );

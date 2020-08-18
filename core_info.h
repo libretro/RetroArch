@@ -25,6 +25,14 @@
 
 RETRO_BEGIN_DECLS
 
+enum core_info_list_qsort_type
+{
+   CORE_INFO_LIST_SORT_PATH = 0,
+   CORE_INFO_LIST_SORT_DISPLAY_NAME,
+   CORE_INFO_LIST_SORT_CORE_NAME,
+   CORE_INFO_LIST_SORT_SYSTEM_NAME
+};
+
 typedef struct
 {
    char *path;
@@ -54,11 +62,6 @@ typedef struct
 
 typedef struct
 {
-   bool supports_no_game;
-   bool database_match_archive_member;
-   bool is_experimental;
-   bool is_locked;
-   size_t firmware_count;
    char *path;
    void *config_data;
    char *display_name;
@@ -85,25 +88,30 @@ typedef struct
    struct string_list *licenses_list;
    struct string_list *required_hw_api_list;
    core_info_firmware_t *firmware;
-   core_file_id_t core_file_id;
+   core_file_id_t core_file_id; /* ptr alignment */
    void *userdata;
+   size_t firmware_count;
+   bool supports_no_game;
+   bool database_match_archive_member;
+   bool is_experimental;
+   bool is_locked;
 } core_info_t;
 
 /* A subset of core_info parameters required for
  * core updater tasks */
 typedef struct
 {
-   bool is_experimental;
    char *display_name;
    char *description;
    char *licenses;
+   bool is_experimental;
 } core_updater_info_t;
 
 typedef struct
 {
    core_info_t *list;
-   size_t count;
    char *all_ext;
+   size_t count;
 } core_info_list_t;
 
 typedef struct core_info_ctx_firmware
@@ -120,14 +128,6 @@ typedef struct core_info_ctx_find
    core_info_t *inf;
    const char *path;
 } core_info_ctx_find_t;
-
-enum core_info_list_qsort_type
-{
-   CORE_INFO_LIST_SORT_PATH = 0,
-   CORE_INFO_LIST_SORT_DISPLAY_NAME,
-   CORE_INFO_LIST_SORT_CORE_NAME,
-   CORE_INFO_LIST_SORT_SYSTEM_NAME
-};
 
 struct core_info_state
 {
@@ -219,6 +219,8 @@ bool core_info_set_core_lock(const char *core_path, bool lock);
 bool core_info_get_core_lock(const char *core_path, bool validate_path);
 
 core_info_state_t *coreinfo_get_ptr(void);
+
+bool core_info_core_file_id_is_equal(const char* core_path_a, const char* core_path_b);
 
 RETRO_END_DECLS
 

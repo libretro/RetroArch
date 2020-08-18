@@ -34,7 +34,6 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#include "../menu/widgets/menu_input_bind_dialog.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -44,6 +43,7 @@
 #include "cheat_manager.h"
 
 #include "../msg_hash.h"
+#include "../configuration.h"
 #include "../retroarch.h"
 #include "../dynamic.h"
 #include "../core.h"
@@ -76,7 +76,8 @@ static void cheat_manager_pause_cheevos(void)
 
 void cheat_manager_apply_cheats(void)
 {
-   unsigned i, idx = 0;
+   unsigned i, idx           = 0;
+   settings_t *settings      = config_get_ptr();
    cheat_manager_t *cheat_st = &cheat_manager_state;
 
    if (!cheat_st->cheats)
@@ -100,7 +101,7 @@ void cheat_manager_apply_cheats(void)
       }
    }
 
-   if (cheat_st->size > 0)
+   if (cheat_st->size > 0 && settings->bools.notification_show_cheats_applied)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_APPLYING_CHEAT));
@@ -436,7 +437,7 @@ static void cheat_manager_load_cb_second_pass(char *key, char *value)
       cheat_st->cheats[cheat_idx].handler = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "memory_search_size"))
       cheat_st->cheats[cheat_idx].memory_search_size = (unsigned)strtoul(value, NULL, 0);
-   else if (string_starts_with(key, "repeat_"))
+   else if (string_starts_with_size(key, "repeat_", STRLEN_CONST("repeat_")))
    {
       if (string_is_equal(key, "repeat_add_to_address"))
          cheat_st->cheats[cheat_idx].repeat_add_to_address = (unsigned)strtoul(value, NULL, 0);
@@ -445,7 +446,7 @@ static void cheat_manager_load_cb_second_pass(char *key, char *value)
       else if (string_is_equal(key, "repeat_count"))
          cheat_st->cheats[cheat_idx].repeat_count = (unsigned)strtoul(value, NULL, 0);
    }
-   else if (string_starts_with(key, "rumble"))
+   else if (string_starts_with_size(key, "rumble", STRLEN_CONST("rumble")))
    {
       if (string_is_equal(key, "rumble_port"))
          cheat_st->cheats[cheat_idx].rumble_port = (unsigned)strtoul(value, NULL, 0);
@@ -774,7 +775,7 @@ bool cheat_manager_alloc_if_empty(void)
    return true;
 }
 
-int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    unsigned i;
    retro_ctx_memory_info_t meminfo;
@@ -864,8 +865,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
 
    }
 
-   cheat_st->num_matches = (cheat_st->total_memory_size * 8) 
-      / ((int)pow(2, cheat_st->search_bit_size));
+   cheat_st->num_matches = (cheat_st->total_memory_size * 8) / (1 << cheat_st->search_bit_size);
 
 #if 0
    /* Ensure we're aligned on 4-byte boundary */
@@ -1133,47 +1133,47 @@ static int cheat_manager_search(enum cheat_search_type search_type)
    return 0;
 }
 
-int cheat_manager_search_exact(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_exact(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EXACT);
 }
 
-int cheat_manager_search_lt(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_lt(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_LT);
 }
 
-int cheat_manager_search_gt(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_gt(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_GT);
 }
 
-int cheat_manager_search_lte(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_lte(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_LTE);
 }
 
-int cheat_manager_search_gte(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_gte(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_GTE);
 }
 
-int cheat_manager_search_eq(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_eq(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQ);
 }
 
-int cheat_manager_search_neq(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_neq(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_NEQ);
 }
 
-int cheat_manager_search_eqplus(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_eqplus(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQPLUS);
 }
 
-int cheat_manager_search_eqminus(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_search_eqminus(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQMINUS);
 }
@@ -1402,7 +1402,7 @@ void cheat_manager_apply_retro_cheats(void)
       if (cheat_st->cheats[i].handler != CHEAT_HANDLER_TYPE_RETRO || !cheat_st->cheats[i].state)
          continue;
       if (!cheat_st->memory_initialized)
-         cheat_manager_initialize_memory(NULL, false);
+         cheat_manager_initialize_memory(NULL, 0, false);
 
       /* If we're still not initialized, something
        * must have gone wrong - just bail */
@@ -1736,7 +1736,7 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    }
 }
 
-int cheat_manager_copy_match(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_copy_match(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    cheat_manager_t *cheat_st = &cheat_manager_state;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_COPY,
@@ -1744,7 +1744,7 @@ int cheat_manager_copy_match(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
-int cheat_manager_delete_match(rarch_setting_t *setting, bool wraparound)
+int cheat_manager_delete_match(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    bool              refresh = false;
    cheat_manager_t *cheat_st = &cheat_manager_state;

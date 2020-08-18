@@ -55,12 +55,14 @@ public:
    QString categoryIconName() const { return m_categoryIconName; }
    virtual void load()
    {
-      for (int i = 0; i < m_pages.size(); i++)
+      size_t size = m_pages.size();
+      for (int i = 0; i < size; i++)
          m_pages.at(i)->load();
    }
    virtual void apply()
    {
-      for (int i = 0; i < m_pages.size(); i++)
+      size_t size = m_pages.size();
+      for (int i = 0; i < size; i++)
          m_pages.at(i)->apply();
    }
 protected:

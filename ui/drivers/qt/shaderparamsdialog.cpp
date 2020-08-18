@@ -331,19 +331,19 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
 
 void ShaderParamsDialog::onShaderPassMoveDownClicked()
 {
-   QToolButton *button = qobject_cast<QToolButton*>(sender());
    QVariant passVariant;
-   struct video_shader *menu_shader = NULL;
+   bool ok                           = false;
+   struct video_shader *menu_shader  = NULL;
    struct video_shader *video_shader = NULL;
-   int pass = 0;
-   bool ok = false;
+   QToolButton *button               = qobject_cast<QToolButton*>(sender());
+   int pass                          = 0;
 
    getShaders(&menu_shader, &video_shader);
 
    if (!button)
       return;
 
-   passVariant = button->property("pass");
+   passVariant                       = button->property("pass");
 
    if (!passVariant.isValid())
       return;
@@ -497,7 +497,8 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
 
    filter = "Shader Preset (";
 
-   /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
+   /* NOTE: Maybe we should have a way to get a list 
+    * of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
       filter += QLatin1Literal(" *") + ".cgp";
 
@@ -507,8 +508,8 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    if (video_shader_is_supported(RARCH_SHADER_SLANG))
       filter += QLatin1Literal(" *") + ".slangp";
 
-   filter += ")";
-   path    = QFileDialog::getOpenFileName(
+   filter    += ")";
+   path       = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
          path_dir_video_shader,
@@ -517,9 +518,9 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    if (path.isEmpty())
       return;
 
-   pathArray = path.toUtf8();
-   pathData  = pathArray.constData();
-   type      = video_shader_parse_type(pathData);
+   pathArray  = path.toUtf8();
+   pathData   = pathArray.constData();
+   type       = video_shader_parse_type(pathData);
 
    menu_shader_manager_set_preset(menu_shader, type, pathData, true);
 }
@@ -627,7 +628,8 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    struct video_shader_pass *shader_pass = NULL;
    const char *pathData                  = NULL;
    settings_t *settings                  = config_get_ptr();
-   const char *path_dir_video_shader     = settings->paths.directory_video_shader;
+   const char *path_dir_video_shader     = 
+      settings->paths.directory_video_shader;
 
    getShaders(&menu_shader, &video_shader);
 
@@ -636,7 +638,8 @@ void ShaderParamsDialog::onShaderAddPassClicked()
 
    filter = "Shader (";
 
-   /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
+   /* NOTE: Maybe we should have a way to get a list 
+    * of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
       filter += QLatin1Literal(" *.cg");
 
@@ -656,6 +659,12 @@ void ShaderParamsDialog::onShaderAddPassClicked()
 
    if (path.isEmpty())
       return;
+
+   /* Qt uses '/' as a directory separator regardless
+    * of host platform. Have to convert to native separators,
+    * or video_shader_resolve_parameters() will fail on
+    * non-Linux platforms */
+   path      = QDir::toNativeSeparators(path);
 
    pathArray = path.toUtf8();
    pathData  = pathArray.constData();
@@ -832,7 +841,7 @@ void ShaderParamsDialog::onShaderRemoveGamePresetClicked()
 
 void ShaderParamsDialog::onShaderRemoveAllPassesClicked()
 {
-   struct video_shader *menu_shader = NULL;
+   struct video_shader *menu_shader  = NULL;
    struct video_shader *video_shader = NULL;
 
    getShaders(&menu_shader, &video_shader);
@@ -1108,28 +1117,30 @@ void ShaderParamsDialog::buildLayout()
       if (shaderBasename.isEmpty())
          continue;
 
-      hasPasses = true;
+      hasPasses                          = true;
 
       filterComboBox->setProperty("pass", i);
       scaleComboBox->setProperty("pass", i);
 
-      moveDownButton = new QToolButton(this);
+      moveDownButton                     = new QToolButton(this);
       moveDownButton->setText("↓");
       moveDownButton->setProperty("pass", i);
 
-      moveUpButton = new QToolButton(this);
+      moveUpButton                       = new QToolButton(this);
       moveUpButton->setText("↑");
       moveUpButton->setProperty("pass", i);
 
       /* Can't move down if we're already at the bottom. */
       if (i < avail_shader->passes - 1)
-         connect(moveDownButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveDownClicked()));
+         connect(moveDownButton, SIGNAL(clicked()),
+               this, SLOT(onShaderPassMoveDownClicked()));
       else
          moveDownButton->setDisabled(true);
 
       /* Can't move up if we're already at the top. */
       if (i > 0)
-         connect(moveUpButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveUpClicked()));
+         connect(moveUpButton, SIGNAL(clicked()),
+               this, SLOT(onShaderPassMoveUpClicked()));
       else
          moveUpButton->setDisabled(true);
 
@@ -1232,18 +1243,18 @@ void ShaderParamsDialog::onParameterLabelContextMenuRequested(const QPoint&)
    if (!label)
       return;
 
-   paramVariant = label->property("parameter");
+   paramVariant  = label->property("parameter");
 
    if (!paramVariant.isValid())
       return;
 
-   parameter = paramVariant.toString();
+   parameter     = paramVariant.toString();
 
    resetParamAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER), 0));
 
    actions.append(resetParamAction.data());
 
-   action = QMenu::exec(actions, QCursor::pos(), NULL, label);
+   action        = QMenu::exec(actions, QCursor::pos(), NULL, label);
 
    if (!action)
       return;
@@ -1266,7 +1277,7 @@ void ShaderParamsDialog::onGroupBoxContextMenuRequested(const QPoint&)
    if (!groupBox)
       return;
 
-   passVariant = groupBox->property("pass");
+   passVariant         = groupBox->property("pass");
 
    if (!passVariant.isValid())
       return;
@@ -1282,7 +1293,7 @@ void ShaderParamsDialog::onGroupBoxContextMenuRequested(const QPoint&)
    actions.append(resetPassAction.data());
    actions.append(resetAllPassesAction.data());
 
-   action = QMenu::exec(actions, QCursor::pos(), NULL, groupBox);
+   action              = QMenu::exec(actions, QCursor::pos(), NULL, groupBox);
 
    if (!action)
       return;

@@ -665,7 +665,9 @@ error:
  *   if functionality is supported by core
  * NOTE: Must be called immediately after
  * loading content */
-bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
+bool disk_control_verify_initial_index(
+      disk_control_interface_t *disk_control,
+      bool verbosity)
 {
    bool success         = false;
    unsigned image_index = 0;
@@ -723,6 +725,8 @@ bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
                image_index + 1,
                image_path);
 
+      /* Ignore 'verbosity' setting - errors should
+       * always be displayed */
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FAILED_TO_SET_INITIAL_DISK),
             0, 60,
@@ -765,11 +769,12 @@ bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
        * it is likely other notifications will be
        * generated before setting the disk index, and
        * we do not want to 'overwrite' them */
-      runloop_msg_queue_push(
-            msg,
-            0, msg_duration,
-            false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      if (verbosity)
+         runloop_msg_queue_push(
+               msg,
+               0, msg_duration,
+               false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    return success;
@@ -777,7 +782,8 @@ bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
 
 /* Saves current disk index to file, if supported
  * by current core */
-bool disk_control_save_image_index(disk_control_interface_t *disk_control)
+bool disk_control_save_image_index(
+      disk_control_interface_t *disk_control)
 {
    if (!disk_control)
       return false;

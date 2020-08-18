@@ -26,9 +26,9 @@
 struct hidpad_snesusb_data
 {
    struct pad_connection* connection;
-   uint8_t data[64];
    uint32_t slot;
    uint32_t buttons;
+   uint8_t data[64];
 };
 
 static void* hidpad_snesusb_init(void *data, uint32_t slot, hid_driver_t *driver)
@@ -82,7 +82,9 @@ static int16_t hidpad_snesusb_get_axis(void *data, unsigned axis)
    val = device->data[1 + axis];
    val = (val << 8) - 0x8000;
 
-   return (abs(val) > 0x1000) ? val : 0;
+   if (abs(val) > 0x1000)
+      return val;
+   return 0;
 }
 
 static void hidpad_snesusb_packet_handler(void *data, uint8_t *packet, uint16_t size)

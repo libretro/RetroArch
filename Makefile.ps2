@@ -6,12 +6,11 @@ HAVE_THREADS       = 0
 MUTE_WARNINGS      = 1
 PS2_IP = 192.168.1.150
 
-TARGET = retroarchps2.elf
-TARGET_RELEASE = retroarchps2-release.elf
+TARGET = retroarchps2-debug.elf
+TARGET_RELEASE = retroarchps2.elf
 
 # Compile the IRXs first
 IRX_DIR = ps2/irx
-IRX_FILES = $(wildcard ps2/irx/*.c)
 
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
@@ -31,12 +30,14 @@ INCDIR += -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/
 CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
-RARCH_DEFINES += -DPS2 -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_RGUI
+RARCH_DEFINES += -DPS2 -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_REWIND -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS -DHAVE_RGUI
 RARCH_DEFINES += -DHAVE_ZLIB -DHAVE_NO_BUILTINZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
+RARCH_DEFINES += -DHAVE_DSP_FILTER
+RARCH_DEFINES += -DHAVE_VIDEO_FILTER
 
 LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
 # Lib cdvd is needed to get proper time
-LIBS += -lretro_ps2 -lpatches -lpoweroff -lgskit -ldmakit -laudsrv -lpadx -lmtap -lz -lcdvd
+LIBS += -lretro_ps2 -lpatches -lpoweroff -lgskit -ldmakit -laudsrv -lpadx -lmtap -lz -lcdvd -lelf-loader
 
 ifeq ($(BUILD_FOR_PCSX2), 1)
 RARCH_DEFINES += -DBUILD_FOR_PCSX2

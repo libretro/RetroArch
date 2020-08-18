@@ -13,50 +13,48 @@
  */
 
 #include <stdint.h>
-
-#include "../frontend_driver.h"
-
-#include <loadfile.h>
+#include <stdio.h>
+#include <string.h>
 #include <unistd.h>
+#include <kernel.h>
+
 #include <sbv_patches.h>
 #include <sifrpc.h>
 #include <iopcontrol.h>
 #include <libpwroff.h>
-#include <libmtap.h>
-#include <audsrv.h>
-#include <libpad.h>
 #include <ps2_devices.h>
 #include <ps2_irx_variables.h>
+#include <loadfile.h>
 
-static char eboot_path[512];
-static char user_path[512];
+#include <file/file_path.h>
+#include <string/stdstring.h>
+
+#include "../frontend_driver.h"
+#include "../../defaults.h"
+#include "../../file_path_special.h"
+#include "../../verbosity.h"
+#include <elf-loader.h>
+
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
+static int bootDeviceID;
+char cwd[FILENAME_MAX];
 
 static void create_path_names(void)
 {
-   char cwd[FILENAME_MAX];
-   int bootDeviceID;
+   char user_path[FILENAME_MAX];
 
-#if defined(BUILD_FOR_PCSX2)
-   strlcpy(cwd, rootDevicePath(BOOT_DEVICE_MC0), sizeof(cwd));
-#else
-   getcwd(cwd, sizeof(cwd));
-   bootDeviceID=getBootDeviceID(cwd);
-   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(cwd));
-#endif
-   strcat(cwd, "RETROARCH");
+   /* TODO/FIXME - third parameter here needs to be size of
+    * rootDevicePath(bootDeviceID) */
+   strlcpy(user_path, rootDevicePath(bootDeviceID), rootDevicePath(bootDeviceID));
+   strlcat(user_path, "RETROARCH", sizeof(user_path));
+   
+   /* Content in the same folder */
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], cwd,
+         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], cwd,
+         "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 
-   strlcpy(eboot_path, cwd, sizeof(eboot_path));
-   strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   strlcpy(user_path, eboot_path, sizeof(user_path));
-
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "CORES", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "INFO", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-
-   /* user data */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
          "CHEATS", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
@@ -85,14 +83,28 @@ static void create_path_names(void)
    /* history and main config */
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
-   fill_pathname_join(g_defaults.path.config, user_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.path_config, user_path,
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
 }
 
 static void poweroffCallback(void *arg)
 {
 	printf("Shutdown!");
 	poweroffShutdown();
+}
+
+static void reset_IOP()
+{
+   SifInitRpc(0);
+#if !defined(DEBUG) || defined(BUILD_FOR_PCSX2)
+   /* Comment this line if you don't wanna debug the output */
+   while(!SifIopReset(NULL, 0)){};
+#endif
+
+   while(!SifIopSync()){};
+   SifInitRpc(0);
+   sbv_patch_enable_lmb();
+   sbv_patch_disable_prefix_check();
 }
 
 static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
@@ -103,7 +115,7 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
 #ifndef IS_SALAMANDER
    if (!string_is_empty(argv[1]))
    {
-      static char path[PATH_MAX_LENGTH] = {0};
+      static char path[FILENAME_MAX] = {0};
       struct rarch_main_wrap      *args =
          (struct rarch_main_wrap*)params_data;
 
@@ -122,7 +134,6 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
 
          RARCH_LOG("argv[0]: %s\n", argv[0]);
          RARCH_LOG("argv[1]: %s\n", argv[1]);
-         RARCH_LOG("argv[2]: %s\n", argv[2]);
 
          RARCH_LOG("Auto-start game %s.\n", argv[1]);
       }
@@ -139,18 +150,7 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
 
 static void frontend_ps2_init(void *data)
 {
-   char cwd[FILENAME_MAX];
-   int bootDeviceID;
-
-   SifInitRpc(0);
-#if !defined(DEBUG) || defined(BUILD_FOR_PCSX2)
-   /* Comment this line if you don't wanna debug the output */
-   while(!SifIopReset(NULL, 0)){};
-#endif
-
-   while(!SifIopSync()){};
-   SifInitRpc(0);
-   sbv_patch_enable_lmb();
+   reset_IOP();
 
    /* I/O Files */
    SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
@@ -161,20 +161,21 @@ static void frontend_ps2_init(void *data)
    SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL, NULL);
 
-   /* Controllers */
-   SifExecModuleBuffer(&freemtap_irx, size_freemtap_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&freepad_irx, size_freepad_irx, 0, NULL, NULL);
-
    /* USB */
    SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
 
+   /* CDFS */
+   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
+
+#ifndef IS_SALAMANDER
+   /* Controllers */
+   SifExecModuleBuffer(&freemtap_irx, size_freemtap_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&freepad_irx, size_freepad_irx, 0, NULL, NULL);
+
    /* Audio */
    SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
-
-   /* CDVD */
-   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
 
    /* Initializes audsrv library */
    if (audsrv_init()) {
@@ -192,48 +193,52 @@ static void frontend_ps2_init(void *data)
    if (mtapPortOpen(0) != 1) {
       RARCH_ERR("mtapPortOpen library not initalizated\n");
    }
+#endif
+
+#if defined(BUILD_FOR_PCSX2)
+   bootDeviceID = BOOT_DEVICE_MC0;
+   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(rootDevicePath(bootDeviceID)));
+#else
+   getcwd(cwd, sizeof(cwd));
+   bootDeviceID = getBootDeviceID(cwd);
+#if !defined(IS_SALAMANDER) && !defined(DEBUG)
+   // If it is not salamander we need to go one level up for set the CWD.
+   path_parent_dir(cwd);
+#endif
+#endif
 
 #if defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("retroarch.log", false);
+   char fileLog[FILENAME_MAX];
+   strlcpy(fileLog, rootDevicePath(bootDeviceID), sizeof(fileLog));
+   strcat(fileLog, "retroarch.log");
+   retro_main_log_file_init(fileLog, false);
    verbosity_enable();
 #endif
+
+   waitUntilDeviceIsReady(bootDeviceID);
 }
 
 static void frontend_ps2_deinit(void *data)
 {
-   (void)data;
 #if defined(HAVE_FILE_LOGGER)
    verbosity_disable();
-   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
+   retro_main_log_file_deinit();
 #endif
-   padEnd();
-   audsrv_quit();
-   Exit(0);
 }
 
 static void frontend_ps2_exec(const char *path, bool should_load_game)
 {
-#if defined(IS_SALAMANDER)
-   char argp[512] = {0};
-   SceSize   args = 0;
-
-   strlcpy(argp, eboot_path, sizeof(argp));
-   args = strlen(argp) + 1;
-
+   int args = 0;
+   static char *argv[1];
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
-      argp[args] = '\0';
-      strlcat(argp + args, path_get(RARCH_PATH_CONTENT), sizeof(argp) - args);
-      args += strlen(argp + args) + 1;
+      args++;
+      argv[0] = path_get(RARCH_PATH_CONTENT);
    }
 #endif
-
-   RARCH_LOG("Attempt to load executable: [%s].\n", path);
-#if 0
-   exitspawn_kernel(path, args, argp); /* I don't know what this is doing */
-#endif
-#endif
+   LoadELFFromFile(path, args, argv);
 }
 
 #ifndef IS_SALAMANDER
@@ -353,7 +358,7 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    frontend_ps2_exitspawn,                         /* exitspawn */
    NULL,                         /* process_args */
    frontend_ps2_exec,                         /* exec */
-   #ifdef IS_SALAMANDER
+#ifdef IS_SALAMANDER
    NULL,                         /* set_fork */
 #else
    frontend_ps2_set_fork,                         /* set_fork */

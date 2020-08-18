@@ -26,8 +26,8 @@ typedef struct powerstate powerstate_t;
 
 struct powerstate
 {
-   enum frontend_powerstate state;
    int percent;
+   enum frontend_powerstate state;
 };
 
 /* TODO/FIXME - global state - perhaps move outside this file */

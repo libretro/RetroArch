@@ -459,7 +459,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
     char assets_zip_path[PATH_MAX_LENGTH];
 #if TARGET_OS_IOS
     if (major > 8)
-       strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
+       strlcpy(g_defaults.path_buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path_buildbot_server_url));
 #endif
 
     fill_pathname_join(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));

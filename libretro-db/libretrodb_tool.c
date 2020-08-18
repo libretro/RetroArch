@@ -31,11 +31,14 @@
 int main(int argc, char ** argv)
 {
    int rv;
-   libretrodb_t *db;
-   libretrodb_cursor_t *cur;
-   libretrodb_query_t *q;
    struct rmsgpack_dom_value item;
-   const char *command, *path, *query_exp, *error;
+   const char *command                            = NULL;
+   const char *path                               = NULL;
+   const char *query_exp                          = NULL;
+   const char *error                              = NULL;
+   libretrodb_t *db                               = NULL;
+   libretrodb_cursor_t *cur                       = NULL;
+   libretrodb_query_t *q                          = NULL;
 
    if (argc < 3)
    {
@@ -51,8 +54,8 @@ int main(int argc, char ** argv)
    command = argv[2];
    path    = argv[1];
 
-   db  = libretrodb_new();
-   cur = libretrodb_cursor_new();
+   db      = libretrodb_new();
+   cur     = libretrodb_cursor_new();
 
    if (!db || !cur)
       goto error;

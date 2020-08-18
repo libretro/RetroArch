@@ -5,7 +5,7 @@
 #import "Context.h"
 #import "MenuDisplay.h"
 #import "ShaderTypes.h"
-#import "menu_driver.h"
+#include "../../../menu/menu_driver.h"
 #import <Metal/Metal.h>
 /* TODO(sgc): this dependency is incorrect */
 #import "../metal_common.h"
@@ -112,10 +112,10 @@
 
    _uniforms.outputSize = simd_make_float2(_context.viewport->full_width, _context.viewport->full_height);
 
-   draw->pipeline.backend_data = &_uniforms;
-   draw->pipeline.backend_data_size = sizeof(_uniforms);
+   draw->backend_data = &_uniforms;
+   draw->backend_data_size = sizeof(_uniforms);
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       /* ribbon */
       default:
@@ -200,7 +200,7 @@
       [rce setScissorRect:_scissorRect];
    }
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
 #if HAVE_SHADERPIPELINE
       case VIDEO_SHADER_MENU:
@@ -209,10 +209,10 @@
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         [rce setRenderPipelineState:[_context getStockShader:draw->pipeline.id blend:_blend]];
-         [rce setVertexBytes:draw->pipeline.backend_data length:draw->pipeline.backend_data_size atIndex:BufferIndexUniforms];
+         [rce setRenderPipelineState:[_context getStockShader:draw->pipeline_id blend:_blend]];
+         [rce setVertexBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
          [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
-         [rce setFragmentBytes:draw->pipeline.backend_data length:draw->pipeline.backend_data_size atIndex:BufferIndexUniforms];
+         [rce setFragmentBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
          [rce drawPrimitives:[self _toPrimitiveType:draw->prim_type] vertexStart:0 vertexCount:vertexCount];
          return;
 #endif

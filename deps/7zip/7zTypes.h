@@ -41,13 +41,9 @@ EXTERN_C_BEGIN
 #define SZ_ERROR_ARCHIVE 16
 #define SZ_ERROR_NO_ARCHIVE 17
 
-typedef int SRes;
+typedef int64_t SRes;
 
-#ifdef _WIN32
-typedef unsigned WRes;
-#else
-typedef int WRes;
-#endif
+typedef int64_t WRes;
 
 #ifndef RINOK
 #define RINOK(x) { int __result__ = (x); if (__result__ != 0) return __result__; }

@@ -156,6 +156,7 @@ void d3d_input_driver(const char* input_name, const char* joypad_name,
    *input_data     = xinput;
 #else
 #if _WIN32_WINNT >= 0x0501
+#ifdef HAVE_WINRAWINPUT
    /* winraw only available since XP */
    if (string_is_equal(input_name, "raw"))
    {
@@ -166,6 +167,7 @@ void d3d_input_driver(const char* input_name, const char* joypad_name,
          return;
       }
    }
+#endif
 #endif
 
 #ifdef HAVE_DINPUT

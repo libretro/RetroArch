@@ -138,8 +138,8 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
    /* history and main config */
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
-   fill_pathname_join(g_defaults.path.config, user_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.path_config, user_path,
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
 
    /* bundle copy */
    snprintf(data_assets_path,
@@ -170,7 +170,7 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
    }
 
    /* set glui as default menu */
-   snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "glui");
+   snprintf(g_defaults.settings_menu, sizeof(g_defaults.settings_menu), "glui");
 }
 
 enum frontend_architecture frontend_qnx_get_architecture(void)

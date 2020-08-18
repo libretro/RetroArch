@@ -80,7 +80,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 		*params = GL_FALSE;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -98,7 +98,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
 		for (i = 0; i < 4; i++) {
 			for (j = 0; j < 4; j++) {
-				data[i*4+j] = modelview_matrix[j][i];
+				data[i * 4 + j] = modelview_matrix[j][i];
 			}
 		}
 		break;
@@ -106,7 +106,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
 		for (i = 0; i < 4; i++) {
 			for (j = 0; j < 4; j++) {
-				data[i*4+j] = projection_matrix[j][i];
+				data[i * 4 + j] = projection_matrix[j][i];
 			}
 		}
 		break;
@@ -122,8 +122,14 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 	case GL_MAX_TEXTURE_STACK_DEPTH: // Max texture stack depth
 		*data = GENERIC_STACK_DEPTH;
 		break;
+	case GL_DEPTH_BITS:
+		*data = 32;
+		break;
+	case GL_STENCIL_BITS:
+		*data = 8;
+		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -155,8 +161,14 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[2] = gl_viewport.w;
 		data[3] = gl_viewport.h;
 		break;
+	case GL_DEPTH_BITS:
+		data[0] = 32;
+		break;
+	case GL_STENCIL_BITS:
+		data[0] = 8;
+		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }

@@ -66,7 +66,7 @@ LoadCoreWindow::LoadCoreWindow(QWidget *parent) :
    ,m_table(new LoadCoreTableWidget())
    ,m_statusLabel(new QLabel())
 {
-   QHBoxLayout *hbox = new QHBoxLayout();
+   QHBoxLayout             *hbox = new QHBoxLayout();
    QPushButton *customCoreButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE));
 
    connect(customCoreButton, SIGNAL(clicked()), this, SLOT(onLoadCustomCoreClicked()));
@@ -80,7 +80,8 @@ LoadCoreWindow::LoadCoreWindow(QWidget *parent) :
    centralWidget()->setLayout(&m_layout);
 
    hbox->addWidget(customCoreButton);
-   hbox->addItem(new QSpacerItem(width(), 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+   hbox->addItem(new QSpacerItem(width(),
+            20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
    m_layout.addWidget(m_table);
    m_layout.addLayout(hbox);
@@ -180,13 +181,15 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    strlcat(filters, core_ext, sizeof(filters));
    strlcat(filters, ");;All Files (*.*)", sizeof(filters));
 
-   path = QFileDialog::getOpenFileName(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE), path_dir_libretro, filters, NULL);
+   path                          = QFileDialog::getOpenFileName(
+         this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE),
+         path_dir_libretro, filters, NULL);
 
    if (path.isEmpty())
       return;
 
    pathArray.append(path);
-   pathData = pathArray.constData();
+   pathData                      = pathArray.constData();
 
    loadCore(pathData);
 }
@@ -227,12 +230,13 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
          const char               *name = core->display_name;
 
          if (string_is_empty(name))
-            name = path_basename(core->path);
+            name                        = path_basename(core->path);
 
-         name_item = new QTableWidgetItem(name);
+         name_item                      = new QTableWidgetItem(name);
 
-         hash["path"]       = core->path;
-         hash["extensions"] = QString(core->supported_extensions).split("|");
+         hash["path"]                   = core->path;
+         hash["extensions"]             = QString(
+               core->supported_extensions).split("|");
 
          name_item->setData(Qt::UserRole, hash);
          name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);

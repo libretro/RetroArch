@@ -67,6 +67,8 @@ extern "C" {
    s ##_version() & 0xFF);
 
 static bool reset_triggered;
+static bool libretro_supports_bitmasks = false;
+
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
    va_list va;
@@ -191,13 +193,21 @@ static GLint mix_loc;
 
 static struct
 {
+   double interpolate_fps;
    unsigned width;
    unsigned height;
-   
-   double interpolate_fps;
    unsigned sample_rate;
 
    float aspect;
+
+   struct
+   {
+      double time;
+      unsigned hours;
+      unsigned minutes;
+      unsigned seconds;
+   } duration;
+
 } media;
 
 #ifdef HAVE_SSA
@@ -231,10 +241,27 @@ void CORE_PREFIX(retro_init)(void)
    reset_triggered = false;
 
    av_register_all();
+
+   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
+      libretro_supports_bitmasks = true;
 }
 
 void CORE_PREFIX(retro_deinit)(void)
-{}
+{
+   libretro_supports_bitmasks = false;
+
+   if (video_buffer)
+   {
+      video_buffer_destroy(video_buffer);
+      video_buffer = NULL;
+   }
+
+   if (tpool)
+   {
+      tpool_destroy(tpool);
+      tpool = NULL;
+   }
+}
 
 unsigned CORE_PREFIX(retro_api_version)(void)
 {
@@ -473,23 +500,89 @@ static void check_variables(bool firststart)
 static void seek_frame(int seek_frames)
 {
    char msg[256];
-   struct retro_message msg_obj = {0};
+   struct retro_message_ext msg_obj = {0};
+   int seek_frames_capped           = seek_frames;
+   unsigned seek_hours              = 0;
+   unsigned seek_minutes            = 0;
+   unsigned seek_seconds            = 0;
+   int8_t seek_progress             = -1;
 
+   msg[0] = '\0';
+
+   /* Handle resets + attempts to seek to a location
+    * before the start of the video */
    if ((seek_frames < 0 && (unsigned)-seek_frames > frame_cnt) || reset_triggered)
       frame_cnt = 0;
-   else
+   /* Handle backwards seeking */
+   else if (seek_frames < 0)
       frame_cnt += seek_frames;
+   /* Handle forwards seeking */
+   else
+   {
+      double current_time     = (double)frame_cnt / media.interpolate_fps;
+      double seek_step_time   = (double)seek_frames / media.interpolate_fps;
+      double seek_target_time = current_time + seek_step_time;
+      double seek_time_max    = media.duration.time - 1.0;
+
+      seek_time_max = (seek_time_max > 0.0) ?
+            seek_time_max : 0.0;
+
+      /* Ensure that we don't attempt to seek past
+       * the end of the file */
+      if (seek_target_time > seek_time_max)
+      {
+         seek_step_time = seek_time_max - current_time;
+
+         /* If seek would have taken us to the
+          * end of the file, restart it instead
+          * (less jarring for the user in case of
+          * accidental seeking...) */
+         if (seek_step_time < 0.0)
+            seek_frames_capped = -1;
+         else
+            seek_frames_capped = (int)(seek_step_time * media.interpolate_fps);
+      }
+
+      if (seek_frames_capped < 0)
+         frame_cnt  = 0;
+      else
+         frame_cnt += seek_frames_capped;
+   }
 
    slock_lock(fifo_lock);
    do_seek        = true;
    seek_time      = frame_cnt / media.interpolate_fps;
 
-   snprintf(msg, sizeof(msg), "Seek: %u s.", (unsigned)seek_time);
-   msg_obj.msg    = msg;
-   msg_obj.frames = 180;
-   CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+   /* Convert seek time to a printable format */
+   seek_seconds  = (unsigned)seek_time;
+   seek_minutes  = seek_seconds / 60;
+   seek_seconds %= 60;
+   seek_hours    = seek_minutes / 60;
+   seek_minutes %= 60;
 
-   if (seek_frames < 0)
+   snprintf(msg, sizeof(msg), "%02d:%02d:%02d / %02d:%02d:%02d",
+         seek_hours, seek_minutes, seek_seconds,
+         media.duration.hours, media.duration.minutes, media.duration.seconds);
+
+   /* Get current progress */
+   if (media.duration.time > 0.0)
+   {
+      seek_progress = (int8_t)((100.0 * seek_time / media.duration.time) + 0.5);
+      seek_progress = (seek_progress < -1)  ? -1  : seek_progress;
+      seek_progress = (seek_progress > 100) ? 100 : seek_progress;
+   }
+
+   /* Send message to frontend */
+   msg_obj.msg      = msg;
+   msg_obj.duration = 2000;
+   msg_obj.priority = 3;
+   msg_obj.level    = RETRO_LOG_INFO;
+   msg_obj.target   = RETRO_MESSAGE_TARGET_OSD;
+   msg_obj.type     = RETRO_MESSAGE_TYPE_PROGRESS;
+   msg_obj.progress = seek_progress;
+   CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg_obj);
+
+   if (seek_frames_capped < 0)
    {
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Resetting PTS.\n");
       frames[0].pts = 0.0;
@@ -522,6 +615,7 @@ void CORE_PREFIX(retro_run)(void)
    double min_pts;
    int16_t audio_buffer[2048];
    bool left, right, up, down, l, r;
+   int16_t ret                  = 0;
    size_t to_read_frames        = 0;
    int seek_frames              = 0;
    bool updated                 = false;
@@ -552,20 +646,28 @@ void CORE_PREFIX(retro_run)(void)
 
    CORE_PREFIX(input_poll_cb)();
 
-   left = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_LEFT);
-   right = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   up = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_UP) ||
-      CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   down = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_DOWN) ||
-      CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-   l = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_L);
-   r = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-         RETRO_DEVICE_ID_JOYPAD_R);
+   if (libretro_supports_bitmasks)
+      ret = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD,
+            0, RETRO_DEVICE_ID_JOYPAD_MASK);
+   else
+   {
+      unsigned i;
+      for (i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+         if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, i))
+            ret |= (1 << i);
+   }
+
+   if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP))
+      ret |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+   if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN))
+      ret |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+
+   left  = ret & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+   right = ret & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   up    = ret & (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+   down  = ret & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+   l     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_L);
+   r     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R);
 
    if (left && !last_left)
       seek_frames -= 10 * media.interpolate_fps;
@@ -579,7 +681,9 @@ void CORE_PREFIX(retro_run)(void)
    if (l && !last_l && audio_streams_num > 0)
    {
       char msg[256];
-      struct retro_message msg_obj = {0};
+      struct retro_message_ext msg_obj = {0};
+
+      msg[0] = '\0';
 
       slock_lock(decode_thread_lock);
       audio_streams_ptr = (audio_streams_ptr + 1) % audio_streams_num;
@@ -587,23 +691,36 @@ void CORE_PREFIX(retro_run)(void)
 
       snprintf(msg, sizeof(msg), "Audio Track #%d.", audio_streams_ptr);
 
-      msg_obj.msg    = msg;
-      msg_obj.frames = 180;
-      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+      msg_obj.msg      = msg;
+      msg_obj.duration = 3000;
+      msg_obj.priority = 1;
+      msg_obj.level    = RETRO_LOG_INFO;
+      msg_obj.target   = RETRO_MESSAGE_TARGET_ALL;
+      msg_obj.type     = RETRO_MESSAGE_TYPE_NOTIFICATION;
+      msg_obj.progress = -1;
+      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg_obj);
    }
    else if (r && !last_r && subtitle_streams_num > 0)
    {
       char msg[256];
-      struct retro_message msg_obj = {0};
+      struct retro_message_ext msg_obj = {0};
+
+      msg[0] = '\0';
 
       slock_lock(decode_thread_lock);
       subtitle_streams_ptr = (subtitle_streams_ptr + 1) % subtitle_streams_num;
       slock_unlock(decode_thread_lock);
 
       snprintf(msg, sizeof(msg), "Subtitle Track #%d.", subtitle_streams_ptr);
-      msg_obj.msg    = msg;
-      msg_obj.frames = 180;
-      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg_obj);
+
+      msg_obj.msg      = msg;
+      msg_obj.duration = 3000;
+      msg_obj.priority = 1;
+      msg_obj.level    = RETRO_LOG_INFO;
+      msg_obj.target   = RETRO_MESSAGE_TARGET_ALL;
+      msg_obj.type     = RETRO_MESSAGE_TYPE_NOTIFICATION;
+      msg_obj.progress = -1;
+      CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg_obj);
    }
 
    last_left  = left;
@@ -649,7 +766,7 @@ void CORE_PREFIX(retro_run)(void)
       to_read_bytes = to_read_frames * sizeof(int16_t) * 2;
 
       slock_lock(fifo_lock);
-      while (!decode_thread_dead && fifo_read_avail(audio_decode_fifo) < to_read_bytes)
+      while (!decode_thread_dead && FIFO_READ_AVAIL(audio_decode_fifo) < to_read_bytes)
       {
          main_sleeping = true;
          scond_signal(fifo_decode_cond);
@@ -658,7 +775,7 @@ void CORE_PREFIX(retro_run)(void)
       }
 
       reading_pts  = decode_last_audio_time -
-         (double)fifo_read_avail(audio_decode_fifo) / (media.sample_rate * sizeof(int16_t) * 2);
+         (double)FIFO_READ_AVAIL(audio_decode_fifo) / (media.sample_rate * sizeof(int16_t) * 2);
       expected_pts = (double)audio_frames / media.sample_rate;
       old_pts_bias = pts_bias;
       pts_bias     = reading_pts - expected_pts;
@@ -707,15 +824,17 @@ void CORE_PREFIX(retro_run)(void)
             if (!decode_thread_dead)
             {
                unsigned y;
-               const uint8_t *src;
                int stride, width;
-               uint32_t               *data = video_frame_temp_buffer;
-
+               const uint8_t *src           = NULL;
                video_decoder_context_t *ctx = NULL;
+               uint32_t               *data = NULL;
+
                video_buffer_get_finished_slot(video_buffer, &ctx);
                pts                          = ctx->pts;
 
-#ifndef HAVE_OPENGLES
+#ifdef HAVE_OPENGLES
+               data                         = video_frame_temp_buffer;
+#else
                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, frames[1].pbo);
 #ifdef __MACH__
                data                         = (uint32_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
@@ -1190,6 +1309,28 @@ static bool init_media_info(void)
          av_q2d(vctx->sample_aspect_ratio) / vctx->height;
    }
 
+   if (fctx)
+   {
+      if (fctx->duration != AV_NOPTS_VALUE)
+      {
+         int64_t duration        = fctx->duration + (fctx->duration <= INT64_MAX - 5000 ? 5000 : 0);
+         media.duration.time     = (double)(duration / AV_TIME_BASE);
+         media.duration.seconds  = (unsigned)media.duration.time;
+         media.duration.minutes  = media.duration.seconds / 60;
+         media.duration.seconds %= 60;
+         media.duration.hours    = media.duration.minutes / 60;
+         media.duration.minutes %= 60;
+      }
+      else
+      {
+         media.duration.time    = 0.0;
+         media.duration.hours   = 0;
+         media.duration.minutes = 0;
+         media.duration.seconds = 0;
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not determine media duration\n");
+      }
+   }
+
 #ifdef HAVE_SSA
    if (sctx[0])
    {
@@ -1496,7 +1637,8 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
       pts = frame->best_effort_timestamp;
       slock_lock(fifo_lock);
 
-      while (!decode_thread_dead && fifo_write_avail(audio_decode_fifo) < required_buffer)
+      while (!decode_thread_dead && 
+            FIFO_WRITE_AVAIL(audio_decode_fifo) < required_buffer)
       {
          if (!main_sleeping)
             scond_wait(fifo_decode_cond, fifo_lock);
@@ -1568,7 +1710,7 @@ static void decode_thread(void *data)
 {
    unsigned i;
    bool eof                = false;
-   struct SwrContext *swr[audio_streams_num];
+   struct SwrContext *swr[(audio_streams_num > 0) ? audio_streams_num : 1];
    AVFrame *aud_frame      = NULL;
    size_t frame_size       = 0;
    int16_t *audio_buffer   = NULL;

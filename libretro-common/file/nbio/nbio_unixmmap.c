@@ -55,10 +55,10 @@
 
 struct nbio_mmap_unix_t
 {
+   void* ptr;
+   size_t len;
    int fd;
    int map_flags;
-   size_t len;
-   void* ptr;
 };
 
 static void *nbio_mmap_unix_open(const char * filename, unsigned mode)

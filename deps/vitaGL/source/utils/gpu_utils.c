@@ -25,8 +25,8 @@
 #include "stb_dxt.h"
 
 #ifndef MIN
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)<(b))?(b):(a))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) < (b)) ? (b) : (a))
 #endif
 
 // VRAM usage setting
@@ -45,29 +45,27 @@ static unsigned int pool_size = 0;
 vglMemType frag_usse_type;
 vglMemType vert_usse_type;
 
-uint64_t morton_1(uint64_t x)
-{
-    x = x & 0x5555555555555555;
-    x = (x | (x >> 1)) & 0x3333333333333333;
-    x = (x | (x >> 2)) & 0x0F0F0F0F0F0F0F0F;
-    x = (x | (x >> 4)) & 0x00FF00FF00FF00FF;
-    x = (x | (x >> 8)) & 0x0000FFFF0000FFFF;
-    x = (x | (x >> 16)) & 0xFFFFFFFFFFFFFFFF;
-    return x;
+uint64_t morton_1(uint64_t x) {
+	x = x & 0x5555555555555555;
+	x = (x | (x >> 1)) & 0x3333333333333333;
+	x = (x | (x >> 2)) & 0x0F0F0F0F0F0F0F0F;
+	x = (x | (x >> 4)) & 0x00FF00FF00FF00FF;
+	x = (x | (x >> 8)) & 0x0000FFFF0000FFFF;
+	x = (x | (x >> 16)) & 0xFFFFFFFFFFFFFFFF;
+	return x;
 }
 
-void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y)
-{
-    *x = morton_1(d);
-    *y = morton_1(d >> 1);
+void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y) {
+	*x = morton_1(d);
+	*y = morton_1(d >> 1);
 }
 
 void extract_block(const uint8_t *src, int width, uint8_t *block) {
 	int j;
 	for (j = 0; j < 4; j++) {
-		memcpy(&block[j * 4 * 4], src, 16);
+		memcpy_neon(&block[j * 4 * 4], src, 16);
 		src += width * 4;
-	} 
+	}
 }
 
 void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
@@ -77,8 +75,10 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 	uint64_t d, offs_x, offs_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
-		if (offs_x * 4 >= h) continue;
-		if (offs_y * 4 >= w) continue;
+		if (offs_x * 4 >= h)
+			continue;
+		if (offs_y * 4 >= w)
+			continue;
 		extract_block(src + offs_y * 16 + offs_x * w * 16, w, block);
 		stb_compress_dxt_block(dst, block, isdxt5, STB_DXT_HIGHQUAL);
 		dst += isdxt5 ? 16 : 8;
@@ -239,7 +239,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	if (data == NULL)
 		memset(texture_palette, 0, 256 * sizeof(uint32_t));
 	else if (bpe == 4)
-		memcpy(texture_palette, data, w * sizeof(uint32_t));
+		memcpy_neon(texture_palette, data, w * sizeof(uint32_t));
 	res->data = texture_palette;
 
 	// Returning palette
@@ -274,11 +274,11 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			int i, j;
 			uint8_t *src = (uint8_t *)data;
 			uint8_t *dst;
-			if (fast_store) { // Internal Format and Data Format are the same, we can just use memcpy for better performance
+			if (fast_store) { // Internal Format and Data Format are the same, we can just use memcpy_neon for better performance
 				uint32_t line_size = w * bpp;
 				for (i = 0; i < h; i++) {
 					dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
-					memcpy(dst, src, line_size);
+					memcpy_neon(dst, src, line_size);
 					src += line_size;
 				}
 			} else { // Different internal and data formats, we need to go with slower callbacks system
@@ -310,20 +310,21 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid)
 		gpu_free_texture(tex);
-	
+
 	// Getting texture format alignment
 	uint8_t alignment = tex_format_to_alignment(format);
-	
+
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	int tex_size = w * h;
-	if (alignment == 8) tex_size /= 2;
-	
+	if (alignment == 8)
+		tex_size /= 2;
+
 	// Allocating texture data buffer
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
-	
+
 	// NOTE: Supports only GL_RGBA source format for now
-	
+
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
@@ -338,11 +339,10 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 				writeRGBA(dst++, src);
 				src += src_bpp;
 			}*/
-			
+
 			// Performing swizzling and DXT compression
-			dxt_compress(texture_data, (void*)data, w, h, alignment == 16);
-			
-			
+			dxt_compress(texture_data, (void *)data, w, h, alignment == 16);
+
 			//swizzle(texture_data, tmp2, w, h, alignment << 3);
 			//free(tmp);
 			//free(tmp2);
@@ -418,7 +418,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			has_temp_buffer = GL_FALSE;
 			temp = sceGxmTextureGetData(&tex->gxm_tex);
 		} else {
-			memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
+			memcpy_neon(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
 			gpu_free_texture(tex);
 		}
 
@@ -427,7 +427,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		void *texture_data = gpu_alloc_mapped(size, &tex->mtype);
 
 		// Moving back old texture data from heap to texture memblock
-		memcpy(texture_data, temp, stride * orig_h * bpp);
+		memcpy_neon(texture_data, temp, stride * orig_h * bpp);
 		if (has_temp_buffer)
 			free(temp);
 		else

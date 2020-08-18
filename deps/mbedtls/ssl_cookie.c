@@ -31,13 +31,6 @@
 
 #if defined(MBEDTLS_SSL_COOKIE_C)
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
-#define mbedtls_calloc    calloc
-#define mbedtls_free      free
-#endif
-
 #include "mbedtls/ssl_cookie.h"
 #include "mbedtls/ssl_internal.h"
 
@@ -75,9 +68,6 @@
 void mbedtls_ssl_cookie_init( mbedtls_ssl_cookie_ctx *ctx )
 {
     mbedtls_md_init( &ctx->hmac_ctx );
-#if !defined(MBEDTLS_HAVE_TIME)
-    ctx->serial = 0;
-#endif
     ctx->timeout = MBEDTLS_SSL_COOKIE_TIMEOUT;
 
 #if defined(MBEDTLS_THREADING_C)
@@ -155,12 +145,12 @@ static int ssl_cookie_hmac( mbedtls_md_context_t *hmac_ctx,
  * Generate cookie for DTLS ClientHello verification
  */
 int mbedtls_ssl_cookie_write( void *p_ctx,
-                      unsigned char **p, unsigned char *end,
-                      const unsigned char *cli_id, size_t cli_id_len )
+      unsigned char **p, unsigned char *end,
+      const unsigned char *cli_id, size_t cli_id_len )
 {
     int ret;
-    mbedtls_ssl_cookie_ctx *ctx = (mbedtls_ssl_cookie_ctx *) p_ctx;
     unsigned long t;
+    mbedtls_ssl_cookie_ctx *ctx = (mbedtls_ssl_cookie_ctx *) p_ctx;
 
     if( ctx == NULL || cli_id == NULL )
         return( MBEDTLS_ERR_SSL_BAD_INPUT_DATA );
@@ -168,11 +158,7 @@ int mbedtls_ssl_cookie_write( void *p_ctx,
     if( (size_t)( end - *p ) < COOKIE_LEN )
         return( MBEDTLS_ERR_SSL_BUFFER_TOO_SMALL );
 
-#if defined(MBEDTLS_HAVE_TIME)
-    t = (unsigned long) mbedtls_time( NULL );
-#else
-    t = ctx->serial++;
-#endif
+    t       = (unsigned long)time( NULL );
 
     (*p)[0] = (unsigned char)( t >> 24 );
     (*p)[1] = (unsigned char)( t >> 16 );
@@ -235,14 +221,11 @@ int mbedtls_ssl_cookie_check( void *p_ctx,
     if( ret != 0 )
         return( ret );
 
-    if( mbedtls_ssl_safer_memcmp( cookie + 4, ref_hmac, sizeof( ref_hmac ) ) != 0 )
+    if( mbedtls_ssl_safer_memcmp(
+             cookie + 4, ref_hmac, sizeof( ref_hmac ) ) != 0 )
         return( -1 );
 
-#if defined(MBEDTLS_HAVE_TIME)
-    cur_time = (unsigned long) mbedtls_time( NULL );
-#else
-    cur_time = ctx->serial;
-#endif
+    cur_time    = (unsigned long)time( NULL );
 
     cookie_time = ( (unsigned long) cookie[0] << 24 ) |
                   ( (unsigned long) cookie[1] << 16 ) |

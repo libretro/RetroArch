@@ -369,6 +369,13 @@
 						RelativePath="..\..\..\libretro-common\encodings\encoding_utf.c">
 					</File>
 				</Filter>
+				<Filter
+					Name="time"
+					Filter="">
+					<File
+						RelativePath="..\..\..\libretro-common\time\rtime.c">
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter

@@ -62,10 +62,10 @@ typedef struct
 
 typedef struct
 {
-   char drive;
+   cdrom_track_t track[99];         /* unsigned alignment */
+   cdrom_group_timeouts_t timeouts; /* unsigned short alignment */
    unsigned char num_tracks;
-   cdrom_group_timeouts_t timeouts;
-   cdrom_track_t track[99];
+   char drive;
 } cdrom_toc_t;
 
 void cdrom_lba_to_msf(unsigned lba, unsigned char *min, unsigned char *sec, unsigned char *frame);

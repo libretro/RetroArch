@@ -140,9 +140,9 @@ enum menu_input_pointer_gesture
  * common to mouse + touchscreen hardware */
 typedef struct menu_input_pointer_hw_state
 {
-   bool active;
    int16_t x;
    int16_t y;
+   bool active;
    bool select_pressed;
    bool cancel_pressed;
    bool up_pressed;
@@ -153,22 +153,22 @@ typedef struct menu_input_pointer_hw_state
 
 typedef struct menu_input_pointer
 {
+   retro_time_t press_duration;  /* int64_t alignment */
+   float y_accel;
    enum menu_pointer_type type;
-   bool active;
-   bool pressed;
-   bool dragged;
-   retro_time_t press_duration;
    enum menu_input_pointer_press_direction press_direction;
    int16_t x;
    int16_t y;
    int16_t dx;
    int16_t dy;
-   float y_accel;
+   bool active;
+   bool pressed;
+   bool dragged;
 } menu_input_pointer_t;
 
 typedef struct menu_input
 {
-   menu_input_pointer_t pointer;
+   menu_input_pointer_t pointer; /* retro_time_t alignment */
    unsigned ptr;
    bool select_inhibit;
    bool cancel_inhibit;
@@ -197,10 +197,6 @@ void menu_input_set_pointer_selection(unsigned selection);
  * (typically want to set acceleration to zero when
  * calling populate entries) */
 void menu_input_set_pointer_y_accel(float y_accel);
-
-/* Inhibits pointer 'select' and 'cancel' actions
- * (until the next time 'select'/'cancel' are released) */
-void menu_input_set_pointer_inhibit(bool inhibit);
 
 RETRO_END_DECLS
 

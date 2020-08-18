@@ -272,10 +272,10 @@ static void frontend_switch_get_environment_settings(
          path_mkdir(dir_path);
    }
 
-   fill_pathname_join(g_defaults.path.config,
+   fill_pathname_join(g_defaults.path_config,
          g_defaults.dirs[DEFAULT_DIR_PORT],
          file_path_str(FILE_PATH_MAIN_CONFIG),
-         sizeof(g_defaults.path.config));
+         sizeof(g_defaults.path_config));
 }
 
 static void frontend_switch_deinit(void *data)
@@ -331,7 +331,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
    args++;
 #endif
 
-   game_path[0]       = NULL;
+   game_path[0]       = '\0';
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
 
@@ -339,7 +339,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
-      arg_data[args] = game_path;
+      arg_data[args]     = game_path;
       arg_data[args + 1] = NULL;
       args++;
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));

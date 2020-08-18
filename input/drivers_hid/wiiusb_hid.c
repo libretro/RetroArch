@@ -539,22 +539,77 @@ static void wiiusb_hid_joypad_get_buttons(void *data,
   BIT256_CLEAR_ALL_PTR(state);
 }
 
-static bool wiiusb_hid_joypad_button(void *data,
+static int16_t wiiusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-  input_bits_t buttons;
+   input_bits_t buttons;
 
-  wiiusb_hid_joypad_get_buttons(data, port, &buttons);
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+   wiiusb_hid_joypad_get_buttons(data, port, &buttons);
 
-  /* Check hat. */
-  if (GET_HAT_DIR(joykey))
-    return false;
+   /* Check hat. */
+   if (GET_HAT_DIR(joykey))
+      return 0;
+   else if (joykey < 32)
+      return (BIT256_GET(buttons, joykey) != 0);
+   return 0;
+}
 
-  /* Check the button. */
-  if ((port < MAX_USERS) && (joykey < 32))
-    return (BIT256_GET(buttons, joykey) != 0);
+static int16_t wiiusb_hid_joypad_axis(void *data,
+      unsigned port, uint32_t joyaxis)
+{
+   wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
 
-  return false;
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      int16_t val = pad_connection_get_axis(&hid->connections[port],
+            port, AXIS_NEG_GET(joyaxis));
+
+      if (val < 0)
+         return val;
+   }
+   else if (AXIS_POS_GET(joyaxis) < 4)
+   {
+      int16_t val = pad_connection_get_axis(&hid->connections[port],
+            port, AXIS_POS_GET(joyaxis));
+
+      if (val > 0)
+         return val;
+   }
+   return 0;
+}
+
+
+static int16_t wiiusb_hid_joypad_state(
+      void *data,
+      rarch_joypad_info_t *joypad_info,
+      const void *binds_data,
+      unsigned port)
+{
+   unsigned i;
+   int16_t ret                          = 0;
+   const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
+   uint16_t port_idx                    = joypad_info->joy_idx;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if (
+               (uint16_t)joykey != NO_BTN 
+            && wiiusb_hid_joypad_button(data, port_idx, (uint16_t)joykey))
+         ret |= ( 1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(wiiusb_hid_joypad_axis(data, port_idx, joyaxis)) 
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+
+   return ret;
 }
 
 static bool wiiusb_hid_joypad_rumble(void *data, unsigned pad,
@@ -566,35 +621,6 @@ static bool wiiusb_hid_joypad_rumble(void *data, unsigned pad,
       return false;
 
    return pad_connection_rumble(&hid->connections[pad], pad, effect, strength);
-}
-
-static int16_t wiiusb_hid_joypad_axis(void *data,
-      unsigned port, uint32_t joyaxis)
-{
-   int16_t       val = 0;
-   wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   if (AXIS_NEG_GET(joyaxis) < 4)
-   {
-      val = pad_connection_get_axis(&hid->connections[port],
-            port, AXIS_NEG_GET(joyaxis));
-
-      if (val >= 0)
-         val = 0;
-   }
-   else if (AXIS_POS_GET(joyaxis) < 4)
-   {
-      val = pad_connection_get_axis(&hid->connections[port],
-            port, AXIS_POS_GET(joyaxis));
-
-      if (val <= 0)
-         val = 0;
-   }
-
-   return val;
 }
 
 static void wiiusb_hid_free(const void *data)
@@ -675,6 +701,7 @@ hid_driver_t wiiusb_hid = {
    wiiusb_hid_joypad_query,
    wiiusb_hid_free,
    wiiusb_hid_joypad_button,
+   wiiusb_hid_joypad_state,
    wiiusb_hid_joypad_get_buttons,
    wiiusb_hid_joypad_axis,
    wiiusb_hid_poll,

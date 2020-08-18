@@ -990,12 +990,16 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    omap_video_t  *vid = (omap_video_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive = video_info->menu_is_alive;
+#endif
 
    if (!frame)
       return true;
 
-   if (width > 4 && height > 4 && (width != vid->width || height != vid->height))
+   if (     (width  > 4)
+         && (height > 4)
+         && (width != vid->width || height != vid->height))
    {
       RARCH_LOG("[video_omap]: mode set (resolution changed by core)\n");
 
@@ -1005,7 +1009,7 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
          return false;
       }
 
-      vid->width = width;
+      vid->width  = width;
       vid->height = height;
    }
 
@@ -1039,17 +1043,8 @@ static void omap_gfx_set_nonblock_state(void *data, bool state,
    vid->omap->sync = !state;
 }
 
-static bool omap_gfx_alive(void *data)
-{
-   (void)data;
-   return true; /* always alive */
-}
-
-static bool omap_gfx_focus(void *data)
-{
-   (void)data;
-   return true; /* fb device always has focus */
-}
+static bool omap_gfx_alive(void *data) { return true; /* always alive */ }
+static bool omap_gfx_focus(void *data) { return true; /* fb device always has focus */ }
 
 static void omap_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
@@ -1058,37 +1053,17 @@ static void omap_gfx_viewport_info(void *data, struct video_viewport *vp)
    if (!vid)
       return;
 
-   vp->x = vp->y = 0;
+   vp->x = vp->y     = 0;
 
-   vp->width  = vp->full_width  = vid->width;
-   vp->height = vp->full_height = vid->height;
+   vp->width         = vp->full_width  = vid->width;
+   vp->height        = vp->full_height = vid->height;
 }
 
-static bool omap_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
-
-static bool omap_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   /* TODO - implement. */
-   return true;
-}
+static bool omap_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool omap_gfx_has_windowed(void *data) { return true; }
 
 static bool omap_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)

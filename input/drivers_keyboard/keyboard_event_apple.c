@@ -29,7 +29,8 @@
 #include "keyboard_event_apple.h"
 
 #if TARGET_OS_IPHONE
-static bool small_keyboard_active;
+/* TODO/FIXME - static globals */
+static bool small_keyboard_active = false;
 
 #define HIDKEY(X) X
 #else

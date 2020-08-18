@@ -31,7 +31,9 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #include "../font_driver.h"
 #include "../common/d3d_common.h"
@@ -50,15 +52,9 @@
 #error "UWP does not support D3D10"
 #endif
 
-#define D3D10_MAX_GPU_COUNT 16
-
 /* Temporary workaround for d3d10 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d10_fake_context;
 static uint32_t d3d10_get_flags(void *data);
-
-static struct string_list *d3d10_gpu_list = NULL;
-static IDXGIAdapter1 *d3d10_adapters[D3D10_MAX_GPU_COUNT] = {NULL};
-static IDXGIAdapter1 *d3d10_current_adapter = NULL;
 
 static void d3d10_clear_scissor(d3d10_video_t *d3d10, unsigned width, unsigned height)
 {
@@ -71,7 +67,6 @@ static void d3d10_clear_scissor(d3d10_video_t *d3d10, unsigned width, unsigned h
 
    D3D10SetScissorRects(d3d10->device, 1, &scissor_rect);
 }
-
 
 #ifdef HAVE_OVERLAY
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
@@ -590,10 +585,10 @@ static void d3d10_gfx_free(void* data)
 
    for (i = 0; i < D3D10_MAX_GPU_COUNT; i++)
    {
-      if (d3d10_adapters[i])
+      if (d3d10->adapters[i])
       {
-         Release(d3d10_adapters[i]);
-         d3d10_adapters[i] = NULL;
+         Release(d3d10->adapters[i]);
+         d3d10->adapters[i] = NULL;
       }
    }
 
@@ -1008,10 +1003,10 @@ static void *d3d10_gfx_init(const video_info_t* video,
       int         i = 0;
       int gpu_index = settings->ints.d3d10_gpu_index;
 
-      if (d3d10_gpu_list)
-         string_list_free(d3d10_gpu_list);
+      if (d3d10->gpu_list)
+         string_list_free(d3d10->gpu_list);
 
-      d3d10_gpu_list = string_list_new();
+      d3d10->gpu_list = string_list_new();
 
       for (;;)
       {
@@ -1036,28 +1031,28 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
          RARCH_LOG("[D3D10]: Found GPU at index %d: %s\n", i, str);
 
-         string_list_append(d3d10_gpu_list, str, attr);
+         string_list_append(d3d10->gpu_list, str, attr);
 
          if (i < D3D10_MAX_GPU_COUNT)
-            d3d10_adapters[i] = d3d10->adapter;
+            d3d10->adapters[i] = d3d10->adapter;
 
          i++;
       }
 
-      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D10_API, d3d10_gpu_list);
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D10_API, d3d10->gpu_list);
 
       if (0 <= gpu_index && gpu_index <= i && (gpu_index < D3D10_MAX_GPU_COUNT))
       {
-         d3d10_current_adapter = d3d10_adapters[gpu_index];
-         d3d10->adapter = d3d10_current_adapter;
+         d3d10->current_adapter = d3d10->adapters[gpu_index];
+         d3d10->adapter         = d3d10->current_adapter;
          RARCH_LOG("[D3D10]: Using GPU index %d.\n", gpu_index);
-         video_driver_set_gpu_device_string(d3d10_gpu_list->elems[gpu_index].data);
+         video_driver_set_gpu_device_string(d3d10->gpu_list->elems[gpu_index].data);
       }
       else
       {
          RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", gpu_index);
-         d3d10_current_adapter = d3d10_adapters[0];
-         d3d10->adapter        = d3d10_current_adapter;
+         d3d10->current_adapter = d3d10->adapters[0];
+         d3d10->adapter         = d3d10->current_adapter;
       }
    }
 
@@ -1212,6 +1207,9 @@ static bool d3d10_gfx_frame(
       &video_info->osd_stat_params;
    const char *stat_text      = video_info->stat_text;
    bool menu_is_alive         = video_info->menu_is_alive;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active        = video_info->widgets_active;
+#endif
 
    if (d3d10->resize_chain)
    {
@@ -1339,7 +1337,11 @@ static bool d3d10_gfx_frame(
          else
             d3d10->pass[i].frame_count = frame_count;
 
+#ifdef HAVE_REWIND
          d3d10->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+         d3d10->pass[i].frame_direction = 1;
+#endif
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
@@ -1510,7 +1512,7 @@ static bool d3d10_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_active)
+   if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1520,7 +1522,22 @@ static bool d3d10_gfx_frame(
       D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
       D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
       font_driver_render_msg(d3d10, msg, NULL, NULL);
-      dxgi_update_title();
+#ifndef __WINRT__
+      {
+         const ui_window_t* window = ui_companion_driver_get_window_ptr();
+         if (window)
+         {
+            char title[128];
+
+            title[0] = '\0';
+
+            video_driver_get_window_title(title, sizeof(title));
+
+            if (title[0])
+               window->set_title(&main_window, title);
+         }
+      }
+#endif
    }
    d3d10->sprites.enabled = false;
 
@@ -1546,7 +1563,9 @@ static bool d3d10_gfx_alive(void* data)
    bool           quit;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   win32_check_window(&quit, &d3d10->resize_chain, &d3d10->vp.full_width, &d3d10->vp.full_height);
+   win32_check_window(NULL,
+         &quit, &d3d10->resize_chain, &d3d10->vp.full_width,
+         &d3d10->vp.full_height);
 
    if (     d3d10->resize_chain 
          && d3d10->vp.full_width != 0 
@@ -1556,18 +1575,8 @@ static bool d3d10_gfx_alive(void* data)
    return !quit;
 }
 
-static bool d3d10_gfx_suppress_screensaver(void* data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool d3d10_gfx_has_windowed(void* data)
-{
-   (void)data;
-   return true;
-}
+static bool d3d10_gfx_suppress_screensaver(void* data, bool enable) { return false; }
+static bool d3d10_gfx_has_windowed(void* data) { return true; }
 
 static struct video_shader* d3d10_gfx_get_current_shader(void* data)
 {
@@ -1699,7 +1708,8 @@ static uintptr_t d3d10_gfx_load_texture(
 
    return (uintptr_t)texture;
 }
-static void d3d10_gfx_unload_texture(void* data, uintptr_t handle)
+static void d3d10_gfx_unload_texture(void* data, 
+      bool threaded, uintptr_t handle)
 {
    d3d10_texture_t* texture = (d3d10_texture_t*)handle;
 
@@ -1734,6 +1744,28 @@ static uint32_t d3d10_get_flags(void *data)
    return flags;
 }
 
+#ifndef __WINRT__
+static void d3d10_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   win32_get_video_output_size(width, height);
+}
+
+static void d3d10_get_video_output_prev(void *data)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   win32_get_video_output_prev(&width, &height);
+}
+
+static void d3d10_get_video_output_next(void *data)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   win32_get_video_output_next(&width, &height);
+}
+#endif
+
 static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_get_flags,
    d3d10_gfx_load_texture,
@@ -1746,9 +1778,15 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL,
 #endif
    d3d10_set_filtering,
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
+#ifdef __WINRT__
+   NULL,                               /* get_video_output_size */
+   NULL,                               /* get_video_output_prev */
+   NULL,                               /* get_video_output_next */
+#else
+   d3d10_get_video_output_size,
+   d3d10_get_video_output_prev,
+   d3d10_get_video_output_next,
+#endif
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
    d3d10_gfx_set_aspect_ratio,

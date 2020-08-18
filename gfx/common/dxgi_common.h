@@ -830,8 +830,6 @@ void dxgi_copy(
       int         dst_pitch,
       void*       dst_data);
 
-void dxgi_update_title(void);
-
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);
 
 RETRO_END_DECLS

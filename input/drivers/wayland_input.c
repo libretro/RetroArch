@@ -40,8 +40,7 @@
 #include "../input_keymaps.h"
 
 #include "../common/linux_common.h"
-
-#include "../../gfx/common/wayland_common.h"
+#include "../common/wayland_common.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -100,8 +99,17 @@ static int16_t input_wl_lightgun_state(
 }
 
 /* forward declaration */
-bool wayland_context_gettouchpos(void *data, unsigned id,
-      unsigned* touch_x, unsigned* touch_y);
+static bool wayland_context_gettouchpos(void *data, unsigned id,
+      unsigned* touch_x, unsigned* touch_y)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   if (id >= MAX_TOUCHES)
+       return false;
+   *touch_x = wl->active_touch_positions[id].x;
+   *touch_y = wl->active_touch_positions[id].y;
+   return wl->active_touch_positions[id].active;
+}
 
 static void input_wl_touch_pool(void *data)
 {
@@ -300,15 +308,14 @@ static int16_t input_wl_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = wl->joypad->state(
+                  joypad_info, binds[port], port);
+
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
                {
-                  if (button_is_pressed(wl->joypad, joypad_info, binds[port],
-                           port, i))
-                     ret |= (1 << i);
-                  else if (BIT_GET(wl->key_state,
+                  if (BIT_GET(wl->key_state,
                            rarch_keysym_lut[binds[port][i].key]) )
                      ret |= (1 << i);
                }
@@ -334,13 +341,7 @@ static int16_t input_wl_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-         {
-            int16_t ret = input_joypad_analog(
-                  wl->joypad, joypad_info, port, idx, id, binds[port]);
-            if (!ret)
-               ret = input_wl_analog_pressed(wl, binds[port], idx, id);
-            return ret;
-         }
+            return input_wl_analog_pressed(wl, binds[port], idx, id);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return input_wl_state_kb(wl, binds, port, device, idx, id);

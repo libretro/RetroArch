@@ -18,23 +18,8 @@
 
 #include "../../retroarch.h"
 
-static void gfx_ctx_null_swap_interval(void *data, int interval)
-{
-   (void)data;
-   (void)interval;
-}
-
-static void gfx_ctx_null_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-   (void)data;
-   (void)quit;
-   (void)width;
-   (void)height;
-   (void)resize;
-}
-
-static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_null_get_video_size(
+      void *data, unsigned *width, unsigned *height)
 {
    (void)data;
 #ifdef VITA
@@ -46,90 +31,25 @@ static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *h
 #endif
 }
 
+static void gfx_ctx_null_swap_interval(void *data, int interval) { }
+static void gfx_ctx_null_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height) { }
 static bool gfx_ctx_null_set_video_mode(void *data,
       unsigned width, unsigned height,
-      bool fullscreen)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   (void)fullscreen;
-
-   return true;
-}
-
-static void gfx_ctx_null_destroy(void *data)
-{
-   (void)data;
-}
-
+      bool fullscreen) { return true; }
+static void gfx_ctx_null_destroy(void *data) { }
 static void gfx_ctx_null_input_driver(void *data,
       const char *name,
-      input_driver_t **input, void **input_data)
-{
-   (void)data;
-   (void)input;
-   (void)input_data;
-}
-
-static bool gfx_ctx_null_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gfx_ctx_null_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static enum gfx_ctx_api gfx_ctx_null_get_api(void *data)
-{
-   return GFX_CTX_NONE;
-}
-
-static bool gfx_ctx_null_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   (void)data;
-   (void)api;
-   (void)major;
-   (void)minor;
-
-   return true;
-}
-
-static void gfx_ctx_null_show_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
-static void gfx_ctx_null_bind_hw_render(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-}
-
-static void *gfx_ctx_null_init(void *video_driver)
-{
-   (void)video_driver;
-
-   return (void*)"null";
-}
-
-static uint32_t gfx_ctx_null_get_flags(void *data)
-{
-   uint32_t flags = 0;
-
-   return flags;
-}
-
-static void gfx_ctx_null_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+      input_driver_t **input, void **input_data) { }
+static bool gfx_ctx_null_has_focus(void *data) { return true; }
+static bool gfx_ctx_null_suppress_screensaver(void *data, bool enable) { return false; }
+static enum gfx_ctx_api gfx_ctx_null_get_api(void *data) { return GFX_CTX_NONE; }
+static bool gfx_ctx_null_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor) { return true; }
+static void gfx_ctx_null_show_mouse(void *data, bool state) { }
+static void gfx_ctx_null_bind_hw_render(void *data, bool enable) { }
+static void *gfx_ctx_null_init(void *video_driver) { return (void*)"null"; }
+static uint32_t gfx_ctx_null_get_flags(void *data) { return 0; }
+static void gfx_ctx_null_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_init,

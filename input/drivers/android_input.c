@@ -1062,11 +1062,7 @@ static void handle_hotplug(android_input_t *android,
     */
    else if(
             (
-               strstr(device_model, "R800x") ||
-               strstr(device_model, "R800at") ||
-               strstr(device_model, "R800i") ||
-               strstr(device_model, "R800a") ||
-               strstr(device_model, "R800") ||
+               string_starts_with_size(device_model, "R800", STRLEN_CONST("R800")) ||
                strstr(device_model, "Xperia Play") ||
                strstr(device_model, "Play") ||
                strstr(device_model, "SO-01D")
@@ -1117,9 +1113,16 @@ static void handle_hotplug(android_input_t *android,
    }
 
    /* Amazon Fire TV & Fire stick */
-   else if (strstr(device_model, "AFTB") || strstr(device_model, "AFTT") ||
-           strstr(device_model, "AFTS") || strstr(device_model, "AFTM") ||
-           strstr(device_model, "AFTRS"))
+   else if (
+             string_starts_with_size(device_model, "AFT", STRLEN_CONST("AFT")) &&
+             (
+              strstr(device_model, "AFTB") || 
+              strstr(device_model, "AFTT") ||
+              strstr(device_model, "AFTS") || 
+              strstr(device_model, "AFTM") ||
+              strstr(device_model, "AFTRS")
+             )
+         )
    {
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
@@ -1312,8 +1315,6 @@ static void android_input_poll_memcpy(android_input_t *android)
 
 static bool android_input_key_pressed(android_input_t *android, int key)
 {
-   uint64_t joykey;
-   uint32_t joyaxis;
    rarch_joypad_info_t joypad_info;
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = input_autoconf_binds[0];
@@ -1324,21 +1325,12 @@ static bool android_input_key_pressed(android_input_t *android, int key)
          && android_keyboard_port_input_pressed(input_config_binds[0],
             key))
       return true;
-
-   joykey                     = 
-      (input_config_binds[0][key].joykey != NO_BTN)
-      ? input_config_binds[0][key].joykey 
-      : joypad_info.auto_binds[key].joykey;
-   joyaxis                    = 
-      (input_config_binds[0][key].joyaxis != AXIS_NONE)
-      ? input_config_binds[0][key].joyaxis 
-      : joypad_info.auto_binds[key].joyaxis;
-
-   if ((uint16_t)joykey != NO_BTN && android->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
-      return true;
-   if (((float)abs(android->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-      return true;
-   return false;
+   return button_is_pressed(
+         android->joypad,
+         &joypad_info,
+         input_config_binds[0],
+         joypad_info.joy_idx,
+         key);
 }
 
 /* Handle all events. If our activity is in pause state,
@@ -1431,17 +1423,13 @@ static int16_t android_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
+            int16_t ret = android->joypad->state(
+                  joypad_info, binds[port], port);
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
                {
-                  if (
-                        button_is_pressed(
-                           android->joypad, joypad_info, binds[port],
-                           port, i)
-                        || android_keyboard_port_input_pressed(binds[port], i)
-                     )
+                  if (android_keyboard_port_input_pressed(binds[port], i))
                      ret |= (1 << i);
                }
             }
@@ -1462,9 +1450,6 @@ static int16_t android_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(android->joypad, joypad_info,
-                  port, idx, id, binds[port]);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);

@@ -31,6 +31,16 @@ typedef struct audio_thread
    sthread_t *thread;
    slock_t *lock;
    scond_t *cond;
+   const char *device;
+   unsigned *new_rate;
+
+   int inited;
+
+   /* Initialization options. */
+   unsigned out_rate;
+   unsigned latency;
+   unsigned block_frames;
+
    bool alive;
    bool stopped;
    bool stopped_ack;
@@ -38,14 +48,6 @@ typedef struct audio_thread
    bool is_shutdown;
    bool use_float;
 
-   int inited;
-
-   /* Initialization options. */
-   const char *device;
-   unsigned *new_rate;
-   unsigned out_rate;
-   unsigned latency;
-   unsigned block_frames;
 } audio_thread_t;
 
 static void audio_thread_loop(void *data)

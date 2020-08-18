@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>com.libretro.RetroArch</id>
+  <launchable type="desktop-id">retroarch.desktop</launchable>
+  <metadata_license>CC0-1.0</metadata_license>
+  <name>RetroArch</name>
+  <summary>Frontend for emulators, game engines and media players</summary>
+  <description>
+    <p>
+      RetroArch is an open source and cross platform frontend/framework for emulators, game engines, video games, media players and other applications.
+    </p>
+    <p>
+      While it can do many things besides this, it is most widely known for enabling you to run classic games on a wide range of computers and consoles through a slick graphical interface. Settings are also unified so configuration is done once and for all.
+    </p>
+    <p>
+      In addition to this, you will soon be able to run original game discs (CDs) from RetroArch. We take videogame preservation seriously and want to ensure you can run your originally bought content on modern day PCs.
+    </p>
+    <p>
+      RetroArch has advanced features like shaders, netplay, rewinding, next-frame response times, runahead, and more!
+    </p>
+  </description>
+  <url type="homepage">https://www.retroarch.com/</url>
+  <url type="bugtracker">https://github.com/libretro/RetroArch/issues</url>
+  <url type="donation">https://www.retroarch.com/index.php?page=donate</url>
+  <releases>
+    <release version="1.9.0"/>
+  </releases>
+  <project_group>Libretro</project_group>
+  <project_license>GPL-3.0</project_license>
+  <developer_name>Libretro</developer_name>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://www.retroarch.com/images/xmb-tabs.png</image>
+    </screenshot>
+    <screenshot type="default">
+      <image>https://www.retroarch.com/images/xmb-updater.png</image>
+    </screenshot>
+    <screenshot type="default">
+      <image>https://www.retroarch.com/images/xmb-osk.png</image>
+    </screenshot>
+    <screenshot type="default">
+      <image>https://www.retroarch.com/images/xmb-playlists.png</image>
+    </screenshot>
+    <screenshot type="default">
+      <image>https://www.retroarch.com/images/xmb-metadata.png</image>
+    </screenshot>
+  </screenshots>
+</component>

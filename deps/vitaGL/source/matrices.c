@@ -46,7 +46,7 @@ void glMatrixMode(GLenum mode) {
 		matrix = &projection_matrix;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -55,11 +55,9 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		vgl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if ((left == right) || (bottom == top) || (nearVal == farVal)) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -72,11 +70,9 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		vgl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if ((left == right) || (bottom == top) || (nearVal < 0) || (farVal < 0)) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -102,7 +98,7 @@ void glMultMatrixf(const GLfloat *m) {
 			tmp[i][j] = m[j * 4 + i];
 		}
 	}
-	
+
 	// Multiplicating passed matrix with in use one
 	matrix4x4_multiply(res, *matrix, tmp);
 
@@ -139,8 +135,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		vgl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 
@@ -162,8 +157,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		vgl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 
@@ -171,7 +165,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH) {
-			vgl_error = GL_STACK_OVERFLOW;
+			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
@@ -181,7 +175,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (projection_stack_counter >= GENERIC_STACK_DEPTH) {
-			vgl_error = GL_STACK_OVERFLOW;
+			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
@@ -193,17 +187,16 @@ void glPopMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		vgl_error = GL_INVALID_OPERATION;
-		return;
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 
 	if (matrix == &modelview_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
-		if (modelview_stack_counter == 0)
-			vgl_error = GL_STACK_UNDERFLOW;
-		else
+		if (modelview_stack_counter == 0) {
+			SET_GL_ERROR(GL_STACK_UNDERFLOW)
+		} else
 #endif
 			// Copying last matrix on stack into current matrix and decreasing stack counter
 			matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
@@ -211,12 +204,25 @@ void glPopMatrix(void) {
 	} else if (matrix == &projection_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
-		if (projection_stack_counter == 0)
-			vgl_error = GL_STACK_UNDERFLOW;
-		else
+		if (projection_stack_counter == 0) {
+			SET_GL_ERROR(GL_STACK_UNDERFLOW)
+		} else
 #endif
 			// Copying last matrix on stack into current matrix and decreasing stack counter
 			matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
 	}
+	mvp_modified = GL_TRUE;
+}
+
+void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	// Initializing frustum matrix with requested parameters
+	matrix4x4_init_perspective(*matrix, fovy, aspect, zNear, zFar);
 	mvp_modified = GL_TRUE;
 }

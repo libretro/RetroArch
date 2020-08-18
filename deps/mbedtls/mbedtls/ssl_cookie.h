@@ -52,9 +52,6 @@ extern "C" {
 typedef struct
 {
     mbedtls_md_context_t    hmac_ctx;   /*!< context for the HMAC portion   */
-#if !defined(MBEDTLS_HAVE_TIME)
-    unsigned long   serial;     /*!< serial number for expiration   */
-#endif
     unsigned long   timeout;    /*!< timeout delay, in seconds if HAVE_TIME,
                                      or in number of tickets issued */
 

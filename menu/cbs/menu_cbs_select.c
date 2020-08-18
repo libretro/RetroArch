@@ -52,7 +52,7 @@ static int action_select_default(
 
    if (cbs->setting)
    {
-      switch (setting_get_type(cbs->setting))
+      switch (cbs->setting->type)
       {
          case ST_BOOL:
          case ST_INT:
@@ -124,43 +124,16 @@ static int action_select_core_setting(const char *path, const char *label, unsig
    return action_ok_core_option_dropdown_list(path, label, type, idx, 0);
 }
 
-static int action_select_input_desc(const char *path, const char *label, unsigned type,
-      size_t idx, size_t entry_idx)
-{
-   return action_right_input_desc(type, label, true);
-}
-
-static int action_select_input_desc_kbd(const char *path,
-      const char *label, unsigned type,
-      size_t idx, size_t entry_idx)
-{
-   return action_right_input_desc_kbd(type, label, true);
-}
-
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
-   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
-         && type <= MENU_SETTINGS_INPUT_DESC_END)
+   switch (type)
    {
-      BIND_ACTION_SELECT(cbs, action_select_input_desc);
-   }
-   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
-         && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
-   {
-      BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
-   }
-   else
-   {
-
-      switch (type)
-      {
-         case FILE_TYPE_USE_DIRECTORY:
-            BIND_ACTION_SELECT(cbs, action_select_path_use_directory);
-            break;
-         default:
-            return -1;
-      }
+      case FILE_TYPE_USE_DIRECTORY:
+         BIND_ACTION_SELECT(cbs, action_select_path_use_directory);
+         break;
+      default:
+         return -1;
    }
 
    return 0;

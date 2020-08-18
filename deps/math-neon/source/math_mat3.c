@@ -106,7 +106,7 @@ void
 matvec3_neon(float m[9], float v[3], float d[3])
 {
 #ifdef __MATH_NEON
-	int tmp;
+	int tmp = 0;
 	asm volatile (
 	"mov 			%3, #12					\n\t"	//r3 = 12
 	"vld1.32 		{d0, d1}, [%1]			\n\t"	//Q0 = v

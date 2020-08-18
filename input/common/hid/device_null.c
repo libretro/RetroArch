@@ -52,23 +52,18 @@ static void *hid_null_init(void *handle)
 {
    hid_null_instance_t *instance = (hid_null_instance_t *)calloc(1, sizeof(hid_null_instance_t));
    if (!instance)
-      goto error;
+      return NULL;
 
    memset(instance, 0, sizeof(hid_null_instance_t));
    instance->handle = handle;
-   instance->pad = hid_pad_register(instance, &hid_null_pad_connection);
+   instance->pad    = hid_pad_register(instance, &hid_null_pad_connection);
    if (!instance->pad)
-      goto error;
-
-   RARCH_LOG("[null]: init complete.\n");
-   return instance;
-
-   error:
-      RARCH_ERR("[null]: init failed.\n");
-      if (instance)
-         free(instance);
-
+   {
+      free(instance);
       return NULL;
+   }
+
+   return instance;
 }
 
 /*
@@ -79,11 +74,11 @@ static void hid_null_free(void *data)
 {
    hid_null_instance_t *instance = (hid_null_instance_t *)data;
 
-   if (instance)
-   {
-      hid_pad_deregister(instance->pad);
-      free(instance);
-   }
+   if (!instance)
+      return;
+
+   hid_pad_deregister(instance->pad);
+   free(instance);
 }
 
 /**
@@ -138,22 +133,13 @@ static void *hid_null_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 /**
  * If you allocate any memory in hid_null_pad_init() above, de-allocate it here.
  */
-static void hid_null_pad_deinit(void *data)
-{
-}
+static void hid_null_pad_deinit(void *data) { }
 
 /**
  * Translate the button data from the pad into the input_bits_t format
  * that RetroArch can use.
  */
-static void hid_null_get_buttons(void *data, input_bits_t *state)
-{
-   hid_null_instance_t *instance = (hid_null_instance_t *)data;
-   if (!instance)
-      return;
-
-   /* TODO: get buttons */
-}
+static void hid_null_get_buttons(void *data, input_bits_t *state) { }
 
 /**
  * Handle a single packet for the pad.
@@ -170,9 +156,7 @@ static void hid_null_packet_handler(void *data, uint8_t *packet, uint16_t size)
 /**
  * If the pad doesn't support rumble, then this can just be a no-op.
  */
-static void hid_null_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
-{
-}
+static void hid_null_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength) { }
 
 /**
  * Read analog sticks.
@@ -183,10 +167,7 @@ static void hid_null_set_rumble(void *data, enum retro_rumble_effect effect, uin
  * - (-32768,-32768) is top-left
  * - (32767,32767) is bottom-right
  */
-static int16_t hid_null_get_axis(void *data, unsigned axis)
-{
-   return 0;
-}
+static int16_t hid_null_get_axis(void *data, unsigned axis) { return 0; }
 
 /**
  * The name the pad will show up as in the UI, also used to auto-assign
@@ -200,10 +181,7 @@ static const char *hid_null_get_name(void *data)
 /**
  * Read the state of a single button.
  */
-static bool hid_null_button(void *data, uint16_t joykey)
-{
-  return false;
-}
+static int16_t hid_null_button(void *data, uint16_t joykey) { return 0; }
 
 /**
  * Fill in the joypad interface

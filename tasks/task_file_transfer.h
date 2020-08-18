@@ -59,23 +59,25 @@ typedef int (*transfer_cb_t)(void *data, size_t len);
 
 typedef struct nbio_handle
 {
-   enum nbio_type type;
-   bool is_finished;
-   unsigned status;
-   unsigned pos_increment;
-   uint32_t status_flags;
    void *data;
    char *path;
    struct nbio_t *handle;
    msg_queue_t *msg_queue;
    transfer_cb_t  cb;
+
+   unsigned status;
+   unsigned pos_increment;
+   uint32_t status_flags;
+
+   enum nbio_type type;
+   bool is_finished;
 } nbio_handle_t;
 
 typedef struct
 {
+   void *user_data;
    enum msg_hash_enums enum_idx;
    char path[PATH_MAX_LENGTH];
-   void *user_data;
 } file_transfer_t;
 
 void* task_push_http_transfer_file(const char* url, bool mute, const char* type,

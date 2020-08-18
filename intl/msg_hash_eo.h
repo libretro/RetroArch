@@ -116,6 +116,8 @@
 
 /* Settings > Core */
 
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
@@ -145,6 +147,8 @@
 
 
 /* Settings > On-Screen Display > On-Screen Overlay */
+
+
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -232,6 +236,8 @@
 /* Import content > Manual Scan */
 
 
+/* Explore tab */
+
 /* Playlist > Playlist Item */
 
 
@@ -297,10 +303,6 @@
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
-   "Esperanto - Esperanto"
-   )
 
 /* RGUI: Settings > User Interface > Appearance */
 

@@ -101,8 +101,8 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #if defined(_XBOX1)
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE],
          "D:", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_CORE],
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_CORE],
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "savestates",
@@ -145,8 +145,8 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE],
          "game:",
          sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   strlcpy(g_defaults.path.config,
-         "game:\\retroarch.cfg", sizeof(g_defaults.path.config));
+   strlcpy(g_defaults.path_config,
+         "game:\\retroarch.cfg", sizeof(g_defaults.path_config));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
          "game:",
          sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
@@ -257,14 +257,20 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
    bool original_verbose       = verbosity_is_enabled();
 #endif
 #if defined(_XBOX1)
+#ifndef IS_SALAMANDER
    LAUNCH_DATA ptr;
+#endif
 #elif defined(_XBOX360)
    char game_path[1024]        = {0};
 #endif
 
 #ifdef IS_SALAMANDER
    if (!string_is_empty(path))
+#ifdef _XBOX360
+      XLaunchNewImage(path, 0);
+#else
       XLaunchNewImage(path, NULL);
+#endif
 #else
 #if defined(_XBOX1)
    memset(&ptr, 0, sizeof(ptr));

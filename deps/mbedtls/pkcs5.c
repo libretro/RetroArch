@@ -42,14 +42,8 @@
 #include "mbedtls/cipher.h"
 #include "mbedtls/oid.h"
 
-#include <string.h>
-
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdio.h>
-#define mbedtls_printf printf
-#endif
+#include <string.h>
 
 static int pkcs5_parse_pbkdf2_params( const mbedtls_asn1_buf *params,
                                       mbedtls_asn1_buf *salt, int *iterations,
@@ -280,123 +274,5 @@ int mbedtls_pkcs5_pbkdf2_hmac( mbedtls_md_context_t *ctx, const unsigned char *p
 
     return( 0 );
 }
-
-#if defined(MBEDTLS_SELF_TEST)
-
-#if !defined(MBEDTLS_SHA1_C)
-int mbedtls_pkcs5_self_test( int verbose )
-{
-    if( verbose != 0 )
-        mbedtls_printf( "  PBKDF2 (SHA1): skipped\n\n" );
-
-    return( 0 );
-}
-#else
-
-#define MAX_TESTS   6
-
-static const size_t plen[MAX_TESTS] =
-    { 8, 8, 8, 24, 9 };
-
-static const unsigned char password[MAX_TESTS][32] =
-{
-    "password",
-    "password",
-    "password",
-    "passwordPASSWORDpassword",
-    "pass\0word",
-};
-
-static const size_t slen[MAX_TESTS] =
-    { 4, 4, 4, 36, 5 };
-
-static const unsigned char salt[MAX_TESTS][40] =
-{
-    "salt",
-    "salt",
-    "salt",
-    "saltSALTsaltSALTsaltSALTsaltSALTsalt",
-    "sa\0lt",
-};
-
-static const uint32_t it_cnt[MAX_TESTS] =
-    { 1, 2, 4096, 4096, 4096 };
-
-static const uint32_t key_len[MAX_TESTS] =
-    { 20, 20, 20, 25, 16 };
-
-static const unsigned char result_key[MAX_TESTS][32] =
-{
-    { 0x0c, 0x60, 0xc8, 0x0f, 0x96, 0x1f, 0x0e, 0x71,
-      0xf3, 0xa9, 0xb5, 0x24, 0xaf, 0x60, 0x12, 0x06,
-      0x2f, 0xe0, 0x37, 0xa6 },
-    { 0xea, 0x6c, 0x01, 0x4d, 0xc7, 0x2d, 0x6f, 0x8c,
-      0xcd, 0x1e, 0xd9, 0x2a, 0xce, 0x1d, 0x41, 0xf0,
-      0xd8, 0xde, 0x89, 0x57 },
-    { 0x4b, 0x00, 0x79, 0x01, 0xb7, 0x65, 0x48, 0x9a,
-      0xbe, 0xad, 0x49, 0xd9, 0x26, 0xf7, 0x21, 0xd0,
-      0x65, 0xa4, 0x29, 0xc1 },
-    { 0x3d, 0x2e, 0xec, 0x4f, 0xe4, 0x1c, 0x84, 0x9b,
-      0x80, 0xc8, 0xd8, 0x36, 0x62, 0xc0, 0xe4, 0x4a,
-      0x8b, 0x29, 0x1a, 0x96, 0x4c, 0xf2, 0xf0, 0x70,
-      0x38 },
-    { 0x56, 0xfa, 0x6a, 0xa7, 0x55, 0x48, 0x09, 0x9d,
-      0xcc, 0x37, 0xd7, 0xf0, 0x34, 0x25, 0xe0, 0xc3 },
-};
-
-int mbedtls_pkcs5_self_test( int verbose )
-{
-    mbedtls_md_context_t sha1_ctx;
-    const mbedtls_md_info_t *info_sha1;
-    int ret, i;
-    unsigned char key[64];
-
-    mbedtls_md_init( &sha1_ctx );
-
-    info_sha1 = mbedtls_md_info_from_type( MBEDTLS_MD_SHA1 );
-    if( info_sha1 == NULL )
-    {
-        ret = 1;
-        goto exit;
-    }
-
-    if( ( ret = mbedtls_md_setup( &sha1_ctx, info_sha1, 1 ) ) != 0 )
-    {
-        ret = 1;
-        goto exit;
-    }
-
-    for( i = 0; i < MAX_TESTS; i++ )
-    {
-        if( verbose != 0 )
-            mbedtls_printf( "  PBKDF2 (SHA1) #%d: ", i );
-
-        ret = mbedtls_pkcs5_pbkdf2_hmac( &sha1_ctx, password[i], plen[i], salt[i],
-                                  slen[i], it_cnt[i], key_len[i], key );
-        if( ret != 0 ||
-            memcmp( result_key[i], key, key_len[i] ) != 0 )
-        {
-            if( verbose != 0 )
-                mbedtls_printf( "failed\n" );
-
-            ret = 1;
-            goto exit;
-        }
-
-        if( verbose != 0 )
-            mbedtls_printf( "passed\n" );
-    }
-
-    if( verbose != 0 )
-        mbedtls_printf( "\n" );
-
-exit:
-    mbedtls_md_free( &sha1_ctx );
-
-    return( ret );
-}
-#endif /* MBEDTLS_SHA1_C */
-
-#endif /* MBEDTLS_SELF_TEST */
 
 #endif /* MBEDTLS_PKCS5_C */

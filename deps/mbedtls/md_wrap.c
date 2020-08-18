@@ -33,14 +33,6 @@
 
 #include "mbedtls/md_internal.h"
 
-#if defined(MBEDTLS_MD2_C)
-#include "mbedtls/md2.h"
-#endif
-
-#if defined(MBEDTLS_MD4_C)
-#include "mbedtls/md4.h"
-#endif
-
 #if defined(MBEDTLS_MD5_C)
 #include "mbedtls/md5.h"
 #endif
@@ -61,139 +53,7 @@
 #include "mbedtls/sha512.h"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
-
-#if defined(MBEDTLS_MD2_C)
-
-static void md2_starts_wrap( void *ctx )
-{
-    mbedtls_md2_starts( (mbedtls_md2_context *) ctx );
-}
-
-static void md2_update_wrap( void *ctx, const unsigned char *input,
-                             size_t ilen )
-{
-    mbedtls_md2_update( (mbedtls_md2_context *) ctx, input, ilen );
-}
-
-static void md2_finish_wrap( void *ctx, unsigned char *output )
-{
-    mbedtls_md2_finish( (mbedtls_md2_context *) ctx, output );
-}
-
-static void *md2_ctx_alloc( void )
-{
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_md2_context ) );
-
-    if( ctx != NULL )
-        mbedtls_md2_init( (mbedtls_md2_context *) ctx );
-
-    return( ctx );
-}
-
-static void md2_ctx_free( void *ctx )
-{
-    mbedtls_md2_free( (mbedtls_md2_context *) ctx );
-    mbedtls_free( ctx );
-}
-
-static void md2_clone_wrap( void *dst, const void *src )
-{
-    mbedtls_md2_clone( (mbedtls_md2_context *) dst,
-                 (const mbedtls_md2_context *) src );
-}
-
-static void md2_process_wrap( void *ctx, const unsigned char *data )
-{
-    ((void) data);
-
-    mbedtls_md2_process( (mbedtls_md2_context *) ctx );
-}
-
-const mbedtls_md_info_t mbedtls_md2_info = {
-    MBEDTLS_MD_MD2,
-    "MD2",
-    16,
-    16,
-    md2_starts_wrap,
-    md2_update_wrap,
-    md2_finish_wrap,
-    mbedtls_md2,
-    md2_ctx_alloc,
-    md2_ctx_free,
-    md2_clone_wrap,
-    md2_process_wrap,
-};
-
-#endif /* MBEDTLS_MD2_C */
-
-#if defined(MBEDTLS_MD4_C)
-
-static void md4_starts_wrap( void *ctx )
-{
-    mbedtls_md4_starts( (mbedtls_md4_context *) ctx );
-}
-
-static void md4_update_wrap( void *ctx, const unsigned char *input,
-                             size_t ilen )
-{
-    mbedtls_md4_update( (mbedtls_md4_context *) ctx, input, ilen );
-}
-
-static void md4_finish_wrap( void *ctx, unsigned char *output )
-{
-    mbedtls_md4_finish( (mbedtls_md4_context *) ctx, output );
-}
-
-static void *md4_ctx_alloc( void )
-{
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_md4_context ) );
-
-    if( ctx != NULL )
-        mbedtls_md4_init( (mbedtls_md4_context *) ctx );
-
-    return( ctx );
-}
-
-static void md4_ctx_free( void *ctx )
-{
-    mbedtls_md4_free( (mbedtls_md4_context *) ctx );
-    mbedtls_free( ctx );
-}
-
-static void md4_clone_wrap( void *dst, const void *src )
-{
-    mbedtls_md4_clone( (mbedtls_md4_context *) dst,
-                 (const mbedtls_md4_context *) src );
-}
-
-static void md4_process_wrap( void *ctx, const unsigned char *data )
-{
-    mbedtls_md4_process( (mbedtls_md4_context *) ctx, data );
-}
-
-const mbedtls_md_info_t mbedtls_md4_info = {
-    MBEDTLS_MD_MD4,
-    "MD4",
-    16,
-    64,
-    md4_starts_wrap,
-    md4_update_wrap,
-    md4_finish_wrap,
-    mbedtls_md4,
-    md4_ctx_alloc,
-    md4_ctx_free,
-    md4_clone_wrap,
-    md4_process_wrap,
-};
-
-#endif /* MBEDTLS_MD4_C */
 
 #if defined(MBEDTLS_MD5_C)
 
@@ -215,7 +75,7 @@ static void md5_finish_wrap( void *ctx, unsigned char *output )
 
 static void *md5_ctx_alloc( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_md5_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_md5_context ) );
 
     if( ctx != NULL )
         mbedtls_md5_init( (mbedtls_md5_context *) ctx );
@@ -226,7 +86,7 @@ static void *md5_ctx_alloc( void )
 static void md5_ctx_free( void *ctx )
 {
     mbedtls_md5_free( (mbedtls_md5_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static void md5_clone_wrap( void *dst, const void *src )
@@ -277,7 +137,7 @@ static void ripemd160_finish_wrap( void *ctx, unsigned char *output )
 
 static void *ripemd160_ctx_alloc( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_ripemd160_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_ripemd160_context ) );
 
     if( ctx != NULL )
         mbedtls_ripemd160_init( (mbedtls_ripemd160_context *) ctx );
@@ -288,7 +148,7 @@ static void *ripemd160_ctx_alloc( void )
 static void ripemd160_ctx_free( void *ctx )
 {
     mbedtls_ripemd160_free( (mbedtls_ripemd160_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static void ripemd160_clone_wrap( void *dst, const void *src )
@@ -339,7 +199,7 @@ static void sha1_finish_wrap( void *ctx, unsigned char *output )
 
 static void *sha1_ctx_alloc( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_sha1_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_sha1_context ) );
 
     if( ctx != NULL )
         mbedtls_sha1_init( (mbedtls_sha1_context *) ctx );
@@ -356,7 +216,7 @@ static void sha1_clone_wrap( void *dst, const void *src )
 static void sha1_ctx_free( void *ctx )
 {
     mbedtls_sha1_free( (mbedtls_sha1_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static void sha1_process_wrap( void *ctx, const unsigned char *data )
@@ -410,7 +270,7 @@ static void sha224_wrap( const unsigned char *input, size_t ilen,
 
 static void *sha224_ctx_alloc( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_sha256_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_sha256_context ) );
 
     if( ctx != NULL )
         mbedtls_sha256_init( (mbedtls_sha256_context *) ctx );
@@ -421,7 +281,7 @@ static void *sha224_ctx_alloc( void )
 static void sha224_ctx_free( void *ctx )
 {
     mbedtls_sha256_free( (mbedtls_sha256_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static void sha224_clone_wrap( void *dst, const void *src )
@@ -504,7 +364,7 @@ static void sha384_wrap( const unsigned char *input, size_t ilen,
 
 static void *sha384_ctx_alloc( void )
 {
-    void *ctx = mbedtls_calloc( 1, sizeof( mbedtls_sha512_context ) );
+    void *ctx = calloc( 1, sizeof( mbedtls_sha512_context ) );
 
     if( ctx != NULL )
         mbedtls_sha512_init( (mbedtls_sha512_context *) ctx );
@@ -515,7 +375,7 @@ static void *sha384_ctx_alloc( void )
 static void sha384_ctx_free( void *ctx )
 {
     mbedtls_sha512_free( (mbedtls_sha512_context *) ctx );
-    mbedtls_free( ctx );
+    free( ctx );
 }
 
 static void sha384_clone_wrap( void *dst, const void *src )

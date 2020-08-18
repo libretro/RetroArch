@@ -15,6 +15,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -32,8 +33,6 @@ typedef struct
    unsigned width;
    unsigned height;
 } khr_display_ctx_data_t;
-
-static enum gfx_ctx_api khr_api = GFX_CTX_NONE;
 
 static void gfx_ctx_khr_display_destroy(void *data)
 {
@@ -60,7 +59,8 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
 
 static void *gfx_ctx_khr_display_init(void *video_driver)
 {
-   khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)calloc(1, sizeof(*khr));
+   khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)
+      calloc(1, sizeof(*khr));
    if (!khr)
        return NULL;
 
@@ -102,8 +102,9 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
-   khr->width = width;
-   khr->height = height;
+   khr->width                  = width;
+   khr->height                 = height;
+
    if (!vulkan_create_swapchain(&khr->vk, khr->width, khr->height,
             khr->swap_interval))
    {
@@ -115,8 +116,8 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
       vulkan_acquire_next_image(&khr->vk);
 
    khr->vk.context.invalid_swapchain = true;
-   khr->vk.need_new_swapchain = false;
-   return false;
+   khr->vk.need_new_swapchain        = false;
+   return true;
 }
 
 static bool gfx_ctx_khr_display_set_video_mode(void *data,
@@ -130,13 +131,13 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
 
    if (!fullscreen)
    {
-      width = 0;
-      height = 0;
+      width                       = 0;
+      height                      = 0;
    }
 
-   info.width         = width;
-   info.height        = height;
-   info.monitor_index = video_monitor_index;
+   info.width                     = width;
+   info.height                    = height;
+   info.monitor_index             = video_monitor_index;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))
@@ -145,8 +146,8 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
       goto error;
    }
 
-   khr->width = khr->vk.context.swapchain_width;
-   khr->height = khr->vk.context.swapchain_height;
+   khr->width                     = khr->vk.context.swapchain_width;
+   khr->height                    = khr->vk.context.swapchain_height;
 
    return true;
 
@@ -198,36 +199,21 @@ static void gfx_ctx_khr_display_input_driver(void *data,
 
 static enum gfx_ctx_api gfx_ctx_khr_display_get_api(void *data)
 {
-   return khr_api;
+   return GFX_CTX_VULKAN_API;
 }
 
 static bool gfx_ctx_khr_display_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-   (void)major;
-   (void)minor;
-
-   khr_api     = api;
-
    if (api == GFX_CTX_VULKAN_API)
       return true;
-
    return false;
 }
 
-static bool gfx_ctx_khr_display_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gfx_ctx_khr_display_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static void gfx_ctx_khr_display_set_flags(void *data, uint32_t flags) { }
+static bool gfx_ctx_khr_display_has_focus(void *data) { return true; }
+static bool gfx_ctx_khr_display_suppress_screensaver(void *data, bool enable) { return false; }
+static gfx_ctx_proc_t gfx_ctx_khr_display_get_proc_address(const char *symbol) { return NULL; }
 
 static void gfx_ctx_khr_display_set_swap_interval(void *data,
       int swap_interval)
@@ -245,13 +231,15 @@ static void gfx_ctx_khr_display_set_swap_interval(void *data,
 static void gfx_ctx_khr_display_swap_buffers(void *data)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-   vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
+   if (khr->vk.context.has_acquired_swapchain)
+   {
+      khr->vk.context.has_acquired_swapchain = false;
+      if (khr->vk.swapchain == VK_NULL_HANDLE)
+         retro_sleep(10);
+      else
+         vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
+   }
    vulkan_acquire_next_image(&khr->vk);
-}
-
-static gfx_ctx_proc_t gfx_ctx_khr_display_get_proc_address(const char *symbol)
-{
-   return NULL;
 }
 
 static uint32_t gfx_ctx_khr_display_get_flags(void *data)
@@ -263,11 +251,6 @@ static uint32_t gfx_ctx_khr_display_get_flags(void *data)
 #endif
 
    return flags;
-}
-
-static void gfx_ctx_khr_display_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
 }
 
 static void *gfx_ctx_khr_display_get_context_data(void *data)
@@ -284,18 +267,18 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_set_swap_interval,
    gfx_ctx_khr_display_set_video_mode,
    gfx_ctx_khr_display_get_video_size,
-   NULL, /* get_refresh_rate */
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   NULL,                                        /* get_refresh_rate */
+   NULL,                                        /* get_video_output_size */
+   NULL,                                        /* get_video_output_prev */
+   NULL,                                        /* get_video_output_next */
+   NULL,                                        /* get_metrics */
    NULL,
-   NULL, /* update_title */
+   NULL,                                        /* update_title */
    gfx_ctx_khr_display_check_window,
    gfx_ctx_khr_display_set_resize,
    gfx_ctx_khr_display_has_focus,
    gfx_ctx_khr_display_suppress_screensaver,
-   false, /* has_windowed */
+   false,                                       /* has_windowed */
    gfx_ctx_khr_display_swap_buffers,
    gfx_ctx_khr_display_input_driver,
    gfx_ctx_khr_display_get_proc_address,
@@ -307,5 +290,5 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_set_flags,
    NULL,
    gfx_ctx_khr_display_get_context_data,
-   NULL
+   NULL                                         /* make_current */
 };

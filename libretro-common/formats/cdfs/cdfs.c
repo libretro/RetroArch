@@ -225,7 +225,8 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
          if (remaining >= len)
          {
             memcpy(buffer,
-                  &file->sector_buffer[file->current_sector_offset], len);
+                  &file->sector_buffer[file->current_sector_offset],
+                  (size_t)len);
             file->current_sector_offset += len;
             return len;
          }
@@ -266,7 +267,7 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
    {
       cdfs_seek_track_sector(file->track, file->current_sector);
       intfstream_read(file->track->stream, file->sector_buffer, 2048);
-      memcpy(buffer, file->sector_buffer, len);
+      memcpy(buffer, file->sector_buffer, (size_t)len);
       file->current_sector_offset = len;
       file->sector_buffer_valid   = 1;
 
@@ -385,7 +386,7 @@ static cdfs_track_t* cdfs_open_cue_track(
    unsigned int track_offset                = 0;
    intfstream_t *cue_stream                 = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    int64_t stream_size                      = intfstream_get_size(cue_stream);
-   char *cue_contents                       = (char*)malloc(stream_size + 1);
+   char *cue_contents                       = (char*)malloc((size_t)(stream_size + 1));
    cdfs_track_t* track                      = NULL;
 
    if (!cue_contents)

@@ -79,18 +79,20 @@
       {
          _buffer = [_context.device newBufferWithBytes:_atlas->buffer
                                                 length:(NSUInteger)(_stride * _atlas->height)
-                                               options:MTLResourceStorageModeManaged];
+                                               options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
 
          // Even though newBufferWithBytes will copy the initial contents
          // from our atlas, it doesn't seem to invalidate the buffer when
          // doing so, causing corrupted text rendering if we hit this code
          // path. To work around it we manually invalidate the buffer.
+#if !defined(HAVE_COCOATOUCH)
          [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
+#endif
       }
       else
       {
          _buffer = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
-                                                options:MTLResourceStorageModeManaged];
+                                                options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
          void *dst = _buffer.contents;
          void *src = _atlas->buffer;
          for (unsigned i = 0; i < _atlas->height; i++)
@@ -99,7 +101,9 @@
             dst += _stride;
             src += _atlas->width;
          }
-         [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
+#if !defined(HAVE_COCOATOUCH)
+          [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
+#endif
       }
 
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
@@ -111,7 +115,7 @@
 
       _capacity = 12000;
       _vert = [_context.device newBufferWithLength:sizeof(SpriteVertex) *
-                                                   _capacity options:MTLResourceStorageModeManaged];
+               _capacity options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
       if (![self _initializeState])
       {
          return nil;
@@ -181,7 +185,9 @@
 
       NSUInteger offset = glyph->atlas_offset_y;
       NSUInteger len = glyph->height * _stride;
+#if !defined(HAVE_COCOATOUCH)
       [_buffer didModifyRange:NSMakeRange(offset, len)];
+#endif
 
       _atlas->dirty = false;
    }
@@ -324,7 +330,9 @@ static INLINE void write_quad6(SpriteVertex *pv,
 - (void)_flush
 {
    NSUInteger start = _offset * sizeof(SpriteVertex);
+#if !defined(HAVE_COCOATOUCH)
    [_vert didModifyRange:NSMakeRange(start, sizeof(SpriteVertex) * _vertices)];
+#endif
 
    id<MTLRenderCommandEncoder> rce = _context.rce;
    [rce pushDebugGroup:@"render fonts"];
@@ -365,34 +373,24 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
+      const char *delim  = strchr(msg, '\n');
+      NSUInteger msg_len = delim ?
+         (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if (delim)
-      {
-         NSUInteger msg_len = delim - msg;
-         [self _renderLine:msg
-                    length:msg_len
-                     scale:scale
-                     color:color
-                      posX:posX
-                      posY:posY - (float)lines * line_height
-                   aligned:aligned];
-         msg += msg_len + 1;
-         lines++;
-      }
-      else
-      {
-         NSUInteger msg_len = strlen(msg);
-         [self _renderLine:msg
-                    length:msg_len
-                     scale:scale
-                     color:color
-                      posX:posX
-                      posY:posY - (float)lines * line_height
-                   aligned:aligned];
+      [self _renderLine:msg
+                 length:msg_len
+                  scale:scale
+                  color:color
+                   posX:posX
+                   posY:posY - (float)lines * line_height
+                aligned:aligned];
+
+      if (!delim)
          break;
-      }
+
+      msg += msg_len + 1;
+      lines++;
    }
 }
 

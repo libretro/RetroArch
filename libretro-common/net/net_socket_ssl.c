@@ -63,25 +63,24 @@ struct ssl_state
   const char *domain;
 };
 
-static const char *pers = "libretro";
-
 static void ssl_debug(void *ctx, int level,
-                      const char *file, int line,
-                      const char *str)
+      const char *file, int line,
+      const char *str)
 {
-   ((void) level);
-
-   mbedtls_fprintf((FILE*)ctx, "%s:%04d: %s", file, line, str);
+   fprintf((FILE*)ctx, "%s:%04d: %s", file, line, str);
    fflush((FILE*)ctx);
 }
 
 void* ssl_socket_init(int fd, const char *domain)
 {
+   static const char *pers = "libretro";
    struct ssl_state *state = (struct ssl_state*)calloc(1, sizeof(*state));
 
-   state->domain = domain;
+   state->domain           = domain;
 
+#if defined(MBEDTLS_DEBUG_C)
    mbedtls_debug_set_threshold(DEBUG_LEVEL);
+#endif
 
    mbedtls_net_init(&state->net_ctx);
    mbedtls_ssl_init(&state->ctx);
@@ -110,10 +109,11 @@ error:
    return NULL;
 }
 
-int ssl_socket_connect(void *state_data, void *data, bool timeout_enable, bool nonblock)
+int ssl_socket_connect(void *state_data,
+      void *data, bool timeout_enable, bool nonblock)
 {
-   struct ssl_state *state = (struct ssl_state*)state_data;
    int ret, flags;
+   struct ssl_state *state = (struct ssl_state*)state_data;
 
    if (socket_connect(state->net_ctx.fd, data, timeout_enable))
       return -1;
@@ -154,12 +154,13 @@ int ssl_socket_connect(void *state_data, void *data, bool timeout_enable, bool n
    return state->net_ctx.fd;
 }
 
-ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *data_, size_t size)
+ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
+      bool *error, void *data_, size_t size)
 {
-   struct ssl_state *state = (struct ssl_state*)state_data;
-   const uint8_t *data = (const uint8_t*)data_;
-   /* mbedtls_ssl_read wants non-const data but it only reads it, so this cast is safe */
    ssize_t         ret;
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   const uint8_t     *data = (const uint8_t*)data_;
+   /* mbedtls_ssl_read wants non-const data but it only reads it, so this cast is safe */
 
    mbedtls_net_set_nonblock(&state->net_ctx);
 
@@ -182,19 +183,22 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *
    return -1;
 }
 
-int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t size)
+int ssl_socket_receive_all_blocking(void *state_data,
+      void *data_, size_t size)
 {
    struct ssl_state *state = (struct ssl_state*)state_data;
-   const uint8_t *data = (const uint8_t*)data_;
+   const uint8_t     *data = (const uint8_t*)data_;
 
    mbedtls_net_set_block(&state->net_ctx);
 
    for (;;)
    {
-      /* mbedtls_ssl_read wants non-const data but it only reads it, so this cast is safe */
+      /* mbedtls_ssl_read wants non-const data but it only reads it, 
+       * so this cast is safe */
       int ret = mbedtls_ssl_read(&state->ctx, (unsigned char*)data, size);
 
-      if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+      if (  ret == MBEDTLS_ERR_SSL_WANT_READ || 
+            ret == MBEDTLS_ERR_SSL_WANT_WRITE)
          continue;
 
       if (ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY)
@@ -210,29 +214,32 @@ int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t size)
    return 1;
 }
 
-int ssl_socket_send_all_blocking(void *state_data, const void *data_, size_t size, bool no_signal)
+int ssl_socket_send_all_blocking(void *state_data,
+      const void *data_, size_t size, bool no_signal)
 {
-   struct ssl_state *state = (struct ssl_state*)state_data;
-   const uint8_t *data = (const uint8_t*)data_;
    int ret;
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   const     uint8_t *data = (const uint8_t*)data_;
 
    mbedtls_net_set_block(&state->net_ctx);
 
    while ((ret = mbedtls_ssl_write(&state->ctx, data, size)) <= 0)
    {
-      if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
+      if (  ret != MBEDTLS_ERR_SSL_WANT_READ && 
+            ret != MBEDTLS_ERR_SSL_WANT_WRITE)
          return false;
    }
 
    return true;
 }
 
-ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_, size_t size, bool no_signal)
+ssize_t ssl_socket_send_all_nonblocking(void *state_data,
+      const void *data_, size_t size, bool no_signal)
 {
-   struct ssl_state *state = (struct ssl_state*)state_data;
-   const uint8_t *data = (const uint8_t*)data_;
-   ssize_t sent = size;
    int ret;
+   ssize_t            sent = size;
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   const uint8_t     *data = (const uint8_t*)data_;
 
    mbedtls_net_set_nonblock(&state->net_ctx);
 

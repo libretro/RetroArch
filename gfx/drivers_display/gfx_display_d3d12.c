@@ -69,7 +69,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
    if (!d3d12 || !draw || !draw->texture)
       return;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
@@ -77,7 +77,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pipes[draw->pipeline.id]);
+         D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pipes[draw->pipeline_id]);
          D3D12DrawInstanced(d3d12->queue.cmd, draw->coords->vertices, 1, 0, 0);
          D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
          D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
@@ -205,7 +205,7 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    if (!d3d12 || !draw)
       return;
 
-   switch (draw->pipeline.id)
+   switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:

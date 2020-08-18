@@ -33,7 +33,9 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -1175,7 +1177,9 @@ static bool d3d12_gfx_frame(
    struct font_params *osd_params = (struct font_params*)
       &video_info->osd_stat_params;
    bool menu_is_alive             = video_info->menu_is_alive;
-
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active            = video_info->widgets_active;
+#endif
 
    d3d12_gfx_sync(d3d12);
 
@@ -1316,7 +1320,11 @@ static bool d3d12_gfx_frame(
          else
             d3d12->pass[i].frame_count = frame_count;
 
+#ifdef HAVE_REWIND
          d3d12->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+         d3d12->pass[i].frame_direction = 1;
+#endif
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
@@ -1566,7 +1574,7 @@ static bool d3d12_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_active)
+   if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1578,7 +1586,22 @@ static bool d3d12_gfx_frame(
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
       font_driver_render_msg(d3d12, msg, NULL, NULL);
-      dxgi_update_title();
+#ifndef __WINRT__
+      {
+         const ui_window_t* window = ui_companion_driver_get_window_ptr();
+         if (window)
+         {
+            char title[128];
+
+            title[0] = '\0';
+
+            video_driver_get_window_title(title, sizeof(title));
+
+            if (title[0])
+               window->set_title(&main_window, title);
+         }
+      }
+#endif
    }
    d3d12->sprites.enabled = false;
 
@@ -1613,7 +1636,11 @@ static bool d3d12_gfx_alive(void* data)
    bool           quit;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   win32_check_window(&quit, &d3d12->resize_chain, &d3d12->vp.full_width, &d3d12->vp.full_height);
+   win32_check_window(NULL,
+         &quit,
+         &d3d12->resize_chain,
+         &d3d12->vp.full_width,
+         &d3d12->vp.full_height);
 
    if (     d3d12->resize_chain 
          && d3d12->vp.full_width  != 0
@@ -1623,18 +1650,8 @@ static bool d3d12_gfx_alive(void* data)
    return !quit;
 }
 
-static bool d3d12_gfx_suppress_screensaver(void* data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static bool d3d12_gfx_has_windowed(void* data)
-{
-   (void)data;
-   return true;
-}
+static bool d3d12_gfx_suppress_screensaver(void* data, bool enable) { return false; }
+static bool d3d12_gfx_has_windowed(void* data) { return true; }
 
 static struct video_shader* d3d12_gfx_get_current_shader(void* data)
 {
@@ -1788,7 +1805,8 @@ static uintptr_t d3d12_gfx_load_texture(
 
    return (uintptr_t)texture;
 }
-static void d3d12_gfx_unload_texture(void* data, uintptr_t handle)
+static void d3d12_gfx_unload_texture(void* data, 
+      bool threaded, uintptr_t handle)
 {
    d3d12_texture_t* texture = (d3d12_texture_t*)handle;
 
@@ -1812,6 +1830,28 @@ static uint32_t d3d12_get_flags(void *data)
    return flags;
 }
 
+#ifndef __WINRT__
+static void d3d12_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   win32_get_video_output_size(width, height);
+}
+
+static void d3d12_get_video_output_prev(void *data)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   win32_get_video_output_prev(&width, &height);
+}
+
+static void d3d12_get_video_output_next(void *data)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   win32_get_video_output_next(&width, &height);
+}
+#endif
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
@@ -1824,9 +1864,15 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL,
 #endif
    d3d12_set_filtering,
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
+#ifdef __WINRT__
+   NULL,                               /* get_video_output_size */
+   NULL,                               /* get_video_output_prev */
+   NULL,                               /* get_video_output_next */
+#else
+   d3d12_get_video_output_size,
+   d3d12_get_video_output_prev,
+   d3d12_get_video_output_next,
+#endif
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
    d3d12_gfx_set_aspect_ratio,
@@ -1847,11 +1893,7 @@ static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_
 }
 
 #ifdef HAVE_GFX_WIDGETS
-static bool d3d12_gfx_widgets_enabled(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool d3d12_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
 video_driver_t video_d3d12 = {

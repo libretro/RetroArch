@@ -37,9 +37,11 @@
 
 #include <retro_common_api.h>
 
-RETRO_BEGIN_DECLS
+#if defined(RARCH_INTERNAL) && defined(HAVE_CONFIG_H)
+#include "../../../config.h" /* for HAVE_MMAP */
+#endif
 
-struct archive_extract_userdata;
+RETRO_BEGIN_DECLS
 
 enum file_archive_transfer_type
 {
@@ -52,72 +54,54 @@ enum file_archive_transfer_type
 
 typedef struct file_archive_handle
 {
-   void     *stream;
    uint8_t  *data;
    uint32_t real_checksum;
-   const struct file_archive_file_backend *backend;
 } file_archive_file_handle_t;
-
-typedef struct file_archive_file_data file_archive_file_data_t;
 
 typedef struct file_archive_transfer
 {
-   enum file_archive_transfer_type type;
-   int32_t archive_size;
-   ptrdiff_t start_delta;
-   file_archive_file_data_t *handle;
-   void *stream;
-   const uint8_t *footer;
-   const uint8_t *directory;
-   const uint8_t *data;
+   int64_t archive_size;
+   void *context;
+   struct RFILE *archive_file;
    const struct file_archive_file_backend *backend;
+#ifdef HAVE_MMAP
+   uint8_t *archive_mmap_data;
+   int archive_mmap_fd;
+#endif
+   unsigned step_total;
+   unsigned step_current;
+   enum file_archive_transfer_type type;
 } file_archive_transfer_t;
-
-enum file_archive_compression_mode
-{
-   ARCHIVE_MODE_UNCOMPRESSED = 0,
-   ARCHIVE_MODE_COMPRESSED   = 8
-};
-
-struct decomp_state_t
-{
-   char *opt_file;
-   char *needle;
-   void **buf;
-   size_t size;
-   bool found;
-};
 
 typedef struct
 {
+   file_archive_transfer_t archive;             /* int64_t alignment */
    char *source_file;
    char *subdir;
    char *target_dir;
    char *target_file;
    char *valid_ext;
-
    char *callback_error;
-
-   file_archive_transfer_t archive;
    struct archive_extract_userdata *userdata;
 } decompress_state_t;
 
 struct archive_extract_userdata
 {
-   char archive_path[PATH_MAX_LENGTH];
+   /* These are set or read by the archive processing */
    char *first_extracted_file_path;
-   char *extracted_file_path;
    const char *extraction_directory;
-   size_t archive_path_size;
    struct string_list *ext;
    struct string_list *list;
+   file_archive_transfer_t *transfer;
+   /* Not used by the processing, free to use outside or in iterate callback */
+   decompress_state_t *dec;
+   void* cb_data;
+   size_t archive_path_size;
+   uint32_t crc;
+   char archive_path[PATH_MAX_LENGTH];
+   char current_file_path[PATH_MAX_LENGTH];
    bool found_file;
    bool list_only;
-   void *context;
-   char archive_name[PATH_MAX_LENGTH];
-   uint32_t crc;
-   struct decomp_state_t decomp_state;
-   decompress_state_t *dec;
 };
 
 /* Returns true when parsing should continue. False to stop. */
@@ -127,22 +111,27 @@ typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
 
 struct file_archive_file_backend
 {
-   void *(*stream_new)(void);
-   void  (*stream_free)(void *);
-   bool     (*stream_decompress_data_to_file_init)(
-         file_archive_file_handle_t *, const uint8_t *,  uint32_t, uint32_t);
-   int      (*stream_decompress_data_to_file_iterate)(void *);
-   uint32_t (*stream_crc_calculate)(uint32_t, const uint8_t *, size_t);
-   int (*compressed_file_read)(const char *path, const char *needle, void **buf,
-         const char *optional_outfile);
    int (*archive_parse_file_init)(
       file_archive_transfer_t *state,
       const char *file);
    int (*archive_parse_file_iterate_step)(
-      file_archive_transfer_t *state,
+      void *context,
       const char *valid_exts,
       struct archive_extract_userdata *userdata,
       file_archive_file_cb file_cb);
+   void (*archive_parse_file_free)(
+      void *context);
+
+   bool     (*stream_decompress_data_to_file_init)(
+      void *context, file_archive_file_handle_t *handle,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size);
+   int      (*stream_decompress_data_to_file_iterate)(
+      void *context,
+      file_archive_file_handle_t *handle);
+
+   uint32_t (*stream_crc_calculate)(uint32_t, const uint8_t *, size_t);
+   int64_t (*compressed_file_read)(const char *path, const char *needle, void **buf,
+         const char *optional_outfile);
    const char *ident;
 };
 

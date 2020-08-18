@@ -25,16 +25,8 @@ MSG_HASH(
    "היסטוריה"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "תמונה"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    "מוזיקה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "וידאו"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -54,10 +46,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "טעינת תוכן"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "סריקת תוכן"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -139,10 +127,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "מוזיקה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   "וידאו"
    )
 
 /* Main Menu > Online Updater */
@@ -326,10 +310,6 @@ MSG_HASH(
    "רשת אלחוטית"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "בחר התקן רשת אלחוטית."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "שירותי מיקום"
    )
@@ -480,10 +460,6 @@ MSG_HASH(
 /* Settings > Input > Hotkey Binds */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "הפעל/הפסק מצב מסך מלא"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
    "אתחל את המשחק"
    )
@@ -494,18 +470,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "שלח נתוני ניפוי תקלות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "מקשי קיצור"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "עוצמת שמע +"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
-   "עוצמת שמע -"
    )
 
 /* Settings > Input > Port # Binds */
@@ -520,6 +484,8 @@ MSG_HASH(
 
 /* Settings > Core */
 
+#ifndef HAVE_DYNAMIC
+#endif
 
 /* Settings > Configuration */
 
@@ -549,6 +515,8 @@ MSG_HASH(
 
 
 /* Settings > On-Screen Display > On-Screen Overlay */
+
+
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -636,6 +604,8 @@ MSG_HASH(
 /* Import content > Manual Scan */
 
 
+/* Explore tab */
+
 /* Playlist > Playlist Item */
 
 
@@ -701,10 +671,6 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
-   "Hebrew - עברית"
-   )
 
 /* RGUI: Settings > User Interface > Appearance */
 

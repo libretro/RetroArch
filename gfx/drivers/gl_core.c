@@ -33,7 +33,9 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#ifdef HAVE_REWIND
 #include "../../managers/state_manager.h"
+#endif
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -592,7 +594,6 @@ static void gl_core_destroy_resources(gl_core_t *gl)
    gl_core_deinit_fences(gl);
    gl_core_deinit_pbo_readback(gl);
    gl_core_deinit_hw_render(gl);
-   free(gl);
 }
 
 static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned height)
@@ -765,7 +766,6 @@ static void gl_core_set_viewport(gl_core_t *gl,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
 {
-   gfx_ctx_aspect_t aspect_data;
    unsigned height                 = gl->video_height;
    int x                           = 0;
    int y                           = 0;
@@ -774,11 +774,9 @@ static void gl_core_set_viewport(gl_core_t *gl,
    bool video_scale_integer        = settings->bools.video_scale_integer;
    unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   aspect_data.aspect              = &device_aspect;
-   aspect_data.width               = viewport_width;
-   aspect_data.height              = viewport_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
+   if (gl->ctx_driver->translate_aspect)
+      device_aspect         = gl->ctx_driver->translate_aspect(
+            gl->ctx_data, viewport_width, viewport_height);
 
    if (video_scale_integer && !force_full)
    {
@@ -959,8 +957,9 @@ static bool gl_core_init_default_filter_chain(gl_core_t *gl)
       return false;
 
    gl->filter_chain = gl_core_filter_chain_create_default(
-         gl->video_info.smooth ?
-         GL_CORE_FILTER_CHAIN_LINEAR : GL_CORE_FILTER_CHAIN_NEAREST);
+         gl->video_info.smooth 
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!gl->filter_chain)
    {
@@ -975,8 +974,9 @@ static bool gl_core_init_filter_chain_preset(gl_core_t *gl, const char *shader_p
 {
    gl->filter_chain = gl_core_filter_chain_create_from_preset(
          shader_path,
-         gl->video_info.smooth ?
-         GL_CORE_FILTER_CHAIN_LINEAR : GL_CORE_FILTER_CHAIN_NEAREST);
+         gl->video_info.smooth
+         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!gl->filter_chain)
    {
@@ -1153,12 +1153,12 @@ static void gl_core_set_viewport_wrapper(void *data,
 static void *gl_core_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   gfx_ctx_mode_t mode;
-   gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    settings_t *settings                 = config_get_ptr();
    bool video_gpu_record                = settings->bools.video_gpu_record;
    int interval                         = 0;
+   unsigned mode_width                  = 0;
+   unsigned mode_height                 = 0;
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
    unsigned temp_width                  = 0;
@@ -1181,12 +1181,14 @@ static void *gl_core_init(const video_info_t *video,
 
    RARCH_LOG("[GLCore]: Found GL context: %s\n", ctx_driver->ident);
 
-   video_context_driver_get_video_size(&mode);
+   if (gl->ctx_driver->get_video_size)
+      gl->ctx_driver->get_video_size(gl->ctx_data,
+               &mode_width, &mode_height);
 
-   full_x      = mode.width;
-   full_y      = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
+   full_x      = mode_width;
+   full_y      = mode_height;
+   mode_width  = 0;
+   mode_height = 0;
    interval    = 0;
 
    RARCH_LOG("[GLCore]: Detecting screen resolution %ux%u.\n", full_x, full_y);
@@ -1212,11 +1214,9 @@ static void *gl_core_init(const video_info_t *video,
       win_height = full_y;
    }
 
-   mode.width      = win_width;
-   mode.height     = win_height;
-   mode.fullscreen = video->fullscreen;
-
-   if (!video_context_driver_set_video_mode(&mode))
+   if (     !gl->ctx_driver->set_video_mode
+         || !gl->ctx_driver->set_video_mode(gl->ctx_data,
+            win_width, win_height, video->fullscreen))
       goto error;
 
    gl_core_context_bind_hw_render(gl, false);
@@ -1284,15 +1284,15 @@ static void *gl_core_init(const video_info_t *video,
    gl->fullscreen  = video->fullscreen;
    gl->keep_aspect = video->force_aspect;
 
-   mode.width     = 0;
-   mode.height    = 0;
+   mode_width     = 0;
+   mode_height    = 0;
 
-   video_context_driver_get_video_size(&mode);
-   temp_width     = mode.width;
-   temp_height    = mode.height;
+   if (gl->ctx_driver->get_video_size)
+      gl->ctx_driver->get_video_size(gl->ctx_data,
+               &mode_width, &mode_height);
 
-   mode.width     = 0;
-   mode.height    = 0;
+   temp_width     = mode_width;
+   temp_height    = mode_height;
 
    /* Get real known video size, which might have been altered by context. */
 
@@ -1308,9 +1308,13 @@ static void *gl_core_init(const video_info_t *video,
     * the viewport sizes before we start running. */
    gl_core_set_viewport_wrapper(gl, temp_width, temp_height, false, true);
 
-   inp.input      = input;
-   inp.input_data = input_data;
-   video_context_driver_input_driver(&inp);
+   if (gl->ctx_driver->input_driver)
+   {
+      const char *joypad_name = settings->arrays.input_joypad_driver;
+      gl->ctx_driver->input_driver(
+            gl->ctx_data, joypad_name,
+            input, input_data);
+   }
 
    if (!gl_core_init_filter_chain(gl))
    {
@@ -1351,6 +1355,8 @@ static void *gl_core_init(const video_info_t *video,
 error:
    video_context_driver_destroy();
    gl_core_destroy_resources(gl);
+   if (gl)
+      free(gl);
    return NULL;
 }
 
@@ -1539,7 +1545,10 @@ static void gl_core_free(void *data)
    gl_core_context_bind_hw_render(gl, false);
    font_driver_free_osd();
    gl_core_destroy_resources(gl);
+   if (gl->ctx_driver && gl->ctx_driver->destroy)
+      gl->ctx_driver->destroy(gl->ctx_data);
    video_context_driver_free();
+   free(gl);
 }
 
 static bool gl_core_alive(void *data)
@@ -1845,12 +1854,17 @@ static bool gl_core_frame(void *data, const void *frame,
    bool statistics_show                        = video_info->statistics_show;
    bool msg_bgcolor_enable                     = video_info->msg_bgcolor_enable;
    bool black_frame_insertion                  = video_info->black_frame_insertion;
-   void *context_data                          = video_info->context_data;
    unsigned hard_sync_frames                   = video_info->hard_sync_frames;
    bool runloop_is_paused                      = video_info->runloop_is_paused;
    bool runloop_is_slowmotion                  = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state            = video_info->input_driver_nonblock_state;
+#ifdef HAVE_MENU
    bool menu_is_alive                          = video_info->menu_is_alive;
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active                         = video_info->widgets_active;
+#endif
+   bool hard_sync                              = video_info->hard_sync;
 
    if (!gl)
       return false;
@@ -1875,7 +1889,9 @@ static bool gl_core_frame(void *data, const void *frame,
 
    if (gl->should_resize)
    {
-      video_info->cb_set_resize(context_data, width, height);
+      if (gl->ctx_driver->set_resize)
+         gl->ctx_driver->set_resize(gl->ctx_data,
+               width, height);
       gl->should_resize = false;
    }
 
@@ -1907,7 +1923,11 @@ static bool gl_core_frame(void *data, const void *frame,
       texture.padded_height = streamed->height;
    }
    gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
+#ifdef HAVE_REWIND
    gl_core_filter_chain_set_frame_direction(gl->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
+#else
+   gl_core_filter_chain_set_frame_direction(gl->filter_chain, 1);
+#endif
    gl_core_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl_core_filter_chain_build_offscreen_passes(gl->filter_chain, &gl->filter_chain_vp);
 
@@ -1939,7 +1959,7 @@ static bool gl_core_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_active)
+   if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1953,7 +1973,7 @@ static bool gl_core_frame(void *data, const void *frame,
    }
 
    if (gl->ctx_driver->update_window_title)
-      gl->ctx_driver->update_window_title(context_data);
+      gl->ctx_driver->update_window_title(gl->ctx_data);
 
    if (gl->readback_buffer_screenshot)
    {
@@ -1977,13 +1997,15 @@ static bool gl_core_frame(void *data, const void *frame,
          && !runloop_is_slowmotion
          && !runloop_is_paused)
    {
-      gl->ctx_driver->swap_buffers(context_data);
+      if (gl->ctx_driver->swap_buffers)
+         gl->ctx_driver->swap_buffers(gl->ctx_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   gl->ctx_driver->swap_buffers(context_data);
+   if (gl->ctx_driver->swap_buffers)
+      gl->ctx_driver->swap_buffers(gl->ctx_data);
 
-   if (video_info->hard_sync &&
+   if (hard_sync &&
        !input_driver_nonblock_state &&
        !gl->menu_texture_enable)
    {
@@ -2074,7 +2096,11 @@ static uintptr_t gl_core_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
+      gl_core_t                *gl = (gl_core_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl_core;
+
+      if (gl->ctx_driver->make_current)
+         gl->ctx_driver->make_current(false);
 
       switch (filter_type)
       {
@@ -2093,26 +2119,33 @@ static uintptr_t gl_core_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void gl_core_unload_texture(void *data, uintptr_t id)
+static void gl_core_unload_texture(void *data, bool threaded,
+      uintptr_t id)
 {
    GLuint glid;
+   gl_core_t                *gl = (gl_core_t*)data;
    if (!id)
       return;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      if (gl->ctx_driver->make_current)
+         gl->ctx_driver->make_current(false);
+   }
+#endif
 
    glid = (GLuint)id;
    glDeleteTextures(1, &glid);
 }
 
 static void gl_core_set_video_mode(void *data, unsigned width, unsigned height,
-                                   bool fullscreen)
+      bool fullscreen)
 {
-   gfx_ctx_mode_t mode;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
+   gl_core_t                *gl = (gl_core_t*)data;
+   if (gl->ctx_driver->set_video_mode)
+      gl->ctx_driver->set_video_mode(gl->ctx_data,
+            width, height, fullscreen);
 }
 
 static void gl_core_show_mouse(void *data, bool state)
@@ -2180,20 +2213,28 @@ static void gl_core_set_texture_enable(void *data, bool state, bool full_screen)
 static void gl_core_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_size_t size_data;
-   size_data.width  = width;
-   size_data.height = height;
-   video_context_driver_get_video_output_size(&size_data);
+   gl_core_t   *gl = (gl_core_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
+      return;
+   gl->ctx_driver->get_video_output_size(
+         gl->ctx_data,
+         width, height);
 }
 
 static void gl_core_get_video_output_prev(void *data)
 {
-   video_context_driver_get_video_output_prev();
+   gl_core_t   *gl = (gl_core_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_prev)
+      return;
+   gl->ctx_driver->get_video_output_prev(gl->ctx_data);
 }
 
 static void gl_core_get_video_output_next(void *data)
 {
-   video_context_driver_get_video_output_next();
+   gl_core_t   *gl = (gl_core_t*)data;
+   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_next)
+      return;
+   gl->ctx_driver->get_video_output_next(gl->ctx_data);
 }
 
 static uintptr_t gl_core_get_current_framebuffer(void *data)
@@ -2278,14 +2319,30 @@ static unsigned gl_core_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
+static bool gl_core_has_windowed(void *data)
+{
+   gl_core_t *gl        = (gl_core_t*)data;
+   if (gl && gl->ctx_driver)
+      return gl->ctx_driver->has_windowed;
+   return false;
+}
+
+static bool gl_core_focus(void *data)
+{
+   gl_core_t *gl        = (gl_core_t*)data;
+   if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
+      return gl->ctx_driver->has_focus(gl->ctx_data);
+   return true;
+}
+
 video_driver_t video_gl_core = {
    gl_core_init,
    gl_core_frame,
    gl_core_set_nonblock_state,
    gl_core_alive,
-   NULL,                    /* focus */
+   gl_core_focus,
    gl_core_suppress_screensaver,
-   NULL,                    /* has_windowed */
+   gl_core_has_windowed,
 
    gl_core_set_shader,
 

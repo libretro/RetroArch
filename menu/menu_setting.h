@@ -74,9 +74,7 @@ enum setting_list_flags
 
 #define SL_FLAG_SETTINGS_GROUP_ALL (SL_FLAG_SETTINGS_ALL - SL_FLAG_MAIN_MENU)
 
-int menu_setting_generic(rarch_setting_t *setting, bool wraparound);
-
-int menu_setting_set_flags(rarch_setting_t *setting);
+int menu_setting_generic(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int menu_setting_set(unsigned type, unsigned action, bool wraparound);
 
@@ -92,35 +90,6 @@ rarch_setting_t *menu_setting_find(const char *label);
 
 rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
 
-/**
- * setting_get_string_representation:
- * @setting            : pointer to setting
- * @s                  : buffer to write contents of string representation to.
- * @len                : size of the buffer (@s)
- *
- * Get a setting value's string representation.
- **/
-void menu_setting_get_string_representation(rarch_setting_t *setting, char *s, size_t len);
-
-/**
- * menu_setting_get_label:
- * @list               : File list on which to perform the search
- * @s                  : String for the type to be represented on-screen as
- *                       a label.
- * @len                : Size of @s.
- * @w                  : Width of the string (for text label representation
- *                       purposes in the menu display driver).
- * @type               : Identifier of setting.
- * @menu_label         : Menu Label identifier of setting.
- * @label              : Label identifier of setting.
- * @idx                : Index identifier of setting.
- *
- * Get associated label of a setting.
- **/
-void menu_setting_get_label(file_list_t *list, char *s,
-      size_t len, unsigned *w, unsigned type,
-      const char *menu_label, unsigned idx);
-
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);
 
@@ -128,10 +97,6 @@ enum setting_type menu_setting_get_browser_selection_type(
       rarch_setting_t *setting);
 
 void setting_generic_handle_change(rarch_setting_t *setting);
-
-void general_write_handler(rarch_setting_t *setting);
-
-void general_read_handler(rarch_setting_t *setting);
 
 void menu_setting_free(rarch_setting_t *setting);
 

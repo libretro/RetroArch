@@ -37,19 +37,19 @@
 
 struct audio_mixer_userdata
 {
+   unsigned slot_selection_idx;
    enum audio_mixer_stream_type stream_type;
    enum audio_mixer_slot_selection_type slot_selection_type;
-   unsigned slot_selection_idx;
 };
 
 struct audio_mixer_handle
 {
    nbio_buf_t *buffer;
-   bool copy_data_over;
-   bool is_finished;
+   retro_task_callback_t cb;
    enum audio_mixer_type type;
    char path[4095];
-   retro_task_callback_t cb;
+   bool copy_data_over;
+   bool is_finished;
 };
 
 static void task_audio_mixer_load_free(retro_task_t *task)
@@ -352,6 +352,7 @@ static void task_audio_mixer_handle_upload_mod_and_play(retro_task_t *task,
    free(user_data);
 }
 
+#ifdef HAVE_RWAV
 static void task_audio_mixer_handle_upload_wav(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
@@ -415,6 +416,7 @@ static void task_audio_mixer_handle_upload_wav_and_play(retro_task_t *task,
    free(img);
    free(user_data);
 }
+#endif
 
 bool task_audio_mixer_load_handler(retro_task_t *task)
 {
@@ -427,7 +429,7 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
          && (mixer->copy_data_over)
          && (!task_get_cancelled(task)))
    {
-      nbio_buf_t *img = (nbio_buf_t*)calloc(1, sizeof(*img));
+      nbio_buf_t *img = (nbio_buf_t*)malloc(sizeof(*img));
 
       if (img)
       {
@@ -498,13 +500,16 @@ bool task_push_audio_mixer_load_and_play(
    strlcpy(ext_lower, ext, sizeof(ext_lower));
    string_to_lower(ext_lower);
 
+#ifdef HAVE_RWAV
    if (string_is_equal(ext_lower, "wav"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_WAV;
       nbio->type      = NBIO_TYPE_WAV;
       t->callback     = task_audio_mixer_handle_upload_wav_and_play;
    }
-   else if (string_is_equal(ext_lower, "ogg"))
+   else
+#endif
+      if (string_is_equal(ext_lower, "ogg"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
@@ -627,13 +632,16 @@ bool task_push_audio_mixer_load(
    strlcpy(ext_lower, ext, sizeof(ext_lower));
    string_to_lower(ext_lower);
 
+#ifdef HAVE_RWAV
    if (string_is_equal(ext_lower, "wav"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_WAV;
       nbio->type      = NBIO_TYPE_WAV;
       t->callback     = task_audio_mixer_handle_upload_wav;
    }
-   else if (string_is_equal(ext_lower, "ogg"))
+   else
+#endif
+      if (string_is_equal(ext_lower, "ogg"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;

@@ -1057,9 +1057,7 @@ static bool d3d9_alive(void *data)
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-#ifndef _XBOX
-   win32_check_window(&quit, &resize, &temp_width, &temp_height);
-#endif
+   win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
 
    if (quit)
       d3d->quitting      = quit;
@@ -1535,6 +1533,9 @@ static bool d3d9_frame(void *data, const void *frame,
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
    bool menu_is_alive                  = video_info->menu_is_alive;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active                 = video_info->widgets_active;
+#endif
 
    if (!frame)
       return true;
@@ -1629,7 +1630,7 @@ static bool d3d9_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_active)
+   if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
@@ -1932,7 +1933,8 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void d3d9_unload_texture(void *data, uintptr_t id)
+static void d3d9_unload_texture(void *data, 
+      bool threaded, uintptr_t id)
 {
    LPDIRECT3DTEXTURE9 texid;
    if (!id)
@@ -1999,23 +2001,18 @@ static const video_poke_interface_t d3d9_poke_interface = {
 static void d3d9_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &d3d9_poke_interface;
 }
 
-static bool d3d9_has_windowed(void *data)
-{
 #ifdef _XBOX
-   return false;
+static bool d3d9_has_windowed(void *data) { return false; }
 #else
-   return true;
+static bool d3d9_has_windowed(void *data) { return true; }
 #endif
-}
 
 #ifdef HAVE_GFX_WIDGETS
 static bool d3d9_gfx_widgets_enabled(void *data)
 {
-   (void)data;
    return false; /* currently disabled due to memory issues */
 }
 #endif

@@ -33,6 +33,7 @@
 #include <compat/fnmatch.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "libretrodb.h"
 #include "query.h"
@@ -64,25 +65,25 @@ typedef struct rmsgpack_dom_value (*rarch_query_func)(
 
 struct invocation
 {
+   struct argument *argv;
    rarch_query_func func;
    unsigned argc;
-   struct argument *argv;
 };
 
 struct argument
 {
-   enum argument_type type;
    union
    {
       struct rmsgpack_dom_value value;
       struct invocation invocation;
    } a;
+   enum argument_type type;
 };
 
 struct query
 {
+   struct invocation root; /* ptr alignment */
    unsigned ref_count;
-   struct invocation root;
 };
 
 struct registered_func
@@ -91,23 +92,15 @@ struct registered_func
    rarch_query_func func;
 };
 
-/* TODO/FIXME - static global variable */
-static char tmp_error_buff [MAX_ERROR_LEN] = {0};
-
 /* Forward declarations */
-static struct buffer query_parse_method_call(struct buffer buff,
+static struct buffer query_parse_method_call(char *s, size_t len,
+      struct buffer buff,
       struct invocation *invocation, const char **error);
-static struct buffer query_parse_table(struct buffer buff,
+static struct buffer query_parse_table(char *s,
+      size_t len, struct buffer buff,
       struct invocation *invocation, const char **error);
 
 /* Errors */
-static void query_raise_too_many_arguments(const char **error)
-{
-   strlcpy(tmp_error_buff,
-         "Too many arguments in function call.", sizeof(tmp_error_buff));
-   *error = tmp_error_buff;
-}
-
 static struct rmsgpack_dom_value query_func_is_true(
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
@@ -143,9 +136,10 @@ static struct rmsgpack_dom_value func_equals(
          res.val.bool_ = 0;
       else
       {
-         if (input.type == RDT_UINT && arg.a.value.type == RDT_INT)
+         if (  input.type       == RDT_UINT && 
+               arg.a.value.type == RDT_INT)
          {
-            arg.a.value.type = RDT_UINT;
+            arg.a.value.type      = RDT_UINT;
             arg.a.value.val.uint_ = arg.a.value.val.int_;
          }
          res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.a.value) == 0);
@@ -170,13 +164,11 @@ static struct rmsgpack_dom_value query_func_operator_or(
       if (argv[i].type == AT_VALUE)
          res = func_equals(input, 1, &argv[i]);
       else
-      {
          res = query_func_is_true(
                argv[i].a.invocation.func(input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ), 0, NULL);
-      }
 
       if (res.val.bool_)
          return res;
@@ -200,14 +192,12 @@ static struct rmsgpack_dom_value query_func_operator_and(
       if (argv[i].type == AT_VALUE)
          res = func_equals(input, 1, &argv[i]);
       else
-      {
          res = query_func_is_true(
                argv[i].a.invocation.func(input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ),
                0, NULL);
-      }
 
       if (!res.val.bool_)
          return res;
@@ -220,18 +210,17 @@ static struct rmsgpack_dom_value query_func_between(
       unsigned argc, const struct argument * argv)
 {
    struct rmsgpack_dom_value res;
-   unsigned i                     = 0;
 
-   res.type      = RDT_BOOL;
-   res.val.bool_ = 0;
-
-   (void)i;
+   res.type                       = RDT_BOOL;
+   res.val.bool_                  = 0;
 
    if (argc != 2)
       return res;
-   if (argv[0].type != AT_VALUE || argv[1].type != AT_VALUE)
+   if (     argv[0].type != AT_VALUE 
+         || argv[1].type != AT_VALUE)
       return res;
-   if (argv[0].a.value.type != RDT_INT || argv[1].a.value.type != RDT_INT)
+   if (     argv[0].a.value.type != RDT_INT 
+         || argv[1].a.value.type != RDT_INT)
       return res;
 
    switch (input.type)
@@ -247,7 +236,7 @@ static struct rmsgpack_dom_value query_func_between(
                && (input.val.int_ <= argv[1].a.value.val.int_));
          break;
       default:
-         return res;
+         break;
    }
 
    return res;
@@ -258,7 +247,7 @@ static struct rmsgpack_dom_value query_func_glob(
       unsigned argc, const struct argument * argv)
 {
    struct rmsgpack_dom_value res;
-   unsigned i = 0;
+   unsigned i    = 0;
 
    res.type      = RDT_BOOL;
    res.val.bool_ = 0;
@@ -288,71 +277,21 @@ struct registered_func registered_functions[100] = {
    {NULL, NULL}
 };
 
-static void query_raise_expected_number(ssize_t where, const char **error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         "%" PRIu64 "::Expected number",
-         (uint64_t)where);
-   *error = tmp_error_buff;
-}
-
-static void query_raise_expected_string(ssize_t where, const char ** error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         "%" PRIu64 "::Expected string",
-         (uint64_t)where);
-   *error = tmp_error_buff;
-}
-
-static void query_raise_unexpected_eof(ssize_t where, const char ** error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         "%" PRIu64 "::Unexpected EOF",
-         (uint64_t)where
-         );
-   *error = tmp_error_buff;
-}
-
-static void query_raise_enomem(const char **error)
-{
-   strlcpy(tmp_error_buff, "Out of memory", sizeof(tmp_error_buff));
-   *error = tmp_error_buff;
-}
-
-static void query_raise_unknown_function(ssize_t where, const char *name,
+static void query_raise_unknown_function(
+      char *s, size_t _len,
+      ssize_t where, const char *name,
       ssize_t len, const char **error)
 {
-   int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
+   int n = snprintf(s, _len,
          "%" PRIu64 "::Unknown function '",
          (uint64_t)where
          );
 
-   if (len < (MAX_ERROR_LEN - n - 3))
-      strncpy(tmp_error_buff + n, name, len);
+   if (len < (_len - n - 3))
+      strncpy(s + n, name, len);
 
-   strlcpy(tmp_error_buff + n + len, "'", sizeof(tmp_error_buff));
-   *error = tmp_error_buff;
-}
-
-static void query_raise_expected_eof(
-      ssize_t where, char found, const char **error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         "%" PRIu64 "::Expected EOF found '%c'",
-         (uint64_t)where,
-         found
-         );
-   *error = tmp_error_buff;
-}
-
-static void query_raise_unexpected_char(
-      ssize_t where, char expected, char found,
-      const char **error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         "%" PRIu64 "::Expected '%c' found '%c'",
-         (uint64_t)where, expected, found);
-   *error = tmp_error_buff;
+   strlcpy(s + n + len, "'", _len);
+   *error = s;
 }
 
 static void query_argument_free(struct argument *arg)
@@ -371,8 +310,11 @@ static void query_argument_free(struct argument *arg)
    free((void*)arg->a.invocation.argv);
 }
 
-static struct buffer query_parse_integer(struct buffer buff,
-      struct rmsgpack_dom_value *value, const char **error)
+static struct buffer query_parse_integer(
+      char *s, size_t len, 
+      struct buffer buff,
+      struct rmsgpack_dom_value *value,
+      const char **error)
 {
    bool test   = false;
 
@@ -383,7 +325,12 @@ static struct buffer query_parse_integer(struct buffer buff,
                          (int64_t*)&value->val.int_) == 0);
 
    if (test)
-      query_raise_expected_number(buff.offset, error);
+   {
+      snprintf(s, len,
+            "%" PRIu64 "::Expected number",
+            (uint64_t)buff.offset);
+      *error = s;
+   }
    else
    {
       while (isdigit((int)buff.data[buff.offset]))
@@ -400,11 +347,19 @@ static struct buffer query_chomp(struct buffer buff)
    return buff;
 }
 
-static struct buffer query_expect_eof(struct buffer buff, const char ** error)
+static struct buffer query_expect_eof(char *s, size_t len,
+      struct buffer buff, const char ** error)
 {
    buff = query_chomp(buff);
    if ((unsigned)buff.offset < buff.len)
-      query_raise_expected_eof(buff.offset, buff.data[buff.offset], error);
+   {
+      snprintf(s, len,
+            "%" PRIu64 "::Expected EOF found '%c'",
+            (uint64_t)buff.offset,
+            buff.data[buff.offset]
+            );
+      *error = s;
+   }
    return buff;
 }
 
@@ -426,12 +381,17 @@ static int query_is_eot(struct buffer buff)
 }
 
 static struct buffer query_get_char(
+      char *s, size_t len,
       struct buffer buff, char * c,
       const char ** error)
 {
    if (query_is_eot(buff))
    {
-      query_raise_unexpected_eof(buff.offset, error);
+      snprintf(s, len,
+            "%" PRIu64 "::Unexpected EOF",
+            (uint64_t)buff.offset
+            );
+      *error = s;
       return buff;
    }
 
@@ -440,17 +400,16 @@ static struct buffer query_get_char(
    return buff;
 }
 
-static struct buffer query_parse_string(struct buffer buff,
+static struct buffer query_parse_string(
+      char *s, size_t len,
+      struct buffer buff,
       struct rmsgpack_dom_value *value, const char **error)
 {
    const char * str_start = NULL;
    char terminator        = '\0';
    char c                 = '\0';
    int  is_binstr         = 0;
-
-   (void)c;
-
-   buff = query_get_char(buff, &terminator, error);
+   buff = query_get_char(s, len,buff, &terminator, error);
 
    if (*error)
       return buff;
@@ -458,23 +417,27 @@ static struct buffer query_parse_string(struct buffer buff,
    if (terminator == 'b')
    {
       is_binstr = 1;
-      buff = query_get_char(buff, &terminator, error);
+      buff = query_get_char(s, len,
+             buff, &terminator, error);
    }
 
    if (terminator != '"' && terminator != '\'')
    {
       buff.offset--;
-      query_raise_expected_string(buff.offset, error);
+      snprintf(s, len,
+            "%" PRIu64 "::Expected string",
+            (uint64_t)buff.offset);
+      *error = s;
    }
 
    str_start = buff.data + buff.offset;
-   buff      = query_get_char(buff, &c, error);
+   buff      = query_get_char(s, len, buff, &c, error);
 
    while (!*error)
    {
       if (c == terminator)
          break;
-      buff = query_get_char(buff, &c, error);
+      buff = query_get_char(s, len, buff, &c, error);
    }
 
    if (!*error)
@@ -488,7 +451,10 @@ static struct buffer query_parse_string(struct buffer buff,
       value->val.string.buff = (char*)calloc(count, sizeof(char));
 
       if (!value->val.string.buff)
-         query_raise_enomem(error);
+      {
+         strlcpy(s, "Out of memory", len);
+         *error = s;
+      }
       else if (is_binstr)
       {
          unsigned i;
@@ -522,15 +488,17 @@ static struct buffer query_parse_string(struct buffer buff,
    return buff;
 }
 
-static struct buffer query_parse_value(struct buffer buff,
+static struct buffer query_parse_value(
+      char *s, size_t len,
+      struct buffer buff,
       struct rmsgpack_dom_value *value, const char **error)
 {
-   buff = query_chomp(buff);
+   buff                 = query_chomp(buff);
 
    if (query_peek(buff, "nil"))
    {
-      buff.offset += STRLEN_CONST("nil");
-      value->type  = RDT_NULL;
+      buff.offset      += STRLEN_CONST("nil");
+      value->type       = RDT_NULL;
    }
    else if (query_peek(buff, "true"))
    {
@@ -544,26 +512,37 @@ static struct buffer query_parse_value(struct buffer buff,
       value->type        = RDT_BOOL;
       value->val.bool_   = 0;
    }
-   else if (query_peek(buff, "b") || query_peek(buff, "\"") || query_peek(buff, "'"))
-      buff = query_parse_string(buff, value, error);
+   else if (
+         query_peek(buff, "b")  || 
+         query_peek(buff, "\"") ||
+         query_peek(buff, "'"))
+      buff = query_parse_string(s, len,
+             buff, value, error);
    else if (isdigit((int)buff.data[buff.offset]))
-      buff = query_parse_integer(buff, value, error);
+      buff = query_parse_integer(s, len, buff, value, error);
    return buff;
 }
 
-static void query_peek_char(struct buffer buff, char *c,
+static void query_peek_char(char *s, size_t len,
+      struct buffer buff, char *c,
       const char **error)
 {
    if (query_is_eot(buff))
    {
-      query_raise_unexpected_eof(buff.offset, error);
+      snprintf(s, len,
+            "%" PRIu64 "::Unexpected EOF",
+            (uint64_t)buff.offset
+            );
+      *error = s;
       return;
    }
 
    *c = buff.data[buff.offset];
 }
 
-static struct buffer query_get_ident(struct buffer buff,
+static struct buffer query_get_ident(
+      char *s, size_t _len,
+      struct buffer buff,
       const char **ident,
       size_t *len, const char **error)
 {
@@ -571,13 +550,17 @@ static struct buffer query_get_ident(struct buffer buff,
 
    if (query_is_eot(buff))
    {
-      query_raise_unexpected_eof(buff.offset, error);
+      snprintf(s, _len,
+            "%" PRIu64 "::Unexpected EOF",
+            (uint64_t)buff.offset
+            );
+      *error = s;
       return buff;
    }
 
    *ident = buff.data + buff.offset;
    *len   = 0;
-   query_peek_char(buff, &c, error);
+   query_peek_char(s, _len, buff, &c, error);
 
    if (*error)
       goto clean;
@@ -586,7 +569,7 @@ static struct buffer query_get_ident(struct buffer buff,
 
    buff.offset++;
    *len = *len + 1;
-   query_peek_char(buff, &c, error);
+   query_peek_char(s, _len, buff, &c, error);
 
    while (!*error)
    {
@@ -594,27 +577,41 @@ static struct buffer query_get_ident(struct buffer buff,
          break;
       buff.offset++;
       *len = *len + 1;
-      query_peek_char(buff, &c, error);
+      query_peek_char(s, _len, buff, &c, error);
    }
 
 clean:
    return buff;
 }
 
-static struct buffer query_expect_char(struct buffer buff,
+static struct buffer query_expect_char(
+      char *s, size_t len,
+      struct buffer buff,
       char c, const char ** error)
 {
    if ((unsigned)buff.offset >= buff.len)
-      query_raise_unexpected_eof(buff.offset, error);
+   {
+      snprintf(s, len,
+            "%" PRIu64 "::Unexpected EOF",
+            (uint64_t)buff.offset
+            );
+      *error = s;
+   }
    else if (buff.data[buff.offset] != c)
-      query_raise_unexpected_char(
-            buff.offset, c, buff.data[buff.offset], error);
+   {
+      snprintf(s, len,
+            "%" PRIu64 "::Expected '%c' found '%c'",
+            (uint64_t)buff.offset, c, buff.data[buff.offset]);
+      *error = s;
+   }
    else
       buff.offset++;
    return buff;
 }
 
-static struct buffer query_parse_argument(struct buffer buff,
+static struct buffer query_parse_argument(
+      char *s, size_t len,
+      struct buffer buff,
       struct argument *arg, const char **error)
 {
    buff = query_chomp(buff);
@@ -631,40 +628,44 @@ static struct buffer query_parse_argument(struct buffer buff,
       )
    {
       arg->type = AT_FUNCTION;
-      buff      = query_parse_method_call(buff,
+      buff      = query_parse_method_call(s, len, buff,
             &arg->a.invocation, error);
    }
    else if (query_peek(buff, "{"))
    {
       arg->type = AT_FUNCTION;
-      buff      = query_parse_table(buff, &arg->a.invocation, error);
+      buff      = query_parse_table(s, len,
+                  buff, &arg->a.invocation, error);
    }
    else
    {
       arg->type = AT_VALUE;
-      buff      = query_parse_value(buff, &arg->a.value, error);
+      buff      = query_parse_value(s,
+                  len, buff, &arg->a.value, error);
    }
    return buff;
 }
 
-static struct buffer query_parse_method_call(struct buffer buff,
+static struct buffer query_parse_method_call(
+      char *s, size_t len, struct buffer buff,
       struct invocation *invocation, const char **error)
 {
    size_t func_name_len;
    unsigned i;
    struct argument args[QUERY_MAX_ARGS];
-   unsigned argi = 0;
-   const char *func_name = NULL;
+   unsigned argi              = 0;
+   const char *func_name      = NULL;
    struct registered_func *rf = registered_functions;
 
-   invocation->func = NULL;
+   invocation->func           = NULL;
 
-   buff = query_get_ident(buff, &func_name, &func_name_len, error);
+   buff                       = query_get_ident(s, len,
+         buff, &func_name, &func_name_len, error);
    if (*error)
       goto clean;
 
-   buff = query_chomp(buff);
-   buff = query_expect_char(buff, '(', error);
+   buff                       = query_chomp(buff);
+   buff                       = query_expect_char(s, len, buff, '(', error);
    if (*error)
       goto clean;
 
@@ -680,7 +681,8 @@ static struct buffer query_parse_method_call(struct buffer buff,
 
    if (!invocation->func)
    {
-      query_raise_unknown_function(buff.offset, func_name,
+      query_raise_unknown_function(s, len,
+            buff.offset, func_name,
             func_name_len, error);
       goto clean;
    }
@@ -690,18 +692,20 @@ static struct buffer query_parse_method_call(struct buffer buff,
    {
       if (argi >= QUERY_MAX_ARGS)
       {
-         query_raise_too_many_arguments(error);
+         strlcpy(s,
+               "Too many arguments in function call.", len);
+         *error = s;
          goto clean;
       }
 
-      buff = query_parse_argument(buff, &args[argi], error);
+      buff = query_parse_argument(s, len, buff, &args[argi], error);
 
       if (*error)
          goto clean;
 
       argi++;
       buff = query_chomp(buff);
-      buff = query_expect_char(buff, ',', error);
+      buff = query_expect_char(s, len, buff, ',', error);
 
       if (*error)
       {
@@ -710,7 +714,7 @@ static struct buffer query_parse_method_call(struct buffer buff,
       }
       buff = query_chomp(buff);
    }
-   buff = query_expect_char(buff, ')', error);
+   buff = query_expect_char(s, len, buff, ')', error);
 
    if (*error)
       goto clean;
@@ -721,7 +725,8 @@ static struct buffer query_parse_method_call(struct buffer buff,
 
    if (!invocation->argv)
    {
-      query_raise_enomem(error);
+      strlcpy(s, "Out of memory", len);
+      *error = s;
       goto clean;
    }
    memcpy(invocation->argv, args,
@@ -789,7 +794,9 @@ clean:
    return res;
 }
 
-static struct buffer query_parse_table(struct buffer buff,
+static struct buffer query_parse_table(
+      char *s, size_t len,
+      struct buffer buff,
       struct invocation *invocation, const char **error)
 {
    unsigned i;
@@ -799,7 +806,7 @@ static struct buffer query_parse_table(struct buffer buff,
    unsigned argi = 0;
 
    buff = query_chomp(buff);
-   buff = query_expect_char(buff, '{', error);
+   buff = query_expect_char(s, len, buff, '{', error);
 
    if (*error)
       goto clean;
@@ -810,13 +817,16 @@ static struct buffer query_parse_table(struct buffer buff,
    {
       if (argi >= QUERY_MAX_ARGS)
       {
-         query_raise_too_many_arguments(error);
+         strlcpy(s,
+               "Too many arguments in function call.", len);
+         *error = s;
          goto clean;
       }
 
       if (isalpha((int)buff.data[buff.offset]))
       {
-         buff = query_get_ident(buff, &ident_name, &ident_len, error);
+         buff = query_get_ident(s, len,
+               buff, &ident_name, &ident_len, error);
 
          if (!*error)
          {
@@ -838,7 +848,8 @@ static struct buffer query_parse_table(struct buffer buff,
          }
       }
       else
-         buff = query_parse_string(buff, &args[argi].a.value, error);
+         buff = query_parse_string(s, len,
+               buff, &args[argi].a.value, error);
 
       if (*error)
          goto clean;
@@ -846,7 +857,7 @@ static struct buffer query_parse_table(struct buffer buff,
       args[argi].type = AT_VALUE;
       buff            = query_chomp(buff);
       argi++;
-      buff = query_expect_char(buff, ':', error);
+      buff            = query_expect_char(s, len, buff, ':', error);
 
       if (*error)
          goto clean;
@@ -855,17 +866,19 @@ static struct buffer query_parse_table(struct buffer buff,
 
       if (argi >= QUERY_MAX_ARGS)
       {
-         query_raise_too_many_arguments(error);
+         strlcpy(s,
+               "Too many arguments in function call.", len);
+         *error = s;
          goto clean;
       }
 
-      buff = query_parse_argument(buff, &args[argi], error);
+      buff = query_parse_argument(s, len, buff, &args[argi], error);
 
       if (*error)
          goto clean;
       argi++;
       buff = query_chomp(buff);
-      buff = query_expect_char(buff, ',', error);
+      buff = query_expect_char(s, len, buff, ',', error);
 
       if (*error)
       {
@@ -875,7 +888,7 @@ static struct buffer query_parse_table(struct buffer buff,
       buff = query_chomp(buff);
    }
 
-   buff = query_expect_char(buff, '}', error);
+   buff = query_expect_char(s, len, buff, '}', error);
 
    if (*error)
       goto clean;
@@ -887,7 +900,8 @@ static struct buffer query_parse_table(struct buffer buff,
 
    if (!invocation->argv)
    {
-      query_raise_enomem(error);
+      strlcpy(s, "Out of memory", len);
+      *error = s;
       goto clean;
    }
    memcpy(invocation->argv, args,
@@ -923,35 +937,52 @@ void *libretrodb_query_compile(libretrodb_t *db,
       const char *query, size_t buff_len, const char **error_string)
 {
    struct buffer buff;
-   struct query *q = (struct query*)calloc(1, sizeof(*q));
+   /* TODO/FIXME - static local variable */
+   static char tmp_error_buff [MAX_ERROR_LEN] = {0};
+   struct query *q       = (struct query*)malloc(sizeof(*q));
+   size_t error_buff_len = sizeof(tmp_error_buff);
 
    if (!q)
-      goto error;
+      return NULL;
 
-   q->ref_count  = 1;
-   buff.data     = query;
-   buff.len      = buff_len;
-   buff.offset   = 0;
-   *error_string = NULL;
+   q->ref_count          = 1;
+   q->root.argc          = 0;
+   q->root.func          = NULL;
+   q->root.argv          = NULL;
 
-   buff         = query_chomp(buff);
+   buff.data             = query;
+   buff.len              = buff_len;
+   buff.offset           = 0;
+   *error_string         = NULL;
+
+   buff                  = query_chomp(buff);
 
    if (query_peek(buff, "{"))
    {
-      buff = query_parse_table(buff, &q->root, error_string);
+      buff = query_parse_table(tmp_error_buff,
+            error_buff_len, buff, &q->root, error_string);
       if (*error_string)
          goto error;
    }
    else if (isalpha((int)buff.data[buff.offset]))
-      buff = query_parse_method_call(buff, &q->root, error_string);
+      buff = query_parse_method_call(tmp_error_buff,
+            error_buff_len,
+            buff, &q->root, error_string);
 
-   buff = query_expect_eof(buff, error_string);
+   buff = query_expect_eof(tmp_error_buff,
+            error_buff_len,
+            buff, error_string);
+
    if (*error_string)
       goto error;
 
    if (!q->root.func)
    {
-      query_raise_unexpected_eof(buff.offset, error_string);
+      snprintf(tmp_error_buff, error_buff_len,
+            "%" PRIu64 "::Unexpected EOF",
+            (uint64_t)buff.offset
+            );
+      *error_string = tmp_error_buff;
       goto error;
    }
 

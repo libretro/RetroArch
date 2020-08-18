@@ -46,15 +46,8 @@
 #include "mbedtls/pem.h"
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
 #include <stdio.h>
-#define mbedtls_free       free
-#define mbedtls_calloc    calloc
-#define mbedtls_snprintf   snprintf
-#endif
 
 #if defined(_WIN32) && !defined(EFIX64) && !defined(EFI32)
 #include <windows.h>
@@ -234,7 +227,7 @@ static int x509_get_entries( unsigned char **p,
 
         if( *p < end )
         {
-            cur_entry->next = mbedtls_calloc( 1, sizeof( mbedtls_x509_crl_entry ) );
+            cur_entry->next = (mbedtls_x509_crl_entry*)calloc( 1, sizeof( mbedtls_x509_crl_entry ) );
 
             if( cur_entry->next == NULL )
                 return( MBEDTLS_ERR_X509_ALLOC_FAILED );
@@ -276,7 +269,7 @@ int mbedtls_x509_crl_parse_der( mbedtls_x509_crl *chain,
 
     if( crl->version != 0 && crl->next == NULL )
     {
-        crl->next = mbedtls_calloc( 1, sizeof( mbedtls_x509_crl ) );
+        crl->next = (mbedtls_x509_crl*)calloc( 1, sizeof( mbedtls_x509_crl ) );
 
         if( crl->next == NULL )
         {
@@ -291,7 +284,7 @@ int mbedtls_x509_crl_parse_der( mbedtls_x509_crl *chain,
     /*
      * Copy raw DER-encoded CRL
      */
-    if( ( p = mbedtls_calloc( 1, buflen ) ) == NULL )
+    if( ( p = (unsigned char*)calloc( 1, buflen ) ) == NULL )
         return( MBEDTLS_ERR_X509_ALLOC_FAILED );
 
     memcpy( p, buf, buflen );
@@ -561,7 +554,7 @@ int mbedtls_x509_crl_parse_file( mbedtls_x509_crl *chain, const char *path )
     ret = mbedtls_x509_crl_parse( chain, buf, n );
 
     mbedtls_zeroize( buf, n );
-    mbedtls_free( buf );
+    free( buf );
 
     return( ret );
 }
@@ -588,23 +581,23 @@ int mbedtls_x509_crl_info( char *buf, size_t size, const char *prefix,
     p = buf;
     n = size;
 
-    ret = mbedtls_snprintf( p, n, "%sCRL version   : %d",
+    ret = snprintf( p, n, "%sCRL version   : %d",
                                prefix, crl->version );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
-    ret = mbedtls_snprintf( p, n, "\n%sissuer name   : ", prefix );
+    ret = snprintf( p, n, "\n%sissuer name   : ", prefix );
     MBEDTLS_X509_SAFE_SNPRINTF;
     ret = mbedtls_x509_dn_gets( p, n, &crl->issuer );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
-    ret = mbedtls_snprintf( p, n, "\n%sthis update   : " \
+    ret = snprintf( p, n, "\n%sthis update   : " \
                    "%04d-%02d-%02d %02d:%02d:%02d", prefix,
                    crl->this_update.year, crl->this_update.mon,
                    crl->this_update.day,  crl->this_update.hour,
                    crl->this_update.min,  crl->this_update.sec );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
-    ret = mbedtls_snprintf( p, n, "\n%snext update   : " \
+    ret = snprintf( p, n, "\n%snext update   : " \
                    "%04d-%02d-%02d %02d:%02d:%02d", prefix,
                    crl->next_update.year, crl->next_update.mon,
                    crl->next_update.day,  crl->next_update.hour,
@@ -613,20 +606,20 @@ int mbedtls_x509_crl_info( char *buf, size_t size, const char *prefix,
 
     entry = &crl->entry;
 
-    ret = mbedtls_snprintf( p, n, "\n%sRevoked certificates:",
+    ret = snprintf( p, n, "\n%sRevoked certificates:",
                                prefix );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
     while( entry != NULL && entry->raw.len != 0 )
     {
-        ret = mbedtls_snprintf( p, n, "\n%sserial number: ",
+        ret = snprintf( p, n, "\n%sserial number: ",
                                prefix );
         MBEDTLS_X509_SAFE_SNPRINTF;
 
         ret = mbedtls_x509_serial_gets( p, n, &entry->serial );
         MBEDTLS_X509_SAFE_SNPRINTF;
 
-        ret = mbedtls_snprintf( p, n, " revocation date: " \
+        ret = snprintf( p, n, " revocation date: " \
                    "%04d-%02d-%02d %02d:%02d:%02d",
                    entry->revocation_date.year, entry->revocation_date.mon,
                    entry->revocation_date.day,  entry->revocation_date.hour,
@@ -636,14 +629,14 @@ int mbedtls_x509_crl_info( char *buf, size_t size, const char *prefix,
         entry = entry->next;
     }
 
-    ret = mbedtls_snprintf( p, n, "\n%ssigned using  : ", prefix );
+    ret = snprintf( p, n, "\n%ssigned using  : ", prefix );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
     ret = mbedtls_x509_sig_alg_gets( p, n, &crl->sig_oid, crl->sig_pk, crl->sig_md,
                              crl->sig_opts );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
-    ret = mbedtls_snprintf( p, n, "\n" );
+    ret = snprintf( p, n, "\n" );
     MBEDTLS_X509_SAFE_SNPRINTF;
 
     return( (int) ( size - n ) );
@@ -675,7 +668,7 @@ void mbedtls_x509_crl_free( mbedtls_x509_crl *crl )
     do
     {
 #if defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT)
-        mbedtls_free( crl_cur->sig_opts );
+        free( crl_cur->sig_opts );
 #endif
 
         name_cur = crl_cur->issuer.next;
@@ -684,7 +677,7 @@ void mbedtls_x509_crl_free( mbedtls_x509_crl *crl )
             name_prv = name_cur;
             name_cur = name_cur->next;
             mbedtls_zeroize( name_prv, sizeof( mbedtls_x509_name ) );
-            mbedtls_free( name_prv );
+            free( name_prv );
         }
 
         entry_cur = crl_cur->entry.next;
@@ -693,13 +686,13 @@ void mbedtls_x509_crl_free( mbedtls_x509_crl *crl )
             entry_prv = entry_cur;
             entry_cur = entry_cur->next;
             mbedtls_zeroize( entry_prv, sizeof( mbedtls_x509_crl_entry ) );
-            mbedtls_free( entry_prv );
+            free( entry_prv );
         }
 
         if( crl_cur->raw.p != NULL )
         {
             mbedtls_zeroize( crl_cur->raw.p, crl_cur->raw.len );
-            mbedtls_free( crl_cur->raw.p );
+            free( crl_cur->raw.p );
         }
 
         crl_cur = crl_cur->next;
@@ -714,7 +707,7 @@ void mbedtls_x509_crl_free( mbedtls_x509_crl *crl )
 
         mbedtls_zeroize( crl_prv, sizeof( mbedtls_x509_crl ) );
         if( crl_prv != crl )
-            mbedtls_free( crl_prv );
+            free( crl_prv );
     }
     while( crl_cur != NULL );
 }

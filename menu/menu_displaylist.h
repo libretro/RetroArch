@@ -67,6 +67,8 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,
    DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX,
+   DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION,
+   DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD,
    DISPLAYLIST_CDROM_DETAIL_INFO,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
@@ -77,6 +79,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_HORIZONTAL,
    DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS,
    DISPLAYLIST_HISTORY,
+   DISPLAYLIST_EXPLORE,
    DISPLAYLIST_FAVORITES,
    DISPLAYLIST_PLAYLIST,
    DISPLAYLIST_VIDEO_HISTORY,
@@ -176,6 +179,7 @@ enum menu_displaylist_ctl_state
 #endif
    DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
+   DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST,
    DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST,
    DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST,
    DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST,
@@ -186,6 +190,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_MENU_SOUNDS_LIST,
    DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    DISPLAYLIST_UPDATER_SETTINGS_LIST,
+   DISPLAYLIST_BLUETOOTH_SETTINGS_LIST,
    DISPLAYLIST_WIFI_SETTINGS_LIST,
    DISPLAYLIST_NETWORK_SETTINGS_LIST,
    DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST,
@@ -241,8 +246,39 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_PENDING_CLEAR
 };
 
+enum filebrowser_enums
+{
+   FILEBROWSER_NONE              = 0,
+   FILEBROWSER_SELECT_DIR,
+   FILEBROWSER_SCAN_DIR,
+   FILEBROWSER_SCAN_FILE,
+   FILEBROWSER_MANUAL_SCAN_DIR,
+   FILEBROWSER_SELECT_FILE,
+   FILEBROWSER_SELECT_FILE_SUBSYSTEM,
+   FILEBROWSER_SELECT_IMAGE,
+   FILEBROWSER_SELECT_FONT,
+   FILEBROWSER_SELECT_COLLECTION
+};
+
 typedef struct menu_displaylist_info
 {
+   char *path;
+   char *path_b;
+   char *path_c;
+   char *exts;
+   char *label;
+   file_list_t *list;
+   file_list_t *menu_list;
+   rarch_setting_t *setting;
+
+   size_t directory_ptr;
+
+   unsigned count;
+
+   unsigned type;
+   unsigned type_default;
+   unsigned flags;
+
    enum msg_hash_enums enum_idx;
    /* should the displaylist be sorted by alphabet? */
    bool need_sort;
@@ -260,31 +296,16 @@ typedef struct menu_displaylist_info
    bool download_core;
    /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
-
-   unsigned count;
-
-   char *path;
-   char *path_b;
-   char *path_c;
-   char *exts;
-   char *label;
-   unsigned type;
-   unsigned type_default;
-   unsigned flags;
-   size_t directory_ptr;
-   file_list_t *list;
-   file_list_t *menu_list;
-   rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
 typedef struct menu_displaylist_ctx_parse_entry
 {
-   enum msg_hash_enums enum_idx;
-   enum menu_displaylist_parse_type parse_type;
-   bool add_empty_entry;
    const char *info_label;
    void *data;
    menu_displaylist_info_t *info;
+   enum msg_hash_enums enum_idx;
+   enum menu_displaylist_parse_type parse_type;
+   bool add_empty_entry;
 } menu_displaylist_ctx_parse_entry_t;
 
 typedef struct menu_displaylist_ctx_entry
@@ -312,6 +333,16 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
 #endif
 
 bool menu_displaylist_has_subsystems(void);
+
+#if defined(HAVE_LIBRETRODB)
+unsigned menu_displaylist_explore(file_list_t *list);
+#endif
+
+enum filebrowser_enums filebrowser_get_type(void);
+
+void filebrowser_clear_type(void);
+
+void filebrowser_set_type(enum filebrowser_enums type);
 
 RETRO_END_DECLS
 

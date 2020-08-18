@@ -19,11 +19,7 @@
 
 #include <boolean.h>
 
-void linux_terminal_flush(void);
-
 void linux_terminal_restore_input(void);
-
-bool linux_terminal_init(void);
 
 void linux_terminal_claim_stdin(void);
 

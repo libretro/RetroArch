@@ -39,37 +39,36 @@ struct bintree_node
 struct bintree
 {
    struct bintree_node *root;
-   bintree_cmp_func cmp;
    void *ctx;
+   bintree_cmp_func cmp;
 };
 
 /* TODO/FIXME - static global variable */
 static void *NIL_NODE = &NIL_NODE;
 
-static struct bintree_node *bintree_new_nil_node(struct bintree_node *parent)
+static struct bintree_node *bintree_new_nil_node(
+      struct bintree_node *parent)
 {
    struct bintree_node *node = (struct bintree_node *)
-      calloc(1, sizeof(struct bintree_node));
+      malloc(sizeof(struct bintree_node));
 
    if (!node)
       return NULL;
 
    node->value  = NIL_NODE;
    node->parent = parent;
+   node->left   = NULL;
+   node->right  = NULL;
 
    return node;
 }
 
-static INLINE int bintree_is_nil(const struct bintree_node *node)
-{
-   return !node || (node->value == NIL_NODE);
-}
-
-static int bintree_insert_internal(bintree_t *t, struct bintree_node *root, void *value)
+static int bintree_insert_internal(bintree_t *t,
+      struct bintree_node *root, void *value)
 {
    int cmp_res = 0;
 
-   if (bintree_is_nil(root))
+   if (!root || (root->value == NIL_NODE))
    {
       root->left  = bintree_new_nil_node(root);
       root->right = bintree_new_nil_node(root);
@@ -92,7 +91,7 @@ static int bintree_iterate_internal(struct bintree_node *n,
 {
    int rv;
 
-   if (bintree_is_nil(n))
+   if (!n || (n->value == NIL_NODE))
       return 0;
 
    if ((rv = bintree_iterate_internal(n->left, cb, ctx)) != 0)
@@ -135,7 +134,7 @@ int bintree_iterate(const bintree_t *t, bintree_iter_cb cb,
 
 bintree_t *bintree_new(bintree_cmp_func cmp, void *ctx)
 {
-   bintree_t *t = (bintree_t*)calloc(1, sizeof(*t));
+   bintree_t *t = (bintree_t*)malloc(sizeof(*t));
 
    if (!t)
       return NULL;
@@ -149,5 +148,7 @@ bintree_t *bintree_new(bintree_cmp_func cmp, void *ctx)
 
 void bintree_free(bintree_t *t)
 {
+   if (!t)
+      return;
    bintree_free_node(t->root);
 }

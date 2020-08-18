@@ -41,17 +41,17 @@ typedef void* HANDLE;
 #ifdef HAVE_CDROM
 typedef struct
 {
+   int64_t byte_pos;
    char *cue_buf;
    size_t cue_len;
-   int64_t byte_pos;
-   char drive;
+   unsigned cur_lba;
+   unsigned last_frame_lba;
    unsigned char cur_min;
    unsigned char cur_sec;
    unsigned char cur_frame;
    unsigned char cur_track;
-   unsigned cur_lba;
-   unsigned last_frame_lba;
    unsigned char last_frame[2352];
+   char drive;
    bool last_frame_valid;
 } vfs_cdrom_t;
 #endif
@@ -69,22 +69,22 @@ struct retro_vfs_file_handle
 struct libretro_vfs_implementation_file
 #endif
 {
-   int fd;
-   unsigned hints;
+#ifdef HAVE_CDROM
+   vfs_cdrom_t cdrom; /* int64_t alignment */
+#endif
    int64_t size;
-   char *buf;
+   uint64_t mappos;
+   uint64_t mapsize;
    FILE *fp;
 #ifdef _WIN32
    HANDLE fh;
 #endif
+   char *buf;
    char* orig_path;
-   uint64_t mappos;
-   uint64_t mapsize;
    uint8_t *mapped;
+   int fd;
+   unsigned hints;
    enum vfs_scheme scheme;
-#ifdef HAVE_CDROM
-   vfs_cdrom_t cdrom;
-#endif
 };
 #endif
 

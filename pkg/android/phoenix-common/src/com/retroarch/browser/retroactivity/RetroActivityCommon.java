@@ -47,8 +47,8 @@ public class RetroActivityCommon extends NativeActivity
   {
     Vibrator vibrator = null;
     int repeat = 0;
-    long[] pattern = {16};
-    int[] strengths = {strength};
+    long[] pattern = {0, 16};
+    int[] strengths = {0, strength};
 
     if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
       if (id == -1)
@@ -73,7 +73,7 @@ public class RetroActivityCommon extends NativeActivity
     if (oneShot > 0)
       repeat = -1;
     else
-      pattern[0] = 1000;
+      pattern[1] = 1000;
 
     if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
       if (id >= 0)

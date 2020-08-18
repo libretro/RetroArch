@@ -95,7 +95,7 @@ typedef uint32_t Codepoint;
 #define IS_TRAILING_SURROGATE(c)         (((c) & 0xFFFFFC00) == 0xDC00)
 #define CODEPOINT_FROM_SURROGATES(hi_lo) ((((hi_lo) >> 16) << 10) + ((hi_lo) & 0xFFFF) + 0xFCA02400)
 #define SURROGATES_FROM_CODEPOINT(c)     ((((c) << 6) & 0x7FF0000) + ((c) & 0x3FF) + 0xD7C0DC00)
-#define SHORTEST_ENCODING_SEQUENCE(enc)  (1U << ((enc) >> 1))
+#define SHORTEST_ENCODING_SEQUENCE(enc)  (UINT32_C(1) << ((enc) >> 1))
 #define LONGEST_ENCODING_SEQUENCE        4
 
 /* Internal types that alias enum types in the public API.
@@ -171,8 +171,8 @@ typedef byte DecoderState;
 /* Decoder data. */
 typedef struct tag_DecoderData
 {
-   DecoderState state;
    uint32_t     bits;
+   DecoderState state;  /* byte alignment */
 } DecoderData;
 typedef DecoderData* Decoder;
 
@@ -223,18 +223,14 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
          {
             case DECODER_RESET:
                if (IS_UTF8_SINGLE_BYTE(b))
-               {
                   output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 1, b);
-               }
                else if (IS_UTF8_FIRST_BYTE_OF_2(b))
                {
                   /* UTF-8 2-byte sequences that are overlong encodings can be
                      detected from just the first byte (C0 or C1). */
                   decoder->bits = (uint32_t)BOTTOM_5_BITS(b) << 6;
                   if (decoder->bits < FIRST_2_BYTE_UTF8_CODEPOINT)
-                  {
                      output = DECODER_OUTPUT(SEQUENCE_INVALID_INCLUSIVE, 1, 0);
-                  }
                   else
                   {
                      decoder->state = DECODED_1_OF_2;
@@ -253,9 +249,7 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                      codepoints can be detected from the first byte (F5 - FF). */
                   decoder->bits = (uint32_t)BOTTOM_3_BITS(b) << 18;
                   if (decoder->bits > MAX_CODEPOINT)
-                  {
                      output = DECODER_OUTPUT(SEQUENCE_INVALID_INCLUSIVE, 1, 0);
-                  }
                   else
                   {
                      decoder->state = DECODED_1_OF_4;
@@ -263,35 +257,28 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                   }
                }
                else
-               {
                   /* The byte is of the form 11111xxx or 10xxxxxx, and is not
                      a valid first byte for a UTF-8 sequence. */
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_INCLUSIVE, 1, 0);
-               }
                break;
 
             case DECODED_1_OF_2:
                if (IS_UTF8_CONTINUATION_BYTE(b))
-               {
                   output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 2, decoder->bits | BOTTOM_6_BITS(b));
-               }
                else
-               {
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 1, 0);
-
-               }
                break;
 
             case DECODED_1_OF_3:
                if (IS_UTF8_CONTINUATION_BYTE(b))
                {
-                  /* UTF-8 3-byte sequences that are overlong encodings or encode
-                     surrogate codepoints can be detected after 2 bytes. */
+                  /* UTF-8 3-byte sequences that are overlong 
+                   * encodings or encode surrogate codepoints 
+                   * can be detected after 2 bytes. */
                   decoder->bits |= (uint32_t)BOTTOM_6_BITS(b) << 6;
-                  if ((decoder->bits < FIRST_3_BYTE_UTF8_CODEPOINT) || IS_SURROGATE(decoder->bits))
-                  {
+                  if ((decoder->bits < FIRST_3_BYTE_UTF8_CODEPOINT) || 
+                        IS_SURROGATE(decoder->bits))
                      output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 1, 0);
-                  }
                   else
                   {
                      decoder->state = DECODED_2_OF_3;
@@ -299,20 +286,14 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                   }
                }
                else
-               {
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 1, 0);
-               }
                break;
 
             case DECODED_2_OF_3:
                if (IS_UTF8_CONTINUATION_BYTE(b))
-               {
                   output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 3, decoder->bits | BOTTOM_6_BITS(b));
-               }
                else
-               {
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 2, 0);
-               }
                break;
 
             case DECODED_1_OF_4:
@@ -321,10 +302,9 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                   /* UTF-8 4-byte sequences that are overlong encodings or encode
                      out-of-range codepoints can be detected after 2 bytes. */
                   decoder->bits |= (uint32_t)BOTTOM_6_BITS(b) << 12;
-                  if ((decoder->bits < FIRST_4_BYTE_UTF8_CODEPOINT) || (decoder->bits > MAX_CODEPOINT))
-                  {
+                  if (  (decoder->bits < FIRST_4_BYTE_UTF8_CODEPOINT) || 
+                        (decoder->bits > MAX_CODEPOINT))
                      output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 1, 0);
-                  }
                   else
                   {
                      decoder->state = DECODED_2_OF_4;
@@ -332,9 +312,7 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                   }
                }
                else
-               {
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 1, 0);
-               }
                break;
 
             case DECODED_2_OF_4:
@@ -344,21 +322,15 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                   decoder->state = DECODED_3_OF_4;
                   goto noreset;
                }
-               else
-               {
-                  output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 2, 0);
-               }
+
+               output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 2, 0);
                break;
 
             case DECODED_3_OF_4:
                if (IS_UTF8_CONTINUATION_BYTE(b))
-               {
                   output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 4, decoder->bits | BOTTOM_6_BITS(b));
-               }
                else
-               {
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 3, 0);
-               }
                break;
          }
          break;
@@ -379,22 +351,18 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
 
             case DECODED_1_OF_2:
                decoder->bits |= (uint32_t)b << 8;
+               /* A trailing surrogate cannot appear on its own. */
                if (IS_TRAILING_SURROGATE(decoder->bits))
-               {
-                  /* A trailing surrogate cannot appear on its own. */
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_INCLUSIVE, 2, 0);
-               }
                else if (IS_LEADING_SURROGATE(decoder->bits))
                {
                   /* A leading surrogate implies a 4-byte surrogate pair. */
                   decoder->bits <<= 16;
-                  decoder->state = DECODED_2_OF_4;
+                  decoder->state  = DECODED_2_OF_4;
                   goto noreset;
                }
                else
-               {
                   output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 2, decoder->bits);
-               }
                break;
 
             case DECODED_2_OF_4:
@@ -414,10 +382,8 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 2, 0);
                   goto noreset;
                }
-               else
-               {
-                  output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 4, CODEPOINT_FROM_SURROGATES(decoder->bits));
-               }
+
+               output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 4, CODEPOINT_FROM_SURROGATES(decoder->bits));
                break;
          }
          break;
@@ -438,11 +404,9 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
 
             case DECODED_1_OF_2:
                decoder->bits |= b;
+               /* A trailing surrogate cannot appear on its own. */
                if (IS_TRAILING_SURROGATE(decoder->bits))
-               {
-                  /* A trailing surrogate cannot appear on its own. */
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_INCLUSIVE, 2, 0);
-               }
                else if (IS_LEADING_SURROGATE(decoder->bits))
                {
                   /* A leading surrogate implies a 4-byte surrogate pair. */
@@ -451,9 +415,7 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                   goto noreset;
                }
                else
-               {
                   output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 2, decoder->bits);
-               }
                break;
 
             case DECODED_2_OF_4:
@@ -473,10 +435,9 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
                   output = DECODER_OUTPUT(SEQUENCE_INVALID_EXCLUSIVE, 2, 0);
                   goto noreset;
                }
-               else
-               {
-                  output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 4, CODEPOINT_FROM_SURROGATES(decoder->bits));
-               }
+
+               output = DECODER_OUTPUT(SEQUENCE_COMPLETE, 4,
+                     CODEPOINT_FROM_SURROGATES(decoder->bits));
                break;
          }
          break;
@@ -503,7 +464,9 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
 
             case DECODED_3_OF_4:
                decoder->bits |= (uint32_t)b << 24;
-               output = (IS_SURROGATE(decoder->bits) || (decoder->bits > MAX_CODEPOINT))
+               output = (
+                     IS_SURROGATE(decoder->bits) || 
+                     (decoder->bits > MAX_CODEPOINT))
                   ? DECODER_OUTPUT(SEQUENCE_INVALID_INCLUSIVE, 4, 0)
                   : DECODER_OUTPUT(SEQUENCE_COMPLETE, 4, decoder->bits);
                break;
@@ -517,7 +480,7 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
          {
             case DECODER_RESET:
                decoder->state = DECODED_1_OF_4;
-               decoder->bits = (uint32_t)b << 24;
+               decoder->bits  = (uint32_t)b << 24;
                goto noreset;
 
             case DECODED_1_OF_4:
@@ -532,7 +495,8 @@ static DecoderOutput Decoder_ProcessByte(Decoder decoder, Encoding encoding, byt
 
             case DECODED_3_OF_4:
                decoder->bits |= b;
-               output = (IS_SURROGATE(decoder->bits) || (decoder->bits > MAX_CODEPOINT))
+               output = (IS_SURROGATE(decoder->bits) || 
+                     (decoder->bits > MAX_CODEPOINT))
                   ? DECODER_OUTPUT(SEQUENCE_INVALID_INCLUSIVE, 4, 0)
                   : DECODER_OUTPUT(SEQUENCE_COMPLETE, 4, decoder->bits);
                break;
@@ -564,20 +528,20 @@ static size_t EncodeCodepoint(Codepoint c, Encoding encoding, byte* pBytes)
          if (c < FIRST_2_BYTE_UTF8_CODEPOINT)
          {
             pBytes[0] = (byte)c;
-            length = 1;
+            length    = 1;
          }
          else if (c < FIRST_3_BYTE_UTF8_CODEPOINT)
          {
             pBytes[0] = (byte)(0xC0 | (c >> 6));
             pBytes[1] = (byte)(0x80 | BOTTOM_6_BITS(c));
-            length = 2;
+            length    = 2;
          }
          else if (c < FIRST_4_BYTE_UTF8_CODEPOINT)
          {
             pBytes[0] = (byte)(0xE0 | (c >> 12));
             pBytes[1] = (byte)(0x80 | BOTTOM_6_BITS(c >> 6));
             pBytes[2] = (byte)(0x80 | BOTTOM_6_BITS(c));
-            length = 3;
+            length    = 3;
          }
          else
          {
@@ -585,7 +549,7 @@ static size_t EncodeCodepoint(Codepoint c, Encoding encoding, byte* pBytes)
             pBytes[1] = (byte)(0x80 | BOTTOM_6_BITS(c >> 12));
             pBytes[2] = (byte)(0x80 | BOTTOM_6_BITS(c >> 6));
             pBytes[3] = (byte)(0x80 | BOTTOM_6_BITS(c));
-            length = 4;
+            length    = 4;
          }
          break;
 
@@ -594,7 +558,7 @@ static size_t EncodeCodepoint(Codepoint c, Encoding encoding, byte* pBytes)
          {
             pBytes[0] = (byte)(c);
             pBytes[1] = (byte)(c >> 8);
-            length = 2;
+            length    = 2;
          }
          else
          {
@@ -607,7 +571,7 @@ static size_t EncodeCodepoint(Codepoint c, Encoding encoding, byte* pBytes)
             /* Trailing surrogate. */
             pBytes[2] = (byte)(surrogates);
             pBytes[3] = (byte)(surrogates >> 8);
-            length = 4;
+            length    = 4;
          }
          break;
 
@@ -616,7 +580,7 @@ static size_t EncodeCodepoint(Codepoint c, Encoding encoding, byte* pBytes)
          {
             pBytes[1] = (byte)(c);
             pBytes[0] = (byte)(c >> 8);
-            length = 2;
+            length    = 2;
          }
          else
          {
@@ -630,7 +594,7 @@ static size_t EncodeCodepoint(Codepoint c, Encoding encoding, byte* pBytes)
             /* Trailing surrogate. */
             pBytes[3] = (byte)(surrogates);
             pBytes[2] = (byte)(surrogates >> 8);
-            length = 4;
+            length    = 4;
          }
          break;
 
@@ -639,7 +603,7 @@ static size_t EncodeCodepoint(Codepoint c, Encoding encoding, byte* pBytes)
          pBytes[1] = (byte)(c >> 8);
          pBytes[2] = (byte)(c >> 16);
          pBytes[3] = (byte)(c >> 24);
-         length = 4;
+         length    = 4;
          break;
 
       case JSON_UTF32BE:
@@ -647,7 +611,7 @@ static size_t EncodeCodepoint(Codepoint c, Encoding encoding, byte* pBytes)
          pBytes[2] = (byte)(c >> 8);
          pBytes[1] = (byte)(c >> 16);
          pBytes[0] = (byte)(c >> 24);
-         length = 4;
+         length    = 4;
          break;
    }
    return length;
@@ -794,10 +758,10 @@ typedef byte GrammarianOutput;
 /* Grammar rule used by the grammarian to process a token. */
 typedef struct tag_GrammarRule
 {
-   Symbol       symbolToPush1;
-   Symbol       symbolToPush2;
+   Symbol       symbolToPush1; /* byte alignment */
+   Symbol       symbolToPush2; /* byte alignment */
    byte         reprocess;
-   GrammarEvent emit;
+   GrammarEvent emit;          /* byte alignment */
 } GrammarRule;
 
 /* Grammarian functions. */
@@ -930,7 +894,7 @@ static GrammarianOutput Grammarian_ProcessToken(Grammarian grammarian,
                   if (!pBiggerStack)
                      return GRAMMARIAN_OUTPUT(SYMBOL_STACK_FULL, EMIT_NOTHING);
 
-                  grammarian->pStack = pBiggerStack;
+                  grammarian->pStack     = pBiggerStack;
                   grammarian->stackSize *= 2;
                }
                grammarian->pStack[grammarian->stackUsed] = pRule->symbolToPush2;
@@ -996,35 +960,12 @@ typedef struct tag_MemberNames
 /* A parser instance. */
 struct JSON_Parser_Data
 {
-   JSON_MemorySuite                    memorySuite;
+   JSON_MemorySuite                    memorySuite;      /* ptr alignment */
    void*                               userData;
-   ParserState                         state;
-   ParserFlags                         flags;
-   Encoding                            inputEncoding;
-   Encoding                            stringEncoding;
-   Encoding                            numberEncoding;
-   Symbol                              token;
-   TokenAttributes                     tokenAttributes;
-   Error                               error;
-   byte                                errorOffset;
-   LexerState                          lexerState;
-   uint32_t                            lexerBits;
-   size_t                              codepointLocationByte;
-   size_t                              codepointLocationLine;
-   size_t                              codepointLocationColumn;
-   size_t                              tokenLocationByte;
-   size_t                              tokenLocationLine;
-   size_t                              tokenLocationColumn;
-   size_t                              depth;
    byte*                               pTokenBytes;
-   size_t                              tokenBytesLength;
-   size_t                              tokenBytesUsed;
-   size_t                              maxStringLength;
-   size_t                              maxNumberLength;
    MemberNames*                        pMemberNames;
-   DecoderData                         decoderData;
-   GrammarianData                      grammarianData;
-   JSON_Parser_EncodingDetectedHandler encodingDetectedHandler;
+   GrammarianData                      grammarianData;   /* ptr  alignment */
+   JSON_Parser_EncodingDetectedHandler encodingDetectedHandler; /* ptr alignment */
    JSON_Parser_NullHandler             nullHandler;
    JSON_Parser_BooleanHandler          booleanHandler;
    JSON_Parser_StringHandler           stringHandler;
@@ -1036,6 +977,30 @@ struct JSON_Parser_Data
    JSON_Parser_StartArrayHandler       startArrayHandler;
    JSON_Parser_EndArrayHandler         endArrayHandler;
    JSON_Parser_ArrayItemHandler        arrayItemHandler;
+   uint32_t                            lexerBits;
+   DecoderData                         decoderData;            
+                                                         /* uint32 alignment */
+   size_t                              codepointLocationByte;
+   size_t                              codepointLocationLine;
+   size_t                              codepointLocationColumn;
+   size_t                              tokenLocationByte;
+   size_t                              tokenLocationLine;
+   size_t                              tokenLocationColumn;
+   size_t                              depth;
+   size_t                              tokenBytesLength;
+   size_t                              tokenBytesUsed;
+   size_t                              maxStringLength;
+   size_t                              maxNumberLength;
+   ParserState                         state;            /* byte alignment */
+   ParserFlags                         flags;            /* byte alignment */
+   Encoding                            inputEncoding;    /* byte alignment */
+   Encoding                            stringEncoding;   /* byte alignment */
+   Encoding                            numberEncoding;   /* byte alignment */
+   Symbol                              token;            /* byte alignment */
+   TokenAttributes                     tokenAttributes;  /* byte alignment */
+   Error                               error;            /* byte alignment */
+   byte                                errorOffset;
+   LexerState                          lexerState;       /* byte alignment */
    byte                                defaultTokenBytes[DEFAULT_TOKEN_BYTES_LENGTH];
 };
 

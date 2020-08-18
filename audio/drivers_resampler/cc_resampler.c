@@ -49,10 +49,9 @@
 
 typedef struct rarch_CC_resampler
 {
-   audio_frame_float_t buffer[4];
-
-   float distance;
    void (*process)(void *re, struct resampler_data *data);
+   audio_frame_float_t buffer[4];
+   float distance;
 } rarch_CC_resampler_t;
 
 #ifdef _MIPS_ARCH_ALLEGREX

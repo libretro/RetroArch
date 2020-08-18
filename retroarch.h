@@ -31,6 +31,7 @@
 #include "config.h"
 #endif
 
+#include <lists/string_list.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
 #ifdef HAVE_AUDIOMIXER
@@ -88,6 +89,7 @@ enum rarch_ctl_state
    RARCH_CTL_IS_INITED,
 
    RARCH_CTL_IS_DUMMY_CORE,
+   RARCH_CTL_IS_CORE_LOADED,
 
    RARCH_CTL_IS_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
@@ -208,10 +210,10 @@ struct rarch_main_wrap
    const char *state_path;
    const char *config_path;
    const char *libretro_path;
+   int argc;
    bool verbose;
    bool no_content;
    bool touched;
-   int argc;
 };
 
 typedef struct rarch_resolution
@@ -224,60 +226,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   bool launched_from_cli;
-   struct
-   {
-      char savefile[8192];
-      char savestate[8192];
-      char cheatfile[8192];
-      char ups[8192];
-      char bps[8192];
-      char ips[8192];
-      char label[8192];
-      char *remapfile;
-   } name;
-
-   /* Recording. */
-   struct
-   {
-      bool use_output_dir;
-      char path[8192];
-      char config[8192];
-      char output_dir[8192];
-      char config_dir[8192];
-      unsigned width;
-      unsigned height;
-
-      size_t gpu_width;
-      size_t gpu_height;
-   } record;
-
-   /* Settings and/or global state that is specific to
-    * a console-style implementation. */
-   struct
-   {
-      bool flickerfilter_enable;
-      bool softfilter_enable;
-
-      struct
-      {
-         bool pal_enable;
-         bool pal60_enable;
-         unsigned char soft_filter_index;
-         unsigned      gamma_correction;
-         unsigned int  flicker_filter_index;
-
-         struct
-         {
-            bool check;
-            unsigned count;
-            uint32_t *list;
-            rarch_resolution_t current;
-            rarch_resolution_t initial;
-         } resolutions;
-      } screen;
-   } console;
-   /* Settings and/or global states specific to menus */
 #ifdef HAVE_MENU
    struct
    {
@@ -286,10 +234,87 @@ typedef struct global
       retro_time_t noop_start_time;
       retro_time_t action_start_time;
       retro_time_t action_press_time;
-      enum menu_action prev_action;
    } menu;
 #endif
+   struct
+   {
+      char *remapfile;
+      char savefile[8192];
+      char savestate[8192];
+      char cheatfile[8192];
+      char ups[8192];
+      char bps[8192];
+      char ips[8192];
+      char label[8192];
+   } name;
+
+   /* Recording. */
+   struct
+   {
+      size_t gpu_width;
+      size_t gpu_height;
+      unsigned width;
+      unsigned height;
+      char path[8192];
+      char config[8192];
+      char output_dir[8192];
+      char config_dir[8192];
+      bool use_output_dir;
+   } record;
+
+   /* Settings and/or global state that is specific to
+    * a console-style implementation. */
+   struct
+   {
+      struct
+      {
+         struct
+         {
+            uint32_t *list;
+            unsigned count;
+            rarch_resolution_t current;
+            rarch_resolution_t initial;
+            bool check;
+         } resolutions;
+         unsigned      gamma_correction;
+         unsigned int  flicker_filter_index;
+         unsigned char soft_filter_index;
+         bool pal_enable;
+         bool pal60_enable;
+      } screen;
+
+      bool flickerfilter_enable;
+      bool softfilter_enable;
+
+   } console;
+   /* Settings and/or global states specific to menus */
+#ifdef HAVE_MENU
+   enum menu_action menu_prev_action;
+#endif
+   bool launched_from_cli;
+   bool cli_load_menu_on_error;
 } global_t;
+
+typedef struct content_state
+{
+   char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
+   struct string_list *temporary_content;
+
+   int pending_subsystem_rom_num;
+   int pending_subsystem_id;
+   unsigned pending_subsystem_rom_id;
+   uint32_t rom_crc;
+
+   char companion_ui_crc32[32];
+   char pending_subsystem_ident[255];
+   char pending_rom_crc_path[PATH_MAX_LENGTH];
+   char companion_ui_db_name[PATH_MAX_LENGTH];
+
+   bool is_inited;
+   bool core_does_not_need_content;
+   bool pending_subsystem_init;
+   bool pending_rom_crc;
+} content_state_t;
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
@@ -328,6 +353,12 @@ bool retroarch_main_init(int argc, char *argv[]);
 bool retroarch_main_quit(void);
 
 global_t *global_get_ptr(void);
+
+content_state_t *content_state_get_ptr(void);
+
+unsigned content_get_subsystem_rom_id(void);
+
+int content_get_subsystem(void);
 
 /**
  * runloop_iterate:
@@ -375,27 +406,27 @@ typedef struct audio_mixer_stream
    audio_mixer_sound_t *handle;
    audio_mixer_voice_t *voice;
    audio_mixer_stop_cb_t stop_cb;
-   enum audio_mixer_stream_type  stream_type;
-   enum audio_mixer_type type;
-   enum audio_mixer_state state;
-   float volume;
    void *buf;
    char *name;
    size_t bufsize;
+   float volume;
+   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_type type;
+   enum audio_mixer_state state;
 } audio_mixer_stream_t;
 
 typedef struct audio_mixer_stream_params
 {
+   void *buf;
+   char *basename;
+   audio_mixer_stop_cb_t cb;
+   size_t bufsize;
+   unsigned slot_selection_idx;
    float volume;
    enum audio_mixer_slot_selection_type slot_selection_type;
-   unsigned slot_selection_idx;
    enum audio_mixer_stream_type  stream_type;
    enum audio_mixer_type  type;
    enum audio_mixer_state state;
-   void *buf;
-   char *basename;
-   size_t bufsize;
-   audio_mixer_stop_cb_t cb;
 } audio_mixer_stream_params_t;
 #endif
 
@@ -545,7 +576,7 @@ enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 
 const char *audio_driver_mixer_get_stream_name(unsigned i);
 
-void audio_driver_load_menu_sounds(void);
+void audio_driver_load_system_sounds(void);
 
 #endif
 
@@ -624,6 +655,14 @@ struct record_params
    /* Sample rate of input audio. */
    double samplerate;
 
+   /* Filename to dump to. */
+   const char *filename;
+
+   /* Path to config. Optional. */
+   const char *config;
+
+   const char *audio_resampler;
+
    /* Desired output resolution. */
    unsigned out_width;
    unsigned out_height;
@@ -632,32 +671,25 @@ struct record_params
    unsigned fb_width;
    unsigned fb_height;
 
+   /* Audio channels. */
+   unsigned channels;
+
+   unsigned video_record_scale_factor;
+   unsigned video_stream_scale_factor;
+   unsigned video_record_threads;
+   unsigned streaming_mode;
+
    /* Aspect ratio of input video. Parameters are passed to the muxer,
     * the video itself is not scaled.
     */
    float aspect_ratio;
-
-   /* Audio channels. */
-   unsigned channels;
 
    enum record_config_type preset;
 
    /* Input pixel format. */
    enum ffemu_pix_format pix_fmt;
 
-   /* Filename to dump to. */
-   const char *filename;
-
-   /* Path to config. Optional. */
-   const char *config;
-
    bool video_gpu_record;
-   unsigned video_record_scale_factor;
-   unsigned video_stream_scale_factor;
-   unsigned video_record_threads;
-   unsigned streaming_mode;
-
-   const char *audio_resampler;
 };
 
 struct record_video_data
@@ -716,7 +748,6 @@ void recording_driver_update_streaming_url(void);
 
 #include "gfx/video_defines.h"
 #include "gfx/video_coord_array.h"
-#include "gfx/video_filter.h"
 
 #include "input/input_driver.h"
 #include "input/input_types.h"
@@ -755,8 +786,8 @@ enum
 
 struct LinkInfo
 {
-   unsigned tex_w, tex_h;
    struct video_shader_pass *pass;
+   unsigned tex_w, tex_h;
 };
 
 enum gfx_ctx_api
@@ -771,13 +802,7 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D12_API,
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
-   GFX_CTX_SIXEL_API,
-   GFX_CTX_NETWORK_VIDEO_API,
-   GFX_CTX_METAL_API,
-   GFX_CTX_GDI_API,
-   GFX_CTX_FPGA_API,
-   GFX_CTX_GX_API,
-   GFX_CTX_GX2_API
+   GFX_CTX_METAL_API
 };
 
 enum display_metric_types
@@ -829,12 +854,12 @@ enum shader_program_type
 
 struct shader_program_info
 {
-   bool is_file;
+   void *data;
    const char *vertex;
    const char *fragment;
    const char *combined;
    unsigned idx;
-   void *data;
+   bool is_file;
 };
 
 struct uniform_info
@@ -932,11 +957,11 @@ typedef struct shader_backend
 
 typedef struct video_shader_ctx_init
 {
-   enum rarch_shader_type shader_type;
    const char *path;
    const shader_backend_t *shader;
    void *data;
    void *shader_data;
+   enum rarch_shader_type shader_type;
    struct
    {
       bool core_context_enabled;
@@ -945,6 +970,11 @@ typedef struct video_shader_ctx_init
 
 typedef struct video_shader_ctx_params
 {
+   void *data;
+   const void *info;
+   const void *prev_info;
+   const void *feedback_info;
+   const void *fbo_info;
    unsigned width;
    unsigned height;
    unsigned tex_width;
@@ -953,11 +983,6 @@ typedef struct video_shader_ctx_params
    unsigned out_height;
    unsigned frame_counter;
    unsigned fbo_info_cnt;
-   void *data;
-   const void *info;
-   const void *prev_info;
-   const void *feedback_info;
-   const void *fbo_info;
 } video_shader_ctx_params_t;
 
 typedef struct video_shader_ctx_coords
@@ -968,16 +993,16 @@ typedef struct video_shader_ctx_coords
 
 typedef struct video_shader_ctx_scale
 {
-   unsigned idx;
    struct gfx_fbo_scale *scale;
+   unsigned idx;
 } video_shader_ctx_scale_t;
 
 typedef struct video_shader_ctx_info
 {
-   bool set_active;
+   void *data;
    unsigned num;
    unsigned idx;
-   void *data;
+   bool set_active;
 } video_shader_ctx_info_t;
 
 typedef struct video_shader_ctx_mvp
@@ -988,8 +1013,8 @@ typedef struct video_shader_ctx_mvp
 
 typedef struct video_shader_ctx_filter
 {
-   unsigned index;
    bool *smooth;
+   unsigned index;
 } video_shader_ctx_filter_t;
 
 typedef struct video_shader_ctx
@@ -1006,17 +1031,12 @@ typedef void (*gfx_ctx_proc_t)(void);
 
 typedef struct video_info
 {
-   /* Launch in fullscreen mode instead of windowed mode. */
-   bool fullscreen;
+   const char *path_font;
 
-   /* Start with V-Sync enabled. */
-   bool vsync;
+   uintptr_t parent;
 
-   /* If true, the output image should have the aspect ratio
-    * as set in aspect_ratio. */
-   bool force_aspect;
+   int swap_interval;
 
-   bool font_enable;
 
    /* Width of window.
     * If fullscreen mode is requested,
@@ -1030,7 +1050,29 @@ typedef struct video_info
     */
    unsigned height;
 
-   int swap_interval;
+#ifdef GEKKO
+   /* TODO - we can't really have driver system-specific
+    * variables in here. There should be some
+    * kind of publicly accessible driver implementation
+    * video struct for specific things like this.
+    */
+
+   /* Wii-specific settings. Ignored for everything else. */
+   unsigned viwidth;
+#endif
+
+   /*
+    * input_scale defines the maximum size of the picture that will
+    * ever be used with the frame callback.
+    *
+    * The maximum resolution is a multiple of 256x256 size (RARCH_SCALE_BASE),
+    * so an input scale of 2 means you should allocate a texture or of 512x512.
+    *
+    * Maximum input size: RARCH_SCALE_BASE * input_scale
+    */
+   unsigned input_scale;
+
+   float font_size;
 
    bool adaptive_vsync;
 
@@ -1056,68 +1098,33 @@ typedef struct video_info
     * */
    bool rgb32;
 
-#ifdef GEKKO
-   /* TODO - we can't really have driver system-specific
-    * variables in here. There should be some
-    * kind of publicly accessible driver implementation
-    * video struct for specific things like this.
-    */
+   /* Launch in fullscreen mode instead of windowed mode. */
+   bool fullscreen;
 
-   /* Wii-specific settings. Ignored for everything else. */
-   unsigned viwidth;
-#endif
+   /* Start with V-Sync enabled. */
+   bool vsync;
 
-   /*
-    * input_scale defines the maximum size of the picture that will
-    * ever be used with the frame callback.
-    *
-    * The maximum resolution is a multiple of 256x256 size (RARCH_SCALE_BASE),
-    * so an input scale of 2 means you should allocate a texture or of 512x512.
-    *
-    * Maximum input size: RARCH_SCALE_BASE * input_scale
-    */
-   unsigned input_scale;
+   /* If true, the output image should have the aspect ratio
+    * as set in aspect_ratio. */
+   bool force_aspect;
 
-   const char *path_font;
-
-   float font_size;
-
-   uintptr_t parent;
+   bool font_enable;
 } video_info_t;
 
 typedef struct video_frame_info
 {
-   bool widgets_active;
-   bool menu_mouse_enable;
-   bool widgets_is_paused;
-   bool widgets_is_fast_forwarding;
-   bool widgets_is_rewinding;
-   bool input_menu_swap_ok_cancel_buttons;
-   bool input_driver_nonblock_state;
-   bool black_frame_insertion;
-   bool hard_sync;
-   bool fps_show;
-   bool memory_show;
-   bool statistics_show;
-   bool framecount_show;
-   bool core_status_msg_show;
-   bool post_filter_record;
-   bool windowed_fullscreen;
-   bool fullscreen;
-   bool font_enable;
-   bool use_rgba;
-   bool libretro_running;
-   bool xmb_shadows_enable;
-   bool battery_level_enable;
-   bool timedate_enable;
-   bool runloop_is_slowmotion;
-   bool runloop_is_paused;
-   bool menu_is_alive;
-   bool msg_bgcolor_enable;
+   void *userdata;
 
    int custom_vp_x;
    int custom_vp_y;
    int crt_switch_center_adjust;
+   int crt_switch_porch_adjust;
+
+   /* TODO/FIXME - nasty hack needed for struct misalignment in Windows X64 -
+    * otherwise the audio/video statistics display glitches after the recent
+    * addition of the above 'crt_switch_porch_adjust' member
+    */
+   char placeholder;
 
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;
@@ -1149,7 +1156,6 @@ typedef struct video_frame_info
    float font_msg_color_b;
    float xmb_alpha_factor;
 
-   char stat_text[512];
 
    struct
    {
@@ -1158,22 +1164,47 @@ typedef struct video_frame_info
       float scale;
       /* Drop shadow color multiplier. */
       float drop_mod;
+      /* Drop shadow alpha */
+      float drop_alpha;
+
       /* Drop shadow offset.
        * If both are 0, no drop shadow will be rendered. */
       int drop_x, drop_y;
-      /* Drop shadow alpha */
-      float drop_alpha;
       /* ABGR. Use the macros. */
       uint32_t color;
-      bool full_screen;
       enum text_alignment text_align;
+      bool full_screen;
    } osd_stat_params;
 
-   void (*cb_swap_buffers)(void*);
-   bool (*cb_set_resize)(void*, unsigned, unsigned);
+   char stat_text[512];
 
-   void *context_data;
-   void *userdata;
+   bool widgets_active;
+   bool menu_mouse_enable;
+   bool widgets_is_paused;
+   bool widgets_is_fast_forwarding;
+   bool widgets_is_rewinding;
+   bool input_menu_swap_ok_cancel_buttons;
+   bool input_driver_nonblock_state;
+   bool black_frame_insertion;
+   bool hard_sync;
+   bool fps_show;
+   bool memory_show;
+   bool statistics_show;
+   bool framecount_show;
+   bool core_status_msg_show;
+   bool post_filter_record;
+   bool windowed_fullscreen;
+   bool fullscreen;
+   bool font_enable;
+   bool use_rgba;
+   bool libretro_running;
+   bool xmb_shadows_enable;
+   bool battery_level_enable;
+   bool timedate_enable;
+   bool runloop_is_slowmotion;
+   bool runloop_is_paused;
+   bool menu_is_alive;
+   bool msg_bgcolor_enable;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
@@ -1288,7 +1319,7 @@ typedef struct gfx_ctx_driver
     * which do not have global context state. */
    void *(*get_context_data)(void *data);
 
-   /* Optional. Makes driver context (only GLX right now)
+   /* Optional. Makes driver context (only GL right now)
     * active for this thread. */
    void (*make_current)(bool release);
 } gfx_ctx_driver_t;
@@ -1310,8 +1341,8 @@ typedef struct gfx_ctx_mode
 
 typedef struct gfx_ctx_metrics
 {
-   enum display_metric_types type;
    float *value;
+   enum display_metric_types type;
 } gfx_ctx_metrics_t;
 
 typedef struct gfx_ctx_aspect
@@ -1324,12 +1355,12 @@ typedef struct gfx_ctx_aspect
 typedef struct gfx_ctx_image
 {
    const void *frame;
+   void **handle;
    unsigned width;
    unsigned height;
    unsigned pitch;
    unsigned index;
    bool rgb32;
-   void **handle;
 } gfx_ctx_image_t;
 
 typedef struct gfx_ctx_input
@@ -1345,8 +1376,8 @@ typedef struct gfx_ctx_ident
 
 struct aspect_ratio_elem
 {
-   char name[64];
    float value;
+   char name[64];
 };
 
 /* Optionally implemented interface to poke more
@@ -1357,7 +1388,7 @@ typedef struct video_poke_interface
    uint32_t (*get_flags)(void *data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
-   void (*unload_texture)(void *data, uintptr_t id);
+   void (*unload_texture)(void *data, bool threaded, uintptr_t id);
    void (*set_video_mode)(void *data, unsigned width,
          unsigned height, bool fullscreen);
    float (*get_refresh_rate)(void *data);
@@ -1537,12 +1568,6 @@ void video_driver_apply_state_changes(void);
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 
 void video_driver_cached_frame(void);
-
-void video_driver_default_settings(void);
-
-void video_driver_load_settings(config_file_t *conf);
-
-void video_driver_save_settings(config_file_t *conf);
 
 bool video_driver_is_hw_context(void);
 
@@ -1751,37 +1776,17 @@ const gfx_ctx_driver_t *video_context_driver_init_first(
       enum gfx_ctx_api api, unsigned major, unsigned minor,
       bool hw_render_ctx, void **ctx_data);
 
-bool video_context_driver_find_prev_driver(void);
-
-bool video_context_driver_find_next_driver(void);
-
-bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img);
-
-bool video_context_driver_get_video_output_prev(void);
-
-bool video_context_driver_get_video_output_next(void);
-
 bool video_context_driver_set(const gfx_ctx_driver_t *data);
 
 void video_context_driver_destroy(void);
 
-bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
-
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident);
-
-bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info);
-
-bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
 
 bool video_context_driver_get_refresh_rate(float *refresh_rate);
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
-
-void video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
-
-bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
 enum gfx_ctx_api video_context_driver_get_api(void);
 
@@ -1791,15 +1796,19 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 float video_driver_get_refresh_rate(void);
 
+#if defined(HAVE_GFX_WIDGETS)
+bool video_driver_has_widgets(void);
+#endif
+
 bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);
 
-bool video_driver_get_flags(gfx_ctx_flags_t *flags);
-
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_driver_test_all_flags(enum display_flags testflag);
+
+gfx_ctx_flags_t video_driver_get_flags_wrapper(void);
 
 void video_driver_set_gpu_device_string(const char *str);
 
@@ -1873,14 +1882,18 @@ extern const gfx_ctx_driver_t gfx_ctx_osmesa;
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_uwp;
+extern const gfx_ctx_driver_t gfx_ctx_vk_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_x;
+extern const gfx_ctx_driver_t gfx_ctx_vk_x;
 extern const gfx_ctx_driver_t gfx_ctx_drm;
 extern const gfx_ctx_driver_t gfx_ctx_go2_drm;
 extern const gfx_ctx_driver_t gfx_ctx_mali_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_vivante_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_android;
+extern const gfx_ctx_driver_t gfx_ctx_vk_android;
 extern const gfx_ctx_driver_t gfx_ctx_ps3;
+extern const gfx_ctx_driver_t gfx_ctx_w_vk;
 extern const gfx_ctx_driver_t gfx_ctx_wgl;
 extern const gfx_ctx_driver_t gfx_ctx_videocore;
 extern const gfx_ctx_driver_t gfx_ctx_qnx;

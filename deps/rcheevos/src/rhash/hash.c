@@ -399,7 +399,7 @@ static int rc_hash_3do(char hash[33], const char* path)
       {
         if (buffer[offset + 0x03] == 0x02) /* file */
         {
-          if (strcasecmp((char*)&buffer[offset + 0x20], "LaunchMe") == 0)
+          if (strcasecmp((const char*)&buffer[offset + 0x20], "LaunchMe") == 0)
           {
             /* the block size is at offset 0x0C (assume 0x0C is always 0) */
             block_size = buffer[offset + 0x0D] * 65536 + buffer[offset + 0x0E] * 256 + buffer[offset + 0x0F];
@@ -710,7 +710,7 @@ static int rc_hash_pce_cd(char hash[33], const char* path)
   rc_cd_read_sector(track_handle, 1, buffer, 128);
 
   /* normal PC Engine CD will have a header block in sector 1 */
-  if (strncmp("PC Engine CD-ROM SYSTEM", (const char*)&buffer[32], 23) == 0)
+  if (memcmp("PC Engine CD-ROM SYSTEM", &buffer[32], 23) == 0)
   {
     /* the title of the disc is the last 22 bytes of the header */
     md5_init(&md5);
@@ -727,7 +727,7 @@ static int rc_hash_pce_cd(char hash[33], const char* path)
     /* the first three bytes specify the sector of the program data, and the fourth byte
      * is the number of sectors.
      */
-    sector = buffer[0] * 65536 + buffer[1] * 256 + buffer[2];
+    sector = (buffer[0] << 16) + (buffer[1] << 8) + buffer[2];
     num_sectors = buffer[3];
 
     if (verbose_message_callback)
@@ -776,6 +776,78 @@ static int rc_hash_pce_cd(char hash[33], const char* path)
   return rc_hash_finalize(&md5, hash);
 }
 
+static int rc_hash_pcfx_cd(char hash[33], const char* path)
+{
+  uint8_t buffer[2048];
+  void* track_handle;
+  md5_state_t md5;
+  int sector, num_sectors;
+
+  track_handle = rc_cd_open_track(path, 0);
+  if (!track_handle)
+    return rc_hash_error("Could not open track");
+
+  /* PC-FX boot header fills the first two sectors of the disc
+   * https://bitbucket.org/trap15/pcfxtools/src/master/pcfx-cdlink.c
+   */
+
+  /* PC-FX CD will have a header marker in sector 0 */
+  rc_cd_read_sector(track_handle, 0, buffer, 32);
+  if (memcmp("PC-FX:Hu_CD-ROM", &buffer[0], 15) == 0)
+  {
+    /* the important stuff is the first 128 bytes of the second sector (title being the first 32) */
+    rc_cd_read_sector(track_handle, 1, buffer, 128);
+
+    md5_init(&md5);
+    md5_append(&md5, buffer, 128);
+
+    if (verbose_message_callback)
+    {
+      char message[128];
+      buffer[128] = '\0';
+      snprintf(message, sizeof(message), "Found PC-FX CD, title=%.32s", &buffer[0]);
+      verbose_message_callback(message);
+    }
+
+    /* the program sector is in bytes 33-36 (assume byte 36 is 0) */
+    sector = (buffer[34] << 16) + (buffer[33] << 8) + buffer[32];
+
+    /* the number of sectors the program occupies is in bytes 37-40 (assume byte 40 is 0) */
+    num_sectors = (buffer[38] << 16) + (buffer[37] << 8) + buffer[36];
+
+    if (verbose_message_callback)
+    {
+      char message[128];
+      snprintf(message, sizeof(message), "Hashing %d sectors starting at sector %d", num_sectors, sector);
+      verbose_message_callback(message);
+    }
+
+    while (num_sectors > 0)
+    {
+      rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer));
+      md5_append(&md5, buffer, sizeof(buffer));
+
+      ++sector;
+      --num_sectors;
+    }
+  }
+  else
+  {
+    rc_cd_read_sector(track_handle, 1, buffer, 128);
+    rc_cd_close_track(track_handle);
+
+    /* some PC-FX CDs still identify as PCE CDs */
+    if (memcmp("PC Engine CD-ROM SYSTEM", &buffer[32], 23) == 0)
+      return rc_hash_pce_cd(hash, path);
+
+    return rc_hash_error("Not a PC-FX CD");
+  }
+
+  rc_cd_close_track(track_handle);
+
+  return rc_hash_finalize(&md5, hash);
+}
+
 static int rc_hash_psx(char hash[33], const char* path)
 {
   uint8_t buffer[2048];
@@ -810,13 +882,13 @@ static int rc_hash_psx(char hash[33], const char* path)
       if (strncmp(ptr, "BOOT", 4) == 0)
       {
         ptr += 4;
-        while (isspace(*ptr))
+        while (isspace((unsigned char)*ptr))
           ++ptr;
 
         if (*ptr == '=')
         {
           ++ptr;
-          while (isspace(*ptr))
+          while (isspace((unsigned char)*ptr))
             ++ptr;
 
           if (strncmp(ptr, "cdrom:", 6) == 0)
@@ -825,7 +897,7 @@ static int rc_hash_psx(char hash[33], const char* path)
             ++ptr;
 
           start = ptr;
-          while (!isspace(*ptr) && *ptr != ';')
+          while (!isspace((unsigned char)*ptr) && *ptr != ';')
             ++ptr;
 
           size = (unsigned)(ptr - start);
@@ -1165,7 +1237,7 @@ static const char* rc_hash_get_first_item_from_playlist(const char* path)
     next = ptr;
 
     /* remove trailing whitespace - especially '\r' */
-    while (ptr > start && isspace(ptr[-1]))
+    while (ptr > start && isspace((unsigned char)ptr[-1]))
       --ptr;
 
     /* if we found a non-empty line, break out of the loop to process it */
@@ -1296,6 +1368,12 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
         return rc_hash_generate_from_playlist(hash, console_id, path);
 
       return rc_hash_whole_file(hash, console_id, path);
+
+    case RC_CONSOLE_PCFX:
+      if (rc_path_compare_extension(path, "m3u"))
+        return rc_hash_generate_from_playlist(hash, console_id, path);
+
+      return rc_hash_pcfx_cd(hash, path);
 
     case RC_CONSOLE_PLAYSTATION:
       if (rc_path_compare_extension(path, "m3u"))
@@ -1452,8 +1530,9 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
           iterator->consoles[0] = RC_CONSOLE_PLAYSTATION;
           iterator->consoles[1] = RC_CONSOLE_PC_ENGINE;
           iterator->consoles[2] = RC_CONSOLE_3DO;
+          iterator->consoles[3] = RC_CONSOLE_PCFX;
           /* SEGA CD hash doesn't have any logic to ensure it's being used against a SEGA CD, so it should always be last */
-          iterator->consoles[3] = RC_CONSOLE_SEGA_CD;
+          iterator->consoles[4] = RC_CONSOLE_SEGA_CD;
           need_path = 1;
         }
         else if (rc_path_compare_extension(ext, "col"))

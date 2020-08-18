@@ -155,7 +155,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
 
       EnterCriticalSection(&ds->crit);
-      fifo_avail = fifo_read_avail(ds->buffer);
+      fifo_avail = FIFO_READ_AVAIL(ds->buffer);
       LeaveCriticalSection(&ds->crit);
 
       if (avail < CHUNK_SIZE || ((fifo_avail < CHUNK_SIZE) && (avail < ds->buffer_size / 2)))
@@ -303,7 +303,8 @@ static void dsound_free(void *data)
    free(ds);
 }
 
-static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOID context)
+static BOOL CALLBACK enumerate_cb(LPGUID guid,
+      LPCSTR desc, LPCSTR module, LPVOID context)
 {
    union string_list_elem_attr attr;
    struct string_list *list = (struct string_list*)context;
@@ -511,7 +512,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
          size_t avail;
 
          EnterCriticalSection(&ds->crit);
-         avail = fifo_write_avail(ds->buffer);
+         avail = FIFO_WRITE_AVAIL(ds->buffer);
          if (avail > size)
             avail = size;
 
@@ -530,7 +531,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
          size_t avail;
 
          EnterCriticalSection(&ds->crit);
-         avail = fifo_write_avail(ds->buffer);
+         avail = FIFO_WRITE_AVAIL(ds->buffer);
          if (avail > size)
             avail = size;
 
@@ -558,21 +559,13 @@ static size_t dsound_write_avail(void *data)
    dsound_t *ds = (dsound_t*)data;
 
    EnterCriticalSection(&ds->crit);
-   avail = fifo_write_avail(ds->buffer);
+   avail = FIFO_WRITE_AVAIL(ds->buffer);
    LeaveCriticalSection(&ds->crit);
    return avail;
 }
 
-static size_t dsound_buffer_size(void *data)
-{
-   return 4 * 1024;
-}
-
-static bool dsound_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+static size_t dsound_buffer_size(void *data) { return 4 * 1024; }
+static bool dsound_use_float(void *data) { return false; }
 
 static void *dsound_list_new(void *u)
 {

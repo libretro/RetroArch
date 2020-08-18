@@ -6,12 +6,26 @@
 #include <boolean.h>
 #include <stdint.h>
 
+#ifdef RARCH_INTERNAL
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#endif
+
 #ifdef HAVE_SSA
 #include <ass/ass.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <libavutil/frame.h>
 #include <libswscale/swscale.h>
+
+#ifdef __cplusplus
+}
+#endif
 
 #include <retro_miscellaneous.h>
 
@@ -29,7 +43,6 @@ RETRO_BEGIN_DECLS
  */
 struct video_decoder_context
 {
-   int index;
    int64_t pts;
    struct SwsContext *sws;
    AVFrame *source;
@@ -41,6 +54,7 @@ struct video_decoder_context
    ASS_Track *ass_track_active;
 #endif
    uint8_t *frame_buf;
+   int index;
 };
 typedef struct video_decoder_context video_decoder_context_t;
 

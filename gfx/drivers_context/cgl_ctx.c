@@ -56,8 +56,6 @@ extern CGLError CGLSetSurface(CGLContextObj gl, CGSConnectionID cid, CGSWindowID
 }
 #endif
 
-static enum gfx_ctx_api cgl_api = GFX_CTX_NONE;
-
 typedef struct gfx_ctx_cgl_data
 {
    CGLContextObj glCtx;
@@ -106,15 +104,7 @@ static void gfx_ctx_cgl_swap_buffers(void *data)
 
 static bool gfx_ctx_cgl_set_video_mode(void *data,
       unsigned width, unsigned height,
-      bool fullscreen)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   (void)fullscreen;
-
-   return true;
-}
+      bool fullscreen) { return true; }
 
 static void gfx_ctx_cgl_destroy(void *data)
 {
@@ -135,12 +125,7 @@ static void gfx_ctx_cgl_destroy(void *data)
 
 static void gfx_ctx_cgl_input_driver(void *data,
       const char *name,
-      input_driver_t **input, void **input_data)
-{
-   (void)data;
-   (void)input;
-   (void)input_data;
-}
+      input_driver_t **input, void **input_data) { }
 
 static gfx_ctx_proc_t gfx_ctx_cgl_get_proc_address(const char *symbol_name)
 {
@@ -161,52 +146,24 @@ static gfx_ctx_proc_t gfx_ctx_cgl_get_proc_address(const char *symbol_name)
    return ret;
 }
 
-static bool gfx_ctx_cgl_has_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool gfx_ctx_cgl_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
-static enum gfx_ctx_api gfx_ctx_cgl_get_api(void *data)
-{
-   return cgl_api;
-}
+static bool gfx_ctx_cgl_has_focus(void *data) { return true; }
+static bool gfx_ctx_cgl_suppress_screensaver(void *data, bool enable) { return false; }
+static enum gfx_ctx_api gfx_ctx_cgl_get_api(void *data) { return GFX_CTX_OPENGL_API; }
 
 static bool gfx_ctx_cgl_bind_api(void *data, enum gfx_ctx_api api,
    unsigned major, unsigned minor)
 {
-   (void)data;
-   (void)api;
-   (void)major;
-   (void)minor;
-
    if (api == GFX_CTX_OPENGL_API)
-   {
-      cgl_api = api;
       return true;
-   }
 
    return false;
 }
 
-static void gfx_ctx_cgl_show_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
+static void gfx_ctx_cgl_show_mouse(void *data, bool state) { }
 
 static void gfx_ctx_cgl_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)data;
-
-   (void)enable;
 
    CGLSetCurrentContext(cgl->glCtx);
 
@@ -342,10 +299,7 @@ static uint32_t gfx_ctx_cgl_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_cgl_set_flags(void *data, uint32_t flags)
-{
-   (void)data;
-}
+static void gfx_ctx_cgl_set_flags(void *data, uint32_t flags) { }
 
 const gfx_ctx_driver_t gfx_ctx_cgl = {
    gfx_ctx_cgl_init,

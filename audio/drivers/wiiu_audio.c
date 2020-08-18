@@ -187,7 +187,8 @@ static bool ax_audio_start(void* data, bool is_shutdown)
    /* Set back to playing on enough buffered data */
    if (ax->written > AX_AUDIO_SAMPLE_LOAD)
    {
-      AXSetMultiVoiceCurrentOffset(ax->mvoice, ax_audio_limit(ax->pos - ax->written));
+      AXSetMultiVoiceCurrentOffset(ax->mvoice,
+            ax_audio_limit(ax->pos - ax->written));
       AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
    }
 
@@ -206,9 +207,12 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       return 0;
 
    if (count > AX_AUDIO_MAX_FREE)
-      count = AX_AUDIO_MAX_FREE;
+      count            = AX_AUDIO_MAX_FREE;
 
-   count_avail = ((ax->written > AX_AUDIO_MAX_FREE) ? 0 : (AX_AUDIO_MAX_FREE - ax->written));
+   count_avail         = (
+         (ax->written > AX_AUDIO_MAX_FREE) 
+         ? 0 
+         : (AX_AUDIO_MAX_FREE - ax->written));
 
    if (ax->nonblock)
    {
@@ -219,7 +223,7 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    else if (count_avail < count)
    {
       /* Sync, wait for free memory */
-      while(AXIsMultiVoiceRunning(ax->mvoice) && (count_avail < count))
+      while (AXIsMultiVoiceRunning(ax->mvoice) && (count_avail < count))
       {
          OSYieldThread(); /* Gives threads with same priority time to run */
          count_avail = (ax->written > AX_AUDIO_MAX_FREE ? 0 : (AX_AUDIO_MAX_FREE - ax->written));
@@ -301,24 +305,17 @@ static void ax_audio_set_nonblock_state(void* data, bool state)
       ax->nonblock = state;
 }
 
-static bool ax_audio_use_float(void* data)
-{
-   (void)data;
-   return false;
-}
+static bool ax_audio_use_float(void* data) { return false; }
 
 static size_t ax_audio_write_avail(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
-
    size_t ret = AX_AUDIO_COUNT - ax->written;
-
    return (ret < AX_AUDIO_SAMPLE_COUNT ? 0 : ret);
 }
 
 static size_t ax_audio_buffer_size(void* data)
 {
-   (void)data;
    return AX_AUDIO_COUNT;
 }
 
@@ -335,6 +332,6 @@ audio_driver_t audio_ax =
    "AX",
    NULL, /* device_list_new */
    NULL, /* device_list_free */
-   NULL, /* write_avail */
-   NULL, /* buffer_size */
+   ax_audio_write_avail,
+   ax_audio_buffer_size,
 };

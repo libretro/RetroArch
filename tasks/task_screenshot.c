@@ -61,15 +61,10 @@ typedef struct screenshot_task_state screenshot_task_state_t;
 
 struct screenshot_task_state
 {
-   bool bgr24;
-   bool silence;
-   bool is_idle;
-   bool is_paused;
-   bool history_list_enable;
-   bool pl_fuzzy_archive_match;
-   bool pl_use_old_format;
-   bool pl_compression;
-   bool widgets_ready;
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
 
    int pitch;
    unsigned width;
@@ -79,11 +74,12 @@ struct screenshot_task_state
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
 
-   struct scaler_ctx scaler;
-
-   uint8_t *out_buffer;
-   const void *frame;
-   void *userbuf;
+   bool bgr24;
+   bool silence;
+   bool is_idle;
+   bool is_paused;
+   bool history_list_enable;
+   bool widgets_ready;
 };
 
 static bool screenshot_dump_direct(screenshot_task_state_t *state)
@@ -180,10 +176,7 @@ static void task_screenshot_handler(retro_task_t *task)
       entry.core_path             = (char*)"builtin";
       entry.core_name             = (char*)"imageviewer";
 
-      command_playlist_push_write(g_defaults.image_history, &entry,
-            state->pl_fuzzy_archive_match,
-            state->pl_use_old_format,
-            state->pl_compression);
+      command_playlist_push_write(g_defaults.image_history, &entry);
    }
 #endif
 
@@ -284,9 +277,6 @@ static bool screenshot_dump(
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
 
-   state->pl_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   state->pl_use_old_format      = settings->bools.playlist_use_old_format;
-   state->pl_compression         = settings->bools.playlist_compression;
    state->is_idle                = is_idle;
    state->is_paused              = is_paused;
    state->bgr24                  = bgr24;
@@ -388,7 +378,7 @@ static bool screenshot_dump(
       else
 #endif
       {
-         if (!savestate)
+         if (!savestate & settings->bools.notification_show_screenshot)
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
       }
 

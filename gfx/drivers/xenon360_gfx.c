@@ -198,19 +198,24 @@ static bool xenon360_gfx_frame(void *data,
       uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned y;
    xenos_t *xenos     = (xenos_t*)data;
+#ifdef HAVE_MENU
    bool menu_is_alive = video_info->menu_is_alive;
+#endif
+   DrawVerticeFormats
+      *Rect           = NULL;
 
-   ScreenUv[UV_TOP]	= ((float) (width) / (float) XE_W)*2;
-   ScreenUv[UV_LEFT]	= ((float) (height) / (float) XE_H)*2;
+   ScreenUv[UV_TOP]	 = ((float) (width) / (float) XE_W)*2;
+   ScreenUv[UV_LEFT]	 = ((float) (height) / (float) XE_H)*2;
 
-   DrawVerticeFormats * Rect = Xe_VB_Lock(
+   Rect               = Xe_VB_Lock(
          xenos->device,
          xenos->vb, 0, 3 * sizeof(DrawVerticeFormats), XE_LOCK_WRITE);
 
    /* bottom left */
-   Rect[1].v = ScreenUv[UV_LEFT];
-   Rect[2].u = ScreenUv[UV_TOP];
+   Rect[1].v          = ScreenUv[UV_LEFT];
+   Rect[2].u          = ScreenUv[UV_TOP];
 
    Xe_VB_Unlock(xenos->device, xenos->vb);
 
@@ -221,7 +226,7 @@ static bool xenon360_gfx_frame(void *data,
    unsigned stride_out = xenos->g_pTexture->wpitch >> 1;
    unsigned copy_size  = width << 1;
 
-   for (unsigned y = 0; y < height; y++, dst += stride_out, src += stride_in)
+   for (y = 0; y < height; y++, dst += stride_out, src += stride_in)
       memcpy(dst, src, copy_size);
    Xe_Surface_Unlock(xenos->device, xenos->g_pTexture);
 
@@ -232,11 +237,14 @@ static bool xenon360_gfx_frame(void *data,
    /* Select stream */
    Xe_SetTexture(xenos->device, 0, xenos->g_pTexture);
    Xe_SetCullMode(xenos->device, XE_CULL_NONE);
-   Xe_SetStreamSource(xenos->device, 0, xenos->vb, 0, sizeof(DrawVerticeFormats));
+   Xe_SetStreamSource(xenos->device, 0, xenos->vb, 0,
+         sizeof(DrawVerticeFormats));
 
    /* Select shaders */
-   Xe_SetShader(xenos->device, SHADER_TYPE_PIXEL, xenos->g_pPixelTexturedShader, 0);
-   Xe_SetShader(xenos->device, SHADER_TYPE_VERTEX, xenos->g_pVertexShader, 0);
+   Xe_SetShader(xenos->device, SHADER_TYPE_PIXEL,
+         xenos->g_pPixelTexturedShader, 0);
+   Xe_SetShader(xenos->device, SHADER_TYPE_VERTEX,
+         xenos->g_pVertexShader, 0);
 
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
@@ -252,43 +260,19 @@ static bool xenon360_gfx_frame(void *data,
    return true;
 }
 
-static void xenon360_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
-
 static bool xenon360_gfx_alive(void *data)
 {
    xenos_t *xenos = (xenos_t*)data;
    return !xenos->quitting;
 }
 
-static bool xenon360_gfx_focus(void *data)
-{
-   (void)data;
-   return true;
-}
-
-static bool xenon360_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
-
+static void xenon360_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool xenon360_gfx_focus(void *data) { return true; }
+static bool xenon360_gfx_suppress_screensaver(void *data, bool enable) { return false; }
 static bool xenon360_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
-
+      enum rarch_shader_type type, const char *path) { return false; }
 static void xenon360_gfx_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
-{
-   (void)data;
-   (void)iface;
-}
+      const video_poke_interface_t **iface) { }
 
 video_driver_t video_xenon360 = {
    xenon360_gfx_init,

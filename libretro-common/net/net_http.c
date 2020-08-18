@@ -55,24 +55,22 @@ enum
 
 struct http_socket_state_t
 {
+   void *ssl_ctx;
    int fd;
    bool ssl;
-   void *ssl_ctx;
 };
 
 struct http_t
 {
-   int status;
-
-   char part;
-   char bodytype;
-   bool error;
-
+   char *data;
+   struct http_socket_state_t sock_state; /* ptr alignment */
    size_t pos;
    size_t len;
    size_t buflen;
-   char *data;
-   struct http_socket_state_t sock_state;
+   int status;
+   char part;
+   char bodytype;
+   bool error;
 };
 
 struct http_connection_t
@@ -85,40 +83,34 @@ struct http_connection_t
    char *contenttypecopy;
    char *postdatacopy;
    char* useragentcopy;
+   struct http_socket_state_t sock_state; /* ptr alignment */
    int port;
-   struct http_socket_state_t sock_state;
 };
-
-static char urlencode_lut[256];
-static bool urlencode_lut_inited = false;
-
-void urlencode_lut_init(void)
-{
-   unsigned i;
-
-   urlencode_lut_inited = true;
-
-   for (i = 0; i < 256; i++)
-   {
-      urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' || i == '/' ? i : 0;
-   }
-}
 
 /* URL Encode a string
    caller is responsible for deleting the destination buffer */
 void net_http_urlencode(char **dest, const char *source)
 {
-   char *enc    = NULL;
+   /* TODO/FIXME - static local globals */
+   static char urlencode_lut[256];
+   static bool urlencode_lut_inited = false;
+
+   char *enc                        = NULL;
    /* Assume every character will be encoded, so we need 3 times the space. */
-   size_t len   = strlen(source) * 3 + 1;
-   size_t count = len;
+   size_t len                       = strlen(source) * 3 + 1;
+   size_t count                     = len;
 
    if (!urlencode_lut_inited)
-      urlencode_lut_init();
+   {
+      unsigned i;
 
-   enc   = (char*)calloc(1, len);
+      for (i = 0; i < 256; i++)
+         urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' || i == '/' ? i : 0;
+      urlencode_lut_inited = true;
+   }
 
-   *dest = enc;
+   enc          = (char*)calloc(1, len);
+   *dest        = enc;
 
    for (; *source; source++)
    {
@@ -252,7 +244,7 @@ static void net_http_send_str(
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
-   struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
+   struct http_connection_t *conn = (struct http_connection_t*)malloc(
          sizeof(*conn));
 
    if (!conn)
@@ -263,6 +255,19 @@ struct http_connection_t *net_http_connection_new(const char *url,
       free(conn);
       return NULL;
    }
+
+   conn->domain            = NULL;
+   conn->location          = NULL;
+   conn->urlcopy           = NULL;
+   conn->scan              = NULL;
+   conn->methodcopy        = NULL;
+   conn->contenttypecopy   = NULL;
+   conn->postdatacopy      = NULL;
+   conn->useragentcopy     = NULL;
+   conn->port              = 0;
+   conn->sock_state.fd     = 0;
+   conn->sock_state.ssl    = false;
+   conn->sock_state.ssl_ctx= NULL;
 
    if (method)
       conn->methodcopy     = strdup(method);
@@ -320,10 +325,7 @@ bool net_http_connection_done(struct http_connection_t *conn)
 {
    int has_port = 0;
 
-   if (!conn)
-      return false;
-
-   if (!conn->domain || !*conn->domain)
+   if (!conn || !conn->domain || !*conn->domain)
       return false;
 
    if (*conn->scan == ':')
@@ -350,7 +352,7 @@ bool net_http_connection_done(struct http_connection_t *conn)
    {
       /* domain followed by location - split off the location */
       /*   site.com/path.html   or   site.com:80/path.html   */
-      *conn->scan = '\0';
+      *conn->scan    = '\0';
       conn->location = conn->scan + 1;
       return true;
    }
@@ -368,30 +370,28 @@ bool net_http_connection_done(struct http_connection_t *conn)
       if (!has_port)
       {
          /* if there wasn't a port, we have to expand the urlcopy so we can separate the two parts */
-         size_t domain_len = strlen(conn->domain);
+         size_t domain_len   = strlen(conn->domain);
          size_t location_len = strlen(conn->scan);
-         char* urlcopy = (char*)malloc(domain_len + location_len + 2);
+         char* urlcopy       = (char*)malloc(domain_len + location_len + 2);
          memcpy(urlcopy, conn->domain, domain_len);
          urlcopy[domain_len] = '\0';
          memcpy(urlcopy + domain_len + 1, conn->scan, location_len + 1);
 
          free(conn->urlcopy);
-         conn->domain = conn->urlcopy = urlcopy;
-         conn->location = conn->scan = urlcopy + domain_len + 1;
+         conn->domain        = conn->urlcopy = urlcopy;
+         conn->location      = conn->scan    = urlcopy + domain_len + 1;
       }
       else
       {
          /* there was a port, so overwriting the : will terminate the domain and we can just point at the ? */
-         conn->location = conn->scan;
+         conn->location      = conn->scan;
       }
 
       return true;
    }
-   else
-   {
-      /* invalid character after domain/port */
-      return false;
-   }
+
+   /* invalid character after domain/port */
+   return false;
 }
 
 void net_http_connection_free(struct http_connection_t *conn)
@@ -423,7 +423,8 @@ void net_http_connection_free(struct http_connection_t *conn)
    free(conn);
 }
 
-void net_http_connection_set_user_agent(struct http_connection_t* conn, const char* user_agent)
+void net_http_connection_set_user_agent(
+      struct http_connection_t* conn, const char* user_agent)
 {
    if (conn->useragentcopy)
       free(conn->useragentcopy);

@@ -41,18 +41,18 @@ enum image_status_enum
 
 struct nbio_image_handle
 {
+   void *handle;
+   transfer_cb_t  cb;
+   struct texture_image ti; /* ptr alignment */
+   size_t size;
+   int processing_final_state;
+   unsigned frame_duration;
+   unsigned upscale_threshold;
    enum image_type_enum type;
    enum image_status_enum status;
    bool is_blocking;
    bool is_blocking_on_processing;
    bool is_finished;
-   int processing_final_state;
-   unsigned frame_duration;
-   size_t size;
-   unsigned upscale_threshold;
-   void *handle;
-   transfer_cb_t  cb;
-   struct texture_image ti;
 };
 
 static int cb_image_upload_generic(void *data, size_t len)
@@ -144,7 +144,7 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
       if (retval != IMAGE_PROCESS_NEXT)
          break;
-   }while(cpu_features_get_time_usec() - start_time 
+   }while (cpu_features_get_time_usec() - start_time 
          < image->frame_duration);
 
    if (retval == IMAGE_PROCESS_NEXT)
@@ -345,9 +345,9 @@ bool task_image_load_handler(retro_task_t *task)
                                                       (float)min_size;
                unsigned scale_factor_int          = (unsigned)scale_factor;
                struct texture_image img_resampled = {
-                  0,
-                  0,
                   NULL,
+                  0,
+                  0,
                   false
                };
 

@@ -40,6 +40,7 @@
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 
 #ifdef HAVE_XRANDR
+/* TODO/FIXME - static globals */
 static char xrandr[1024]        = {0};
 static char crt_name[16]        = {0};
 static int crt_name_id          = 0;
@@ -75,9 +76,7 @@ static Display* x11_display_server_open_display(void)
 
    return dpy;
 }
-#endif
 
-#ifdef HAVE_XRANDR
 static void x11_display_server_close_display(Display *dpy)
 {
    if (!dpy || x11_display_server_using_global_dpy || dpy == g_x11_dpy)
@@ -85,86 +84,9 @@ static void x11_display_server_close_display(Display *dpy)
 
    XCloseDisplay(dpy);
 }
-#endif
 
-static void* x11_display_server_init(void)
-{
-   dispserv_x11_t *dispserv = (dispserv_x11_t*)calloc(1, sizeof(*dispserv));
-
-   if (!dispserv)
-      return NULL;
-
-   return dispserv;
-}
-
-static void x11_display_server_destroy(void *data)
-{
-   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
-
-#ifdef HAVE_XRANDR
-   if (crt_en)
-   {
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --newmode 700x480_59.94 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync");
-      system(xrandr);
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --addmode \"%s\" 700x480_59.94",
-            orig_output);
-      system(xrandr);
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --output \"%s\" --mode 700x480_59.94",
-            orig_output);
-      system(xrandr);
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --delmode \"%s\" \"%s\"",
-            orig_output, old_mode);
-      system(xrandr);
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --rmmode \"%s\"",
-            old_mode);
-      system(xrandr);
-   }
-#endif
-
-   if (dispserv)
-      free(dispserv);
-}
-
-static bool x11_display_server_set_window_opacity(void *data, unsigned opacity)
-{
-   dispserv_x11_t *serv = (dispserv_x11_t*)data;
-   Atom net_wm_opacity  = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
-   Atom cardinal        = XInternAtom(g_x11_dpy, "CARDINAL", False);
-
-   serv->opacity        = opacity;
-
-   opacity              = opacity * ((unsigned)-1 / 100.0);
-
-   if (opacity == (unsigned)-1)
-      XDeleteProperty(g_x11_dpy, g_x11_win, net_wm_opacity);
-   else
-      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_opacity, cardinal,
-            32, PropModeReplace, (const unsigned char*)&opacity, 1);
-
-   return true;
-}
-
-static bool x11_display_server_set_window_decorations(void *data, bool on)
-{
-   dispserv_x11_t *serv = (dispserv_x11_t*)data;
-
-   if (serv)
-      serv->decorations = on;
-
-   /* menu_setting performs a reinit instead to properly apply
-    * decoration changes */
-
-   return true;
-}
-
-#ifdef HAVE_XRANDR
 static bool x11_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset)
+      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    int screen;
    Window window;
@@ -200,11 +122,11 @@ static bool x11_display_server_set_resolution(void *data,
    /* following code is the mode line generator */
    if (width < 700)
    {
-      hfp    = (width * 1.033);
-      hbp  = width * 1.225;
+      hfp    = (width * 1.033)+(padjust*2);
+      hbp  = (width * 1.225)+(padjust*2);
    }else {
-      hfp  = (width * 1.033) + (width / 112);
-      hbp  = (width * 1.225) + (width /58);
+      hfp  = ((width * 1.033) + (width / 112))+(padjust*4);
+      hbp  = ((width * 1.225) + (width /58))+(padjust*4);
       xoffset = xoffset*2;
    }
    
@@ -349,44 +271,7 @@ static bool x11_display_server_set_resolution(void *data,
    }
    return true;
 }
-#endif
 
-const char *x11_display_server_get_output_options(void *data)
-{
-#ifdef HAVE_XRANDR
-   Display *dpy;
-   XRRScreenResources *res;
-   XRROutputInfo *info;
-   Window root;
-   int i;
-   static char s[PATH_MAX_LENGTH];
-
-   if (!(dpy = XOpenDisplay(0)))
-      return NULL;
-
-   root = RootWindow(dpy, DefaultScreen(dpy));
-
-   if (!(res = XRRGetScreenResources(dpy, root)))
-      return NULL;
-
-   for (i = 0; i < res->noutput; i++)
-   {
-      if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
-         return NULL;
-
-      strlcat(s, info->name, sizeof(s));
-      if ((i+1) < res->noutput)
-         strlcat(s, "|", sizeof(s));
-   }
-
-   return s;
-#else
-   /* TODO/FIXME - hardcoded for now; list should be built up dynamically later */
-   return "HDMI-0|HDMI-1|HDMI-2|HDMI-3|DVI-0|DVI-1|DVI-2|DVI-3|VGA-0|VGA-1|VGA-2|VGA-3|Config";
-#endif
-}
-
-#ifdef HAVE_XRANDR
 static void x11_display_server_set_screen_orientation(enum rotation rotation)
 {
    int i, j;
@@ -539,6 +424,117 @@ static enum rotation x11_display_server_get_screen_orientation(void)
    return rotation;
 }
 #endif
+
+static void* x11_display_server_init(void)
+{
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)calloc(1, sizeof(*dispserv));
+
+   if (!dispserv)
+      return NULL;
+
+   return dispserv;
+}
+
+static void x11_display_server_destroy(void *data)
+{
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+
+#ifdef HAVE_XRANDR
+   if (crt_en)
+   {
+      snprintf(xrandr, sizeof(xrandr),
+            "xrandr --newmode 700x480_59.94 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync");
+      system(xrandr);
+      snprintf(xrandr, sizeof(xrandr),
+            "xrandr --addmode \"%s\" 700x480_59.94",
+            orig_output);
+      system(xrandr);
+      snprintf(xrandr, sizeof(xrandr),
+            "xrandr --output \"%s\" --mode 700x480_59.94",
+            orig_output);
+      system(xrandr);
+      snprintf(xrandr, sizeof(xrandr),
+            "xrandr --delmode \"%s\" \"%s\"",
+            orig_output, old_mode);
+      system(xrandr);
+      snprintf(xrandr, sizeof(xrandr),
+            "xrandr --rmmode \"%s\"",
+            old_mode);
+      system(xrandr);
+   }
+#endif
+
+   if (dispserv)
+      free(dispserv);
+}
+
+static bool x11_display_server_set_window_opacity(void *data, unsigned opacity)
+{
+   dispserv_x11_t *serv = (dispserv_x11_t*)data;
+   Atom net_wm_opacity  = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
+   Atom cardinal        = XInternAtom(g_x11_dpy, "CARDINAL", False);
+
+   serv->opacity        = opacity;
+
+   opacity              = opacity * ((unsigned)-1 / 100.0);
+
+   if (opacity == (unsigned)-1)
+      XDeleteProperty(g_x11_dpy, g_x11_win, net_wm_opacity);
+   else
+      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_opacity, cardinal,
+            32, PropModeReplace, (const unsigned char*)&opacity, 1);
+
+   return true;
+}
+
+static bool x11_display_server_set_window_decorations(void *data, bool on)
+{
+   dispserv_x11_t *serv = (dispserv_x11_t*)data;
+
+   if (serv)
+      serv->decorations = on;
+
+   /* menu_setting performs a reinit instead to properly apply
+    * decoration changes */
+
+   return true;
+}
+
+
+const char *x11_display_server_get_output_options(void *data)
+{
+#ifdef HAVE_XRANDR
+   Display *dpy;
+   XRRScreenResources *res;
+   XRROutputInfo *info;
+   Window root;
+   int i;
+   static char s[PATH_MAX_LENGTH];
+
+   if (!(dpy = XOpenDisplay(0)))
+      return NULL;
+
+   root = RootWindow(dpy, DefaultScreen(dpy));
+
+   if (!(res = XRRGetScreenResources(dpy, root)))
+      return NULL;
+
+   for (i = 0; i < res->noutput; i++)
+   {
+      if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
+         return NULL;
+
+      strlcat(s, info->name, sizeof(s));
+      if ((i+1) < res->noutput)
+         strlcat(s, "|", sizeof(s));
+   }
+
+   return s;
+#else
+   /* TODO/FIXME - hardcoded for now; list should be built up dynamically later */
+   return "HDMI-0|HDMI-1|HDMI-2|HDMI-3|DVI-0|DVI-1|DVI-2|DVI-3|VGA-0|VGA-1|VGA-2|VGA-3|Config";
+#endif
+}
 
 static uint32_t x11_display_server_get_flags(void *data)
 {

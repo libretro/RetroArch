@@ -34,7 +34,9 @@
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../managers/core_option_manager.h"
+#ifdef HAVE_CHEATS
 #include "../../managers/cheat_manager.h"
+#endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../performance_counters.h"
@@ -178,6 +180,31 @@ static int action_start_input_desc(
    return 0;
 }
 
+static int action_start_input_desc_kbd(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned user_idx;
+   unsigned btn_idx;
+
+   (void)label;
+
+   if (!settings)
+      return 0;
+
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+
+   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+      return 0;
+
+   /* By default, inputs are unmapped */
+   settings->uints.input_keymapper_ids[user_idx][btn_idx] = RETROK_FIRST;
+
+   return 0;
+}
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_start_shader_action_parameter_generic(
       unsigned type, unsigned offset)
@@ -279,6 +306,7 @@ static int action_start_shader_num_passes(
 }
 #endif
 
+#ifdef HAVE_CHEATS
 static int action_start_cheat_num_passes(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -292,6 +320,7 @@ static int action_start_cheat_num_passes(
 
    return 0;
 }
+#endif
 
 static int action_start_core_setting(
       const char *path, const char *label,
@@ -310,10 +339,7 @@ static int action_start_playlist_association(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings         = config_get_ptr();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
-   playlist_t *playlist         = playlist_get_cached();
+   playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
@@ -321,8 +347,7 @@ static int action_start_playlist_association(
    /* Set default core path + name to DETECT */
    playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
    playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return 0;
 }
@@ -331,18 +356,14 @@ static int action_start_playlist_label_display_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings         = config_get_ptr();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
-   playlist_t *playlist         = playlist_get_cached();
+   playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    /* Set label display mode to the default */
    playlist_set_label_display_mode(playlist, LABEL_DISPLAY_MODE_DEFAULT);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return 0;
 }
@@ -351,18 +372,14 @@ static int action_start_playlist_right_thumbnail_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings         = config_get_ptr();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
-   playlist_t *playlist         = playlist_get_cached();
+   playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    /* Set thumbnail_mode to default value */
    playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT, PLAYLIST_THUMBNAIL_MODE_DEFAULT);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return 0;
 }
@@ -371,18 +388,14 @@ static int action_start_playlist_left_thumbnail_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings         = config_get_ptr();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
-   playlist_t *playlist         = playlist_get_cached();
+   playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    /* Set thumbnail_mode to default value */
    playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT, PLAYLIST_THUMBNAIL_MODE_DEFAULT);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return 0;
 }
@@ -391,18 +404,14 @@ static int action_start_playlist_sort_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings         = config_get_ptr();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
-   bool playlist_compression    = settings->bools.playlist_compression;
-   playlist_t *playlist         = playlist_get_cached();
+   playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    /* Set sort mode to the default */
    playlist_set_sort_mode(playlist, PLAYLIST_SORT_MODE_DEFAULT);
-   playlist_write_file(
-         playlist, playlist_use_old_format, playlist_compression);
+   playlist_write_file(playlist);
 
    return 0;
 }
@@ -440,6 +449,7 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
 
@@ -452,11 +462,20 @@ static int action_start_video_resolution(
 
       msg[0] = '\0';
 
+#if defined(__CELLOS_LV2__) || defined(_WIN32)
+      generic_action_ok_command(CMD_EVENT_REINIT);
+#endif
       video_driver_set_video_mode(width, height, true);
-
-      strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
+#ifdef GEKKO
+      if (width == 0 || height == 0)
+         strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
+      else
+#endif
+         snprintf(msg, sizeof(msg),
+               "Resetting to: %dx%d", width, height);
       runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+#endif
 
    return 0;
 }
@@ -611,7 +630,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
 #endif
             break;
          case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
+#ifdef HAVE_CHEATS
             BIND_ACTION_START(cbs, action_start_cheat_num_passes);
+#endif
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_START(cbs, action_start_video_resolution);
@@ -678,6 +699,11 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_START(cbs, action_start_input_desc);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_START(cbs, action_start_input_desc_kbd);
    }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_PERF_COUNTERS_END)

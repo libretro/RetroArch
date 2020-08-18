@@ -28,12 +28,14 @@
 fifo_buffer_t *fifo_new(size_t size)
 {
    uint8_t    *buffer = NULL;
-   fifo_buffer_t *buf = (fifo_buffer_t*)calloc(1, sizeof(*buf));
+   fifo_buffer_t *buf = (fifo_buffer_t*)malloc(sizeof(*buf));
 
    if (!buf)
       return NULL;
 
-   buffer = (uint8_t*)calloc(1, size + 1);
+   buf->first         = 0;
+   buf->end           = 0;
+   buffer             = (uint8_t*)calloc(1, size + 1);
 
    if (!buffer)
    {
@@ -41,8 +43,8 @@ fifo_buffer_t *fifo_new(size_t size)
       return NULL;
    }
 
-   buf->buffer = buffer;
-   buf->size   = size + 1;
+   buf->buffer        = buffer;
+   buf->size          = size + 1;
 
    return buf;
 }

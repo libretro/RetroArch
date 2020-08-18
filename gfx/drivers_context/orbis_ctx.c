@@ -22,35 +22,42 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_EGL
+#include "../common/egl_common.h"
+#endif
+
 #include "../common/orbis_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 
+/* TODO/FIXME - static globals */
 static enum gfx_ctx_api ctx_orbis_api = GFX_CTX_OPENGL_API;
 
+/* TODO/FIXME - global reference */
 extern bool platform_orbis_has_focus;
 
 void orbis_ctx_destroy(void *data)
 {
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
 
-    if (ctx_orbis)
-    {
+   if (ctx_orbis)
+   {
 #ifdef HAVE_EGL
-        egl_destroy(&ctx_orbis->egl);
+      egl_destroy(&ctx_orbis->egl);
 #endif
-        ctx_orbis->resize = false;
-        free(ctx_orbis);
-    }
+      ctx_orbis->resize = false;
+      free(ctx_orbis);
+   }
 }
 
 static void orbis_ctx_get_video_size(void *data,
-                                      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height)
 {
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
+   orbis_ctx_data_t 
+      *ctx_orbis = (orbis_ctx_data_t *)data;
 
-    *width = ATTR_ORBISGL_WIDTH;
-    *height = ATTR_ORBISGL_HEIGHT;
+   *width        = ATTR_ORBISGL_WIDTH;
+   *height       = ATTR_ORBISGL_HEIGHT;
 }
 
 static void *orbis_ctx_init(void *video_driver)
@@ -73,7 +80,8 @@ static void *orbis_ctx_init(void *video_driver)
          EGL_NONE};
 #endif
 
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)calloc(1, sizeof(*ctx_orbis));
+    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)
+       calloc(1, sizeof(*ctx_orbis));
 
     if (!ctx_orbis)
         return NULL;
@@ -81,20 +89,25 @@ static void *orbis_ctx_init(void *video_driver)
 #ifdef HAVE_EGL
 
    memset(&ctx_orbis->pgl_config, 0, sizeof(ctx_orbis->pgl_config));
+
    {
-      ctx_orbis->pgl_config.size=sizeof(ctx_orbis->pgl_config);
-      ctx_orbis->pgl_config.flags=SCE_PGL_FLAGS_USE_COMPOSITE_EXT | SCE_PGL_FLAGS_USE_FLEXIBLE_MEMORY | 0x60;
-      ctx_orbis->pgl_config.processOrder=1;
-      ctx_orbis->pgl_config.systemSharedMemorySize=0x200000;
-      ctx_orbis->pgl_config.videoSharedMemorySize=0x2400000;
-      ctx_orbis->pgl_config.maxMappedFlexibleMemory=0xAA00000;
-      ctx_orbis->pgl_config.drawCommandBufferSize=0xC0000;
-      ctx_orbis->pgl_config.lcueResourceBufferSize=0x10000;
-      ctx_orbis->pgl_config.dbgPosCmd_0x40=ATTR_ORBISGL_WIDTH;
-      ctx_orbis->pgl_config.dbgPosCmd_0x44=ATTR_ORBISGL_HEIGHT;
-      ctx_orbis->pgl_config.dbgPosCmd_0x48=0;
-      ctx_orbis->pgl_config.dbgPosCmd_0x4C=0;
-      ctx_orbis->pgl_config.unk_0x5C=2;
+      ctx_orbis->pgl_config.size                    = 
+         sizeof(ctx_orbis->pgl_config);
+      ctx_orbis->pgl_config.flags                   = 
+           SCE_PGL_FLAGS_USE_COMPOSITE_EXT 
+         | SCE_PGL_FLAGS_USE_FLEXIBLE_MEMORY 
+         | 0x60;
+      ctx_orbis->pgl_config.processOrder            = 1;
+      ctx_orbis->pgl_config.systemSharedMemorySize  = 0x200000;
+      ctx_orbis->pgl_config.videoSharedMemorySize   = 0x2400000;
+      ctx_orbis->pgl_config.maxMappedFlexibleMemory = 0xAA00000;
+      ctx_orbis->pgl_config.drawCommandBufferSize   = 0xC0000;
+      ctx_orbis->pgl_config.lcueResourceBufferSize  = 0x10000;
+      ctx_orbis->pgl_config.dbgPosCmd_0x40          = ATTR_ORBISGL_WIDTH;
+      ctx_orbis->pgl_config.dbgPosCmd_0x44          = ATTR_ORBISGL_HEIGHT;
+      ctx_orbis->pgl_config.dbgPosCmd_0x48          = 0;
+      ctx_orbis->pgl_config.dbgPosCmd_0x4C          = 0;
+      ctx_orbis->pgl_config.unk_0x5C                = 2;
    }
     ret = scePigletSetConfigurationVSH(&ctx_orbis->pgl_config);
     if (!ret)
@@ -128,7 +141,7 @@ static void orbis_ctx_check_window(void *data, bool *quit,
 
     if (new_width != *width || new_height != *height)
     {
-        *width = new_width;
+        *width  = new_width;
         *height = new_height;
         *resize = true;
     }
@@ -141,17 +154,18 @@ static bool orbis_ctx_set_video_mode(void *data,
       bool fullscreen)
 {
     /* Create an EGL rendering context */
-    static const EGLint contextAttributeList[] =
+    static const EGLint 
+       contextAttributeList[]       =
         {
             EGL_CONTEXT_CLIENT_VERSION, 2,
             EGL_NONE};
 
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
+    orbis_ctx_data_t *ctx_orbis     = (orbis_ctx_data_t *)data;
 
-    ctx_orbis->width = ATTR_ORBISGL_WIDTH;
-    ctx_orbis->height = ATTR_ORBISGL_HEIGHT;
+    ctx_orbis->width                = ATTR_ORBISGL_WIDTH;
+    ctx_orbis->height               = ATTR_ORBISGL_HEIGHT;
 
-    ctx_orbis->native_window.width = ctx_orbis->width;
+    ctx_orbis->native_window.width  = ctx_orbis->width;
     ctx_orbis->native_window.height = ctx_orbis->height;
 
     ctx_orbis->refresh_rate = 60;
@@ -193,7 +207,6 @@ static enum gfx_ctx_api orbis_ctx_get_api(void *data)
 static bool orbis_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-    (void)data;
     ctx_orbis_api = api;
 
 #ifdef HAVE_EGL
@@ -205,51 +218,33 @@ static bool orbis_ctx_bind_api(void *data,
     return false;
 }
 
-static bool orbis_ctx_has_focus(void *data)
-{
-    (void)data;
-    return true;
-}
+static bool orbis_ctx_has_focus(void *data) { return true; }
 
-static bool orbis_ctx_suppress_screensaver(void *data, bool enable)
-{
-    (void)data;
-    (void)enable;
-    return false;
-}
+static bool orbis_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void orbis_ctx_set_swap_interval(void *data,
-                                         int swap_interval)
+      int swap_interval)
 {
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
-
 #ifdef HAVE_EGL
-    egl_set_swap_interval(&ctx_orbis->egl, 0);
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
+   egl_set_swap_interval(&ctx_orbis->egl, 0);
 #endif
 }
 
 static void orbis_ctx_swap_buffers(void *data)
 {
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
-
 #ifdef HAVE_EGL
-    egl_swap_buffers(&ctx_orbis->egl);
-#endif
-}
-
-static gfx_ctx_proc_t orbis_ctx_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-    return egl_get_proc_address(symbol);
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
+   egl_swap_buffers(&ctx_orbis->egl);
 #endif
 }
 
 static void orbis_ctx_bind_hw_render(void *data, bool enable)
 {
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
 
 #ifdef HAVE_EGL
-    egl_bind_hw_render(&ctx_orbis->egl, enable);
+   egl_bind_hw_render(&ctx_orbis->egl, enable);
 #endif
 }
 
@@ -271,16 +266,13 @@ static uint32_t orbis_ctx_get_flags(void *data)
    return flags;
 }
 
-static void orbis_ctx_set_flags(void *data, uint32_t flags)
-{
-    (void)data;
-}
+static void orbis_ctx_set_flags(void *data, uint32_t flags) { }
 
 static float orbis_ctx_get_refresh_rate(void *data)
 {
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
 
-    return ctx_orbis->refresh_rate;
+   return ctx_orbis->refresh_rate;
 }
 
 const gfx_ctx_driver_t orbis_ctx = {
@@ -305,11 +297,15 @@ const gfx_ctx_driver_t orbis_ctx = {
     false, /* has_windowed */
     orbis_ctx_swap_buffers,
     orbis_ctx_input_driver,
-    orbis_ctx_get_proc_address,
+#ifdef HAVE_EGL
+    egl_get_proc_address,
+#else
+    NULL,
+#endif
     NULL,
     NULL,
     NULL,
-    "orbis",
+    "egl_orbis",
     orbis_ctx_get_flags,
     orbis_ctx_set_flags,
     orbis_ctx_bind_hw_render,

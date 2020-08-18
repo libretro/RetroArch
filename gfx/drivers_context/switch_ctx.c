@@ -27,8 +27,7 @@
 #include "../common/switch_common.h"
 #include "../../frontend/frontend_driver.h"
 
-static enum gfx_ctx_api ctx_nx_api = GFX_CTX_OPENGL_API;
-
+/* TODO/FIXME - global referenced */
 extern bool platform_switch_has_focus;
 
 void switch_ctx_destroy(void *data)
@@ -197,15 +196,12 @@ static void switch_ctx_input_driver(void *data,
 
 static enum gfx_ctx_api switch_ctx_get_api(void *data)
 {
-    return ctx_nx_api;
+    return GFX_CTX_OPENGL_API;
 }
 
 static bool switch_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-    (void)data;
-    ctx_nx_api = api;
-
     if (api == GFX_CTX_OPENGL_API)
         if (egl_bind_api(EGL_OPENGL_API))
             return true;
@@ -213,18 +209,8 @@ static bool switch_ctx_bind_api(void *data,
     return false;
 }
 
-static bool switch_ctx_has_focus(void *data)
-{
-    (void)data;
-    return platform_switch_has_focus;
-}
-
-static bool switch_ctx_suppress_screensaver(void *data, bool enable)
-{
-    (void)data;
-    (void)enable;
-    return false;
-}
+static bool switch_ctx_has_focus(void *data) { return platform_switch_has_focus; }
+static bool switch_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void switch_ctx_set_swap_interval(void *data,
                                          int swap_interval)
@@ -242,13 +228,6 @@ static void switch_ctx_swap_buffers(void *data)
 
 #ifdef HAVE_EGL
     egl_swap_buffers(&ctx_nx->egl);
-#endif
-}
-
-static gfx_ctx_proc_t switch_ctx_get_proc_address(const char *symbol)
-{
-#ifdef HAVE_EGL
-    return egl_get_proc_address(symbol);
 #endif
 }
 
@@ -281,10 +260,7 @@ static uint32_t switch_ctx_get_flags(void *data)
     return flags;
 }
 
-static void switch_ctx_set_flags(void *data, uint32_t flags)
-{
-    (void)data;
-}
+static void switch_ctx_set_flags(void *data, uint32_t flags) { }
 
 static float switch_ctx_get_refresh_rate(void *data)
 {
@@ -365,13 +341,18 @@ const gfx_ctx_driver_t switch_ctx = {
     false, /* has_windowed */
     switch_ctx_swap_buffers,
     switch_ctx_input_driver,
-    switch_ctx_get_proc_address,
+#ifdef HAVE_EGL
+    egl_get_proc_address,
+#else
+    NULL,
+#endif
     NULL,
     NULL,
     NULL,
-    "switch",
+    "egl_switch",
     switch_ctx_get_flags,
     switch_ctx_set_flags,
     switch_ctx_bind_hw_render,
     NULL,
-    NULL};
+    NULL
+};

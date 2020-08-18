@@ -217,9 +217,9 @@ int getaddrinfo_retro(const char *node, const char *service,
 
    if (!node && (hints->ai_flags & AI_PASSIVE))
       in_addr->sin_addr.s_addr = INADDR_ANY;
-   else if (node && isdigit(*node))
+   else if (node && isdigit((unsigned char)*node))
       in_addr->sin_addr.s_addr = inet_addr(node);
-   else if (node && !isdigit(*node))
+   else if (node && !isdigit((unsigned char)*node))
    {
       struct hostent *host = (struct hostent*)gethostbyname(node);
 
