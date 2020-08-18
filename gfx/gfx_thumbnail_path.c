@@ -238,11 +238,11 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
    
    /* When system is updated, must regenerate right/left
     * thumbnail paths */
-   path_data->right_path[0] = '\0';
-   path_data->left_path[0] = '\0';
+   path_data->right_path[0]       = '\0';
+   path_data->left_path[0]        = '\0';
    
    /* 'Reset' path_data system string */
-   path_data->system[0] = '\0';
+   path_data->system[0]           = '\0';
    
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -353,10 +353,7 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
    strlcpy(path_data->content_path, label, sizeof(path_data->content_path));
    
    /* Redundant error check... */
-   if (string_is_empty(path_data->content_img))
-      return false;
-   
-   return true;
+   return !string_is_empty(path_data->content_img);
 }
 
 /* Sets current thumbnail content to the specified image.
@@ -386,10 +383,7 @@ bool gfx_thumbnail_set_content_image(
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    
-   if (string_is_empty(img_dir))
-      return false;
-   
-   if (string_is_empty(img_name))
+   if (string_is_empty(img_dir) || string_is_empty(img_name))
       return false;
    
    if (path_is_media_type(img_name) != RARCH_CONTENT_IMAGE)
@@ -424,10 +418,7 @@ bool gfx_thumbnail_set_content_image(
          "_images_", sizeof(path_data->content_db_name));
    
    /* Redundant error check */
-   if (string_is_empty(path_data->content_path))
-      return false;
-   
-   return true;
+   return !string_is_empty(path_data->content_path);
 }
 
 /* Sets current thumbnail content to the specified playlist entry.
