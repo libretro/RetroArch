@@ -1467,35 +1467,34 @@ static int file_load_with_detect_core_wrapper(
       const char *path, const char *label,
       unsigned type, bool is_carchive)
 {
-   menu_content_ctx_defer_info_t def_info;
    int ret                             = 0;
-   char *new_core_path                 = NULL;
-   const char *menu_path               = NULL;
-   const char *menu_label              = NULL;
-   core_info_list_t *list              = NULL;
    menu_handle_t *menu                 = menu_driver_get_ptr();
 
    if (!menu)
       return menu_cbs_exit();
 
    {
-      char *menu_path_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      new_core_path       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      menu_content_ctx_defer_info_t def_info;
+      char menu_path_new[PATH_MAX_LENGTH];
+      char new_core_path[PATH_MAX_LENGTH];
+      const char *menu_path                  = NULL;
+      const char *menu_label                 = NULL;
+      core_info_list_t *list                 = NULL;
       new_core_path[0]    = menu_path_new[0] = '\0';
 
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
       if (!string_is_empty(menu_path))
-         strlcpy(menu_path_new, menu_path, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
       if (string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
-         fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
-               PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname_join(menu_path_new,
+               menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
       else if (string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
-         fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
-               PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname_join(menu_path_new,
+               menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
 
       core_info_get_list(&list);
 
@@ -1507,7 +1506,7 @@ static int file_load_with_detect_core_wrapper(
       def_info.len        = sizeof(menu->deferred_path);
 
       if (menu_content_find_first_core(&def_info, false, new_core_path,
-               PATH_MAX_LENGTH * sizeof(char)))
+               sizeof(new_core_path)))
          ret = -1;
 
       if (     !is_carchive && !string_is_empty(path)
@@ -1516,14 +1515,9 @@ static int file_load_with_detect_core_wrapper(
                menu_path_new, path,
                sizeof(menu->detect_content_path));
 
-      free(menu_path_new);
-
       if (enum_label_idx == MENU_ENUM_LABEL_COLLECTION)
-      {
-         free(new_core_path);
          return generic_action_ok_displaylist_push(path, NULL,
                NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
-      }
 
       switch (ret)
       {
@@ -1541,10 +1535,8 @@ static int file_load_with_detect_core_wrapper(
                         &content_info,
                         CORE_TYPE_PLAIN,
                         NULL, NULL))
-               {
-                  free(new_core_path);
                   return -1;
-               }
+
                content_add_to_playlist(def_info.s);
 
                ret = 0;
@@ -1559,7 +1551,6 @@ static int file_load_with_detect_core_wrapper(
       }
    }
 
-   free(new_core_path);
    return ret;
 }
 
@@ -2562,7 +2553,7 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
    struct playlist_entry entry = {0};
    menu_handle_t *menu         = menu_driver_get_ptr();
 
-   combined_path[0] = '\0';
+   combined_path[0]            = '\0';
 
    if (!menu)
       return menu_cbs_exit();
@@ -2593,7 +2584,7 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
    struct playlist_entry entry = {0};
    menu_handle_t *menu         = menu_driver_get_ptr();
 
-   combined_path[0] = '\0';
+   combined_path[0]            = '\0';
 
    if (!menu)
       return menu_cbs_exit();
@@ -3214,12 +3205,12 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char content_dir[PATH_MAX_LENGTH];
    const char *flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST);
    unsigned flush_type    = 0;
    const char *menu_path  = NULL;
-   char content_dir[PATH_MAX_LENGTH];
 
-   content_dir[0] = '\0';
+   content_dir[0]         = '\0';
 
    /* 'Reset' file browser */
    filebrowser_clear_type();
@@ -6054,12 +6045,12 @@ static int action_ok_load_archive(const char *path,
 static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char new_core_path[PATH_MAX_LENGTH];
    menu_content_ctx_defer_info_t def_info;
    int ret                             = 0;
    core_info_list_t *list              = NULL;
    const char *menu_path               = NULL;
    const char *content_path            = NULL;
-   char *new_core_path                 = NULL;
    menu_handle_t *menu                 = menu_driver_get_ptr();
 
    if (!menu)
@@ -6077,12 +6068,10 @@ static int action_ok_load_archive_detect_core(const char *path,
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
-   new_core_path       = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
    new_core_path[0]    = '\0';
 
    if (menu_content_find_first_core(&def_info, false,
-            new_core_path, PATH_MAX_LENGTH * sizeof(char)))
+            new_core_path, sizeof(new_core_path)))
       ret = -1;
 
    fill_pathname_join(menu->detect_content_path, menu_path, content_path,
@@ -6119,7 +6108,6 @@ static int action_ok_load_archive_detect_core(const char *path,
          break;
    }
 
-   free(new_core_path);
    return ret;
 }
 

@@ -2498,13 +2498,16 @@ void config_set_defaults(void *data)
             g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]);
 #if TARGET_OS_IPHONE
       {
-         char *config_file_path        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-         size_t config_file_path_size  = PATH_MAX_LENGTH * sizeof(char);
+         char config_file_path[PATH_MAX_LENGTH];
 
-         fill_pathname_join(config_file_path, settings->paths.directory_menu_config, file_path_str(FILE_PATH_MAIN_CONFIG), config_file_path_size);
+         config_file_path[0]           = '\0';
+
+         fill_pathname_join(config_file_path,
+               settings->paths.directory_menu_config,
+               file_path_str(FILE_PATH_MAIN_CONFIG),
+               sizeof(config_file_path));
          path_set(RARCH_PATH_CONFIG,
                config_file_path);
-         free(config_file_path);
       }
 #endif
    }
@@ -2548,15 +2551,14 @@ void config_set_defaults(void *data)
 
    if (!string_is_empty(g_defaults.path_config))
    {
-      char *temp_str = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char temp_str[PATH_MAX_LENGTH];
 
       temp_str[0] = '\0';
 
       fill_pathname_expand_special(temp_str,
             g_defaults.path_config,
-            PATH_MAX_LENGTH * sizeof(char));
+            sizeof(temp_str));
       path_set(RARCH_PATH_CONFIG, temp_str);
-      free(temp_str);
    }
 
    configuration_set_string(settings,
@@ -2646,37 +2648,33 @@ static bool check_menu_driver_compatibility(settings_t *settings)
  **/
 static config_file_t *open_default_config_file(void)
 {
+   char application_data[PATH_MAX_LENGTH];
+   char conf_path[PATH_MAX_LENGTH];
+   char app_path[PATH_MAX_LENGTH];
    bool has_application_data              = false;
-   size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
-   char *application_data                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *conf_path                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *app_path                         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    config_file_t *conf                    = NULL;
-
-   (void)has_application_data;
-   (void)path_size;
 
    application_data[0] = conf_path[0] = app_path[0] = '\0';
 
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* On UWP, the app install directory is not writable so use the writable LocalState dir instead */
-   fill_pathname_home_dir(app_path, path_size);
+   fill_pathname_home_dir(app_path, sizeof(app_path));
 #else
-   fill_pathname_application_dir(app_path, path_size);
+   fill_pathname_application_dir(app_path, sizeof(app_path));
 #endif
    fill_pathname_resolve_relative(conf_path, app_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
 
    conf = config_file_new_from_path_to_string(conf_path);
 
    if (!conf)
    {
       if (fill_pathname_application_data(application_data,
-            path_size))
+            sizeof(application_data)))
       {
          fill_pathname_join(conf_path, application_data,
-               file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
+               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
          conf = config_file_new_from_path_to_string(conf_path);
       }
    }
@@ -2693,7 +2691,7 @@ static config_file_t *open_default_config_file(void)
          /* Since this is a clean config file, we can
           * safely use config_save_on_exit. */
          fill_pathname_resolve_relative(conf_path, app_path,
-               file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
+               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
          config_set_bool(conf, "config_save_on_exit", true);
          saved = config_file_write(conf, conf_path, true);
       }
@@ -2710,16 +2708,16 @@ static config_file_t *open_default_config_file(void)
    }
 #elif defined(OSX)
    if (!fill_pathname_application_data(application_data,
-            path_size))
+            sizeof(application_data)))
       goto error;
 
    /* Group config file with menu configs, remaps, etc: */
-   strlcat(application_data, "/config", path_size);
+   strlcat(application_data, "/config", sizeof(application_data));
 
    path_mkdir(application_data);
 
    fill_pathname_join(conf_path, application_data,
-         file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
    conf = config_file_new_from_path_to_string(conf_path);
 
    if (!conf)
@@ -2746,12 +2744,12 @@ static config_file_t *open_default_config_file(void)
 #elif !defined(RARCH_CONSOLE)
    has_application_data =
       fill_pathname_application_data(application_data,
-            path_size);
+            sizeof(application_data));
 
    if (has_application_data)
    {
       fill_pathname_join(conf_path, application_data,
-            file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
+            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
@@ -2760,7 +2758,7 @@ static config_file_t *open_default_config_file(void)
    if (!conf && getenv("HOME"))
    {
       fill_pathname_join(conf_path, getenv("HOME"),
-            ".retroarch.cfg", path_size);
+            ".retroarch.cfg", sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
@@ -2768,25 +2766,21 @@ static config_file_t *open_default_config_file(void)
    if (!conf && has_application_data)
    {
       bool dir_created = false;
-      char *basedir    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char basedir[PATH_MAX_LENGTH];
 
       basedir[0]       = '\0';
 
       /* Try to create a new config file. */
 
-      strlcpy(conf_path, application_data, path_size);
-
-      fill_pathname_basedir(basedir, conf_path, path_size);
-
-      fill_pathname_join(conf_path, conf_path,
-            file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
+      fill_pathname_basedir(basedir, application_data, sizeof(basedir));
+      fill_pathname_join(conf_path, application_data,
+            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
 
       dir_created = path_mkdir(basedir);
-      free(basedir);
 
       if (dir_created)
       {
-         char *skeleton_conf = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         char skeleton_conf[PATH_MAX_LENGTH];
          bool saved          = false;
 
          skeleton_conf[0] = '\0';
@@ -2794,15 +2788,13 @@ static config_file_t *open_default_config_file(void)
          /* Build a retroarch.cfg path from the
           * global config directory (/etc). */
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
-            file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
+            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
 
          conf = config_file_new_from_path_to_string(skeleton_conf);
          if (conf)
             RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
          else
             conf = config_file_new_alloc();
-
-         free(skeleton_conf);
 
          if (conf)
          {
@@ -2815,35 +2807,27 @@ static config_file_t *open_default_config_file(void)
          if (!saved)
          {
             /* WARN here to make sure user has a good chance of seeing it. */
-            RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
+            RARCH_ERR("Failed to create new config file in: \"%s\".\n",
+                  conf_path);
             goto error;
          }
 
-         RARCH_WARN("Config: Created new config file in: \"%s\".\n", conf_path);
+         RARCH_WARN("Config: Created new config file in: \"%s\".\n",
+               conf_path);
       }
    }
 #endif
-
-   (void)application_data;
-   (void)conf_path;
-   (void)app_path;
 
    if (!conf)
       goto error;
 
    path_set(RARCH_PATH_CONFIG, conf_path);
-   free(application_data);
-   free(conf_path);
-   free(app_path);
 
    return conf;
 
 error:
    if (conf)
       config_file_free(conf);
-   free(application_data);
-   free(conf_path);
-   free(app_path);
    return NULL;
 }
 
@@ -2892,8 +2876,7 @@ static bool config_load_file(global_t *global,
       const char *path, settings_t *settings)
 {
    unsigned i;
-   size_t path_size                                = PATH_MAX_LENGTH * sizeof(char);
-   char *tmp_str                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char tmp_str[PATH_MAX_LENGTH];
    bool ret                                        = false;
    unsigned tmp_uint                               = 0;
    bool tmp_bool                                   = false;
@@ -2931,13 +2914,13 @@ static bool config_load_file(global_t *global,
    {
       /* Don't destroy append_config_path, store in temporary
        * variable. */
-      char *tmp_append_path  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char tmp_append_path[PATH_MAX_LENGTH];
       const char *extra_path = NULL;
 
       tmp_append_path[0] = '\0';
 
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_APPEND),
-            path_size);
+            sizeof(tmp_append_path));
       extra_path = strtok_r(tmp_append_path, "|", &save);
 
       while (extra_path)
@@ -2950,8 +2933,6 @@ static bool config_load_file(global_t *global,
             RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
          extra_path = strtok_r(NULL, "|", &save);
       }
-
-      free(tmp_append_path);
    }
 
 #if 0
@@ -3099,16 +3080,16 @@ static bool config_load_file(global_t *global,
    {
       if (!path_settings[i].handle)
          continue;
-      if (config_get_path(conf, path_settings[i].ident, tmp_str, path_size))
+      if (config_get_path(conf, path_settings[i].ident, tmp_str, sizeof(tmp_str)))
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-   if (config_get_path(conf, "libretro_directory", tmp_str, path_size))
+   if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
       configuration_set_string(settings,
             settings->paths.directory_libretro, tmp_str);
 
 #ifndef HAVE_DYNAMIC
-   if (config_get_path(conf, "libretro_path", tmp_str, path_size))
+   if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
       path_set(RARCH_PATH_CORE, tmp_str);
 #endif
 
@@ -3318,7 +3299,7 @@ static bool config_load_file(global_t *global,
 #endif
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
-         config_get_path(conf, "savefile_directory", tmp_str, path_size))
+         config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
          dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
@@ -3342,7 +3323,7 @@ static bool config_load_file(global_t *global,
    }
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
-         config_get_path(conf, "savestate_directory", tmp_str, path_size))
+         config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
          dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
@@ -3417,7 +3398,6 @@ end:
       free(path_settings);
    if (size_settings)
       free(size_settings);
-   free(tmp_str);
    return ret;
 }
 
@@ -3442,12 +3422,12 @@ end:
  */
 bool config_load_override(void *data)
 {
-   size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
-   char *buf                              = NULL;
-   char *core_path                        = NULL;
-   char *game_path                        = NULL;
-   char *content_path                     = NULL;
-   char *config_directory                 = NULL;
+   char buf[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
+   char game_path[PATH_MAX_LENGTH];
+   char content_path[PATH_MAX_LENGTH];
+   char content_dir_name[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
    bool should_append                     = false;
    rarch_system_info_t *system            = (rarch_system_info_t*)data;
    const char *core_name                  = system ?
@@ -3455,7 +3435,6 @@ bool config_load_override(void *data)
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = path_basename(rarch_path_basename);
    settings_t *settings                   = config_get_ptr();
-   char content_dir_name[PATH_MAX_LENGTH];
 
    if (!string_is_empty(rarch_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
@@ -3464,41 +3443,30 @@ bool config_load_override(void *data)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   game_path                              = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   core_path                              = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   content_path = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   buf                                    = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   config_directory                       = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   config_directory[0] = core_path[0] = game_path[0] = '\0';
+   config_directory[0] = core_path[0] = game_path[0] = buf[0] = '\0';
 
-   fill_pathname_application_special(config_directory, path_size,
+   fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   /* Concatenate strings into full paths for core_path, game_path, content_path */
+   /* Concatenate strings into full paths for core_path, game_path, 
+    * content_path */
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
          ".cfg",
-         path_size);
+         sizeof(game_path));
 
    fill_pathname_join_special_ext(content_path,
       config_directory, core_name,
       content_dir_name,
       ".cfg",
-      path_size);
+      sizeof(content_path));
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
          core_name,
          ".cfg",
-         path_size);
-
-   free(config_directory);
+         sizeof(core_path));
 
    /* per-core overrides */
    /* Create a new config file from core_path */
@@ -3519,7 +3487,7 @@ bool config_load_override(void *data)
    /* Create a new config file from content_path */
    if (config_file_exists(content_path))
    {
-      char *temp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char temp_path[PATH_MAX_LENGTH];
 
       temp_path[0]    = '\0';
 
@@ -3529,16 +3497,14 @@ bool config_load_override(void *data)
       if (should_append)
       {
          RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
-         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), path_size);
-         strlcat(temp_path, "|", path_size);
-         strlcat(temp_path, content_path, path_size);
+         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
+         strlcat(temp_path, "|", sizeof(temp_path));
+         strlcat(temp_path, content_path, sizeof(temp_path));
       }
       else
-         strlcpy(temp_path, content_path, path_size);
+         strlcpy(temp_path, content_path, sizeof(temp_path));
 
       path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
-
-      free(temp_path);
 
       should_append = true;
    }
@@ -3550,7 +3516,7 @@ bool config_load_override(void *data)
    /* Create a new config file from game_path */
    if (config_file_exists(game_path))
    {
-      char *temp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char temp_path[PATH_MAX_LENGTH];
 
       temp_path[0]    = '\0';
 
@@ -3560,16 +3526,14 @@ bool config_load_override(void *data)
       if (should_append)
       {
          RARCH_LOG("[Overrides]: game-specific overrides stacking on top of previous overrides\n");
-         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), path_size);
-         strlcat(temp_path, "|", path_size);
-         strlcat(temp_path, game_path, path_size);
+         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
+         strlcat(temp_path, "|", sizeof(temp_path));
+         strlcat(temp_path, game_path, sizeof(temp_path));
       }
       else
-         strlcpy(temp_path, game_path, path_size);
+         strlcpy(temp_path, game_path, sizeof(temp_path));
 
       path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
-
-      free(temp_path);
 
       should_append = true;
    }
@@ -3578,15 +3542,13 @@ bool config_load_override(void *data)
             game_path);
 
    if (!should_append)
-      goto error;
+      return false;
 
    /* Re-load the configuration with any overrides
     * that might have been found */
-   buf[0] = '\0';
-
    /* Store the libretro_path we're using since it will be
     * overwritten by the override when reloading. */
-   strlcpy(buf, path_get(RARCH_PATH_CORE), path_size);
+   strlcpy(buf, path_get(RARCH_PATH_CORE), sizeof(buf));
 
    /* Toggle has_save_path to false so it resets */
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -3594,7 +3556,7 @@ bool config_load_override(void *data)
 
    if (!config_load_file(global_get_ptr(),
             path_get(RARCH_PATH_CONFIG), settings))
-      goto error;
+      return false;
 
    /* Restore the libretro_path we're using
     * since it will be overwritten by the override when reloading. */
@@ -3610,18 +3572,7 @@ bool config_load_override(void *data)
 
    path_clear(RARCH_PATH_CONFIG_APPEND);
 
-   free(buf);
-   free(core_path);
-   free(content_path);
-   free(game_path);
    return true;
-
-error:
-   free(buf);
-   free(core_path);
-   free(content_path);
-   free(game_path);
-   return false;
 }
 
 /**
@@ -3669,12 +3620,16 @@ bool config_unload_override(void)
 bool config_load_remap(const char *directory_input_remapping,
       void *data)
 {
-   size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
+   char content_dir_name[PATH_MAX_LENGTH];
+   /* path to the directory containing retroarch.cfg (prefix)    */
+   char remap_directory[PATH_MAX_LENGTH];
+   /* final path for core-specific configuration (prefix+suffix) */
+   char core_path[PATH_MAX_LENGTH];
+   /* final path for game-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH];
+   /* final path for content-dir-specific configuration (prefix+suffix) */
+   char content_path[PATH_MAX_LENGTH];
    config_file_t *new_conf                = NULL;
-   char *remap_directory                  = NULL;
-   char *core_path                        = NULL;
-   char *game_path                        = NULL;
-   char *content_path                     = NULL;
    rarch_system_info_t *system            = (rarch_system_info_t*)data;
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
@@ -3682,7 +3637,6 @@ bool config_load_remap(const char *directory_input_remapping,
    enum msg_hash_enums msg_remap_loaded   = MSG_GAME_REMAP_FILE_LOADED;
    settings_t *settings                   = config_get_ptr();
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
-   char content_dir_name[PATH_MAX_LENGTH];
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3696,21 +3650,10 @@ bool config_load_remap(const char *directory_input_remapping,
       fill_pathname_parent_dir_name(content_dir_name,
             rarch_path_basename, sizeof(content_dir_name));
 
-   /* path to the directory containing retroarch.cfg (prefix)    */
-   remap_directory                        = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   /* final path for core-specific configuration (prefix+suffix) */
-   core_path                              = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   /* final path for game-specific configuration (prefix+suffix) */
-   game_path                              = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   /* final path for content-dir-specific configuration (prefix+suffix) */
-   content_path = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
-   strlcpy(remap_directory, directory_input_remapping, path_size);
+   strlcpy(remap_directory,
+         directory_input_remapping, sizeof(remap_directory));
    RARCH_LOG("[Remaps]: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
@@ -3718,19 +3661,19 @@ bool config_load_remap(const char *directory_input_remapping,
          remap_directory, core_name,
          core_name,
          ".rmp",
-         path_size);
+         sizeof(core_path));
 
    fill_pathname_join_special_ext(content_path,
          remap_directory, core_name,
          content_dir_name,
          ".rmp",
-         path_size);
+         sizeof(content_path));
 
    fill_pathname_join_special_ext(game_path,
          remap_directory, core_name,
          game_name,
          ".rmp",
-         path_size);
+         sizeof(game_path));
 
 #ifdef HAVE_CONFIGFILE
    input_remapping_set_defaults(false);
@@ -3775,10 +3718,6 @@ bool config_load_remap(const char *directory_input_remapping,
 
    new_conf = NULL;
 
-   free(content_path);
-   free(remap_directory);
-   free(core_path);
-   free(game_path);
    return false;
 
 success:
@@ -3786,11 +3725,6 @@ success:
       runloop_msg_queue_push(
             msg_hash_to_str(msg_remap_loaded), 1, 100, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   free(content_path);
-   free(remap_directory);
-   free(core_path);
-   free(game_path);
    return true;
 }
 
@@ -3846,7 +3780,8 @@ static void video_driver_save_settings(config_file_t *conf)
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-bool config_save_autoconf_profile(const char *device_name, unsigned user)
+bool config_save_autoconf_profile(const 
+      char *device_name, unsigned user)
 {
    static const char* invalid_filename_chars[] = {
       /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
@@ -3854,8 +3789,9 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
       NULL
    };
    size_t i;
+   char buf[PATH_MAX_LENGTH];
+   char autoconf_file[PATH_MAX_LENGTH];
    config_file_t *conf                  = NULL;
-   size_t path_size                     = PATH_MAX_LENGTH * sizeof(char);
    int32_t pid_user                     = 0;
    int32_t vid_user                     = 0;
    bool ret                             = false;
@@ -3864,16 +3800,9 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
    const char *joypad_driver            = NULL;
    char *sanitised_name                 = NULL;
-   char *buf                            = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *autoconf_file                  = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
 
-   if (!buf || !autoconf_file)
-      goto end;
-
-   buf[0]           = '\0';
-   autoconf_file[0] = '\0';
+   buf[0]                               = '\0';
+   autoconf_file[0]                     = '\0';
 
    if (string_is_empty(device_name))
       goto end;
@@ -3892,18 +3821,16 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
          goto end;
    }
 
-   /* Remove invalid filename characters from
-    * input device name */
    sanitised_name = strdup(device_name);
 
-   if (string_is_empty(sanitised_name))
-      goto end;
-
+   /* Remove invalid filename characters from
+    * input device name */
    for (i = 0; invalid_filename_chars[i]; i++)
    {
       for (;;)
       {
-         char *tmp = strstr(sanitised_name, invalid_filename_chars[i]);
+         char *tmp = strstr(sanitised_name,
+               invalid_filename_chars[i]);
 
          if (tmp)
             *tmp = '_';
@@ -3912,31 +3839,26 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
       }
    }
 
-   /* Generate autconfig file path */
-   fill_pathname_join(buf, autoconf_dir, joypad_driver, path_size);
+   /* Generate autoconfig file path */
+   fill_pathname_join(buf, autoconf_dir, joypad_driver, sizeof(buf));
 
    if (path_is_directory(buf))
    {
-      char *buf_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-      if (!buf_new)
-         goto end;
+      char buf_new[PATH_MAX_LENGTH];
 
       buf_new[0] = '\0';
 
       fill_pathname_join(buf_new, buf,
-            sanitised_name, path_size);
+            sanitised_name, sizeof(buf_new));
       fill_pathname_noext(autoconf_file,
-            buf_new, ".cfg", path_size);
-
-      free(buf_new);
+            buf_new, ".cfg", sizeof(autoconf_file));
    }
    else
    {
       fill_pathname_join(buf, autoconf_dir,
-            sanitised_name, path_size);
+            sanitised_name, sizeof(buf));
       fill_pathname_noext(autoconf_file,
-            buf, ".cfg", path_size);
+            buf, ".cfg", sizeof(autoconf_file));
    }
 
    /* Open config file */
@@ -3981,12 +3903,6 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
 end:
    if (sanitised_name)
       free(sanitised_name);
-
-   if (buf)
-      free(buf);
-
-   if (autoconf_file)
-      free(autoconf_file);
 
    if (conf)
       config_file_free(conf);
@@ -4225,7 +4141,6 @@ bool config_save_file(const char *path)
  **/
 bool config_save_overrides(enum override_type type, void *data)
 {
-   size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
    int tmp_i                                   = 0;
    unsigned i                                  = 0;
    bool ret                                    = false;
@@ -4245,11 +4160,11 @@ bool config_save_overrides(enum override_type type, void *data)
    struct config_array_setting *array_overrides= NULL;
    struct config_path_setting *path_settings   = NULL;
    struct config_path_setting *path_overrides  = NULL;
-   char *config_directory                      = NULL;
-   char *override_directory                    = NULL;
-   char *core_path                             = NULL;
-   char *game_path                             = NULL;
-   char *content_path                          = NULL;
+   char config_directory[PATH_MAX_LENGTH];
+   char override_directory[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
+   char game_path[PATH_MAX_LENGTH];
+   char content_path[PATH_MAX_LENGTH];
    settings_t *overrides                       = config_get_ptr();
    int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
@@ -4270,20 +4185,16 @@ bool config_save_overrides(enum override_type type, void *data)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   settings           = (settings_t*)calloc(1, sizeof(settings_t));
-   config_directory   = (char*)malloc(PATH_MAX_LENGTH);
-   override_directory = (char*)malloc(PATH_MAX_LENGTH);
-   core_path          = (char*)malloc(PATH_MAX_LENGTH);
-   game_path          = (char*)malloc(PATH_MAX_LENGTH);
-   content_path       = (char*)malloc(PATH_MAX_LENGTH);
+   settings            = (settings_t*)calloc(1, sizeof(settings_t));
 
-   config_directory[0] = override_directory[0] = core_path[0] = game_path[0] = '\0';
+   config_directory[0] = override_directory[0] = core_path[0] = 
+          game_path[0] = '\0';
 
-   fill_pathname_application_special(config_directory, path_size,
+   fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    fill_pathname_join(override_directory, config_directory, core_name,
-      path_size);
+      sizeof(override_directory));
 
    if (!path_is_directory(override_directory))
        path_mkdir(override_directory);
@@ -4293,19 +4204,19 @@ bool config_save_overrides(enum override_type type, void *data)
          config_directory, core_name,
          game_name,
          ".cfg",
-         path_size);
+         sizeof(game_path));
 
    fill_pathname_join_special_ext(content_path,
          config_directory, core_name,
          content_dir_name,
          ".cfg",
-         path_size);
+         sizeof(content_path));
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
          core_name,
          ".cfg",
-         path_size);
+         sizeof(core_path));
 
    if (!conf)
       conf = config_file_new_alloc();
@@ -4464,11 +4375,6 @@ bool config_save_overrides(enum override_type type, void *data)
    if (size_overrides)
       free(size_overrides);
    free(settings);
-   free(config_directory);
-   free(override_directory);
-   free(core_path);
-   free(game_path);
-   free(content_path);
 
    return ret;
 }
@@ -4621,9 +4527,8 @@ bool input_remapping_save_file(const char *path)
 {
    bool ret;
    unsigned i, j, k;
-   size_t path_size                  = PATH_MAX_LENGTH * sizeof(char);
-   char *buf                         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *remap_file                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char buf[PATH_MAX_LENGTH];
+   char remap_file[PATH_MAX_LENGTH];
    config_file_t               *conf = NULL;
    unsigned max_users                = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    settings_t              *settings = config_get_ptr();
@@ -4631,18 +4536,13 @@ bool input_remapping_save_file(const char *path)
 
    buf[0] = remap_file[0]            = '\0';
 
-   fill_pathname_join(buf, dir_input_remapping, path, path_size);
-   fill_pathname_noext(remap_file, buf, ".rmp", path_size);
-
-   free(buf);
+   fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
+   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
 
    if (!(conf = config_file_new_from_path_to_string(remap_file)))
    {
       if (!(conf = config_file_new_alloc()))
-      {
-         free(remap_file);
          return false;
-      }
    }
 
    for (i = 0; i < max_users; i++)
@@ -4715,26 +4615,20 @@ bool input_remapping_save_file(const char *path)
    ret = config_file_write(conf, remap_file, true);
    config_file_free(conf);
 
-   free(remap_file);
    return ret;
 }
 
 bool input_remapping_remove_file(const char *path,
       const char *dir_input_remapping)
 {
-   bool ret                = false;
-   size_t path_size        = PATH_MAX_LENGTH * sizeof(char);
-   char *buf               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *remap_file        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char buf[PATH_MAX_LENGTH];
+   char remap_file[PATH_MAX_LENGTH];
    buf[0] = remap_file[0]  = '\0';
 
-   fill_pathname_join(buf, dir_input_remapping, path, path_size);
-   fill_pathname_noext(remap_file, buf, ".rmp", path_size);
+   fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
+   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
 
-   ret = filestream_delete(remap_file) == 0 ? true : false;
-   free(buf);
-   free(remap_file);
-   return ret;
+   return filestream_delete(remap_file) == 0 ? true : false;
 }
 
 void input_remapping_set_defaults(bool deinit)

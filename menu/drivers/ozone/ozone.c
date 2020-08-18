@@ -972,12 +972,12 @@ static void ozone_cache_footer_labels(ozone_handle_t *ozone)
 /* Determines the size of all menu elements */
 static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
 {
+   char s1[PATH_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
    float scale_factor  = 0.0f;
    bool font_inited    = false;
-   char *s1            = NULL;
 
-   font_path[0]        = '\0';
+   font_path[0] = s1[0]= '\0';
 
    if (!ozone)
       return;
@@ -1033,27 +1033,22 @@ static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
    ozone->pointer_active_delta = CURSOR_ACTIVE_DELTA * scale_factor;
 
    /* Initialise fonts */
-   s1    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   s1[0] = '\0';
    switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_application_special(s1,
-               PATH_MAX_LENGTH * sizeof(char),
+         fill_pathname_application_special(s1, sizeof(s1),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
          fill_pathname_join(font_path, s1, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_application_special(s1,
-               PATH_MAX_LENGTH * sizeof(char),
+         fill_pathname_application_special(s1, sizeof(s1),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
          fill_pathname_join(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_application_special(s1,
-               PATH_MAX_LENGTH * sizeof(char),
+         fill_pathname_application_special(s1, sizeof(s1),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
          fill_pathname_join(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
          break;
@@ -1069,29 +1064,24 @@ static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_application_special(s1,
-               PATH_MAX_LENGTH * sizeof(char),
+         fill_pathname_application_special(s1, sizeof(s1),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
          fill_pathname_join(font_path, s1, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_application_special(s1,
-               PATH_MAX_LENGTH * sizeof(char),
+         fill_pathname_application_special(s1, sizeof(s1),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
          fill_pathname_join(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_application_special(s1,
-               PATH_MAX_LENGTH * sizeof(char),
+         fill_pathname_application_special(s1, sizeof(s1),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
          fill_pathname_join(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
          fill_pathname_join(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
    }
-
-   free(s1);
 
    font_inited = ozone_init_font(&ozone->fonts.footer,
          is_threaded, font_path, FONT_SIZE_FOOTER * scale_factor);

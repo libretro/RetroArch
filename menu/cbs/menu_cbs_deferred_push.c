@@ -417,7 +417,7 @@ end:
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   char                      *newstring2      = NULL;
+   char newstring2[PATH_MAX_LENGTH];
    core_info_list_t           *list           = NULL;
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_driver_get_ptr();
@@ -473,8 +473,6 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   newstring2                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
    newstring2[0]                  = '\0';
 
    switch (id)
@@ -484,11 +482,9 @@ static int general_push(menu_displaylist_info_t *info,
             struct retro_system_info *system = 
                runloop_get_libretro_system_info();
             if (system)
-            {
                if (!string_is_empty(system->valid_extensions))
                   strlcpy(newstring2, system->valid_extensions,
-                        PATH_MAX_LENGTH * sizeof(char));
-            }
+                        sizeof(newstring2));
          }
          break;
       case PUSH_DEFAULT:
@@ -496,9 +492,8 @@ static int general_push(menu_displaylist_info_t *info,
             bool new_exts_allocated               = false;
             char *new_exts                        = NULL;
 
-            if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
-            {
-            }
+            if (menu_setting_get_browser_selection_type(info->setting) 
+                  == ST_DIR) { }
             else
             {
                struct retro_system_info *system = 
@@ -515,19 +510,15 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!string_is_empty(new_exts))
             {
-               size_t path_size               = PATH_MAX_LENGTH * sizeof(char);
                struct string_list *str_list3  = string_split(new_exts, "|");
-
 #ifdef HAVE_IBXM
-               {
-                  union string_list_elem_attr attr;
-                  attr.i = 0;
-                  string_list_append(str_list3, "s3m", attr);
-                  string_list_append(str_list3, "mod", attr);
-                  string_list_append(str_list3, "xm", attr);
-               }
+               union string_list_elem_attr attr;
+               attr.i = 0;
+               string_list_append(str_list3, "s3m", attr);
+               string_list_append(str_list3, "mod", attr);
+               string_list_append(str_list3, "xm", attr);
 #endif
-               string_list_join_concat(newstring2, path_size,
+               string_list_join_concat(newstring2, sizeof(newstring2),
                      str_list3, "|");
                string_list_free(str_list3);
 
@@ -546,8 +537,7 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_DETECT_CORE_LIST:
          {
             union string_list_elem_attr attr;
-            size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
-            char *newstring                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            char newstring[PATH_MAX_LENGTH];
             struct string_list *str_list2    = string_list_new();
             struct retro_system_info *system = runloop_get_libretro_system_info();
 
@@ -593,7 +583,7 @@ static int general_push(menu_displaylist_info_t *info,
                }
             }
 
-            string_list_join_concat(newstring, path_size,
+            string_list_join_concat(newstring, sizeof(newstring),
                   str_list2, "|");
 
             {
@@ -608,11 +598,10 @@ static int general_push(menu_displaylist_info_t *info,
                   string_list_append(str_list3, "xm", attr);
                }
 #endif
-               string_list_join_concat(newstring2, path_size,
+               string_list_join_concat(newstring2, sizeof(newstring2),
                      str_list3, "|");
                string_list_free(str_list3);
             }
-            free(newstring);
             string_list_free(str_list2);
          }
          break;
@@ -632,18 +621,17 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
          libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-         strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
-         strlcat(newstring2, sysinfo.valid_extensions,
-               PATH_MAX_LENGTH * sizeof(char));
+         strlcat(newstring2, "|", sizeof(newstring2));
+         strlcat(newstring2, sysinfo.valid_extensions, sizeof(newstring2));
       }
 #endif
 #ifdef HAVE_IMAGEVIEWER
       if (multimedia_builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
+         strlcat(newstring2, "|", sizeof(newstring2));
          strlcat(newstring2, sysinfo.valid_extensions,
-               PATH_MAX_LENGTH * sizeof(char));
+               sizeof(newstring2));
       }
 #endif
    }
@@ -654,7 +642,6 @@ static int general_push(menu_displaylist_info_t *info,
          free(info->exts);
       info->exts = strdup(newstring2);
    }
-   free(newstring2);
 
    return deferred_push_dlist(info, state);
 }

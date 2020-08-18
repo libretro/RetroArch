@@ -1765,8 +1765,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
    if (menu_dynamic_wallpaper_enable)
    {
-      size_t path_size = PATH_MAX_LENGTH * sizeof(char);
-      char       *path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char path[PATH_MAX_LENGTH];
       char       *tmp  = string_replace_substring(xmb->title_name, "/", " ");
 
       path[0]          = '\0';
@@ -1777,14 +1776,14 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
                path,
                dir_dynamic_wallpapers,
                tmp,
-               path_size);
+               sizeof(path));
          free(tmp);
       }
 
-      strlcat(path, ".png", path_size);
+      strlcat(path, ".png", sizeof(path));
 
       if (!path_is_valid(path))
-         fill_pathname_application_special(path, path_size,
+         fill_pathname_application_special(path, sizeof(path),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
       if (!string_is_equal(path, xmb->bg_file_path))
@@ -1799,8 +1798,6 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
             xmb->bg_file_path = strdup(path);
          }
       }
-
-      free(path);
    }
 
    end = file_list_get_size(list);
@@ -2163,41 +2160,30 @@ static void xmb_context_reset_horizontal_list(
       if (!path)
          continue;
 
-      if (!string_ends_with_size(path, ".lpl",
+      if (string_ends_with_size(path, ".lpl",
                strlen(path), STRLEN_CONST(".lpl")))
-         continue;
-
       {
          struct texture_image ti;
-         char *sysname             = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *iconpath            = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *texturepath         = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *content_texturepath = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
+         char sysname[PATH_MAX_LENGTH];
+         char iconpath[PATH_MAX_LENGTH];
+         char texturepath[PATH_MAX_LENGTH];
+         char content_texturepath[PATH_MAX_LENGTH];
 
-         iconpath[0]    = sysname[0] =
+         iconpath[0]       = sysname[0]             =
             texturepath[0] = content_texturepath[0] = '\0';
 
-         fill_pathname_base_noext(sysname, path,
-               PATH_MAX_LENGTH * sizeof(char));
-
-         fill_pathname_application_special(iconpath,
-               PATH_MAX_LENGTH * sizeof(char),
+         fill_pathname_base_noext(sysname, path, sizeof(sysname));
+         fill_pathname_application_special(iconpath, sizeof(iconpath),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
          fill_pathname_join_concat(texturepath, iconpath, sysname,
-               ".png",
-               PATH_MAX_LENGTH * sizeof(char));
+               ".png", sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, iconpath, "default",
-               ".png",
-               PATH_MAX_LENGTH * sizeof(char));
+               ".png", sizeof(texturepath));
 
          ti.width         = 0;
          ti.height        = 0;
@@ -2216,10 +2202,10 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
-         fill_pathname_join_delim(sysname, sysname, "content.png",
-               '-', PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, iconpath, PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname_join_delim(sysname, sysname, "content.png", '-',
+               sizeof(sysname));
+         strlcat(content_texturepath, iconpath, sizeof(content_texturepath));
+         strlcat(content_texturepath, sysname,  sizeof(content_texturepath));
 
          /* If the content icon doesn't exist return default-content */
 
@@ -2242,11 +2228,6 @@ static void xmb_context_reset_horizontal_list(
 
             image_texture_free(&ti);
          }
-
-         free(sysname);
-         free(iconpath);
-         free(texturepath);
-         free(content_texturepath);
       }
    }
 
@@ -6067,8 +6048,8 @@ static void xmb_context_reset_background(const char *iconpath)
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
       bool is_threaded, bool reinit_textures)
 {
+   char iconpath[PATH_MAX_LENGTH];
    char bg_file_path[PATH_MAX_LENGTH] = {0};
-   char *iconpath    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    iconpath[0]       = '\0';
 
    fill_pathname_application_special(bg_file_path,
@@ -6081,8 +6062,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->bg_file_path = strdup(bg_file_path);
    }
 
-   fill_pathname_application_special(iconpath,
-         PATH_MAX_LENGTH * sizeof(char),
+   fill_pathname_application_special(iconpath, sizeof(iconpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
    xmb_layout(xmb);
@@ -6131,8 +6111,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    }
 
    xmb_update_savestate_thumbnail_image(xmb);
-
-   free(iconpath);
 }
 
 static void xmb_context_reset(void *data, bool is_threaded)

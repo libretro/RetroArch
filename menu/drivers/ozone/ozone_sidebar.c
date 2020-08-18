@@ -884,32 +884,25 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
       {
          struct texture_image ti;
-         char *sysname             = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *texturepath         = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *content_texturepath = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *icons_path          = (char*)
-            malloc(PATH_MAX_LENGTH * sizeof(char));
+         char sysname[PATH_MAX_LENGTH];
+         char texturepath[PATH_MAX_LENGTH];
+         char content_texturepath[PATH_MAX_LENGTH];
+         char icons_path[PATH_MAX_LENGTH];
 
-         strlcpy(icons_path, ozone->icons_path, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(icons_path, ozone->icons_path, sizeof(icons_path));
 
          sysname[0] = texturepath[0] = content_texturepath[0] = '\0';
 
-         fill_pathname_base_noext(sysname, path,
-               PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname_base_noext(sysname, path, sizeof(sysname));
 
          fill_pathname_join_concat(texturepath, icons_path, sysname,
-               ".png",
-               PATH_MAX_LENGTH * sizeof(char));
+               ".png", sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, icons_path, "default",
-               ".png",
-               PATH_MAX_LENGTH * sizeof(char));
+               ".png", sizeof(texturepath));
 
          ti.width         = 0;
          ti.height        = 0;
@@ -929,22 +922,18 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          }
 
          fill_pathname_join_delim(sysname, sysname,
-               "content.png", '-',
-               PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, icons_path,
-               PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, PATH_DEFAULT_SLASH(),
-               PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
+               "content.png", '-', sizeof(sysname));
+         strlcat(content_texturepath, icons_path, sizeof(content_texturepath));
+         strlcat(content_texturepath, PATH_DEFAULT_SLASH(), sizeof(content_texturepath));
+         strlcat(content_texturepath, sysname, sizeof(content_texturepath));
 
          /* If the content icon doesn't exist return default-content */
          if (!path_is_valid(content_texturepath))
          {
             strlcat(icons_path,
-                  PATH_DEFAULT_SLASH() "default", PATH_MAX_LENGTH * sizeof(char));
+                  PATH_DEFAULT_SLASH() "default", sizeof(icons_path));
             fill_pathname_join_delim(content_texturepath, icons_path,
-                  "content.png", '-',
-                  PATH_MAX_LENGTH * sizeof(char));
+                  "content.png", '-', sizeof(content_texturepath));
          }
 
          if (image_texture_load(&ti, content_texturepath))
@@ -972,11 +961,6 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
           * dereferencing in case of unknown errors... */
          node->console_name = strdup(
                console_name ? console_name : path);
-
-         free(sysname);
-         free(texturepath);
-         free(content_texturepath);
-         free(icons_path);
       }
    }
 }

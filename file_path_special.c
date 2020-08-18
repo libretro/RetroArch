@@ -169,36 +169,24 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG:
          {
             settings_t *settings   = config_get_ptr();
-            char               *s1 = (char*)malloc(
-                  PATH_MAX_LENGTH * sizeof(char));
             const char *dir_assets = settings->paths.directory_assets;
-            s1[0] = '\0';
-            fill_pathname_join(s1, dir_assets, "pkg", PATH_MAX_LENGTH * sizeof(char));
-            strlcpy(s, s1, len);
-            free(s1);
+            fill_pathname_join(s, dir_assets, "pkg", len);
          }
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {
-            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-            char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            char s1[PATH_MAX_LENGTH];
+            char s2[PATH_MAX_LENGTH];
 
             s1[0]    = '\0';
             s2[0]    = '\0';
 
-            fill_pathname_application_special(s1,
-                  PATH_MAX_LENGTH * sizeof(char),
+            fill_pathname_application_special(s1, sizeof(s1),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-            fill_pathname_join(s2, s1, "png",
-                  PATH_MAX_LENGTH * sizeof(char)
-                  );
-            fill_pathname_slash(s2,
-                  PATH_MAX_LENGTH * sizeof(char)
-                  );
+            fill_pathname_join(s2, s1, "png", sizeof(s2));
+            fill_pathname_slash(s2, sizeof(s2));
             strlcpy(s, s2, len);
-            free(s1);
-            free(s2);
          }
 #endif
          break;
@@ -212,15 +200,13 @@ void fill_pathname_application_special(char *s,
                strlcpy(s, path_menu_wallpaper, len);
             else
             {
-               char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+               char s1[PATH_MAX_LENGTH];
 
                s1[0] = '\0';
 
-               fill_pathname_application_special(s1,
-                     PATH_MAX_LENGTH * sizeof(char),
+               fill_pathname_application_special(s1, sizeof(s1),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
                fill_pathname_join(s, s1, "bg.png", len);
-               free(s1);
             }
          }
 #endif
@@ -296,18 +282,10 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE:
 #ifdef HAVE_OZONE
          {
-            char                 *s1 = (char*)malloc(
-                  PATH_MAX_LENGTH * sizeof(char));
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-
-            s1[0] = '\0';
-
-            fill_pathname_join(s1, dir_assets, "ozone",
-                  PATH_MAX_LENGTH * sizeof(char)
-                  );
-            strlcpy(s, s1, len);
-            free(s1);
+            fill_pathname_join(s, dir_assets, "ozone",
+                  len);
          }
 #endif
          break;
@@ -338,19 +316,15 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB:
 #ifdef HAVE_XMB
          {
-            char                 *s1 = (char*)malloc(
-                  PATH_MAX_LENGTH * sizeof(char));
+            char s1[PATH_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
 
             s1[0] = '\0';
 
-            fill_pathname_join(s1, dir_assets, "xmb",
-                  PATH_MAX_LENGTH * sizeof(char)
-                  );
+            fill_pathname_join(s1, dir_assets, "xmb", sizeof(s1));
             fill_pathname_join(s,
                   s1, xmb_theme_ident(), len);
-            free(s1);
          }
 #endif
          break;
@@ -366,57 +340,40 @@ void fill_pathname_application_special(char *s,
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS:
 #ifdef HAVE_MATERIALUI
-         {
-            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-            s1[0] = '\0';
-
-            fill_pathname_application_special(s1,
-                  PATH_MAX_LENGTH * sizeof(char),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-            strlcpy(s, s1, len);
-
-            free(s1);
-         }
+         fill_pathname_application_special(s, len,
+               APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
 #endif
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT:
 #ifdef HAVE_MATERIALUI
          {
-            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
+            char s1[PATH_MAX_LENGTH];
             s1[0] = '\0';
 
             switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
             {
                case RETRO_LANGUAGE_ARABIC:
                case RETRO_LANGUAGE_PERSIAN:
-                  fill_pathname_application_special(s1,
-                        PATH_MAX_LENGTH * sizeof(char),
+                  fill_pathname_application_special(s1, sizeof(s1),
                         APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
                   fill_pathname_join(s, s1, "fallback-font.ttf", len);
                   break;
                case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
                case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-                  fill_pathname_application_special(s1,
-                        PATH_MAX_LENGTH * sizeof(char),
+                  fill_pathname_application_special(s1, sizeof(s1),
                         APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
                   fill_pathname_join(s, s1, "chinese-fallback-font.ttf", len);
                   break;
                case RETRO_LANGUAGE_KOREAN:
-                  fill_pathname_application_special(s1,
-                        PATH_MAX_LENGTH * sizeof(char),
+                  fill_pathname_application_special(s1, sizeof(s1),
                         APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
                   fill_pathname_join(s, s1, "korean-fallback-font.ttf", len);
                   break;
                default:
-                  fill_pathname_application_special(s1,
-                        PATH_MAX_LENGTH * sizeof(char),
+                  fill_pathname_application_special(s1, sizeof(s1),
                         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
                   fill_pathname_join(s, s1, "font.ttf", len);
             }
-
-            free(s1);
          }
 #endif
          break;
@@ -430,90 +387,70 @@ void fill_pathname_application_special(char *s,
                strlcpy(s, path_menu_xmb_font, len);
             else
             {
-               char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
+               char s1[PATH_MAX_LENGTH];
                s1[0] = '\0';
 
                switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
                {
                   case RETRO_LANGUAGE_ARABIC:
                   case RETRO_LANGUAGE_PERSIAN:
-                     fill_pathname_application_special(s1,
-                           PATH_MAX_LENGTH * sizeof(char),
+                     fill_pathname_application_special(s1, sizeof(s1),
                            APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
                      fill_pathname_join(s, s1, "fallback-font.ttf", len);
                      break;
                   case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
                   case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-                     fill_pathname_application_special(s1,
-                           PATH_MAX_LENGTH * sizeof(char),
+                     fill_pathname_application_special(s1, sizeof(s1),
                            APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
                      fill_pathname_join(s, s1, "chinese-fallback-font.ttf", len);
                      break;
                   case RETRO_LANGUAGE_KOREAN:
-                     fill_pathname_application_special(s1,
-                           PATH_MAX_LENGTH * sizeof(char),
+                     fill_pathname_application_special(s1, sizeof(s1),
                            APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
                      fill_pathname_join(s, s1, "korean-fallback-font.ttf", len);
                      break;
                   default:
-                     fill_pathname_application_special(s1,
-                           PATH_MAX_LENGTH * sizeof(char),
+                     fill_pathname_application_special(s1, sizeof(s1),
                            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
                      fill_pathname_join(s, s1, "font.ttf", len);
                }
-               free(s1);
             }
          }
 #endif
          break;
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS:
       {
-        char *s1                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-        char *s2                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        char s1[PATH_MAX_LENGTH];
+        char s2[PATH_MAX_LENGTH];
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
 
         s1[0]                = '\0';
         s2[0]                = '\0';
 
-        fill_pathname_join(s1, dir_thumbnails, "discord", len);
+        fill_pathname_join(s1, dir_thumbnails, "discord", sizeof(s1));
         fill_pathname_join(s2,
-              s1, "avatars",
-              PATH_MAX_LENGTH * sizeof(char)
-              );
-        fill_pathname_slash(s2,
-              PATH_MAX_LENGTH * sizeof(char)
-              );
+              s1, "avatars", sizeof(s2));
+        fill_pathname_slash(s2, sizeof(s2));
         strlcpy(s, s2, len);
-        free(s1);
-        free(s2);
       }
       break;
 
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES:
       {
-        char *s1                   = (char*)malloc(
-              PATH_MAX_LENGTH * sizeof(char));
-        char *s2                   = (char*)malloc(
-              PATH_MAX_LENGTH * sizeof(char));
+        char s1[PATH_MAX_LENGTH];
+        char s2[PATH_MAX_LENGTH];
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
 
-        s1[0]                = '\0';
-        s2[0]                = '\0';
+        s1[0]                      = '\0';
+        s2[0]                      = '\0';
 
         fill_pathname_join(s1, dir_thumbnails, "cheevos", len);
         fill_pathname_join(s2,
-              s1, "badges",
-              PATH_MAX_LENGTH * sizeof(char)
-              );
-        fill_pathname_slash(s2,
-              PATH_MAX_LENGTH * sizeof(char)
-              );
+              s1, "badges", sizeof(s2));
+        fill_pathname_slash(s2, sizeof(s2));
         strlcpy(s, s2, len);
-        free(s1);
-        free(s2);
       }
       break;
 

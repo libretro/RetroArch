@@ -195,21 +195,18 @@ static config_file_t *core_info_list_iterate(
       const char *current_path,
       const char *path_basedir)
 {
-   size_t info_path_base_size = PATH_MAX_LENGTH * sizeof(char);
-   char *info_path_base       = NULL;
-   char *info_path            = NULL;
-   config_file_t *conf        = NULL;
+   char info_path[PATH_MAX_LENGTH];
+   char info_path_base[PATH_MAX_LENGTH];
 
    if (!current_path)
       return NULL;
 
-   info_path_base             = (char*)malloc(info_path_base_size);
-
-   info_path_base[0] = '\0';
+   info_path     [0]          = '\0';
+   info_path_base[0]          = '\0';
 
    fill_pathname_base_noext(info_path_base,
          current_path,
-         info_path_base_size);
+         sizeof(info_path_base));
 
 #if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA) && !defined(HW_WUP))
    {
@@ -219,20 +216,15 @@ static config_file_t *core_info_list_iterate(
    }
 #endif
 
-   strlcat(info_path_base, ".info", info_path_base_size);
+   strlcat(info_path_base, ".info", sizeof(info_path_base));
 
-   info_path = (char*)malloc(info_path_base_size);
    fill_pathname_join(info_path,
          path_basedir,
-         info_path_base, info_path_base_size);
-   free(info_path_base);
-   info_path_base = NULL;
+         info_path_base, sizeof(info_path_base));
 
    if (path_is_valid(info_path))
-      conf = config_file_new_from_path_to_string(info_path);
-   free(info_path);
-
-   return conf;
+      return config_file_new_from_path_to_string(info_path);
+   return NULL;
 }
 
 /* Returned path must be free()'d */
@@ -633,9 +625,8 @@ static bool core_info_list_update_missing_firmware_internal(
       bool *set_missing_bios)
 {
    size_t i;
+   char path[PATH_MAX_LENGTH];
    core_info_t      *info = NULL;
-   char             *path = NULL;
-   size_t       path_size = PATH_MAX_LENGTH * sizeof(char);
 
    if (!core_info_list || !core)
       return false;
@@ -643,11 +634,6 @@ static bool core_info_list_update_missing_firmware_internal(
    info                   = core_info_find_internal(core_info_list, core);
 
    if (!info)
-      return false;
-
-   path                   = (char*)malloc(path_size);
-
-   if (!path)
       return false;
 
    path[0]                = '\0';
@@ -658,13 +644,12 @@ static bool core_info_list_update_missing_firmware_internal(
          continue;
 
       fill_pathname_join(path, systemdir,
-            info->firmware[i].path, path_size);
+            info->firmware[i].path, sizeof(path));
       info->firmware[i].missing = !path_is_valid(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
          *set_missing_bios = true;
    }
 
-   free(path);
    return true;
 }
 
@@ -1142,7 +1127,7 @@ core_updater_info_t *core_info_get_core_updater_info(const char *path)
       return NULL;
 
    /* Create info struct */
-   info = (core_updater_info_t*)malloc(sizeof(*info));
+   info                      = (core_updater_info_t*)malloc(sizeof(*info));
 
    if (!info)
       return NULL;
