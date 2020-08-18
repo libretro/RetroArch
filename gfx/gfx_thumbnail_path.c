@@ -661,10 +661,7 @@ bool gfx_thumbnail_update_path(
    }
    
    /* Final error check - is cached path empty? */
-   if (string_is_empty(thumbnail_path))
-      return false;
-   
-   return true;
+   return !string_is_empty(thumbnail_path);
 }
 
 /* Getters */
@@ -678,30 +675,32 @@ bool gfx_thumbnail_get_path(
 {
    char *thumbnail_path = NULL;
    
-   if (!path_data)
-      return false;
-   
-   if (!path)
+   if (!path_data || !path)
       return false;
    
    switch (thumbnail_id)
    {
       case GFX_THUMBNAIL_RIGHT:
-         thumbnail_path = path_data->right_path;
+         if (!string_is_empty(path_data->right_path))
+         {
+            thumbnail_path = path_data->right_path;
+            *path          = thumbnail_path;
+            return true;
+         }
          break;
       case GFX_THUMBNAIL_LEFT:
-         thumbnail_path = path_data->left_path;
+         if (!string_is_empty(path_data->left_path))
+         {
+            thumbnail_path = path_data->left_path;
+            *path          = thumbnail_path;
+            return true;
+         }
          break;
       default:
-         return false;
+         break;
    }
    
-   if (string_is_empty(thumbnail_path))
-      return false;
-   
-   *path = thumbnail_path;
-   
-   return true;
+   return false;
 }
 
 /* Fetches current 'system' (default database name).
@@ -709,12 +708,8 @@ bool gfx_thumbnail_get_path(
 bool gfx_thumbnail_get_system(
       gfx_thumbnail_path_data_t *path_data, const char **system)
 {
-   if (!path_data)
+   if (!path_data || !system)
       return false;
-   
-   if (!system)
-      return false;
-   
    if (string_is_empty(path_data->system))
       return false;
    
@@ -728,12 +723,8 @@ bool gfx_thumbnail_get_system(
 bool gfx_thumbnail_get_content_path(
       gfx_thumbnail_path_data_t *path_data, const char **content_path)
 {
-   if (!path_data)
+   if (!path_data || !content_path)
       return false;
-   
-   if (!content_path)
-      return false;
-   
    if (string_is_empty(path_data->content_path))
       return false;
    
@@ -747,12 +738,8 @@ bool gfx_thumbnail_get_content_path(
 bool gfx_thumbnail_get_label(
       gfx_thumbnail_path_data_t *path_data, const char **label)
 {
-   if (!path_data)
+   if (!path_data || !label)
       return false;
-   
-   if (!label)
-      return false;
-   
    if (string_is_empty(path_data->content_label))
       return false;
    
@@ -766,12 +753,8 @@ bool gfx_thumbnail_get_label(
 bool gfx_thumbnail_get_core_name(
       gfx_thumbnail_path_data_t *path_data, const char **core_name)
 {
-   if (!path_data)
+   if (!path_data || !core_name)
       return false;
-   
-   if (!core_name)
-      return false;
-   
    if (string_is_empty(path_data->content_core_name))
       return false;
    
@@ -785,12 +768,8 @@ bool gfx_thumbnail_get_core_name(
 bool gfx_thumbnail_get_db_name(
       gfx_thumbnail_path_data_t *path_data, const char **db_name)
 {
-   if (!path_data)
+   if (!path_data || !db_name)
       return false;
-   
-   if (!db_name)
-      return false;
-   
    if (string_is_empty(path_data->content_db_name))
       return false;
    
@@ -805,12 +784,8 @@ bool gfx_thumbnail_get_db_name(
 bool gfx_thumbnail_get_img_name(
       gfx_thumbnail_path_data_t *path_data, const char **img_name)
 {
-   if (!path_data)
+   if (!path_data || !img_name)
       return false;
-   
-   if (!img_name)
-      return false;
-   
    if (string_is_empty(path_data->content_img))
       return false;
    
@@ -824,14 +799,11 @@ bool gfx_thumbnail_get_img_name(
 bool gfx_thumbnail_get_content_dir(
       gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
 {
-   const char *last_slash        = NULL;
-   char tmp_buf[PATH_MAX_LENGTH] = {0};
    size_t path_length;
+   char tmp_buf[PATH_MAX_LENGTH];
+   const char *last_slash        = NULL;
    
-   if (!path_data)
-      return false;
-   
-   if (string_is_empty(path_data->content_path))
+   if (!path_data || string_is_empty(path_data->content_path))
       return false;
    
    last_slash = find_last_slash(path_data->content_path);
@@ -843,12 +815,11 @@ bool gfx_thumbnail_get_content_dir(
    
    if (!((path_length > 1) && (path_length < PATH_MAX_LENGTH)))
       return false;
+
+   tmp_buf[0] = '\0';
    
    strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
    strlcpy(content_dir, path_basename(tmp_buf), len);
    
-   if (string_is_empty(content_dir))
-      return false;
-   
-   return true;
+   return !string_is_empty(content_dir);
 }
