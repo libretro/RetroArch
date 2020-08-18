@@ -910,31 +910,31 @@ typedef struct
 
 /* TODO/FIXME - static global variables */
 static thumbnail_t fs_thumbnail = {
+   NULL,
    0,
    0,
    0,
    0,
-   false,
    {0},
-   NULL
+   false
 };
 static thumbnail_t mini_thumbnail = {
+   NULL,
    0,
    0,
    0,
    0,
-   false,
    {0},
-   NULL
+   false
 };
 static thumbnail_t mini_left_thumbnail = {
+   NULL,
    0,
    0,
    0,
    0,
-   false,
    {0},
-   NULL
+   false
 };
 
 static frame_buf_t rgui_frame_buf = {
