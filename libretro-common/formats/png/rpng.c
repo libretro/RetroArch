@@ -947,16 +947,15 @@ static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end,
 {
    unsigned i;
    uint8_t dword[4];
+   uint8_t *dword_ptr = NULL;
+   uint8_t *buf_ptr   = NULL;
 
-   dword[0] = '\0';
+   dword[0]           = '\0';
 
-   /* Check whether reading the header will overflow
-    * the data buffer */
-   if (buf_end - buf < 8)
-      return false;
-
-   for (i = 0; i < 4; i++)
-      dword[i] = buf[i];
+   for (   dword_ptr = &dword[0], buf_ptr = &buf[0]
+         ; dword_ptr < dword + 4
+         ; dword_ptr++, buf_ptr++)
+      *dword_ptr = *buf_ptr;
 
    chunk->size = dword_be(dword);
 
@@ -1010,6 +1009,10 @@ bool rpng_iterate_image(rpng_t *rpng)
    if (buf > rpng->buff_end)
       return false;
 
+   /* Check whether reading the header will overflow
+    * the data buffer */
+   if (rpng->buff_end - buf < 8)
+      return false;
    if (!read_chunk_header(buf, rpng->buff_end, &chunk))
       return false;
 
