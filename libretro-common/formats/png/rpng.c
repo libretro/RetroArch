@@ -266,32 +266,24 @@ static void png_reverse_filter_copy_line_rgba(uint32_t *data,
 static void png_reverse_filter_copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
-   unsigned i, bit;
-   static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
-   unsigned mul, mask;
+   unsigned i;
+   static const unsigned 
+      mul_table[]     = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
+   unsigned mul       = mul_table[depth];
+   unsigned mask      = (1 << depth) - 1;
+   unsigned bit       = 0;
+   uint32_t *data_ptr = NULL;
 
-   if (depth == 16)
-   {
-      for (i = 0; i < width; i++)
-      {
-         uint32_t val = decoded[i << 1];
-         data[i]      = (val * 0x010101) | (0xffu << 24);
-      }
-      return;
-   }
-
-   mul  = mul_table[depth];
-   mask = (1 << depth) - 1;
-   bit  = 0;
-
-   for (i = 0; i < width; i++, bit += depth)
+   for (   i = 0, data_ptr = &data[0]
+         ; i < width
+         ; i++, data_ptr++, bit += depth)
    {
       unsigned byte = bit >> 3;
       unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
 
       val          &= mask;
       val          *= mul;
-      data[i]       = (val * 0x010101) | (0xffu << 24);
+      *data_ptr     = (val * 0x010101) | (0xffu << 24);
    }
 }
 
@@ -617,7 +609,23 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
    switch (ihdr->color_type)
    {
       case PNG_IHDR_COLOR_GRAY:
-         png_reverse_filter_copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+         if (ihdr->depth == 16)
+         {
+            unsigned i;
+            const uint8_t *decoded = pngp->decoded_scanline;
+            unsigned width         = ihdr->width;
+            uint32_t *data_ptr     = NULL;
+
+            for (   i = 0, data_ptr = &data[0]
+                  ; i < width
+                  ; data_ptr++, i++)
+            {
+               uint32_t val = decoded[i << 1];
+               *data_ptr    = (val * 0x010101) | (0xffu << 24);
+            }
+         }
+         else
+            png_reverse_filter_copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
       case PNG_IHDR_COLOR_RGB:
          png_reverse_filter_copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
