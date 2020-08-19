@@ -468,13 +468,10 @@ static void png_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
    for (y = 0; y < pass_height;
          y++, data += ihdr->width * pass->stride_y, input += pass_width)
    {
-      uint32_t *out             = data;
-      const uint32_t *input_ptr = NULL;
+      uint32_t *out = data;
 
-      for (   input_ptr = &input[0]
-            ; input_ptr < input + pass_width
-            ; input_ptr++, out += pass->stride_x)
-         *out = *input_ptr;
+      for (x = 0; x < pass_width; x++, out += pass->stride_x)
+         *out = input[x];
    }
 }
 
