@@ -821,14 +821,17 @@ false_end:
 static bool png_read_plte(uint8_t *buf,
       uint32_t *buffer, unsigned entries)
 {
-   unsigned i;
+   uint8_t *buf_ptr     = NULL;
+   uint32_t *buffer_ptr = NULL;
 
-   for (i = 0; i < entries; i++)
+   for (   buf_ptr = &buf[0], buffer_ptr = &buffer[0]
+         ; buffer_ptr < buffer + entries
+         ; buf_ptr += 3, buffer_ptr++)
    {
-      uint32_t r = buf[3 * i + 0];
-      uint32_t g = buf[3 * i + 1];
-      uint32_t b = buf[3 * i + 2];
-      buffer[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
+      uint32_t r  = *(buf_ptr);
+      uint32_t g  = *(buf_ptr + 1);
+      uint32_t b  = *(buf_ptr + 2);
+      *buffer_ptr = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
    }
 
    return true;
