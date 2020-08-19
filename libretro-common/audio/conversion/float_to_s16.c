@@ -50,7 +50,9 @@ void convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
 void convert_float_to_s16(int16_t *out,
       const float *in, size_t samples)
 {
-   size_t i      = 0;
+   int16_t *out_ptr        = NULL;
+   const float *in_ptr     = NULL;
+   size_t i                = 0;
 #if defined(__SSE2__)
    __m128 factor = _mm_set1_ps((float)0x8000);
 
@@ -135,10 +137,13 @@ void convert_float_to_s16(int16_t *out,
 
 #endif
 
-   for (; i < samples; i++)
+   for (  
+           out_ptr = &out[i], in_ptr = &in[i]
+         ; i < samples
+         ; out_ptr++, in_ptr++, i++)
    {
-      int32_t val = (int32_t)(in[i] * 0x8000);
-      out[i]      = (val > 0x7FFF) ? 0x7FFF :
+      int32_t val = (int32_t)(*in_ptr * 0x8000);
+      *out_ptr    = (val > 0x7FFF) ? 0x7FFF :
          (val < -0x8000 ? -0x8000 : (int16_t)val);
    }
 }

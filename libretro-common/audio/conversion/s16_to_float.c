@@ -50,7 +50,9 @@ void convert_s16_float_asm(float *out, const int16_t *in,
 void convert_s16_to_float(float *out,
       const int16_t *in, size_t samples, float gain)
 {
-   unsigned i      = 0;
+   float *out_ptr        = NULL;
+   const int16_t *in_ptr = NULL;
+   unsigned i            = 0;
 
 #if defined(__SSE2__)
    float fgain   = gain / UINT32_C(0x80000000);
@@ -169,8 +171,11 @@ void convert_s16_to_float(float *out,
 
 #endif
 
-   for (; i < samples; i++)
-      out[i] = (float)in[i] * gain;
+   for (
+           out_ptr = &out[i], in_ptr = &in[i]
+         ; i < samples
+         ; out_ptr++, in_ptr++, i++)
+      *out_ptr = (float)*in_ptr * gain;
 }
 
 /**
