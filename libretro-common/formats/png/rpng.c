@@ -473,7 +473,7 @@ static void png_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
       const uint32_t *input, unsigned pass_width, unsigned pass_height,
       const struct adam7_pass *pass)
 {
-   unsigned y;
+   unsigned x, y;
 
    data += pass->y * ihdr->width + pass->x;
 
