@@ -248,18 +248,22 @@ static void png_reverse_filter_copy_line_rgb(uint32_t *data,
 static void png_reverse_filter_copy_line_rgba(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
-   uint32_t *data_ptr = NULL;
+   unsigned i;
 
    bpp /= 8;
 
-   for (data_ptr = &data[0]; data_ptr < data + width; data_ptr++)
+   for (i = 0; i < width; i++)
    {
-      uint32_t r        = *(decoded);
-      uint32_t g        = *(decoded + bpp);
-      uint32_t b        = *(decoded + bpp + bpp);
-      uint32_t a        = *(decoded + bpp + bpp + bpp);
-      decoded          += (4 * bpp);
-      *data_ptr         = (a << 24) | (r << 16) | (g << 8) | (b << 0);
+      uint32_t r, g, b, a;
+      r        = *decoded;
+      decoded += bpp;
+      g        = *decoded;
+      decoded += bpp;
+      b        = *decoded;
+      decoded += bpp;
+      a        = *decoded;
+      decoded += bpp;
+      data[i]  = (a << 24) | (r << 16) | (g << 8) | (b << 0);
    }
 }
 
