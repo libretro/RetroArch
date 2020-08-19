@@ -269,19 +269,21 @@ static void xinput_joypad_destroy(void)
 
 static int16_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
-   int xuser         = pad_index_to_xuser_index(port);
-   uint16_t btn_word = 0;
-   if (!(g_xinput_states[xuser].connected))
+   int xuser                  = pad_index_to_xuser_index(port);
+   uint16_t btn_word          = 0;
+   xinput_joypad_state *state = &g_xinput_states[xuser];
+   if (!state->connected)
       return 0;
-   btn_word          = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+   btn_word                   = state->xstate.Gamepad.wButtons;
    return xinput_joypad_button_state(xuser, btn_word, port, joykey);
 }
 
 static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int xuser           = pad_index_to_xuser_index(port);
-   XINPUT_GAMEPAD *pad = &(g_xinput_states[xuser].xstate.Gamepad);
-   if (!(g_xinput_states[xuser].connected))
+   int xuser                  = pad_index_to_xuser_index(port);
+   xinput_joypad_state *state = &g_xinput_states[xuser];
+   XINPUT_GAMEPAD *pad        = &(state->xstate.Gamepad);
+   if (!state->connected)
       return 0;
    return xinput_joypad_axis_state(pad, port, joyaxis);
 }
@@ -293,13 +295,14 @@ static int16_t xinput_joypad_state_func(
 {
    unsigned i;
    uint16_t btn_word;
-   int16_t ret         = 0;
-   uint16_t port_idx   = joypad_info->joy_idx;
-   int xuser           = pad_index_to_xuser_index(port_idx);
-   XINPUT_GAMEPAD *pad = &(g_xinput_states[xuser].xstate.Gamepad);
-   if (!(g_xinput_states[xuser].connected))
+   int16_t ret                = 0;
+   uint16_t port_idx          = joypad_info->joy_idx;
+   int xuser                  = pad_index_to_xuser_index(port_idx);
+   xinput_joypad_state *state = &g_xinput_states[xuser];
+   XINPUT_GAMEPAD *pad        = &state->xstate.Gamepad;
+   if (!state->connected)
       return 0;
-   btn_word            = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+   btn_word                   = state->xstate.Gamepad.wButtons;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -328,10 +331,12 @@ static void xinput_joypad_poll(void)
 
    for (i = 0; i < 4; ++i)
    {
-      DWORD status       = g_XInputGetStateEx(i, &(g_xinput_states[i].xstate));
+      xinput_joypad_state 
+         *state          = &g_xinput_states[i];
+      DWORD status       = g_XInputGetStateEx(i, &state->xstate);
       bool success       = status == ERROR_SUCCESS;
       bool new_connected = status != ERROR_DEVICE_NOT_CONNECTED;
-      if (new_connected != g_xinput_states[i].connected)
+      if (new_connected != state->connected)
       {
          /* Normally, dinput handles device insertion/removal for us, but
           * since dinput is not available on UWP we have to do it ourselves */
@@ -346,7 +351,7 @@ static void xinput_joypad_poll(void)
             return;
          }
 
-         g_xinput_states[i].connected = new_connected;
+         state->connected = new_connected;
          if (!success)
             input_autoconfigure_disconnect(i, xinput_joypad_name(i));
       }
