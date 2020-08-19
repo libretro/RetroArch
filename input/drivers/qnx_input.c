@@ -340,10 +340,8 @@ static int qnx_discover_controllers(qnx_input_t *qnx)
    }
 
    /* Scan the list for gamepad and joystick devices. */
-   for(i = 0; i < qnx->pads_connected; ++i)
-   {
+   for (i = 0; i < qnx->pads_connected; ++i)
       qnx_init_controller(qnx, &qnx->devices[i]);
-   }
 
    qnx->pads_connected = 0;
 
@@ -423,7 +421,7 @@ static void qnx_process_touch_event(
    {
       case SCREEN_EVENT_MTOUCH_TOUCH:
          /* Find a free touch struct. */
-         for(i = 0; i < MAX_TOUCH; ++i)
+         for (i = 0; i < MAX_TOUCH; ++i)
          {
             if(qnx->pointer[i].contact_id == -1)
             {
@@ -460,7 +458,7 @@ static void qnx_process_touch_event(
          break;
 
       case SCREEN_EVENT_MTOUCH_RELEASE:
-         for(i = 0; i < MAX_TOUCH; ++i)
+         for (i = 0; i < MAX_TOUCH; ++i)
          {
             if(qnx->pointer[i].contact_id == contact_id)
             {
@@ -470,7 +468,7 @@ static void qnx_process_touch_event(
                /* Remove pointer from map and shift
                 * remaining valid ones to the front. */
                qnx->touch_map[qnx->pointer[i].map] = -1;
-               for(j = qnx->pointer[i].map; j < qnx->pointer_count; ++j)
+               for (j = qnx->pointer[i].map; j < qnx->pointer_count; ++j)
                {
                   qnx->touch_map[j] = qnx->touch_map[j+1];
                   qnx->pointer[qnx->touch_map[j+1]].map = j;
@@ -490,7 +488,7 @@ static void qnx_process_touch_event(
 
       case SCREEN_EVENT_MTOUCH_MOVE:
          /* Find the finger we're tracking and update. */
-         for(i = 0; i < qnx->pointer_count; ++i)
+         for (i = 0; i < qnx->pointer_count; ++i)
          {
             if(qnx->pointer[i].contact_id == contact_id)
             {

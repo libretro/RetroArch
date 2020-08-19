@@ -37,7 +37,7 @@ static void rpi_init(void)
    if (!settings)
       return;
 
-   for(i = 0; i < MAX_LEDS; i++)
+   for (i = 0; i < MAX_LEDS; i++)
    {
       cur->setup[i] = 0;
       cur->map[i]   = settings->uints.led_map[i];

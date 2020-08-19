@@ -98,7 +98,7 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
                   (instance->data[3] << 8) |
                   ((instance->data[4] & 0x01) << 16);
 
-   for(i = 0; i < 17; i++)
+   for (i = 0; i < 17; i++)
      instance->buttons |= (pressed_keys & (1 << i)) ?
         (1 << button_mapping[i]) : 0;
 }
@@ -109,7 +109,7 @@ static void ds3_update_analog_state(ds3_instance_t *instance)
    int16_t interpolated;
    unsigned stick, axis;
 
-   for(pad_axis = 0; pad_axis < 4; pad_axis++)
+   for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
       axis         = pad_axis % 2 ? 0 : 1;
       stick        = pad_axis / 2;

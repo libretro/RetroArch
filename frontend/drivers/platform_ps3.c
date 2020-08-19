@@ -457,7 +457,7 @@ static int frontend_ps3_exec_exitspawn(const char *path,
    SceNpDrmKey *license_data = NULL;
 #endif
 
-   for(i = 0; i < sizeof(spawn_data); ++i)
+   for (i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
 #ifndef __PSL1GHT__

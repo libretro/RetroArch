@@ -6751,7 +6751,7 @@ unsigned menu_displaylist_build_list(
             {
                unsigned user;
                unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-               for(user = 0; user < max_users; user++)
+               for (user = 0; user < max_users; user++)
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            (enum msg_hash_enums)(

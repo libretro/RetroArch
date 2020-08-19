@@ -17098,7 +17098,7 @@ static bool setting_append_list(
 
             {
                unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-               for(user = 0; user < max_users; user++)
+               for (user = 0; user < max_users; user++)
                {
                   char s1[64], s2[64];
 

@@ -54,7 +54,7 @@ static INLINE float overflow(void)
    unsigned i;
    volatile float f = 1e10;
 
-   for(i = 0; i < 10; ++i)
+   for (i = 0; i < 10; ++i)
       f *= f;
    return f;
 }

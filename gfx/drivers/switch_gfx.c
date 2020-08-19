@@ -170,11 +170,9 @@ static bool switch_frame(void *data, const void *frame,
    centery                = (720-tgth)/2;
 
    /* clear image to black */
-   for(y = 0; y < 720; y++)
-   {
-      for(x = 0; x < 1280; x++)
+   for (y = 0; y < 720; y++)
+      for (x = 0; x < 1280; x++)
          sw->image[y*1280+x] = 0xFF000000;
-   }
 
    if(width > 0 && height > 0)
    {

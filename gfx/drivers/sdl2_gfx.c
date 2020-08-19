@@ -395,7 +395,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
    }
 
    RARCH_LOG("[SDL2]: Available displays:\n");
-   for(i = 0; i < SDL_GetNumVideoDisplays(); ++i)
+   for (i = 0; i < SDL_GetNumVideoDisplays(); ++i)
    {
       SDL_DisplayMode mode;
 

@@ -4575,7 +4575,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       /* skip 25 utf8 multi-byte chars */
       char *end = title_truncated;
 
-      for(i = 0; i < 25 && *end; i++)
+      for (i = 0; i < 25 && *end; i++)
       {
          end++;
          while ((*end & 0xC0) == 0x80)

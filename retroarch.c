@@ -27754,11 +27754,11 @@ static void input_config_reindex_device_names(void)
    unsigned name_index;
 
    /* Reset device name indices */
-   for(i = 0; i < MAX_INPUT_DEVICES; i++)
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
       input_config_set_device_name_index(i, 0);
 
    /* Scan device names */
-   for(i = 0; i < MAX_INPUT_DEVICES; i++)
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
       const char *device_name = input_config_get_device_name(i);
 
@@ -27777,7 +27777,7 @@ static void input_config_reindex_device_names(void)
 
       /* Loop over all devices following the current
        * selection */
-      for(j = i + 1; j < MAX_INPUT_DEVICES; j++)
+      for (j = i + 1; j < MAX_INPUT_DEVICES; j++)
       {
          const char *next_device_name = input_config_get_device_name(j);
 

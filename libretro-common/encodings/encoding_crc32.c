@@ -117,7 +117,7 @@ uint32_t file_crc32(uint32_t crc, const char *path)
    if (!buf)
       goto error;
 
-   for(i = 0; i < CRC32_MAX_MB; i++)
+   for (i = 0; i < CRC32_MAX_MB; i++)
    {
       int64_t nread = filestream_read(file, buf, CRC32_BUFFER_SIZE);
       if (nread < 0)		

@@ -888,7 +888,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    char tmp[4096];
    unsigned controller;
 
-   for(controller = 0; controller < MAX_USERS; controller++)
+   for (controller = 0; controller < MAX_USERS; controller++)
    {
       if (input_config_get_device_autoconfigured(controller))
       {

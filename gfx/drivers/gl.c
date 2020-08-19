@@ -4228,7 +4228,7 @@ unsigned *height_p, size_t *pitch_p)
    {
       unsigned i;
 
-      for(i = 0; i < height ; i++)
+      for (i = 0; i < height ; i++)
          memcpy((uint8_t*)buffer + i * pitch,
             (uint8_t*)buffer_texture + (height - 1 - i) * pitch, pitch);
 

@@ -134,10 +134,10 @@ set_nil:
       "sha1",
       "serial"
    };
-   for(i = 0; i < (sizeof(ordered_keys)/sizeof(char*)); i++)
+   for (i = 0; i < (sizeof(ordered_keys)/sizeof(char*)); i++)
    {
       int j;
-      for(j = 0; j < out->val.map.len; j++)
+      for (j = 0; j < out->val.map.len; j++)
       {
          if(string_is_equal(ordered_keys[i], out->val.map.items[j].key.val.string.buff))
          {

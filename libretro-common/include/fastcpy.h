@@ -45,49 +45,48 @@ static INLINE void* memcpy64(void* dst,void* src,size_t size)
 
 static INLINE void* memset16(void* dst,uint16_t val,size_t size)
 {
-   uint16_t* typedptr = (uint16_t*)dst;
+   uint16_t *typedptr = (uint16_t*)dst;
    std::fill(typedptr, typedptr + size, val);
    return dst;
 }
 
 static INLINE void* memset32(void* dst,uint32_t val,size_t size)
 {
-   uint32_t* typedptr = (uint32_t*)dst;
+   uint32_t *typedptr = (uint32_t*)dst;
    std::fill(typedptr, typedptr + size, val);
    return dst;
 }
 
 static INLINE void* memset64(void* dst,uint64_t val,size_t size)
 {
-   uint64_t* typedptr = (uint64_t*)dst;
+   uint64_t *typedptr = (uint64_t*)dst;
    std::fill(typedptr, typedptr + size, val);
    return dst;
 }
 #else
-
-static INLINE void* memset16(void* dst,uint16_t val,size_t size)
+static INLINE void *memset16(void* dst,uint16_t val,size_t size)
 {
    size_t i;
-   uint16_t* typedptr = (uint16_t*)dst;
-   for(i = 0;i < size;i++)
+   uint16_t *typedptr = (uint16_t*)dst;
+   for (i = 0;i < size;i++)
       typedptr[i] = val;
    return dst;
 }
 
-static INLINE void* memset32(void* dst,uint32_t val,size_t size)
+static INLINE void *memset32(void* dst,uint32_t val,size_t size)
 {
    size_t i;
-   uint32_t* typedptr = (uint32_t*)dst;
-   for(i = 0;i < size;i++)
+   uint32_t *typedptr = (uint32_t*)dst;
+   for (i = 0; i < size; i++)
       typedptr[i] = val;
    return dst;
 }
 
-static INLINE void* memset64(void* dst,uint64_t val,size_t size)
+static INLINE void *memset64(void* dst,uint64_t val,size_t size)
 {
    size_t i;
-   uint64_t* typedptr = (uint64_t*)dst;
-   for(i = 0;i < size;i++)
+   uint64_t *typedptr = (uint64_t*)dst;
+   for (i = 0; i < size;i++)
       typedptr[i] = val;
    return dst;
 }

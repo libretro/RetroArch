@@ -804,9 +804,9 @@ static void switch_input_free_input(void *data)
       if(sw->joypad)
          sw->joypad->destroy();
 
-      for(i = 0; i < DEFAULT_MAX_PADS; i++)
-         if(sw->sixaxis_handles_count[i] > 0)
-            for(j = 0; j < sw->sixaxis_handles_count[i]; j++)
+      for (i = 0; i < DEFAULT_MAX_PADS; i++)
+         if (sw->sixaxis_handles_count[i] > 0)
+            for (j = 0; j < sw->sixaxis_handles_count[i]; j++)
                hidStopSixAxisSensor(sw->sixaxis_handles[i][j]);
 
       free(sw);
@@ -856,7 +856,7 @@ static void* switch_input_init(const char *joypad_driver)
    for (i = 0; i < 2; i++)
       sw->simulated_click_start_time[i] = 0;
 
-   for(i = 0; i < DEFAULT_MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
       sw->sixaxis_handles_count[i]      = 0;
 #endif
 
@@ -940,13 +940,10 @@ static bool switch_input_set_sensor_state(void *data, unsigned port,
                handles_count = 4;
             }
             else
-            {
                handles_count = 3;
-            }
 
-            for(i = 0; i < handles_count; i++) {
+            for (i = 0; i < handles_count; i++)
                hidStartSixAxisSensor(sw->sixaxis_handles[port][i]);
-            }
 
             sw->sixaxis_handles_count[port] = handles_count;
          }
@@ -966,9 +963,10 @@ static float switch_input_get_sensor_input(void *data,
    float f;
    SixAxisSensorValues sixaxis;
 
-   if(id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
    {
-      hidSixAxisSensorValuesRead(&sixaxis, port == 0 ? CONTROLLER_P1_AUTO : port, 1);
+      hidSixAxisSensorValuesRead(&sixaxis,
+            port == 0 ? CONTROLLER_P1_AUTO : port, 1);
 
       switch(id)
       {
@@ -985,7 +983,6 @@ static float switch_input_get_sensor_input(void *data,
          case RETRO_SENSOR_GYROSCOPE_Z:
             return sixaxis.gyroscope.z;
       }
-
    }
 
    if(id == RETRO_SENSOR_ILLUMINANCE)
