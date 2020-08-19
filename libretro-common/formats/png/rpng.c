@@ -299,20 +299,16 @@ static void png_reverse_filter_copy_line_gray_alpha(uint32_t *data,
       const uint8_t *decoded, unsigned width,
       unsigned bpp)
 {
-   unsigned i;
+   uint32_t *data_ptr = NULL;
 
    bpp /= 8;
 
-   for (i = 0; i < width; i++)
+   for (data_ptr = &data[0]; data_ptr < data + width; data_ptr++)
    {
-      uint32_t gray, alpha;
-
-      gray     = *decoded;
-      decoded += bpp;
-      alpha    = *decoded;
-      decoded += bpp;
-
-      data[i]  = (gray * 0x010101) | (alpha << 24);
+      uint32_t gray     = *(decoded);
+      uint32_t alpha    = *(decoded + bpp);
+      decoded          += (2 * bpp);
+      *data_ptr         = (gray * 0x010101) | (alpha << 24);
    }
 }
 
