@@ -1847,13 +1847,20 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_SET_DIRECTORY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
 #ifdef HAVE_COCOATOUCH
-         // For iOS, set the path using realpath because the path name
-         // can start with /private and this ensures the path starts with it.
-         // This will allow the path to be properly substituted when fill_pathname_expand_special
-         // is called.
-         char real_action_path[PATH_MAX_LENGTH] = {0};
-         realpath(action_path, real_action_path);
-         strlcpy(action_path, real_action_path, sizeof(action_path));
+         /* For iOS, set the path using realpath because the 
+          * path name can start with /private and this ensures 
+          * the path starts with it.
+          *
+          * This will allow the path to be properly substituted 
+          * when fill_pathname_expand_special
+          * is called.
+          */
+         {
+            char real_action_path[PATH_MAX_LENGTH];
+            real_action_path[0] = '\0';
+            realpath(action_path, real_action_path);
+            strlcpy(action_path, real_action_path, sizeof(action_path));
+         }
 #endif
          ret        = set_path_generic(menu->filebrowser_label, action_path);
          break;
@@ -3228,7 +3235,8 @@ static int action_ok_path_manual_scan_directory(const char *path,
        * can start with /private and this ensures the path starts with it.
        * This will allow the path to be properly substituted when
        * fill_pathname_expand_special() is called. */
-      char real_content_dir[PATH_MAX_LENGTH] = {0};
+      char real_content_dir[PATH_MAX_LENGTH];
+      real_content_dir[0] = '\0';
       realpath(content_dir, real_content_dir);
       strlcpy(content_dir, real_content_dir, sizeof(content_dir));
    }
@@ -3350,8 +3358,10 @@ static int action_ok_set_switch_cpu_profile(const char *path,
 static int action_ok_set_switch_gpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char            *profile_name = SWITCH_GPU_PROFILES[entry_idx];
-   char command[PATH_MAX_LENGTH] = {0};
+   char command[PATH_MAX_LENGTH];
+   char            *profile_name  = SWITCH_GPU_PROFILES[entry_idx];
+
+   command[0]                     = '\0';
 
    snprintf(command, sizeof(command),
          "gpu-profile set '%s'",
@@ -4238,13 +4248,10 @@ void cb_generic_download(retro_task_t *task,
          dir_path = LAKKA_UPDATE_DIR;
          break;
       case MENU_ENUM_LABEL_CB_DISCORD_AVATAR:
-      {
-         fill_pathname_application_special(buf,
-            PATH_MAX_LENGTH * sizeof(char),
-            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+         fill_pathname_application_special(buf, sizeof(buf),
+               APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
          dir_path = buf;
          break;
-      }
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
@@ -4655,12 +4662,12 @@ static int action_ok_add_to_favorites(const char *path,
       char core_name[PATH_MAX_LENGTH];
 
       content_label[0] = '\0';
-      core_path[0] = '\0';
-      core_name[0] = '\0';
+      core_path[0]     = '\0';
+      core_name[0]     = '\0';
 
       /* Create string list container for playlist parameters */
-      attr.i = 0;
-      str_list = string_list_new();
+      attr.i           = 0;
+      str_list         = string_list_new();
       if (!str_list)
          return 0;
 
@@ -6328,6 +6335,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 static int action_ok_disk_image_append(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char image_path[PATH_MAX_LENGTH];
    rarch_system_info_t *sys_info = runloop_get_system_info();
    menu_handle_t *menu           = menu_driver_get_ptr();
    const char *menu_path         = NULL;
@@ -6337,9 +6345,8 @@ static int action_ok_disk_image_append(const char *path,
    bool audio_enable_menu_ok     = settings->bools.audio_enable_menu_ok;
 #endif
    bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
-   char image_path[PATH_MAX_LENGTH];
 
-   image_path[0] = '\0';
+   image_path[0]                 = '\0';
 
    if (!menu)
       return menu_cbs_exit();

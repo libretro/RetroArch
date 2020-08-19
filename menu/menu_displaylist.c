@@ -1582,17 +1582,15 @@ static int create_string_list_rdb_entry_string(
       file_list_t *list)
 {
    union string_list_elem_attr attr;
-   char *tmp                        = NULL;
+   char tmp[PATH_MAX_LENGTH];
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
-   size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
 
    if (!str_list)
       return -1;
 
    attr.i                           = 0;
-   tmp                              = (char*)malloc(path_size);
    tmp[0]                           = '\0';
 
    str_len += strlen(label) + 1;
@@ -1609,7 +1607,6 @@ static int create_string_list_rdb_entry_string(
    if (!output_label)
    {
       string_list_free(str_list);
-      free(tmp);
       return -1;
    }
 
@@ -1617,13 +1614,12 @@ static int create_string_list_rdb_entry_string(
    string_list_free(str_list);
 
    fill_pathname_join_concat_noext(tmp, desc, ": ",
-         actual_string, path_size);
+         actual_string, sizeof(tmp));
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
 
    free(output_label);
-   free(tmp);
 
    return 0;
 }

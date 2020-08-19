@@ -14651,9 +14651,8 @@ static void command_event_load_auto_state(
       global_t *global,
       struct rarch_state *p_rarch)
 {
+   char savestate_name_auto[PATH_MAX_LENGTH];
    bool ret                        = false;
-   char *savestate_name_auto       = NULL;
-   size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    bool savestate_auto_load        = settings->bools.savestate_auto_load;
 
    if (!global || !savestate_auto_load)
@@ -14667,17 +14666,13 @@ static void command_event_load_auto_state(
       return;
 #endif
 
-   savestate_name_auto             = (char*)calloc(PATH_MAX_LENGTH,
-         sizeof(*savestate_name_auto));
+   savestate_name_auto[0] = '\0';
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         ".auto", savestate_name_auto_size);
+         ".auto", sizeof(savestate_name_auto));
 
    if (!path_is_valid(savestate_name_auto))
-   {
-      free(savestate_name_auto);
       return;
-   }
 
    ret = content_load_state(savestate_name_auto, false, true);
 
@@ -14687,8 +14682,6 @@ static void command_event_load_auto_state(
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
          savestate_name_auto, ret ? "succeeded" : "failed"
          );
-
-   free(savestate_name_auto);
 }
 
 static void command_event_set_savestate_auto_index(
@@ -15054,9 +15047,7 @@ static bool command_event_save_auto_state(
       struct rarch_state *p_rarch)
 {
    bool ret                    = false;
-   char *savestate_name_auto   = NULL;
-   size_t
-      savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
+   char savestate_name_auto[PATH_MAX_LENGTH];
    bool savestate_auto_save    = settings->bools.savestate_auto_save;
    const enum rarch_core_type
       current_core_type        = p_rarch->current_core_type;
@@ -15074,11 +15065,10 @@ static bool command_event_save_auto_state(
       return false;
 #endif
 
-   savestate_name_auto         = (char*)
-      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
+   savestate_name_auto[0]      = '\0';
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         ".auto", savestate_name_auto_size);
+         ".auto", sizeof(savestate_name_auto));
 
    ret = content_save_state((const char*)savestate_name_auto, true, true);
    RARCH_LOG("%s \"%s\" %s.\n",
@@ -15086,7 +15076,6 @@ static bool command_event_save_auto_state(
          savestate_name_auto, ret ?
          "succeeded" : "failed");
 
-   free(savestate_name_auto);
    return true;
 }
 
