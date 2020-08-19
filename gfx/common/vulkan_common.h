@@ -586,26 +586,36 @@ static INLINE void vulkan_write_quad_vbo(struct vk_vertex *pv,
       float tex_x, float tex_y, float tex_width, float tex_height,
       const struct vk_color *color)
 {
-   unsigned i;
-   static const float strip[2 * 6] = {
-      0.0f, 0.0f,
-      0.0f, 1.0f,
-      1.0f, 0.0f,
-      1.0f, 1.0f,
-      1.0f, 0.0f,
-      0.0f, 1.0f,
-   };
-
-   for (i = 0; i < 6; i++)
-   {
-      float strip1 = strip[2 * i + 0];
-      float strip2 = strip[2 * i + 1];
-      pv[i].x      = x     + strip1 * width;
-      pv[i].y      = y     + strip2 * height;
-      pv[i].tex_x  = tex_x + strip1 * tex_width;
-      pv[i].tex_y  = tex_y + strip2 * tex_height;
-      pv[i].color  = *color;
-   }
+   pv[0].x      = x     + 0.0f * width;
+   pv[0].y      = y     + 0.0f * height;
+   pv[0].tex_x  = tex_x + 0.0f * tex_width;
+   pv[0].tex_y  = tex_y + 0.0f * tex_height;
+   pv[0].color  = *color;
+   pv[1].x      = x     + 0.0f * width;
+   pv[1].y      = y     + 1.0f * height;
+   pv[1].tex_x  = tex_x + 0.0f * tex_width;
+   pv[1].tex_y  = tex_y + 1.0f * tex_height;
+   pv[1].color  = *color;
+   pv[2].x      = x     + 1.0f * width;
+   pv[2].y      = y     + 0.0f * height;
+   pv[2].tex_x  = tex_x + 1.0f * tex_width;
+   pv[2].tex_y  = tex_y + 0.0f * tex_height;
+   pv[2].color  = *color;
+   pv[3].x      = x     + 1.0f * width;
+   pv[3].y      = y     + 1.0f * height;
+   pv[3].tex_x  = tex_x + 1.0f * tex_width;
+   pv[3].tex_y  = tex_y + 1.0f * tex_height;
+   pv[3].color  = *color;
+   pv[4].x      = x     + 1.0f * width;
+   pv[4].y      = y     + 0.0f * height;
+   pv[4].tex_x  = tex_x + 1.0f * tex_width;
+   pv[4].tex_y  = tex_y + 0.0f * tex_height;
+   pv[4].color  = *color;
+   pv[5].x      = x     + 0.0f * width;
+   pv[5].y      = y     + 1.0f * height;
+   pv[5].tex_x  = tex_x + 0.0f * tex_width;
+   pv[5].tex_y  = tex_y + 1.0f * tex_height;
+   pv[5].color  = *color;
 }
 
 struct vk_buffer vulkan_create_buffer(
