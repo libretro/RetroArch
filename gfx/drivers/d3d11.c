@@ -1479,7 +1479,7 @@ static bool d3d11_gfx_frame(
             D3D11ShaderResourceView textures[SLANG_NUM_BINDINGS] = { NULL };
             D3D11SamplerState       samplers[SLANG_NUM_BINDINGS] = { NULL };
 
-            texture_sem_t* texture_sem = d3d11->pass[i].semantics.textures;
+            texture_sem_t *texture_sem = d3d11->pass[i].semantics.textures;
             while (texture_sem->stage_mask)
             {
                int binding       = texture_sem->binding;
@@ -1496,22 +1496,20 @@ static bool d3d11_gfx_frame(
             D3D11SetPShaderSamplers(context, 0, SLANG_NUM_BINDINGS, samplers);
          }
 
-         if (d3d11->pass[i].rt.handle)
-         {
-            D3D11SetRenderTargets(context, 1, &d3d11->pass[i].rt.rt_view, NULL);
-#if 0
-            D3D11ClearRenderTargetView(context, d3d11->pass[i].rt.rt_view, d3d11->clearcolor);
-#endif
-            D3D11SetViewports(context, 1, &d3d11->pass[i].viewport);
-
-            D3D11Draw(context, 4, 0);
-            texture = &d3d11->pass[i].rt;
-         }
-         else
+         if (!d3d11->pass[i].rt.handle)
          {
             texture = NULL;
             break;
          }
+
+         D3D11SetRenderTargets(context, 1, &d3d11->pass[i].rt.rt_view, NULL);
+#if 0
+         D3D11ClearRenderTargetView(context, d3d11->pass[i].rt.rt_view, d3d11->clearcolor);
+#endif
+         D3D11SetViewports(context, 1, &d3d11->pass[i].viewport);
+
+         D3D11Draw(context, 4, 0);
+         texture = &d3d11->pass[i].rt;
       }
       D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
    }
@@ -1535,6 +1533,7 @@ static bool d3d11_gfx_frame(
 
    D3D11SetBlendState(context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
+#ifdef HAVE_MENU
    if (d3d11->menu.enabled && d3d11->menu.texture.handle)
    {
       if (d3d11->menu.fullscreen)
@@ -1546,6 +1545,7 @@ static bool d3d11_gfx_frame(
       d3d11_set_texture_and_sampler(context, 0, &d3d11->menu.texture);
       D3D11Draw(context, 4, 0);
    }
+#endif
 
    d3d11_set_shader(context, &d3d11->sprites.shader);
    D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
