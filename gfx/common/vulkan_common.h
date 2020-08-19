@@ -598,11 +598,13 @@ static INLINE void vulkan_write_quad_vbo(struct vk_vertex *pv,
 
    for (i = 0; i < 6; i++)
    {
-      pv[i].x     = x + strip[2 * i + 0] * width;
-      pv[i].y     = y + strip[2 * i + 1] * height;
-      pv[i].tex_x = tex_x + strip[2 * i + 0] * tex_width;
-      pv[i].tex_y = tex_y + strip[2 * i + 1] * tex_height;
-      pv[i].color = *color;
+      float strip1 = strip[2 * i + 0];
+      float strip2 = strip[2 * i + 1];
+      pv[i].x      = x     + strip1 * width;
+      pv[i].y      = y     + strip2 * height;
+      pv[i].tex_x  = tex_x + strip1 * tex_width;
+      pv[i].tex_y  = tex_y + strip2 * tex_height;
+      pv[i].color  = *color;
    }
 }
 
