@@ -231,17 +231,21 @@ end:
 static void png_reverse_filter_copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
-   uint32_t *data_ptr = NULL;
+   unsigned i;
 
    bpp /= 8;
 
-   for (data_ptr = &data[0]; data_ptr < data + width; data_ptr++)
+   for (i = 0; i < width; i++)
    {
-      uint32_t r  = *(decoded);
-      uint32_t g  = *(decoded + bpp);
-      uint32_t b  = *(decoded + bpp + bpp);
-      decoded    += (3 * bpp);
-      *data_ptr   = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
+      uint32_t r, g, b;
+
+      r        = *decoded;
+      decoded += bpp;
+      g        = *decoded;
+      decoded += bpp;
+      b        = *decoded;
+      decoded += bpp;
+      data[i]  = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
    }
 }
 
