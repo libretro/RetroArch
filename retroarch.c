@@ -5927,7 +5927,7 @@ void menu_entries_append(
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)
+   cbs                             = (menu_file_list_cbs_t*)
       malloc(sizeof(menu_file_list_cbs_t));
 
    if (!cbs)
@@ -8027,7 +8027,7 @@ static bool menu_shader_manager_save_preset_internal(
    char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
 
-   fullname[0] = buffer[0] = '\0';
+   fullname[0] = buffer[0]        = '\0';
 
    if (!shader || !shader->passes)
       return false;
@@ -14697,10 +14697,9 @@ static void command_event_set_savestate_auto_index(
       struct rarch_state *p_rarch)
 {
    size_t i;
-   char *state_dir                   = NULL;
-   char *state_base                  = NULL;
+   char state_dir[PATH_MAX_LENGTH];
+   char state_base[PATH_MAX_LENGTH];
 
-   size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
    bool savestate_auto_index         = settings->bools.savestate_auto_index;
@@ -14709,7 +14708,7 @@ static void command_event_set_savestate_auto_index(
    if (!global || !savestate_auto_index)
       return;
 
-   state_dir                         = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
+   state_dir[0] = state_base[0]      = '\0';
 
    /* Find the file in the same directory as global->savestate_name
     * with the largest numeral suffix.
@@ -14718,20 +14717,16 @@ static void command_event_set_savestate_auto_index(
     * /foo/path/content.state%d, where %d is the largest number available.
     */
    fill_pathname_basedir(state_dir, global->name.savestate,
-         state_size);
+         sizeof(state_dir));
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
          show_hidden_files);
 
-   free(state_dir);
-
    if (!dir_list)
       return;
 
-   state_base                        = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
-
    fill_pathname_base(state_base, global->name.savestate,
-         state_size);
+         sizeof(state_base));
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -14755,7 +14750,6 @@ static void command_event_set_savestate_auto_index(
    }
 
    dir_list_free(dir_list);
-   free(state_base);
 
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
 
@@ -15145,31 +15139,26 @@ static bool command_event_save_core_config(
       const char *dir_menu_config)
 {
    char msg[128];
+   char config_name[PATH_MAX_LENGTH];
+   char config_path[PATH_MAX_LENGTH];
+   char config_dir[PATH_MAX_LENGTH];
    bool found_path                 = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
-   char config_name[PATH_MAX_LENGTH];
-   char config_path[PATH_MAX_LENGTH];
-   char *config_dir                = NULL;
-   size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
 
    msg[0]                          = '\0';
+   config_dir[0]                   = '\0';
 
    if (!string_is_empty(dir_menu_config))
-      config_dir = strdup(dir_menu_config);
+      strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
-   {
-      config_dir                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      config_dir[0]                = '\0';
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
-            config_size);
-   }
+            sizeof(config_dir));
 
    if (string_is_empty(config_dir))
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_ERR("[config] %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
-      free (config_dir);
       return false;
    }
 
@@ -15238,7 +15227,6 @@ static bool command_event_save_core_config(
 
    p_rarch->runloop_overrides_active = overrides_active;
 
-   free(config_dir);
    return true;
 }
 
