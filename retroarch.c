@@ -5565,27 +5565,24 @@ static void menu_list_flush_stack(
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
+      menu_ctx_list_t list_info;
       bool refresh             = false;
       size_t new_selection_ptr = menu_st->selection_ptr;
       bool wont_pop_stack      = (MENU_LIST_GET_STACK_SIZE(list, idx) <= 1);
       if (wont_pop_stack)
          break;
-      else
-      {
-         menu_ctx_list_t list_info;
-         list_info.type         = MENU_LIST_PLAIN;
-         list_info.action       = 0;
-         menu_driver_list_cache(&list_info);
-      }
+
+      list_info.type           = MENU_LIST_PLAIN;
+      list_info.action         = 0;
+      menu_driver_list_cache(&list_info);
 
       menu_list_pop_stack(p_rarch,
             list, idx, &new_selection_ptr);
 
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
-      menu_st->selection_ptr = new_selection_ptr;
-
-      menu_list              = MENU_LIST_GET(list, (unsigned)idx);
+      menu_st->selection_ptr   = new_selection_ptr;
+      menu_list                = MENU_LIST_GET(list, (unsigned)idx);
 
       file_list_get_last(menu_list,
             &path, &label, &type, &entry_idx);
