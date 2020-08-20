@@ -29408,10 +29408,10 @@ static void audio_driver_flush(
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
 
-   convert_s16_to_float(&p_rarch->audio_driver_input_data[0], data, samples,
+   convert_s16_to_float(p_rarch->audio_driver_input_data, data, samples,
          audio_volume_gain);
 
-   src_data.data_in                  = &p_rarch->audio_driver_input_data[0];
+   src_data.data_in                  = p_rarch->audio_driver_input_data;
    src_data.input_frames             = samples >> 1;
 
 #ifdef HAVE_DSP_FILTER
@@ -29424,7 +29424,7 @@ static void audio_driver_flush(
       dsp_data.output                = NULL;
       dsp_data.output_frames         = 0;
 
-      dsp_data.input                 = &p_rarch->audio_driver_input_data[0];
+      dsp_data.input                 = p_rarch->audio_driver_input_data;
       dsp_data.input_frames          = (unsigned)(samples >> 1);
 
       retro_dsp_filter_process(p_rarch->audio_driver_dsp, &dsp_data);
