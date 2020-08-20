@@ -18230,7 +18230,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].flags                            = 0; \
    (*&list)[pos].free_flags                       = 0; \
    (*&list)[pos].min                              = 0.0; \
-   (*&list)[pos].placeholder                      = 0; \
    (*&list)[pos].max                              = 0.0; \
    (*&list)[pos].rounding_fraction                = NULL; \
    (*&list)[pos].name                             = NULL; \
