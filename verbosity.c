@@ -87,18 +87,18 @@
 
 typedef struct verbosity_state
 {
-   bool verbosity;
-
-   bool initialized;
-   bool override_active;
-   char override_path[PATH_MAX_LENGTH];
+#ifdef HAVE_LIBNX
+   Mutex mtx;
+#endif
    /* If this is non-NULL. RARCH_LOG and friends
     * will write to this file. */
    FILE *fp;
    void *buf;
-#ifdef HAVE_LIBNX
-   Mutex mtx;
-#endif
+
+   char override_path[PATH_MAX_LENGTH];
+   bool verbosity;
+   bool initialized;
+   bool override_active;
 } verbosity_state_t;
 
 /* TODO/FIXME - static public global variables */
