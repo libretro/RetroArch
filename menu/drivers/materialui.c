@@ -1065,6 +1065,51 @@ static const materialui_theme_t materialui_theme_virtual_boy = {
    0.75f     /* screen_fade_opacity */
 };
 
+static const materialui_theme_t materialui_theme_hacking_the_kernel = {
+   /* Text (& small inline icon) colours */
+   0x00E000, /* on_sys_bar */
+   0x00E02D, /* on_header */
+   0x00E000, /* list_text */
+   0x00E02D, /* list_text_highlighted */
+   0x83FF83, /* list_hint_text */
+   0x83FF83, /* list_hint_text_highlighted */
+   0x83FF83, /* status_bar_text */
+   /* Background colours */
+   0x000000, /* sys_bar_background */
+   0x003400, /* title_bar_background */
+   0x000000, /* list_background */
+   0x022F1C, /* list_highlighted_background */
+   0x002200, /* nav_bar_background */
+   0x022F1C, /* surface_background */
+   0x001100, /* thumbnail_background */
+   0x022F1C, /* side_bar_background */
+   0x002200, /* status_bar_background */
+   /* List icon colours */
+   0x008C00, /* list_icon */
+   0x89DE00, /* list_switch_on */
+   0x4A8500, /* list_switch_on_background */
+   0x04804C, /* list_switch_off */
+   0x02663C, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x00E02D, /* nav_bar_icon_active */
+   0x008C00, /* nav_bar_icon_passive */
+   0x000000, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* header_shadow */
+   0x08ED8D, /* landscape_border_shadow */
+   0x000000, /* status_bar_shadow */
+   0x00FF00, /* selection_marker_shadow */
+   0x008C00, /* scrollbar */
+   0x006F00, /* divider */
+   0x000000, /* screen_fade */
+   0x008C00, /* missing_thumbnail_icon */
+   0.8f,     /* header_shadow_opacity */
+   0.2f,     /* landscape_border_shadow_opacity */
+   1.0f,     /* status_bar_shadow_opacity */
+   0.12f,    /* selection_marker_shadow_opacity */
+   0.85f     /* screen_fade_opacity */
+};
+
 typedef struct
 {
    /* Text */
@@ -1672,6 +1717,8 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
          return &materialui_theme_cutie_red;
       case MATERIALUI_THEME_VIRTUAL_BOY:
          return &materialui_theme_virtual_boy;
+      case MATERIALUI_THEME_HACKING_THE_KERNEL:
+         return &materialui_theme_hacking_the_kernel;
       default:
          break;
    }
