@@ -1983,6 +1983,10 @@ struct rarch_state
    input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
 #endif
 
+   struct string_list *subsystem_fullpaths;
+   struct string_list *midi_drv_inputs;
+   struct string_list *midi_drv_outputs;
+   struct string_list *audio_driver_devices_list;
 
    uint8_t *video_driver_record_gpu_buffer;
    uint8_t *midi_drv_input_buffer;
@@ -2001,7 +2005,6 @@ struct rarch_state
 #endif
    core_option_manager_t *runloop_core_options;
    msg_queue_t *runloop_msg_queue;
-   struct string_list *subsystem_fullpaths;
 
    const record_driver_t *recording_driver;
    void *recording_data;
@@ -2016,8 +2019,6 @@ struct rarch_state
    void *camera_data;
 
    void *midi_drv_data;
-   struct string_list *midi_drv_inputs;
-   struct string_list *midi_drv_outputs;
 
    const ui_companion_driver_t *ui_companion;
    void *ui_companion_data;
@@ -2068,7 +2069,6 @@ struct rarch_state
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *audio_driver_dsp;
 #endif
-   struct string_list *audio_driver_devices_list;
    const retro_resampler_t *audio_driver_resampler;
 
    void *audio_driver_resampler_data;
