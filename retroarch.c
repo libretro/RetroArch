@@ -1988,7 +1988,6 @@ struct rarch_state
    uint8_t *midi_drv_input_buffer;
    uint8_t *midi_drv_output_buffer;
    bool    *load_no_content_hook;
-   float   *audio_driver_input_data;
    float   *audio_driver_output_samples_buf;
    char    *osk_grid[45];
 #if defined(HAVE_RUNAHEAD)
@@ -2276,6 +2275,7 @@ struct rarch_state
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
+   float audio_driver_input_data[AUDIO_CHUNK_SIZE_NONBLOCKING * 2];
    float video_driver_core_hz;
    float video_driver_aspect_ratio;
 
@@ -29100,9 +29100,12 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
 
    audio_driver_deinit_resampler(p_rarch);
 
-   if (p_rarch->audio_driver_input_data)
-      free(p_rarch->audio_driver_input_data);
-   p_rarch->audio_driver_input_data         = NULL;
+   {
+      unsigned i;
+      size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+      for (i = 0; i < max_bufsamples; i++)
+         p_rarch->audio_driver_input_data[i] = 0.0f;
+   }
 
    if (p_rarch->audio_driver_output_samples_buf)
       free(p_rarch->audio_driver_output_samples_buf);
@@ -29187,7 +29190,6 @@ static bool audio_driver_init_internal(
       bool audio_cb_inited)
 {
    unsigned new_rate       = 0;
-   float   *aud_inp_data   = NULL;
    float  *samples_buf     = NULL;
    size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings    = p_rarch->configuration_settings;
@@ -29327,13 +29329,6 @@ static bool audio_driver_init_internal(
       p_rarch->audio_driver_active = false;
    }
 
-   aud_inp_data = (float*)malloc(max_bufsamples * sizeof(float));
-   retro_assert(aud_inp_data != NULL);
-
-   if (!aud_inp_data)
-      goto error;
-
-   p_rarch->audio_driver_input_data = aud_inp_data;
    p_rarch->audio_driver_data_ptr   = 0;
 
    retro_assert(settings->uints.audio_out_rate <
@@ -29413,10 +29408,10 @@ static void audio_driver_flush(
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
 
-   convert_s16_to_float(p_rarch->audio_driver_input_data, data, samples,
+   convert_s16_to_float(&p_rarch->audio_driver_input_data[0], data, samples,
          audio_volume_gain);
 
-   src_data.data_in                  = p_rarch->audio_driver_input_data;
+   src_data.data_in                  = &p_rarch->audio_driver_input_data[0];
    src_data.input_frames             = samples >> 1;
 
 #ifdef HAVE_DSP_FILTER
@@ -29429,7 +29424,7 @@ static void audio_driver_flush(
       dsp_data.output                = NULL;
       dsp_data.output_frames         = 0;
 
-      dsp_data.input                 = p_rarch->audio_driver_input_data;
+      dsp_data.input                 = &p_rarch->audio_driver_input_data[0];
       dsp_data.input_frames          = (unsigned)(samples >> 1);
 
       retro_dsp_filter_process(p_rarch->audio_driver_dsp, &dsp_data);
@@ -29579,7 +29574,6 @@ static void audio_driver_sample(int16_t left, int16_t right)
 
    if (!(p_rarch->runloop_paused           ||
 		   !p_rarch->audio_driver_active     ||
-		   !p_rarch->audio_driver_input_data ||
 		   !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
@@ -29605,7 +29599,6 @@ static void audio_driver_menu_sample(void)
    bool check_flush                       = !(
          p_rarch->runloop_paused           ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_input_data ||
          !p_rarch->audio_driver_output_samples_buf);
 
    while (sample_count > 1024)
@@ -29692,7 +29685,6 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    if (!(
          p_rarch->runloop_paused           ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_input_data ||
          !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
@@ -30573,7 +30565,6 @@ void audio_driver_frame_is_reverse(void)
    if (!(
           p_rarch->runloop_paused          ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_input_data ||
          !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
