@@ -142,6 +142,12 @@ unsigned gfx_widgets_get_padding(void *data)
    return p_dispwidget->simple_widget_padding;
 }
 
+unsigned gfx_widgets_get_divider_width(void *data)
+{
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
+   return p_dispwidget->divider_width_1px;
+}
+
 unsigned gfx_widgets_get_height(void *data)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
