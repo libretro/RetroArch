@@ -21,228 +21,156 @@
 
 const char *file_path_str(enum file_path_enum enum_idx)
 {
-   const char *str = "null";
-
    switch (enum_idx)
    {
       case FILE_PATH_DETECT:
-         str = "DETECT";
-         break;
+         return "DETECT";
       case FILE_PATH_CONTENT_BASENAME:
-         str = "content.png";
-         break;
+         return "content.png";
       case FILE_PATH_LUTRO_PLAYLIST:
-         str = "Lutro.lpl";
-         break;
+         return "Lutro.lpl";
       case FILE_PATH_NUL:
-         str = "nul";
-         break;
+         return "nul";
       case FILE_PATH_CGP_EXTENSION:
-         str = ".cgp";
-         break;
+         return ".cgp";
       case FILE_PATH_GLSLP_EXTENSION:
-         str = ".glslp";
-         break;
+         return ".glslp";
       case FILE_PATH_SLANGP_EXTENSION:
-         str = ".slangp";
-         break;
+         return ".slangp";
       case FILE_PATH_AUTO_EXTENSION:
-         str = ".auto";
-         break;
+         return ".auto";
       case FILE_PATH_BSV_EXTENSION:
-         str = ".bsv";
-         break;
+         return ".bsv";
       case FILE_PATH_OPT_EXTENSION:
-         str = ".opt";
-         break;
+         return ".opt";
       case FILE_PATH_CORE_INFO_EXTENSION:
-         str = ".info";
-         break;
+         return ".info";
       case FILE_PATH_CONFIG_EXTENSION:
-         str = ".cfg";
-         break;
+         return ".cfg";
       case FILE_PATH_REMAP_EXTENSION:
-         str = ".rmp";
-         break;
+         return ".rmp";
       case FILE_PATH_RTC_EXTENSION:
-         str = ".rtc";
-         break;
+         return ".rtc";
       case FILE_PATH_CHT_EXTENSION:
-         str = ".cht";
-         break;
+         return ".cht";
       case FILE_PATH_SRM_EXTENSION:
-         str = ".srm";
-         break;
+         return ".srm";
       case FILE_PATH_STATE_EXTENSION:
-         str = ".state";
-         break;
+         return ".state";
       case FILE_PATH_LPL_EXTENSION:
-         str = ".lpl";
-         break;
+         return ".lpl";
       case FILE_PATH_LPL_EXTENSION_NO_DOT:
-         str = "lpl";
-         break;
+         return "lpl";
       case FILE_PATH_PNG_EXTENSION:
-         str = ".png";
-         break;
+         return ".png";
       case FILE_PATH_MP3_EXTENSION:
-         str = ".mp3";
-         break;
+         return ".mp3";
       case FILE_PATH_FLAC_EXTENSION:
-         str = ".flac";
-         break;
+         return ".flac";
       case FILE_PATH_OGG_EXTENSION:
-         str = ".ogg";
-         break;
+         return ".ogg";
       case FILE_PATH_WAV_EXTENSION:
-         str = ".wav";
-         break;
+         return ".wav";
       case FILE_PATH_MOD_EXTENSION:
-         str = ".mod";
-         break;
+         return ".mod";
       case FILE_PATH_S3M_EXTENSION:
-         str = ".s3m";
-         break;
+         return ".s3m";
       case FILE_PATH_XM_EXTENSION:
-         str = ".xm";
-         break;
+         return ".xm";
       case FILE_PATH_JPEG_EXTENSION:
-         str = ".jpeg";
-         break;
+         return ".jpeg";
       case FILE_PATH_BMP_EXTENSION:
-         str = ".bmp";
-         break;
+         return ".bmp";
       case FILE_PATH_TGA_EXTENSION:
-         str = ".tga";
-         break;
+         return ".tga";
       case FILE_PATH_JPG_EXTENSION:
-         str = ".jpg";
-         break;
+         return ".jpg";
       case FILE_PATH_UPS_EXTENSION:
-         str = ".ups";
-         break;
+         return ".ups";
       case FILE_PATH_IPS_EXTENSION:
-         str = ".ips";
-         break;
+         return ".ips";
       case FILE_PATH_BPS_EXTENSION:
-         str = ".bps";
-         break;
+         return ".bps";
       case FILE_PATH_RDB_EXTENSION:
-         str = ".rdb";
-         break;
+         return ".rdb";
       case FILE_PATH_RDB_EXTENSION_NO_DOT:
-         str = "rdb";
-         break;
+         return "rdb";
       case FILE_PATH_ZIP_EXTENSION:
-         str = ".zip";
-         break;
+         return ".zip";
       case FILE_PATH_7Z_EXTENSION:
-         str = ".7z";
-         break;
+         return ".7z";
       case FILE_PATH_INDEX_URL:
-         str = ".index";
-         break;
+         return ".index";
       case FILE_PATH_INDEX_DIRS_URL:
-         str = ".index-dirs";
-         break;
+         return ".index-dirs";
       case FILE_PATH_INDEX_EXTENDED_URL:
-         str = ".index-extended";
-         break;
+         return ".index-extended";
       case FILE_PATH_NETPLAY_ROOM_LIST_URL:
-         str = "registry.lpl";
-         break;
+         return "registry.lpl";
       case FILE_PATH_CORE_THUMBNAILS_URL:
-         str = "http://thumbnails.libretro.com";
-         break;
+         return "http://thumbnails.libretro.com";
       case FILE_PATH_CORE_THUMBNAILPACKS_URL:
-         str = "http://thumbnailpacks.libretro.com";
-         break;
+         return "http://thumbnailpacks.libretro.com";
       case FILE_PATH_LAKKA_URL:
 #ifdef HAVE_LAKKA_NIGHTLY
-         str = "http://nightly.builds.lakka.tv/.updater";
+         return "http://nightly.builds.lakka.tv/.updater";
 #else
-         str = "http://le.builds.lakka.tv";
+         return "http://le.builds.lakka.tv";
 #endif
-         break;
       case FILE_PATH_SHADERS_GLSL_ZIP:
-         str = "shaders_glsl.zip";
-         break;
+         return "shaders_glsl.zip";
       case FILE_PATH_SHADERS_SLANG_ZIP:
-         str = "shaders_slang.zip";
-         break;
+         return "shaders_slang.zip";
       case FILE_PATH_SHADERS_CG_ZIP:
-         str = "shaders_cg.zip";
-         break;
+         return "shaders_cg.zip";
       case FILE_PATH_DATABASE_RDB_ZIP:
-         str = "database-rdb.zip";
-         break;
+         return "database-rdb.zip";
       case FILE_PATH_OVERLAYS_ZIP:
-         str = "overlays.zip";
-         break;
+         return "overlays.zip";
       case FILE_PATH_CORE_INFO_ZIP:
-         str = "info.zip";
-         break;
+         return "info.zip";
       case FILE_PATH_CHEATS_ZIP:
-         str = "cheats.zip";
-         break;
+         return "cheats.zip";
       case FILE_PATH_ASSETS_ZIP:
-         str = "assets.zip";
-         break;
+         return "assets.zip";
       case FILE_PATH_AUTOCONFIG_ZIP:
-         str = "autoconfig.zip";
-         break;
+         return "autoconfig.zip";
       case FILE_PATH_CONTENT_HISTORY:
-         str = "content_history.lpl";
-         break;
+         return "content_history.lpl";
       case FILE_PATH_CONTENT_FAVORITES:
-         str = "content_favorites.lpl";
-         break;
+         return "content_favorites.lpl";
       case FILE_PATH_CONTENT_MUSIC_HISTORY:
-         str = "content_music_history.lpl";
-         break;
+         return "content_music_history.lpl";
       case FILE_PATH_CONTENT_VIDEO_HISTORY:
-         str = "content_video_history.lpl";
-         break;
+         return "content_video_history.lpl";
       case FILE_PATH_CONTENT_IMAGE_HISTORY:
-         str = "content_image_history.lpl";
-         break;
+         return "content_image_history.lpl";
       case FILE_PATH_CORE_OPTIONS_CONFIG:
-         str = "retroarch-core-options.cfg";
-         break;
+         return "retroarch-core-options.cfg";
       case FILE_PATH_MAIN_CONFIG:
-         str = "retroarch.cfg";
-         break;
+         return "retroarch.cfg";
       case FILE_PATH_BACKGROUND_IMAGE:
-         str = "bg.png";
-         break;
+         return "bg.png";
       case FILE_PATH_TTF_FONT:
-         str = "font.ttf";
-         break;
+         return "font.ttf";
       case FILE_PATH_RUNTIME_EXTENSION:
-         str = ".lrtl";
-         break;
+         return ".lrtl";
       case FILE_PATH_DEFAULT_EVENT_LOG:
-         str = "retroarch.log";
-         break;
+         return "retroarch.log";
       case FILE_PATH_EVENT_LOG_EXTENSION:
-         str = ".log";
-         break;
+         return ".log";
       case FILE_PATH_DISK_CONTROL_INDEX_EXTENSION:
-         str = ".ldci";
-         break;
+         return ".ldci";
       case FILE_PATH_CORE_BACKUP_EXTENSION:
-         str = ".lcbk";
-         break;
+         return ".lcbk";
       case FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT:
-         str = "lcbk";
-         break;
+         return "lcbk";
       case FILE_PATH_LOCK_EXTENSION:
-         str = ".lck";
-         break;
+         return ".lck";
       case FILE_PATH_UNKNOWN:
       default:
          break;
    }
 
-   return str;
+   return "null";
 }
