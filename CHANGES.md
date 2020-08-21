@@ -11,6 +11,7 @@ Having remaps for many different cores makes finding the active core files cumbe
 - RBUF/ANIMATIONS: Simplify gfx_animation by switching from dynarray to rbuf
 - RBUF/CORE UPDATER: Replace static entries array with dynamic array via RBUF library
 - RBUF/M3U: Replace static entries array with dynamic array via RBUF library
+- SHADERS: Add option to remember last selected shader preset/shader pass directories 
 - SWITCH: Fix input bind icons being off by one line
 - WIIU: Fix touchscreen mouse emulation
 
