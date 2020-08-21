@@ -605,6 +605,9 @@ static const bool default_auto_shaders_enable = true;
 
 static const bool default_sort_savefiles_enable = false;
 static const bool default_sort_savestates_enable = false;
+static const bool default_sort_savefiles_by_content_enable = false;
+static const bool default_sort_savestates_by_content_enable = false;
+static const bool default_sort_screenshots_by_content_enable = false;
 
 static const bool default_savestates_in_content_dir = false;
 static const bool default_savefiles_in_content_dir = false;
