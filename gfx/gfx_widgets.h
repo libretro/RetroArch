@@ -275,6 +275,8 @@ float* gfx_widgets_get_pure_white(void);
 
 unsigned gfx_widgets_get_padding(void *data);
 
+unsigned gfx_widgets_get_divider_width(void *data);
+
 unsigned gfx_widgets_get_height(void *data);
 
 gfx_widget_font_data_t* gfx_widgets_get_font_regular(void *data);
