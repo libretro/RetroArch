@@ -454,15 +454,6 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    return MSG_UNKNOWN;
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static const char *get_default_shader_dir(void)
-{
-   settings_t *settings       = config_get_ptr();
-   const char *def_shader_dir = settings->paths.directory_video_shader;
-   return def_shader_dir;
-}
-#endif
-
 int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -819,7 +810,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = get_default_shader_dir();
+         info_path          = menu_driver_get_last_shader_pass_dir();
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 #endif
@@ -829,7 +820,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = get_default_shader_dir();
+         info_path          = menu_driver_get_last_shader_preset_dir();
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 #endif
@@ -1727,8 +1718,12 @@ static int generic_action_ok(const char *path,
          {
             struct video_shader      *shader  = menu_shader_get();
             flush_char = msg_hash_to_str(flush_id);
+
+            /* Cache selected shader parent directory */
+            menu_driver_set_last_shader_preset_dir(action_path);
+
             menu_shader_manager_set_preset(shader,
-                  video_shader_parse_type(action_path),
+                  menu_driver_get_last_shader_preset_type(),
                   action_path,
                   true);
          }
@@ -1743,6 +1738,9 @@ static int generic_action_ok(const char *path,
 
             if (shader_pass)
             {
+               /* Cache selected shader parent directory */
+               menu_driver_set_last_shader_pass_dir(action_path);
+
                strlcpy(
                      shader_pass->source.path,
                      action_path,

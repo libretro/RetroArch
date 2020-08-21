@@ -687,6 +687,10 @@ static const float message_bgcolor_opacity = 1.0f;
 /* Watch shader files for changes and auto-apply as necessary. */
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false
 
+/* Initialise file browser with last used directory
+ * when selecting shader presets/passes via the menu */
+#define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR false
+
 /* Screenshots named automatically. */
 #define DEFAULT_AUTO_SCREENSHOT_FILENAME true
 

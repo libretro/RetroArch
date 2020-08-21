@@ -7433,6 +7433,147 @@ void menu_driver_search_append_terms_string(char *s, size_t len)
    }
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+
+static void menu_driver_set_last_shader_dir_int(
+      const char *shader_path,
+      enum rarch_shader_type *type,
+      char *shader_dir, size_t len)
+{
+   if (!type || !shader_dir || (len < 1))
+      return;
+
+   /* Reset existing cache */
+   *type         = RARCH_SHADER_NONE;
+   shader_dir[0] = '\0';
+
+   /* If path is empty, do nothing */
+   if (string_is_empty(shader_path))
+      return;
+
+   /* Get shader type */
+   *type = video_shader_parse_type(shader_path);
+
+   /* If type is invalid, do nothing */
+   if (*type == RARCH_SHADER_NONE)
+      return;
+
+   /* Cache parent directory */
+   fill_pathname_parent_dir(shader_dir, shader_path, len);
+}
+
+void menu_driver_set_last_shader_preset_dir(const char *shader_path)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return;
+
+   menu_driver_set_last_shader_dir_int(
+         shader_path,
+         &menu->last_shader_selection.preset_type,
+         menu->last_shader_selection.preset_dir,
+         sizeof(menu->last_shader_selection.preset_dir));
+}
+
+void menu_driver_set_last_shader_pass_dir(const char *shader_pass_path)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return;
+
+   menu_driver_set_last_shader_dir_int(
+         shader_pass_path,
+         &menu->last_shader_selection.pass_type,
+         menu->last_shader_selection.pass_dir,
+         sizeof(menu->last_shader_selection.pass_dir));
+}
+
+enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return RARCH_SHADER_NONE;
+
+   return menu->last_shader_selection.preset_type;
+}
+
+enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return RARCH_SHADER_NONE;
+
+   return menu->last_shader_selection.pass_type;
+}
+
+static const char *menu_driver_get_last_shader_dir_int(
+      enum rarch_shader_type type, const char *shader_dir)
+{
+   struct rarch_state *p_rarch  = &rarch_st;
+   settings_t *settings         = p_rarch->configuration_settings;
+   bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
+   const char *video_shader_dir = settings->paths.directory_video_shader;
+
+   /* If any of the following are true:
+    * - Directory caching is disabled
+    * - No directory has been cached
+    * - Cached directory is invalid
+    * - Last selected shader is incompatible with
+    *   the current video driver
+    * ...use the default setting */
+   if (!remember_last_dir ||
+       (type == RARCH_SHADER_NONE) ||
+       string_is_empty(shader_dir) ||
+       !path_is_directory(shader_dir) ||
+       !video_shader_is_supported(type))
+      return video_shader_dir;
+
+   return shader_dir;
+}
+
+
+const char *menu_driver_get_last_shader_preset_dir(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+   const char *shader_dir      = NULL;
+
+   if (menu)
+   {
+      type       = menu->last_shader_selection.preset_type;
+      shader_dir = menu->last_shader_selection.preset_dir;
+   }
+
+   return menu_driver_get_last_shader_dir_int(type, shader_dir);
+}
+
+const char *menu_driver_get_last_shader_pass_dir(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+   const char *shader_dir      = NULL;
+
+   if (menu)
+   {
+      type       = menu->last_shader_selection.pass_type;
+      shader_dir = menu->last_shader_selection.pass_dir;
+   }
+
+   return menu_driver_get_last_shader_dir_int(type, shader_dir);
+}
+
+#endif
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
