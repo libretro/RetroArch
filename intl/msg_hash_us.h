@@ -6408,6 +6408,14 @@ MSG_HASH(
    "Automatically apply changes made to shader files on disk."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Remember Last Used Shader Directory"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Open the file browser at the last used directory when loading shader presets and passes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "Load Shader Preset"
    )

@@ -9787,6 +9787,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            0, 0, 0))
                      count++;
                }
+
+               if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+                        0, 0, 0))
+                  count++;
+
                if (menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET),

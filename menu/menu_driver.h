@@ -329,6 +329,18 @@ typedef struct
    } scratchpad;
    unsigned rpl_entry_selection_ptr;
 
+   /* Used to cache the type and directory
+    * of the last shader preset/pass loaded
+    * via the menu file browser */
+   struct
+   {
+      enum rarch_shader_type preset_type;
+      enum rarch_shader_type pass_type;
+
+      char preset_dir[PATH_MAX_LENGTH];
+      char pass_dir[PATH_MAX_LENGTH];
+   } last_shader_selection;
+
    char menu_state_msg[8192];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
@@ -499,6 +511,15 @@ struct string_list *menu_driver_search_get_terms(void);
 /* Convenience function: Appends list of current
  * search terms to specified string */
 void menu_driver_search_append_terms_string(char *s, size_t len);
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+void menu_driver_set_last_shader_preset_dir(const char *shader_path);
+void menu_driver_set_last_shader_pass_dir(const char *shader_pass_path);
+enum rarch_shader_type menu_driver_get_last_shader_preset_type(void);
+enum rarch_shader_type menu_driver_get_last_shader_pass_type(void);
+const char *menu_driver_get_last_shader_preset_dir(void);
+const char *menu_driver_get_last_shader_pass_dir(void);
+#endif
 
 menu_handle_t *menu_driver_get_ptr(void);
 
