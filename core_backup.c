@@ -163,7 +163,7 @@ bool core_backup_get_backup_path(
          (unsigned)time_info.tm_sec,
          crc,
          (unsigned)backup_mode,
-         file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION));
+         FILE_PATH_CORE_BACKUP_EXTENSION);
 
    if ((n < 0) || (n >= 128))
       n = 0; /* Silence GCC warnings... */
@@ -199,7 +199,7 @@ enum core_backup_type core_backup_get_backup_type(const char *backup_path)
 
    /* Check if this is an archived backup */
    if (string_is_equal_noncase(backup_ext,
-         file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT)))
+         FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT))
    {
       const char *backup_filename = NULL;
       const char *src_ext         = NULL;
@@ -516,7 +516,7 @@ core_backup_list_t *core_backup_list_init(
    /* Get backup file list */
    dir_list = dir_list_new(
          backup_dir,
-         file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION),
+         FILE_PATH_CORE_BACKUP_EXTENSION,
          false, /* include_dirs */
          false, /* include_hidden */
          false, /* include_compressed */

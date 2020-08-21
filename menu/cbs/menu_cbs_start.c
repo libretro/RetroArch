@@ -345,8 +345,8 @@ static int action_start_playlist_association(
       return -1;
 
    /* Set default core path + name to DETECT */
-   playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
-   playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
+   playlist_set_default_core_path(playlist, FILE_PATH_DETECT);
+   playlist_set_default_core_name(playlist, FILE_PATH_DETECT);
    playlist_write_file(playlist);
 
    return 0;

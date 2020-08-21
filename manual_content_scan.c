@@ -797,7 +797,7 @@ bool manual_content_scan_get_task_config(
 
    strlcat(
          task_config->database_name,
-         file_path_str(FILE_PATH_LPL_EXTENSION),
+         FILE_PATH_LPL_EXTENSION,
          sizeof(task_config->database_name));
 
    /* ...which can in turn be used to generate the

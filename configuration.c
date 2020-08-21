@@ -2508,7 +2508,7 @@ void config_set_defaults(void *data)
 
          fill_pathname_join(config_file_path,
                settings->paths.directory_menu_config,
-               file_path_str(FILE_PATH_MAIN_CONFIG),
+               FILE_PATH_MAIN_CONFIG,
                sizeof(config_file_path));
          path_set(RARCH_PATH_CONFIG,
                config_file_path);
@@ -2668,7 +2668,7 @@ static config_file_t *open_default_config_file(void)
    fill_pathname_application_dir(app_path, sizeof(app_path));
 #endif
    fill_pathname_resolve_relative(conf_path, app_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+         FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
 
    conf = config_file_new_from_path_to_string(conf_path);
 
@@ -2678,7 +2678,7 @@ static config_file_t *open_default_config_file(void)
             sizeof(application_data)))
       {
          fill_pathname_join(conf_path, application_data,
-               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+               FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
          conf = config_file_new_from_path_to_string(conf_path);
       }
    }
@@ -2695,7 +2695,7 @@ static config_file_t *open_default_config_file(void)
          /* Since this is a clean config file, we can
           * safely use config_save_on_exit. */
          fill_pathname_resolve_relative(conf_path, app_path,
-               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+               FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
          config_set_bool(conf, "config_save_on_exit", true);
          saved = config_file_write(conf, conf_path, true);
       }
@@ -2721,7 +2721,7 @@ static config_file_t *open_default_config_file(void)
    path_mkdir(application_data);
 
    fill_pathname_join(conf_path, application_data,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+         FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
    conf = config_file_new_from_path_to_string(conf_path);
 
    if (!conf)
@@ -2753,7 +2753,7 @@ static config_file_t *open_default_config_file(void)
    if (has_application_data)
    {
       fill_pathname_join(conf_path, application_data,
-            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+            FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
@@ -2778,7 +2778,7 @@ static config_file_t *open_default_config_file(void)
 
       fill_pathname_basedir(basedir, application_data, sizeof(basedir));
       fill_pathname_join(conf_path, application_data,
-            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+            FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
 
       dir_created = path_mkdir(basedir);
 
@@ -2792,7 +2792,7 @@ static config_file_t *open_default_config_file(void)
          /* Build a retroarch.cfg path from the
           * global config directory (/etc). */
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
-            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
+            FILE_PATH_MAIN_CONFIG, sizeof(skeleton_conf));
 
          conf = config_file_new_from_path_to_string(skeleton_conf);
          if (conf)
@@ -3134,12 +3134,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_history,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_HISTORY),
+               FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
       else
          fill_pathname_join(settings->paths.path_content_history,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_HISTORY),
+               FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
    }
 
@@ -3149,12 +3149,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_favorites,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_FAVORITES),
+               FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
       else
          fill_pathname_join(settings->paths.path_content_favorites,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_FAVORITES),
+               FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
    }
 
@@ -3164,12 +3164,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_music_history,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
+               FILE_PATH_CONTENT_MUSIC_HISTORY,
                sizeof(settings->paths.path_content_music_history));
       else
          fill_pathname_join(settings->paths.path_content_music_history,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
+               FILE_PATH_CONTENT_MUSIC_HISTORY,
                sizeof(settings->paths.path_content_music_history));
    }
 
@@ -3179,12 +3179,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_video_history,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
+               FILE_PATH_CONTENT_VIDEO_HISTORY,
                sizeof(settings->paths.path_content_video_history));
       else
          fill_pathname_join(settings->paths.path_content_video_history,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
+               FILE_PATH_CONTENT_VIDEO_HISTORY,
                sizeof(settings->paths.path_content_video_history));
    }
 
@@ -3194,12 +3194,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_image_history,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
+               FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
       else
          fill_pathname_join(settings->paths.path_content_image_history,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
+               FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
    }
 

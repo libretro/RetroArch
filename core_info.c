@@ -231,7 +231,6 @@ static config_file_t *core_info_list_iterate(
 static char *core_info_get_core_lock_file_path(const char *core_path)
 {
    char *lock_file_path      = NULL;
-   const char *lock_file_ext = file_path_str(FILE_PATH_LOCK_EXTENSION);
    size_t len;
 
    if (string_is_empty(core_path))
@@ -241,7 +240,7 @@ static char *core_info_get_core_lock_file_path(const char *core_path)
     * allocating all strings dynamically... */
 
    /* Get path length */
-   len = (strlen(core_path) + strlen(lock_file_ext) + 1) * sizeof(char);
+   len = (strlen(core_path) + STRLEN_CONST(FILE_PATH_LOCK_EXTENSION) + 1) * sizeof(char);
 
    /* Allocate string */
    lock_file_path = (char*)malloc(len);
@@ -252,7 +251,7 @@ static char *core_info_get_core_lock_file_path(const char *core_path)
 
    /* Lock file is just core path + 'lock' extension */
    strlcpy(lock_file_path, core_path, len);
-   strlcat(lock_file_path, lock_file_ext, len);
+   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION, len);
 
    return lock_file_path;
 }

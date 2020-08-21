@@ -133,7 +133,7 @@ static void fill_derived_paths(void)
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
 		       "shaders_cg", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
     fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
-		       file_path_str(FILE_PATH_MAIN_CONFIG),  sizeof(g_defaults.path_config));
+		       FILE_PATH_MAIN_CONFIG,  sizeof(g_defaults.path_config));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
 		       "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));

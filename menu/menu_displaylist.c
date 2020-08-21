@@ -2353,7 +2353,7 @@ static void menu_displaylist_set_new_playlist(
                strlen(playlist_file_name), STRLEN_CONST("_history.lpl")))
          playlist_config.capacity = content_history_size;
       else if (string_is_equal(playlist_file_name,
-                     file_path_str(FILE_PATH_CONTENT_FAVORITES)) &&
+                     FILE_PATH_CONTENT_FAVORITES) &&
                (content_favorites_size >= 0))
          playlist_config.capacity = (unsigned)content_favorites_size;
    }
@@ -2847,8 +2847,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
                         const char *playlist_file = path_basename(playlist_path);
 
                         if (!string_is_empty(playlist_file))
-                           remove_entry_enabled = string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-                              string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES));
+                           remove_entry_enabled = string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY) ||
+                              string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
                      }
                   }
                }
@@ -3183,7 +3183,7 @@ static unsigned menu_displaylist_parse_playlists(
                string_ends_with_size(path, "_history.lpl",
                   strlen(path), STRLEN_CONST("_history.lpl"))
             || string_is_equal(playlist_file,
-               file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+               FILE_PATH_CONTENT_FAVORITES))
          continue;
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
@@ -3444,7 +3444,7 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
                   string_ends_with_size(path, "_history.lpl",
                      strlen(path), STRLEN_CONST("_history.lpl"))
                || string_is_equal(playlist_file,
-                  file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+                  FILE_PATH_CONTENT_FAVORITES))
             continue;
 
          menu_entries_append_enum(info->list,
@@ -3528,7 +3528,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
     * > This is only shown for collection playlists
     *   (i.e. it is not relevant for history/favourites) */
    if (!is_content_history &&
-       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+       !string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE),
@@ -10110,7 +10110,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                && string_ends_with(info->path, ".lpl"))
          {
             if (string_is_equal(info->path,
-                     file_path_str(FILE_PATH_CONTENT_HISTORY)))
+                     FILE_PATH_CONTENT_HISTORY))
             {
                if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
                   return menu_displaylist_process(info);
@@ -10118,7 +10118,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 
             if (string_is_equal(info->path,
-                     file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+                     FILE_PATH_CONTENT_FAVORITES))
             {
                if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
                   return menu_displaylist_process(info);
@@ -11751,10 +11751,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (frontend_driver_get_core_extension(ext_names, sizeof(ext_names)))
                   {
                      strlcat(ext_names, "|", sizeof(ext_names));
-                     strlcat(ext_names, file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT), sizeof(ext_names));
+                     strlcat(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
                   }
                   else
-                     strlcpy(ext_names, file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT), sizeof(ext_names));
+                     strlcpy(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
 
                   info->exts      = strdup(ext_names);
                }

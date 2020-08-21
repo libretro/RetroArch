@@ -149,7 +149,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path_config, user_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
+         FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {

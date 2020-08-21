@@ -3006,7 +3006,7 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
                && !string_ends_with_size(conf_path_basename, "_history.lpl",
                         strlen(conf_path_basename), STRLEN_CONST("_history.lpl"))
                && !string_is_equal(conf_path_basename,
-                        file_path_str(FILE_PATH_CONTENT_FAVORITES))
+                        FILE_PATH_CONTENT_FAVORITES)
             )
             *db_name = conf_path_basename;
       }

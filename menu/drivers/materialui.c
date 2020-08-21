@@ -2186,7 +2186,7 @@ static void materialui_refresh_playlist_icon_list(materialui_handle_t *mui)
       if (string_ends_with_size(playlist_file, "_history.lpl",
             strlen(playlist_file), STRLEN_CONST("_history.lpl")) ||
           string_is_equal(playlist_file,
-               file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+               FILE_PATH_CONTENT_FAVORITES))
          continue;
 
       /* Playlist is valid - generate image file name */

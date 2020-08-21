@@ -1047,7 +1047,6 @@ FILE
 #include "../libretro-common/file/file_path.c"
 #include "../libretro-common/file/file_path_io.c"
 #include "../file_path_special.c"
-#include "../file_path_str.c"
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
 #include "../libretro-common/lists/file_list.c"

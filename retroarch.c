@@ -11297,7 +11297,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                : system && !string_is_empty(system->library_name)
                ? system->library_name
                : "",
-               file_path_str(FILE_PATH_SRM_EXTENSION),
+               FILE_PATH_SRM_EXTENSION,
                sizeof(global->name.savefile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -11312,7 +11312,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                : system && !string_is_empty(system->library_name)
                ? system->library_name
                : "",
-               file_path_str(FILE_PATH_STATE_EXTENSION),
+               FILE_PATH_STATE_EXTENSION,
                sizeof(global->name.savestate));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
@@ -11327,7 +11327,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                !string_is_empty(p_rarch->path_main_basename)
                ? p_rarch->path_main_basename
                : "",
-               file_path_str(FILE_PATH_CHT_EXTENSION),
+               FILE_PATH_CHT_EXTENSION,
                sizeof(global->name.cheatfile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),

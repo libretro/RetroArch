@@ -4109,7 +4109,7 @@ static int generic_action_ok_network(const char *path,
       case MENU_ENUM_LABEL_CB_LAKKA_LIST:
          /* TODO unhardcode this path */
          fill_pathname_join(url_path,
-               file_path_str(FILE_PATH_LAKKA_URL),
+               FILE_PATH_LAKKA_URL,
                lakka_get_project(), sizeof(url_path));
          fill_pathname_join(url_path, url_path,
                ".index",
@@ -4384,7 +4384,7 @@ static int action_ok_download_generic(const char *path,
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
 #ifdef HAVE_LAKKA
          /* TODO unhardcode this path*/
-         fill_pathname_join(s, file_path_str(FILE_PATH_LAKKA_URL),
+         fill_pathname_join(s, FILE_PATH_LAKKA_URL,
                lakka_get_project(), sizeof(s));
 #endif
          break;
