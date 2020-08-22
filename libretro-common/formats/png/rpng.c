@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef DEBUG
 #include <stdio.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -132,7 +134,6 @@ static INLINE uint32_t dword_be(const uint8_t *buf)
 static bool png_process_ihdr(struct png_ihdr *ihdr)
 {
    unsigned i;
-   bool ret = true;
 
    switch (ihdr->color_type)
    {
@@ -140,7 +141,12 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
       case PNG_IHDR_COLOR_GRAY_ALPHA:
       case PNG_IHDR_COLOR_RGBA:
          if (ihdr->depth != 8 && ihdr->depth != 16)
-            GOTO_END_ERROR();
+         {
+#ifdef DEBUG
+            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+#endif
+            return false;
+         }
          break;
       case PNG_IHDR_COLOR_GRAY:
          {
@@ -157,7 +163,12 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
             }
 
             if (!correct_bpp)
-               GOTO_END_ERROR();
+            {
+#ifdef DEBUG
+               fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+#endif
+               return false;
+            }
          }
          break;
       case PNG_IHDR_COLOR_PLT:
@@ -175,11 +186,19 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
             }
 
             if (!correct_bpp)
-               GOTO_END_ERROR();
+            {
+#ifdef DEBUG
+               fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+#endif
+               return false;
+            }
          }
          break;
       default:
-         GOTO_END_ERROR();
+#ifdef DEBUG
+         fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+#endif
+         return false;
    }
 
 #ifdef RPNG_TEST
@@ -192,10 +211,14 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
 #endif
 
    if (ihdr->compression != 0)
-      GOTO_END_ERROR();
+   {
+#ifdef DEBUG
+      fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+#endif
+      return false;
+   }
 
-end:
-   return ret;
+   return true;
 }
 
 static void png_reverse_filter_copy_line_rgb(uint32_t *data,

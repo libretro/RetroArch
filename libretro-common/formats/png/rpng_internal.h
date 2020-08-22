@@ -27,13 +27,6 @@
 #include <filters.h>
 #include <formats/rpng.h>
 
-#undef GOTO_END_ERROR
-#define GOTO_END_ERROR() do { \
-   fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
-   ret = false; \
-   goto end; \
-} while (0)
-
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
