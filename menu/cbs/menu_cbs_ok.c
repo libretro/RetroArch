@@ -4083,7 +4083,8 @@ static int generic_action_ok_network(const char *path,
 
          fill_pathname_join(url_path,
                network_buildbot_assets_url,
-               "cores/.index-dirs", sizeof(url_path));
+               "cores/" FILE_PATH_INDEX_DIRS_URL,
+               sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
          callback  = cb_net_generic;
@@ -4091,7 +4092,7 @@ static int generic_action_ok_network(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
          fill_pathname_join(url_path, path,
-               ".index", sizeof(url_path));
+               FILE_PATH_INDEX_URL, sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
          callback  = cb_net_generic;
@@ -4099,8 +4100,8 @@ static int generic_action_ok_network(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
-               "http://thumbnailpacks.libretro.com",
-               ".index", sizeof(url_path));
+               FILE_PATH_CORE_THUMBNAILPACKS_URL,
+               FILE_PATH_INDEX_URL, sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
          callback  = cb_net_generic;
@@ -4112,7 +4113,7 @@ static int generic_action_ok_network(const char *path,
                FILE_PATH_LAKKA_URL,
                lakka_get_project(), sizeof(url_path));
          fill_pathname_join(url_path, url_path,
-               ".index",
+               FILE_PATH_INDEX_URL,
                sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_LAKKA_LIST;

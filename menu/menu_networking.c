@@ -33,6 +33,7 @@
 #include "menu_networking.h"
 #include "menu_entries.h"
 
+#include "../file_path_special.h"
 #include "../msg_hash.h"
 #include "../tasks/task_file_transfer.h"
 #include "../tasks/tasks_internal.h"
@@ -139,10 +140,10 @@ void cb_net_generic_subdir(retro_task_t *task,
 {
 #ifdef HAVE_NETWORKING
    char subdir_path[PATH_MAX_LENGTH];
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    file_transfer_t *state       = (file_transfer_t*)user_data;
 
-   subdir_path[0] = '\0';
+   subdir_path[0]               = '\0';
 
    if (!data || err)
       goto finish;
@@ -153,9 +154,9 @@ void cb_net_generic_subdir(retro_task_t *task,
 
 finish:
    if (!err && !string_ends_with_size(subdir_path,
-            ".index-dirs",
+            FILE_PATH_INDEX_DIRS_URL,
             strlen(subdir_path),
-            STRLEN_CONST(".index-dirs")
+            STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
             ))
    {
       char parent_dir[PATH_MAX_LENGTH];
@@ -225,22 +226,22 @@ finish:
 
    if (!err && 
          !string_ends_with_size(state->path,
-            ".index-dirs",
+            FILE_PATH_INDEX_DIRS_URL,
             strlen(state->path),
-            STRLEN_CONST(".index-dirs")
+            STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
             ))
    {
       char parent_dir[PATH_MAX_LENGTH];
       char parent_dir_encoded[PATH_MAX_LENGTH];
       file_transfer_t *transf     = NULL;
 
-      parent_dir[0]         = '\0';
-      parent_dir_encoded[0] = '\0';
+      parent_dir[0]               = '\0';
+      parent_dir_encoded[0]       = '\0';
 
       fill_pathname_parent_dir(parent_dir,
             state->path, sizeof(parent_dir));
-      strlcat(parent_dir,
-            ".index-dirs", sizeof(parent_dir));
+      strlcat(parent_dir, FILE_PATH_INDEX_DIRS_URL,
+            sizeof(parent_dir));
 
       transf           = (file_transfer_t*)malloc(sizeof(*transf));
 
