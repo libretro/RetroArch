@@ -2762,7 +2762,7 @@ static config_file_t *open_default_config_file(void)
    if (!conf && getenv("HOME"))
    {
       fill_pathname_join(conf_path, getenv("HOME"),
-            ".retroarch.cfg", sizeof(conf_path));
+            "." FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
@@ -3009,10 +3009,13 @@ static bool config_load_file(global_t *global,
       size_t tmp = 0;
       if (config_get_size_t(conf, size_settings[i].ident, &tmp))
          *size_settings[i].ptr = tmp ;
-      /* Special case for rewind_buffer_size - need to convert low values to what they were
+      /* Special case for rewind_buffer_size - need to convert 
+       * low values to what they were
        * intended to be based on the default value in config.def.h
-       * If the value is less than 10000 then multiple by 1MB because if the retroarch.cfg
-       * file contains rewind_buffer_size = "100" then that ultimately gets interpreted as
+       * If the value is less than 10000 then multiple by 1MB because if 
+       * the retroarch.cfg
+       * file contains rewind_buffer_size = "100",
+       * then that ultimately gets interpreted as
        * 100MB, so ensure the internal values represent that.*/
       if (string_is_equal(size_settings[i].ident, "rewind_buffer_size"))
          if (*size_settings[i].ptr < 10000)
@@ -3048,7 +3051,7 @@ static bool config_load_file(global_t *global,
       snprintf(buf, sizeof(buf), "led%u_map", i + 1);
 
       /* TODO/FIXME - change of sign - led_map is unsigned */
-      settings->uints.led_map[i]=-1;
+      settings->uints.led_map[i] =- 1;
 
       CONFIG_GET_INT_BASE(conf, settings, uints.led_map[i], buf);
    }
@@ -3318,7 +3321,7 @@ static bool config_load_file(global_t *global,
                   sizeof(global->name.savefile));
             fill_pathname_dir(global->name.savefile,
                   path_get(RARCH_PATH_BASENAME),
-                  ".srm",
+                  FILE_PATH_SRM_EXTENSION,
                   sizeof(global->name.savefile));
          }
       }
@@ -3664,19 +3667,19 @@ bool config_load_remap(const char *directory_input_remapping,
    fill_pathname_join_special_ext(core_path,
          remap_directory, core_name,
          core_name,
-         ".rmp",
+         FILE_PATH_REMAP_EXTENSION,
          sizeof(core_path));
 
    fill_pathname_join_special_ext(content_path,
          remap_directory, core_name,
          content_dir_name,
-         ".rmp",
+         FILE_PATH_REMAP_EXTENSION,
          sizeof(content_path));
 
    fill_pathname_join_special_ext(game_path,
          remap_directory, core_name,
          game_name,
-         ".rmp",
+         FILE_PATH_REMAP_EXTENSION,
          sizeof(game_path));
 
 #ifdef HAVE_CONFIGFILE
@@ -4207,19 +4210,19 @@ bool config_save_overrides(enum override_type type, void *data)
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
-         ".cfg",
+         FILE_PATH_CONFIG_EXTENSION,
          sizeof(game_path));
 
    fill_pathname_join_special_ext(content_path,
          config_directory, core_name,
          content_dir_name,
-         ".cfg",
+         FILE_PATH_CONFIG_EXTENSION,
          sizeof(content_path));
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
          core_name,
-         ".cfg",
+         FILE_PATH_CONFIG_EXTENSION,
          sizeof(core_path));
 
    if (!conf)
@@ -4541,7 +4544,8 @@ bool input_remapping_save_file(const char *path)
    buf[0] = remap_file[0]            = '\0';
 
    fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
-   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
+   fill_pathname_noext(remap_file, buf,
+         FILE_PATH_REMAP_EXTENSION, sizeof(remap_file));
 
    if (!(conf = config_file_new_from_path_to_string(remap_file)))
    {
@@ -4630,7 +4634,9 @@ bool input_remapping_remove_file(const char *path,
    buf[0] = remap_file[0]  = '\0';
 
    fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
-   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
+   fill_pathname_noext(remap_file, buf,
+         FILE_PATH_REMAP_EXTENSION,
+         sizeof(remap_file));
 
    return filestream_delete(remap_file) == 0 ? true : false;
 }
