@@ -143,6 +143,7 @@ QWidget *VideoPage::widget()
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR);
 
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);
