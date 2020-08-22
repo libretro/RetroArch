@@ -131,6 +131,7 @@ static INLINE uint32_t dword_be(const uint8_t *buf)
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
 }
 
+#if defined(DEBUG) || defined(RPNG_TEST)
 static bool png_process_ihdr(struct png_ihdr *ihdr)
 {
    unsigned i;
@@ -143,9 +144,7 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
       case PNG_IHDR_COLOR_RGBA:
          if (ihdr_depth != 8 && ihdr_depth != 16)
          {
-#ifdef DEBUG
             fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
-#endif
             return false;
          }
          break;
@@ -153,9 +152,7 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
          /* Valid bitdepths are: 1, 2, 4, 8, 16 */
          if (ihdr_depth > 16 || (0x977F7FFF << ihdr_depth) & 0x80000000)
          {
-#ifdef DEBUG
             fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
-#endif
             return false;
          }
          break;
@@ -163,38 +160,55 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
          /* Valid bitdepths are: 1, 2, 4, 8 */
          if (ihdr_depth > 8 || (0x977F7FFF << ihdr_depth)  & 0x80000000)
          {
-#ifdef DEBUG
             fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
-#endif
             return false;
          }
          break;
       default:
-#ifdef DEBUG
          fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
-#endif
          return false;
    }
 
-#ifdef RPNG_TEST
    fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
          ihdr->width, ihdr->height,
          ihdr_depth, (ihdr->color_type == PNG_IHDR_COLOR_PLT) ? "yes" : "no",
          (ihdr->color_type & PNG_IHDR_COLOR_RGB)              ? "yes" : "no",
          (ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA)       ? "yes" : "no",
          ihdr->interlace == 1 ? "yes" : "no");
-#endif
 
-   if (ihdr->compression != 0)
+   return true;
+}
+#else
+static bool png_process_ihdr(struct png_ihdr *ihdr)
+{
+   unsigned i;
+   uint8_t ihdr_depth = ihdr->depth;
+
+   switch (ihdr->color_type)
    {
-#ifdef DEBUG
-      fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
-#endif
-      return false;
+      case PNG_IHDR_COLOR_RGB:
+      case PNG_IHDR_COLOR_GRAY_ALPHA:
+      case PNG_IHDR_COLOR_RGBA:
+         if (ihdr_depth != 8 && ihdr_depth != 16)
+            return false;
+         break;
+      case PNG_IHDR_COLOR_GRAY:
+         /* Valid bitdepths are: 1, 2, 4, 8, 16 */
+         if (ihdr_depth > 16 || (0x977F7FFF << ihdr_depth) & 0x80000000)
+            return false;
+         break;
+      case PNG_IHDR_COLOR_PLT:
+         /* Valid bitdepths are: 1, 2, 4, 8 */
+         if (ihdr_depth > 8 || (0x977F7FFF << ihdr_depth)  & 0x80000000)
+            return false;
+         break;
+      default:
+         return false;
    }
 
    return true;
 }
+#endif
 
 static void png_reverse_filter_copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
@@ -979,24 +993,6 @@ static enum png_chunk_type read_chunk_header(
    return PNG_CHUNK_NOOP;
 }
 
-static bool png_parse_ihdr(uint8_t *buf,
-      struct png_ihdr *ihdr)
-{
-   buf               += 4 + 4;
-
-   ihdr->width        = dword_be(buf + 0);
-   ihdr->height       = dword_be(buf + 4);
-   ihdr->depth        = buf[8];
-   ihdr->color_type   = buf[9];
-   ihdr->compression  = buf[10];
-   ihdr->filter       = buf[11];
-   ihdr->interlace    = buf[12];
-
-   if (ihdr->width == 0 || ihdr->height == 0)
-      return false;
-   return true;
-}
-
 bool rpng_iterate_image(rpng_t *rpng)
 {
    unsigned i;
@@ -1034,11 +1030,30 @@ bool rpng_iterate_image(rpng_t *rpng)
          if (chunk_size != 13)
             return false;
 
-         if (!png_parse_ihdr(buf, &rpng->ihdr))
+         buf                    += 4 + 4;
+
+         rpng->ihdr.width        = dword_be(buf + 0);
+         rpng->ihdr.height       = dword_be(buf + 4);
+         rpng->ihdr.depth        = buf[8];
+         rpng->ihdr.color_type   = buf[9];
+         rpng->ihdr.compression  = buf[10];
+         rpng->ihdr.filter       = buf[11];
+         rpng->ihdr.interlace    = buf[12];
+
+         if (     rpng->ihdr.width  == 0 
+               || rpng->ihdr.height == 0)
             return false;
 
          if (!png_process_ihdr(&rpng->ihdr))
             return false;
+
+         if (rpng->ihdr.compression != 0)
+         {
+#if defined(DEBUG) || defined(RPNG_TEST)
+            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+#endif
+            return false;
+         }
 
          rpng->has_ihdr = true;
          break;
@@ -1047,7 +1062,11 @@ bool rpng_iterate_image(rpng_t *rpng)
          {
             unsigned entries = chunk_size / 3;
 
-            if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat || rpng->has_trns)
+            if (     !rpng->has_ihdr 
+                  ||  rpng->has_plte 
+                  ||  rpng->has_iend 
+                  ||  rpng->has_idat
+                  ||  rpng->has_trns)
                return false;
 
             if (chunk_size % 3)
