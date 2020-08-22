@@ -83,7 +83,6 @@ struct idat_buffer
 struct png_chunk
 {
    uint32_t size;
-   char type[4];
 };
 
 struct rpng_process
@@ -133,30 +132,6 @@ struct rpng
 static INLINE uint32_t dword_be(const uint8_t *buf)
 {
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
-}
-
-static enum png_chunk_type png_chunk_type(char chunk_type[4])
-{
-   unsigned i;
-   struct
-   {
-      const char *id;
-      enum png_chunk_type type;
-   } static const chunk_map[] = {
-      { "IHDR", PNG_CHUNK_IHDR },
-      { "IDAT", PNG_CHUNK_IDAT },
-      { "IEND", PNG_CHUNK_IEND },
-      { "PLTE", PNG_CHUNK_PLTE },
-      { "tRNS", PNG_CHUNK_tRNS },
-   };
-
-   for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
-   {
-      if (!memcmp(chunk_type, chunk_map[i].id, 4))
-         return chunk_map[i].type;
-   }
-
-   return PNG_CHUNK_NOOP;
 }
 
 static bool png_process_ihdr(struct png_ihdr *ihdr)
@@ -951,16 +926,17 @@ error:
    return NULL;
 }
 
-static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end,
+static enum png_chunk_type read_chunk_header(uint8_t *buf, uint8_t *buf_end,
       struct png_chunk *chunk)
 {
    unsigned i;
+   char type[4];
 
    chunk->size = dword_be(buf);
 
    /* Check whether chunk will overflow the data buffer */
    if (buf + 8 + chunk->size > buf_end)
-      return false;
+      return PNG_CHUNK_ERROR;
 
    for (i = 0; i < 4; i++)
    {
@@ -969,12 +945,51 @@ static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end,
       /* All four bytes of the chunk type must be
        * ASCII letters (codes 65-90 and 97-122) */
       if ((byte < 65) || ((byte > 90) && (byte < 97)) || (byte > 122))
-         return false;
-
-      chunk->type[i] = byte;
+         return PNG_CHUNK_ERROR;
+      type[i]      = byte;
    }
 
-   return true;
+   if (     
+            type[0] == 'I'
+         && type[1] == 'H'
+         && type[2] == 'D'
+         && type[3] == 'R'
+      )
+      return PNG_CHUNK_IHDR;
+   else if
+      (
+          type[0] == 'I'
+       && type[1] == 'D'
+       && type[2] == 'A'
+       && type[3] == 'T'
+      )
+         return PNG_CHUNK_IDAT;
+   else if
+      (
+          type[0] == 'I'
+       && type[1] == 'E'
+       && type[2] == 'N'
+       && type[3] == 'D'
+      )
+         return PNG_CHUNK_IEND;
+   else if
+      (
+          type[0] == 'P'
+       && type[1] == 'L'
+       && type[2] == 'T'
+       && type[3] == 'E'
+      )
+         return PNG_CHUNK_PLTE;
+   else if
+      (
+          type[0] == 't'
+       && type[1] == 'R'
+       && type[2] == 'N'
+       && type[3] == 'S'
+      )
+         return PNG_CHUNK_tRNS;
+
+   return PNG_CHUNK_NOOP;
 }
 
 static bool png_parse_ihdr(uint8_t *buf,
@@ -999,10 +1014,9 @@ bool rpng_iterate_image(rpng_t *rpng)
 {
    unsigned i;
    struct png_chunk chunk;
-   uint8_t *buf           = (uint8_t*)rpng->buff_data;
+   uint8_t *buf             = (uint8_t*)rpng->buff_data;
 
-   chunk.size             = 0;
-   chunk.type[0]          = 0;
+   chunk.size               = 0;
 
    /* Check whether data buffer pointer is valid */
    if (buf > rpng->buff_end)
@@ -1012,10 +1026,8 @@ bool rpng_iterate_image(rpng_t *rpng)
     * the data buffer */
    if (rpng->buff_end - buf < 8)
       return false;
-   if (!read_chunk_header(buf, rpng->buff_end, &chunk))
-      return false;
 
-   switch (png_chunk_type(chunk.type))
+   switch (read_chunk_header(buf, rpng->buff_end, &chunk))
    {
       case PNG_CHUNK_NOOP:
       default:
