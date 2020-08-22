@@ -4418,7 +4418,7 @@ static int generic_menu_iterate(
             size_t selection           = menu_st->selection_ptr;
             menu_file_list_cbs_t *cbs  = selection_buf ?
                (menu_file_list_cbs_t*)
-			   file_list_get_actiondata_at_offset(selection_buf, selection)
+               file_list_get_actiondata_at_offset(selection_buf, selection)
                : NULL;
 
             if (cbs && cbs->enum_idx != MSG_UNKNOWN)
@@ -4439,8 +4439,8 @@ static int generic_menu_iterate(
 
                         /* Search for specified core */
                         if (core_list && path &&
-                            core_updater_list_get_filename(core_list, path, &entry) &&
-                            !string_is_empty(entry->description))
+                              core_updater_list_get_filename(core_list, path, &entry) &&
+                              !string_is_empty(entry->description))
                            strlcpy(menu->menu_state_msg, entry->description,
                                  sizeof(menu->menu_state_msg));
                         else
@@ -4466,8 +4466,8 @@ static int generic_menu_iterate(
                         core_info.path = path;
 
                         if (path &&
-                            core_info_find(&core_info) &&
-                            !string_is_empty(core_info.inf->description))
+                              core_info_find(&core_info) &&
+                              !string_is_empty(core_info.inf->description))
                            strlcpy(menu->menu_state_msg, core_info.inf->description,
                                  sizeof(menu->menu_state_msg));
                         else
@@ -4618,7 +4618,7 @@ static int generic_menu_iterate(
             ret                      = menu_entry_action(&entry,
                   selection, (enum menu_action)action);
             if (ret)
-               goto end;
+               return -1;
 
             BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
@@ -4653,7 +4653,6 @@ static int generic_menu_iterate(
       menu_input_post_iterate(p_rarch, &ret, action,
             current_time);
 
-end:
    if (ret)
       return -1;
    return 0;
