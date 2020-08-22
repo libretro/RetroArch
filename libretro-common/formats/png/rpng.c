@@ -919,15 +919,11 @@ error:
    return NULL;
 }
 
-static enum png_chunk_type read_chunk_header(uint8_t *buf, uint8_t *buf_end,
-      uint32_t chunk_size)
+static enum png_chunk_type read_chunk_header(
+      uint8_t *buf, uint32_t chunk_size)
 {
    unsigned i;
    char type[4];
-
-   /* Check whether chunk will overflow the data buffer */
-   if (buf + 8 + chunk_size > buf_end)
-      return PNG_CHUNK_ERROR;
 
    for (i = 0; i < 4; i++)
    {
@@ -1018,7 +1014,11 @@ bool rpng_iterate_image(rpng_t *rpng)
 
    chunk_size = dword_be(buf);
 
-   switch (read_chunk_header(buf, rpng->buff_end, chunk_size))
+   /* Check whether chunk will overflow the data buffer */
+   if (buf + 8 + chunk_size > rpng->buff_end)
+      return false;
+
+   switch (read_chunk_header(buf, chunk_size))
    {
       case PNG_CHUNK_NOOP:
       default:
