@@ -1212,7 +1212,6 @@ void rpng_free(rpng_t *rpng)
 bool rpng_start(rpng_t *rpng)
 {
    unsigned i;
-   char header[8];
 
    if (!rpng)
       return false;
@@ -1222,12 +1221,8 @@ bool rpng_start(rpng_t *rpng)
    if (rpng->buff_end - rpng->buff_data < 8)
       return false;
 
-   header[0] = '\0';
-
-   for (i = 0; i < 8; i++)
-      header[i] = rpng->buff_data[i];
-
-   if (string_is_not_equal_fast(header, png_magic, sizeof(png_magic)))
+   if (string_is_not_equal_fast(
+            rpng->buff_data, png_magic, sizeof(png_magic)))
       return false;
 
    rpng->buff_data += 8;
