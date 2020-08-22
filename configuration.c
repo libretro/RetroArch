@@ -3051,7 +3051,7 @@ static bool config_load_file(global_t *global,
       snprintf(buf, sizeof(buf), "led%u_map", i + 1);
 
       /* TODO/FIXME - change of sign - led_map is unsigned */
-      settings->uints.led_map[i] =- 1;
+      settings->uints.led_map[i] = -1;
 
       CONFIG_GET_INT_BASE(conf, settings, uints.led_map[i], buf);
    }

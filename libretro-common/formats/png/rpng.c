@@ -191,7 +191,6 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
 #else
 static bool png_process_ihdr(struct png_ihdr *ihdr)
 {
-   unsigned i;
    uint8_t ihdr_depth = ihdr->depth;
 
    switch (ihdr->color_type)
@@ -1199,8 +1198,6 @@ void rpng_free(rpng_t *rpng)
 
 bool rpng_start(rpng_t *rpng)
 {
-   unsigned i;
-
    if (!rpng)
       return false;
 
