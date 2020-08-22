@@ -126,6 +126,16 @@ struct rpng
    bool has_trns;
 };
 
+static const struct adam7_pass passes[] = {
+   { 0, 0, 8, 8 },
+   { 4, 0, 8, 8 },
+   { 0, 4, 4, 8 },
+   { 2, 0, 4, 4 },
+   { 0, 2, 2, 4 },
+   { 1, 0, 2, 2 },
+   { 0, 1, 1, 2 },
+};
+
 static INLINE uint32_t dword_be(const uint8_t *buf)
 {
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
@@ -388,9 +398,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
             }
 
             if (width & 1)
-            {
                *data = palette[*decoded >> 4];
-            }
          }
          break;
 
@@ -399,9 +407,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
             unsigned i;
 
             for (i = 0; i < width; i++, decoded++, data++)
-            {
                *data = palette[*decoded];
-            }
          }
          break;
    }
@@ -411,8 +417,8 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
       unsigned width, unsigned height,
       unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size)
 {
-   unsigned bpp;
-   unsigned pitch;
+   unsigned bpp   = 0;
+   unsigned pitch = 0;
 
    switch (ihdr->color_type)
    {
@@ -437,15 +443,13 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
          pitch = (ihdr->width * ihdr->depth * 4 + 7) / 8;
          break;
       default:
-         bpp = 0;
-         pitch = 0;
          break;
    }
 
    if (pass_size)
       *pass_size = (pitch + 1) * ihdr->height;
    if (bpp_out)
-      *bpp_out = bpp;
+      *bpp_out   = bpp;
    if (pitch_out)
       *pitch_out = pitch;
 }
@@ -483,16 +487,6 @@ static void png_reverse_filter_deinit(struct rpng_process *pngp)
    pngp->pass_initialized = false;
    pngp->h                = 0;
 }
-
-static const struct adam7_pass passes[] = {
-   { 0, 0, 8, 8 },
-   { 4, 0, 8, 8 },
-   { 0, 4, 4, 8 },
-   { 2, 0, 4, 4 },
-   { 0, 2, 2, 4 },
-   { 1, 0, 2, 2 },
-   { 0, 1, 1, 2 },
-};
 
 static int png_reverse_filter_init(const struct png_ihdr *ihdr,
       struct rpng_process *pngp)
