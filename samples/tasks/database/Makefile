@@ -94,7 +94,6 @@ SOURCES_C := \
 	$(CORE_DIR)/tasks/task_database_cue.c \
 	$(CORE_DIR)/database_info.c \
 	$(CORE_DIR)/core_info.c \
-	$(CORE_DIR)/file_path_str.c \
 	$(CORE_DIR)/msg_hash.c \
 	$(CORE_DIR)/intl/msg_hash_us.c \
 	$(CORE_DIR)/playlist.c \
