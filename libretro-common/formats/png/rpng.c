@@ -134,13 +134,14 @@ static INLINE uint32_t dword_be(const uint8_t *buf)
 static bool png_process_ihdr(struct png_ihdr *ihdr)
 {
    unsigned i;
+   uint8_t ihdr_depth = ihdr->depth;
 
    switch (ihdr->color_type)
    {
       case PNG_IHDR_COLOR_RGB:
       case PNG_IHDR_COLOR_GRAY_ALPHA:
       case PNG_IHDR_COLOR_RGBA:
-         if (ihdr->depth != 8 && ihdr->depth != 16)
+         if (ihdr_depth != 8 && ihdr_depth != 16)
          {
 #ifdef DEBUG
             fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
@@ -149,49 +150,23 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
          }
          break;
       case PNG_IHDR_COLOR_GRAY:
+         /* Valid bitdepths are: 1, 2, 4, 8, 16 */
+         if (ihdr_depth > 16 || (0x977F7FFF << ihdr_depth) & 0x80000000)
          {
-            static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
-            bool correct_bpp = false;
-
-            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
-            {
-               if (valid_bpp[i] == ihdr->depth)
-               {
-                  correct_bpp = true;
-                  break;
-               }
-            }
-
-            if (!correct_bpp)
-            {
 #ifdef DEBUG
-               fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
 #endif
-               return false;
-            }
+            return false;
          }
          break;
       case PNG_IHDR_COLOR_PLT:
+         /* Valid bitdepths are: 1, 2, 4, 8 */
+         if (ihdr_depth > 8 || (0x977F7FFF << ihdr_depth)  & 0x80000000)
          {
-            static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
-            bool correct_bpp = false;
-
-            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
-            {
-               if (valid_bpp[i] == ihdr->depth)
-               {
-                  correct_bpp = true;
-                  break;
-               }
-            }
-
-            if (!correct_bpp)
-            {
 #ifdef DEBUG
-               fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
 #endif
-               return false;
-            }
+            return false;
          }
          break;
       default:
@@ -204,9 +179,9 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
 #ifdef RPNG_TEST
    fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
          ihdr->width, ihdr->height,
-         ihdr->depth, (ihdr->color_type == PNG_IHDR_COLOR_PLT) ? "yes" : "no",
-         (ihdr->color_type & PNG_IHDR_COLOR_RGB) ? "yes" : "no",
-         (ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA) ? "yes" : "no",
+         ihdr_depth, (ihdr->color_type == PNG_IHDR_COLOR_PLT) ? "yes" : "no",
+         (ihdr->color_type & PNG_IHDR_COLOR_RGB)              ? "yes" : "no",
+         (ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA)       ? "yes" : "no",
          ihdr->interlace == 1 ? "yes" : "no");
 #endif
 
