@@ -2509,7 +2509,7 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
 
 #ifdef HAVE_CHEEVOS
-         if (!rcheevos_hardcore_active)
+         if (!rcheevos_hardcore_active())
 #endif
          {
             if (menu_entries_append_enum(list,
@@ -2525,7 +2525,7 @@ static int menu_displaylist_parse_load_content_settings(
           settings->bools.quick_menu_show_undo_save_load_state)
       {
 #ifdef HAVE_CHEEVOS
-         if (!rcheevos_hardcore_active)
+         if (!rcheevos_hardcore_active())
 #endif
          {
             if (menu_entries_append_enum(list,

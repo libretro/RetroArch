@@ -12972,7 +12972,7 @@ static bool command_write_ram(const char *arg)
    if (!data)
       return false;
 
-   if (rcheevos_hardcore_active && rcheevos_loaded && !rcheevos_hardcore_paused)
+   if (rcheevos_hardcore_active())
    {
       RARCH_LOG("Achievements hardcore mode disabled by WRITE_CORE_RAM\n");
       rcheevos_pause_hardcore();
@@ -14846,7 +14846,7 @@ static void command_event_load_auto_state(
    if (!global || !savestate_auto_load)
       return;
 #ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active)
+   if (rcheevos_hardcore_active())
       return;
 #endif
 #ifdef HAVE_NETWORKING
@@ -15249,7 +15249,7 @@ static bool command_event_save_auto_state(
       return false;
 
 #ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active)
+   if (rcheevos_hardcore_active())
       return false;
 #endif
 
@@ -15552,8 +15552,11 @@ static bool command_event_main_state(
             if (content_load_state(state_path, false, false))
             {
 #ifdef HAVE_CHEEVOS
-               if (rcheevos_hardcore_active)
-                  rcheevos_state_loaded_flag = true;
+               if (rcheevos_hardcore_active())
+               {
+                  rcheevos_pause_hardcore();
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
 #endif
                ret = true;
 #ifdef HAVE_NETWORKING
@@ -15978,7 +15981,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
 #ifdef HAVE_CHEEVOS
-         if (rcheevos_hardcore_active)
+         if (rcheevos_hardcore_active())
             return false;
 #endif
          if (!command_event_main_state(p_rarch, cmd))
@@ -16005,10 +16008,6 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RESET:
-#ifdef HAVE_CHEEVOS
-         rcheevos_state_loaded_flag = false;
-         rcheevos_hardcore_paused = false;
-#endif
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -16141,7 +16140,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
-         rcheevos_toggle_hardcore_mode();
+         rcheevos_toggle_hardcore_paused();
 #endif
          break;
       case CMD_EVENT_REINIT_FROM_TOGGLE:
@@ -16159,10 +16158,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_REWIND
-#ifdef HAVE_CHEEVOS
-         if (rcheevos_hardcore_active)
-            return false;
-#endif
          state_manager_event_deinit();
 #endif
          break;
@@ -16172,7 +16167,7 @@ bool command_event(enum event_command cmd, void *data)
             bool rewind_enable        = settings->bools.rewind_enable;
             unsigned rewind_buf_size  = settings->sizes.rewind_buffer_size;
 #ifdef HAVE_CHEEVOS
-            if (rcheevos_hardcore_active)
+            if (rcheevos_hardcore_active())
                return false;
 #endif
             if (rewind_enable)
@@ -39378,17 +39373,7 @@ static enum runloop_state runloop_check_state(
    HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true, NULL);
 
 #ifdef HAVE_CHEEVOS
-   rcheevos_hardcore_active = settings->bools.cheevos_enable
-      && settings->bools.cheevos_hardcore_mode_enable
-      && !rcheevos_hardcore_paused;
-
-   if (rcheevos_hardcore_active && rcheevos_state_loaded_flag)
-   {
-      rcheevos_hardcore_paused = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-
-   if (!rcheevos_hardcore_active)
+   if (!rcheevos_hardcore_active())
 #endif
 #ifdef HAVE_REWIND
    {
@@ -39419,7 +39404,7 @@ static enum runloop_state runloop_check_state(
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
 #ifdef HAVE_CHEEVOS
-   if (!rcheevos_hardcore_active)
+   if (!rcheevos_hardcore_active())
 #endif
    {
       static bool old_slowmotion_button_state      = false;
@@ -39746,7 +39731,7 @@ int runloop_iterate(void)
          p_rarch, current_time);
 
 #ifdef HAVE_CHEEVOS
-   if (settings->bools.cheevos_enable && rcheevos_loaded)
+   if (settings->bools.cheevos_enable)
       rcheevos_test();
 #endif
 #ifdef HAVE_CHEATS

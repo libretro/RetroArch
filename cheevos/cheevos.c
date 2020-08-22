@@ -153,6 +153,8 @@ typedef struct
    slock_t* task_lock;
 #endif
 
+   bool hardcore_active;
+   bool loaded;
    bool core_supports;
    bool invalid_peek_address;
 
@@ -166,6 +168,7 @@ typedef struct
 
    char token[32];
    char hash[33];
+   char user_agent_prefix[128];
 } rcheevos_locals_t;
 
 static rcheevos_locals_t rcheevos_locals =
@@ -174,6 +177,8 @@ static rcheevos_locals_t rcheevos_locals =
 #ifdef HAVE_THREADS
    NULL, /* task_lock */
 #endif
+   false,/* hardcore_active */
+   false,/* loaded */
    true, /* core_supports */
    false,/* invalid_peek_address */
    {0},  /* patchdata */
@@ -184,14 +189,8 @@ static rcheevos_locals_t rcheevos_locals =
    {{0}},/* memory */
    {0},  /* token */
    "N/A",/* hash */
+   "",   /* user_agent_prefix */
 };
-
-/* TODO/FIXME - public global variables */
-bool rcheevos_loaded                 = false;
-bool rcheevos_hardcore_active        = false;
-bool rcheevos_hardcore_paused        = false;
-bool rcheevos_state_loaded_flag      = false;
-char rcheevos_user_agent_prefix[128] = "";
 
 #ifdef HAVE_THREADS
 #define CHEEVOS_LOCK(l)   do { slock_lock(l); } while (0)
@@ -220,13 +219,13 @@ static void rcheevos_get_user_agent(char* buffer)
    const char* scan;
    char* ptr;
 
-   if (!rcheevos_user_agent_prefix[0])
+   if (!rcheevos_locals.user_agent_prefix[0])
    {
       const frontend_ctx_driver_t *frontend = frontend_get_ptr();
       int major, minor;
       char tmp[64];
 
-      ptr = rcheevos_user_agent_prefix + sprintf(rcheevos_user_agent_prefix, "RetroArch/%s", PACKAGE_VERSION);
+      ptr = rcheevos_locals.user_agent_prefix + sprintf(rcheevos_locals.user_agent_prefix, "RetroArch/%s", PACKAGE_VERSION);
 
       if (frontend && frontend->get_os)
       {
@@ -235,7 +234,7 @@ static void rcheevos_get_user_agent(char* buffer)
       }
    }
 
-   ptr = buffer + sprintf(buffer, "%s", rcheevos_user_agent_prefix);
+   ptr = buffer + sprintf(buffer, "%s", rcheevos_locals.user_agent_prefix);
 
    if (system && !string_is_empty(system->library_name))
    {
@@ -869,12 +868,11 @@ static int rcheevos_has_indirect_memref(const rc_memref_value_t* memrefs)
 
 static void rcheevos_test_cheevo_set(bool official)
 {
-   settings_t *settings = config_get_ptr();
    int mode = RCHEEVOS_ACTIVE_SOFTCORE;
    rcheevos_cheevo_t* cheevo;
    int i, count;
 
-   if (settings && settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused)
+   if (rcheevos_locals.hardcore_active)
       mode = RCHEEVOS_ACTIVE_HARDCORE;
 
    if (official)
@@ -1121,9 +1119,7 @@ void rcheevos_get_achievement_state(unsigned index, char *buffer, size_t buffer_
    else if (!(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
    {
       /* if in hardcore mode, track progress towards hardcore unlock */
-      const settings_t* settings = config_get_ptr();
-      const bool hardcore = settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused;
-      check_measured = hardcore;
+      check_measured = rcheevos_locals.hardcore_active;
 
       enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
    }
@@ -1188,9 +1184,9 @@ void rcheevos_populate_menu(void* data)
 
    if (   cheevos_enable
        && cheevos_hardcore_mode_enable
-       && rcheevos_loaded)
+       && rcheevos_locals.loaded)
    {
-      if (!rcheevos_hardcore_paused)
+      if (rcheevos_locals.hardcore_active)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
                msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE),
@@ -1236,7 +1232,7 @@ bool rcheevos_get_description(rcheevos_ctx_desc_t* desc)
 
    *desc->s = 0;
 
-   if (rcheevos_loaded)
+   if (rcheevos_locals.loaded)
    {
       idx = desc->idx;
 
@@ -1258,9 +1254,15 @@ bool rcheevos_get_description(rcheevos_ctx_desc_t* desc)
    return true;
 }
 
+bool rcheevos_hardcore_active(void)
+{
+   return rcheevos_locals.hardcore_active;
+}
+
 void rcheevos_pause_hardcore(void)
 {
-   rcheevos_hardcore_paused = true;
+   if (rcheevos_locals.hardcore_active)
+      rcheevos_toggle_hardcore_paused();
 }
 
 bool rcheevos_unload(void)
@@ -1288,7 +1290,7 @@ bool rcheevos_unload(void)
 #endif
    }
 
-   if (rcheevos_loaded)
+   if (rcheevos_locals.loaded)
    {
       for (i = 0, count = rcheevos_locals.patchdata.core_count; i < count; i++)
       {
@@ -1320,10 +1322,8 @@ bool rcheevos_unload(void)
       rcheevos_locals.lboards                   = NULL;
       rcheevos_locals.richpresence.richpresence = NULL;
 
-      rcheevos_loaded                           = false;
-      rcheevos_hardcore_active                  = false;
-      rcheevos_hardcore_paused                  = false;
-      rcheevos_state_loaded_flag                = false;
+      rcheevos_locals.loaded                    = false;
+      rcheevos_locals.hardcore_active           = false;
    }
 
    /* if the config-level token has been cleared, we need to re-login on loading the next game */
@@ -1333,40 +1333,63 @@ bool rcheevos_unload(void)
    return true;
 }
 
-bool rcheevos_toggle_hardcore_mode(void)
+static void rcheevos_toggle_hardcore_active(void)
 {
-   settings_t *settings              = config_get_ptr();
-   bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
-   bool rewind_enable                = settings->bools.rewind_enable;
+   settings_t* settings = config_get_ptr();
+   bool rewind_enable = settings->bools.rewind_enable;
 
-   /* reset and deinit rewind to avoid cheat the score */
-   if (cheevos_hardcore_mode_enable
-       && !rcheevos_hardcore_paused)
+   if (!rcheevos_locals.hardcore_active)
    {
-      const char *msg            = msg_hash_to_str(
-            MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
+      /* activate hardcore */
+      rcheevos_locals.hardcore_active = true;
 
-      /* reset the state loaded flag in case it was set */
-      rcheevos_state_loaded_flag = false;
+      if (rcheevos_locals.loaded)
+      {
+         const char* msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
+         CHEEVOS_LOG("%s\n", msg);
+         runloop_msg_queue_push(msg, 0, 3 * 60, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-      /* send reset core cmd to avoid any user
-       * savestate previusly loaded. */
-      command_event(CMD_EVENT_RESET, NULL);
+         /* reset the game */
+         command_event(CMD_EVENT_RESET, NULL);
+      }
 
+      /* deinit rewind */
       if (rewind_enable)
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
-
-      CHEEVOS_LOG("%s\n", msg);
-      runloop_msg_queue_push(msg, 0, 3 * 60, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    else
    {
+      /* pause hardcore */
+      rcheevos_locals.hardcore_active = false;
+
+      if (rcheevos_locals.loaded)
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Hardcore paused\n");
+      }
+
+      /* re-init rewind */
       if (rewind_enable)
          command_event(CMD_EVENT_REWIND_INIT, NULL);
    }
+}
 
-   return true;
+void rcheevos_toggle_hardcore_paused(void)
+{
+   settings_t* settings = config_get_ptr();
+
+   /* if hardcore mode is not enabled, we can't toggle it */
+   if (settings->bools.cheevos_hardcore_mode_enable)
+      rcheevos_toggle_hardcore_active();
+}
+
+void rcheevos_hardcore_enabled_changed(void)
+{
+   const settings_t* settings = config_get_ptr();
+   const bool enabled = settings && settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable;
+
+   if (enabled != rcheevos_locals.hardcore_active)
+      rcheevos_toggle_hardcore_active();
 }
 
 /*****************************************************************************
@@ -1374,7 +1397,12 @@ Test all the achievements (call once per frame).
 *****************************************************************************/
 void rcheevos_test(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t* settings;
+
+   if (!rcheevos_locals.loaded)
+      return;
+
+   settings = config_get_ptr();
 
    if (rcheevos_locals.memory.count == 0)
    {
@@ -1383,10 +1411,11 @@ void rcheevos_test(void)
       {
          CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
 
-         if (settings->bools.cheevos_verbose_enable)
+         if (settings && settings->bools.cheevos_verbose_enable)
             runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 
-         rcheevos_loaded = false;
+         rcheevos_locals.loaded = false;
+         rcheevos_pause_hardcore();
          return;
       }
    }
@@ -1398,9 +1427,7 @@ void rcheevos_test(void)
       if (settings->bools.cheevos_test_unofficial)
          rcheevos_test_cheevo_set(false);
 
-      if (settings->bools.cheevos_hardcore_mode_enable &&
-          settings->bools.cheevos_leaderboards_enable  &&
-          !rcheevos_hardcore_paused)
+      if (rcheevos_locals.hardcore_active && settings->bools.cheevos_leaderboards_enable)
          rcheevos_test_leaderboards();
    }
 }
@@ -1556,7 +1583,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "this game doesn't feature achievements\n");
          strcpy(rcheevos_locals.hash, "N/A");
-         rcheevos_hardcore_paused = true;
+         rcheevos_pause_hardcore();
          CORO_STOP();
       }
 
@@ -1609,12 +1636,11 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
                "This game has no achievements.",
                0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-         rcheevos_hardcore_paused = true;
-
+         rcheevos_pause_hardcore();
          CORO_STOP();
       }
 
-      rcheevos_loaded = true;
+      rcheevos_locals.loaded = true;
 
       /*
          * Inputs:  CHEEVOS_VAR_GAMEID
@@ -1638,7 +1664,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          int number_of_unlocked          = rcheevos_locals.patchdata.core_count;
          int number_of_unsupported       = 0;
 
-         if (coro->settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused)
+         if (rcheevos_locals.hardcore_active)
             mode = RCHEEVOS_ACTIVE_HARDCORE;
 
          for (; cheevo < end; cheevo++)
@@ -2256,14 +2282,16 @@ bool rcheevos_load(const void *data)
    struct rc_hash_filereader filereader;
    struct rc_hash_cdreader cdreader;
 
-   rcheevos_loaded                    = false;
-   rcheevos_hardcore_paused           = false;
+   rcheevos_locals.loaded             = false;
 
    if (!cheevos_enable || !rcheevos_locals.core_supports || !data)
    {
-      rcheevos_hardcore_paused        = true;
+      rcheevos_pause_hardcore();
       return false;
    }
+
+   /* reset hardcore mode based on configs */
+   rcheevos_hardcore_enabled_changed();
 
    coro = (rcheevos_coro_t*)calloc(1, sizeof(*coro));
 

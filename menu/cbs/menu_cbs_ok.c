@@ -85,10 +85,6 @@
 #include "../../network/netplay/netplay_discovery.h"
 #endif
 
-#ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
-#endif
-
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #endif
@@ -3965,9 +3961,6 @@ static int action_ok_save_state(const char *path,
 static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_CHEEVOS
-   rcheevos_hardcore_paused = !rcheevos_hardcore_paused;
-#endif
    generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
