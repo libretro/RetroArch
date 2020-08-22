@@ -955,14 +955,8 @@ static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end,
       struct png_chunk *chunk)
 {
    unsigned i;
-   uint8_t dword[4];
 
-   dword[0] = '\0';
-
-   for (i = 0; i < 4; i++)
-      dword[i] = buf[i];
-
-   chunk->size = dword_be(dword);
+   chunk->size = dword_be(buf);
 
    /* Check whether chunk will overflow the data buffer */
    if (buf + 8 + chunk->size > buf_end)
