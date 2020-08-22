@@ -70,12 +70,12 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_INDEX_DIRS_URL ".index-dirs"
 #define FILE_PATH_INDEX_EXTENDED_URL ".index-extended"
 #define FILE_PATH_NETPLAY_ROOM_LIST_URL "registry.lpl"
-#define FILE_PATH_CORE_THUMBNAILS_URL "http//thumbnails.libretro.com"
-#define FILE_PATH_CORE_THUMBNAILPACKS_URL "http//thumbnailpacks.libretro.com"
+#define FILE_PATH_CORE_THUMBNAILS_URL "http://thumbnails.libretro.com"
+#define FILE_PATH_CORE_THUMBNAILPACKS_URL "http://thumbnailpacks.libretro.com"
 #ifdef HAVE_LAKKA_NIGHTLY
-#define FILE_PATH_LAKKA_URL "http//nightly.builds.lakka.tv/.updater"
+#define FILE_PATH_LAKKA_URL "http://nightly.builds.lakka.tv/.updater"
 #else
-#define FILE_PATH_LAKKA_URL "http//le.builds.lakka.tv"
+#define FILE_PATH_LAKKA_URL "http://le.builds.lakka.tv"
 #endif
 #define FILE_PATH_SHADERS_GLSL_ZIP "shaders_glsl.zip"
 #define FILE_PATH_SHADERS_SLANG_ZIP "shaders_slang.zip"
