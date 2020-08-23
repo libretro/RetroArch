@@ -1370,6 +1370,7 @@
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_CHEATS",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
@@ -1417,6 +1418,58 @@
 				LIBRARY_SEARCH_PATHS = "";
 				MARKETING_VERSION = 1.9.0;
 				MTL_FAST_MATH = YES;
+				OTHER_CFLAGS = (
+					"-DNS_BLOCK_ASSERTIONS=1",
+					"-DNDEBUG",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
+					"-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_STB_FONT",
+					"-DHAVE_HID",
+					"-DHAVE_NETWORKING",
+					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_RUNAHEAD",
+					"-DHAVE_TRANSLATE",
+					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_CORES",
+					"-DHAVE_ONLINE_UPDATER",
+					"-DHAVE_LANGEXTRA",
+					"-DHAVE_CHEEVOS",
+					"-DRC_DISABLE_LUA",
+					"-DHAVE_IMAGEVIEWER",
+					"-DHAVE_RGUI",
+					"-DHAVE_CONFIGFILE",
+					"-DHAVE_MENU",
+					"-DHAVE_GFX_WIDGETS",
+					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
+					"-DIOS",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_OPENGL",
+					"-DHAVE_OPENGLES",
+					"-DHAVE_OPENGLES2",
+					"-DHAVE_CC_RESAMPLER",
+					"-DHAVE_GLSL",
+					"-DINLINE=inline",
+					"-DHAVE_THREADS",
+					"-D__LIBRETRO__",
+					"-DRARCH_MOBILE",
+					"-std=gnu99",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_VIDEO_LAYOUT",
+					"-DHAVE_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_RJPEG",
+					"-DHAVE_RBMP",
+					"-DHAVE_RTGA",
+					"-DHAVE_COCOATOUCH",
+					"-DHAVE_MAIN",
+					"-DHAVE_CHEATS",
+				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -1485,6 +1538,7 @@
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_CHEATS",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
