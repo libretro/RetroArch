@@ -108,11 +108,8 @@ void cheat_manager_apply_cheats(void)
    }
 
 #ifdef HAVE_CHEEVOS
-   if (idx != 0)
-      if (     rcheevos_hardcore_active 
-            && rcheevos_loaded 
-            && !rcheevos_hardcore_paused)
-         cheat_manager_pause_cheevos();
+   if (idx != 0 && rcheevos_hardcore_active())
+      cheat_manager_pause_cheevos();
 #endif
 }
 
@@ -1568,11 +1565,8 @@ void cheat_manager_apply_retro_cheats(void)
    }
 
 #ifdef HAVE_CHEEVOS
-   if (cheat_applied)
-      if (     rcheevos_hardcore_active 
-            && rcheevos_loaded 
-            && !rcheevos_hardcore_paused)
-         cheat_manager_pause_cheevos();
+   if (cheat_applied && rcheevos_hardcore_active())
+      cheat_manager_pause_cheevos();
 #endif
 }
 

@@ -7389,16 +7389,7 @@ static void change_handler_video_layout_selected_view(rarch_setting_t *setting)
 #ifdef HAVE_CHEEVOS
 static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
 {
-   settings_t *settings  = config_get_ptr();
-
-   if (!setting)
-      return;
-
-   if (settings && settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable)
-   {
-      rcheevos_toggle_hardcore_mode();
-      command_event(CMD_EVENT_RESET, NULL);
-   }
+   rcheevos_hardcore_enabled_changed();
 }
 #endif
 
