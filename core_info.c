@@ -261,61 +261,58 @@ static core_info_list_t *core_info_list_new(const char *path,
       const char *exts,
       bool dir_show_hidden_files)
 {
+   struct string_list contents;
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
    const char       *path_basedir   = libretro_info_dir;
-   struct string_list *contents     = string_list_new();
-   bool                          ok = dir_list_append(contents, path, exts,
-         false, dir_show_hidden_files, false, false);
+   bool                          ok = false;
+
+   string_list_initialize(&contents);
+
+   if (dir_list_append(&contents, path, exts,
+         false, dir_show_hidden_files, false, false))
+      ok                            = true;
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-   /* UWP: browse the optional packages for additional cores */
-   struct string_list *core_packages = string_list_new();
-   uwp_fill_installed_core_packages(core_packages);
-   for (i = 0; i < core_packages->size; i++)
-      dir_list_append(contents, core_packages->elems[i].data, exts,
-            false, dir_show_hidden_files, false, false);
-   string_list_free(core_packages);
+   {
+      /* UWP: browse the optional packages for additional cores */
+      struct string_list *core_packages = string_list_new();
+      uwp_fill_installed_core_packages(core_packages);
+      for (i = 0; i < core_packages->size; i++)
+         dir_list_append(&contents, core_packages->elems[i].data, exts,
+               false, dir_show_hidden_files, false, false);
+      string_list_free(core_packages);
+   }
 #else
    /* Keep the old 'directory not found' behavior */
    if (!ok)
-   {
-      string_list_free(contents);
-      return NULL;
-   }
+      goto error;
 #endif
-
-   if (!contents)
-      return NULL;
 
    core_info_list = (core_info_list_t*)malloc(sizeof(*core_info_list));
    if (!core_info_list)
-   {
-      string_list_free(contents);
-      return NULL;
-   }
+      goto error;
 
    core_info_list->list    = NULL;
    core_info_list->count   = 0;
    core_info_list->all_ext = NULL;
 
    core_info               = (core_info_t*)
-      calloc(contents->size, sizeof(*core_info));
+      calloc(contents.size, sizeof(*core_info));
 
    if (!core_info)
    {
       core_info_list_free(core_info_list);
-      string_list_free(contents);
-      return NULL;
+      goto error;
    }
 
    core_info_list->list    = core_info;
-   core_info_list->count   = contents->size;
+   core_info_list->count   = contents.size;
 
-   for (i = 0; i < contents->size; i++)
+   for (i = 0; i < contents.size; i++)
    {
-      const char *base_path = contents->elems[i].data;
+      const char *base_path = contents.elems[i].data;
       config_file_t *conf   = core_info_list_iterate(base_path,
             path_basedir);
 
@@ -498,8 +495,12 @@ static core_info_list_t *core_info_list_new(const char *path,
       core_info_list_resolve_all_firmware(core_info_list);
    }
 
-   string_list_free(contents);
+   string_list_deinitialize(&contents);
    return core_info_list;
+
+error:
+   string_list_deinitialize(&contents);
+   return NULL;
 }
 
 /* Shallow-copies internal state.
