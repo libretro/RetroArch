@@ -107,7 +107,7 @@ static void rcheevos_memory_init_without_regions(
    char description[64];
    retro_ctx_memory_info_t meminfo;
 
-   sprintf(description, "offset 0x%06x", 0);
+   snprintf(description, sizeof(description), "offset 0x%06x", 0);
 
    meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
    core_get_memory(&meminfo);
@@ -180,7 +180,9 @@ void rcheevos_memory_init_from_memory_map(rcheevos_memory_regions_t* regions, co
          }
 
          offset = real_address - desc->core.start;
-         sprintf(description, "descriptor %u, offset 0x%06X", (int)(desc - mmap->descriptors) + 1, (int)offset);
+         snprintf(description, sizeof(description),
+               "descriptor %u, offset 0x%06X",
+               (int)(desc - mmap->descriptors) + 1, (int)offset);
 
          if (desc->core.ptr)
          {
@@ -273,11 +275,12 @@ static void rcheevos_memory_init_from_unmapped_memory(rcheevos_memory_regions_t*
 
          if (meminfo.data)
          {
-            sprintf(description, "offset 0x%06X", (int)offset);
+            snprintf(description, sizeof(description),
+                  "offset 0x%06X", (int)offset);
             meminfo.data = (uint8_t*)meminfo.data + offset;
          }
          else
-            sprintf(description, "null filler");
+            snprintf(description, sizeof(description), "null filler");
       }
       else
       {
