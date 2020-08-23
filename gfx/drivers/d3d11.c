@@ -729,7 +729,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       /* On phone, no swap effects are supported. */
       desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 #elif defined(__WINRT__)
-      desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
       desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
 #endif

@@ -648,10 +648,9 @@ static INLINE ULONG DXGIReleaseSwapChain(DXGISwapChain swap_chain)
 {
    return swap_chain->lpVtbl->Release(swap_chain);
 }
-static INLINE HRESULT DXGIPresent(DXGISwapChain swap_chain, UINT sync_interval, UINT flags)
-{
-   return swap_chain->lpVtbl->Present(swap_chain, sync_interval, flags);
-}
+
+#define DXGIPresent(swap_chain, sync_interval, flags) ((swap_chain)->lpVtbl->Present((swap_chain), (UINT)(sync_interval), flags))
+
 static INLINE HRESULT DXGIGetBuffer(DXGISwapChain swap_chain, UINT buffer, IDXGISurface** out)
 {
    return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, uuidof(IDXGISurface), (void**)out);
@@ -666,17 +665,9 @@ DXGIGetFullscreenState(DXGISwapChain swap_chain, BOOL* fullscreen, DXGIOutput* t
 {
    return swap_chain->lpVtbl->GetFullscreenState(swap_chain, fullscreen, target);
 }
-static INLINE HRESULT DXGIResizeBuffers(
-      DXGISwapChain swap_chain,
-      UINT          buffer_count,
-      UINT          width,
-      UINT          height,
-      DXGI_FORMAT   new_format,
-      UINT          swap_chain_flags)
-{
-   return swap_chain->lpVtbl->ResizeBuffers(
-         swap_chain, buffer_count, width, height, new_format, swap_chain_flags);
-}
+
+#define DXGIResizeBuffers(swap_chain, buffer_count, width, height, new_format, swap_chain_flags) ((swap_chain)->lpVtbl->ResizeBuffers((swap_chain), buffer_count, width, height, new_format, swap_chain_flags))
+
 static INLINE HRESULT
 DXGIResizeTarget(DXGISwapChain swap_chain, DXGI_MODE_DESC* new_target_parameters)
 {
