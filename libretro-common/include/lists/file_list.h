@@ -70,6 +70,8 @@ void *file_list_get_actiondata_at_offset(const file_list_t *list,
  */
 void file_list_free(file_list_t *list);
 
+bool file_list_deinitialize(file_list_t *list);
+
 /**
  * @brief makes the list big enough to contain at least nitems
  *

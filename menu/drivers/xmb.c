@@ -267,7 +267,7 @@ typedef struct xmb_handle
    char *bg_file_path;
 
    file_list_t *selection_buf_old;
-   file_list_t *horizontal_list;
+   file_list_t horizontal_list; /* ptr alignment */
 
    xmb_node_t main_menu_node;
 #ifdef HAVE_IMAGEVIEWER
@@ -719,9 +719,7 @@ static size_t xmb_list_get_size(void *data, enum menu_list_type type)
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_HORIZONTAL:
-         if (xmb && xmb->horizontal_list)
-            return file_list_get_size(xmb->horizontal_list);
-         break;
+         return file_list_get_size(&xmb->horizontal_list);
       case MENU_LIST_TABS:
          return xmb->system_tab_end;
    }
@@ -746,10 +744,9 @@ static void *xmb_list_get_entry(void *data,
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         if (xmb && xmb->horizontal_list)
-            list_size = file_list_get_size(xmb->horizontal_list);
+         list_size = file_list_get_size(&xmb->horizontal_list);
          if (i < list_size)
-            return (void*)&xmb->horizontal_list->list[i];
+            return (void*)&xmb->horizontal_list.list[i];
          break;
       default:
          break;
@@ -1683,10 +1680,10 @@ static xmb_node_t *xmb_node_allocate_userdata(
    }
 
    tmp = (xmb_node_t*)file_list_get_userdata_at_offset(
-         xmb->horizontal_list, i);
+         &xmb->horizontal_list, i);
    xmb_free_node(tmp);
 
-   file_list_set_userdata(xmb->horizontal_list, i, node);
+   file_list_set_userdata(&xmb->horizontal_list, i, node);
 
    return node;
 }
@@ -1695,7 +1692,7 @@ static xmb_node_t* xmb_get_userdata_from_horizontal_list(
       xmb_handle_t *xmb, unsigned i)
 {
    return (xmb_node_t*)
-      file_list_get_userdata_at_offset(xmb->horizontal_list, i);
+      file_list_get_userdata_at_offset(&xmb->horizontal_list, i);
 }
 
 static void xmb_push_animations(xmb_node_t *node,
@@ -1844,7 +1841,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
       const char *path = NULL;
 
       menu_entries_get_at_offset(
-            xmb->horizontal_list,
+            &xmb->horizontal_list,
             xmb->categories_selection_ptr - (xmb->system_tab_end + 1),
             &path, NULL, NULL, NULL, NULL);
 
@@ -2057,7 +2054,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
       if (!node)
          continue;
 
-      file_list_get_at_offset(xmb->horizontal_list, i,
+      file_list_get_at_offset(&xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
       if (!path || !string_ends_with_size(path, ".lpl",
@@ -2078,9 +2075,9 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 
    menu_displaylist_info_init(&info);
 
-   info.list                    = xmb->horizontal_list;
-   info.path                    = strdup(dir_playlist);
-   info.label                   = strdup(
+   info.list                        = &xmb->horizontal_list;
+   info.path                        = strdup(dir_playlist);
+   info.label                       = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
    info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
@@ -2091,7 +2088,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
       {
          size_t i;
-         for (i = 0; i < xmb->horizontal_list->size; i++)
+         for (i = 0; i < xmb->horizontal_list.size; i++)
             xmb_node_allocate_userdata(xmb, (unsigned)i);
          menu_displaylist_process(&info);
       }
@@ -2154,7 +2151,7 @@ static void xmb_context_reset_horizontal_list(
             continue;
       }
 
-      file_list_get_at_offset(xmb->horizontal_list, i,
+      file_list_get_at_offset(&xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
       if (!path)
@@ -2236,24 +2233,13 @@ static void xmb_context_reset_horizontal_list(
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 {
    xmb_context_destroy_horizontal_list(xmb);
-   if (xmb->horizontal_list)
-   {
-      xmb_free_list_nodes(xmb->horizontal_list, false);
-      file_list_free(xmb->horizontal_list);
-   }
-   xmb->horizontal_list           = NULL;
+
+   xmb_free_list_nodes(&xmb->horizontal_list, false);
+   file_list_deinitialize(&xmb->horizontal_list);
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   xmb->horizontal_list           = (file_list_t*)
-      malloc(sizeof(file_list_t));
-
-   xmb->horizontal_list->list     = NULL;
-   xmb->horizontal_list->capacity = 0;
-   xmb->horizontal_list->size     = 0;
-
-   if (xmb->horizontal_list)
-      xmb_init_horizontal_list(xmb);
+   xmb_init_horizontal_list(xmb);
 
    xmb_context_reset_horizontal_list(xmb);
 }
@@ -5497,14 +5483,11 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    gfx_display_allocate_white_texture();
 
-   xmb->horizontal_list           = (file_list_t*)malloc(sizeof(file_list_t));
+   xmb->horizontal_list.list     = NULL;
+   xmb->horizontal_list.capacity = 0;
+   xmb->horizontal_list.size     = 0;
 
-   xmb->horizontal_list->list     = NULL;
-   xmb->horizontal_list->capacity = 0;
-   xmb->horizontal_list->size     = 0;
-
-   if (xmb->horizontal_list)
-      xmb_init_horizontal_list(xmb);
+   xmb_init_horizontal_list(xmb);
 
    xmb_init_ribbon(xmb);
 
@@ -5540,12 +5523,9 @@ error:
    if (xmb->selection_buf_old)
       free(xmb->selection_buf_old);
    xmb->selection_buf_old = NULL;
-   if (xmb->horizontal_list)
-   {
-      xmb_free_list_nodes(xmb->horizontal_list, false);
-      file_list_free(xmb->horizontal_list);
-   }
-   xmb->horizontal_list = NULL;
+
+   xmb_free_list_nodes(&xmb->horizontal_list, false);
+   file_list_deinitialize(&xmb->horizontal_list);
    gfx_animation_unset_update_time_cb();
    return NULL;
 }
@@ -5562,14 +5542,10 @@ static void xmb_free(void *data)
          file_list_free(xmb->selection_buf_old);
       }
 
-      if (xmb->horizontal_list)
-      {
-         xmb_free_list_nodes(xmb->horizontal_list, false);
-         file_list_free(xmb->horizontal_list);
-      }
+      xmb_free_list_nodes(&xmb->horizontal_list, false);
+      file_list_deinitialize(&xmb->horizontal_list);
 
       xmb->selection_buf_old = NULL;
-      xmb->horizontal_list   = NULL;
 
       video_coord_array_free(&xmb->raster_block.carr);
       video_coord_array_free(&xmb->raster_block2.carr);
