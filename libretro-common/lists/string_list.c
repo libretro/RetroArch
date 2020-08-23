@@ -29,20 +29,14 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
-/**
- * string_list_free
- * @list             : pointer to string list object
- *
- * Frees a string list.
- */
-void string_list_free(struct string_list *list)
+static bool string_list_deinitialize_internal(struct string_list *list)
 {
-   size_t i;
    if (!list)
-      return;
+      return false;
 
    if (list->elems)
    {
+      unsigned i;
       for (i = 0; i < list->size; i++)
       {
          if (list->elems[i].data)
@@ -57,7 +51,8 @@ void string_list_free(struct string_list *list)
    }
 
    list->elems = NULL;
-   free(list);
+
+   return true;
 }
 
 /**
@@ -85,6 +80,38 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
    return true;
 }
 
+static bool string_list_initialize_internal(struct string_list *list)
+{
+   list->elems              = NULL;
+   list->size               = 0;
+   list->cap                = 0;
+
+   return string_list_capacity(list, 32);
+}
+
+/**
+ * string_list_free
+ * @list             : pointer to string list object
+ *
+ * Frees a string list.
+ */
+void string_list_free(struct string_list *list)
+{
+   if (!list)
+      return;
+
+   string_list_deinitialize_internal(list);
+
+   free(list);
+}
+
+bool string_list_deinitialize(struct string_list *list)
+{
+   if (!list)
+      return false;
+   return string_list_deinitialize_internal(list);
+}
+
 /**
  * string_list_new:
  *
@@ -100,17 +127,25 @@ struct string_list *string_list_new(void)
    if (!list)
       return NULL;
 
-   list->elems              = NULL;
-   list->size               = 0;
-   list->cap                = 0;
-
-   if (!string_list_capacity(list, 32))
+   if (!string_list_initialize_internal(list))
    {
       string_list_free(list);
       return NULL;
    }
 
    return list;
+}
+
+bool string_list_initialize(struct string_list *list)
+{
+   if (!list)
+      return false;
+   if (!string_list_initialize_internal(list))
+   {
+      string_list_free(list);
+      return false;
+   }
+   return true;
 }
 
 /**

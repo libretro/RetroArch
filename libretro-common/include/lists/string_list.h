@@ -101,6 +101,10 @@ struct string_list *string_split(const char *str, const char *delim);
  */
 struct string_list *string_separate(char *str, const char *delim);
 
+bool string_list_deinitialize(struct string_list *list);
+
+bool string_list_initialize(struct string_list *list);
+
 /**
  * string_list_new:
  *

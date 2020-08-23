@@ -1225,12 +1225,15 @@ static bool content_file_init(
    if (info)
    {
       unsigned i;
-      struct string_list *additional_path_allocs = string_list_new();
-
-      ret = content_file_load(info, p_content,
-            content, content_ctx, error_string,
-            special, additional_path_allocs);
-      string_list_free(additional_path_allocs);
+      struct string_list additional_path_allocs;
+      
+      if (string_list_initialize(&additional_path_allocs))
+      {
+         ret = content_file_load(info, p_content,
+               content, content_ctx, error_string,
+               special, &additional_path_allocs);
+         string_list_deinitialize(&additional_path_allocs);
+      }
 
       for (i = 0; i < content->size; i++)
          free((void*)info[i].data);
@@ -2485,12 +2488,12 @@ void content_set_subsystem_info(void)
  * selected libretro core. */
 bool content_init(void)
 {
+   struct string_list content;
    content_information_ctx_t content_ctx;
    content_state_t *p_content                 = content_state_get_ptr();
 
    bool ret                                   = true;
    char *error_string                         = NULL;
-   struct string_list *content                = NULL;
    global_t *global                           = global_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
    settings_t *settings                       = config_get_ptr();
@@ -2553,18 +2556,19 @@ bool content_init(void)
    }
 
    p_content->is_inited = true;
-   content              = string_list_new();
 
-   if (     !p_content->temporary_content
-         || !content_file_init(&content_ctx, p_content,
-            content, &error_string))
+   if (string_list_initialize(&content))
    {
-      content_deinit();
+      if (     !p_content->temporary_content
+            || !content_file_init(&content_ctx, p_content,
+               &content, &error_string))
+      {
+         content_deinit();
 
-      ret                = false;
+         ret                = false;
+      }
+      string_list_deinitialize(&content);
    }
-
-   string_list_free(content);
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
