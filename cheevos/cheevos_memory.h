@@ -29,8 +29,8 @@ typedef struct
 {
    uint8_t* data[MAX_MEMORY_REGIONS];
    size_t size[MAX_MEMORY_REGIONS];
-   unsigned count;
    size_t total_size;
+   unsigned count;
 } rcheevos_memory_regions_t;
 
 bool rcheevos_memory_init(rcheevos_memory_regions_t* regions, int console);

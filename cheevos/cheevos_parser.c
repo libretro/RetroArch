@@ -29,6 +29,14 @@
 #define CHEEVOS_JSON_KEY_SUCCESS      0x110461deU
 #define CHEEVOS_JSON_KEY_ERROR        0x0d2011cfU
 
+typedef struct
+{
+   const char *value;
+   int         is_key;
+   size_t      length;
+   unsigned    key_hash;
+} rcheevos_getvalueud_t;
+
 /*****************************************************************************
 Gets a value in a JSON
 *****************************************************************************/
@@ -43,14 +51,6 @@ static uint32_t rcheevos_djb2(const char* str, size_t length)
 
    return hash;
 }
-
-typedef struct
-{
-   unsigned    key_hash;
-   int         is_key;
-   const char* value;
-   size_t      length;
-} rcheevos_getvalueud_t;
 
 static int rcheevos_getvalue_key(void* userdata,
       const char* name, size_t length)
