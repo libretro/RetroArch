@@ -112,11 +112,11 @@ typedef int (playlist_sort_fun_t)(
 void playlist_set_cached_external(playlist_t* pl)
 {
    playlist_free_cached();
-   if (pl)
-   {
-      playlist_cached = pl;
-      playlist_cached->cached_external = true;
-   }
+   if (!pl)
+      return;
+
+   playlist_cached = pl;
+   playlist_cached->cached_external = true;
 }
 
 /* Convenience function: copies specified playlist
@@ -126,37 +126,42 @@ void playlist_config_set_path(playlist_config_t *config, const char *path)
    if (!config)
       return;
 
-   if (string_is_empty(path))
-      config->path[0] = '\0';
-   else
+   if (!string_is_empty(path))
       strlcpy(config->path, path, sizeof(config->path));
+   else
+      config->path[0] = '\0';
 }
 
 /* Convenience function: copies base content directory
  * path to specified playlist configuration object.
- * Also sets autofix_paths boolean, depending on base content directory value */
-void playlist_config_set_base_content_directory(playlist_config_t* config, const char* path)
+ * Also sets autofix_paths boolean, depending on base 
+ * content directory value */
+void playlist_config_set_base_content_directory(
+      playlist_config_t* config, const char* path)
 {
    if (!config)
       return;
 
    config->autofix_paths = !string_is_empty(path);
-   if (!config->autofix_paths)
-      config->base_content_directory[0] = '\0';
+   if (config->autofix_paths)
+      strlcpy(config->base_content_directory, path,
+            sizeof(config->base_content_directory));
    else
-      strlcpy(config->base_content_directory, path, sizeof(config->base_content_directory));
+      config->base_content_directory[0] = '\0';
 }
 
 
 /* Creates a copy of the specified playlist configuration.
  * Returns false in the event of an error */
-bool playlist_config_copy(const playlist_config_t *src, playlist_config_t *dst)
+bool playlist_config_copy(const playlist_config_t *src,
+      playlist_config_t *dst)
 {
    if (!src || !dst)
       return false;
 
    strlcpy(dst->path, src->path, sizeof(dst->path));
-   strlcpy(dst->base_content_directory, src->base_content_directory, sizeof(dst->base_content_directory));
+   strlcpy(dst->base_content_directory, src->base_content_directory,
+         sizeof(dst->base_content_directory));
 
    dst->capacity            = src->capacity;
    dst->old_format          = src->old_format;
@@ -209,9 +214,7 @@ static void path_replace_base_path_and_convert_to_local_file_system(
 #endif
    }
    else
-   {
       strlcpy(out_path, in_path, size);
-   }
 }
 
 /**
@@ -329,8 +332,8 @@ static bool playlist_core_path_equal(const char *real_core_path, const char *ent
 
    /* Get entry 'real' core path */
    strlcpy(entry_real_core_path, entry_core_path, sizeof(entry_real_core_path));
-   if (!string_is_equal(entry_real_core_path, "DETECT") &&
-       !string_is_equal(entry_real_core_path, "builtin"))
+   if (!string_is_equal(entry_real_core_path, FILE_PATH_DETECT) &&
+       !string_is_equal(entry_real_core_path, FILE_PATH_BUILTIN))
       path_resolve_realpath(entry_real_core_path, sizeof(entry_real_core_path), true);
 
    if (string_is_empty(entry_real_core_path))
@@ -397,27 +400,27 @@ static void playlist_free_entry(struct playlist_entry *entry)
    if (!entry)
       return;
 
-   if (entry->path != NULL)
+   if (entry->path)
       free(entry->path);
-   if (entry->label != NULL)
+   if (entry->label)
       free(entry->label);
-   if (entry->core_path != NULL)
+   if (entry->core_path)
       free(entry->core_path);
-   if (entry->core_name != NULL)
+   if (entry->core_name)
       free(entry->core_name);
-   if (entry->db_name != NULL)
+   if (entry->db_name)
       free(entry->db_name);
-   if (entry->crc32 != NULL)
+   if (entry->crc32)
       free(entry->crc32);
-   if (entry->subsystem_ident != NULL)
+   if (entry->subsystem_ident)
       free(entry->subsystem_ident);
-   if (entry->subsystem_name != NULL)
+   if (entry->subsystem_name)
       free(entry->subsystem_name);
-   if (entry->runtime_str != NULL)
+   if (entry->runtime_str)
       free(entry->runtime_str);
-   if (entry->last_played_str != NULL)
+   if (entry->last_played_str)
       free(entry->last_played_str);
-   if (entry->subsystem_roms != NULL)
+   if (entry->subsystem_roms)
       string_list_free(entry->subsystem_roms);
 
    entry->path      = NULL;
@@ -561,9 +564,11 @@ bool playlist_entry_exists(playlist_t *playlist,
    path_resolve_realpath(real_search_path, sizeof(real_search_path), true);
 
    for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
+   {
       if (playlist_path_equal(real_search_path, playlist->entries[i].path,
                &playlist->config))
          return true;
+   }
 
    return false;
 }
@@ -580,7 +585,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    if (update_entry->path && (update_entry->path != entry->path))
    {
-      if (entry->path != NULL)
+      if (entry->path)
          free(entry->path);
       entry->path        = strdup(update_entry->path);
       playlist->modified = true;
@@ -588,7 +593,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    if (update_entry->label && (update_entry->label != entry->label))
    {
-      if (entry->label != NULL)
+      if (entry->label)
          free(entry->label);
       entry->label       = strdup(update_entry->label);
       playlist->modified = true;
@@ -596,7 +601,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    if (update_entry->core_path && (update_entry->core_path != entry->core_path))
    {
-      if (entry->core_path != NULL)
+      if (entry->core_path)
          free(entry->core_path);
       entry->core_path   = NULL;
       entry->core_path   = strdup(update_entry->core_path);
@@ -605,7 +610,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    if (update_entry->core_name && (update_entry->core_name != entry->core_name))
    {
-      if (entry->core_name != NULL)
+      if (entry->core_name)
          free(entry->core_name);
       entry->core_name   = strdup(update_entry->core_name);
       playlist->modified = true;
@@ -613,7 +618,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    if (update_entry->db_name && (update_entry->db_name != entry->db_name))
    {
-      if (entry->db_name != NULL)
+      if (entry->db_name)
          free(entry->db_name);
       entry->db_name     = strdup(update_entry->db_name);
       playlist->modified = true;
@@ -621,7 +626,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    if (update_entry->crc32 && (update_entry->crc32 != entry->crc32))
    {
-      if (entry->crc32 != NULL)
+      if (entry->crc32)
          free(entry->crc32);
       entry->crc32       = strdup(update_entry->crc32);
       playlist->modified = true;
@@ -641,7 +646,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
    if (update_entry->path && (update_entry->path != entry->path))
    {
-      if (entry->path != NULL)
+      if (entry->path)
          free(entry->path);
       entry->path        = NULL;
       entry->path        = strdup(update_entry->path);
@@ -650,7 +655,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
    if (update_entry->core_path && (update_entry->core_path != entry->core_path))
    {
-      if (entry->core_path != NULL)
+      if (entry->core_path)
          free(entry->core_path);
       entry->core_path   = NULL;
       entry->core_path   = strdup(update_entry->core_path);
@@ -719,7 +724,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
    if (update_entry->runtime_str && (update_entry->runtime_str != entry->runtime_str))
    {
-      if (entry->runtime_str != NULL)
+      if (entry->runtime_str)
          free(entry->runtime_str);
       entry->runtime_str = NULL;
       entry->runtime_str = strdup(update_entry->runtime_str);
@@ -728,7 +733,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
    if (update_entry->last_played_str && (update_entry->last_played_str != entry->last_played_str))
    {
-      if (entry->last_played_str != NULL)
+      if (entry->last_played_str)
          free(entry->last_played_str);
       entry->last_played_str = NULL;
       entry->last_played_str = strdup(update_entry->last_played_str);
@@ -743,9 +748,6 @@ bool playlist_push_runtime(playlist_t *playlist,
    char real_path[PATH_MAX_LENGTH];
    char real_core_path[PATH_MAX_LENGTH];
 
-   real_path[0] = '\0';
-   real_core_path[0] = '\0';
-
    if (!playlist || !entry)
       return false;
 
@@ -754,6 +756,9 @@ bool playlist_push_runtime(playlist_t *playlist,
       RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
       return false;
    }
+
+   real_path[0]      = '\0';
+   real_core_path[0] = '\0';
 
    /* Get 'real' path */
    if (!string_is_empty(entry->path))
@@ -764,8 +769,8 @@ bool playlist_push_runtime(playlist_t *playlist,
 
    /* Get 'real' core path */
    strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
-   if (!string_is_equal(real_core_path, "DETECT") &&
-       !string_is_equal(real_core_path, "builtin"))
+   if (!string_is_equal(real_core_path, FILE_PATH_DETECT) &&
+       !string_is_equal(real_core_path, FILE_PATH_BUILTIN))
       path_resolve_realpath(real_core_path, sizeof(real_core_path), true);
 
    if (string_is_empty(real_core_path))
@@ -941,9 +946,10 @@ bool playlist_push(playlist_t *playlist,
 
    /* Get 'real' core path */
    strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
-   if (!string_is_equal(real_core_path, "DETECT") &&
-       !string_is_equal(real_core_path, "builtin"))
-       playlist_resolve_path(PLAYLIST_SAVE, real_core_path, sizeof(real_core_path));
+   if (!string_is_equal(real_core_path, FILE_PATH_DETECT) &&
+       !string_is_equal(real_core_path, FILE_PATH_BUILTIN))
+       playlist_resolve_path(PLAYLIST_SAVE, real_core_path,
+             sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
    {
@@ -1867,15 +1873,15 @@ void playlist_free(playlist_t *playlist)
    if (!playlist)
       return;
 
-   if (playlist->default_core_path != NULL)
+   if (playlist->default_core_path)
       free(playlist->default_core_path);
    playlist->default_core_path = NULL;
 
-   if (playlist->default_core_name != NULL)
+   if (playlist->default_core_name)
       free(playlist->default_core_name);
    playlist->default_core_name = NULL;
 
-   if (playlist->base_content_directory != NULL)
+   if (playlist->base_content_directory)
       free(playlist->base_content_directory);
    playlist->base_content_directory = NULL;
 
@@ -2967,8 +2973,8 @@ bool playlist_entries_are_equal(
    if (!string_is_empty(entry_a->core_path))
    {
       strlcpy(real_core_path_a, entry_a->core_path, sizeof(real_core_path_a));
-      if (!string_is_equal(real_core_path_a, "DETECT") &&
-          !string_is_equal(real_core_path_a, "builtin"))
+      if (!string_is_equal(real_core_path_a, FILE_PATH_DETECT) &&
+          !string_is_equal(real_core_path_a, FILE_PATH_BUILTIN))
          path_resolve_realpath(real_core_path_a, sizeof(real_core_path_a), true);
    }
 
@@ -3060,15 +3066,15 @@ void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
 {
    char real_core_path[PATH_MAX_LENGTH];
 
-   real_core_path[0] = '\0';
-
    if (!playlist || string_is_empty(core_path))
       return;
 
+   real_core_path[0] = '\0';
+
    /* Get 'real' core path */
    strlcpy(real_core_path, core_path, sizeof(real_core_path));
-   if (!string_is_equal(real_core_path, "DETECT") &&
-       !string_is_equal(real_core_path, "builtin"))
+   if (!string_is_equal(real_core_path, FILE_PATH_DETECT) &&
+       !string_is_equal(real_core_path, FILE_PATH_BUILTIN))
        playlist_resolve_path(PLAYLIST_SAVE,
              real_core_path, sizeof(real_core_path));
 
@@ -3084,7 +3090,8 @@ void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
    }
 }
 
-void playlist_set_default_core_name(playlist_t *playlist, const char *core_name)
+void playlist_set_default_core_name(
+      playlist_t *playlist, const char *core_name)
 {
    if (!playlist || string_is_empty(core_name))
       return;
@@ -3131,7 +3138,8 @@ void playlist_set_thumbnail_mode(
    }
 }
 
-void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_mode)
+void playlist_set_sort_mode(playlist_t *playlist,
+      enum playlist_sort_mode sort_mode)
 {
    if (!playlist)
       return;
@@ -3148,11 +3156,11 @@ void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_m
  * other than DETECT) */
 bool playlist_entry_has_core(const struct playlist_entry *entry)
 {
-   if (!entry ||
-       string_is_empty(entry->core_path) ||
-       string_is_empty(entry->core_name) ||
-       string_is_equal(entry->core_path, "DETECT") ||
-       string_is_equal(entry->core_name, "DETECT"))
+   if (!entry                                              ||
+       string_is_empty(entry->core_path)                   ||
+       string_is_empty(entry->core_name)                   ||
+       string_is_equal(entry->core_path, FILE_PATH_DETECT) ||
+       string_is_equal(entry->core_name, FILE_PATH_DETECT))
       return false;
 
    return true;
@@ -3192,8 +3200,8 @@ core_info_t *playlist_get_default_core_info(playlist_t* playlist)
    if (!playlist ||
        string_is_empty(playlist->default_core_path) ||
        string_is_empty(playlist->default_core_name) ||
-       string_is_equal(playlist->default_core_path, "DETECT") ||
-       string_is_equal(playlist->default_core_name, "DETECT"))
+       string_is_equal(playlist->default_core_path, FILE_PATH_DETECT) ||
+       string_is_equal(playlist->default_core_name, FILE_PATH_DETECT))
       return NULL;
 
    /* Search for associated core */

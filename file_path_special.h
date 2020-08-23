@@ -29,6 +29,7 @@ RETRO_BEGIN_DECLS
 
 #define FILE_PATH_UNKNOWN          "null"
 #define FILE_PATH_CONTENT_BASENAME "content.png"
+#define FILE_PATH_BUILTIN          "builtin"
 #define FILE_PATH_DETECT           "DETECT"
 #define FILE_PATH_LUTRO_PLAYLIST   "Lutro.lpl"
 #define FILE_PATH_NUL              "nul"
