@@ -1010,6 +1010,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
       VkDescriptorSet set;
       /* Upload UBO */
       struct vk_buffer_range range;
+      float *mvp_data_ptr          = NULL;
 
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                call->uniform_size, &range))
@@ -1037,8 +1038,11 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
       vk->tracker.view    = VK_NULL_HANDLE;
       vk->tracker.sampler = VK_NULL_HANDLE;
-      for (i = 0; i < 16; i++)
-         vk->tracker.mvp.data[i] = 0.0f;
+      for (
+              mvp_data_ptr = &vk->tracker.mvp.data[0]
+            ; mvp_data_ptr < vk->tracker.mvp.data + 16
+            ; mvp_data_ptr++)
+         *mvp_data_ptr = 0.0f;
    }
 
    /* VBO is already uploaded. */

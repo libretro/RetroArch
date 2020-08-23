@@ -892,7 +892,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
 {
    menu_entry_t entry;
    unsigned entry_type            = 0;
-   char new_path[PATH_MAX_LENGTH] = {0};
+   char new_path[PATH_MAX_LENGTH];
    settings_t     *settings       = config_get_ptr();
    stripes_handle_t     *stripes  = (stripes_handle_t*)data;
    playlist_t     *playlist       = NULL;
@@ -900,6 +900,8 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
 
    if (!stripes || string_is_empty(dir_thumbnails))
       goto end;
+
+   new_path[0]                    = '\0';
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
@@ -2387,7 +2389,9 @@ static int stripes_draw_item(
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
-      char entry_path[PATH_MAX_LENGTH] = {0};
+      char entry_path[PATH_MAX_LENGTH];
+      
+      entry_path[0] = '\0';
       strlcpy(entry_path, entry->path, sizeof(entry_path));
 
       fill_short_pathname_representation(entry_path, entry_path,
@@ -3727,28 +3731,21 @@ static void stripes_context_reset_textures(
 
 static void stripes_context_reset_background(const char *iconpath)
 {
-   char *path                  = NULL;
+   char path[PATH_MAX_LENGTH];
    settings_t *settings        = config_get_ptr();
    const char *path_menu_wp    = settings->paths.path_menu_wallpaper;
 
-   if (!string_is_empty(path_menu_wp))
-      path = strdup(path_menu_wp);
-   else if (!string_is_empty(iconpath))
-   {
-      path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      path[0] = '\0';
+   path[0]                     = '\0';
 
-      fill_pathname_join(path, iconpath, "bg.png",
-            PATH_MAX_LENGTH * sizeof(char));
-   }
+   if (!string_is_empty(path_menu_wp))
+      strlcpy(path, path_menu_wp, sizeof(path));
+   else if (!string_is_empty(iconpath))
+      fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
 
    if (path_is_valid(path))
       task_push_image_load(path,
             video_driver_supports_rgba(), 0,
             menu_display_handle_wallpaper_upload, NULL);
-
-   if (path)
-      free(path);
 }
 
 static void stripes_context_reset(void *data, bool is_threaded)
@@ -3757,9 +3754,9 @@ static void stripes_context_reset(void *data, bool is_threaded)
 
    if (stripes)
    {
-      char bg_file_path[PATH_MAX_LENGTH] = {0};
-      char *iconpath    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      iconpath[0]       = '\0';
+      char iconpath    [PATH_MAX_LENGTH];
+      char bg_file_path[PATH_MAX_LENGTH];
+      iconpath[0]       = bg_file_path[0] = '\0';
 
       fill_pathname_application_special(bg_file_path,
             sizeof(bg_file_path), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
@@ -3771,8 +3768,7 @@ static void stripes_context_reset(void *data, bool is_threaded)
          stripes->bg_file_path = strdup(bg_file_path);
       }
 
-      fill_pathname_application_special(iconpath,
-            PATH_MAX_LENGTH * sizeof(char),
+      fill_pathname_application_special(iconpath, sizeof(iconpath),
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
       stripes_layout(stripes);
@@ -3793,8 +3789,6 @@ static void stripes_context_reset(void *data, bool is_threaded)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          stripes_update_thumbnail_image(stripes);
       stripes_update_savestate_thumbnail_image(stripes);
-
-      free(iconpath);
    }
    video_driver_monitor_reset();
 }

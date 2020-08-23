@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef DEBUG
 #include <stdio.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,12 +82,6 @@ struct idat_buffer
    size_t size;
 };
 
-struct png_chunk
-{
-   uint32_t size;
-   char type[4];
-};
-
 struct rpng_process
 {
    uint32_t *data;
@@ -130,103 +126,98 @@ struct rpng
    bool has_trns;
 };
 
+static const struct adam7_pass passes[] = {
+   { 0, 0, 8, 8 },
+   { 4, 0, 8, 8 },
+   { 0, 4, 4, 8 },
+   { 2, 0, 4, 4 },
+   { 0, 2, 2, 4 },
+   { 1, 0, 2, 2 },
+   { 0, 1, 1, 2 },
+};
+
 static INLINE uint32_t dword_be(const uint8_t *buf)
 {
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
 }
 
-static enum png_chunk_type png_chunk_type(char chunk_type[4])
-{
-   unsigned i;
-   struct
-   {
-      const char *id;
-      enum png_chunk_type type;
-   } static const chunk_map[] = {
-      { "IHDR", PNG_CHUNK_IHDR },
-      { "IDAT", PNG_CHUNK_IDAT },
-      { "IEND", PNG_CHUNK_IEND },
-      { "PLTE", PNG_CHUNK_PLTE },
-      { "tRNS", PNG_CHUNK_tRNS },
-   };
-
-   for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
-   {
-      if (!memcmp(chunk_type, chunk_map[i].id, 4))
-         return chunk_map[i].type;
-   }
-
-   return PNG_CHUNK_NOOP;
-}
-
+#if defined(DEBUG) || defined(RPNG_TEST)
 static bool png_process_ihdr(struct png_ihdr *ihdr)
 {
    unsigned i;
-   bool ret = true;
+   uint8_t ihdr_depth = ihdr->depth;
 
    switch (ihdr->color_type)
    {
       case PNG_IHDR_COLOR_RGB:
       case PNG_IHDR_COLOR_GRAY_ALPHA:
       case PNG_IHDR_COLOR_RGBA:
-         if (ihdr->depth != 8 && ihdr->depth != 16)
-            GOTO_END_ERROR();
+         if (ihdr_depth != 8 && ihdr_depth != 16)
+         {
+            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            return false;
+         }
          break;
       case PNG_IHDR_COLOR_GRAY:
+         /* Valid bitdepths are: 1, 2, 4, 8, 16 */
+         if (ihdr_depth > 16 || (0x977F7FFF << ihdr_depth) & 0x80000000)
          {
-            static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
-            bool correct_bpp = false;
-
-            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
-            {
-               if (valid_bpp[i] == ihdr->depth)
-               {
-                  correct_bpp = true;
-                  break;
-               }
-            }
-
-            if (!correct_bpp)
-               GOTO_END_ERROR();
+            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            return false;
          }
          break;
       case PNG_IHDR_COLOR_PLT:
+         /* Valid bitdepths are: 1, 2, 4, 8 */
+         if (ihdr_depth > 8 || (0x977F7FFF << ihdr_depth)  & 0x80000000)
          {
-            static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
-            bool correct_bpp = false;
-
-            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
-            {
-               if (valid_bpp[i] == ihdr->depth)
-               {
-                  correct_bpp = true;
-                  break;
-               }
-            }
-
-            if (!correct_bpp)
-               GOTO_END_ERROR();
+            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            return false;
          }
          break;
       default:
-         GOTO_END_ERROR();
+         fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+         return false;
    }
 
-#ifdef RPNG_TEST
    fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
          ihdr->width, ihdr->height,
-         ihdr->depth, (ihdr->color_type == PNG_IHDR_COLOR_PLT) ? "yes" : "no",
-         (ihdr->color_type & PNG_IHDR_COLOR_RGB) ? "yes" : "no",
-         (ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA) ? "yes" : "no",
+         ihdr_depth, (ihdr->color_type == PNG_IHDR_COLOR_PLT) ? "yes" : "no",
+         (ihdr->color_type & PNG_IHDR_COLOR_RGB)              ? "yes" : "no",
+         (ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA)       ? "yes" : "no",
          ihdr->interlace == 1 ? "yes" : "no");
-#endif
 
-   if (ihdr->compression != 0)
-      GOTO_END_ERROR();
-
-end:
-   return ret;
+   return true;
 }
+#else
+static bool png_process_ihdr(struct png_ihdr *ihdr)
+{
+   uint8_t ihdr_depth = ihdr->depth;
+
+   switch (ihdr->color_type)
+   {
+      case PNG_IHDR_COLOR_RGB:
+      case PNG_IHDR_COLOR_GRAY_ALPHA:
+      case PNG_IHDR_COLOR_RGBA:
+         if (ihdr_depth != 8 && ihdr_depth != 16)
+            return false;
+         break;
+      case PNG_IHDR_COLOR_GRAY:
+         /* Valid bitdepths are: 1, 2, 4, 8, 16 */
+         if (ihdr_depth > 16 || (0x977F7FFF << ihdr_depth) & 0x80000000)
+            return false;
+         break;
+      case PNG_IHDR_COLOR_PLT:
+         /* Valid bitdepths are: 1, 2, 4, 8 */
+         if (ihdr_depth > 8 || (0x977F7FFF << ihdr_depth)  & 0x80000000)
+            return false;
+         break;
+      default:
+         return false;
+   }
+
+   return true;
+}
+#endif
 
 static void png_reverse_filter_copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
@@ -406,9 +397,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
             }
 
             if (width & 1)
-            {
                *data = palette[*decoded >> 4];
-            }
          }
          break;
 
@@ -417,9 +406,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
             unsigned i;
 
             for (i = 0; i < width; i++, decoded++, data++)
-            {
                *data = palette[*decoded];
-            }
          }
          break;
    }
@@ -429,8 +416,8 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
       unsigned width, unsigned height,
       unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size)
 {
-   unsigned bpp;
-   unsigned pitch;
+   unsigned bpp   = 0;
+   unsigned pitch = 0;
 
    switch (ihdr->color_type)
    {
@@ -455,15 +442,13 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
          pitch = (ihdr->width * ihdr->depth * 4 + 7) / 8;
          break;
       default:
-         bpp = 0;
-         pitch = 0;
          break;
    }
 
    if (pass_size)
       *pass_size = (pitch + 1) * ihdr->height;
    if (bpp_out)
-      *bpp_out = bpp;
+      *bpp_out   = bpp;
    if (pitch_out)
       *pitch_out = pitch;
 }
@@ -501,16 +486,6 @@ static void png_reverse_filter_deinit(struct rpng_process *pngp)
    pngp->pass_initialized = false;
    pngp->h                = 0;
 }
-
-static const struct adam7_pass passes[] = {
-   { 0, 0, 8, 8 },
-   { 4, 0, 8, 8 },
-   { 0, 4, 4, 8 },
-   { 2, 0, 4, 4 },
-   { 0, 2, 2, 4 },
-   { 1, 0, 2, 2 },
-   { 0, 1, 1, 2 },
-};
 
 static int png_reverse_filter_init(const struct png_ihdr *ihdr,
       struct rpng_process *pngp)
@@ -951,27 +926,11 @@ error:
    return NULL;
 }
 
-static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end,
-      struct png_chunk *chunk)
+static enum png_chunk_type read_chunk_header(
+      uint8_t *buf, uint32_t chunk_size)
 {
    unsigned i;
-   uint8_t dword[4];
-
-   dword[0] = '\0';
-
-   /* Check whether reading the header will overflow
-    * the data buffer */
-   if (buf_end - buf < 8)
-      return false;
-
-   for (i = 0; i < 4; i++)
-      dword[i] = buf[i];
-
-   chunk->size = dword_be(dword);
-
-   /* Check whether chunk will overflow the data buffer */
-   if (buf + 8 + chunk->size > buf_end)
-      return false;
+   char type[4];
 
    for (i = 0; i < 4; i++)
    {
@@ -980,49 +939,75 @@ static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end,
       /* All four bytes of the chunk type must be
        * ASCII letters (codes 65-90 and 97-122) */
       if ((byte < 65) || ((byte > 90) && (byte < 97)) || (byte > 122))
-         return false;
-
-      chunk->type[i] = byte;
+         return PNG_CHUNK_ERROR;
+      type[i]      = byte;
    }
 
-   return true;
-}
+   if (     
+            type[0] == 'I'
+         && type[1] == 'H'
+         && type[2] == 'D'
+         && type[3] == 'R'
+      )
+      return PNG_CHUNK_IHDR;
+   else if
+      (
+          type[0] == 'I'
+       && type[1] == 'D'
+       && type[2] == 'A'
+       && type[3] == 'T'
+      )
+         return PNG_CHUNK_IDAT;
+   else if
+      (
+          type[0] == 'I'
+       && type[1] == 'E'
+       && type[2] == 'N'
+       && type[3] == 'D'
+      )
+         return PNG_CHUNK_IEND;
+   else if
+      (
+          type[0] == 'P'
+       && type[1] == 'L'
+       && type[2] == 'T'
+       && type[3] == 'E'
+      )
+         return PNG_CHUNK_PLTE;
+   else if
+      (
+          type[0] == 't'
+       && type[1] == 'R'
+       && type[2] == 'N'
+       && type[3] == 'S'
+      )
+         return PNG_CHUNK_tRNS;
 
-static bool png_parse_ihdr(uint8_t *buf,
-      struct png_ihdr *ihdr)
-{
-   buf               += 4 + 4;
-
-   ihdr->width        = dword_be(buf + 0);
-   ihdr->height       = dword_be(buf + 4);
-   ihdr->depth        = buf[8];
-   ihdr->color_type   = buf[9];
-   ihdr->compression  = buf[10];
-   ihdr->filter       = buf[11];
-   ihdr->interlace    = buf[12];
-
-   if (ihdr->width == 0 || ihdr->height == 0)
-      return false;
-   return true;
+   return PNG_CHUNK_NOOP;
 }
 
 bool rpng_iterate_image(rpng_t *rpng)
 {
    unsigned i;
-   struct png_chunk chunk;
-   uint8_t *buf           = (uint8_t*)rpng->buff_data;
-
-   chunk.size             = 0;
-   chunk.type[0]          = 0;
+   uint8_t *buf             = (uint8_t*)rpng->buff_data;
+   uint32_t chunk_size      = 0;
 
    /* Check whether data buffer pointer is valid */
    if (buf > rpng->buff_end)
       return false;
 
-   if (!read_chunk_header(buf, rpng->buff_end, &chunk))
+   /* Check whether reading the header will overflow
+    * the data buffer */
+   if (rpng->buff_end - buf < 8)
       return false;
 
-   switch (png_chunk_type(chunk.type))
+   chunk_size = dword_be(buf);
+
+   /* Check whether chunk will overflow the data buffer */
+   if (buf + 8 + chunk_size > rpng->buff_end)
+      return false;
+
+   switch (read_chunk_header(buf, chunk_size))
    {
       case PNG_CHUNK_NOOP:
       default:
@@ -1035,26 +1020,49 @@ bool rpng_iterate_image(rpng_t *rpng)
          if (rpng->has_ihdr || rpng->has_idat || rpng->has_iend)
             return false;
 
-         if (chunk.size != 13)
+         if (chunk_size != 13)
             return false;
 
-         if (!png_parse_ihdr(buf, &rpng->ihdr))
+         buf                    += 4 + 4;
+
+         rpng->ihdr.width        = dword_be(buf + 0);
+         rpng->ihdr.height       = dword_be(buf + 4);
+         rpng->ihdr.depth        = buf[8];
+         rpng->ihdr.color_type   = buf[9];
+         rpng->ihdr.compression  = buf[10];
+         rpng->ihdr.filter       = buf[11];
+         rpng->ihdr.interlace    = buf[12];
+
+         if (     rpng->ihdr.width  == 0 
+               || rpng->ihdr.height == 0)
             return false;
 
          if (!png_process_ihdr(&rpng->ihdr))
             return false;
+
+         if (rpng->ihdr.compression != 0)
+         {
+#if defined(DEBUG) || defined(RPNG_TEST)
+            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+#endif
+            return false;
+         }
 
          rpng->has_ihdr = true;
          break;
 
       case PNG_CHUNK_PLTE:
          {
-            unsigned entries = chunk.size / 3;
+            unsigned entries = chunk_size / 3;
 
-            if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat || rpng->has_trns)
+            if (     !rpng->has_ihdr 
+                  ||  rpng->has_plte 
+                  ||  rpng->has_iend 
+                  ||  rpng->has_idat
+                  ||  rpng->has_trns)
                return false;
 
-            if (chunk.size % 3)
+            if (chunk_size % 3)
                return false;
 
             if (entries > 256)
@@ -1076,12 +1084,12 @@ bool rpng_iterate_image(rpng_t *rpng)
          if (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT)
          {
             /* we should compare with the number of palette entries */
-            if (chunk.size > 256)
+            if (chunk_size > 256)
                return false;
 
             buf += 8;
 
-            if (!png_read_trns(buf, rpng->palette, chunk.size))
+            if (!png_read_trns(buf, rpng->palette, chunk_size))
                return false;
          }
          /* TODO: support colorkey in grayscale and truecolor images */
@@ -1093,15 +1101,15 @@ bool rpng_iterate_image(rpng_t *rpng)
          if (!(rpng->has_ihdr) || rpng->has_iend || (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT && !(rpng->has_plte)))
             return false;
 
-         if (!png_realloc_idat(&rpng->idat_buf, chunk.size))
+         if (!png_realloc_idat(&rpng->idat_buf, chunk_size))
             return false;
 
          buf += 8;
 
-         for (i = 0; i < chunk.size; i++)
+         for (i = 0; i < chunk_size; i++)
             rpng->idat_buf.data[i + rpng->idat_buf.size] = buf[i];
 
-         rpng->idat_buf.size += chunk.size;
+         rpng->idat_buf.size += chunk_size;
 
          rpng->has_idat = true;
          break;
@@ -1114,7 +1122,7 @@ bool rpng_iterate_image(rpng_t *rpng)
          return false;
    }
 
-   rpng->buff_data += chunk.size + 12;
+   rpng->buff_data += chunk_size + 12;
 
    /* Check whether data buffer pointer is valid */
    if (rpng->buff_data > rpng->buff_end)
@@ -1190,9 +1198,6 @@ void rpng_free(rpng_t *rpng)
 
 bool rpng_start(rpng_t *rpng)
 {
-   unsigned i;
-   char header[8];
-
    if (!rpng)
       return false;
 
@@ -1201,12 +1206,8 @@ bool rpng_start(rpng_t *rpng)
    if (rpng->buff_end - rpng->buff_data < 8)
       return false;
 
-   header[0] = '\0';
-
-   for (i = 0; i < 8; i++)
-      header[i] = rpng->buff_data[i];
-
-   if (string_is_not_equal_fast(header, png_magic, sizeof(png_magic)))
+   if (string_is_not_equal_fast(
+            rpng->buff_data, png_magic, sizeof(png_magic)))
       return false;
 
    rpng->buff_data += 8;

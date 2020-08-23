@@ -71,8 +71,7 @@ OBJ		= frontend/frontend_salamander.o \
 				  libretro-common/vfs/vfs_implementation.o \
 				  libretro-common/file/config_file.o \
 				  libretro-common/time/rtime.o \
-				  file_path_str.o \
-				   verbosity.o
+				  verbosity.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER

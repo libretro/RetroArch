@@ -114,12 +114,6 @@ struct rarch_setting_group_info
 struct rarch_setting
 {
    double               min;
-   /* TODO/FIXME - nasty hack needed for 'suspected' MSVC 2010 x64 Release -
-    * split min/max to work around MSVC 2010 x64 bug that 
-    * causes crashes due to stack misalignment in or near 
-    * setting_string_setting'
-    */
-   char placeholder;
    double               max;
 
    uint64_t             flags;

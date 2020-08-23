@@ -256,7 +256,6 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
        $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
-       file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        input/common/input_hid_common.o \
        led/led_driver.o \

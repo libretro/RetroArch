@@ -34,6 +34,7 @@ QWidget *SavingPage::widget()
    SettingsGroup          *runtimeLogGroup     = new SettingsGroup("Runtime Log");
 
    savesGroup->add(MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE);
+   savesGroup->add(MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE);
    savesGroup->add(MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE);
 
    savestatesGroup->add(MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX);
@@ -43,6 +44,7 @@ QWidget *SavingPage::widget()
    savestatesGroup->addRow(autoSavestatesGroup);
    savestatesGroup->add(MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE);
    savestatesGroup->add(MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE);
+   savestatesGroup->add(MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE);
    savestatesGroup->add(MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE);
    savestatesGroup->add(MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION);
 
@@ -52,6 +54,7 @@ QWidget *SavingPage::widget()
 
    systemFilesDirGroup->add(MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE);
 
+   screenshotsDirGroup->add(MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE);
    screenshotsDirGroup->add(MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE);
 
    runtimeLogGroup->add(MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG);

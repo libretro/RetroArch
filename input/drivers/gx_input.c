@@ -233,6 +233,7 @@ static void gx_input_poll_mouse(gx_input_t *gx)
 
    if (gx && count > 0)
    {
+      unsigned i;
       if (count != gx->mouse_max)
       {
          gx_input_mouse_t* tmp = NULL;
@@ -255,7 +256,7 @@ static void gx_input_poll_mouse(gx_input_t *gx)
          }
       }
       
-      for(unsigned i=0; i<gx->mouse_max; i++)
+      for (i = 0; i < gx->mouse_max; i++)
       {
          gx->mouse[i].x_last = gx->mouse[i].x_abs;
          gx->mouse[i].y_last = gx->mouse[i].y_abs;

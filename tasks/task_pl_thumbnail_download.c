@@ -152,7 +152,7 @@ static bool get_thumbnail_paths(
    
    /* Generate remote path */
    snprintf(raw_url, sizeof(raw_url), "%s/%s/%s/%s",
-         file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
+         FILE_PATH_CORE_THUMBNAILS_URL,
          system_name,
          sub_dir,
          img_name
@@ -501,7 +501,7 @@ bool task_push_pl_thumbnail_download(
                STRLEN_CONST("_history.lpl")
                ) 
          || string_is_equal(playlist_file,
-            file_path_str(FILE_PATH_CONTENT_FAVORITES))
+            FILE_PATH_CONTENT_FAVORITES)
          || string_is_equal(system, "history")
          || string_is_equal(system, "favorites"))
       goto error;

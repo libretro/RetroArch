@@ -70,10 +70,10 @@ static int action_bind_label_playlist_collection_entry(
             "lpl"))
    {
       /* Handle content history */
-      if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)))
+      if (string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY))
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
       /* Handle favourites */
-      else if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+      else if (string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
       /* Handle collection playlists */
       else

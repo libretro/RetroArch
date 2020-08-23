@@ -607,6 +607,9 @@ static const bool default_auto_shaders_enable = true;
 
 static const bool default_sort_savefiles_enable = false;
 static const bool default_sort_savestates_enable = false;
+static const bool default_sort_savefiles_by_content_enable = false;
+static const bool default_sort_savestates_by_content_enable = false;
+static const bool default_sort_screenshots_by_content_enable = false;
 
 static const bool default_savestates_in_content_dir = false;
 static const bool default_savefiles_in_content_dir = false;
@@ -685,6 +688,10 @@ static const float message_bgcolor_opacity = 1.0f;
 
 /* Watch shader files for changes and auto-apply as necessary. */
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false
+
+/* Initialise file browser with last used directory
+ * when selecting shader presets/passes via the menu */
+#define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR false
 
 /* Screenshots named automatically. */
 #define DEFAULT_AUTO_SCREENSHOT_FILENAME true

@@ -4176,6 +4176,11 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY), len);
          break;
+      case MATERIALUI_THEME_HACKING_THE_KERNEL:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_HACKING_THE_KERNEL), len);
+         break;
       default:
          break;
    }
@@ -4482,6 +4487,16 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK), len);
          break;
+      case 4:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY), len);
+         break;
+      case 5:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL), len);
+         break;                  
       case 0:
       default:
          strlcpy(s,
@@ -9081,7 +9096,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_SAVING:
          {
             uint8_t i;
-            struct bool_entry bool_entries[11];
+            struct bool_entry bool_entries[14];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
@@ -9101,59 +9116,77 @@ static bool setting_append_list(
             bool_entries[1].default_value  = default_sort_savestates_enable;
             bool_entries[1].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[2].target         = &settings->bools.block_sram_overwrite;
-            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE;
-            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE;
-            bool_entries[2].default_value  = DEFAULT_BLOCK_SRAM_OVERWRITE;
-            bool_entries[2].flags          = SD_FLAG_NONE;
+            bool_entries[2].target         = &settings->bools.sort_savefiles_by_content_enable;
+            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE;
+            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE;
+            bool_entries[2].default_value  = default_sort_savefiles_by_content_enable;
+            bool_entries[2].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[3].target         = &settings->bools.savestate_auto_index;
-            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX;
-            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX;
-            bool_entries[3].default_value  = savestate_auto_index;
-            bool_entries[3].flags          = SD_FLAG_NONE;
+            bool_entries[3].target         = &settings->bools.sort_savestates_by_content_enable;
+            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE;
+            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE;
+            bool_entries[3].default_value  = default_sort_savestates_by_content_enable;
+            bool_entries[3].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[4].target         = &settings->bools.savestate_auto_save;
-            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE;
-            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE;
-            bool_entries[4].default_value  = savestate_auto_save;
-            bool_entries[4].flags          = SD_FLAG_NONE;
+            bool_entries[4].target         = &settings->bools.sort_screenshots_by_content_enable;
+            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE;
+            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE;
+            bool_entries[4].default_value  = default_sort_screenshots_by_content_enable;
+            bool_entries[4].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[5].target         = &settings->bools.savestate_auto_load;
-            bool_entries[5].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD;
-            bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD;
-            bool_entries[5].default_value  = savestate_auto_load;
+            bool_entries[5].target         = &settings->bools.block_sram_overwrite;
+            bool_entries[5].name_enum_idx  = MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE;
+            bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE;
+            bool_entries[5].default_value  = DEFAULT_BLOCK_SRAM_OVERWRITE;
             bool_entries[5].flags          = SD_FLAG_NONE;
 
-            bool_entries[6].target         = &settings->bools.savestate_thumbnail_enable;
-            bool_entries[6].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE;
-            bool_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE;
-            bool_entries[6].default_value  = savestate_thumbnail_enable;
-            bool_entries[6].flags          = SD_FLAG_ADVANCED;
+            bool_entries[6].target         = &settings->bools.savestate_auto_index;
+            bool_entries[6].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX;
+            bool_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX;
+            bool_entries[6].default_value  = savestate_auto_index;
+            bool_entries[6].flags          = SD_FLAG_NONE;
 
-            bool_entries[7].target         = &settings->bools.savefiles_in_content_dir;
-            bool_entries[7].name_enum_idx  = MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[7].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[7].default_value  = default_savefiles_in_content_dir;
-            bool_entries[7].flags          = SD_FLAG_ADVANCED;
+            bool_entries[7].target         = &settings->bools.savestate_auto_save;
+            bool_entries[7].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE;
+            bool_entries[7].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE;
+            bool_entries[7].default_value  = savestate_auto_save;
+            bool_entries[7].flags          = SD_FLAG_NONE;
 
-            bool_entries[8].target         = &settings->bools.savestates_in_content_dir;
-            bool_entries[8].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[8].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[8].default_value  = default_savestates_in_content_dir;
-            bool_entries[8].flags          = SD_FLAG_ADVANCED;
+            bool_entries[8].target         = &settings->bools.savestate_auto_load;
+            bool_entries[8].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD;
+            bool_entries[8].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD;
+            bool_entries[8].default_value  = savestate_auto_load;
+            bool_entries[8].flags          = SD_FLAG_NONE;
 
-            bool_entries[9].target         = &settings->bools.systemfiles_in_content_dir;
-            bool_entries[9].name_enum_idx  = MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[9].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[9].default_value  = default_systemfiles_in_content_dir;
+            bool_entries[9].target         = &settings->bools.savestate_thumbnail_enable;
+            bool_entries[9].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE;
+            bool_entries[9].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE;
+            bool_entries[9].default_value  = savestate_thumbnail_enable;
             bool_entries[9].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[10].target         = &settings->bools.screenshots_in_content_dir;
-            bool_entries[10].name_enum_idx  = MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE;
-            bool_entries[10].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE;
-            bool_entries[10].default_value  = default_screenshots_in_content_dir;
+            bool_entries[10].target         = &settings->bools.savefiles_in_content_dir;
+            bool_entries[10].name_enum_idx  = MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[10].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[10].default_value  = default_savefiles_in_content_dir;
             bool_entries[10].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[11].target         = &settings->bools.savestates_in_content_dir;
+            bool_entries[11].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[11].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[11].default_value  = default_savestates_in_content_dir;
+            bool_entries[11].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[12].target         = &settings->bools.systemfiles_in_content_dir;
+            bool_entries[12].name_enum_idx  = MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[12].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[12].default_value  = default_systemfiles_in_content_dir;
+            bool_entries[12].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[13].target         = &settings->bools.screenshots_in_content_dir;
+            bool_entries[13].name_enum_idx  = MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE;
+            bool_entries[13].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE;
+            bool_entries[13].default_value  = default_screenshots_in_content_dir;
+            bool_entries[13].flags          = SD_FLAG_ADVANCED;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
@@ -10719,6 +10752,22 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
                   MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
                   DEFAULT_VIDEO_SHADER_WATCH_FILES,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_shader_remember_last_dir,
+                  MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+                  DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -14695,7 +14744,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_ozone_menu_color_theme;
-            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_BOOL(
@@ -17115,7 +17164,7 @@ static bool setting_append_list(
 
             {
                unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-               for(user = 0; user < max_users; user++)
+               for (user = 0; user < max_users; user++)
                {
                   char s1[64], s2[64];
 
@@ -18232,7 +18281,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].flags                            = 0; \
    (*&list)[pos].free_flags                       = 0; \
    (*&list)[pos].min                              = 0.0; \
-   (*&list)[pos].placeholder                      = 0; \
    (*&list)[pos].max                              = 0.0; \
    (*&list)[pos].rounding_fraction                = NULL; \
    (*&list)[pos].name                             = NULL; \

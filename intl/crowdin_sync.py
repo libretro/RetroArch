@@ -3,10 +3,28 @@
 import os
 import shutil
 import subprocess
+import sys
 import time
 import urllib.request
 import zipfile
 
+# Check Crowdin API Key
+if len(sys.argv) < 1:
+    print('Please Provides Crowdin API Key!')
+    exit()
+
+api_key = sys.argv[1]
+
+# Apply Crowdin API Key
+crowdin_config_file = open('crowdin.yaml', 'r')
+crowdin_config = crowdin_config_file.read()
+crowdin_config_file.close()
+crowdin_config = crowdin_config.replace('_secret_', api_key)
+crowdin_config_file = open('crowdin.yaml', 'w')
+crowdin_config_file.write(crowdin_config)
+crowdin_config_file.close()
+
+# Download Crowdin CLI
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 jar_name = 'crowdin-cli.jar'
@@ -48,3 +66,12 @@ for file in os.listdir(dir_path):
 
 print('fetch translation progress')
 subprocess.run(['python3', 'fetch_progress.py'])
+
+# Reset Crowdin API Key
+crowdin_config_file = open('crowdin.yaml', 'r')
+crowdin_config = crowdin_config_file.read()
+crowdin_config_file.close()
+crowdin_config = crowdin_config.replace(api_key, '_secret_')
+crowdin_config_file = open('crowdin.yaml', 'w')
+crowdin_config_file.write(crowdin_config)
+crowdin_config_file.close()

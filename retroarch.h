@@ -881,6 +881,10 @@ struct uniform_info
 
    struct
    {
+      float *floatv;
+      intptr_t *integerv;
+      uintptr_t *unsigned_integerv;
+
       struct
       {
          intptr_t v0;
@@ -888,8 +892,6 @@ struct uniform_info
          intptr_t v2;
          intptr_t v3;
       } integer;
-
-      intptr_t *integerv;
 
       struct
       {
@@ -899,8 +901,6 @@ struct uniform_info
          uintptr_t v3;
       } unsigned_integer;
 
-      uintptr_t *unsigned_integerv;
-
       struct
       {
          float v0;
@@ -909,7 +909,6 @@ struct uniform_info
          float v3;
       } f;
 
-      float *floatv;
    } result;
 };
 
@@ -1119,12 +1118,6 @@ typedef struct video_frame_info
    int custom_vp_y;
    int crt_switch_center_adjust;
    int crt_switch_porch_adjust;
-
-   /* TODO/FIXME - nasty hack needed for struct misalignment in Windows X64 -
-    * otherwise the audio/video statistics display glitches after the recent
-    * addition of the above 'crt_switch_porch_adjust' member
-    */
-   char placeholder;
 
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;

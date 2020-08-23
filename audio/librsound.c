@@ -700,11 +700,11 @@ static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking)
 
 static int rsnd_poll(struct pollfd *fd, int numfd, int timeout)
 {
-   for(;;)
+   for (;;)
    {
-      if ( socketpoll(fd, numfd, timeout) < 0 )
+      if (socketpoll(fd, numfd, timeout) < 0)
       {
-         if ( errno == EINTR )
+         if (errno == EINTR)
             continue;
 
          perror("poll");
@@ -938,15 +938,15 @@ static int rsnd_close_ctl(rsound_t *rd)
    int index = 0;
    char buf[RSD_PROTO_MAXSIZE*2] = {0};
 
-   for(;;)
+   for (;;)
    {
-      if ( rsnd_poll(&fd, 1, 2000) < 0 )
+      if (rsnd_poll(&fd, 1, 2000) < 0)
          return -1;
 
-      if ( fd.revents & POLLHUP )
+      if (fd.revents & POLLHUP)
          break;
 
-      else if ( fd.revents & POLLIN )
+      if (fd.revents & POLLIN)
       {
          const char *subchar;
 
@@ -1102,7 +1102,7 @@ static void rsnd_thread ( void * thread_data )
    /* Two (;;) for loops! :3 Beware! */
    for (;;)
    {
-      for(;;)
+      for (;;)
       {
          _TEST_CANCEL();
 

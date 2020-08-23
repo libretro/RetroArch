@@ -1054,9 +1054,9 @@ void gfx_display_draw_texture_slice(
 
    /* need space for the coordinates of two triangles in a strip,
     * so 8 vertices */
-   float *tex_coord  = (float*)malloc(8 * sizeof(float));
-   float *vert_coord = (float*)malloc(8 * sizeof(float));
-   float *colors     = (float*)malloc(16 * sizeof(float));
+   float tex_coord[8];
+   float vert_coord[8];
+   float colors[16];
 
    /* normalized width/height of the amount to offset from the corners,
     * for both the vertex and texture coordinates */
@@ -1326,10 +1326,6 @@ void gfx_display_draw_texture_slice(
 
    gfx_display_draw(&draw, userdata,
          video_width, video_height);
-
-   free(colors);
-   free(vert_coord);
-   free(tex_coord);
 }
 
 void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw, void *data)

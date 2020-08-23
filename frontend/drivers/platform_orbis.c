@@ -178,7 +178,7 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path_config, user_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
+         FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
 #ifndef IS_SALAMANDER
    params          = (struct rarch_main_wrap*)params_data;

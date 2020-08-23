@@ -1582,17 +1582,15 @@ static int create_string_list_rdb_entry_string(
       file_list_t *list)
 {
    union string_list_elem_attr attr;
-   char *tmp                        = NULL;
+   char tmp[PATH_MAX_LENGTH];
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
-   size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
 
    if (!str_list)
       return -1;
 
    attr.i                           = 0;
-   tmp                              = (char*)malloc(path_size);
    tmp[0]                           = '\0';
 
    str_len += strlen(label) + 1;
@@ -1609,7 +1607,6 @@ static int create_string_list_rdb_entry_string(
    if (!output_label)
    {
       string_list_free(str_list);
-      free(tmp);
       return -1;
    }
 
@@ -1617,13 +1614,12 @@ static int create_string_list_rdb_entry_string(
    string_list_free(str_list);
 
    fill_pathname_join_concat_noext(tmp, desc, ": ",
-         actual_string, path_size);
+         actual_string, sizeof(tmp));
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
 
    free(output_label);
-   free(tmp);
 
    return 0;
 }
@@ -2357,7 +2353,7 @@ static void menu_displaylist_set_new_playlist(
                strlen(playlist_file_name), STRLEN_CONST("_history.lpl")))
          playlist_config.capacity = content_history_size;
       else if (string_is_equal(playlist_file_name,
-                     file_path_str(FILE_PATH_CONTENT_FAVORITES)) &&
+                     FILE_PATH_CONTENT_FAVORITES) &&
                (content_favorites_size >= 0))
          playlist_config.capacity = (unsigned)content_favorites_size;
    }
@@ -2851,8 +2847,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
                         const char *playlist_file = path_basename(playlist_path);
 
                         if (!string_is_empty(playlist_file))
-                           remove_entry_enabled = string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-                              string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES));
+                           remove_entry_enabled = string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY) ||
+                              string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
                      }
                   }
                }
@@ -3187,7 +3183,7 @@ static unsigned menu_displaylist_parse_playlists(
                string_ends_with_size(path, "_history.lpl",
                   strlen(path), STRLEN_CONST("_history.lpl"))
             || string_is_equal(playlist_file,
-               file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+               FILE_PATH_CONTENT_FAVORITES))
          continue;
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
@@ -3448,7 +3444,7 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
                   string_ends_with_size(path, "_history.lpl",
                      strlen(path), STRLEN_CONST("_history.lpl"))
                || string_is_equal(playlist_file,
-                  file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+                  FILE_PATH_CONTENT_FAVORITES))
             continue;
 
          menu_entries_append_enum(info->list,
@@ -3532,7 +3528,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
     * > This is only shown for collection playlists
     *   (i.e. it is not relevant for history/favourites) */
    if (!is_content_history &&
-       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+       !string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE),
@@ -6751,7 +6747,7 @@ unsigned menu_displaylist_build_list(
             {
                unsigned user;
                unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-               for(user = 0; user < max_users; user++)
+               for (user = 0; user < max_users; user++)
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            (enum msg_hash_enums)(
@@ -7949,6 +7945,8 @@ unsigned menu_displaylist_build_list(
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,  PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,  PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,  PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,  PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,  PARSE_ONLY_BOOL},
@@ -7957,6 +7955,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,  PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
@@ -9004,7 +9003,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         key_type, PARSE_ONLY_UINT, true, 0) == 0)
                   count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
-                        key_analog, PARSE_ONLY_UINT, true, 0) == 0)
+                        key_analog, PARSE_ONLY_UINT, true, MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE) == 0)
                   count++;
             }
 
@@ -9076,8 +9075,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         const struct retro_keybind *keyptr =
                            &input_config_binds[p][retro_id];
 
-                        strlcpy(descriptor,
-                              msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+                        snprintf(desc_label, sizeof(desc_label),
+                              "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
+                        strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
                      /* Add user index when display driver == rgui and sublabels
@@ -9789,6 +9789,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            0, 0, 0))
                      count++;
                }
+
+               if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+                        0, 0, 0))
+                  count++;
+
                if (menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET),
@@ -10104,7 +10112,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                && string_ends_with(info->path, ".lpl"))
          {
             if (string_is_equal(info->path,
-                     file_path_str(FILE_PATH_CONTENT_HISTORY)))
+                     FILE_PATH_CONTENT_HISTORY))
             {
                if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
                   return menu_displaylist_process(info);
@@ -10112,7 +10120,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 
             if (string_is_equal(info->path,
-                     file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+                     FILE_PATH_CONTENT_FAVORITES))
             {
                if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
                   return menu_displaylist_process(info);
@@ -11745,10 +11753,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (frontend_driver_get_core_extension(ext_names, sizeof(ext_names)))
                   {
                      strlcat(ext_names, "|", sizeof(ext_names));
-                     strlcat(ext_names, file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT), sizeof(ext_names));
+                     strlcat(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
                   }
                   else
-                     strlcpy(ext_names, file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT), sizeof(ext_names));
+                     strlcpy(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
 
                   info->exts      = strdup(ext_names);
                }

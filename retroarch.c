@@ -1983,12 +1983,15 @@ struct rarch_state
    input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
 #endif
 
+   struct string_list *subsystem_fullpaths;
+   struct string_list *midi_drv_inputs;
+   struct string_list *midi_drv_outputs;
+   struct string_list *audio_driver_devices_list;
 
    uint8_t *video_driver_record_gpu_buffer;
    uint8_t *midi_drv_input_buffer;
    uint8_t *midi_drv_output_buffer;
    bool    *load_no_content_hook;
-   float   *audio_driver_input_data;
    float   *audio_driver_output_samples_buf;
    char    *osk_grid[45];
 #if defined(HAVE_RUNAHEAD)
@@ -2002,7 +2005,6 @@ struct rarch_state
 #endif
    core_option_manager_t *runloop_core_options;
    msg_queue_t *runloop_msg_queue;
-   struct string_list *subsystem_fullpaths;
 
    const record_driver_t *recording_driver;
    void *recording_data;
@@ -2017,8 +2019,6 @@ struct rarch_state
    void *camera_data;
 
    void *midi_drv_data;
-   struct string_list *midi_drv_inputs;
-   struct string_list *midi_drv_outputs;
 
    const ui_companion_driver_t *ui_companion;
    void *ui_companion_data;
@@ -2069,7 +2069,6 @@ struct rarch_state
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *audio_driver_dsp;
 #endif
-   struct string_list *audio_driver_devices_list;
    const retro_resampler_t *audio_driver_resampler;
 
    void *audio_driver_resampler_data;
@@ -2276,6 +2275,7 @@ struct rarch_state
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
+   float audio_driver_input_data[AUDIO_CHUNK_SIZE_NONBLOCKING * 2];
    float video_driver_core_hz;
    float video_driver_aspect_ratio;
 
@@ -4418,7 +4418,7 @@ static int generic_menu_iterate(
             size_t selection           = menu_st->selection_ptr;
             menu_file_list_cbs_t *cbs  = selection_buf ?
                (menu_file_list_cbs_t*)
-			   file_list_get_actiondata_at_offset(selection_buf, selection)
+               file_list_get_actiondata_at_offset(selection_buf, selection)
                : NULL;
 
             if (cbs && cbs->enum_idx != MSG_UNKNOWN)
@@ -4439,8 +4439,8 @@ static int generic_menu_iterate(
 
                         /* Search for specified core */
                         if (core_list && path &&
-                            core_updater_list_get_filename(core_list, path, &entry) &&
-                            !string_is_empty(entry->description))
+                              core_updater_list_get_filename(core_list, path, &entry) &&
+                              !string_is_empty(entry->description))
                            strlcpy(menu->menu_state_msg, entry->description,
                                  sizeof(menu->menu_state_msg));
                         else
@@ -4466,8 +4466,8 @@ static int generic_menu_iterate(
                         core_info.path = path;
 
                         if (path &&
-                            core_info_find(&core_info) &&
-                            !string_is_empty(core_info.inf->description))
+                              core_info_find(&core_info) &&
+                              !string_is_empty(core_info.inf->description))
                            strlcpy(menu->menu_state_msg, core_info.inf->description,
                                  sizeof(menu->menu_state_msg));
                         else
@@ -4618,7 +4618,7 @@ static int generic_menu_iterate(
             ret                      = menu_entry_action(&entry,
                   selection, (enum menu_action)action);
             if (ret)
-               goto end;
+               return -1;
 
             BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
@@ -4653,7 +4653,6 @@ static int generic_menu_iterate(
       menu_input_post_iterate(p_rarch, &ret, action,
             current_time);
 
-end:
    if (ret)
       return -1;
    return 0;
@@ -5565,27 +5564,24 @@ static void menu_list_flush_stack(
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
+      menu_ctx_list_t list_info;
       bool refresh             = false;
       size_t new_selection_ptr = menu_st->selection_ptr;
       bool wont_pop_stack      = (MENU_LIST_GET_STACK_SIZE(list, idx) <= 1);
       if (wont_pop_stack)
          break;
-      else
-      {
-         menu_ctx_list_t list_info;
-         list_info.type         = MENU_LIST_PLAIN;
-         list_info.action       = 0;
-         menu_driver_list_cache(&list_info);
-      }
+
+      list_info.type           = MENU_LIST_PLAIN;
+      list_info.action         = 0;
+      menu_driver_list_cache(&list_info);
 
       menu_list_pop_stack(p_rarch,
             list, idx, &new_selection_ptr);
 
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
-      menu_st->selection_ptr = new_selection_ptr;
-
-      menu_list              = MENU_LIST_GET(list, (unsigned)idx);
+      menu_st->selection_ptr   = new_selection_ptr;
+      menu_list                = MENU_LIST_GET(list, (unsigned)idx);
 
       file_list_get_last(menu_list,
             &path, &label, &type, &entry_idx);
@@ -5927,7 +5923,7 @@ void menu_entries_append(
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)
+   cbs                             = (menu_file_list_cbs_t*)
       malloc(sizeof(menu_file_list_cbs_t));
 
    if (!cbs)
@@ -7436,6 +7432,147 @@ void menu_driver_search_append_terms_string(char *s, size_t len)
    }
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+
+static void menu_driver_set_last_shader_dir_int(
+      const char *shader_path,
+      enum rarch_shader_type *type,
+      char *shader_dir, size_t len)
+{
+   if (!type || !shader_dir || (len < 1))
+      return;
+
+   /* Reset existing cache */
+   *type         = RARCH_SHADER_NONE;
+   shader_dir[0] = '\0';
+
+   /* If path is empty, do nothing */
+   if (string_is_empty(shader_path))
+      return;
+
+   /* Get shader type */
+   *type = video_shader_parse_type(shader_path);
+
+   /* If type is invalid, do nothing */
+   if (*type == RARCH_SHADER_NONE)
+      return;
+
+   /* Cache parent directory */
+   fill_pathname_parent_dir(shader_dir, shader_path, len);
+}
+
+void menu_driver_set_last_shader_preset_dir(const char *shader_path)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return;
+
+   menu_driver_set_last_shader_dir_int(
+         shader_path,
+         &menu->last_shader_selection.preset_type,
+         menu->last_shader_selection.preset_dir,
+         sizeof(menu->last_shader_selection.preset_dir));
+}
+
+void menu_driver_set_last_shader_pass_dir(const char *shader_pass_path)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return;
+
+   menu_driver_set_last_shader_dir_int(
+         shader_pass_path,
+         &menu->last_shader_selection.pass_type,
+         menu->last_shader_selection.pass_dir,
+         sizeof(menu->last_shader_selection.pass_dir));
+}
+
+enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return RARCH_SHADER_NONE;
+
+   return menu->last_shader_selection.preset_type;
+}
+
+enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+
+   if (!menu)
+      return RARCH_SHADER_NONE;
+
+   return menu->last_shader_selection.pass_type;
+}
+
+static const char *menu_driver_get_last_shader_dir_int(
+      enum rarch_shader_type type, const char *shader_dir)
+{
+   struct rarch_state *p_rarch  = &rarch_st;
+   settings_t *settings         = p_rarch->configuration_settings;
+   bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
+   const char *video_shader_dir = settings->paths.directory_video_shader;
+
+   /* If any of the following are true:
+    * - Directory caching is disabled
+    * - No directory has been cached
+    * - Cached directory is invalid
+    * - Last selected shader is incompatible with
+    *   the current video driver
+    * ...use the default setting */
+   if (!remember_last_dir ||
+       (type == RARCH_SHADER_NONE) ||
+       string_is_empty(shader_dir) ||
+       !path_is_directory(shader_dir) ||
+       !video_shader_is_supported(type))
+      return video_shader_dir;
+
+   return shader_dir;
+}
+
+
+const char *menu_driver_get_last_shader_preset_dir(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+   const char *shader_dir      = NULL;
+
+   if (menu)
+   {
+      type       = menu->last_shader_selection.preset_type;
+      shader_dir = menu->last_shader_selection.preset_dir;
+   }
+
+   return menu_driver_get_last_shader_dir_int(type, shader_dir);
+}
+
+const char *menu_driver_get_last_shader_pass_dir(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+   const char *shader_dir      = NULL;
+
+   if (menu)
+   {
+      type       = menu->last_shader_selection.pass_type;
+      shader_dir = menu->last_shader_selection.pass_dir;
+   }
+
+   return menu_driver_get_last_shader_dir_int(type, shader_dir);
+}
+
+#endif
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -8027,7 +8164,7 @@ static bool menu_shader_manager_save_preset_internal(
    char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
 
-   fullname[0] = buffer[0] = '\0';
+   fullname[0] = buffer[0]        = '\0';
 
    if (!shader || !shader->passes)
       return false;
@@ -11001,6 +11138,7 @@ const char *char_list_new_special(enum string_list_type type, void *data)
 
 static void path_set_redirect(struct rarch_state *p_rarch)
 {
+   char content_dir_name[PATH_MAX_LENGTH];
    char new_savefile_dir[PATH_MAX_LENGTH];
    char new_savestate_dir[PATH_MAX_LENGTH];
    global_t   *global                          = &p_rarch->g_extern;
@@ -11009,15 +11147,28 @@ static void path_set_redirect(struct rarch_state *p_rarch)
    struct retro_system_info *system            = &p_rarch->runloop_system.info;
    settings_t *settings                        = p_rarch->configuration_settings;
    bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
+   bool sort_savefiles_by_content_enable       = settings->bools.sort_savefiles_by_content_enable;
    bool sort_savestates_enable                 = settings->bools.sort_savestates_enable;
+   bool sort_savestates_by_content_enable      = settings->bools.sort_savestates_by_content_enable;
    bool savefiles_in_content_dir               = settings->bools.savefiles_in_content_dir;
    bool savestates_in_content_dir              = settings->bools.savestates_in_content_dir;
-   new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
+
+   content_dir_name[0]  = '\0';
+   new_savefile_dir[0]  = '\0';
+   new_savestate_dir[0] = '\0';
 
    /* Initialize current save directories
     * with the values from the config. */
    strlcpy(new_savefile_dir,  old_savefile_dir,  sizeof(new_savefile_dir));
    strlcpy(new_savestate_dir, old_savestate_dir, sizeof(new_savestate_dir));
+
+   /* Get content directory name, if per-content-directory
+    * saves/states are enabled */
+   if ((sort_savefiles_by_content_enable ||
+         sort_savestates_by_content_enable) &&
+       !string_is_empty(p_rarch->path_main_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            p_rarch->path_main_basename, sizeof(content_dir_name));
 
    if (system && !string_is_empty(system->library_name))
    {
@@ -11026,15 +11177,25 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
       {
-         /* per-core saves: append the library_name to the save location */
-         if (sort_savefiles_enable
+         /* Per-core and/or per-content-directory saves */
+         if ((sort_savefiles_enable || sort_savefiles_by_content_enable)
                && !string_is_empty(old_savefile_dir))
          {
-            fill_pathname_join(
-                  new_savefile_dir,
-                  old_savefile_dir,
-                  system->library_name,
-                  sizeof(new_savefile_dir));
+            /* Append content directory name to save location */
+            if (sort_savefiles_by_content_enable)
+               fill_pathname_join(
+                     new_savefile_dir,
+                     old_savefile_dir,
+                     content_dir_name,
+                     sizeof(new_savefile_dir));
+
+            /* Append library_name to the save location */
+            if (sort_savefiles_enable)
+               fill_pathname_join(
+                     new_savefile_dir,
+                     new_savefile_dir,
+                     system->library_name,
+                     sizeof(new_savefile_dir));
 
             /* If path doesn't exist, try to create it,
              * if everything fails revert to the original path. */
@@ -11049,16 +11210,28 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                }
          }
 
-         /* per-core states: append the library_name to the save location */
-         if (sort_savestates_enable
+         /* Per-core and/or per-content-directory savestates */
+         if ((sort_savestates_enable || sort_savestates_by_content_enable)
                && !string_is_empty(old_savestate_dir))
          {
-            fill_pathname_join(
-                  new_savestate_dir,
-                  old_savestate_dir,
-                  system->library_name,
-                  sizeof(new_savestate_dir));
+            /* Append content directory name to savestate location */
+            if (sort_savestates_by_content_enable)
+               fill_pathname_join(
+                     new_savestate_dir,
+                     old_savestate_dir,
+                     content_dir_name,
+                     sizeof(new_savestate_dir));
 
+            /* Append library_name to the savestate location */
+            if (sort_savestates_enable)
+            {
+               fill_pathname_join(
+                     new_savestate_dir,
+                     new_savestate_dir,
+                     system->library_name,
+                     sizeof(new_savestate_dir));
+            }
+            
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */
             if (!path_is_directory(new_savestate_dir))
@@ -11081,6 +11254,13 @@ static void path_set_redirect(struct rarch_state *p_rarch)
       strlcpy(new_savefile_dir, p_rarch->path_main_basename,
             sizeof(new_savefile_dir));
       path_basedir(new_savefile_dir);
+
+      if (string_is_empty(new_savefile_dir))
+         RARCH_LOG("Cannot resolve save file path.\n",
+            msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
+            new_savefile_dir);
+      else if (sort_savefiles_enable || sort_savefiles_by_content_enable)
+         RARCH_LOG("Saving files in content directory is set. This overrides other save file directory settings.\n");
    }
 
    /* Set savestate directory if empty based on content directory */
@@ -11089,6 +11269,13 @@ static void path_set_redirect(struct rarch_state *p_rarch)
       strlcpy(new_savestate_dir, p_rarch->path_main_basename,
             sizeof(new_savestate_dir));
       path_basedir(new_savestate_dir);
+
+      if (string_is_empty(new_savestate_dir))
+         RARCH_LOG("Cannot resolve save state file path.\n",
+            msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
+            new_savestate_dir);
+      else if (sort_savestates_enable || sort_savestates_by_content_enable)
+         RARCH_LOG("Saving save states in content directory is set. This overrides other save state file directory settings.\n");
    }
 
    if (global)
@@ -11109,7 +11296,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                : system && !string_is_empty(system->library_name)
                ? system->library_name
                : "",
-               file_path_str(FILE_PATH_SRM_EXTENSION),
+               FILE_PATH_SRM_EXTENSION,
                sizeof(global->name.savefile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -11124,7 +11311,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                : system && !string_is_empty(system->library_name)
                ? system->library_name
                : "",
-               file_path_str(FILE_PATH_STATE_EXTENSION),
+               FILE_PATH_STATE_EXTENSION,
                sizeof(global->name.savestate));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
@@ -11139,7 +11326,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                !string_is_empty(p_rarch->path_main_basename)
                ? p_rarch->path_main_basename
                : "",
-               file_path_str(FILE_PATH_CHT_EXTENSION),
+               FILE_PATH_CHT_EXTENSION,
                sizeof(global->name.cheatfile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
@@ -14651,9 +14838,8 @@ static void command_event_load_auto_state(
       global_t *global,
       struct rarch_state *p_rarch)
 {
+   char savestate_name_auto[PATH_MAX_LENGTH];
    bool ret                        = false;
-   char *savestate_name_auto       = NULL;
-   size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    bool savestate_auto_load        = settings->bools.savestate_auto_load;
 
    if (!global || !savestate_auto_load)
@@ -14667,17 +14853,13 @@ static void command_event_load_auto_state(
       return;
 #endif
 
-   savestate_name_auto             = (char*)calloc(PATH_MAX_LENGTH,
-         sizeof(*savestate_name_auto));
+   savestate_name_auto[0] = '\0';
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         ".auto", savestate_name_auto_size);
+         ".auto", sizeof(savestate_name_auto));
 
    if (!path_is_valid(savestate_name_auto))
-   {
-      free(savestate_name_auto);
       return;
-   }
 
    ret = content_load_state(savestate_name_auto, false, true);
 
@@ -14687,8 +14869,6 @@ static void command_event_load_auto_state(
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
          savestate_name_auto, ret ? "succeeded" : "failed"
          );
-
-   free(savestate_name_auto);
 }
 
 static void command_event_set_savestate_auto_index(
@@ -14697,10 +14877,9 @@ static void command_event_set_savestate_auto_index(
       struct rarch_state *p_rarch)
 {
    size_t i;
-   char *state_dir                   = NULL;
-   char *state_base                  = NULL;
+   char state_dir[PATH_MAX_LENGTH];
+   char state_base[PATH_MAX_LENGTH];
 
-   size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
    bool savestate_auto_index         = settings->bools.savestate_auto_index;
@@ -14709,7 +14888,7 @@ static void command_event_set_savestate_auto_index(
    if (!global || !savestate_auto_index)
       return;
 
-   state_dir                         = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
+   state_dir[0] = state_base[0]      = '\0';
 
    /* Find the file in the same directory as global->savestate_name
     * with the largest numeral suffix.
@@ -14718,20 +14897,16 @@ static void command_event_set_savestate_auto_index(
     * /foo/path/content.state%d, where %d is the largest number available.
     */
    fill_pathname_basedir(state_dir, global->name.savestate,
-         state_size);
+         sizeof(state_dir));
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
          show_hidden_files);
 
-   free(state_dir);
-
    if (!dir_list)
       return;
 
-   state_base                        = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
-
    fill_pathname_base(state_base, global->name.savestate,
-         state_size);
+         sizeof(state_base));
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -14755,7 +14930,6 @@ static void command_event_set_savestate_auto_index(
    }
 
    dir_list_free(dir_list);
-   free(state_base);
 
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
 
@@ -15060,9 +15234,7 @@ static bool command_event_save_auto_state(
       struct rarch_state *p_rarch)
 {
    bool ret                    = false;
-   char *savestate_name_auto   = NULL;
-   size_t
-      savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
+   char savestate_name_auto[PATH_MAX_LENGTH];
    bool savestate_auto_save    = settings->bools.savestate_auto_save;
    const enum rarch_core_type
       current_core_type        = p_rarch->current_core_type;
@@ -15080,11 +15252,10 @@ static bool command_event_save_auto_state(
       return false;
 #endif
 
-   savestate_name_auto         = (char*)
-      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
+   savestate_name_auto[0]      = '\0';
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         ".auto", savestate_name_auto_size);
+         ".auto", sizeof(savestate_name_auto));
 
    ret = content_save_state((const char*)savestate_name_auto, true, true);
    RARCH_LOG("%s \"%s\" %s.\n",
@@ -15092,7 +15263,6 @@ static bool command_event_save_auto_state(
          savestate_name_auto, ret ?
          "succeeded" : "failed");
 
-   free(savestate_name_auto);
    return true;
 }
 
@@ -15145,31 +15315,26 @@ static bool command_event_save_core_config(
       const char *dir_menu_config)
 {
    char msg[128];
+   char config_name[PATH_MAX_LENGTH];
+   char config_path[PATH_MAX_LENGTH];
+   char config_dir[PATH_MAX_LENGTH];
    bool found_path                 = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
-   char config_name[PATH_MAX_LENGTH];
-   char config_path[PATH_MAX_LENGTH];
-   char *config_dir                = NULL;
-   size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
 
    msg[0]                          = '\0';
+   config_dir[0]                   = '\0';
 
    if (!string_is_empty(dir_menu_config))
-      config_dir = strdup(dir_menu_config);
+      strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
-   {
-      config_dir                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      config_dir[0]                = '\0';
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
-            config_size);
-   }
+            sizeof(config_dir));
 
    if (string_is_empty(config_dir))
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_ERR("[config] %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
-      free (config_dir);
       return false;
    }
 
@@ -15238,7 +15403,6 @@ static bool command_event_save_core_config(
 
    p_rarch->runloop_overrides_active = overrides_active;
 
-   free(config_dir);
    return true;
 }
 
@@ -27754,11 +27918,11 @@ static void input_config_reindex_device_names(void)
    unsigned name_index;
 
    /* Reset device name indices */
-   for(i = 0; i < MAX_INPUT_DEVICES; i++)
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
       input_config_set_device_name_index(i, 0);
 
    /* Scan device names */
-   for(i = 0; i < MAX_INPUT_DEVICES; i++)
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
       const char *device_name = input_config_get_device_name(i);
 
@@ -27777,7 +27941,7 @@ static void input_config_reindex_device_names(void)
 
       /* Loop over all devices following the current
        * selection */
-      for(j = i + 1; j < MAX_INPUT_DEVICES; j++)
+      for (j = i + 1; j < MAX_INPUT_DEVICES; j++)
       {
          const char *next_device_name = input_config_get_device_name(j);
 
@@ -29123,9 +29287,12 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
 
    audio_driver_deinit_resampler(p_rarch);
 
-   if (p_rarch->audio_driver_input_data)
-      free(p_rarch->audio_driver_input_data);
-   p_rarch->audio_driver_input_data         = NULL;
+   {
+      unsigned i;
+      size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+      for (i = 0; i < max_bufsamples; i++)
+         p_rarch->audio_driver_input_data[i] = 0.0f;
+   }
 
    if (p_rarch->audio_driver_output_samples_buf)
       free(p_rarch->audio_driver_output_samples_buf);
@@ -29210,7 +29377,6 @@ static bool audio_driver_init_internal(
       bool audio_cb_inited)
 {
    unsigned new_rate       = 0;
-   float   *aud_inp_data   = NULL;
    float  *samples_buf     = NULL;
    size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings    = p_rarch->configuration_settings;
@@ -29350,13 +29516,6 @@ static bool audio_driver_init_internal(
       p_rarch->audio_driver_active = false;
    }
 
-   aud_inp_data = (float*)malloc(max_bufsamples * sizeof(float));
-   retro_assert(aud_inp_data != NULL);
-
-   if (!aud_inp_data)
-      goto error;
-
-   p_rarch->audio_driver_input_data = aud_inp_data;
    p_rarch->audio_driver_data_ptr   = 0;
 
    retro_assert(settings->uints.audio_out_rate <
@@ -29602,7 +29761,6 @@ static void audio_driver_sample(int16_t left, int16_t right)
 
    if (!(p_rarch->runloop_paused           ||
 		   !p_rarch->audio_driver_active     ||
-		   !p_rarch->audio_driver_input_data ||
 		   !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
@@ -29628,7 +29786,6 @@ static void audio_driver_menu_sample(void)
    bool check_flush                       = !(
          p_rarch->runloop_paused           ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_input_data ||
          !p_rarch->audio_driver_output_samples_buf);
 
    while (sample_count > 1024)
@@ -29715,7 +29872,6 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    if (!(
          p_rarch->runloop_paused           ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_input_data ||
          !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
@@ -30596,7 +30752,6 @@ void audio_driver_frame_is_reverse(void)
    if (!(
           p_rarch->runloop_paused          ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_input_data ||
          !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,

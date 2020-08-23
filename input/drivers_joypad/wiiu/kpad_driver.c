@@ -55,7 +55,7 @@ static int to_wiimote_channel(unsigned pad)
 {
    unsigned i;
 
-   for(i = 0; i < WIIU_WIIMOTE_CHANNELS; i++)
+   for (i = 0; i < WIIU_WIIMOTE_CHANNELS; i++)
       if (channel_slot_map[i] == pad)
          return i;
 

@@ -284,6 +284,18 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len, "Sort save files in folders \n"
                     "named after the libretro core used.");
             break;
+        case MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE:
+            snprintf(s, len, "Sort save states in folders named \n"
+                   "after the folder in which the content lives.");
+            break;
+        case MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE:
+            snprintf(s, len, "Sort save files in folders named \n"
+                  "after the folder in which the content lives.");
+            break;
+        case MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE:
+            snprintf(s, len, "Sort screenshots in folders named \n"
+                  "after the folder in which the content lives.");
+            break;
         case MENU_ENUM_LABEL_RESUME_CONTENT:
             snprintf(s, len, "Exits from the menu and returns back \n"
                     "to the content.");

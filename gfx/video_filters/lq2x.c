@@ -111,22 +111,21 @@ static void lq2x_generic_rgb565(unsigned width, unsigned height,
    uint16_t *out0 = (uint16_t*)dst;
    uint16_t *out1 = (uint16_t*)(dst + dst_stride);
 
-   for(y = 0; y < height; y++)
+   for (y = 0; y < height; y++)
    {
       int prevline = (y == 0 ? 0 : src_stride);
       int nextline = (y == height - 1 || last) ? 0 : src_stride;
 
-      for(x = 0; x < width; x++)
+      for (x = 0; x < width; x++)
       {
-         uint16_t A, B, C, D, E, c;
-         A = *(src - prevline);
-         B = (x > 0) ? *(src - 1) : *src;
-         C = *src;
-         D = (x < width - 1) ? *(src + 1) : *src;
-         E = *(src++ + nextline);
-         c = C;
+         uint16_t A = *(src - prevline);
+         uint16_t B = (x > 0) ? *(src - 1) : *src;
+         uint16_t C = *src;
+         uint16_t D = (x < width - 1) ? *(src + 1) : *src;
+         uint16_t E = *(src++ + nextline);
+         uint16_t c = C;
 
-         if(A != E && B != D)
+         if (A != E && B != D)
          {
             *out0++ = (A == B ? ((C + A - ((C ^ A) & 0x0821)) >> 1) : c);
             *out0++ = (A == D ? ((C + A - ((C ^ A) & 0x0821)) >> 1) : c);
@@ -142,7 +141,7 @@ static void lq2x_generic_rgb565(unsigned width, unsigned height,
          }
       }
 
-      src += src_stride - width;
+      src  += src_stride - width;
       out0 += dst_stride + dst_stride - (width << 1);
       out1 += dst_stride + dst_stride - (width << 1);
    }
@@ -156,12 +155,12 @@ static void lq2x_generic_xrgb8888(unsigned width, unsigned height,
    uint32_t *out0 = (uint32_t*)dst;
    uint32_t *out1 = (uint32_t*)(dst + dst_stride);
 
-   for(y = 0; y < height; y++)
+   for (y = 0; y < height; y++)
    {
       int prevline = (y == 0 ? 0 : src_stride);
       int nextline = (y == height - 1 || last) ? 0 : src_stride;
 
-      for(x = 0; x < width; x++)
+      for (x = 0; x < width; x++)
       {
          uint32_t A = *(src - prevline);
          uint32_t B = (x > 0) ? *(src - 1) : *src;
@@ -170,7 +169,7 @@ static void lq2x_generic_xrgb8888(unsigned width, unsigned height,
          uint32_t E = *(src++ + nextline);
          uint32_t c = C;
 
-         if(A != E && B != D)
+         if (A != E && B != D)
          {
             *out0++ = (A == B ? (C + A - ((C ^ A) & 0x0421)) >> 1 : c);
             *out0++ = (A == D ? (C + A - ((C ^ A) & 0x0421)) >> 1 : c);

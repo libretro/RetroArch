@@ -102,7 +102,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE],
          "D:", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_CORE],
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
+         FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "savestates",

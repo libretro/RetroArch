@@ -34,7 +34,7 @@ char *string_init(const char *src)
 void string_set(char **string, const char *src)
 {
    free(*string);
-   *string = src ? strdup(src) : NULL;
+   *string = string_init(src);
 }
 
 

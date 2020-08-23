@@ -125,7 +125,7 @@ static void frontend_ctr_get_environment_settings(int* argc, char* argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
-                      file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path_config));
+                      FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 }
 
 static void frontend_ctr_deinit(void* data)

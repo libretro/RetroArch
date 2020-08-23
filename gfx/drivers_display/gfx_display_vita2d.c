@@ -87,39 +87,40 @@ static void gfx_display_vita2d_viewport(gfx_display_ctx_draw_t *draw,
 static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-    unsigned i;
-    struct vita2d_texture *texture   = NULL;
-    const float *vertex              = NULL;
-    const float *tex_coord           = NULL;
-    const float *color               = NULL;
-    vita_video_t             *vita2d = (vita_video_t*)data;
+   unsigned i;
+   struct vita2d_texture *texture   = NULL;
+   const float *vertex              = NULL;
+   const float *tex_coord           = NULL;
+   const float *color               = NULL;
+   vita_video_t             *vita2d = (vita_video_t*)data;
 
-    if (!vita2d || !draw)
+   if (!vita2d || !draw)
       return;
 
-    texture            = (struct vita2d_texture*)draw->texture;
-    vertex             = draw->coords->vertex;
-    tex_coord          = draw->coords->tex_coord;
-    color              = draw->coords->color;
+   texture            = (struct vita2d_texture*)draw->texture;
+   vertex             = draw->coords->vertex;
+   tex_coord          = draw->coords->tex_coord;
+   color              = draw->coords->color;
 
-    if (!vertex)
-       vertex          = gfx_display_vita2d_get_default_vertices();
-    if (!tex_coord)
-       tex_coord       = gfx_display_vita2d_get_default_tex_coords();
-    if (!draw->coords->lut_tex_coord)
-       draw->coords->lut_tex_coord = gfx_display_vita2d_get_default_tex_coords();
-    if (!texture)
-       return;
-    if (!color)
-       color           = gfx_display_vita2d_get_default_color();
+   if (!vertex)
+      vertex          = gfx_display_vita2d_get_default_vertices();
+   if (!tex_coord)
+      tex_coord       = gfx_display_vita2d_get_default_tex_coords();
+   if (!draw->coords->lut_tex_coord)
+      draw->coords->lut_tex_coord = gfx_display_vita2d_get_default_tex_coords();
+   if (!texture)
+      return;
+   if (!color)
+      color           = gfx_display_vita2d_get_default_color();
 
-    gfx_display_vita2d_viewport(draw, vita2d);
-   
-    vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)vita2d_pool_memalign(
-	   draw->coords->vertices * sizeof(vita2d_texture_tint_vertex),
-		sizeof(vita2d_texture_tint_vertex));
+   gfx_display_vita2d_viewport(draw, vita2d);
 
-    for(i = 0; i < draw->coords->vertices; i++){
+   vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)vita2d_pool_memalign(
+         draw->coords->vertices * sizeof(vita2d_texture_tint_vertex),
+         sizeof(vita2d_texture_tint_vertex));
+
+   for (i = 0; i < draw->coords->vertices; i++)
+   {
       vertices[i].x = *vertex++;
       vertices[i].y = *vertex++;
       vertices[i].z = 1.0f;
@@ -129,16 +130,16 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       vertices[i].g = *color++;
       vertices[i].b = *color++;
       vertices[i].a = *color++;
-    }
+   }
 
    switch (draw->pipeline_id)
    {
-     default:
-     {
-        vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, gfx_display_vita2d_get_default_mvp(vita2d));
-        break;
-     }
-  }
+      default:
+         {
+            vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, gfx_display_vita2d_get_default_mvp(vita2d));
+            break;
+         }
+   }
 }
 
 static void gfx_display_vita2d_draw_pipeline(gfx_display_ctx_draw_t *draw,
@@ -155,9 +156,9 @@ static void gfx_display_vita2d_clear_color(
    if (!clearcolor)
       return;
    vita2d_set_clear_color(RGBA8((int)(clearcolor->r*255.f),
-                                (int)(clearcolor->g*255.f),
-                                (int)(clearcolor->b*255.f),
-                                (int)(clearcolor->a*255.f)));
+            (int)(clearcolor->g*255.f),
+            (int)(clearcolor->b*255.f),
+            (int)(clearcolor->a*255.f)));
    vita2d_draw_rectangle(0,0,PSP_FB_WIDTH,PSP_FB_HEIGHT, vita2d_get_clear_color());
 }
 
@@ -167,7 +168,7 @@ static bool gfx_display_vita2d_font_init_first(
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
+   *handle              = font_driver_init_first(video_data,
          font_path, font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_VITA2D);

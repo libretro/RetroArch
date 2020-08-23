@@ -339,17 +339,17 @@ static void vga_set_texture_frame(void *data,
       {
          unsigned short *video_frame = (unsigned short*)frame;
 
-         for(y = 0; y < VGA_HEIGHT; y++)
+         for (y = 0; y < VGA_HEIGHT; y++)
          {
-            for(x = 0; x < VGA_WIDTH; x++)
+            for (x = 0; x < VGA_WIDTH; x++)
             {
                /* scale incoming frame to fit the screen */
-               unsigned scaled_x = (width * x) / VGA_WIDTH;
-               unsigned scaled_y = (height * y) / VGA_HEIGHT;
+               unsigned scaled_x    = (width * x) / VGA_WIDTH;
+               unsigned scaled_y    = (height * y) / VGA_HEIGHT;
                unsigned short pixel = video_frame[width * scaled_y + scaled_x];
-               unsigned r = ((pixel & 0xF000) >> 13);
-               unsigned g = ((pixel & 0xF00) >> 9);
-               unsigned b = ((pixel & 0xF0) >> 6);
+               unsigned r           = ((pixel & 0xF000) >> 13);
+               unsigned g           = ((pixel & 0xF00) >> 9);
+               unsigned b           = ((pixel & 0xF0) >> 6);
                vga->vga_menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
             }
          }

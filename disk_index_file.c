@@ -334,7 +334,7 @@ bool disk_index_file_init(
          content_name, sizeof(disk_index_file_path));
    strlcat(
          disk_index_file_path,
-         file_path_str(FILE_PATH_DISK_CONTROL_INDEX_EXTENSION),
+         FILE_PATH_DISK_CONTROL_INDEX_EXTENSION,
          sizeof(disk_index_file_path));
    if (string_is_empty(disk_index_file_path))
       goto error;

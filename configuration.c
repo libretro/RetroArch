@@ -1449,6 +1449,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("audio_sync",                    &settings->bools.audio_sync, true, DEFAULT_AUDIO_SYNC, false);
    SETTING_BOOL("video_shader_enable",           &settings->bools.video_shader_enable, true, DEFAULT_SHADER_ENABLE, false);
    SETTING_BOOL("video_shader_watch_files",      &settings->bools.video_shader_watch_files, true, DEFAULT_VIDEO_SHADER_WATCH_FILES, false);
+   SETTING_BOOL("video_shader_remember_last_dir", &settings->bools.video_shader_remember_last_dir, true, DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR, false);
 
    /* Let implementation decide if automatic, or 1:1 PAR. */
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->bools.video_aspect_ratio_auto, true, DEFAULT_ASPECT_RATIO_AUTO, false);
@@ -1703,6 +1704,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("scan_without_core_match",   &settings->bools.scan_without_core_match, true, DEFAULT_SCAN_WITHOUT_CORE_MATCH, false);
    SETTING_BOOL("sort_savefiles_enable",        &settings->bools.sort_savefiles_enable, true, default_sort_savefiles_enable, false);
    SETTING_BOOL("sort_savestates_enable",       &settings->bools.sort_savestates_enable, true, default_sort_savestates_enable, false);
+   SETTING_BOOL("sort_savefiles_by_content_enable", &settings->bools.sort_savefiles_by_content_enable, true, default_sort_savefiles_by_content_enable, false);
+   SETTING_BOOL("sort_savestates_by_content_enable", &settings->bools.sort_savestates_by_content_enable, true, default_sort_savestates_by_content_enable, false);
+   SETTING_BOOL("sort_screenshots_by_content_enable", &settings->bools.sort_screenshots_by_content_enable, true, default_sort_screenshots_by_content_enable, false);
    SETTING_BOOL("config_save_on_exit",          &settings->bools.config_save_on_exit, true, DEFAULT_CONFIG_SAVE_ON_EXIT, false);
    SETTING_BOOL("show_hidden_files",            &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
    SETTING_BOOL("input_autodetect_enable",      &settings->bools.input_autodetect_enable, true, input_autodetect_enable, false);
@@ -2505,7 +2509,7 @@ void config_set_defaults(void *data)
 
          fill_pathname_join(config_file_path,
                settings->paths.directory_menu_config,
-               file_path_str(FILE_PATH_MAIN_CONFIG),
+               FILE_PATH_MAIN_CONFIG,
                sizeof(config_file_path));
          path_set(RARCH_PATH_CONFIG,
                config_file_path);
@@ -2665,7 +2669,7 @@ static config_file_t *open_default_config_file(void)
    fill_pathname_application_dir(app_path, sizeof(app_path));
 #endif
    fill_pathname_resolve_relative(conf_path, app_path,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+         FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
 
    conf = config_file_new_from_path_to_string(conf_path);
 
@@ -2675,7 +2679,7 @@ static config_file_t *open_default_config_file(void)
             sizeof(application_data)))
       {
          fill_pathname_join(conf_path, application_data,
-               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+               FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
          conf = config_file_new_from_path_to_string(conf_path);
       }
    }
@@ -2692,7 +2696,7 @@ static config_file_t *open_default_config_file(void)
          /* Since this is a clean config file, we can
           * safely use config_save_on_exit. */
          fill_pathname_resolve_relative(conf_path, app_path,
-               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+               FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
          config_set_bool(conf, "config_save_on_exit", true);
          saved = config_file_write(conf, conf_path, true);
       }
@@ -2718,7 +2722,7 @@ static config_file_t *open_default_config_file(void)
    path_mkdir(application_data);
 
    fill_pathname_join(conf_path, application_data,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+         FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
    conf = config_file_new_from_path_to_string(conf_path);
 
    if (!conf)
@@ -2750,7 +2754,7 @@ static config_file_t *open_default_config_file(void)
    if (has_application_data)
    {
       fill_pathname_join(conf_path, application_data,
-            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+            FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
@@ -2759,7 +2763,7 @@ static config_file_t *open_default_config_file(void)
    if (!conf && getenv("HOME"))
    {
       fill_pathname_join(conf_path, getenv("HOME"),
-            ".retroarch.cfg", sizeof(conf_path));
+            "." FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
@@ -2775,7 +2779,7 @@ static config_file_t *open_default_config_file(void)
 
       fill_pathname_basedir(basedir, application_data, sizeof(basedir));
       fill_pathname_join(conf_path, application_data,
-            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+            FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
 
       dir_created = path_mkdir(basedir);
 
@@ -2789,7 +2793,7 @@ static config_file_t *open_default_config_file(void)
          /* Build a retroarch.cfg path from the
           * global config directory (/etc). */
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
-            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
+            FILE_PATH_MAIN_CONFIG, sizeof(skeleton_conf));
 
          conf = config_file_new_from_path_to_string(skeleton_conf);
          if (conf)
@@ -3006,10 +3010,13 @@ static bool config_load_file(global_t *global,
       size_t tmp = 0;
       if (config_get_size_t(conf, size_settings[i].ident, &tmp))
          *size_settings[i].ptr = tmp ;
-      /* Special case for rewind_buffer_size - need to convert low values to what they were
+      /* Special case for rewind_buffer_size - need to convert 
+       * low values to what they were
        * intended to be based on the default value in config.def.h
-       * If the value is less than 10000 then multiple by 1MB because if the retroarch.cfg
-       * file contains rewind_buffer_size = "100" then that ultimately gets interpreted as
+       * If the value is less than 10000 then multiple by 1MB because if 
+       * the retroarch.cfg
+       * file contains rewind_buffer_size = "100",
+       * then that ultimately gets interpreted as
        * 100MB, so ensure the internal values represent that.*/
       if (string_is_equal(size_settings[i].ident, "rewind_buffer_size"))
          if (*size_settings[i].ptr < 10000)
@@ -3045,7 +3052,7 @@ static bool config_load_file(global_t *global,
       snprintf(buf, sizeof(buf), "led%u_map", i + 1);
 
       /* TODO/FIXME - change of sign - led_map is unsigned */
-      settings->uints.led_map[i]=-1;
+      settings->uints.led_map[i] = -1;
 
       CONFIG_GET_INT_BASE(conf, settings, uints.led_map[i], buf);
    }
@@ -3131,12 +3138,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_history,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_HISTORY),
+               FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
       else
          fill_pathname_join(settings->paths.path_content_history,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_HISTORY),
+               FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
    }
 
@@ -3146,12 +3153,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_favorites,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_FAVORITES),
+               FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
       else
          fill_pathname_join(settings->paths.path_content_favorites,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_FAVORITES),
+               FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
    }
 
@@ -3161,12 +3168,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_music_history,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
+               FILE_PATH_CONTENT_MUSIC_HISTORY,
                sizeof(settings->paths.path_content_music_history));
       else
          fill_pathname_join(settings->paths.path_content_music_history,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
+               FILE_PATH_CONTENT_MUSIC_HISTORY,
                sizeof(settings->paths.path_content_music_history));
    }
 
@@ -3176,12 +3183,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_video_history,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
+               FILE_PATH_CONTENT_VIDEO_HISTORY,
                sizeof(settings->paths.path_content_video_history));
       else
          fill_pathname_join(settings->paths.path_content_video_history,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
+               FILE_PATH_CONTENT_VIDEO_HISTORY,
                sizeof(settings->paths.path_content_video_history));
    }
 
@@ -3191,12 +3198,12 @@ static bool config_load_file(global_t *global,
          fill_pathname_resolve_relative(
                settings->paths.path_content_image_history,
                path_config,
-               file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
+               FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
       else
          fill_pathname_join(settings->paths.path_content_image_history,
                settings->paths.directory_content_history,
-               file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
+               FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
    }
 
@@ -3315,7 +3322,7 @@ static bool config_load_file(global_t *global,
                   sizeof(global->name.savefile));
             fill_pathname_dir(global->name.savefile,
                   path_get(RARCH_PATH_BASENAME),
-                  ".srm",
+                  FILE_PATH_SRM_EXTENSION,
                   sizeof(global->name.savefile));
          }
       }
@@ -3661,19 +3668,19 @@ bool config_load_remap(const char *directory_input_remapping,
    fill_pathname_join_special_ext(core_path,
          remap_directory, core_name,
          core_name,
-         ".rmp",
+         FILE_PATH_REMAP_EXTENSION,
          sizeof(core_path));
 
    fill_pathname_join_special_ext(content_path,
          remap_directory, core_name,
          content_dir_name,
-         ".rmp",
+         FILE_PATH_REMAP_EXTENSION,
          sizeof(content_path));
 
    fill_pathname_join_special_ext(game_path,
          remap_directory, core_name,
          game_name,
-         ".rmp",
+         FILE_PATH_REMAP_EXTENSION,
          sizeof(game_path));
 
 #ifdef HAVE_CONFIGFILE
@@ -4204,19 +4211,19 @@ bool config_save_overrides(enum override_type type, void *data)
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
-         ".cfg",
+         FILE_PATH_CONFIG_EXTENSION,
          sizeof(game_path));
 
    fill_pathname_join_special_ext(content_path,
          config_directory, core_name,
          content_dir_name,
-         ".cfg",
+         FILE_PATH_CONFIG_EXTENSION,
          sizeof(content_path));
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
          core_name,
-         ".cfg",
+         FILE_PATH_CONFIG_EXTENSION,
          sizeof(core_path));
 
    if (!conf)
@@ -4538,7 +4545,8 @@ bool input_remapping_save_file(const char *path)
    buf[0] = remap_file[0]            = '\0';
 
    fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
-   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
+   fill_pathname_noext(remap_file, buf,
+         FILE_PATH_REMAP_EXTENSION, sizeof(remap_file));
 
    if (!(conf = config_file_new_from_path_to_string(remap_file)))
    {
@@ -4627,7 +4635,9 @@ bool input_remapping_remove_file(const char *path,
    buf[0] = remap_file[0]  = '\0';
 
    fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
-   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
+   fill_pathname_noext(remap_file, buf,
+         FILE_PATH_REMAP_EXTENSION,
+         sizeof(remap_file));
 
    return filestream_delete(remap_file) == 0 ? true : false;
 }

@@ -92,6 +92,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
    /* TODO come up with a better check for "not all vertexes are the same color" */
    else if (draw->coords->vertex || draw->coords->color[0] != draw->coords->color[12])
    {
+      int i;
       if (wiiu->vertex_cache_tex.current + 4 > wiiu->vertex_cache_tex.size)
          return;
 
@@ -157,7 +158,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
          v[3].coord.v = draw->coords->tex_coord[7];
       }
 
-      for(int i = 0; i < 4; i++)
+      for (i = 0; i < 4; i++)
       {
          v[i].color.r = draw->coords->color[(i << 2) + 0];
          v[i].color.g = draw->coords->color[(i << 2) + 1];

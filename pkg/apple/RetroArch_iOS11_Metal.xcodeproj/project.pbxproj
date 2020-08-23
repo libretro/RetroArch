@@ -286,7 +286,6 @@
 		92B9ECB724E054B500E6CFB2 /* switch_performance_profiles.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = switch_performance_profiles.h; path = ../../switch_performance_profiles.h; sourceTree = "<group>"; };
 		92B9ECB824E054B500E6CFB2 /* driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = driver.h; path = ../../driver.h; sourceTree = "<group>"; };
 		92B9ECB924E054B500E6CFB2 /* version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../../version.h; sourceTree = "<group>"; };
-		92B9ECBA24E054B500E6CFB2 /* file_path_str.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = file_path_str.c; path = ../../file_path_str.c; sourceTree = "<group>"; };
 		92B9ECBB24E054B500E6CFB2 /* disk_index_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = disk_index_file.h; path = ../../disk_index_file.h; sourceTree = "<group>"; };
 		92B9ECBC24E054B500E6CFB2 /* core_backup.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = core_backup.c; path = ../../core_backup.c; sourceTree = "<group>"; };
 		92B9ECBD24E054B500E6CFB2 /* database_info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = database_info.h; path = ../../database_info.h; sourceTree = "<group>"; };
@@ -865,7 +864,6 @@
 				92B9ECB224E054B400E6CFB2 /* dynamic.h */,
 				92B9ECC724E054B600E6CFB2 /* file_path_special.c */,
 				92B9ECA724E054B300E6CFB2 /* file_path_special.h */,
-				92B9ECBA24E054B500E6CFB2 /* file_path_str.c */,
 				92B9ECAD24E054B400E6CFB2 /* lakka.h */,
 				92B9ECB324E054B400E6CFB2 /* list_special.h */,
 				92B9ECAB24E054B400E6CFB2 /* manual_content_scan.c */,

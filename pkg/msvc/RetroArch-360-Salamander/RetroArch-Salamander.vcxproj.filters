@@ -89,8 +89,5 @@
     <ClCompile Include="..\..\..\libretro-common\compat\compat_snprintf.c">
       <Filter>Source Files\libretro-common\compat</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\file_path_str.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

@@ -283,10 +283,10 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
       playlist_valid =
             (string_is_equal(system, "history") &&
              string_is_equal(playlist_file,
-                file_path_str(FILE_PATH_CONTENT_HISTORY))) ||
+                FILE_PATH_CONTENT_HISTORY)) ||
             (string_is_equal(system, "favorites") &&
              string_is_equal(playlist_file,
-                file_path_str(FILE_PATH_CONTENT_FAVORITES)));
+                FILE_PATH_CONTENT_FAVORITES));
       
       if (!playlist_valid)
       {

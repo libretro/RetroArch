@@ -185,14 +185,19 @@ static void *dinput_init(const char *joypad_driver)
 
 static void dinput_poll(void *data)
 {
-   unsigned i;
    struct dinput_input *di = (struct dinput_input*)data;
+   uint8_t *kb_state       = NULL;
 
    if (!di)
       return;
 
-   for (i = 0; i < 256; i++)
-      di->state[i] = 0;
+   kb_state                = &di->state[0];
+
+   for (
+         ; kb_state < di->state + 256
+         ; kb_state++)
+      *kb_state = 0;
+
    if (di->keyboard)
    {
       if (FAILED(IDirectInputDevice8_GetDeviceState(
@@ -202,8 +207,10 @@ static void dinput_poll(void *data)
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->keyboard, sizeof(di->state), di->state)))
          {
-            for (i = 0; i < 256; i++)
-               di->state[i] = 0;
+            for (
+                  ; kb_state < di->state + 256
+                  ; kb_state++)
+               *kb_state = 0;
          }
       }
    }
@@ -212,6 +219,7 @@ static void dinput_poll(void *data)
    {
       POINT point;
       DIMOUSESTATE2 mouse_state;
+      BYTE *rgb_buttons_ptr     = &mouse_state.rgbButtons[0];
       
       point.x = 0;
       point.y = 0;
@@ -219,8 +227,11 @@ static void dinput_poll(void *data)
       mouse_state.lX = 0;
       mouse_state.lY = 0;
       mouse_state.lZ = 0;
-      for (i = 0; i < 8; i++)
-         mouse_state.rgbButtons[i] = 0;
+
+      for (
+            ; rgb_buttons_ptr < mouse_state.rgbButtons + 8
+            ; rgb_buttons_ptr++)
+         *rgb_buttons_ptr = 0;
 
       if (FAILED(IDirectInputDevice8_GetDeviceState(
                   di->mouse, sizeof(mouse_state), &mouse_state)))
@@ -232,8 +243,10 @@ static void dinput_poll(void *data)
             mouse_state.lX = 0;
             mouse_state.lY = 0;
             mouse_state.lZ = 0;
-            for (i = 0; i < 8; i++)
-               mouse_state.rgbButtons[i] = 0;
+            for (
+                  ; rgb_buttons_ptr < mouse_state.rgbButtons + 8
+                  ; rgb_buttons_ptr++)
+               *rgb_buttons_ptr = 0;
          }
       }
 

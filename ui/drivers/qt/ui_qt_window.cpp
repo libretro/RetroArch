@@ -1996,9 +1996,9 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 
       if (      string_is_empty(extension) 
             || !string_is_equal_noncase(
-            extension, file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+            extension, FILE_PATH_LPL_EXTENSION_NO_DOT))
          strlcat(
-               contentDbNameFull, file_path_str(FILE_PATH_LPL_EXTENSION),
+               contentDbNameFull, FILE_PATH_LPL_EXTENSION,
                      sizeof(contentDbNameFull));
    }
 

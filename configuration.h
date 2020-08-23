@@ -445,6 +445,7 @@ typedef struct settings
       bool video_scale_integer;
       bool video_shader_enable;
       bool video_shader_watch_files;
+      bool video_shader_remember_last_dir;
       bool video_threaded;
       bool video_font_enable;
       bool video_disable_composition;
@@ -731,6 +732,9 @@ typedef struct settings
 
       bool sort_savefiles_enable;
       bool sort_savestates_enable;
+      bool sort_savefiles_by_content_enable;
+      bool sort_savestates_by_content_enable;
+      bool sort_screenshots_by_content_enable;
       bool config_save_on_exit;
       bool show_hidden_files;
 

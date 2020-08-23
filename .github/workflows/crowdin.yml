@@ -23,6 +23,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Crowdin Sync
+        shell: bash
+        env:
+          CROWDIN_API_KEY: ${{ secrets.CROWDIN_API_KEY }}
         run: |
           cd intl
-          python3 crowdin_sync.py
+          python3 crowdin_sync.py "$CROWDIN_API_KEY"

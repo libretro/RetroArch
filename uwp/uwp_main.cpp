@@ -213,7 +213,7 @@ static inline float ConvertDipsToPixels(float dips, float dpi)
 int main(Platform::Array<Platform::String^>^)
 {
 	Platform::String^ install_dir = Windows::ApplicationModel::Package::Current->InstalledLocation->Path + L"\\";
-	wcstombs(uwp_dir_install, install_dir->Data(), sizeof(upw_dir_install));
+	wcstombs(uwp_dir_install, install_dir->Data(), sizeof(uwp_dir_install));
 	Platform::String^ data_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\";
 	wcstombs(uwp_dir_data, data_dir->Data(), sizeof(uwp_dir_data));
 

@@ -219,19 +219,19 @@ void GPU_SetAttributeBuffers(
 	param[0x1] = attributeFormats & 0xFFFFFFFF;
 	param[0x2] = ((totalAttributes-1) << 28) | ((attributeMask & 0xFFF) << 16) | ((attributeFormats >> 32) & 0xFFFF);
 
-	for(i = 0; i < totalAttributes; i++)
+	for (i = 0; i < totalAttributes; i++)
 	{
 		u8 v               = attributeFormats & 0xF;
 		sizeTable[i]       = GPU_FORMATSIZE[v & 3]*((v>>2)+1);
 		attributeFormats >>= 4;
 	}
 
-	for(i=0;i<numBuffers;i++)
+	for (i = 0; i < numBuffers; i++)
 	{
 		u16 stride       = 0;
 		param[3*(i+1)+0] = bufferOffsets[i];
 		param[3*(i+1)+1] = bufferPermutations[i] & 0xFFFFFFFF;
-		for(j = 0; j < bufferNumAttributes[i]; j++)
+		for (j = 0; j < bufferNumAttributes[i]; j++)
          stride += sizeTable[(bufferPermutations[i]>>(4*j)) & 0xF];
 
 		param[3*(i+1)+2] = (bufferNumAttributes[i] << 28) | ((stride & 0xFFF)<< 16) | ((bufferPermutations[i] >> 32) & 0xFFFF);

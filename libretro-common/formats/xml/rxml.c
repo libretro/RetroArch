@@ -285,7 +285,7 @@ rxml_document_t *rxml_load_document_string(const char *str)
             break;
 
          case YXML_ATTRVAL:
-            for(c = 0; c < sizeof(x.data) && x.data[c]; ++c)
+            for (c = 0; c < sizeof(x.data) && x.data[c]; ++c)
             {
                *valptr = x.data[c];
                ++valptr;

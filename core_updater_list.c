@@ -474,7 +474,7 @@ static bool core_updater_list_set_paths(
    /* > Add proper file extension */
    strlcat(
          local_info_path,
-         file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
+         FILE_PATH_CORE_INFO_EXTENSION,
          sizeof(local_info_path));
 
    if (entry->local_info_path)

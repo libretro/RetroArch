@@ -206,7 +206,7 @@ void fill_pathname_application_special(char *s,
 
                fill_pathname_application_special(s1, sizeof(s1),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-               fill_pathname_join(s, s1, "bg.png", len);
+               fill_pathname_join(s, s1, FILE_PATH_BACKGROUND_IMAGE, len);
             }
          }
 #endif
@@ -371,7 +371,7 @@ void fill_pathname_application_special(char *s,
                default:
                   fill_pathname_application_special(s1, sizeof(s1),
                         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-                  fill_pathname_join(s, s1, "font.ttf", len);
+                  fill_pathname_join(s, s1, FILE_PATH_TTF_FONT, len);
             }
          }
 #endif
@@ -411,7 +411,7 @@ void fill_pathname_application_special(char *s,
                   default:
                      fill_pathname_application_special(s1, sizeof(s1),
                            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-                     fill_pathname_join(s, s1, "font.ttf", len);
+                     fill_pathname_join(s, s1, FILE_PATH_TTF_FONT, len);
                }
             }
          }

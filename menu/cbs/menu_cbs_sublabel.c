@@ -562,6 +562,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_directory,                MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_swap_interval,           MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savefiles_enable,         MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savestates_enable,        MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savefiles_by_content_enable,      MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savestates_by_content_enable,     MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_screenshots_by_content_enable,     MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_updater_buildbot_url,     MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_show_physical_inputs,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_show_physical_inputs_port,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT)
@@ -764,6 +767,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_recording_config_directory,         
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_font_path,                       MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_apply_changes,                  MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_watch_for_changes,              MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shader_remember_last_dir,        MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_num_passes,                     MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset,                         MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save,                    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE)
@@ -889,7 +893,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    char tmp[4096];
    unsigned controller;
 
-   for(controller = 0; controller < MAX_USERS; controller++)
+   for (controller = 0; controller < MAX_USERS; controller++)
    {
       if (input_config_get_device_autoconfigured(controller))
       {
@@ -1853,6 +1857,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_watch_for_changes);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shader_remember_last_dir);
+            break;
          case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_font_path);
             break;
@@ -2518,6 +2525,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savestates_enable);
+            break;
+         case MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savefiles_by_content_enable);
+            break;
+         case MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savestates_by_content_enable);
+            break;
+         case MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_screenshots_by_content_enable);
             break;
          case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_swap_interval);

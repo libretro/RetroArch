@@ -142,6 +142,12 @@ unsigned gfx_widgets_get_padding(void *data)
    return p_dispwidget->simple_widget_padding;
 }
 
+unsigned gfx_widgets_get_divider_width(void *data)
+{
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
+   return p_dispwidget->divider_width_1px;
+}
+
 unsigned gfx_widgets_get_height(void *data)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
@@ -859,9 +865,7 @@ void gfx_widgets_iterate(
          {
             /* Task messages always appear from the bottom of the screen, append it */
             if (p_dispwidget->msg_queue_tasks_count == 0 || msg_widget->task_ptr)
-            {
                p_dispwidget->current_msgs[p_dispwidget->current_msgs_size] = msg_widget;
-            }
             /* Regular messages are always above tasks, make room and insert it */
             else
             {
