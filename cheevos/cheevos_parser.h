@@ -45,15 +45,14 @@ typedef struct
 
 typedef struct
 {
-   unsigned game_id;
-   unsigned console_id;
    char* title;
-
    rcheevos_racheevo_t* core;
    rcheevos_racheevo_t* unofficial;
    rcheevos_ralboard_t* lboards;
    char* richpresence_script;
 
+   unsigned game_id;
+   unsigned console_id;
    unsigned core_count;
    unsigned unofficial_count;
    unsigned lboard_count;

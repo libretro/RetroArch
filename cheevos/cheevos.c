@@ -105,15 +105,15 @@
 
 enum rcheevos_async_io_type
 {
-   CHEEVOS_ASYNC_RICHPRESENCE,
+   CHEEVOS_ASYNC_RICHPRESENCE = 0,
    CHEEVOS_ASYNC_AWARD_ACHIEVEMENT,
    CHEEVOS_ASYNC_SUBMIT_LBOARD
 };
 
 typedef struct
 {
-   rc_trigger_t* trigger;
-   const rcheevos_racheevo_t* info;
+   rc_trigger_t *trigger;
+   const rcheevos_racheevo_t *info;
    int active;
    int last;
 } rcheevos_cheevo_t;
@@ -122,74 +122,73 @@ typedef struct
 {
    rc_lboard_t* lboard;
    const rcheevos_ralboard_t* info;
-   bool active;
    int last_value;
    int format;
+   bool active;
 } rcheevos_lboard_t;
 
 typedef struct
 {
+   retro_time_t last_update;
    rc_richpresence_t* richpresence;
    char evaluation[256];
-   retro_time_t last_update;
 } rcheevos_richpresence_t;
 
 typedef struct rcheevos_async_io_request
 {
+   const char* success_message;
+   const char* failure_message;
    int id;
    int value;
    int attempt_count;
+   char user_agent[256];
    char type;
    char hardcore;
-   const char* success_message;
-   const char* failure_message;
-   char user_agent[256];
 } rcheevos_async_io_request;
 
 typedef struct
 {
+   rcheevos_richpresence_t richpresence; /* retro_time_t alignment */
    retro_task_t* task;
 #ifdef HAVE_THREADS
    slock_t* task_lock;
 #endif
 
-   bool hardcore_active;
-   bool loaded;
-   bool core_supports;
-   bool invalid_peek_address;
-
-   rcheevos_rapatchdata_t patchdata;
    rcheevos_cheevo_t* core;
    rcheevos_cheevo_t* unofficial;
    rcheevos_lboard_t* lboards;
-   rcheevos_richpresence_t richpresence;
-
-   rcheevos_memory_regions_t memory;
+   rcheevos_rapatchdata_t patchdata; /* ptr alignment */
+   rcheevos_memory_regions_t memory; /* ptr alignment */
 
    char token[32];
    char hash[33];
    char user_agent_prefix[128];
+
+   bool hardcore_active;
+   bool loaded;
+   bool core_supports;
+   bool invalid_peek_address;
 } rcheevos_locals_t;
 
 static rcheevos_locals_t rcheevos_locals =
 {
+   {0},  /* rich presence */
    NULL, /* task */
 #ifdef HAVE_THREADS
    NULL, /* task_lock */
 #endif
-   false,/* hardcore_active */
-   false,/* loaded */
-   true, /* core_supports */
-   false,/* invalid_peek_address */
-   {0},  /* patchdata */
    NULL, /* core */
    NULL, /* unofficial */
    NULL, /* lboards */
-   {0},  /* rich presence */
+   {0},  /* patchdata */
    {{0}},/* memory */
    {0},  /* token */
    "N/A",/* hash */
    "",   /* user_agent_prefix */
+   false,/* hardcore_active */
+   false,/* loaded */
+   true, /* core_supports */
+   false,/* invalid_peek_address */
 };
 
 #ifdef HAVE_THREADS
