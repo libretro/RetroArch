@@ -235,9 +235,9 @@ struct string_list *dir_list_new(const char *dir,
       bool include_hidden, bool include_compressed,
       bool recursive)
 {
-   struct string_list *list       = NULL;
+   struct string_list *list       = string_list_new();
 
-   if (!(list = string_list_new()))
+   if (!list)
       return NULL;
 
    if (!dir_list_append(list, dir, ext, include_dirs,

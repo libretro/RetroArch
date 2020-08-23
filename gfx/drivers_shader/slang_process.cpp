@@ -428,26 +428,23 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader)
 {
    glslang_meta meta;
-   bool ret                  = false;
-   struct string_list *lines = string_list_new();
+   struct string_list lines;
+   
+   if (!string_list_initialize(&lines))
+      goto error;
 
-   if (!lines)
-      goto end;
-
-   if (!glslang_read_shader_file(shader_path, lines, true))
-      goto end;
+   if (!glslang_read_shader_file(shader_path, &lines, true))
+      goto error;
    meta = glslang_meta{};
-   if (!glslang_parse_meta(lines, &meta))
-      goto end;
+   if (!glslang_parse_meta(&lines, &meta))
+      goto error;
 
-   ret = slang_preprocess_parse_parameters(meta, shader);
+   string_list_deinitialize(&lines);
+   return slang_preprocess_parse_parameters(meta, shader);
 
-end:
-
-   if (lines)
-      string_list_free(lines);
-
-   return ret;
+error:
+   string_list_deinitialize(&lines);
+   return false;
 }
 
 bool slang_process(
