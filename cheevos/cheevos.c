@@ -212,7 +212,7 @@ void rcheevos_log(const char *fmt, ...)
 }
 #endif
 
-static void rcheevos_get_user_agent(char* buffer)
+static void rcheevos_get_user_agent(char *buffer, size_t len)
 {
    struct retro_system_info *system = runloop_get_libretro_system_info();
    const char* scan;
@@ -224,7 +224,7 @@ static void rcheevos_get_user_agent(char* buffer)
       int major, minor;
       char tmp[64];
 
-      ptr = rcheevos_locals.user_agent_prefix + sprintf(rcheevos_locals.user_agent_prefix, "RetroArch/%s", PACKAGE_VERSION);
+      ptr = rcheevos_locals.user_agent_prefix + snprintf(rcheevos_locals.user_agent_prefix, sizeof(rcheevos_locals.user_agent_prefix), "RetroArch/%s", PACKAGE_VERSION);
 
       if (frontend && frontend->get_os)
       {
@@ -233,7 +233,7 @@ static void rcheevos_get_user_agent(char* buffer)
       }
    }
 
-   ptr = buffer + sprintf(buffer, "%s", rcheevos_locals.user_agent_prefix);
+   ptr = buffer + snprintf(buffer, len, "%s", rcheevos_locals.user_agent_prefix);
 
    if (system && !string_is_empty(system->library_name))
    {
@@ -320,15 +320,15 @@ static void rcheevos_filter_url_param(char* url, char* param)
 static void rcheevos_log_url(const char* api, const char* url)
 {
 #ifdef CHEEVOS_LOG_URLS
- #ifdef CHEEVOS_LOG_PASSWORD
+#ifdef CHEEVOS_LOG_PASSWORD
    CHEEVOS_LOG(RCHEEVOS_TAG "%s: %s\n", api, url);
- #else
+#else
    char copy[256];
    strlcpy(copy, url, sizeof(copy));
    rcheevos_filter_url_param(copy, "p");
    rcheevos_filter_url_param(copy, "t");
    CHEEVOS_LOG(RCHEEVOS_TAG "%s: %s\n", api, copy);
- #endif
+#endif
 #else
    (void)api;
    (void)url;
@@ -425,7 +425,7 @@ static retro_time_t rcheevos_async_send_rich_presence(
       {
          rcheevos_log_post_url("rc_url_ping", url, post_data);
 
-         rcheevos_get_user_agent(request->user_agent);
+         rcheevos_get_user_agent(request->user_agent, sizeof(request->user_agent));
          task_push_http_post_transfer_with_user_agent(url, post_data, true, "POST", request->user_agent, NULL, NULL);
       }
    }
@@ -822,7 +822,7 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
          ? 1 : 0;
       request->success_message = "Awarded achievement";
       request->failure_message = "Error awarding achievement";
-      rcheevos_get_user_agent(request->user_agent);
+      rcheevos_get_user_agent(request->user_agent, sizeof(request->user_agent));
       rcheevos_async_award_achievement(request);
    }
 
@@ -974,7 +974,7 @@ static void rcheevos_lboard_submit(rcheevos_lboard_t* lboard)
       request->value = lboard->last_value;
       request->success_message = "Submitted leaderboard";
       request->failure_message = "Error submitting leaderboard";
-      rcheevos_get_user_agent(request->user_agent);
+      rcheevos_get_user_agent(request->user_agent, sizeof(request->user_agent));
       rcheevos_async_submit_lboard(request);
    }
 }
@@ -1581,7 +1581,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       if (coro->gameid == 0)
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "this game doesn't feature achievements\n");
-         strcpy(rcheevos_locals.hash, "N/A");
+         strlcpy(rcheevos_locals.hash, "N/A", sizeof(rcheevos_locals.hash));
          rcheevos_pause_hardcore();
          CORO_STOP();
       }
@@ -2040,7 +2040,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
             continue;
          }
 
-         rcheevos_get_user_agent(buffer);
+         rcheevos_get_user_agent(buffer, sizeof(buffer));
          net_http_connection_set_user_agent(coro->conn, buffer);
 
          coro->http = net_http_new(coro->conn);
