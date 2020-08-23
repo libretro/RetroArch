@@ -536,13 +536,15 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_DETECT_CORE_LIST:
          {
+            struct string_list str_list2;
             union string_list_elem_attr attr;
             char newstring[PATH_MAX_LENGTH];
-            struct string_list *str_list2    = string_list_new();
             struct retro_system_info *system = runloop_get_libretro_system_info();
 
             newstring[0]                     = '\0';
             attr.i                           = 0;
+
+            string_list_initialize(&str_list2);
 
             if (system)
             {
@@ -554,7 +556,7 @@ static int general_push(menu_displaylist_info_t *info,
                   for (x = 0; x < str_list->size; x++)
                   {
                      const char *elem = str_list->elems[x].data;
-                     string_list_append(str_list2, elem, attr);
+                     string_list_append(&str_list2, elem, attr);
                   }
 
                   string_list_free(str_list);
@@ -571,11 +573,11 @@ static int general_push(menu_displaylist_info_t *info,
 
                   for (x = 0; x < str_list->size; x++)
                   {
-                     if (!string_list_find_elem(str_list2,
+                     if (!string_list_find_elem(&str_list2,
                               str_list->elems[x].data))
                      {
                         const char *elem = str_list->elems[x].data;
-                        string_list_append(str_list2, elem, attr);
+                        string_list_append(&str_list2, elem, attr);
                      }
                   }
 
@@ -584,7 +586,7 @@ static int general_push(menu_displaylist_info_t *info,
             }
 
             string_list_join_concat(newstring, sizeof(newstring),
-                  str_list2, "|");
+                  &str_list2, "|");
 
             {
                struct string_list *str_list3  = string_split(newstring, "|");
@@ -602,7 +604,7 @@ static int general_push(menu_displaylist_info_t *info,
                      str_list3, "|");
                string_list_free(str_list3);
             }
-            string_list_free(str_list2);
+            string_list_deinitialize(&str_list2);
          }
          break;
    }
