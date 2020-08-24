@@ -543,9 +543,60 @@ float gradient_midgar[16] = {
    32/255.0,  32/255.0,  32/255.0, 1.0,
 };
 
+static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
+{
+   float iy = xmb->icon_spacing_vertical;
+
+   if (i < (int)current)
+      if (xmb->depth > 1)
+         iy *= (i - (int)current + xmb->above_subitem_offset);
+      else
+         iy *= (i - (int)current + xmb->above_item_offset);
+   else
+      iy    *= (i - (int)current + xmb->under_item_offset);
+
+   if (i == (int)current)
+      iy = xmb->icon_spacing_vertical * xmb->active_item_factor;
+
+   return iy;
+}
+
+
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
-      unsigned *first, unsigned *last);
+      unsigned *first, unsigned *last)
+{
+   unsigned j;
+   float    base_y = xmb->margins_screen_top;
+
+   *first = 0;
+   *last  = (unsigned)(list_size ? list_size - 1 : 0);
+
+   if (current)
+   {
+      for (j = current; j-- > 0; )
+      {
+         float bottom = xmb_item_y(xmb, j, current)
+            + base_y + xmb->icon_size;
+
+         if (bottom < 0)
+            break;
+
+         *first = j;
+      }
+   }
+
+   for (j = current+1; j < list_size; j++)
+   {
+      float top = xmb_item_y(xmb, j, current) + base_y;
+
+      if (top > height)
+         break;
+
+      *last = j;
+   }
+}
+
 
 const char* xmb_theme_ident(void)
 {
@@ -753,24 +804,6 @@ static void *xmb_list_get_entry(void *data,
    }
 
    return NULL;
-}
-
-static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
-{
-   float iy = xmb->icon_spacing_vertical;
-
-   if (i < (int)current)
-      if (xmb->depth > 1)
-         iy *= (i - (int)current + xmb->above_subitem_offset);
-      else
-         iy *= (i - (int)current + xmb->above_item_offset);
-   else
-      iy    *= (i - (int)current + xmb->under_item_offset);
-
-   if (i == (int)current)
-      iy = xmb->icon_spacing_vertical * xmb->active_item_factor;
-
-   return iy;
 }
 
 static void xmb_draw_icon(
@@ -2963,41 +2996,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 
-}
-
-static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
-      unsigned height, size_t list_size, unsigned current,
-      unsigned *first, unsigned *last)
-{
-   unsigned j;
-   float    base_y = xmb->margins_screen_top;
-
-   *first = 0;
-   *last  = (unsigned)(list_size ? list_size - 1 : 0);
-
-   if (current)
-   {
-      for (j = current; j-- > 0; )
-      {
-         float bottom = xmb_item_y(xmb, j, current)
-            + base_y + xmb->icon_size;
-
-         if (bottom < 0)
-            break;
-
-         *first = j;
-      }
-   }
-
-   for (j = current+1; j < list_size; j++)
-   {
-      float top = xmb_item_y(xmb, j, current) + base_y;
-
-      if (top > height)
-         break;
-
-      *last = j;
-   }
 }
 
 static int xmb_draw_item(
