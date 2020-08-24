@@ -1175,6 +1175,12 @@ int cheat_manager_search_eqminus(rarch_setting_t *setting, size_t idx, bool wrap
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQMINUS);
 }
 
+unsigned cheat_manager_get_state_search_size(unsigned search_size)
+{
+   uint32_t n[] = {1,3,15,255,0x0000ffff,0xffffffff};
+   return n[search_size];
+}
+
 bool cheat_manager_add_new_code(unsigned int memory_search_size, unsigned int address, unsigned int address_mask,
       bool big_endian, unsigned int value)
 {
