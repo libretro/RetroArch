@@ -574,14 +574,11 @@ error:
    return NULL;
 }
 
-void config_file_free(config_file_t *conf)
+static void config_file_deinitialize_internal(config_file_t *conf)
 {
    struct config_include_list *inc_tmp = NULL;
-   struct config_entry_list *tmp       = NULL;
-   if (!conf)
-      return;
+   struct config_entry_list *tmp       = conf->entries;
 
-   tmp = conf->entries;
    while (tmp)
    {
       struct config_entry_list *hold = NULL;
@@ -614,7 +611,22 @@ void config_file_free(config_file_t *conf)
 
    if (conf->path)
       free(conf->path);
+}
+
+void config_file_free(config_file_t *conf)
+{
+   if (!conf)
+      return;
+   config_file_deinitialize_internal(conf);
    free(conf);
+}
+
+bool config_file_deinitialize(config_file_t *conf)
+{
+   if (!conf)
+      return false;
+   config_file_deinitialize_internal(conf);
+   return true;
 }
 
 bool config_append_file(config_file_t *conf, const char *path)

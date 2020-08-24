@@ -105,6 +105,8 @@ config_file_t *config_file_new_from_path_to_string(const char *path);
 /* Frees config file. */
 void config_file_free(config_file_t *conf);
 
+bool config_file_deinitialize(config_file_t *conf);
+
 /* Loads a new config, and appends its data to conf.
  * The key-value pairs of the new config file takes priority over the old. */
 bool config_append_file(config_file_t *conf, const char *path);
