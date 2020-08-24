@@ -24,6 +24,7 @@
 #define __LIBRETRO_SDK_DIR_LIST_H
 
 #include <retro_common_api.h>
+#include <boolean.h>
 
 #include <lists/string_list.h>
 
@@ -63,6 +64,12 @@ bool dir_list_append(struct string_list *list, const char *dir, const char *ext,
 struct string_list *dir_list_new(const char *dir, const char *ext,
       bool include_dirs, bool include_hidden, bool include_compressed, bool recursive);
 
+bool dir_list_initialize(struct string_list *list,
+      const char *dir,
+      const char *ext, bool include_dirs,
+      bool include_hidden, bool include_compressed,
+      bool recursive);
+
 /**
  * dir_list_sort:
  * @list      : pointer to the directory listing.
@@ -81,6 +88,8 @@ void dir_list_sort(struct string_list *list, bool dir_first);
  *
  **/
 void dir_list_free(struct string_list *list);
+
+bool dir_list_deinitialize(struct string_list *list);
 
 RETRO_END_DECLS
 

@@ -911,26 +911,26 @@ void core_info_get_name(const char *path, char *s, size_t len,
       bool get_display_name)
 {
    size_t i;
+   struct string_list contents;
    const char       *path_basedir   = !string_is_empty(path_info) ?
       path_info : dir_cores;
-   struct string_list *contents     = dir_list_new(
-         dir_cores, exts, false, dir_show_hidden_files, false, false);
    const char *core_path_basename   = path_basename(path);
 
-   if (!contents)
+   if (!dir_list_initialize(&contents,
+            dir_cores, exts, false, dir_show_hidden_files, false, false))
       return;
 
-   for (i = 0; i < contents->size; i++)
+   for (i = 0; i < contents.size; i++)
    {
       struct config_entry_list 
          *entry                       = NULL;
       config_file_t *conf             = NULL;
-      const char *current_path        = contents->elems[i].data;
+      const char *current_path        = contents.elems[i].data;
 
       if (!string_is_equal(path_basename(current_path), core_path_basename))
          continue;
 
-      conf = core_info_list_iterate(contents->elems[i].data,
+      conf = core_info_list_iterate(contents.elems[i].data,
                path_basedir);
 
       if (!conf)
@@ -948,8 +948,7 @@ void core_info_get_name(const char *path, char *s, size_t len,
       break;
    }
 
-   dir_list_free(contents);
-   contents = NULL;
+   dir_list_deinitialize(&contents);
 }
 
 size_t core_info_list_num_info_files(core_info_list_t *core_info_list)

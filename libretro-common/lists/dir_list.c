@@ -86,6 +86,13 @@ void dir_list_free(struct string_list *list)
    string_list_free(list);
 }
 
+bool dir_list_deinitialize(struct string_list *list)
+{
+   if (!list)
+      return false;
+   return string_list_deinitialize(list);
+}
+
 /**
  * dir_list_read:
  * @dir                : directory path.
@@ -248,4 +255,16 @@ struct string_list *dir_list_new(const char *dir,
    }
 
    return list;
+}
+
+bool dir_list_initialize(struct string_list *list,
+      const char *dir,
+      const char *ext, bool include_dirs,
+      bool include_hidden, bool include_compressed,
+      bool recursive)
+{
+   if (!list)
+      return NULL;
+   return dir_list_append(list, dir, ext, include_dirs,
+            include_hidden, include_compressed, recursive);
 }
