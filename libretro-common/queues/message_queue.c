@@ -270,8 +270,6 @@ bool msg_queue_extract(msg_queue_t *queue, msg_queue_entry_t *queue_entry)
    struct queue_elem *front  = NULL, *last = NULL;
    size_t tmp_ptr = 1;
 
-   (void)tmp_ptr;
-
    /* Ensure arguments are valid and queue is not
     * empty */
    if (!queue || queue->ptr == 1 || !queue_entry)
