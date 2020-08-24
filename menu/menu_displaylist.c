@@ -11529,50 +11529,47 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
+            struct string_list str_list;
             char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
-            struct string_list *str_list    = string_list_new();
 
             attr.i = 0;
 
             new_exts[0] = '\0';
 
+            string_list_initialize(&str_list);
+
             filebrowser_clear_type();
 
-            if      (type == DISPLAYLIST_SHADER_PRESET)
-               info->type_default = FILE_TYPE_SHADER_PRESET;
-            else if (type == DISPLAYLIST_SHADER_PASS)
-               info->type_default = FILE_TYPE_SHADER;
-
-            if (video_shader_is_supported(RARCH_SHADER_CG))
+            switch (type)
             {
-               if (type == DISPLAYLIST_SHADER_PRESET)
-                  string_list_append(str_list, "cgp", attr);
-               else if (type == DISPLAYLIST_SHADER_PASS)
-                  string_list_append(str_list, "cg", attr);
+               case DISPLAYLIST_SHADER_PRESET:
+                  info->type_default = FILE_TYPE_SHADER_PRESET;
+                  if (video_shader_is_supported(RARCH_SHADER_CG))
+                     string_list_append(&str_list, "cgp", attr);
+                  if (video_shader_is_supported(RARCH_SHADER_GLSL))
+                     string_list_append(&str_list, "glslp", attr);
+                  if (video_shader_is_supported(RARCH_SHADER_SLANG))
+                     string_list_append(&str_list, "slangp", attr);
+                  break;
+               case DISPLAYLIST_SHADER_PASS:
+                  info->type_default = FILE_TYPE_SHADER;
+                  if (video_shader_is_supported(RARCH_SHADER_CG))
+                     string_list_append(&str_list, "cg", attr);
+                  if (video_shader_is_supported(RARCH_SHADER_GLSL))
+                     string_list_append(&str_list, "glsl", attr);
+                  if (video_shader_is_supported(RARCH_SHADER_SLANG))
+                     string_list_append(&str_list, "slang", attr);
+                  break;
+               default:
+                  break;
             }
 
-            if (video_shader_is_supported(RARCH_SHADER_GLSL))
-            {
-               if (type == DISPLAYLIST_SHADER_PRESET)
-                  string_list_append(str_list, "glslp", attr);
-               else if (type == DISPLAYLIST_SHADER_PASS)
-                  string_list_append(str_list, "glsl", attr);
-            }
-
-            if (video_shader_is_supported(RARCH_SHADER_SLANG))
-            {
-               if (type == DISPLAYLIST_SHADER_PRESET)
-                  string_list_append(str_list, "slangp", attr);
-               else if (type == DISPLAYLIST_SHADER_PASS)
-                  string_list_append(str_list, "slang", attr);
-            }
-
-            string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
+            string_list_join_concat(new_exts, sizeof(new_exts), &str_list, "|");
             if (!string_is_empty(info->exts))
                free(info->exts);
             info->exts = strdup(new_exts);
-            string_list_free(str_list);
+            string_list_deinitialize(&str_list);
             use_filebrowser    = true;
          }
 #endif
