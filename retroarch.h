@@ -1152,6 +1152,11 @@ typedef struct video_frame_info
 
    struct
    {
+      /* Drop shadow offset.
+       * If both are 0, no drop shadow will be rendered. */
+      int drop_x, drop_y;
+      /* ABGR. Use the macros. */
+      uint32_t color;
       float x;
       float y;
       float scale;
@@ -1159,12 +1164,6 @@ typedef struct video_frame_info
       float drop_mod;
       /* Drop shadow alpha */
       float drop_alpha;
-
-      /* Drop shadow offset.
-       * If both are 0, no drop shadow will be rendered. */
-      int drop_x, drop_y;
-      /* ABGR. Use the macros. */
-      uint32_t color;
       enum text_alignment text_align;
       bool full_screen;
    } osd_stat_params;
