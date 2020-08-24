@@ -266,8 +266,8 @@ typedef struct xmb_handle
    char *box_message;
    char *bg_file_path;
 
-   file_list_t *selection_buf_old;
-   file_list_t horizontal_list; /* ptr alignment */
+   file_list_t selection_buf_old; /* ptr alignment */
+   file_list_t horizontal_list;   /* ptr alignment */
 
    xmb_node_t main_menu_node;
 #ifdef HAVE_IMAGEVIEWER
@@ -2019,7 +2019,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    if (xmb->categories_selection_ptr > xmb->categories_selection_ptr_old)
       dir = 1;
 
-   xmb_list_switch_old(xmb, xmb->selection_buf_old,
+   xmb_list_switch_old(xmb, &xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
 
    /* Check if we are to have horizontal animations. */
@@ -2329,7 +2329,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 
    xmb_list_open_horizontal_list(xmb);
 
-   xmb_list_open_old(xmb, xmb->selection_buf_old,
+   xmb_list_open_old(xmb, &xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
    xmb_list_open_new(xmb, selection_buf,
          dir, selection);
@@ -3472,7 +3472,7 @@ static void xmb_draw_items(
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
-   if (list == xmb->selection_buf_old)
+   if (list == &xmb->selection_buf_old)
    {
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(list, current);
@@ -5032,7 +5032,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          video_height,
          xmb_shadows_enable,
          xmb,
-         xmb->selection_buf_old,
+         &xmb->selection_buf_old,
          xmb->selection_ptr_old,
          (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
          ? xmb->categories_selection_ptr :
@@ -5275,14 +5275,14 @@ static void xmb_layout(xmb_handle_t *xmb)
       return;
 
    current = (unsigned)xmb->selection_ptr_old;
-   end     = (unsigned)file_list_get_size(xmb->selection_buf_old);
+   end     = (unsigned)file_list_get_size(&xmb->selection_buf_old);
 
    for (i = 0; i < end; i++)
    {
       float         ia = 0;
       float         iz = xmb->items_passive_zoom;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            xmb->selection_buf_old, i);
+            &xmb->selection_buf_old, i);
 
       if (!node)
          continue;
@@ -5418,15 +5418,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    *userdata = xmb;
 
-   xmb->selection_buf_old             = (file_list_t*)
-      malloc(sizeof(file_list_t));
-
-   if (!xmb->selection_buf_old)
-      goto error;
-
-   xmb->selection_buf_old->list       = NULL;
-   xmb->selection_buf_old->capacity   = 0;
-   xmb->selection_buf_old->size       = 0;
+   file_list_initialize(&xmb->selection_buf_old);
 
    xmb->categories_active_idx         = 0;
    xmb->categories_active_idx_old     = 0;
@@ -5481,9 +5473,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    gfx_display_allocate_white_texture();
 
-   xmb->horizontal_list.list     = NULL;
-   xmb->horizontal_list.capacity = 0;
-   xmb->horizontal_list.size     = 0;
+   file_list_initialize(&xmb->horizontal_list);
 
    xmb_init_horizontal_list(xmb);
 
@@ -5518,11 +5508,8 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 error:
    free(menu);
 
-   if (xmb->selection_buf_old)
-      free(xmb->selection_buf_old);
-   xmb->selection_buf_old = NULL;
-
    xmb_free_list_nodes(&xmb->horizontal_list, false);
+   file_list_deinitialize(&xmb->selection_buf_old);
    file_list_deinitialize(&xmb->horizontal_list);
    gfx_animation_unset_update_time_cb();
    return NULL;
@@ -5534,16 +5521,10 @@ static void xmb_free(void *data)
 
    if (xmb)
    {
-      if (xmb->selection_buf_old)
-      {
-         xmb_free_list_nodes(xmb->selection_buf_old, false);
-         file_list_free(xmb->selection_buf_old);
-      }
-
+      xmb_free_list_nodes(&xmb->selection_buf_old, false);
       xmb_free_list_nodes(&xmb->horizontal_list, false);
+      file_list_deinitialize(&xmb->selection_buf_old);
       file_list_deinitialize(&xmb->horizontal_list);
-
-      xmb->selection_buf_old = NULL;
 
       video_coord_array_free(&xmb->raster_block.carr);
       video_coord_array_free(&xmb->raster_block2.carr);
@@ -6261,7 +6242,8 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       xmb_calculate_visible_range(xmb, height, selection_buf->size,
             (unsigned)xmb->selection_ptr_old, &first, &last);
 
-      xmb_list_deep_copy(selection_buf, xmb->selection_buf_old, first, last);
+      xmb_list_deep_copy(selection_buf,
+            &xmb->selection_buf_old, first, last);
 
       xmb->selection_ptr_old -= first;
       last                   -= first;

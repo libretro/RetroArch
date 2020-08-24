@@ -459,7 +459,7 @@ void ozone_draw_entries(
    enum gfx_animation_ticker_type 
       menu_ticker_type     = (enum gfx_animation_ticker_type)
       settings->uints.menu_ticker_type;
-   bool old_list           = selection_buf == ozone->selection_buf_old;
+   bool old_list           = selection_buf == &ozone->selection_buf_old;
    int x_offset            = 0;
    size_t selection_y      = 0; /* 0 means no selection (we assume that no entry has y = 0) */
    size_t old_selection_y  = 0;

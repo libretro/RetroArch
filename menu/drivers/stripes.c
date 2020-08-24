@@ -259,8 +259,8 @@ typedef struct stripes_handle
    char *left_thumbnail_file_path;
    char *bg_file_path;
 
-   file_list_t *selection_buf_old;
-   file_list_t *horizontal_list;
+   file_list_t selection_buf_old;   /* ptr alignment */
+   file_list_t horizontal_list;     /* ptr alignment */
 
    struct
    {
@@ -503,9 +503,7 @@ static size_t stripes_list_get_size(void *data, enum menu_list_type type)
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_HORIZONTAL:
-         if (stripes && stripes->horizontal_list)
-            return file_list_get_size(stripes->horizontal_list);
-         break;
+         return file_list_get_size(&stripes->horizontal_list);
       case MENU_LIST_TABS:
          return stripes->system_tab_end;
    }
@@ -530,10 +528,9 @@ static void *stripes_list_get_entry(void *data,
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         if (stripes && stripes->horizontal_list)
-            list_size = file_list_get_size(stripes->horizontal_list);
+         list_size = file_list_get_size(&stripes->horizontal_list);
          if (i < list_size)
-            return (void*)&stripes->horizontal_list->list[i];
+            return (void*)&stripes->horizontal_list.list[i];
          break;
       default:
          break;
@@ -1432,10 +1429,10 @@ static stripes_node_t *stripes_node_allocate_userdata(
    }
 
    tmp = (stripes_node_t*)file_list_get_userdata_at_offset(
-         stripes->horizontal_list, i);
+         &stripes->horizontal_list, i);
    stripes_free_node(tmp);
 
-   file_list_set_userdata(stripes->horizontal_list, i, node);
+   file_list_set_userdata(&stripes->horizontal_list, i, node);
 
    return node;
 }
@@ -1444,7 +1441,7 @@ static stripes_node_t* stripes_get_userdata_from_horizontal_list(
       stripes_handle_t *stripes, unsigned i)
 {
    return (stripes_node_t*)
-      file_list_get_userdata_at_offset(stripes->horizontal_list, i);
+      file_list_get_userdata_at_offset(&stripes->horizontal_list, i);
 }
 
 static void stripes_push_animations(stripes_node_t *node,
@@ -1592,7 +1589,7 @@ static void stripes_set_title(stripes_handle_t *stripes)
    {
       const char *path = NULL;
       menu_entries_get_at_offset(
-            stripes->horizontal_list,
+            &stripes->horizontal_list,
             stripes->categories_selection_ptr - (stripes->system_tab_end + 1),
             &path, NULL, NULL, NULL, NULL);
 
@@ -1740,7 +1737,8 @@ static void stripes_list_switch(stripes_handle_t *stripes)
    if (stripes->categories_selection_ptr > stripes->categories_selection_ptr_old)
       dir = 1;
 
-   stripes_list_switch_old(stripes, stripes->selection_buf_old,
+   stripes_list_switch_old(stripes,
+         &stripes->selection_buf_old,
          dir, stripes->selection_ptr_old);
 
    /* Check if we are to have horizontal animations. */
@@ -1824,7 +1822,7 @@ static void stripes_context_destroy_horizontal_list(stripes_handle_t *stripes)
       if (!node)
          continue;
 
-      file_list_get_at_offset(stripes->horizontal_list, i,
+      file_list_get_at_offset(&stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
       if (!path || !string_ends_with_size(path, ".lpl",
@@ -1843,7 +1841,7 @@ static void stripes_init_horizontal_list(stripes_handle_t *stripes)
 
    menu_displaylist_info_init(&info);
 
-   info.list                    = stripes->horizontal_list;
+   info.list                    = &stripes->horizontal_list;
    info.path                    = strdup(
          settings->paths.directory_playlist);
 #if 0
@@ -1860,7 +1858,7 @@ static void stripes_init_horizontal_list(stripes_handle_t *stripes)
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
       {
          size_t i;
-         for (i = 0; i < stripes->horizontal_list->size; i++)
+         for (i = 0; i < stripes->horizontal_list.size; i++)
             stripes_node_allocate_userdata(stripes, (unsigned)i);
          menu_displaylist_process(&info);
       }
@@ -1923,7 +1921,7 @@ static void stripes_context_reset_horizontal_list(
             continue;
       }
 
-      file_list_get_at_offset(stripes->horizontal_list, i,
+      file_list_get_at_offset(&stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
       if (!path || !string_ends_with_size(path, ".lpl",
@@ -1989,20 +1987,12 @@ static void stripes_context_reset_horizontal_list(
 static void stripes_refresh_horizontal_list(stripes_handle_t *stripes)
 {
    stripes_context_destroy_horizontal_list(stripes);
-   if (stripes->horizontal_list)
-   {
-      stripes_free_list_nodes(stripes->horizontal_list, false);
-      file_list_free(stripes->horizontal_list);
-   }
-   stripes->horizontal_list = NULL;
+   stripes_free_list_nodes(stripes->horizontal_list, false);
+   file_list_deinitialize(&stripes->horizontal_list);
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   stripes->horizontal_list         = (file_list_t*)
-      calloc(1, sizeof(file_list_t));
-
-   if (stripes->horizontal_list)
-      stripes_init_horizontal_list(stripes);
+   stripes_init_horizontal_list(stripes);
 
    stripes_context_reset_horizontal_list(stripes);
 }
@@ -2053,7 +2043,8 @@ static void stripes_list_open(stripes_handle_t *stripes)
 
    stripes_list_open_horizontal_list(stripes);
 
-   stripes_list_open_old(stripes, stripes->selection_buf_old,
+   stripes_list_open_old(stripes,
+         &stripes->selection_buf_old,
          dir, stripes->selection_ptr_old);
    stripes_list_open_new(stripes, selection_buf,
          dir, selection);
@@ -2642,7 +2633,7 @@ static void stripes_draw_items(
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
-   if (list == stripes->selection_buf_old)
+   if (list == &stripes->selection_buf_old)
    {
       stripes_node_t *node = (stripes_node_t*)
             file_list_get_userdata_at_offset(list, current);
@@ -2996,7 +2987,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
             video_height,
             xmb_shadows_enable,
             stripes,
-            stripes->selection_buf_old,
+            &stripes->selection_buf_old,
             stripes->selection_ptr_old,
             (stripes_list_get_size(stripes, MENU_LIST_PLAIN) > 1)
             ? stripes->categories_selection_ptr :
@@ -3289,14 +3280,14 @@ static void stripes_layout(stripes_handle_t *stripes)
       return;
 
    current = (unsigned)stripes->selection_ptr_old;
-   end     = (unsigned)file_list_get_size(stripes->selection_buf_old);
+   end     = (unsigned)file_list_get_size(&stripes->selection_buf_old);
 
    for (i = 0; i < end; i++)
    {
       float         ia = 0;
       float         iz = stripes->items_passive_zoom;
       stripes_node_t *node = (stripes_node_t*)file_list_get_userdata_at_offset(
-            stripes->selection_buf_old, i);
+            &stripes->selection_buf_old, i);
 
       if (!node)
          continue;
@@ -3366,9 +3357,7 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
 
    *userdata = stripes;
 
-   stripes->selection_buf_old     = (file_list_t*)calloc(1, sizeof(file_list_t));
-
-   if (!stripes->selection_buf_old)
+   if (!file_list_initialize(&stripes->selection_buf_old))
       goto error;
 
    stripes->categories_active_idx         = 0;
@@ -3417,10 +3406,8 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
 
    gfx_display_allocate_white_texture();
 
-   stripes->horizontal_list         = (file_list_t*)calloc(1, sizeof(file_list_t));
-
-   if (stripes->horizontal_list)
-      stripes_init_horizontal_list(stripes);
+   file_list_initialize(&stripes->horizontal_list);
+   stripes_init_horizontal_list(stripes);
 
    return menu;
 
@@ -3430,15 +3417,10 @@ error:
 
    if (stripes)
    {
-      if (stripes->selection_buf_old)
-         free(stripes->selection_buf_old);
-      stripes->selection_buf_old = NULL;
-      if (stripes->horizontal_list)
-      {
-         stripes_free_list_nodes(stripes->horizontal_list, false);
-         file_list_free(stripes->horizontal_list);
-      }
-      stripes->horizontal_list = NULL;
+      stripes_free_list_nodes(&stripes->selection_buf_old, false);
+      stripes_free_list_nodes(&stripes->horizontal_list, false);
+      file_list_deinitialize(&stripes->selection_buf_old);
+      file_list_deinitialize(&stripes->horizontal_list);
    }
    return NULL;
 }
@@ -3449,20 +3431,10 @@ static void stripes_free(void *data)
 
    if (stripes)
    {
-      if (stripes->selection_buf_old)
-      {
-         stripes_free_list_nodes(stripes->selection_buf_old, false);
-         file_list_free(stripes->selection_buf_old);
-      }
-
-      if (stripes->horizontal_list)
-      {
-         stripes_free_list_nodes(stripes->horizontal_list, false);
-         file_list_free(stripes->horizontal_list);
-      }
-
-      stripes->selection_buf_old = NULL;
-      stripes->horizontal_list   = NULL;
+      stripes_free_list_nodes(&stripes->selection_buf_old, false);
+      stripes_free_list_nodes(&stripes->horizontal_list, false);
+      file_list_deinitialize(&stripes->selection_buf_old);
+      file_list_deinitialize(&stripes->horizontal_list);
 
       video_coord_array_free(&stripes->raster_block.carr);
       video_coord_array_free(&stripes->raster_block2.carr);
@@ -3956,7 +3928,8 @@ static void stripes_list_cache(void *data, enum menu_list_type type, unsigned ac
       stripes_calculate_visible_range(stripes, height, selection_buf->size,
             stripes->selection_ptr_old, &first, &last);
 
-      stripes_list_deep_copy(selection_buf, stripes->selection_buf_old, first, last);
+      stripes_list_deep_copy(selection_buf,
+            &stripes->selection_buf_old, first, last);
 
       stripes->selection_ptr_old -= first;
       last                   -= first;

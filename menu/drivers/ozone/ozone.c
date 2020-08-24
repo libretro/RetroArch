@@ -589,7 +589,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->last_height       = height;
    ozone->last_scale_factor = gfx_display_get_dpi_scale(width, height);
 
-   ozone->selection_buf_old = (file_list_t*)calloc(1, sizeof(file_list_t));
+   file_list_initialize(&ozone->selection_buf_old);
 
    ozone->draw_sidebar              = true;
    ozone->sidebar_offset            = 0;
@@ -748,15 +748,9 @@ error:
    if (ozone)
    {
       ozone_free_list_nodes(&ozone->horizontal_list, false);
+      ozone_free_list_nodes(&ozone->selection_buf_old, false);
       file_list_deinitialize(&ozone->horizontal_list);
-
-      if (ozone->selection_buf_old)
-      {
-         ozone_free_list_nodes(ozone->selection_buf_old, false);
-         file_list_free(ozone->selection_buf_old);
-      }
-
-      ozone->selection_buf_old = NULL;
+      file_list_deinitialize(&ozone->selection_buf_old);
    }
 
    if (menu)
@@ -781,16 +775,10 @@ static void ozone_free(void *data)
 
       font_driver_bind_block(NULL, NULL);
 
-      if (ozone->selection_buf_old)
-      {
-         ozone_free_list_nodes(ozone->selection_buf_old, false);
-         file_list_free(ozone->selection_buf_old);
-      }
-
+      ozone_free_list_nodes(&ozone->selection_buf_old, false);
       ozone_free_list_nodes(&ozone->horizontal_list, false);
+      file_list_deinitialize(&ozone->selection_buf_old);
       file_list_deinitialize(&ozone->horizontal_list);
-
-      ozone->selection_buf_old   = NULL;
 
       if (!string_is_empty(ozone->pending_message))
          free(ozone->pending_message);
@@ -2728,7 +2716,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_height,
             (unsigned)ozone->selection_old_list,
             (unsigned)ozone->selection_old_list,
-            ozone->selection_buf_old,
+            &ozone->selection_buf_old,
             ozone->animations.list_alpha,
             ozone->scroll_old,
             ozone->is_playlist_old
@@ -3270,13 +3258,15 @@ text_iterate:
       y += node->height;
    }
 
-   last -= 1;
-   last += first;
+   last                    -= 1;
+   last                    += first;
 
-   first_node = (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, first);
+   first_node               = (ozone_node_t*)file_list_get_userdata_at_offset(
+         selection_buf, first);
    ozone->old_list_offset_y = first_node->position_y;
 
-   ozone_list_deep_copy(selection_buf, ozone->selection_buf_old, first, last);
+   ozone_list_deep_copy(selection_buf,
+         &ozone->selection_buf_old, first, last);
 }
 
 static int ozone_environ_cb(enum menu_environ_cb type, void *data, void *userdata)

@@ -112,8 +112,8 @@ struct ozone_handle
 
    ozone_theme_t *theme;
    gfx_thumbnail_path_data_t *thumbnail_path_data;
-   file_list_t *selection_buf_old;
    char *pending_message;
+   file_list_t selection_buf_old;                  /* ptr alignment */
    file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
 
    struct
