@@ -41,6 +41,10 @@ MSG_HASH(
    "ネットプレイ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "エクスプローラー"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "コンテンツをインポート"
    )
@@ -94,6 +98,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
    "スキャンしたコンテンツを表示します."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   "コンテンツをインポート"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "コンテンツをスキャンしてプレイリストを作成, 更新します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -255,6 +267,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
    "以前再生した動画がここに表示されます."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "エクスプローラー"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "カテゴリ検索インターフェイスを介してデータベースに一致するすべてのコンテンツを参照します."
    )
 
 /* Main Menu > Online Updater */
@@ -2689,16 +2709,8 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "フォルダ内でセーブファイルを並べ替え"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "使用したコアの名前に基づいて, フォルダ内でセーブファイルを並べ替えます."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "フォルダ内でステートセーブを並べ替え"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
@@ -3381,7 +3393,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "タッチスクリーンでのメニュー操作を有効にします." 
+   "タッチスクリーンでのメニュー操作を有効にします."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
@@ -6935,10 +6947,6 @@ MSG_HASH(
    "プレイリスト名を切り詰める"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "プレイリストからシステム名を削除します. たとえば, ｢Sony - PlayStation｣は｢PlayStation｣になります.(再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "名前切り詰め後にプレイリストを並び替える"
    )
@@ -9538,19 +9546,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
    "画面の明るさ"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "画面の明るさを増減します。"
-   )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "CPUオーバークロック"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-   "SwitchのCPUをオーバークロックします。"
    )
 #endif
 #ifdef HAVE_LAKKA

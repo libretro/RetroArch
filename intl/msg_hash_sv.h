@@ -1375,6 +1375,22 @@ MSG_HASH(
    "Din skärms vertikala uppdateringsfrekvens. Används för att beräkna en lämplig frekvens för inkommande ljud.\nOBS: Detta kommer att ignoreras om 'Trådad bildrendering' är aktiverat."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   "Estimerad uppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   "Den exakt estimerade uppdateringsfrekvensen för skärmen i Hz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "Bestäm uppdateringsfrekvens som rapporteras från skärmen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "Uppdateringsfrekvensen som rapporterats från bilddrivrutinen."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
    "Tvinga sRGB FBO-stödet att vara inaktivt. Vissa Intel OpenGL-drivrutiner i Windows har bildproblem när sRGB FBO-stödet är aktivt. Denna inställning kan avhjälpa detta."
    )
