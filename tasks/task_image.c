@@ -406,7 +406,6 @@ bool task_push_image_load(const char *fullpath,
    nbio->status_flags  = 0;
    nbio->data          = NULL;
    nbio->handle        = NULL;
-   nbio->msg_queue     = NULL;
    nbio->cb            = &cb_nbio_image_thumbnail;
 
    if (supports_rgba)

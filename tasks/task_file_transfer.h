@@ -20,7 +20,6 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include <queues/message_queue.h>
 #include <queues/task_queue.h>
 
 #include "../msg_hash.h"
@@ -62,7 +61,6 @@ typedef struct nbio_handle
    void *data;
    char *path;
    struct nbio_t *handle;
-   msg_queue_t *msg_queue;
    transfer_cb_t  cb;
 
    unsigned status;
