@@ -25,8 +25,24 @@ MSG_HASH(
    "پیشینه"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   "تصویر"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    "موسیقی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   "ویدئو"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   "بازی تحت شبکه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "کاوش"
    )
 
 /* Main Menu */
@@ -36,12 +52,40 @@ MSG_HASH(
    "فهرست سریع"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   "بارگذاری هسته"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST,
+   "هستهٔ مورد نظر خود را انتخاب کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   "بارگذاری محتوا"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   "محتوای مورد نظر خود را انتخاب کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   "بارگذاری از دیسک"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "محتوا را از دیسک فیزیکی بارگذاری کنید. ابتدا هستهٔ مورد نظر را از بخش «انتخاب هسته» برای استفاده از محتوای دیسک انتخاب کنید."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "فهرست‌های پخش"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "به‌روز کننده آنلاین"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
+   "بازی تحت شبکه"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -63,9 +107,29 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
    "بازآغاز کردن برنامه."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   "خروج از رتروآرچ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "از برنامه خارج می‌شود."
+   )
 
 /* Main Menu > Load Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   "دریافت هسته"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   "با برنامهٔ بروزرسان، یک هسته را دریافت و نصب می‌کند."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   "آغاز پردازشگر ویدئویی"
+   )
 
 /* Main Menu > Load Content */
 
@@ -84,9 +148,37 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "موسیقی"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   "تصویر"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   "تصاویری که قبلاً مشاهده کرده‌اید اینجا نشان داده خواهند شد."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   "ویدئو"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   "ویدئوهایی که قبلاً تماشا کرده‌اید اینجا نشان داده خواهند شد."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "کاوش"
+   )
 
 /* Main Menu > Online Updater */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   "دریافت‌کنندهٔ هسته"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   "بروزرسانی هسته‌های نصب‌شده"
+   )
 
 /* Main Menu > Information */
 
@@ -277,6 +369,50 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
    "دکمه آغاز"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   "شوک سمت چپ محور افقی مثبت (راست)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   "شوک سمت چپ محور افقی منفی (چپ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   "شوک سمت چپ محور عمودی مثبت (پایین)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   "شوک سمت چپ محور عمودی منفی (بالا)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   "شوک سمت راست محور افقی مثبت (راست)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   "شوک سمت راست محور افقی منفی (چپ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   "شوک سمت راست محور عمودی مثبت (پایین)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   "شوک سمت راست محور عمودی منفی (بالا)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   "ماشه تفنگ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   "خشاب تفنگ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "توربو (سرعتی)"
    )
 
 /* Settings > Latency */

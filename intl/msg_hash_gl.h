@@ -100,6 +100,14 @@ MSG_HASH(
    "O contido atopado coincidente coa base de datos aparecerá aquí."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   "Importar o contido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Crea e anova as listas de reproducción facendo unha procura de contido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Amosar o menú do escritorio"
    )
