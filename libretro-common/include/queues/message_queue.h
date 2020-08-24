@@ -43,7 +43,23 @@ enum message_queue_category
    MESSAGE_QUEUE_CATEGORY_SUCCESS
 };
 
-typedef struct msg_queue msg_queue_t;
+typedef struct queue_elem
+{
+   char *msg;
+   char *title;
+   unsigned duration;
+   unsigned prio;
+   enum message_queue_icon icon;
+   enum message_queue_category category;
+} queue_elem_t;
+
+typedef struct msg_queue
+{
+   char *tmp_msg;
+   queue_elem_t **elems;
+   size_t ptr;
+   size_t size;
+} msg_queue_t;
 
 typedef struct
 {
@@ -65,6 +81,8 @@ typedef struct
  * if successful. Has to be freed manually.
  **/
 msg_queue_t *msg_queue_new(size_t size);
+
+bool msg_queue_initialize(msg_queue_t *queue, size_t size);
 
 /**
  * msg_queue_push:
@@ -130,6 +148,8 @@ void msg_queue_clear(msg_queue_t *queue);
  * Frees message queue..
  **/
 void msg_queue_free(msg_queue_t *queue);
+
+bool msg_queue_deinitialize(msg_queue_t *queue);
 
 RETRO_END_DECLS
 

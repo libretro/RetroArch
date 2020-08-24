@@ -28,23 +28,21 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
-struct queue_elem
+static bool msg_queue_initialize_internal(msg_queue_t *queue, size_t size)
 {
-   char *msg;
-   char *title;
-   unsigned duration;
-   unsigned prio;
-   enum message_queue_icon icon;
-   enum message_queue_category category;
-};
+   struct queue_elem **elems = (struct queue_elem**)calloc(size + 1,
+         sizeof(struct queue_elem*));
 
-struct msg_queue
-{
-   char *tmp_msg;
-   struct queue_elem **elems;
-   size_t ptr;
-   size_t size;
-};
+   if (!elems)
+      return false;
+
+   queue->tmp_msg            = NULL;
+   queue->elems              = elems;
+   queue->ptr                = 1;
+   queue->size               = size + 1;
+
+   return true;
+}
 
 /**
  * msg_queue_new:
@@ -57,28 +55,25 @@ struct msg_queue
  **/
 msg_queue_t *msg_queue_new(size_t size)
 {
-   struct queue_elem **elems = NULL;
    msg_queue_t *queue        = (msg_queue_t*)malloc(sizeof(*queue));
 
    if (!queue)
       return NULL;
 
-   queue->size               = size + 1;
-   queue->tmp_msg            = NULL;
-
-   elems                     = (struct queue_elem**)calloc(queue->size,
-         sizeof(struct queue_elem*));
-
-   if (!elems)
+   if (!msg_queue_initialize_internal(queue, size))
    {
       free(queue);
       return NULL;
    }
 
-   queue->elems              = elems;
-   queue->ptr                = 1;
-
    return queue;
+}
+
+bool msg_queue_initialize(msg_queue_t *queue, size_t size)
+{
+   if (!queue)
+      return false;
+   return msg_queue_initialize_internal(queue, size);
 }
 
 /**
@@ -89,12 +84,24 @@ msg_queue_t *msg_queue_new(size_t size)
  **/
 void msg_queue_free(msg_queue_t *queue)
 {
-   if (queue)
-   {
-      msg_queue_clear(queue);
-      free(queue->elems);
-   }
+   if (!queue)
+      return;
+   msg_queue_clear(queue);
+   free(queue->elems);
    free(queue);
+}
+
+bool msg_queue_deinitialize(msg_queue_t *queue)
+{
+   if (!queue)
+      return false;
+   msg_queue_clear(queue);
+   free(queue->elems);
+   queue->elems   = NULL;
+   queue->tmp_msg = NULL;
+   queue->ptr     = 0;
+   queue->size    = 0;
+   return true;
 }
 
 /**

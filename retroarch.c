@@ -2004,7 +2004,6 @@ struct rarch_state
    const char **menu_input_dialog_keyboard_buffer;
 #endif
    core_option_manager_t *runloop_core_options;
-   msg_queue_t *runloop_msg_queue;
 
    const record_driver_t *recording_driver;
    void *recording_data;
@@ -2124,6 +2123,7 @@ struct rarch_state
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
+   msg_queue_t runloop_msg_queue;                        /* ptr alignment */
    gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    content_state_t            content_st;                /* ptr alignment */
    midi_event_t midi_drv_input_event;                    /* ptr alignment */
@@ -12572,10 +12572,7 @@ static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
 {
    RUNLOOP_MSG_QUEUE_LOCK();
 
-   if (!p_rarch->runloop_msg_queue)
-      return;
-
-   msg_queue_free(p_rarch->runloop_msg_queue);
+   msg_queue_deinitialize(&p_rarch->runloop_msg_queue);
 
    RUNLOOP_MSG_QUEUE_UNLOCK();
 #ifdef HAVE_THREADS
@@ -12583,14 +12580,13 @@ static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
    p_rarch->runloop_msg_queue_lock = NULL;
 #endif
 
-   p_rarch->runloop_msg_queue      = NULL;
    p_rarch->runloop_msg_queue_size = 0;
 }
 
 static void retroarch_msg_queue_init(struct rarch_state *p_rarch)
 {
    retroarch_msg_queue_deinit(p_rarch);
-   p_rarch->runloop_msg_queue        = msg_queue_new(8);
+   msg_queue_initialize(&p_rarch->runloop_msg_queue, 8);
 
 #ifdef HAVE_THREADS
    p_rarch->runloop_msg_queue_lock   = slock_new();
@@ -33075,9 +33071,9 @@ static void video_driver_frame(const void *data, unsigned width,
 
          RUNLOOP_MSG_QUEUE_LOCK();
          msg_found                       = msg_queue_extract(
-               p_rarch->runloop_msg_queue, &msg_entry);
+               &p_rarch->runloop_msg_queue, &msg_entry);
          p_rarch->runloop_msg_queue_size = msg_queue_size(
-               p_rarch->runloop_msg_queue);
+               &p_rarch->runloop_msg_queue);
          RUNLOOP_MSG_QUEUE_UNLOCK();
 
          if (msg_found)
@@ -33107,8 +33103,8 @@ static void video_driver_frame(const void *data, unsigned width,
       {
          const char *msg                 = NULL;
          RUNLOOP_MSG_QUEUE_LOCK();
-         msg                             = msg_queue_pull(p_rarch->runloop_msg_queue);
-         p_rarch->runloop_msg_queue_size = msg_queue_size(p_rarch->runloop_msg_queue);
+         msg                             = msg_queue_pull(&p_rarch->runloop_msg_queue);
+         p_rarch->runloop_msg_queue_size = msg_queue_size(&p_rarch->runloop_msg_queue);
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
          RUNLOOP_MSG_QUEUE_UNLOCK();
@@ -38299,14 +38295,14 @@ void runloop_msg_queue_push(const char *msg,
 #endif
    {
       if (flush)
-         msg_queue_clear(p_rarch->runloop_msg_queue);
+         msg_queue_clear(&p_rarch->runloop_msg_queue);
 
-      if (p_rarch->runloop_msg_queue)
-         msg_queue_push(p_rarch->runloop_msg_queue, msg,
-               prio, duration,
-               title, icon, category);
+      msg_queue_push(&p_rarch->runloop_msg_queue, msg,
+            prio, duration,
+            title, icon, category);
 
-      p_rarch->runloop_msg_queue_size = msg_queue_size(p_rarch->runloop_msg_queue);
+      p_rarch->runloop_msg_queue_size = msg_queue_size(
+            &p_rarch->runloop_msg_queue);
    }
 
    ui_companion_driver_msg_queue_push(p_rarch,
