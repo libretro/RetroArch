@@ -10849,9 +10849,9 @@ struct string_list *dir_list_new_special(const char *input_dir,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             union string_list_elem_attr attr;
-            struct string_list *str_list     = string_list_new();
+            struct string_list str_list;
 
-            if (!str_list)
+            if (!string_list_initialize(&str_list))
                return NULL;
 
             ext_shaders[0]                   = '\0';
@@ -10860,24 +10860,24 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             if (video_shader_is_supported(RARCH_SHADER_CG))
             {
-               string_list_append(str_list, "cgp", attr);
-               string_list_append(str_list, "cg", attr);
+               string_list_append(&str_list, "cgp", attr);
+               string_list_append(&str_list, "cg", attr);
             }
 
             if (video_shader_is_supported(RARCH_SHADER_GLSL))
             {
-               string_list_append(str_list, "glslp", attr);
-               string_list_append(str_list, "glsl", attr);
+               string_list_append(&str_list, "glslp", attr);
+               string_list_append(&str_list, "glsl", attr);
             }
 
             if (video_shader_is_supported(RARCH_SHADER_SLANG))
             {
-               string_list_append(str_list, "slangp", attr);
-               string_list_append(str_list, "slang", attr);
+               string_list_append(&str_list, "slangp", attr);
+               string_list_append(&str_list, "slang", attr);
             }
 
-            string_list_join_concat(ext_shaders, sizeof(ext_shaders), str_list, "|");
-            string_list_free(str_list);
+            string_list_join_concat(ext_shaders, sizeof(ext_shaders), &str_list, "|");
+            string_list_deinitialize(&str_list);
             exts = ext_shaders;
          }
          break;
@@ -11387,7 +11387,7 @@ void path_set_special(char **argv, unsigned num_content)
    unsigned i;
    char str[PATH_MAX_LENGTH];
    union string_list_elem_attr attr;
-   struct string_list *subsystem_paths = NULL;
+   struct string_list subsystem_paths;
    struct rarch_state         *p_rarch = &rarch_st;
    global_t   *global                  = &p_rarch->g_extern;
    const char *savestate_dir           = p_rarch->current_savestate_dir;
@@ -11396,7 +11396,8 @@ void path_set_special(char **argv, unsigned num_content)
    /* First content file is the significant one. */
    path_set_basename(p_rarch, argv[0]);
 
-   subsystem_paths                     = string_list_new();
+   string_list_initialize(&subsystem_paths);
+
    p_rarch->subsystem_fullpaths        = string_list_new();
    retro_assert(p_rarch->subsystem_fullpaths);
 
@@ -11407,11 +11408,12 @@ void path_set_special(char **argv, unsigned num_content)
       string_list_append(p_rarch->subsystem_fullpaths, argv[i], attr);
       strlcpy(str, argv[i], sizeof(str));
       path_remove_extension(str);
-      string_list_append(subsystem_paths, path_basename(str), attr);
+      string_list_append(&subsystem_paths, path_basename(str), attr);
    }
 
    str[0] = '\0';
-   string_list_join_concat(str, sizeof(str), subsystem_paths, " + ");
+   string_list_join_concat(str, sizeof(str), &subsystem_paths, " + ");
+   string_list_deinitialize(&subsystem_paths);
 
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
@@ -11431,9 +11433,6 @@ void path_set_special(char **argv, unsigned num_content)
                global->name.savestate);
       }
    }
-
-   if (subsystem_paths)
-      string_list_free(subsystem_paths);
 }
 
 static bool path_init_subsystem(struct rarch_state *p_rarch)
@@ -30039,32 +30038,34 @@ bool audio_driver_get_devices_list(void **data)
 #ifdef HAVE_AUDIOMIXER
 bool audio_driver_mixer_extension_supported(const char *ext)
 {
-   union string_list_elem_attr attr;
    unsigned i;
+   struct string_list str_list;
+   union string_list_elem_attr attr;
    bool ret                      = false;
-   struct string_list *str_list  = string_list_new();
 
    attr.i = 0;
+   if (string_list_initialize(&str_list))
+      return false;
 
 #ifdef HAVE_STB_VORBIS
-   string_list_append(str_list, "ogg", attr);
+   string_list_append(&str_list, "ogg", attr);
 #endif
 #ifdef HAVE_IBXM
-   string_list_append(str_list, "mod", attr);
-   string_list_append(str_list, "s3m", attr);
-   string_list_append(str_list, "xm", attr);
+   string_list_append(&str_list, "mod", attr);
+   string_list_append(&str_list, "s3m", attr);
+   string_list_append(&str_list, "xm", attr);
 #endif
 #ifdef HAVE_DR_FLAC
-   string_list_append(str_list, "flac", attr);
+   string_list_append(&str_list, "flac", attr);
 #endif
 #ifdef HAVE_DR_MP3
-   string_list_append(str_list, "mp3", attr);
+   string_list_append(&str_list, "mp3", attr);
 #endif
-   string_list_append(str_list, "wav", attr);
+   string_list_append(&str_list, "wav", attr);
 
-   for (i = 0; i < str_list->size; i++)
+   for (i = 0; i < str_list.size; i++)
    {
-      const char *str_ext = str_list->elems[i].data;
+      const char *str_ext = str_list.elems[i].data;
       if (string_is_equal_noncase(str_ext, ext))
       {
          ret = true;
@@ -30072,7 +30073,7 @@ bool audio_driver_mixer_extension_supported(const char *ext)
       }
    }
 
-   string_list_free(str_list);
+   string_list_deinitialize(&str_list);
 
    return ret;
 }
