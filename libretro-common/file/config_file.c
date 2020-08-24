@@ -968,39 +968,46 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    if (!conf || !key || !val)
       return;
 
-   last  = (conf->guaranteed_no_duplicates && conf->last) ?
-         conf->last : conf->entries;
-   entry = conf->guaranteed_no_duplicates ?
-         NULL : config_get_entry(conf, key, &last);
+   last                            = conf->entries;
 
-   if (entry)
+   if (conf->guaranteed_no_duplicates)
    {
-      /* An entry corresponding to 'key' already exists
-       * > Check if it's read only */
-      if (entry->readonly)
-         return;
+      if (conf->last)
+         last                      = conf->last;
+   }
+   else
+   {
+      entry                        = config_get_entry(conf, key, &last);
 
-      /* Check whether value is currently set */
-      if (entry->value)
+      if (entry)
       {
-         /* Do nothing if value is unchanged */
-         if (string_is_equal(entry->value, val))
+         /* An entry corresponding to 'key' already exists
+          * > Check if it's read only */
+         if (entry->readonly)
             return;
 
-         /* Value is to be updated
-          * > Free existing */
-         free(entry->value);
-      }
+         /* Check whether value is currently set */
+         if (entry->value)
+         {
+            /* Do nothing if value is unchanged */
+            if (string_is_equal(entry->value, val))
+               return;
 
-      /* Update value */
-      entry->value   = strdup(val);
-      conf->modified = true;
-      return;
+            /* Value is to be updated
+             * > Free existing */
+            free(entry->value);
+         }
+
+         /* Update value */
+         entry->value   = strdup(val);
+         conf->modified = true;
+         return;
+      }
    }
 
    /* Entry corresponding to 'key' does not exist
     * > Create new entry */
-   entry = (struct config_entry_list*)malloc(sizeof(*entry));
+   entry            = (struct config_entry_list*)malloc(sizeof(*entry));
    if (!entry)
       return;
 
