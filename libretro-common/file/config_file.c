@@ -64,10 +64,12 @@ static int config_sort_compare_func(struct config_entry_list *a,
 {
    if (a && b)
    {
-      if (a->key && b->key)
-         return strcasecmp(a->key, b->key);
-      else if (a->key)
+      if (a->key)
+      {
+         if (b->key)
+            return strcasecmp(a->key, b->key);
          return 1;
+      }
       else if (b->key)
          return -1;
    }
