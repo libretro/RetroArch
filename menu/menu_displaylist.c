@@ -1581,37 +1581,37 @@ static int create_string_list_rdb_entry_string(
       const char *actual_string, const char *path,
       file_list_t *list)
 {
+   struct string_list str_list;
    union string_list_elem_attr attr;
    char tmp[PATH_MAX_LENGTH];
    char *output_label               = NULL;
    int str_len                      = 0;
-   struct string_list *str_list     = string_list_new();
 
-   if (!str_list)
+   if (!string_list_initialize(&str_list))
       return -1;
 
    attr.i                           = 0;
    tmp[0]                           = '\0';
 
    str_len += strlen(label) + 1;
-   string_list_append(str_list, label, attr);
+   string_list_append(&str_list, label, attr);
 
    str_len += strlen(actual_string) + 1;
-   string_list_append(str_list, actual_string, attr);
+   string_list_append(&str_list, actual_string, attr);
 
    str_len += strlen(path) + 1;
-   string_list_append(str_list, path, attr);
+   string_list_append(&str_list, path, attr);
 
    output_label = (char*)calloc(str_len, sizeof(char));
 
    if (!output_label)
    {
-      string_list_free(str_list);
+      string_list_deinitialize(&str_list);
       return -1;
    }
 
-   string_list_join_concat(output_label, str_len, str_list, "|");
-   string_list_free(str_list);
+   string_list_join_concat(output_label, str_len, &str_list, "|");
+   string_list_deinitialize(&str_list);
 
    fill_pathname_join_concat_noext(tmp, desc, ": ",
          actual_string, sizeof(tmp));
@@ -1629,35 +1629,34 @@ static int create_string_list_rdb_entry_int(
       const char *desc, const char *label,
       int actual_int, const char *path, file_list_t *list)
 {
+   struct string_list str_list;
    union string_list_elem_attr attr;
-   int str_len                      = 0;
-   struct string_list *str_list     = string_list_new();
    char tmp[PATH_MAX_LENGTH];
    char str[PATH_MAX_LENGTH];
    char output_label[PATH_MAX_LENGTH];
+   int str_len                      = 0;
 
    tmp[0]          = '\0';
    str[0]          = '\0';
    output_label[0] = '\0';
 
-   if (!str_list)
+   if (!string_list_initialize(&str_list))
       return -1;
 
    attr.i                           = 0;
 
    str_len                         += strlen(label) + 1;
-   string_list_append(str_list, label, attr);
+   string_list_append(&str_list, label, attr);
 
    snprintf(str, sizeof(str), "%d", actual_int);
    str_len                         += strlen(str) + 1;
-   string_list_append(str_list, str, attr);
+   string_list_append(&str_list, str, attr);
 
    str_len                         += strlen(path) + 1;
-   string_list_append(str_list, path, attr);
+   string_list_append(&str_list, path, attr);
 
-   string_list_join_concat(output_label, str_len, str_list, "|");
-   string_list_free(str_list);
-   str_list = NULL;
+   string_list_join_concat(output_label, str_len, &str_list, "|");
+   string_list_deinitialize(&str_list);
 
    snprintf(tmp, sizeof(tmp), "%s : %d", desc, actual_int);
    menu_entries_append_enum(list, tmp, output_label,
