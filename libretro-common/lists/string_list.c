@@ -109,7 +109,12 @@ bool string_list_deinitialize(struct string_list *list)
 {
    if (!list)
       return false;
-   return string_list_deinitialize_internal(list);
+   if (!string_list_deinitialize_internal(list))
+      return false;
+   list->elems              = NULL;
+   list->size               = 0;
+   list->cap                = 0;
+   return true;
 }
 
 /**
