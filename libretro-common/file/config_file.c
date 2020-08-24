@@ -1181,12 +1181,14 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
    while (includes)
    {
       char cad[256];
-      sprintf(cad,"#include %s\n", includes->path);
+      snprintf(cad, sizeof(cad), 
+            "#include %s\n", includes->path);
       orbisWrite(fd, cad, strlen(cad));
       includes = includes->next;
    }
 
-   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   list          = merge_sort_linked_list((struct config_entry_list*)
+         conf->entries, config_sort_compare_func);
    conf->entries = list;
 
    while (list)
@@ -1194,7 +1196,8 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
       if (!list->readonly && list->key)
       {
          char newlist[256];
-         sprintf(newlist,"%s = %s\n", list->key, list->value);
+         snprintf(newlist, sizeof(newlist),
+               "%s = %s\n", list->key, list->value);
          orbisWrite(fd, newlist, strlen(newlist));
       }
       list = list->next;
