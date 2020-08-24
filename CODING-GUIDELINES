@@ -16,6 +16,7 @@ For POD-types, try to order structs as follows (first to last):
 * jmp_buf         (4 bytes)
 * long            (4 bytes [64bit Win], 8 bytes [64bit non-Win], 4 bytes [32bit])
 * int32_t         (4 bytes)
+* unsigned        (4 bytes)
 * float           (4 bytes)
 * int             (4 bytes)
 * enum            (4 bytes)

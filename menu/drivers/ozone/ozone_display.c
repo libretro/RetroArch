@@ -79,7 +79,7 @@ static void ozone_cursor_animation_cb(void *userdata)
 
    float *target = NULL;
 
-   switch (ozone->theme_dynamic.cursor_state)
+   switch (ozone->theme_dynamic_cursor_state)
    {
       case 0:
          target = ozone->theme->cursor_border_1;
@@ -89,7 +89,7 @@ static void ozone_cursor_animation_cb(void *userdata)
          break;
    }
 
-   ozone->theme_dynamic.cursor_state = (ozone->theme_dynamic.cursor_state + 1) % 2;
+   ozone->theme_dynamic_cursor_state = (ozone->theme_dynamic_cursor_state + 1) % 2;
 
    ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, target);
 }
@@ -238,7 +238,7 @@ void ozone_restart_cursor_animation(ozone_handle_t *ozone)
    if (!ozone->has_all_assets)
       return;
 
-   ozone->theme_dynamic.cursor_state = 1;
+   ozone->theme_dynamic_cursor_state = 1;
    memcpy(ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_0, sizeof(ozone->theme_dynamic.cursor_border));
    gfx_animation_kill_by_tag(&tag);
 

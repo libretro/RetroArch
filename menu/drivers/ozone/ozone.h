@@ -92,7 +92,7 @@ enum ozone_onscreen_entry_position_type
 typedef struct
 {
    font_data_t *font;
-   video_font_raster_block_t raster_block;
+   video_font_raster_block_t raster_block; /* ptr alignment */
    int glyph_width;
    int line_height;
    int line_ascender;
@@ -108,6 +108,14 @@ typedef struct
 
 struct ozone_handle
 {
+   menu_input_pointer_t pointer; /* retro_time_t alignment */
+
+   ozone_theme_t *theme;
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
+   file_list_t *selection_buf_old;
+   char *pending_message;
+   file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
+
    struct
    {
       ozone_font_data_t footer;
@@ -120,7 +128,6 @@ struct ozone_handle
 
    struct
    {
-      unsigned lanuage;
       ozone_footer_label_t ok;
       ozone_footer_label_t back;
       ozone_footer_label_t search;
@@ -128,101 +135,33 @@ struct ozone_handle
       ozone_footer_label_t metadata_toggle;
    } footer_labels;
 
+   struct
+   {
+      gfx_thumbnail_t right;  /* uintptr_t alignment */
+      gfx_thumbnail_t left;   /* uintptr_t alignment */
+   } thumbnails;
    uintptr_t textures[OZONE_THEME_TEXTURE_LAST];
    uintptr_t icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
    uintptr_t tab_textures[OZONE_TAB_TEXTURE_LAST];
 
-   char title[PATH_MAX_LENGTH];
-
-   char assets_path[PATH_MAX_LENGTH];
-   char png_path[PATH_MAX_LENGTH];
-   char icons_path[PATH_MAX_LENGTH];
-   char tab_path[PATH_MAX_LENGTH];
-
-   uint8_t system_tab_end;
-   uint8_t tabs[OZONE_SYSTEM_TAB_LAST];
-
    size_t categories_selection_ptr; /* active tab id  */
    size_t categories_active_idx_old;
-
-   bool cursor_in_sidebar;
-   bool cursor_in_sidebar_old;
-
-   struct
-   {
-      float cursor_alpha;
-      float scroll_y;
-      float scroll_y_sidebar;
-
-      float list_alpha;
-
-      float messagebox_alpha;
-
-      float sidebar_text_alpha;
-      float thumbnail_bar_position;
-
-      float fullscreen_thumbnail_alpha;
-      float left_thumbnail_alpha;
-   } animations;
-
-   bool fade_direction; /* false = left to right, true = right to left */
 
    size_t selection; /* currently selected entry */
    size_t selection_old; /* previously selected entry (for fancy animation) */
    size_t selection_old_list;
-
-   unsigned entries_height;
+   size_t fullscreen_thumbnail_selection;
+   size_t num_search_terms_old;
+   size_t pointer_categories_selection;
+   size_t first_onscreen_entry;
+   size_t last_onscreen_entry;
+   size_t first_onscreen_category;
+   size_t last_onscreen_category;
 
    int depth;
 
-   bool draw_sidebar;
-   float sidebar_offset;
-
-   ozone_theme_t *theme;
-
-   struct {
-      float selection_border[16];
-      float selection[16];
-      float entries_border[16];
-      float entries_icon[16];
-      float entries_checkmark[16];
-      float cursor_alpha[16];
-
-      unsigned cursor_state; /* 0 -> 1 -> 0 -> 1 [...] */
-      float cursor_border[16];
-      float message_background[16];
-   } theme_dynamic;
-
-   unsigned last_width;
-   unsigned last_height;
-   float last_scale_factor;
-
-   bool need_compute;
-
-   file_list_t *selection_buf_old;
-
-   bool draw_old_list;
-   float scroll_old;
-
-   char *pending_message;
-   bool has_all_assets;
-
-   bool is_playlist;
-   bool is_playlist_old;
-   size_t num_search_terms_old;
-
-   bool empty_playlist;
-
-   bool osk_cursor; /* true = display it, false = don't */
-   bool messagebox_state;
-   bool messagebox_state_old;
-   bool should_draw_messagebox;
-
-   unsigned old_list_offset_y;
-
-   file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
-
-   struct {
+   struct
+   {
       int header_height;
       int footer_height;
 
@@ -237,7 +176,6 @@ struct ozone_handle
       int sidebar_width_normal;
       int sidebar_width_collapsed;
 
-      float sidebar_width; /* animated field */
       int sidebar_padding_horizontal;
       int sidebar_padding_vertical;
       int sidebar_entry_padding_vertical;
@@ -257,44 +195,98 @@ struct ozone_handle
       int spacer_5px;
    } dimensions;
 
-   menu_input_pointer_t pointer;
+   unsigned footer_labels_language;
+   unsigned last_width;
+   unsigned last_height;
+   unsigned entries_height;
+   unsigned theme_dynamic_cursor_state; /* 0 -> 1 -> 0 -> 1 [...] */
+   unsigned selection_core_name_lines;
+   unsigned selection_lastplayed_lines;
+   unsigned old_list_offset_y;
+
+   float dimensions_sidebar_width; /* animated field */
+   float sidebar_offset;
+   float last_scale_factor;
+
+   struct
+   {
+      float cursor_alpha;
+      float scroll_y;
+      float scroll_y_sidebar;
+
+      float list_alpha;
+
+      float messagebox_alpha;
+
+      float sidebar_text_alpha;
+      float thumbnail_bar_position;
+
+      float fullscreen_thumbnail_alpha;
+      float left_thumbnail_alpha;
+   } animations;
+
+   struct
+   {
+      float selection_border[16];
+      float selection[16];
+      float entries_border[16];
+      float entries_icon[16];
+      float entries_checkmark[16];
+      float cursor_alpha[16];
+
+      float cursor_border[16];
+      float message_background[16];
+   } theme_dynamic;
+
+   float scroll_old;
+
    int16_t pointer_active_delta;
-   bool pointer_in_sidebar;
-   bool last_pointer_in_sidebar;
-   size_t pointer_categories_selection;
-   size_t first_onscreen_entry;
-   size_t last_onscreen_entry;
-   size_t first_onscreen_category;
-   size_t last_onscreen_category;
-
-   bool show_cursor;
-   bool cursor_mode;
-
    int16_t cursor_x_old;
    int16_t cursor_y_old;
 
-   bool sidebar_collapsed;
+   uint8_t system_tab_end;
+   uint8_t tabs[OZONE_SYSTEM_TAB_LAST];
 
-   /* Thumbnails data */
-   bool show_thumbnail_bar;
+   char title[PATH_MAX_LENGTH];
 
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-
-   struct {
-      gfx_thumbnail_t right;
-      gfx_thumbnail_t left;
-   } thumbnails;
-
-   bool fullscreen_thumbnails_available;
-   bool show_fullscreen_thumbnails;
-   size_t fullscreen_thumbnail_selection;
+   char assets_path[PATH_MAX_LENGTH];
+   char png_path[PATH_MAX_LENGTH];
+   char icons_path[PATH_MAX_LENGTH];
+   char tab_path[PATH_MAX_LENGTH];
    char fullscreen_thumbnail_label[255];
 
    char selection_core_name[255];
    char selection_playtime[255];
    char selection_lastplayed[255];
-   unsigned selection_core_name_lines;
-   unsigned selection_lastplayed_lines;
+
+   bool cursor_in_sidebar;
+   bool cursor_in_sidebar_old;
+
+   bool fade_direction; /* false = left to right, true = right to left */
+
+   bool draw_sidebar;
+   bool empty_playlist;
+
+   bool osk_cursor; /* true = display it, false = don't */
+   bool messagebox_state;
+   bool messagebox_state_old;
+   bool should_draw_messagebox;
+
+   bool need_compute;
+   bool draw_old_list;
+   bool has_all_assets;
+
+   bool is_playlist;
+   bool is_playlist_old;
+
+   bool pointer_in_sidebar;
+   bool last_pointer_in_sidebar;
+   bool show_cursor;
+   bool cursor_mode;
+   bool sidebar_collapsed;
+   bool show_thumbnail_bar;
+   bool fullscreen_thumbnails_available;
+   bool show_fullscreen_thumbnails;
    bool selection_core_is_viewer;
 
    bool force_metadata_display;
