@@ -264,6 +264,8 @@ int cheat_manager_search_eqplus(rarch_setting_t *setting, size_t idx, bool wrapa
 
 int cheat_manager_search_eqminus(rarch_setting_t *setting, size_t idx, bool wraparound);
 
+unsigned cheat_manager_get_state_search_size(unsigned search_size);
+
 int cheat_manager_add_matches(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 

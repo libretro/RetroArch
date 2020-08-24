@@ -7165,13 +7165,13 @@ static void general_write_handler(rarch_setting_t *setting)
             if (setting)
             {
                *(setting->value.target.unsigned_integer) = 0;
-               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
+               setting->max = cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size);
             }
             setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE);
             if (setting)
             {
                *setting->value.target.unsigned_integer = 0;
-               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
+               setting->max = cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size);
             }
             setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
             if (setting)
@@ -7181,7 +7181,6 @@ static void general_write_handler(rarch_setting_t *setting)
                max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0;
                setting->max     = max_bit_position;
             }
-
          }
 #endif
          break;
@@ -7192,21 +7191,20 @@ static void general_write_handler(rarch_setting_t *setting)
             if (setting)
             {
                *setting->value.target.unsigned_integer = 0;
-               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+               setting->max = cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size);
             }
             setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS);
             if (setting)
             {
                *setting->value.target.unsigned_integer = 0;
-               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+               setting->max = cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size);
             }
             setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS);
             if (setting)
             {
                *setting->value.target.unsigned_integer = 0;
-               setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+               setting->max = cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size);
             }
-
          }
 #endif
          break;
@@ -9569,12 +9567,14 @@ static bool setting_append_list(
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.value, CHEAT_VALUE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1);
+                  0,&setting_get_string_representation_hex_and_uint,
+                  0,cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size),1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address, CHEAT_ADDRESS,
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-                  0,&setting_get_string_representation_hex_and_uint,0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1);
+                  0,&setting_get_string_representation_hex_and_uint,
+                  0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1);
 
             max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0;
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address_mask, CHEAT_ADDRESS_BIT_POSITION,
@@ -9620,7 +9620,8 @@ static bool setting_append_list(
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_value, CHEAT_RUMBLE_VALUE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1);
+                  0,&setting_get_string_representation_hex_and_uint,
+                  0,cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size),1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_port, CHEAT_RUMBLE_PORT,
@@ -9697,7 +9698,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info,
+               0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_exact;
          (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact;
 
@@ -9796,7 +9798,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info,
+               0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_eqplus;
          (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqplus;
 
@@ -9811,7 +9814,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info,
+               0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_eqminus;
          (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqminus;
 
