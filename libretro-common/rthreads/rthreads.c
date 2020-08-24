@@ -95,9 +95,9 @@ struct slock
 #ifdef USE_WIN32_THREADS
 /* The syntax we'll use is mind-bending unless we use a struct. Plus, we might want to store more info later */
 /* This will be used as a linked list immplementing a queue of waiting threads */
-struct QueueEntry
+struct queue_entry
 {
-   struct QueueEntry *next;
+   struct queue_entry *next;
 };
 #endif
 
@@ -117,7 +117,7 @@ struct scond
    HANDLE event;
 
    /* the head of the queue; NULL if queue is empty */
-   struct QueueEntry *head;
+   struct queue_entry *head;
 
    /* equivalent to the queue length */
    int waiters;
@@ -515,8 +515,8 @@ void scond_free(scond_t *cond)
 #ifdef USE_WIN32_THREADS
 static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
 {
-   struct QueueEntry myentry;
-   struct QueueEntry **ptr;
+   struct queue_entry myentry;
+   struct queue_entry **ptr;
 
 #if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
    static LARGE_INTEGER performanceCounterFrequency;
@@ -662,7 +662,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
          {
             /* It's not our turn and we're out of time. Give up.
              * Remove ourself from the queue and bail. */
-            struct QueueEntry* curr = cond->head;
+            struct queue_entry *curr = cond->head;
 
             while (curr->next != &myentry)
                curr = curr->next;
