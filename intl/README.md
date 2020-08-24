@@ -77,3 +77,10 @@ Links:
      "2D (High Resolution)"
      )
    ```
+
+### Add New Languages
+
+1. Go to Crowdin and add the language
+2. Run Crowdin script to download new translations
+3. Add new language into menu (see [#10787](https://github.com/libretro/RetroArch/pull/10787))
+
