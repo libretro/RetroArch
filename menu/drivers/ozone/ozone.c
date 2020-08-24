@@ -280,8 +280,7 @@ static enum menu_action ozone_parse_menu_entry_action(
       }
    }
 
-   if (ozone->horizontal_list)
-      horizontal_list_size    = (unsigned)ozone->horizontal_list->size;
+   horizontal_list_size       = (unsigned)ozone->horizontal_list.size;
 
    ozone->messagebox_state    = false || menu_input_dialog_get_display_kb();
    selection_buf              = menu_entries_get_selection_buf_ptr(0);
@@ -669,14 +668,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    gfx_display_allocate_white_texture();
 
-   ozone->horizontal_list           = (file_list_t*)malloc(sizeof(file_list_t));
+   file_list_initialize(&ozone->horizontal_list);
 
-   ozone->horizontal_list->list     = NULL;
-   ozone->horizontal_list->capacity = 0;
-   ozone->horizontal_list->size     = 0;
-
-   if (ozone->horizontal_list)
-      ozone_init_horizontal_list(ozone);
+   ozone_init_horizontal_list(ozone);
 
    /* Theme */
    if (settings->bools.menu_use_preferred_system_color_theme)
@@ -753,11 +747,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 error:
    if (ozone)
    {
-      if (ozone->horizontal_list)
-      {
-         ozone_free_list_nodes(ozone->horizontal_list, false);
-         file_list_free(ozone->horizontal_list);
-      }
+      ozone_free_list_nodes(&ozone->horizontal_list, false);
+      file_list_deinitialize(&ozone->horizontal_list);
 
       if (ozone->selection_buf_old)
       {
@@ -766,7 +757,6 @@ error:
       }
 
       ozone->selection_buf_old = NULL;
-      ozone->horizontal_list   = NULL;
    }
 
    if (menu)
@@ -797,13 +787,9 @@ static void ozone_free(void *data)
          file_list_free(ozone->selection_buf_old);
       }
 
-      if (ozone->horizontal_list)
-      {
-         ozone_free_list_nodes(ozone->horizontal_list, false);
-         file_list_free(ozone->horizontal_list);
-      }
+      ozone_free_list_nodes(&ozone->horizontal_list, false);
+      file_list_deinitialize(&ozone->horizontal_list);
 
-      ozone->horizontal_list     = NULL;
       ozone->selection_buf_old   = NULL;
 
       if (!string_is_empty(ozone->pending_message))
@@ -1323,10 +1309,9 @@ static void *ozone_list_get_entry(void *data,
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         if (ozone && ozone->horizontal_list)
-            list_size = file_list_get_size(ozone->horizontal_list);
+         list_size = file_list_get_size(&ozone->horizontal_list);
          if (i < list_size)
-            return (void*)&ozone->horizontal_list->list[i];
+            return (void*)&ozone->horizontal_list.list[i];
          break;
       default:
          break;
@@ -1689,8 +1674,7 @@ static void ozone_render(void *data,
       bool first_entry_found      = false;
       bool last_entry_found       = false;
 
-      unsigned horizontal_list_size = ozone->horizontal_list ?
-            (unsigned)ozone->horizontal_list->size : 0;
+      unsigned horizontal_list_size = (unsigned)ozone->horizontal_list.size;
       float category_height         = ozone->dimensions.sidebar_entry_height +
             ozone->dimensions.sidebar_entry_padding_vertical;
       bool first_category_found     = false;
@@ -2880,12 +2864,10 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 static void ozone_set_header(ozone_handle_t *ozone)
 {
    if (ozone->categories_selection_ptr <= ozone->system_tab_end)
-   {
       menu_entries_get_title(ozone->title, sizeof(ozone->title));
-   }
-   else if (ozone->horizontal_list)
+   else
    {
-      ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
+      ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
 
       if (node && node->console_name)
       {
@@ -3494,8 +3476,7 @@ static int ozone_pointer_up(void *userdata,
             /* Otherwise, select current category */
             else if (ozone->pointer_categories_selection != ozone->categories_selection_ptr)
             {
-               unsigned horizontal_list_size = (ozone->horizontal_list) ?
-                     (unsigned)ozone->horizontal_list->size : 0;
+               unsigned horizontal_list_size = (unsigned)ozone->horizontal_list.size;
 
                /* Ensure that current category is valid */
                if (ozone->pointer_categories_selection <= ozone->system_tab_end + horizontal_list_size)
@@ -3568,9 +3549,7 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type)
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_HORIZONTAL:
-         if (ozone && ozone->horizontal_list)
-            return file_list_get_size(ozone->horizontal_list);
-         break;
+         return file_list_get_size(&ozone->horizontal_list);
       case MENU_LIST_TABS:
          return ozone->system_tab_end;
    }

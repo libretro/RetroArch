@@ -721,9 +721,9 @@ border_iterate:
          uintptr_t texture = tex;
 
          /* Console specific icons */
-         if (entry.type == FILE_TYPE_RPL_ENTRY && ozone->horizontal_list && ozone->categories_selection_ptr > ozone->system_tab_end)
+         if (entry.type == FILE_TYPE_RPL_ENTRY && ozone->categories_selection_ptr > ozone->system_tab_end)
          {
-            ozone_node_t *sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
+            ozone_node_t *sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
 
             if (!sidebar_node || !sidebar_node->content_icon)
                texture = tex;
@@ -736,13 +736,9 @@ border_iterate:
             (entry.type >= MENU_SETTINGS_CHEEVOS_START) &&
             (entry.type < MENU_SETTINGS_NETPLAY_ROOMS_START)
          ))
-         {
             icon_color = ozone->theme_dynamic.entries_icon;
-         }
          else
-         {
             icon_color = ozone_pure_white;
-         }
 
          gfx_display_set_alpha(icon_color, alpha);
 

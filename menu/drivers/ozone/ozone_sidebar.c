@@ -207,8 +207,7 @@ void ozone_draw_sidebar(
       ticker.spacer               = ticker_spacer;
    }
 
-   if (ozone->horizontal_list)
-      horizontal_list_size = (unsigned)ozone->horizontal_list->size;
+   horizontal_list_size           = (unsigned)ozone->horizontal_list.size;
 
    gfx_display_scissor_begin(userdata,
          video_width, video_height,
@@ -374,7 +373,7 @@ void ozone_draw_sidebar(
 
          uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
 
-         ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(ozone->horizontal_list, i);
+         ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, i);
 
          if (!node)
             goto console_iterate;
@@ -504,9 +503,9 @@ unsigned ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone)
 
 unsigned ozone_get_sidebar_height(ozone_handle_t *ozone)
 {
-   int entries = (int)(ozone->system_tab_end + 1 + (ozone->horizontal_list ? ozone->horizontal_list->size : 0));
+   int entries = (int)(ozone->system_tab_end + 1 + (ozone->horizontal_list.size ));
    return entries * ozone->dimensions.sidebar_entry_height + (entries - 1) * ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.sidebar_padding_vertical +
-         (ozone->horizontal_list && ozone->horizontal_list->size > 0 ? ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px : 0);
+         (ozone->horizontal_list.size > 0 ? ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px : 0);
 }
 
 void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
@@ -746,7 +745,7 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
 
    menu_displaylist_info_init(&info);
 
-   info.list                    = ozone->horizontal_list;
+   info.list                    = &ozone->horizontal_list;
    info.path                    = strdup(dir_playlist);
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
@@ -774,12 +773,12 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
       playlist_file_noext[0] = '\0';
 
       /* Get playlist file name */
-      file_list_get_at_offset(ozone->horizontal_list, i,
+      file_list_get_at_offset(&ozone->horizontal_list, i,
             &playlist_file, NULL, NULL, NULL);
 
       if (!playlist_file)
       {
-         file_list_set_alt_at_offset(ozone->horizontal_list, i, NULL);
+         file_list_set_alt_at_offset(&ozone->horizontal_list, i, NULL);
          continue;
       }
 
@@ -818,7 +817,7 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
       }
 
       /* Assign console name to list */
-      file_list_set_alt_at_offset(ozone->horizontal_list, i, console_name);
+      file_list_set_alt_at_offset(&ozone->horizontal_list, i, console_name);
    }
 
    /* If playlist names were truncated and option is
@@ -826,30 +825,19 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
    if (ozone_truncate_playlist_name &&
        ozone_sort_after_truncate &&
        (list_size > 0))
-      file_list_sort_on_alt(ozone->horizontal_list);
+      file_list_sort_on_alt(&ozone->horizontal_list);
 }
 
 void ozone_refresh_horizontal_list(ozone_handle_t *ozone)
 {
    ozone_context_destroy_horizontal_list(ozone);
-   if (ozone->horizontal_list)
-   {
-      ozone_free_list_nodes(ozone->horizontal_list, false);
-      file_list_free(ozone->horizontal_list);
-   }
-   ozone->horizontal_list           = NULL;
+   ozone_free_list_nodes(&ozone->horizontal_list, false);
+   file_list_deinitialize(&ozone->horizontal_list);
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   ozone->horizontal_list           = (file_list_t*)
-      malloc(sizeof(file_list_t));
-
-   ozone->horizontal_list->list     = NULL;
-   ozone->horizontal_list->capacity = 0;
-   ozone->horizontal_list->size     = 0;
-
-   if (ozone->horizontal_list)
-      ozone_init_horizontal_list(ozone);
+   file_list_initialize(&ozone->horizontal_list);
+   ozone_init_horizontal_list(ozone);
 
    ozone_context_reset_horizontal_list(ozone);
 }
@@ -863,7 +851,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
    {
       const char *path         = NULL;
       const char *console_name = NULL;
-      ozone_node_t *node       = (ozone_node_t*)file_list_get_userdata_at_offset(ozone->horizontal_list, i);
+      ozone_node_t *node       = (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, i);
 
       if (!node)
       {
@@ -872,7 +860,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             continue;
       }
 
-      file_list_get_at_offset(ozone->horizontal_list, i,
+      file_list_get_at_offset(&ozone->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
       if (!path)
@@ -950,7 +938,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          /* Console name */
          menu_entries_get_at_offset(
-            ozone->horizontal_list, i,
+            &ozone->horizontal_list, i,
             NULL, NULL, NULL, NULL, &console_name);
 
          if (node->console_name)
@@ -973,12 +961,12 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
    for (i = 0; i < list_size; i++)
    {
       const char *path = NULL;
-      ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(ozone->horizontal_list, i);
+      ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, i);
 
       if (!node)
          continue;
 
-      file_list_get_at_offset(ozone->horizontal_list, i,
+      file_list_get_at_offset(&ozone->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
       if (!path || !string_ends_with_size(path, ".lpl",

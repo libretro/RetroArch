@@ -220,7 +220,7 @@ struct ozone_handle
 
    unsigned old_list_offset_y;
 
-   file_list_t *horizontal_list; /* console tabs */
+   file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
 
    struct {
       int header_height;

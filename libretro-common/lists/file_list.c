@@ -55,6 +55,18 @@ static bool file_list_deinitialize_internal(file_list_t *list)
    return true;
 }
 
+bool file_list_initialize(file_list_t *list)
+{
+   if (!list)
+      return false;
+
+   list->list     = NULL;
+   list->capacity = 0;
+   list->size     = 0;
+
+   return true;
+}
+
 bool file_list_reserve(file_list_t *list, size_t nitems)
 {
    const size_t item_size = sizeof(struct item_file);
