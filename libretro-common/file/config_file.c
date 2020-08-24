@@ -374,7 +374,7 @@ static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
       if (!config_file_initialize_internal(
                sub_conf, real_path, conf->include_depth + 1, cb))
       {
-         free(sub_conf);
+         config_file_free(conf);
          return;
       }
 
@@ -529,9 +529,8 @@ static bool config_file_initialize_internal(
 
       if (!list)
       {
-         config_file_free(conf);
          filestream_close(file);
-         return NULL;
+         return false;
       }
 
       list->readonly  = false;
@@ -736,7 +735,7 @@ config_file_t *config_file_new_with_callback(
       return conf;
    if (!config_file_initialize_internal(conf, path, 0, cb))
    {
-      free(conf);
+      config_file_free(conf);
       return NULL;
    }
    return conf;
@@ -751,7 +750,7 @@ config_file_t *config_file_new(const char *path)
       return conf;
    if (!config_file_initialize_internal(conf, path, 0, NULL))
    {
-      free(conf);
+      config_file_free(conf);
       return NULL;
    }
    return conf;
