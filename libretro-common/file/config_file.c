@@ -649,22 +649,13 @@ bool config_append_file(config_file_t *conf, const char *path)
 config_file_t *config_file_new_from_string(char *from_string,
       const char *path)
 {
-   char *lines              = from_string;
-   char *save_ptr           = NULL;
-   char *line               = NULL;
-   struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
+   char *lines                    = from_string;
+   char *save_ptr                 = NULL;
+   char *line                     = NULL;
+   struct config_file *conf       = NULL;
 
-   if (!conf)
+   if (!(conf = config_file_new_alloc()))
       return NULL;
-
-   conf->path                     = NULL;
-   conf->entries                  = NULL;
-   conf->tail                     = NULL;
-   conf->last                     = NULL;
-   conf->includes                 = NULL;
-   conf->include_depth            = 0;
-   conf->guaranteed_no_duplicates = false;
-   conf->modified                 = false;
 
    if (!string_is_empty(path))
       conf->path                  = strdup(path);
