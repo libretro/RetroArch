@@ -23,28 +23,70 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_common_api.h>
+#include <retro_inline.h>
+#include <boolean.h>
+
 #include <queues/fifo_queue.h>
+
+static bool fifo_initialize_internal(fifo_buffer_t *buf, size_t size)
+{
+   uint8_t *buffer    = (uint8_t*)calloc(1, size + 1);
+
+   if (!buffer)
+      return false;
+
+   buf->buffer        = buffer;
+   buf->size          = size + 1;
+   buf->first         = 0;
+   buf->end           = 0;
+
+   return true;
+}
+
+bool fifo_initialize(fifo_buffer_t *buf, size_t size)
+{
+   if (!buf)
+      return false;
+   return fifo_initialize_internal(buf, size);
+}
+
+void fifo_free(fifo_buffer_t *buffer)
+{
+   if (!buffer)
+      return;
+
+   free(buffer->buffer);
+   free(buffer);
+}
+
+bool fifo_deinitialize(fifo_buffer_t *buffer)
+{
+   if (!buffer)
+      return false;
+
+   if (buffer->buffer)
+      free(buffer->buffer);
+   buffer->buffer = NULL;
+   buffer->size   = 0;
+   buffer->first  = 0;
+   buffer->end    = 0;
+
+   return true;
+}
 
 fifo_buffer_t *fifo_new(size_t size)
 {
-   uint8_t    *buffer = NULL;
    fifo_buffer_t *buf = (fifo_buffer_t*)malloc(sizeof(*buf));
 
    if (!buf)
       return NULL;
 
-   buf->first         = 0;
-   buf->end           = 0;
-   buffer             = (uint8_t*)calloc(1, size + 1);
-
-   if (!buffer)
+   if (!fifo_initialize_internal(buf, size))
    {
       free(buf);
       return NULL;
    }
-
-   buf->buffer        = buffer;
-   buf->size          = size + 1;
 
    return buf;
 }
