@@ -12852,7 +12852,8 @@ bool retroarch_apply_shader(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
 #ifdef HAVE_GFX_WIDGETS
          if (p_rarch->widgets_active)
-            gfx_widget_set_message(msg);
+            gfx_widget_set_generic_message(&p_rarch->dispwidget_st,
+						msg, 2000);
          else
 #endif
             runloop_msg_queue_push(msg, 1, 120, true, NULL,
