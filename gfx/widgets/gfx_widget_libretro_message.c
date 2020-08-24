@@ -98,7 +98,7 @@ static gfx_widget_libretro_message_state_t* gfx_widget_libretro_message_get_stat
 
 /* Utilities */
 
-static void gfx_widget_libretro_message_reset(void)
+static void gfx_widget_libretro_message_reset(bool cancel_pending)
 {
    gfx_widget_libretro_message_state_t *state = gfx_widget_libretro_message_get_state();
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
@@ -108,15 +108,16 @@ static void gfx_widget_libretro_message_reset(void)
    gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Reset status */
-   state->status          = GFX_WIDGET_LIBRETRO_MESSAGE_IDLE;
-   state->message_updated = false;
+   state->status             = GFX_WIDGET_LIBRETRO_MESSAGE_IDLE;
+   if (cancel_pending)
+      state->message_updated = false;
 }
 
 /* Callbacks */
 
 static void gfx_widget_libretro_message_fade_out_cb(void *userdata)
 {
-   gfx_widget_libretro_message_reset();
+   gfx_widget_libretro_message_reset(false);
 }
 
 static void gfx_widget_libretro_message_wait_cb(void *userdata)
@@ -257,10 +258,8 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
       uintptr_t alpha_tag                                    = (uintptr_t)&state->alpha;
       gfx_animation_ctx_entry_t animation_entry;
 
-      /* In all cases, reset any existing animation
-       * > Note that this sets state->message_updated
-       *   to 'false' */
-      gfx_widget_libretro_message_reset();
+      /* In all cases, reset any existing animation */
+      gfx_widget_libretro_message_reset(false);
 
       /* If an animation was already in progress,
        * have to continue from the last active
@@ -301,7 +300,7 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
                {
                   animation_entry.easing_enum  = EASING_OUT_QUAD;
                   animation_entry.tag          = alpha_tag;
-                  animation_entry.duration     = LIBRETRO_MESSAGE_FADE_DURATION;
+                  animation_entry.duration     = fade_duration;
                   animation_entry.target_value = 1.0f;
                   animation_entry.subject      = &state->alpha;
                   /* Note that 'slide in' and 'fade in' share
@@ -330,6 +329,8 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
              * action is required */
             break;
       }
+
+      state->message_updated = false;
    }
 }
 
@@ -474,7 +475,7 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 
 static void gfx_widget_libretro_message_free(void)
 {
-   gfx_widget_libretro_message_reset();
+   gfx_widget_libretro_message_reset(true);
 }
 
 /* Widget definition */

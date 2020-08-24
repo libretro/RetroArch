@@ -40,7 +40,6 @@
 #define TASK_FINISHED_DURATION            3000
 #define HOURGLASS_INTERVAL                5000
 #define HOURGLASS_DURATION                1000
-#define GENERIC_MESSAGE_DURATION          3000
 
 /* TODO: Colors for warning, error and success */
 
@@ -371,7 +370,9 @@ void gfx_widgets_push_achievement(const char *title, const char *badge);
 #endif
 
 /* Warning: not thread safe! */
-void gfx_widget_set_message(char *message);
+void gfx_widget_set_generic_message(
+      void *data,
+      const char *message, unsigned duration);
 
 /* Warning: not thread safe! */
 void gfx_widget_set_libretro_message(
