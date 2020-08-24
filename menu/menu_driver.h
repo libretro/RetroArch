@@ -422,7 +422,6 @@ typedef struct menu_ctx_bind
    const char *path;
    const char *label;
    size_t idx;
-   int retcode;
    unsigned type;
 } menu_ctx_bind_t;
 

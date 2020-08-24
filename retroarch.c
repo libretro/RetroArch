@@ -4219,11 +4219,8 @@ static void menu_cbs_init(
    bind_info.idx             = idx;
 
    if (!p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->bind_init)
-   {
-      bind_info.retcode = 0;
       return;
-   }
-   bind_info.retcode = p_rarch->menu_driver_ctx->bind_init(
+   p_rarch->menu_driver_ctx->bind_init(
          bind_info.cbs,
          bind_info.path,
          bind_info.label,

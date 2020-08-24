@@ -1345,17 +1345,6 @@ typedef struct gfx_ctx_aspect
    unsigned height;
 } gfx_ctx_aspect_t;
 
-typedef struct gfx_ctx_image
-{
-   const void *frame;
-   void **handle;
-   unsigned width;
-   unsigned height;
-   unsigned pitch;
-   unsigned index;
-   bool rgb32;
-} gfx_ctx_image_t;
-
 typedef struct gfx_ctx_input
 {
    input_driver_t **input;
