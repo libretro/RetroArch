@@ -3,9 +3,9 @@ Struct ordering
 
 For POD-types, try to order structs as follows (first to last):
 
-* long double     (16 bytes [64bit x86], 12 bytes [32bit x86], 8 bytes)
+* long double     (8 bytes, 16 bytes [64bit x86], 12 bytes [32bit x86])
 * double          (8 bytes)
-* int64_t         (8 bytes, 8 bytes [32bit ARM], 4 bytes [32bit x86])
+* int64_t         (8 bytes,         8 bytes [32bit ARM], 4 bytes [32bit x86])
 * uint64_t        (4 bytes [32bit], 8 bytes [32bit ARM], 8 bytes [64bit])
 * pointer         (4 bytes [32bit], 8 bytes [64bit])
 * intptr_t        (4 bytes [32bit], 8 bytes [64bit])
