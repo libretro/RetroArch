@@ -11384,7 +11384,7 @@ void path_set_special(char **argv, unsigned num_content)
    unsigned i;
    char str[PATH_MAX_LENGTH];
    union string_list_elem_attr attr;
-   struct string_list subsystem_paths;
+   struct string_list subsystem_paths  = {0};
    struct rarch_state         *p_rarch = &rarch_st;
    global_t   *global                  = &p_rarch->g_extern;
    const char *savestate_dir           = p_rarch->current_savestate_dir;
@@ -30041,7 +30041,7 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    bool ret                      = false;
 
    attr.i = 0;
-   if (string_list_initialize(&str_list))
+   if (!string_list_initialize(&str_list))
       return false;
 
 #ifdef HAVE_STB_VORBIS

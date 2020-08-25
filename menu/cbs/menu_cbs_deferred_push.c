@@ -536,9 +536,9 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_DETECT_CORE_LIST:
          {
-            struct string_list str_list2;
             union string_list_elem_attr attr;
             char newstring[PATH_MAX_LENGTH];
+            struct string_list str_list2     = {0};
             struct retro_system_info *system = runloop_get_libretro_system_info();
 
             newstring[0]                     = '\0';

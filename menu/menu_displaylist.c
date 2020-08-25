@@ -11529,7 +11529,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
-            struct string_list str_list;
+            struct string_list str_list = {0};
             char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
 

@@ -261,8 +261,8 @@ static core_info_list_t *core_info_list_new(const char *path,
       const char *exts,
       bool dir_show_hidden_files)
 {
-   struct string_list contents;
    size_t i;
+   struct string_list contents      = {0};
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
    const char       *path_basedir   = libretro_info_dir;

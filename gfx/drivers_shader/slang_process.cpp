@@ -428,7 +428,7 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader)
 {
    glslang_meta meta;
-   struct string_list lines;
+   struct string_list lines = {0};
    
    if (!string_list_initialize(&lines))
       goto error;
