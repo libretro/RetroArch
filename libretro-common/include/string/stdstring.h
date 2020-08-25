@@ -70,7 +70,18 @@ static INLINE bool string_ends_with(const char *str, const char *suffix)
    return string_ends_with_size(str, suffix, strlen(str), strlen(suffix));
 }
 
-
+/* Returns the length of 'str' (c.f. strlen()), but only
+ * checks the first 'size' characters
+ * - If 'str' is NULL, returns 0
+ * - If 'str' is not NULL and no '\0' character is found
+ *   in the first 'size' characters, returns 'size' */
+static INLINE size_t strlen_size(const char *str, size_t size)
+{
+   size_t i = 0;
+   if (str)
+      for(; (i < size) && str[i]; ++i);
+   return i;
+}
 
 #define STRLEN_CONST(x)                   ((sizeof((x))-1))
 
