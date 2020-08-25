@@ -382,11 +382,11 @@ static int config_file_new_internal(
       const char *path, unsigned depth, config_file_cb_t *cb)
 {
    RFILE         *file = NULL;
-
-   conf->path          = strdup(path);
-   if (!conf->path)
+   char      *new_path = strdup(path);
+   if (!new_path)
       return 1;
 
+   conf->path          = new_path;
    conf->include_depth = depth;
    file                = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
