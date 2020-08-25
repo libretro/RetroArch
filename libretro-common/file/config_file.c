@@ -503,11 +503,20 @@ static bool config_file_parse_line(config_file_t *conf,
 
       config_file_initialize(&sub_conf);
 
-      if (config_file_load_internal(&sub_conf, real_path,
-               conf->include_depth + 1, cb) == 0)
-         config_file_add_child_list(conf, &sub_conf); /* Pilfer internal list. */
-
-      config_file_deinitialize(&sub_conf);
+      switch (config_file_load_internal(&sub_conf, real_path,
+               conf->include_depth + 1, cb))
+      {
+         case 0:
+            /* Pilfer internal list. */
+            config_file_add_child_list(conf, &sub_conf);
+            /* fall-through to deinitialize */
+         case -1:
+            config_file_deinitialize(&sub_conf);
+            break;
+         case 1:
+         default:
+            break;
+      }
 
       free(path);
       return true;
@@ -1330,10 +1339,11 @@ bool config_get_entry_list_next(struct config_file_entry *entry)
 
 bool config_file_exists(const char *path)
 {
-   config_file_t *config = config_file_new(path);
-   if (!config)
+   config_file_t conf;
+   config_file_initialize(&conf);
+   if (config_file_load_internal(&conf, path, 0, NULL) == 1)
       return false;
 
-   config_file_free(config);
+   config_file_deinitialize(&conf);
    return true;
 }
