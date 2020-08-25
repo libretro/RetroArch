@@ -1908,10 +1908,10 @@ struct discord_state
 
    unsigned status;
 
-   char user_name[344];
    char self_party_id[128];
    char peer_party_id[128];
-   char user_avatar[PATH_MAX_LENGTH];
+   char user_name[344];
+   char user_avatar[344];
 
    bool ready;
    bool avatar_ready;
