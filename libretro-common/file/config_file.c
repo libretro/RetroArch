@@ -637,21 +637,19 @@ bool config_append_file(config_file_t *conf, const char *path)
    return true;
 }
 
-config_file_t *config_file_new_from_string(char *from_string,
+static int config_file_from_string_internal(
+      struct config_file *conf,
+      char *from_string,
       const char *path)
 {
    char *lines                    = from_string;
    char *save_ptr                 = NULL;
    char *line                     = NULL;
-   struct config_file *conf      = config_file_new_alloc();
-
-   if (!conf)
-      return NULL;
 
    if (!string_is_empty(path))
       conf->path                  = strdup(path);
    if (string_is_empty(lines))
-      return conf;
+      return 0;
 
    /* Get first line of config file */
    line = strtok_r(lines, "\n", &save_ptr);
@@ -662,10 +660,7 @@ config_file_t *config_file_new_from_string(char *from_string,
             malloc(sizeof(*list));
 
       if (!list)
-      {
-         config_file_free(conf);
-         return NULL;
-      }
+         return -1;
 
       list->readonly  = false;
       list->key       = NULL;
@@ -691,7 +686,22 @@ config_file_t *config_file_new_from_string(char *from_string,
       /* Get next line of config file */
       line = strtok_r(NULL, "\n", &save_ptr);
    }
+   
+   return 0;
+}
 
+config_file_t *config_file_new_from_string(char *from_string,
+      const char *path)
+{
+   struct config_file *conf      = config_file_new_alloc();
+
+   if (!conf)
+      return NULL;
+   if (config_file_from_string_internal(conf, from_string, path) == -1)
+   {
+      config_file_free(conf);
+      return NULL;
+   }
    return conf;
 }
 
@@ -710,10 +720,12 @@ config_file_t *config_file_new_from_path_to_string(const char *path)
           * modified by config_file_new_from_string() */
          if (length >= 0)
             conf = config_file_new_from_string((char*)ret_buf, path);
+
          if ((void*)ret_buf)
             free((void*)ret_buf);
       }
    }
+
    return conf;
 }
 
