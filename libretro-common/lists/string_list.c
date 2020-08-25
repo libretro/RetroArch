@@ -245,7 +245,18 @@ void string_list_set(struct string_list *list,
 void string_list_join_concat(char *buffer, size_t size,
       const struct string_list *list, const char *delim)
 {
-   size_t i, len = strlen(buffer);
+   size_t i;
+   size_t len = strlen_size(buffer, size);
+
+   /* If buffer is already 'full', nothing
+    * further can be added
+    * > This condition will also be triggered
+    *   if buffer is not NUL-terminated,
+    *   in which case any attempt to increment
+    *   buffer or decrement size would lead to
+    *   undefined behaviour */
+   if (len >= size)
+      return;
 
    buffer += len;
    size   -= len;
