@@ -3241,6 +3241,20 @@ MSG_HASH(
    "Hide the overlay while inside the menu, and show it again when exiting the menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Hide Overlay When Gamepad is Connected"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Hide the overlay when a physical gamepad is connected in port 1, and show it again when the gamepad is disconnected."
+   )
+#if defined(ANDROID)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   "Hide the overlay when a physical gamepad is connected in port 1. WARNING: Overlay will not be restored automatically when gamepad is disconnected."
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "Show Inputs on Overlay"
    )

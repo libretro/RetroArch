@@ -7537,17 +7537,18 @@ unsigned menu_displaylist_build_list(
             settings_t      *settings     = config_get_ptr();
             bool input_overlay_enable     = settings->bools.input_overlay_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                   PARSE_ONLY_BOOL,  true  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,             PARSE_ONLY_BOOL,  false  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,     PARSE_ONLY_BOOL,  false  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,PARSE_ONLY_BOOL,  false  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,        PARSE_ONLY_BOOL,  false  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,              PARSE_ONLY_BOOL,  false  },
-               {MENU_ENUM_LABEL_OVERLAY_PRESET,                         PARSE_ONLY_PATH,  false  },
-               {MENU_ENUM_LABEL_OVERLAY_OPACITY,                        PARSE_ONLY_FLOAT, false },
-               {MENU_ENUM_LABEL_OVERLAY_SCALE,                          PARSE_ONLY_FLOAT, false },
-               {MENU_ENUM_LABEL_OVERLAY_CENTER_X,                       PARSE_ONLY_FLOAT, false },
-               {MENU_ENUM_LABEL_OVERLAY_CENTER_Y,                       PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                      PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,                PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,        PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,   PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,           PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,                 PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_OVERLAY_PRESET,                            PARSE_ONLY_PATH,  false },
+               {MENU_ENUM_LABEL_OVERLAY_OPACITY,                           PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_SCALE,                             PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_CENTER_X,                          PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_CENTER_Y,                          PARSE_ONLY_FLOAT, false },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7555,6 +7556,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
