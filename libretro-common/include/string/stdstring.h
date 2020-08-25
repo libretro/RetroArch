@@ -79,7 +79,7 @@ static INLINE size_t strlen_size(const char *str, size_t size)
 {
    size_t i = 0;
    if (str)
-      for(; (i < size) && str[i]; ++i);
+      while (i < size && str[i]) i++;
    return i;
 }
 
