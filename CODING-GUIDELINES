@@ -7,10 +7,10 @@ For POD-types, try to order structs as follows (first to last):
 * double          (8 bytes)
 * int64_t         (8 bytes,         8 bytes [32bit ARM], 4 bytes [32bit x86])
 * uint64_t        (4 bytes [32bit], 8 bytes [32bit ARM], 8 bytes [64bit])
-* pointer         (4 bytes [32bit], 8 bytes [64bit])
-* intptr_t        (4 bytes [32bit], 8 bytes [64bit])
-* uintptr_t       (4 bytes [32bit], 8 bytes [64bit])
-* ptrdiff_t       (4 bytes [32bit], 8 bytes [64bit])
+* pointer         (4 bytes [32bit], 8 bytes [64bit] [1])
+* intptr_t        (4 bytes [32bit], 8 bytes [64bit] [1])
+* uintptr_t       (4 bytes [32bit], 8 bytes [64bit] [1])
+* ptrdiff_t       (4 bytes [32bit], 8 bytes [64bit] [1])
 * ssize_t         (4 bytes [32bit], 8 bytes [64bit])
 * size_t          (4 bytes [32bit], 8 bytes [64bit])
 * jmp_buf         (4 bytes)
@@ -23,6 +23,8 @@ For POD-types, try to order structs as follows (first to last):
 * int16_t         (2 bytes)
 * char            (1 byte)
 * bool            (1 byte)
+
+[1] PS3 uses 4 byte pointers despite having a 64bit processor
 
 Struct members should be sorted by alignment. Therefore, structs
 should be sorted by the largest type inside them.
@@ -55,3 +57,10 @@ struct a
    char* c;
    size_t c_len;
 };
+
+Stack size
+----------
+
+You have to assume that stack size is going to be limited in RetroArch. Some game consoles (and other embedded systems) might have a default stack size as low as 128Kb or less. Be conservative with stack size but don't try to put very small structs on heap either [to avoid memory fragmentation among other things].
+
+Be mindful that heap allocations are slow compared to stack.
