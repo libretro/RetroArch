@@ -348,10 +348,9 @@ static void config_file_get_realpath(char *s, size_t len,
 #endif
 }
 
-static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
+static void add_sub_conf(config_file_t *conf, char *path,
+      char *real_path, size_t len, config_file_cb_t *cb)
 {
-   char real_path[PATH_MAX_LENGTH];
-   config_file_t         *sub_conf  = NULL;
    struct config_include_list *head = conf->includes;
    struct config_include_list *node = (struct config_include_list*)
       malloc(sizeof(*node));
@@ -373,18 +372,8 @@ static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
          conf->includes = node;
    }
 
-   real_path[0]         = '\0';
-   config_file_get_realpath(real_path, sizeof(real_path), path,
+   config_file_get_realpath(real_path, len, path,
          conf->path);
-
-   sub_conf = (config_file_t*)
-      config_file_new_internal(real_path, conf->include_depth + 1, cb);
-   if (!sub_conf)
-      return;
-
-   /* Pilfer internal list. */
-   add_child_list(conf, sub_conf);
-   config_file_free(sub_conf);
 }
 
 static bool parse_line(config_file_t *conf,
@@ -400,8 +389,10 @@ static bool parse_line(config_file_t *conf,
    /* Check whether entire line is a comment */
    if (comment)
    {
-      char *path         = NULL;
-      char *include_line = NULL;
+      char real_path[PATH_MAX_LENGTH];
+      char *path               = NULL;
+      char *include_line       = NULL;
+      config_file_t *sub_conf  = NULL;
 
       /* Starting a line with an 'include' directive
        * appends a sub-config file
@@ -433,7 +424,17 @@ static bool parse_line(config_file_t *conf,
          return false;
       }
 
-      add_sub_conf(conf, path, cb);
+      real_path[0]         = '\0';
+      add_sub_conf(conf, path, real_path, sizeof(real_path), cb);
+
+      if ((sub_conf = (config_file_t*)
+         config_file_new_internal(real_path, conf->include_depth + 1, cb)))
+      {
+         /* Pilfer internal list. */
+         add_child_list(conf, sub_conf);
+         config_file_free(sub_conf);
+      }
+
       free(path);
       return true;
    }
