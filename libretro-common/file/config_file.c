@@ -321,6 +321,33 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
       parent->tail = NULL;
 }
 
+static void config_file_get_realpath(char *s, size_t len,
+      char *path, const char *config_path)
+{
+#ifdef _WIN32
+   if (!string_is_empty(config_path))
+      fill_pathname_resolve_relative(s, config_path,
+            path, len);
+#else
+#ifndef __CELLOS_LV2__
+   if (*path == '~')
+   {
+      const char *home = getenv("HOME");
+      if (home)
+      {
+         strlcpy(s, home,     len);
+         strlcat(s, path + 1, len);
+      }
+      else
+         strlcpy(s, path + 1, len);
+   }
+   else
+#endif
+      if (!string_is_empty(config_path))
+         fill_pathname_resolve_relative(s, config_path, path, len);
+#endif
+}
+
 static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
 {
    char real_path[PATH_MAX_LENGTH];
@@ -347,25 +374,8 @@ static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
    }
 
    real_path[0]         = '\0';
-
-#ifdef _WIN32
-   if (!string_is_empty(conf->path))
-      fill_pathname_resolve_relative(real_path, conf->path,
-            path, sizeof(real_path));
-#else
-#ifndef __CELLOS_LV2__
-   if (*path == '~')
-   {
-      const char *home = getenv("HOME");
-      strlcpy(real_path, home ? home : "", sizeof(real_path));
-      strlcat(real_path, path + 1, sizeof(real_path));
-   }
-   else
-#endif
-      if (!string_is_empty(conf->path))
-         fill_pathname_resolve_relative(real_path, conf->path,
-               path, sizeof(real_path));
-#endif
+   config_file_get_realpath(real_path, sizeof(real_path), path,
+         conf->path);
 
    sub_conf = (config_file_t*)
       config_file_new_internal(real_path, conf->include_depth + 1, cb);
