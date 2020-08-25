@@ -18,7 +18,7 @@ typedef struct c_attr_image
 typedef struct c_attr_text
 {
    char               *string;
-   video_layout_text_align_t align;
+   video_layout_text_align_t align; /* enum alignment */
 } c_attr_text_t;
 
 typedef struct c_attr_counter

@@ -29,10 +29,10 @@
 
 typedef struct video_layout_render_info
 {
-   video_layout_bounds_t      bounds;
-   video_layout_orientation_t orientation;
-   video_layout_color_t       color;
    void                      *video_driver_data;
+   video_layout_bounds_t      bounds;           /* float alignment */
+   video_layout_color_t       color;            /* float alignment */
+   video_layout_orientation_t orientation;      /* uint8_t alignment */
 } video_layout_render_info_t;
 
 typedef enum video_layout_led

@@ -7,17 +7,15 @@
 typedef struct element
 {
    char            *name;
+   component_t     *components;
+   int              components_count;
    int              state;
    int              o_bind;
    int              i_bind;
    int              i_mask;
+   video_layout_bounds_t  bounds;         /* float alignment */
+   video_layout_bounds_t  render_bounds;  /* float alignment */
    bool             i_raw;
-
-   video_layout_bounds_t  bounds;
-   video_layout_bounds_t  render_bounds;
-
-   component_t     *components;
-   int              components_count;
 } element_t;
 
 void element_init              (element_t *elem, const char *name, int components_count);
