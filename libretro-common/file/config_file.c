@@ -462,10 +462,10 @@ static bool config_file_parse_line(config_file_t *conf,
    /* Check whether entire line is a comment */
    if (comment)
    {
+      config_file_t sub_conf;
       char real_path[PATH_MAX_LENGTH];
       char *path               = NULL;
       char *include_line       = NULL;
-      config_file_t *sub_conf  = NULL;
 
       /* Starting a line with an 'include' directive
        * appends a sub-config file
@@ -501,12 +501,13 @@ static bool config_file_parse_line(config_file_t *conf,
       config_file_add_sub_conf(conf, path,
             real_path, sizeof(real_path), cb);
 
-      sub_conf = config_file_new_alloc();
+      config_file_initialize(&sub_conf);
 
-      if (config_file_load_internal(sub_conf, real_path,
+      if (config_file_load_internal(&sub_conf, real_path,
                conf->include_depth + 1, cb) == 0)
-         config_file_add_child_list(conf, sub_conf); /* Pilfer internal list. */
-      config_file_free(sub_conf);
+         config_file_add_child_list(conf, &sub_conf); /* Pilfer internal list. */
+
+      config_file_deinitialize(&sub_conf);
 
       free(path);
       return true;
@@ -560,12 +561,12 @@ static bool config_file_parse_line(config_file_t *conf,
    return true;
 }
 
-void config_file_free(config_file_t *conf)
+bool config_file_deinitialize(config_file_t *conf)
 {
    struct config_include_list *inc_tmp = NULL;
    struct config_entry_list *tmp       = NULL;
    if (!conf)
-      return;
+      return false;
 
    tmp = conf->entries;
    while (tmp)
@@ -600,6 +601,13 @@ void config_file_free(config_file_t *conf)
 
    if (conf->path)
       free(conf->path);
+   return true;
+}
+
+void config_file_free(config_file_t *conf)
+{
+   if (!config_file_deinitialize(conf))
+      return;
    free(conf);
 }
 
@@ -739,6 +747,21 @@ config_file_t *config_file_new(const char *path)
       return NULL;
    }
    return conf;
+}
+
+void config_file_initialize(struct config_file *conf)
+{
+   if (!conf)
+      return;
+
+   conf->path                     = NULL;
+   conf->entries                  = NULL;
+   conf->tail                     = NULL;
+   conf->last                     = NULL;
+   conf->includes                 = NULL;
+   conf->include_depth            = 0;
+   conf->guaranteed_no_duplicates = false;
+   conf->modified                 = false;
 }
 
 config_file_t *config_file_new_alloc(void)

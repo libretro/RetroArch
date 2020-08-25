@@ -88,6 +88,8 @@ config_file_t *config_file_new(const char *path);
 
 config_file_t *config_file_new_alloc(void);
 
+void config_file_initialize(struct config_file *conf);
+
 /* Loads a config file. Returns NULL if file doesn't exist.
  * NULL path will create an empty config file.
  * Includes cb callbacks to run custom code during config file processing.*/
