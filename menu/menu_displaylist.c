@@ -9395,7 +9395,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          fgets(current_profile, PATH_MAX_LENGTH, profile);
          pclose(profile);
 
-         snprintf(text, sizeof(text), "Current profile : %s", current_profile);
+         strlcpy(text, "Current profile : ", sizeof(text));
+         strlcat(text, current_profile, sizeof(text));
 #else
          u32 currentClock = 0;
          if (hosversionBefore(8, 0, 0))
@@ -9456,7 +9457,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         snprintf(text, sizeof(text), "Current profile : %s", current_profile);
+         strlcpy(text, "Current profile : ", sizeof(text));
+         strlcat(text, current_profile, sizeof(text));
 
          if (menu_entries_append_enum(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0))
             count++;
