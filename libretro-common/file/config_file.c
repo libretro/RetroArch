@@ -56,10 +56,11 @@ struct config_include_list
    struct config_include_list *next;
 };
 
-static config_file_t *config_file_new_internal(
-      const char *path, unsigned depth, config_file_cb_t *cb);
+/* Forward declaration */
+static bool config_file_parse_line(config_file_t *conf,
+      struct config_entry_list *list, char *line, config_file_cb_t *cb);
 
-static int config_sort_compare_func(struct config_entry_list *a,
+static int config_file_sort_compare_func(struct config_entry_list *a,
       struct config_entry_list *b)
 {
    if (a && b)
@@ -78,7 +79,7 @@ static int config_sort_compare_func(struct config_entry_list *a,
 }
 
 /* https://stackoverflow.com/questions/7685/merge-sort-a-linked-list */
-static struct config_entry_list* merge_sort_linked_list(
+static struct config_entry_list* config_file_merge_sort_linked_list(
          struct config_entry_list *list, int (*compare)(
          struct config_entry_list *one,struct config_entry_list *two))
 {
@@ -108,8 +109,8 @@ static struct config_entry_list* merge_sort_linked_list(
    last->next  = 0;
 
    /* Recurse on the two smaller lists: */
-   list        = merge_sort_linked_list(list, compare);
-   right       = merge_sort_linked_list(right, compare);
+   list        = config_file_merge_sort_linked_list(list, compare);
+   right       = config_file_merge_sort_linked_list(right, compare);
 
    /* Merge: */
    while (list || right)
@@ -162,7 +163,7 @@ static struct config_entry_list* merge_sort_linked_list(
  *   comment text is a suffix of the input string and
  *   has no programmatic value. In this case, the comment
  *   is removed from the end of 'str' and NULL is returned */
-static char *strip_comment(char *str)
+static char *config_file_strip_comment(char *str)
 {
    /* Search for a comment (#) character */
    char *comment = strchr(str, '#');
@@ -211,7 +212,7 @@ static char *strip_comment(char *str)
    return NULL;
 }
 
-static char *extract_value(char *line, bool is_value)
+static char *config_file_extract_value(char *line, bool is_value)
 {
    size_t idx  = 0;
    char *value = NULL;
@@ -277,7 +278,7 @@ static char *extract_value(char *line, bool is_value)
 }
 
 /* Move semantics? */
-static void add_child_list(config_file_t *parent, config_file_t *child)
+static void config_file_add_child_list(config_file_t *parent, config_file_t *child)
 {
    struct config_entry_list *list = child->entries;
    if (parent->entries)
@@ -348,7 +349,7 @@ static void config_file_get_realpath(char *s, size_t len,
 #endif
 }
 
-static void add_sub_conf(config_file_t *conf, char *path,
+static void config_file_add_sub_conf(config_file_t *conf, char *path,
       char *real_path, size_t len, config_file_cb_t *cb)
 {
    struct config_include_list *head = conf->includes;
@@ -374,117 +375,6 @@ static void add_sub_conf(config_file_t *conf, char *path,
 
    config_file_get_realpath(real_path, len, path,
          conf->path);
-}
-
-static bool parse_line(config_file_t *conf,
-      struct config_entry_list *list, char *line, config_file_cb_t *cb)
-{
-   size_t cur_size       = 32;
-   size_t idx            = 0;
-   char *key             = NULL;
-   char *key_tmp         = NULL;
-   /* Remove any comment text */
-   char *comment         = strip_comment(line);
-
-   /* Check whether entire line is a comment */
-   if (comment)
-   {
-      char real_path[PATH_MAX_LENGTH];
-      char *path               = NULL;
-      char *include_line       = NULL;
-      config_file_t *sub_conf  = NULL;
-
-      /* Starting a line with an 'include' directive
-       * appends a sub-config file
-       * > All other comments are ignored */
-      if (!string_starts_with_size(comment, "include ",
-               STRLEN_CONST("include ")))
-         return false;
-
-      include_line = comment + STRLEN_CONST("include ");
-
-      if (string_is_empty(include_line))
-         return false;
-
-      path = extract_value(include_line, false);
-
-      if (!path)
-         return false;
-
-      if (string_is_empty(path))
-      {
-         free(path);
-         return false;
-      }
-
-      if (conf->include_depth >= MAX_INCLUDE_DEPTH)
-      {
-         fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
-         free(path);
-         return false;
-      }
-
-      real_path[0]         = '\0';
-      add_sub_conf(conf, path, real_path, sizeof(real_path), cb);
-
-      if ((sub_conf = (config_file_t*)
-         config_file_new_internal(real_path, conf->include_depth + 1, cb)))
-      {
-         /* Pilfer internal list. */
-         add_child_list(conf, sub_conf);
-         config_file_free(sub_conf);
-      }
-
-      free(path);
-      return true;
-   }
-
-   /* Skip to first non-space character */
-   while (isspace((int)*line))
-      line++;
-
-   /* Allocate storage for key */
-   key = (char*)malloc(cur_size + 1);
-   if (!key)
-      return false;
-
-   /* Copy line contents into key until we
-    * reach the next space character */
-   while (isgraph((int)*line))
-   {
-      /* If current key storage is too small,
-       * double its size */
-      if (idx == cur_size)
-      {
-         cur_size *= 2;
-         key_tmp   = (char*)realloc(key, cur_size + 1);
-
-         if (!key_tmp)
-         {
-            free(key);
-            return false;
-         }
-
-         key = key_tmp;
-      }
-
-      key[idx++] = *line++;
-   }
-   key[idx]      = '\0';
-
-   /* Add key and value entries to list */
-   list->key     = key;
-   list->value   = extract_value(line, true);
-
-   /* An entry without a value is invalid */
-   if (!list->value)
-   {
-      list->key = NULL;
-      free(key);
-      return false;
-   }
-
-   return true;
 }
 
 static config_file_t *config_file_new_internal(
@@ -538,7 +428,7 @@ static config_file_t *config_file_new_internal(
 
       if ( 
               !string_is_empty(line) 
-            && parse_line(conf, list, line, cb))
+            && config_file_parse_line(conf, list, line, cb))
       {
          if (conf->entries)
             conf->tail->next = list;
@@ -565,6 +455,117 @@ error:
    free(conf);
 
    return NULL;
+}
+
+static bool config_file_parse_line(config_file_t *conf,
+      struct config_entry_list *list, char *line, config_file_cb_t *cb)
+{
+   size_t cur_size       = 32;
+   size_t idx            = 0;
+   char *key             = NULL;
+   char *key_tmp         = NULL;
+   /* Remove any comment text */
+   char *comment         = config_file_strip_comment(line);
+
+   /* Check whether entire line is a comment */
+   if (comment)
+   {
+      char real_path[PATH_MAX_LENGTH];
+      char *path               = NULL;
+      char *include_line       = NULL;
+      config_file_t *sub_conf  = NULL;
+
+      /* Starting a line with an 'include' directive
+       * appends a sub-config file
+       * > All other comments are ignored */
+      if (!string_starts_with_size(comment, "include ",
+               STRLEN_CONST("include ")))
+         return false;
+
+      include_line = comment + STRLEN_CONST("include ");
+
+      if (string_is_empty(include_line))
+         return false;
+
+      path = config_file_extract_value(include_line, false);
+
+      if (!path)
+         return false;
+
+      if (string_is_empty(path))
+      {
+         free(path);
+         return false;
+      }
+
+      if (conf->include_depth >= MAX_INCLUDE_DEPTH)
+      {
+         fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
+         free(path);
+         return false;
+      }
+
+      real_path[0]         = '\0';
+      config_file_add_sub_conf(conf, path, real_path, sizeof(real_path), cb);
+
+      if ((sub_conf = (config_file_t*)
+         config_file_new_internal(real_path, conf->include_depth + 1, cb)))
+      {
+         /* Pilfer internal list. */
+         config_file_add_child_list(conf, sub_conf);
+         config_file_free(sub_conf);
+      }
+
+      free(path);
+      return true;
+   }
+
+   /* Skip to first non-space character */
+   while (isspace((int)*line))
+      line++;
+
+   /* Allocate storage for key */
+   key = (char*)malloc(cur_size + 1);
+   if (!key)
+      return false;
+
+   /* Copy line contents into key until we
+    * reach the next space character */
+   while (isgraph((int)*line))
+   {
+      /* If current key storage is too small,
+       * double its size */
+      if (idx == cur_size)
+      {
+         cur_size *= 2;
+         key_tmp   = (char*)realloc(key, cur_size + 1);
+
+         if (!key_tmp)
+         {
+            free(key);
+            return false;
+         }
+
+         key = key_tmp;
+      }
+
+      key[idx++] = *line++;
+   }
+   key[idx]      = '\0';
+
+   /* Add key and value entries to list */
+   list->key     = key;
+   list->value   = config_file_extract_value(line, true);
+
+   /* An entry without a value is invalid */
+   if (!list->value)
+   {
+      list->key = NULL;
+      free(key);
+      return false;
+   }
+
+   return true;
 }
 
 void config_file_free(config_file_t *conf)
@@ -630,26 +631,16 @@ bool config_append_file(config_file_t *conf, const char *path)
 config_file_t *config_file_new_from_string(char *from_string,
       const char *path)
 {
-   char *lines              = from_string;
-   char *save_ptr           = NULL;
-   char *line               = NULL;
-   struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
+   char *lines                    = from_string;
+   char *save_ptr                 = NULL;
+   char *line                     = NULL;
+   struct config_file *conf      = config_file_new_alloc();
 
    if (!conf)
       return NULL;
 
-   conf->path                     = NULL;
-   conf->entries                  = NULL;
-   conf->tail                     = NULL;
-   conf->last                     = NULL;
-   conf->includes                 = NULL;
-   conf->include_depth            = 0;
-   conf->guaranteed_no_duplicates = false;
-   conf->modified                 = false;
-
    if (!string_is_empty(path))
       conf->path                  = strdup(path);
-
    if (string_is_empty(lines))
       return conf;
 
@@ -675,7 +666,7 @@ config_file_t *config_file_new_from_string(char *from_string,
       /* Parse current line */
       if (
               !string_is_empty(line)
-            && parse_line(conf, list, line, NULL))
+            && config_file_parse_line(conf, list, line, NULL))
       {
          if (conf->entries)
             conf->tail->next = list;
@@ -1198,8 +1189,9 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
       includes = includes->next;
    }
 
-   list          = merge_sort_linked_list((struct config_entry_list*)
-         conf->entries, config_sort_compare_func);
+   list          = config_file_merge_sort_linked_list(
+         (struct config_entry_list*)conf->entries,
+         config_file_sort_compare_func);
    conf->entries = list;
 
    while (list)
@@ -1228,8 +1220,9 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    }
 
    if (sort)
-      list = merge_sort_linked_list((struct config_entry_list*)
-            conf->entries, config_sort_compare_func);
+      list = config_file_merge_sort_linked_list(
+            (struct config_entry_list*)conf->entries,
+            config_file_sort_compare_func);
    else
       list = (struct config_entry_list*)conf->entries;
 
