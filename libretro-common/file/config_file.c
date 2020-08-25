@@ -1121,9 +1121,7 @@ void config_set_path(config_file_t *conf, const char *entry, const char *val)
 
 void config_set_double(config_file_t *conf, const char *key, double val)
 {
-   char buf[128];
-
-   buf[0] = '\0';
+   char buf[320];
 #ifdef __cplusplus
    snprintf(buf, sizeof(buf), "%f", (float)val);
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
@@ -1136,45 +1134,35 @@ void config_set_double(config_file_t *conf, const char *key, double val)
 
 void config_set_float(config_file_t *conf, const char *key, float val)
 {
-   char buf[128];
-
-   buf[0] = '\0';
+   char buf[64];
    snprintf(buf, sizeof(buf), "%f", val);
    config_set_string(conf, key, buf);
 }
 
 void config_set_int(config_file_t *conf, const char *key, int val)
 {
-   char buf[128];
-
-   buf[0] = '\0';
+   char buf[16];
    snprintf(buf, sizeof(buf), "%d", val);
    config_set_string(conf, key, buf);
 }
 
 void config_set_uint(config_file_t *conf, const char *key, unsigned int val)
 {
-   char buf[128];
-
-   buf[0] = '\0';
+   char buf[16];
    snprintf(buf, sizeof(buf), "%u", val);
    config_set_string(conf, key, buf);
 }
 
 void config_set_hex(config_file_t *conf, const char *key, unsigned val)
 {
-   char buf[128];
-
-   buf[0] = '\0';
+   char buf[16];
    snprintf(buf, sizeof(buf), "%x", val);
    config_set_string(conf, key, buf);
 }
 
 void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
 {
-   char buf[128];
-
-   buf[0] = '\0';
+   char buf[32];
    snprintf(buf, sizeof(buf), "%" PRIu64, val);
    config_set_string(conf, key, buf);
 }
@@ -1182,8 +1170,6 @@ void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
 void config_set_char(config_file_t *conf, const char *key, char val)
 {
    char buf[2];
-
-   buf[0] = '\0';
    snprintf(buf, sizeof(buf), "%c", val);
    config_set_string(conf, key, buf);
 }
