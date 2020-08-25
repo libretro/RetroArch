@@ -1000,21 +1000,29 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
-   if (entry)
-   {
-      if (string_is_equal(entry->value, "true"))
-         *in = true;
-      else if (string_is_equal(entry->value, "1"))
-         *in = true;
-      else if (string_is_equal(entry->value, "false"))
-         *in = false;
-      else if (string_is_equal(entry->value, "0"))
-         *in = false;
-      else
-         return false;
-   }
+   if (!entry)
+      return false;
 
-   return entry != NULL;
+   if      (
+         (
+            entry->value[0] == '1'
+         && entry->value[1] == '\0'
+         )
+         || string_is_equal(entry->value, "true")
+         )
+      *in = true;
+   else if (
+         (
+            entry->value[0] == '0'
+         && entry->value[1] == '\0'
+         )
+         || string_is_equal(entry->value, "false")
+         )
+      *in = false;
+   else
+      return false;
+
+   return true;
 }
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
