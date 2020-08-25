@@ -377,17 +377,15 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
          conf->path);
 }
 
-static config_file_t *config_file_new_internal(
+static int config_file_new_internal(
+      struct config_file *conf,
       const char *path, unsigned depth, config_file_cb_t *cb)
 {
-   RFILE              *file = NULL;
-   struct config_file *conf = config_file_new_alloc();
+   RFILE         *file = NULL;
 
-   if (!path || !*path)
-      return conf;
    conf->path          = strdup(path);
    if (!conf->path)
-      goto error;
+      return 1;
 
    conf->include_depth = depth;
    file                = filestream_open(path,
@@ -397,7 +395,7 @@ static config_file_t *config_file_new_internal(
    if (!file)
    {
       free(conf->path);
-      goto error;
+      return 1;
    }
 
    while (!filestream_eof(file))
@@ -408,9 +406,8 @@ static config_file_t *config_file_new_internal(
 
       if (!list)
       {
-         config_file_free(conf);
          filestream_close(file);
-         return NULL;
+         return -1;
       }
 
       list->readonly  = false;
@@ -449,12 +446,7 @@ static config_file_t *config_file_new_internal(
 
    filestream_close(file);
 
-   return conf;
-
-error:
-   free(conf);
-
-   return NULL;
+   return 0;
 }
 
 static bool config_file_parse_line(config_file_t *conf,
@@ -506,15 +498,15 @@ static bool config_file_parse_line(config_file_t *conf,
       }
 
       real_path[0]         = '\0';
-      config_file_add_sub_conf(conf, path, real_path, sizeof(real_path), cb);
+      config_file_add_sub_conf(conf, path,
+            real_path, sizeof(real_path), cb);
 
-      if ((sub_conf = (config_file_t*)
-         config_file_new_internal(real_path, conf->include_depth + 1, cb)))
-      {
-         /* Pilfer internal list. */
-         config_file_add_child_list(conf, sub_conf);
-         config_file_free(sub_conf);
-      }
+      sub_conf = config_file_new_alloc();
+
+      if (config_file_new_internal(sub_conf, real_path,
+               conf->include_depth + 1, cb) == 0)
+         config_file_add_child_list(conf, sub_conf); /* Pilfer internal list. */
+      config_file_free(sub_conf);
 
       free(path);
       return true;
@@ -711,12 +703,42 @@ config_file_t *config_file_new_from_path_to_string(const char *path)
 config_file_t *config_file_new_with_callback(
       const char *path, config_file_cb_t *cb)
 {
-   return config_file_new_internal(path, 0, cb);
+   int ret                  = 0;
+   struct config_file *conf = config_file_new_alloc();
+   if (!path || !*path)
+      return conf;
+   ret = config_file_new_internal(conf, path, 0, cb);
+   if (ret == -1)
+   {
+      config_file_free(conf);
+      return NULL;
+   }
+   else if (ret == 1)
+   {
+      free(conf);
+      return NULL;
+   }
+   return conf;
 }
 
 config_file_t *config_file_new(const char *path)
 {
-   return config_file_new_internal(path, 0, NULL);
+   int ret                  = 0;
+   struct config_file *conf = config_file_new_alloc();
+   if (!path || !*path)
+      return conf;
+   ret = config_file_new_internal(conf, path, 0, NULL);
+   if (ret == -1)
+   {
+      config_file_free(conf);
+      return NULL;
+   }
+   else if (ret == 1)
+   {
+      free(conf);
+      return NULL;
+   }
+   return conf;
 }
 
 config_file_t *config_file_new_alloc(void)
