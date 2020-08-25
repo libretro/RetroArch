@@ -570,6 +570,60 @@ static bool config_file_parse_line(config_file_t *conf,
    return true;
 }
 
+static int config_file_from_string_internal(
+      struct config_file *conf,
+      char *from_string,
+      const char *path)
+{
+   char *lines                    = from_string;
+   char *save_ptr                 = NULL;
+   char *line                     = NULL;
+
+   if (!string_is_empty(path))
+      conf->path                  = strdup(path);
+   if (string_is_empty(lines))
+      return 0;
+
+   /* Get first line of config file */
+   line = strtok_r(lines, "\n", &save_ptr);
+
+   while (line)
+   {
+      struct config_entry_list *list = (struct config_entry_list*)
+            malloc(sizeof(*list));
+
+      if (!list)
+         return -1;
+
+      list->readonly  = false;
+      list->key       = NULL;
+      list->value     = NULL;
+      list->next      = NULL;
+
+      /* Parse current line */
+      if (
+              !string_is_empty(line)
+            && config_file_parse_line(conf, list, line, NULL))
+      {
+         if (conf->entries)
+            conf->tail->next = list;
+         else
+            conf->entries    = list;
+
+         conf->tail          = list;
+      }
+
+      if (list != conf->tail)
+         free(list);
+
+      /* Get next line of config file */
+      line = strtok_r(NULL, "\n", &save_ptr);
+   }
+   
+   return 0;
+}
+
+
 bool config_file_deinitialize(config_file_t *conf)
 {
    struct config_include_list *inc_tmp = NULL;
@@ -635,59 +689,6 @@ bool config_append_file(config_file_t *conf, const char *path)
 
    config_file_free(new_conf);
    return true;
-}
-
-static int config_file_from_string_internal(
-      struct config_file *conf,
-      char *from_string,
-      const char *path)
-{
-   char *lines                    = from_string;
-   char *save_ptr                 = NULL;
-   char *line                     = NULL;
-
-   if (!string_is_empty(path))
-      conf->path                  = strdup(path);
-   if (string_is_empty(lines))
-      return 0;
-
-   /* Get first line of config file */
-   line = strtok_r(lines, "\n", &save_ptr);
-
-   while (line)
-   {
-      struct config_entry_list *list = (struct config_entry_list*)
-            malloc(sizeof(*list));
-
-      if (!list)
-         return -1;
-
-      list->readonly  = false;
-      list->key       = NULL;
-      list->value     = NULL;
-      list->next      = NULL;
-
-      /* Parse current line */
-      if (
-              !string_is_empty(line)
-            && config_file_parse_line(conf, list, line, NULL))
-      {
-         if (conf->entries)
-            conf->tail->next = list;
-         else
-            conf->entries    = list;
-
-         conf->tail          = list;
-      }
-
-      if (list != conf->tail)
-         free(list);
-
-      /* Get next line of config file */
-      line = strtok_r(NULL, "\n", &save_ptr);
-   }
-   
-   return 0;
 }
 
 config_file_t *config_file_new_from_string(char *from_string,
