@@ -490,8 +490,9 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       const char *path          = shader->pass[i].source.path;
       uint8_t *buf              = NULL;
       int64_t buf_len           = 0;
-      struct string_list *lines = NULL;
+      struct string_list lines  = {0};
       size_t line_index         = 0;
+      bool lines_inited         = false;
 
       if (string_is_empty(path))
          continue;
@@ -519,23 +520,26 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
       /* Split into lines */
       if (buf_len > 0)
-         lines = string_split((const char*)buf, "\n");
+      {
+         string_list_initialize(&lines);
+         lines_inited = string_split_noalloc(&lines, (const char*)buf, "\n");
+      }
 
       /* Buffer is no longer required - clean up */
       if ((void*)buf)
          free((void*)buf);
 
-      if (!lines)
+      if (!lines_inited)
          continue;
 
       /* even though the pass is set in the loop too, not all passes have parameters */
       param->pass = i;
 
       while ((shader->num_parameters < ARRAY_SIZE(shader->parameters)) &&
-             (line_index < lines->size))
+             (line_index < lines.size))
       {
          int ret;
-         const char *line = lines->elems[line_index].data;
+         const char *line = lines.elems[line_index].data;
          line_index++;
 
          /* Check if this is a '#pragma parameter' line */
@@ -568,7 +572,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          param++;
       }
 
-      string_list_free(lines);
+      string_list_deinitialize(&lines);
    }
 
    return video_shader_resolve_current_parameters(conf, shader);
