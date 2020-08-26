@@ -36,15 +36,14 @@ typedef struct jack
    jack_client_t *client;
    jack_port_t *ports[2];
    jack_ringbuffer_t *buffer[2];
-   volatile bool shutdown;
-   bool nonblock;
-   bool is_paused;
-
 #ifdef HAVE_THREADS
    scond_t *cond;
    slock_t *cond_lock;
 #endif
    size_t buffer_size;
+   volatile bool shutdown;
+   bool nonblock;
+   bool is_paused;
 } jack_t;
 
 static int process_cb(jack_nframes_t nframes, void *data)

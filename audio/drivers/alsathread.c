@@ -33,20 +33,18 @@
 typedef struct alsa_thread
 {
    snd_pcm_t *pcm;
-   bool nonblock;
-   bool is_paused;
-   bool has_float;
-   volatile bool thread_dead;
-
-   size_t buffer_size;
-   size_t period_size;
-   snd_pcm_uframes_t period_frames;
-
    fifo_buffer_t *buffer;
    sthread_t *worker_thread;
    slock_t *fifo_lock;
    scond_t *cond;
    slock_t *cond_lock;
+   size_t buffer_size;
+   size_t period_size;
+   snd_pcm_uframes_t period_frames;
+   bool nonblock;
+   bool is_paused;
+   bool has_float;
+   volatile bool thread_dead;
 } alsa_thread_t;
 
 static void alsa_worker_thread(void *data)

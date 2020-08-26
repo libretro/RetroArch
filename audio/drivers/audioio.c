@@ -36,9 +36,9 @@ static void *audioio_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_out_rate)
 {
-   int *fd = (int*)calloc(1, sizeof(int));
-   const char *audiodev = device ? device : DEFAULT_DEV;
    struct audio_info info;
+   const char *audiodev = device ? device : DEFAULT_DEV;
+   int              *fd = (int*)calloc(1, sizeof(int));
 
    if (!fd)
       return NULL;

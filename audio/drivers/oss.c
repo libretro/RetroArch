@@ -42,6 +42,7 @@
 #define DEFAULT_OSS_DEV "/dev/dsp"
 #endif
 
+/* TODO/FIXME - static global variable */
 static bool oss_is_paused = false;
 
 static void *oss_init(const char *device, unsigned rate, unsigned latency,

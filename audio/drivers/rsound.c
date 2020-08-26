@@ -27,14 +27,14 @@
 typedef struct rsd
 {
    rsound_t *rd;
+
+   fifo_buffer_t *buffer;
+   slock_t *cond_lock;
+   scond_t *cond;
+
    bool nonblock;
    bool is_paused;
    volatile bool has_error;
-
-   fifo_buffer_t *buffer;
-
-   slock_t *cond_lock;
-   scond_t *cond;
 } rsd_t;
 
 static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)

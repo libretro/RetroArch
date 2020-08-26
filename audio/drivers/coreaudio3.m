@@ -30,9 +30,9 @@ typedef struct ringbuffer
 {
    float *buffer;
    size_t cap;
-   atomic_int len;
    size_t write_ptr;
    size_t read_ptr;
+   atomic_int len;
 } ringbuffer_t;
 
 typedef ringbuffer_t * ringbuffer_h;

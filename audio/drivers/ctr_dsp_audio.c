@@ -22,12 +22,11 @@
 
 typedef struct
 {
+   ndspWaveBuf dsp_buf; /* TODO/FIXME - find out alignment */
+   int channel;
+   uint32_t pos;
    bool nonblock;
    bool playing;
-   int channel;
-   ndspWaveBuf dsp_buf;
-
-   uint32_t pos;
 } ctr_dsp_audio_t;
 
 #define CTR_DSP_AUDIO_COUNT       (1u << 11u)

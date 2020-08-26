@@ -32,13 +32,11 @@
 
 typedef struct
 {
+   size_t write_ptr;
    uint32_t data[BLOCKS][CHUNK_FRAMES];
-
    volatile unsigned dma_busy;
    volatile unsigned dma_next;
    volatile unsigned dma_write;
-   size_t write_ptr;
-
    bool nonblock;
    bool is_paused;
 } gx_audio_t;

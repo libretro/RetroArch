@@ -37,9 +37,6 @@ typedef struct sl
 {
    uint8_t **buffer;
    uint8_t *buffer_chunk;
-   unsigned buffer_index;
-   unsigned buffer_ptr;
-   volatile unsigned buffered_blocks;
 
    SLObjectItf engine_object;
    SLEngineItf engine;
@@ -51,10 +48,13 @@ typedef struct sl
 
    slock_t *lock;
    scond_t *cond;
-   bool nonblock;
-   bool is_paused;
    unsigned buf_size;
    unsigned buf_count;
+   unsigned buffer_index;
+   unsigned buffer_ptr;
+   volatile unsigned buffered_blocks;
+   bool nonblock;
+   bool is_paused;
 } sl_t;
 
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)

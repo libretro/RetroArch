@@ -30,6 +30,8 @@ void RWebAudioSetNonblockState(bool state);
 void RWebAudioFree(void);
 size_t RWebAudioWriteAvail(void);
 size_t RWebAudioBufferSize(void);
+
+/* TODO/FIXME - static global variable */
 static bool rwebaudio_is_paused;
 
 static void rwebaudio_free(void *data)

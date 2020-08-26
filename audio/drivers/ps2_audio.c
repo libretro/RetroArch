@@ -32,7 +32,6 @@ typedef struct ps2_audio
    /* TODO/FIXME - nonblock is not implemented */
    bool nonblock;
    bool running;
-
 } ps2_audio_t;
 
 static void audioConfigure(ps2_audio_t *ps2, unsigned rate)

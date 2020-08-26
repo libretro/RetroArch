@@ -43,17 +43,14 @@ typedef struct al
    ALuint source;
    ALuint *buffers;
    ALuint *res_buf;
-   size_t res_ptr;
-   ALenum format;
-   size_t num_buffers;
-   int rate;
-
-   uint8_t tmpbuf[BUFSIZE];
-   size_t tmpbuf_ptr;
-
    ALCdevice *handle;
    ALCcontext *ctx;
-
+   size_t res_ptr;
+   size_t num_buffers;
+   size_t tmpbuf_ptr;
+   int rate;
+   ALenum format;
+   uint8_t tmpbuf[BUFSIZE];
    bool nonblock;
    bool is_paused;
 } al_t;

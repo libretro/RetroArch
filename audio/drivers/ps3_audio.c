@@ -28,16 +28,15 @@
 
 typedef struct
 {
-   uint32_t audio_port;
-   bool nonblock;
-   bool started;
-   volatile bool quit_thread;
    fifo_buffer_t *buffer;
-
    sys_ppu_thread_t thread;
    sys_lwmutex_t lock;
    sys_lwmutex_t cond_lock;
    sys_lwcond_t cond;
+   uint32_t audio_port;
+   bool nonblock;
+   bool started;
+   volatile bool quit_thread;
 } ps3_audio_t;
 
 #ifdef __PSL1GHT__

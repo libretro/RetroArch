@@ -23,8 +23,8 @@
 
 typedef struct
 {
-   bool nonblock;
-   bool playing;
+   uint64_t cpu_ticks_last;
+
    int16_t* l;
    int16_t* r;
 
@@ -34,7 +34,8 @@ typedef struct
    uint32_t pos;
 
    uint32_t playpos;
-   uint64_t cpu_ticks_last;
+   bool nonblock;
+   bool playing;
 } ctr_csnd_audio_t;
 
 #define CTR_CSND_AUDIO_COUNT       (1u << 11u)

@@ -29,18 +29,18 @@
 typedef struct alsa
 {
    uint8_t **buffer;
+   snd_pcm_t *pcm;
    uint8_t *buffer_chunk;
    unsigned buffer_index;
    unsigned buffer_ptr;
    volatile unsigned buffered_blocks;
 
-   snd_pcm_t *pcm;
+   unsigned buf_size;
+   unsigned buf_count;
    bool nonblock;
    bool has_float;
    bool can_pause;
    bool is_paused;
-   unsigned buf_size;
-   unsigned buf_count;
 } alsa_qsa_t;
 
 typedef long snd_pcm_sframes_t;

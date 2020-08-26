@@ -31,11 +31,10 @@ typedef struct
    AXMVoice* mvoice;
    uint16_t* buffer_l;
    uint16_t* buffer_r;
-   bool nonblock;
-
+   OSSpinLock spinlock;
    uint32_t pos;
    uint32_t written;
-   OSSpinLock spinlock;
+   bool nonblock;
 } ax_audio_t;
 
 /* 3072 samples main buffer, 64ms total */

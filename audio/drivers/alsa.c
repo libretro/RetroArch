@@ -28,8 +28,8 @@ typedef struct alsa
 {
    snd_pcm_t *pcm;
    size_t buffer_size;
-   bool nonblock;
    unsigned int frame_bits;
+   bool nonblock;
    bool has_float;
    bool can_pause;
    bool is_paused;

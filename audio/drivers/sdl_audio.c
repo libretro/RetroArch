@@ -33,14 +33,13 @@
 
 typedef struct sdl_audio
 {
-   bool nonblock;
-   bool is_paused;
-
 #ifdef HAVE_THREADS
    slock_t *lock;
    scond_t *cond;
 #endif
    fifo_buffer_t *buffer;
+   bool nonblock;
+   bool is_paused;
 } sdl_audio_t;
 
 static void sdl_audio_cb(void *data, Uint8 *stream, int len)

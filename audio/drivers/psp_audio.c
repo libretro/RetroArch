@@ -44,23 +44,23 @@
 
 typedef struct psp_audio
 {
-   bool nonblock;
-
    uint32_t* buffer;
    uint32_t* zeroBuffer;
-
-   SceUID thread;
-   int rate;
-
-   volatile bool running;
-   volatile uint16_t read_pos;
-   volatile uint16_t write_pos;
 
    sthread_t *worker_thread;
    slock_t *fifo_lock;
    scond_t *cond;
    slock_t *cond_lock;
 
+   SceUID thread;
+
+   int rate;
+
+   volatile uint16_t read_pos;
+   volatile uint16_t write_pos;
+
+   volatile bool running;
+   bool nonblock;
 } psp_audio_t;
 
 #define AUDIO_OUT_COUNT 512u

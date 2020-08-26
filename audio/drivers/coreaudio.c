@@ -38,18 +38,16 @@ typedef struct coreaudio
 {
    slock_t *lock;
    scond_t *cond;
-
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    ComponentInstance dev;
 #else
    AudioComponentInstance dev;
 #endif
+   fifo_buffer_t *buffer;
+   size_t buffer_size;
    bool dev_alive;
    bool is_paused;
-
-   fifo_buffer_t *buffer;
    bool nonblock;
-   size_t buffer_size;
 } coreaudio_t;
 
 #if TARGET_OS_IOS
