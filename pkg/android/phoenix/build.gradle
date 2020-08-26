@@ -37,12 +37,14 @@ android {
   productFlavors {
     normal {
       resValue "string", "app_name", "RetroArch"
+      buildConfigField "boolean", "PLAY_STORE_BUILD", "false"
 
       dimension "variant"
     }
     aarch64 {
       applicationIdSuffix '.aarch64'
       resValue "string", "app_name", "RetroArch (AArch64)"
+      buildConfigField "boolean", "PLAY_STORE_BUILD", "false"
 
       dimension "variant"
       ndk {
@@ -52,10 +54,27 @@ android {
     ra32 {
       applicationIdSuffix '.ra32'
       resValue "string", "app_name", "RetroArch (32-bit)"
+      buildConfigField "boolean", "PLAY_STORE_BUILD", "false"
 
       dimension "variant"
       ndk {
         abiFilters 'armeabi-v7a', 'x86'
+      }
+    }
+    playStoreNormal {
+      resValue "string", "app_name", "RetroArch"
+      buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
+
+      dimension "variant"
+    }
+    playStoreAarch64 {
+      applicationIdSuffix '.aarch64'
+      resValue "string", "app_name", "RetroArch (AArch64)"
+      buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
+
+      dimension "variant"
+      ndk {
+        abiFilters 'arm64-v8a', 'x86_64'
       }
     }
   }
@@ -67,10 +86,10 @@ android {
       java.srcDirs = ['src', '../phoenix-common/src']
       jniLibs.srcDir '../phoenix-common/libs'
       jni.srcDirs = []
-      res.srcDirs = ['../phoenix-common/res']
+      res.srcDirs = ['res', '../phoenix-common/res']
     }
     aarch64 {
-      res.srcDirs = ['res64']
+      res.srcDirs = ['res', 'res64']
     }
   }
 
@@ -103,4 +122,13 @@ android {
       }
     }
   }
+}
+
+dependencies {
+  implementation 'com.google.android.play:core:1.8.0'
+}
+
+def dynamicFeatures = file("dynamic_features.gradle")
+if(dynamicFeatures.exists()) {
+  apply from: "dynamic_features.gradle"
 }

@@ -1,0 +1,5 @@
+genesis_plus_gx
+mesen-s
+dolphin
+mupen64plus_next_gles3
+flycast
