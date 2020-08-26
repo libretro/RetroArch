@@ -104,6 +104,9 @@ bool string_split_noalloc(struct string_list *list,
  */
 struct string_list *string_separate(char *str, const char *delim);
 
+bool string_separate_noalloc(struct string_list *list, 
+      char *str, const char *delim);
+
 bool string_list_deinitialize(struct string_list *list);
 
 bool string_list_initialize(struct string_list *list);

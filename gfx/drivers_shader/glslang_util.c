@@ -139,13 +139,14 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 bool glslang_read_shader_file(const char *path,
       struct string_list *output, bool root_file)
 {
+   size_t i;
    char tmp[PATH_MAX_LENGTH];
    union string_list_elem_attr attr;
-   size_t i;
    const char *basename      = NULL;
    uint8_t *buf              = NULL;
    int64_t buf_len           = 0;
-   struct string_list *lines = NULL;
+   struct string_list lines  = {0};
+   bool    ret               = false;
 
    tmp[0] = '\0';
    attr.i = 0;
@@ -173,7 +174,8 @@ bool glslang_read_shader_file(const char *path,
 
       /* Split into lines
        * (Blank lines must be included) */
-      lines = string_separate((char*)buf, "\n");
+      string_list_initialize(&lines);
+      ret = string_separate_noalloc(&lines, (char*)buf, "\n");
    }
 
    /* Buffer is no longer required - clean up */
@@ -181,17 +183,17 @@ bool glslang_read_shader_file(const char *path,
       free(buf);
 
    /* Sanity check */
-   if (!lines)
+   if (!ret)
       return false;
 
-   if (lines->size < 1)
+   if (lines.size < 1)
       goto error;
 
    /* If this is the 'parent' shader file, ensure that first
     * line is a 'VERSION' string */
    if (root_file)
    {
-      const char *line = lines->elems[0].data;
+      const char *line = lines.elems[0].data;
 
       if (strncmp("#version ", line, STRLEN_CONST("#version ")))
       {
@@ -217,10 +219,10 @@ bool glslang_read_shader_file(const char *path,
       goto error;
 
    /* Loop through lines of file */
-   for (i = root_file ? 1 : 0; i < lines->size; i++)
+   for (i = root_file ? 1 : 0; i < lines.size; i++)
    {
       unsigned push_line = 0;
-      const char *line   = lines->elems[i].data;
+      const char *line   = lines.elems[i].data;
 
       /* Check for 'include' statements */
       if (!strncmp("#include ", line, STRLEN_CONST("#include ")))
@@ -276,15 +278,12 @@ bool glslang_read_shader_file(const char *path,
       }
    }
 
-   string_list_free(lines);
+   string_list_deinitialize(&lines);
 
    return true;
 
 error:
-
-   if (lines)
-      string_list_free(lines);
-
+   string_list_deinitialize(&lines);
    return false;
 }
 

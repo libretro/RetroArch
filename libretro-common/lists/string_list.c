@@ -411,6 +411,39 @@ error:
    return NULL;
 }
 
+bool string_separate_noalloc(
+      struct string_list *list,
+      char *str, const char *delim)
+{
+   char *token              = NULL;
+   char **str_ptr           = NULL;
+
+   /* Sanity check */
+   if (!str || string_is_empty(delim) || !list)
+      return false;
+
+   str_ptr = &str;
+   token   = string_tokenize(str_ptr, delim);
+
+   while (token)
+   {
+      union string_list_elem_attr attr;
+
+      attr.i = 0;
+
+      if (!string_list_append(list, token, attr))
+      {
+         free(token);
+         return false;
+      }
+
+      free(token);
+      token = string_tokenize(str_ptr, delim);
+   }
+
+   return true;
+}
+
 /**
  * string_list_find_elem:
  * @list             : pointer to string list
