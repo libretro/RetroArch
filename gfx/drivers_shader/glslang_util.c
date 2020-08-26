@@ -197,18 +197,21 @@ bool glslang_read_shader_file(const char *path,
 
       if (strncmp("#version ", line, STRLEN_CONST("#version ")))
       {
-         RARCH_ERR("First line of the shader must contain a valid #version string.\n");
+         RARCH_ERR("First line of the shader must contain a valid "
+               "#version string.\n");
          goto error;
       }
 
       if (!string_list_append(output, line, attr))
          goto error;
 
-      /* Allows us to use #line to make dealing with shader errors easier.
-       * This is supported by glslang, but since we always use glslang statically,
-       * this is fine. */
-
-      if (!string_list_append(output, "#extension GL_GOOGLE_cpp_style_line_directive : require", attr))
+      /* Allows us to use #line to make dealing with shader 
+       * errors easier.
+       * This is supported by glslang, but since we always 
+       * use glslang statically, this is fine. */
+      if (!string_list_append(output,
+               "#extension GL_GOOGLE_cpp_style_line_directive : require",
+               attr))
          goto error;
    }
 
@@ -221,7 +224,6 @@ bool glslang_read_shader_file(const char *path,
    /* Loop through lines of file */
    for (i = root_file ? 1 : 0; i < lines.size; i++)
    {
-      unsigned push_line = 0;
       const char *line   = lines.elems[i].data;
 
       /* Check for 'include' statements */
@@ -251,7 +253,10 @@ bool glslang_read_shader_file(const char *path,
 
          /* After including a file, use line directive
           * to pull it back to current file. */
-         push_line = 1;
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+               (unsigned)(i + 1), basename);
+         if (!string_list_append(output, tmp, attr))
+            goto error;
       }
       else if (!strncmp("#endif", line, STRLEN_CONST("#endif")) ||
                !strncmp("#pragma", line, STRLEN_CONST("#pragma")))
@@ -261,21 +266,16 @@ bool glslang_read_shader_file(const char *path,
           * Add extra offset here since we're setting #line
           * for the line after this one.
           */
-         push_line = 2;
          if (!string_list_append(output, line, attr))
+            goto error;
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+               (unsigned)(i + 2), basename);
+         if (!string_list_append(output, tmp, attr))
             goto error;
       }
       else
          if (!string_list_append(output, line, attr))
             goto error;
-
-      if (push_line != 0)
-      {
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
-               (unsigned)(i + push_line), basename);
-         if (!string_list_append(output, tmp, attr))
-            goto error;
-      }
    }
 
    string_list_deinitialize(&lines);
