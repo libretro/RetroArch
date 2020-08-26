@@ -818,10 +818,8 @@ bool video_shader_read_conf_preset(config_file_t *conf,
       struct video_shader *shader)
 {
    unsigned i;
-   union string_list_elem_attr attr;
    unsigned shaders                 = 0;
    settings_t *settings             = config_get_ptr();
-   struct string_list *file_list    = NULL;
    bool watch_files                 = settings->bools.video_shader_watch_files;
 
    memset(shader, 0, sizeof(*shader));
@@ -843,49 +841,52 @@ bool video_shader_read_conf_preset(config_file_t *conf,
       shader->feedback_pass = -1;
 
    shader->passes = MIN(shaders, GFX_MAX_SHADERS);
-   attr.i         = 0;
 
    strlcpy(shader->path, conf->path, sizeof(shader->path));
 
    if (watch_files)
    {
+      union string_list_elem_attr attr;
+      int flags                        = 
+         PATH_CHANGE_TYPE_MODIFIED                   |
+         PATH_CHANGE_TYPE_WRITE_FILE_CLOSED          |
+         PATH_CHANGE_TYPE_FILE_MOVED                 |
+         PATH_CHANGE_TYPE_FILE_DELETED;
+      struct string_list file_list     = {0};
+
+      attr.i         = 0;
+
       if (file_change_data)
          frontend_driver_watch_path_for_changes(NULL,
                0, &file_change_data);
 
       file_change_data = NULL;
-      file_list        = string_list_new();
-      string_list_append(file_list, conf->path, attr);
-   }
+      string_list_initialize(&file_list);
+      string_list_append(&file_list, conf->path, attr);
 
-   for (i = 0; i < shader->passes; i++)
-   {
-      if (!video_shader_parse_pass(conf, &shader->pass[i], i))
+      for (i = 0; i < shader->passes; i++)
       {
-         if (file_list)
+         if (!video_shader_parse_pass(conf, &shader->pass[i], i))
          {
-            string_list_free(file_list);
-            file_list = NULL;
+            string_list_deinitialize(&file_list);
+            return false;
          }
-         return false;
+
+         string_list_append(&file_list,
+               shader->pass[i].source.path, attr);
       }
 
-      if (watch_files && file_list)
-         string_list_append(file_list,
-               shader->pass[i].source.path, attr);
-   }
-
-   if (watch_files)
-   {
-      int flags = PATH_CHANGE_TYPE_MODIFIED          |
-                  PATH_CHANGE_TYPE_WRITE_FILE_CLOSED |
-                  PATH_CHANGE_TYPE_FILE_MOVED        |
-                  PATH_CHANGE_TYPE_FILE_DELETED;
-
-      frontend_driver_watch_path_for_changes(file_list,
+      frontend_driver_watch_path_for_changes(&file_list,
             flags, &file_change_data);
-      if (file_list)
-         string_list_free(file_list);
+      string_list_deinitialize(&file_list);
+   }
+   else
+   {
+      for (i = 0; i < shader->passes; i++)
+      {
+         if (!video_shader_parse_pass(conf, &shader->pass[i], i))
+            return false;
+      }
    }
 
    return video_shader_parse_textures(conf, shader);
