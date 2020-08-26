@@ -58,37 +58,34 @@ static int file_archive_get_file_list_cb(
       size_t path_len              = strlen(path);
       /* Checks if this entry is a directory or a file. */
       char last_char               = path[path_len - 1];
-      struct string_list *ext_list = NULL;
+      struct string_list ext_list  = {0};
 
       /* Skip if directory. */
       if (last_char == '/' || last_char == '\\' )
-      {
-         string_list_free(ext_list);
          return 0;
-      }
       
-      ext_list                = string_split(valid_exts, "|");
-
-      if (ext_list)
+      string_list_initialize(&ext_list);
+      if (string_split_noalloc(&ext_list, valid_exts, "|"))
       {
          const char *file_ext = path_get_extension(path);
 
          if (!file_ext)
          {
-            string_list_free(ext_list);
+            string_list_deinitialize(&ext_list);
             return 0;
          }
 
-         if (!string_list_find_elem_prefix(ext_list, ".", file_ext))
+         if (!string_list_find_elem_prefix(&ext_list, ".", file_ext))
          {
             /* keep iterating */
-            string_list_free(ext_list);
+            string_list_deinitialize(&ext_list);
             return -1;
          }
 
          attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
-         string_list_free(ext_list);
       }
+
+      string_list_deinitialize(&ext_list);
    }
 
    return string_list_append(userdata->list, path, attr);

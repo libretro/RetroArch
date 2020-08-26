@@ -1395,11 +1395,13 @@ struct string_list* cdrom_get_available_drives(void)
       if (filestream_read_file("/proc/modules", (void**)&buf, &len))
       {
 #ifdef CDROM_DEBUG
-         bool found = false;
+         bool found              = false;
 #endif
-         struct string_list *mods = string_split(buf, "\n");
+         struct string_list mods = {0};
 
-         if (mods)
+         string_list_initialize(&mods);
+         
+         if (string_split_noalloc(&mods, buf, "\n"))
          {
             for (i = 0; i < mods->size; i++)
             {
@@ -1411,9 +1413,8 @@ struct string_list* cdrom_get_available_drives(void)
                   break;
                }
             }
-
-            string_list_free(mods);
          }
+         string_list_deinitialize(&mods);
 
 #ifdef CDROM_DEBUG
          if (found)

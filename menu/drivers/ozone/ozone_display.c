@@ -367,7 +367,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    char message[2048];
    unsigned text_color;
    static retro_time_t last_time  = 0;
-   struct string_list *list       = NULL;
+   struct string_list list        = {0};
    float scale_factor             = ozone->last_scale_factor;
    unsigned margin                = 75 * scale_factor;
    unsigned padding               = 10 * scale_factor;
@@ -463,11 +463,12 @@ void ozone_draw_osk(ozone_handle_t *ozone,
 
    word_wrap(message, text, (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width, true, 0);
 
-   list = string_split(message, "\n");
+   string_list_initialize(&list);
+   string_split_noalloc(&list, message, "\n");
 
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *msg = list->elems[i].data;
+      const char *msg = list.elems[i].data;
 
       ozone_draw_text(ozone, msg,
             margin + padding * 2,
@@ -475,7 +476,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
             TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.entries_label, text_color, false);
 
       /* Cursor */
-      if (i == list->size - 1)
+      if (i == list.size - 1)
       {
          if (ozone->osk_cursor)
          {
@@ -520,7 +521,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          input_event_get_osk_ptr(),
          ozone->theme->text_rgba);
 
-   string_list_free(list);
+   string_list_deinitialize(&list);
 }
 
 void ozone_draw_messagebox(
@@ -534,7 +535,7 @@ void ozone_draw_messagebox(
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
    int x, y, longest_width  = 0;
    int usable_width         = 0;
-   struct string_list *list = NULL;
+   struct string_list list  = {0};
    float scale_factor       = 0.0f;
    unsigned width           = video_width;
    unsigned height          = video_height;
@@ -551,7 +552,7 @@ void ozone_draw_messagebox(
    usable_width = (int)width - (48 * 8 * scale_factor);
 
    if (usable_width < 1)
-      goto end;
+      return;
 
    /* Split message into lines */
    word_wrap(
@@ -559,22 +560,27 @@ void ozone_draw_messagebox(
          usable_width / (int)ozone->fonts.footer.glyph_width,
          true, 0);
 
-   list = string_split(wrapped_message, "\n");
-
-   if (!list || list->elems == 0)
-      goto end;
+   string_list_initialize(&list);
+   if (
+            !string_split_noalloc(&list, wrapped_message, "\n")
+         || list.elems == 0)
+   {
+      string_list_deinitialize(&list);
+      return;
+   }
 
    y_position       = height / 2;
    if (menu_input_dialog_get_display_kb())
       y_position    = height / 4;
 
    x                = width  / 2;
-   y                = y_position - (list->size * ozone->fonts.footer.line_height) / 2;
+   y                = y_position - (list.size 
+         * ozone->fonts.footer.line_height) / 2;
 
    /* find the longest line width */
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *msg  = list->elems[i].data;
+      const char *msg  = list.elems[i].data;
 
       if (!string_is_empty(msg))
       {
@@ -599,10 +605,12 @@ void ozone_draw_messagebox(
        *   is quite 'loose', and depends upon source image
        *   size, draw size and scale factor... */
       unsigned slice_new_w = longest_width + 48 * 2 * scale_factor;
-      unsigned slice_new_h = ozone->fonts.footer.line_height * (list->size + 2);
+      unsigned slice_new_h = ozone->fonts.footer.line_height * (list.size + 2);
       int slice_x          = x - longest_width/2 - 48 * scale_factor;
       int slice_y          = y - ozone->fonts.footer.line_height +
-            ((slice_new_h >= 256) ? (16.0f * scale_factor) : (16.0f * ((float)slice_new_h / 256.0f)));
+            ((slice_new_h >= 256) 
+             ? (16.0f * scale_factor) 
+             : (16.0f * ((float)slice_new_h / 256.0f)));
 
       gfx_display_draw_texture_slice(
             userdata,
@@ -620,9 +628,9 @@ void ozone_draw_messagebox(
             );
    }
 
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *msg = list->elems[i].data;
+      const char *msg = list.elems[i].data;
 
       if (msg)
          ozone_draw_text(ozone,
@@ -637,9 +645,7 @@ void ozone_draw_messagebox(
          );
    }
 
-end:
-   if (list)
-      string_list_free(list);
+   string_list_deinitialize(&list);
 }
 
 void ozone_draw_fullscreen_thumbnails(

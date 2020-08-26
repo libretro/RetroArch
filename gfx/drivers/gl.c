@@ -3313,11 +3313,14 @@ static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const vi
       if (ext)
       {
          size_t i;
-         struct string_list *list = string_split(ext, " ");
+         struct string_list  list = {0};
 
-         for (i = 0; i < list->size; i++)
-            RARCH_LOG("\t%s\n", list->elems[i].data);
-         string_list_free(list);
+         string_list_initialize(&list);
+         string_split_noalloc(&list, ext, " ");
+
+         for (i = 0; i < list.size; i++)
+            RARCH_LOG("\t%s\n", list.elems[i].data);
+         string_list_deinitialize(&list);
       }
    }
 #endif

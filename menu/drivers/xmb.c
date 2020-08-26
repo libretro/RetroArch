@@ -938,24 +938,24 @@ static void xmb_render_messagebox_internal(
       xmb_handle_t *xmb, const char *message)
 {
    unsigned i, y_position;
-   int x, y, longest_width = 0;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   int x, y, longest_width  = 0;
    float line_height        = 0;
    int usable_width         = 0;
-   struct string_list *list = NULL;
-   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   struct string_list list  = {0};
 
-   wrapped_message[0] = '\0';
+   wrapped_message[0]       = '\0';
 
    /* Sanity check */
    if (string_is_empty(message) ||
        !xmb ||
        !xmb->font)
-      goto end;
+      return;
 
    usable_width = (int)video_width - (xmb->margins_dialog * 8);
 
    if (usable_width < 1)
-      goto end;
+      return;
 
    /* Split message into lines */
    word_wrap(
@@ -963,10 +963,16 @@ static void xmb_render_messagebox_internal(
          usable_width / (xmb->font_size * 0.6f),
          true, 0);
 
-   list = string_split(wrapped_message, "\n");
+   string_list_initialize(&list);
 
-   if (!list || list->elems == 0)
-      goto end;
+   if (
+            !string_split_noalloc(&list, wrapped_message, "\n")
+         || list.elems == 0
+      )
+   {
+      string_list_deinitialize(&list);
+      return;
+   }
 
    line_height      = xmb->font->size * 1.2;
 
@@ -975,12 +981,12 @@ static void xmb_render_messagebox_internal(
       y_position    = video_height / 4;
 
    x                = video_width  / 2;
-   y                = y_position - (list->size-1) * line_height / 2;
+   y                = y_position - (list.size-1) * line_height / 2;
 
    /* find the longest line width */
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *msg = list->elems[i].data;
+      const char *msg = list.elems[i].data;
 
       if (!string_is_empty(msg))
       {
@@ -1002,15 +1008,15 @@ static void xmb_render_messagebox_internal(
          y + xmb->margins_slice - xmb->margins_dialog,
          256, 256,
          longest_width + xmb->margins_dialog * 2,
-         line_height * list->size + xmb->margins_dialog * 2,
+         line_height * list.size + xmb->margins_dialog * 2,
          video_width, video_height,
          NULL,
          xmb->margins_slice, xmb->last_scale_factor,
          xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
 
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *msg = list->elems[i].data;
+      const char *msg = list.elems[i].data;
 
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
@@ -1031,9 +1037,7 @@ static void xmb_render_messagebox_internal(
             input_event_get_osk_ptr(),
             0xffffffff);
 
-end:
-   if (list)
-      string_list_free(list);
+   string_list_deinitialize(&list);
 }
 
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)

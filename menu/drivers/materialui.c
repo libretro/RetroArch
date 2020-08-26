@@ -2504,7 +2504,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
    int y                    = 0;
    int usable_width         = 0;
    int longest_width        = 0;
-   struct string_list *list = NULL;
+   struct string_list list  = {0};
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 
    wrapped_message[0] = '\0';
@@ -2513,12 +2513,12 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
    if (string_is_empty(message) ||
        !mui ||
        !mui->font_data.list.font)
-      goto end;
+      return;
 
    usable_width = (int)video_width - (mui->margin * 4.0);
 
    if (usable_width < 1)
-      goto end;
+      return;
 
    /* Split message into lines */
    word_wrap(
@@ -2526,22 +2526,26 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
          usable_width / (int)mui->font_data.list.glyph_width,
          true, 0);
 
-   list = string_split(wrapped_message, "\n");
-
-   if (!list || list->elems == 0)
-      goto end;
+   string_list_initialize(&list);
+   if (
+            !string_split_noalloc(&list, wrapped_message, "\n")
+         || list.elems == 0)
+   {
+      string_list_deinitialize(&list);
+      return;
+   }
 
    /* Get coordinates of message box centre */
    x = video_width / 2;
-   y = (int)(y_centre - (list->size * mui->font_data.list.line_height) / 2);
+   y = (int)(y_centre - (list.size * mui->font_data.list.line_height) / 2);
 
    /* TODO/FIXME: Reduce text scale if width or height
     * are too large to fit on screen */
 
    /* Find the longest line width */
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *line = list->elems[i].data;
+      const char *line = list.elems[i].data;
 
       if (!string_is_empty(line))
       {
@@ -2564,15 +2568,15 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
          x - longest_width / 2.0 - mui->margin * 2.0,
          y - mui->margin * 2.0,
          longest_width + mui->margin * 4.0,
-         mui->font_data.list.line_height * list->size + mui->margin * 4.0,
+         mui->font_data.list.line_height * list.size + mui->margin * 4.0,
          video_width,
          video_height,
          mui->colors.surface_background);
 
    /* Print each line of the message */
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      const char *line = list->elems[i].data;
+      const char *line = list.elems[i].data;
 
       if (!string_is_empty(line))
          gfx_display_draw_text(
@@ -2583,9 +2587,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
    }
 
-end:
-   if (list)
-      string_list_free(list);
+   string_list_deinitialize(&list);
 }
 
 /* Initialises scrollbar parameters (width/height) */

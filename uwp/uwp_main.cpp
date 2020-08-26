@@ -798,7 +798,7 @@ extern "C" {
       string_list_initialize(&split);
 		string_split_noalloc(&split, lang_bcp, "-");
 
-		strlcat(lang_iso, split.elems[0].data, sizeof(lang_iso));
+		strlcpy(lang_iso, split.elems[0].data, sizeof(lang_iso));
 
 		if (split.size >= 2)
 		{

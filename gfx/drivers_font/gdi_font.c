@@ -101,7 +101,7 @@ static void gdi_render_msg(
    unsigned width                   = gdi->video_width;
    unsigned height                  = gdi->video_height;
    SIZE textSize                    = {0};
-   struct string_list *msg_list     = NULL;
+   struct string_list msg_list      = {0};
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
@@ -173,7 +173,8 @@ static void gdi_render_msg(
 
    SetBkMode(font->gdi->memDC, TRANSPARENT);
 
-   msg_list = string_split(msg, "\n");
+   string_list_initialize(&msg_list);
+   string_split_noalloc(&msg_list, msg, "\n");
 
    if (drop_x || drop_y)
    {
@@ -184,22 +185,20 @@ static void gdi_render_msg(
 
       SetTextColor(font->gdi->memDC, RGB(drop_red, drop_green, drop_blue));
 
-      if (msg_list)
-      {
-         for (i = 0; i < msg_list->size; i++)
-            TextOut(font->gdi->memDC, newDropX, newDropY + (textSize.cy * i), msg_list->elems[i].data, utf8len(msg_list->elems[i].data));
-      }
+      for (i = 0; i < msg_list.size; i++)
+         TextOut(font->gdi->memDC, newDropX, newDropY + (textSize.cy * i),
+               msg_list.elems[i].data,
+               utf8len(msg_list.elems[i].data));
    }
 
    SetTextColor(font->gdi->memDC, RGB(red, green, blue));
 
-   if (msg_list)
-   {
-      for (i = 0; i < msg_list->size; i++)
-         TextOut(font->gdi->memDC, newX, newY + (textSize.cy * i), msg_list->elems[i].data, utf8len(msg_list->elems[i].data));
+   for (i = 0; i < msg_list.size; i++)
+      TextOut(font->gdi->memDC, newX, newY + (textSize.cy * i),
+            msg_list.elems[i].data,
+            utf8len(msg_list.elems[i].data));
 
-      string_list_free(msg_list);
-   }
+   string_list_deinitialize(&msg_list);
 
    SelectObject(font->gdi->memDC, font->gdi->bmp_old);
 }

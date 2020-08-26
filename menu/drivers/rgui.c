@@ -2890,7 +2890,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
    unsigned width           = 0;
    unsigned glyphs_width    = 0;
    unsigned height          = 0;
-   struct string_list *list = NULL;
+   struct string_list list  = {0};
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 
    wrapped_message[0] = '\0';
@@ -2904,18 +2904,21 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
          rgui_term_layout.width,
          false, 0);
 
-   list = string_split(wrapped_message, "\n");
-
-   if (!list || list->elems == 0)
-      goto end;
+   string_list_initialize(&list);
+   if (     !string_split_noalloc(&list, wrapped_message, "\n")
+         || list.elems == 0)
+   {
+      string_list_deinitialize(&list);
+      return;
+   }
 
    gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
       unsigned line_width;
-      char     *msg   = list->elems[i].data;
+      char     *msg   = list.elems[i].data;
       unsigned msglen = (unsigned)utf8len(msg);
 
       line_width   = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
@@ -2923,7 +2926,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       glyphs_width = MAX(glyphs_width, msglen);
    }
 
-   height = (unsigned)(FONT_HEIGHT_STRIDE * list->size + 6 + 10);
+   height = (unsigned)(FONT_HEIGHT_STRIDE * list.size + 6 + 10);
    x      = ((int)fb_width  - (int)width) / 2;
    y      = ((int)fb_height - (int)height) / 2;
 
@@ -2973,14 +2976,11 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
             x, y + 5, 5, height - 5,
             border_dark_color, border_light_color, border_thickness);
-   }
 
-   /* Draw text */
-   if (rgui_frame_buf.data)
-   {
-      for (i = 0; i < list->size; i++)
+      /* Draw text */
+      for (i = 0; i < list.size; i++)
       {
-         const char *msg = list->elems[i].data;
+         const char *msg = list.elems[i].data;
          int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
          int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
          int text_x      = x + 8 + offset_x;
@@ -2996,9 +2996,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       }
    }
 
-end:
-   if (list)
-      string_list_free(list);
+   string_list_deinitialize(&list);
 }
 
 static void rgui_blit_cursor(rgui_t *rgui)
@@ -5119,13 +5117,16 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
          /* Sanitise sublabel
           * > Replace newline characters with standard delimiter
           * > Remove whitespace surrounding each sublabel line */
-         struct string_list *list = string_split(entry.sublabel, "\n");
-
-         if (list)
+         struct string_list list  = {0};
+         
+         string_list_initialize(&list);
+         
+         if (string_split_noalloc(&list, entry.sublabel, "\n"))
          {
-            for (line_index = 0; line_index < list->size; line_index++)
+            for (line_index = 0; line_index < list.size; line_index++)
             {
-               const char *line = string_trim_whitespace(list->elems[line_index].data);
+               const char *line = string_trim_whitespace(
+                     list.elems[line_index].data);
                if (!string_is_empty(line))
                {
                   if (!prev_line_empty)
@@ -5136,9 +5137,9 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
                   prev_line_empty = false;
                }
             }
-            
-            string_list_free(list);
          }
+
+         string_list_deinitialize(&list);
       }
    }
 }
