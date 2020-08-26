@@ -138,8 +138,7 @@ struct config_file_entry
 };
 
 struct config_entry_list *config_get_entry(
-      const config_file_t *conf,
-      const char *key, struct config_entry_list **prev);
+      const config_file_t *conf, const char *key);
 
 bool config_get_entry_list_head(config_file_t *conf, struct config_file_entry *entry);
 bool config_get_entry_list_next(struct config_file_entry *entry);

@@ -484,15 +484,9 @@ static bool config_file_parse_line(config_file_t *conf,
       if (!path)
          return false;
 
-      if (string_is_empty(path))
+      if (     string_is_empty(path)
+            || conf->include_depth >= MAX_INCLUDE_DEPTH)
       {
-         free(path);
-         return false;
-      }
-
-      if (conf->include_depth >= MAX_INCLUDE_DEPTH)
-      {
-         fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
          free(path);
          return false;
       }
@@ -795,7 +789,7 @@ config_file_t *config_file_new_alloc(void)
    return conf;
 }
 
-struct config_entry_list *config_get_entry(
+static struct config_entry_list *config_get_entry_internal(
       const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
 {
@@ -816,9 +810,22 @@ struct config_entry_list *config_get_entry(
    return NULL;
 }
 
+struct config_entry_list *config_get_entry(
+      const config_file_t *conf, const char *key)
+{
+   struct config_entry_list *entry    = NULL;
+   for (entry = conf->entries; entry; entry = entry->next)
+   {
+      if (string_is_equal(key, entry->key))
+         return entry;
+   }
+   return NULL;
+}
+
+
 bool config_get_double(config_file_t *conf, const char *key, double *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
 
    if (!entry)
       return false;
@@ -829,7 +836,7 @@ bool config_get_double(config_file_t *conf, const char *key, double *in)
 
 bool config_get_float(config_file_t *conf, const char *key, float *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
 
    if (!entry)
       return false;
@@ -841,7 +848,7 @@ bool config_get_float(config_file_t *conf, const char *key, float *in)
 
 bool config_get_int(config_file_t *conf, const char *key, int *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
    errno = 0;
 
    if (entry)
@@ -860,7 +867,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
 
 bool config_get_size_t(config_file_t *conf, const char *key, size_t *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
    errno = 0;
 
    if (entry)
@@ -879,7 +886,7 @@ bool config_get_size_t(config_file_t *conf, const char *key, size_t *in)
 #if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
    errno = 0;
 
    if (entry)
@@ -898,7 +905,7 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
    errno = 0;
 
    if (entry)
@@ -917,7 +924,7 @@ bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 
 bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
    errno = 0;
 
    if (entry)
@@ -936,7 +943,7 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 
 bool config_get_char(config_file_t *conf, const char *key, char *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
 
    if (entry)
    {
@@ -952,7 +959,7 @@ bool config_get_char(config_file_t *conf, const char *key, char *in)
 
 bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
 
    if (!entry || !entry->value)
       return false;
@@ -971,8 +978,7 @@ bool config_get_config_path(config_file_t *conf, char *s, size_t len)
 bool config_get_array(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
-
+   const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
       return strlcpy(buf, entry->value, size) < size;
    return false;
@@ -985,7 +991,7 @@ bool config_get_path(config_file_t *conf, const char *key,
    if (config_get_array(conf, key, buf, size))
       return true;
 #else
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
 
    if (entry)
    {
@@ -998,7 +1004,7 @@ bool config_get_path(config_file_t *conf, const char *key,
 
 bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 {
-   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   const struct config_entry_list *entry = config_get_entry(conf, key);
 
    if (!entry)
       return false;
@@ -1042,7 +1048,8 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    }
    else
    {
-      entry                        = config_get_entry(conf, key, &last);
+      entry                        = config_get_entry_internal(
+            conf, key, &last);
       if (entry)
       {
          /* An entry corresponding to 'key' already exists
@@ -1098,7 +1105,7 @@ void config_unset(config_file_t *conf, const char *key)
       return;
 
    last  = conf->entries;
-   entry = config_get_entry(conf, key, &last);
+   entry = config_get_entry_internal(conf, key, &last);
 
    if (!entry)
       return;

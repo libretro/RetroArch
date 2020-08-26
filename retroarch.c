@@ -17838,9 +17838,9 @@ static bool core_option_manager_parse_variable(
    option->index         = 0;
 
    if (config_src)
-      entry              = config_get_entry(config_src, option->key, NULL);
+      entry              = config_get_entry(config_src, option->key);
    else
-      entry              = config_get_entry(opt->conf,  option->key, NULL);
+      entry              = config_get_entry(opt->conf,  option->key);
 
    /* Set current config value */
    if (entry && !string_is_empty(entry->value))
@@ -17871,13 +17871,15 @@ static bool core_option_manager_parse_option(
 {
    size_t i;
    union string_list_elem_attr attr;
-   size_t num_vals                              = 0;
-   struct config_entry_list *entry              = NULL;
-   struct core_option *option                   = (struct core_option*)&opt->opts[idx];
-   const struct retro_core_option_value *values = option_def->values;
+   struct config_entry_list 
+      *entry                  = NULL;
+   size_t num_vals            = 0;
+   struct core_option *option = (struct core_option*)&opt->opts[idx];
+   const struct retro_core_option_value 
+      *values                 = option_def->values;
 
    /* All options are visible by default */
-   option->visible = true;
+   option->visible            = true;
 
    if (!string_is_empty(option_def->key))
       option->key             = strdup(option_def->key);
@@ -17944,9 +17946,9 @@ static bool core_option_manager_parse_option(
    }
 
    if (config_src)
-      entry              = config_get_entry(config_src, option->key, NULL);
+      entry              = config_get_entry(config_src, option->key);
    else
-      entry              = config_get_entry(opt->conf,  option->key, NULL);
+      entry              = config_get_entry(opt->conf,  option->key);
 
    /* Set current config value */
    if (entry && !string_is_empty(entry->value))

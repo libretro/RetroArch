@@ -123,12 +123,12 @@ static void core_info_list_resolve_all_firmware(
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
          snprintf(opt_key,  sizeof(opt_key),  "firmware%u_opt",  c);
 
-         entry             = config_get_entry(config, path_key, NULL);
+         entry             = config_get_entry(config, path_key);
 
          if (entry && !string_is_empty(entry->value))
             info->firmware[c].path = strdup(entry->value);
 
-         entry             = config_get_entry(config, desc_key, NULL);
+         entry             = config_get_entry(config, desc_key);
 
          if (entry && !string_is_empty(entry->value))
             info->firmware[c].desc     = strdup(entry->value);
@@ -321,32 +321,32 @@ static core_info_list_t *core_info_list_new(const char *path,
          bool tmp_bool      = false;
          unsigned tmp_uint  = 0;
          struct config_entry_list 
-            *entry = config_get_entry(conf, "display_name", NULL);
+            *entry = config_get_entry(conf, "display_name");
 
          if (entry && !string_is_empty(entry->value))
             core_info[i].display_name = strdup(entry->value);
 
-         entry = config_get_entry(conf, "display_version", NULL);
+         entry = config_get_entry(conf, "display_version");
 
          if (entry && !string_is_empty(entry->value))
             core_info[i].display_version = strdup(entry->value);
 
-         entry = config_get_entry(conf, "corename", NULL);
+         entry = config_get_entry(conf, "corename");
 
          if (entry && !string_is_empty(entry->value))
             core_info[i].core_name = strdup(entry->value);
 
-         entry = config_get_entry(conf, "systemname", NULL);
+         entry = config_get_entry(conf, "systemname");
 
          if (entry && !string_is_empty(entry->value))
                core_info[i].systemname = strdup(entry->value);
 
-         entry = config_get_entry(conf, "systemid", NULL);
+         entry = config_get_entry(conf, "systemid");
 
          if (entry && !string_is_empty(entry->value))
             core_info[i].system_id = strdup(entry->value);
 
-         entry = config_get_entry(conf, "manufacturer", NULL);
+         entry = config_get_entry(conf, "manufacturer");
 
          if (entry && !string_is_empty(entry->value))
             core_info[i].system_manufacturer = strdup(entry->value);
@@ -354,7 +354,7 @@ static core_info_list_t *core_info_list_new(const char *path,
          config_get_uint(conf, "firmware_count", &tmp_uint);
          core_info[i].firmware_count = tmp_uint;
 
-         entry = config_get_entry(conf, "supported_extensions", NULL);
+         entry = config_get_entry(conf, "supported_extensions");
 
          if (entry && !string_is_empty(entry->value))
          {
@@ -363,7 +363,7 @@ static core_info_list_t *core_info_list_new(const char *path,
                string_split(core_info[i].supported_extensions, "|");
          }
 
-         entry = config_get_entry(conf, "authors", NULL);
+         entry = config_get_entry(conf, "authors");
 
          if (entry && !string_is_empty(entry->value))
          {
@@ -372,7 +372,7 @@ static core_info_list_t *core_info_list_new(const char *path,
                string_split(core_info[i].authors, "|");
          }
 
-         entry = config_get_entry(conf, "permissions", NULL);
+         entry = config_get_entry(conf, "permissions");
 
          if (entry && !string_is_empty(entry->value))
          {
@@ -381,7 +381,7 @@ static core_info_list_t *core_info_list_new(const char *path,
                string_split(core_info[i].permissions, "|");
          }
 
-         entry = config_get_entry(conf, "license", NULL);
+         entry = config_get_entry(conf, "license");
 
          if (entry && !string_is_empty(entry->value))
          {
@@ -390,7 +390,7 @@ static core_info_list_t *core_info_list_new(const char *path,
                string_split(core_info[i].licenses, "|");
          }
 
-         entry = config_get_entry(conf, "categories", NULL);
+         entry = config_get_entry(conf, "categories");
 
          if (entry && !string_is_empty(entry->value))
          {
@@ -399,7 +399,7 @@ static core_info_list_t *core_info_list_new(const char *path,
                string_split(core_info[i].categories, "|");
          }
 
-         entry = config_get_entry(conf, "database", NULL);
+         entry = config_get_entry(conf, "database");
 
          if (entry && !string_is_empty(entry->value))
          {
@@ -408,7 +408,7 @@ static core_info_list_t *core_info_list_new(const char *path,
                string_split(core_info[i].databases, "|");
          }
 
-         entry = config_get_entry(conf, "notes", NULL);
+         entry = config_get_entry(conf, "notes");
 
          if (entry && !string_is_empty(entry->value))
          {
@@ -417,7 +417,7 @@ static core_info_list_t *core_info_list_new(const char *path,
                string_split(core_info[i].notes, "|");
          }
 
-         entry = config_get_entry(conf, "required_hw_api", NULL);
+         entry = config_get_entry(conf, "required_hw_api");
 
          if (entry && !string_is_empty(entry->value))
          {
@@ -426,7 +426,7 @@ static core_info_list_t *core_info_list_new(const char *path,
                string_split(core_info[i].required_hw_api, "|");
          }
 
-         entry = config_get_entry(conf, "description", NULL);
+         entry = config_get_entry(conf, "description");
 
          if (entry && !string_is_empty(entry->value))
             core_info[i].description = strdup(entry->value);
@@ -937,9 +937,9 @@ void core_info_get_name(const char *path, char *s, size_t len,
          continue;
 
       if (get_display_name)
-         entry = config_get_entry(conf, "display_name", NULL);
+         entry = config_get_entry(conf, "display_name");
       else
-         entry = config_get_entry(conf, "corename", NULL);
+         entry = config_get_entry(conf, "corename");
 
       if (entry && !string_is_empty(entry->value))
          strlcpy(s, entry->value, len);
@@ -1094,7 +1094,7 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    if (!conf)
       return false;
 
-   entry               = config_get_entry(conf, "display_name", NULL);
+   entry               = config_get_entry(conf, "display_name");
 
    if (entry && !string_is_empty(entry->value))
       strlcpy(s, entry->value, len);
@@ -1143,19 +1143,19 @@ core_updater_info_t *core_info_get_core_updater_info(const char *path)
       info->is_experimental  = tmp_bool;
 
    /* > display_name */
-   entry                     = config_get_entry(conf, "display_name", NULL);
+   entry                     = config_get_entry(conf, "display_name");
 
    if (entry && !string_is_empty(entry->value))
       info->display_name     = strdup(entry->value);
 
    /* > description */
-   entry                     = config_get_entry(conf, "description", NULL);
+   entry                     = config_get_entry(conf, "description");
 
    if (entry && !string_is_empty(entry->value))
       info->description      = strdup(entry->value);
 
    /* > licenses */
-   entry                     = config_get_entry(conf, "license", NULL);
+   entry                     = config_get_entry(conf, "license");
 
    if (entry && !string_is_empty(entry->value))
       info->licenses         = strdup(entry->value);
