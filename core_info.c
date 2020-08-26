@@ -227,35 +227,6 @@ static config_file_t *core_info_list_iterate(
    return NULL;
 }
 
-/* Returned path must be free()'d */
-static char *core_info_get_core_lock_file_path(const char *core_path)
-{
-   char *lock_file_path      = NULL;
-   size_t len;
-
-   if (string_is_empty(core_path))
-      return NULL;
-
-   /* Note: We follow the common 'core_info' trend of
-    * allocating all strings dynamically... */
-
-   /* Get path length */
-   len = (strlen(core_path) + STRLEN_CONST(FILE_PATH_LOCK_EXTENSION) + 1) * sizeof(char);
-
-   /* Allocate string */
-   lock_file_path = (char*)malloc(len);
-   if (!lock_file_path)
-      return NULL;
-
-   lock_file_path[0] = '\0';
-
-   /* Lock file is just core path + 'lock' extension */
-   strlcpy(lock_file_path, core_path, len);
-   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION, len);
-
-   return lock_file_path;
-}
-
 static core_info_list_t *core_info_list_new(const char *path,
       const char *libretro_info_dir,
       const char *exts,
@@ -1547,26 +1518,32 @@ bool core_info_hw_api_supported(core_info_t *info)
  *   core info list this is *not* thread safe */
 bool core_info_set_core_lock(const char *core_path, bool lock)
 {
-   char *lock_file_path  = NULL;
+   core_info_ctx_find_t core_info;
+   char lock_file_path[PATH_MAX_LENGTH];
    RFILE *lock_file      = NULL;
    bool lock_file_exists = false;
-   core_info_ctx_find_t core_info;
 
    if (string_is_empty(core_path))
-      goto error;
+      return false;
 
    /* Search for specified core */
    core_info.inf  = NULL;
    core_info.path = core_path;
 
    if (!core_info_find(&core_info))
-      goto error;
+      return false;
 
-   /* Get associated lock file path */
-   lock_file_path = core_info_get_core_lock_file_path(core_info.inf->path);
+   if (string_is_empty(core_info.inf->path))
+      return false;
+
+   /* Get lock file path */
+   strlcpy(lock_file_path, core_info.inf->path,
+         sizeof(lock_file_path));
+   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION,
+         sizeof(lock_file_path));
 
    if (string_is_empty(lock_file_path))
-      goto error;
+      return false;
 
    /* Check whether lock file exists */
    lock_file_exists = path_is_valid(lock_file_path);
@@ -1574,50 +1551,33 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
    /* Create or delete lock file, as required */
    if (lock && !lock_file_exists)
    {
-      lock_file = filestream_open(
+      RFILE *lock_file = filestream_open(
             lock_file_path,
             RETRO_VFS_FILE_ACCESS_WRITE,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!lock_file)
-         goto error;
+         return false;
 
       /* We have to write something - just output
        * a single character */
       if (filestream_putc(lock_file, 0) != 0)
-         goto error;
+      {
+         filestream_close(lock_file);
+         return false;
+      }
 
       filestream_close(lock_file);
-      lock_file = NULL;
    }
    else if (!lock && lock_file_exists)
       if (filestream_delete(lock_file_path) != 0)
-         goto error;
-
-   /* Clean up */
-   free(lock_file_path);
-   lock_file_path = NULL;
+         return false;
 
    /* File operations were successful - update
     * core info entry */
    core_info.inf->is_locked = lock;
 
    return true;
-
-error:
-   if (lock_file_path)
-   {
-      free(lock_file_path);
-      lock_file_path = NULL;
-   }
-
-   if (lock_file)
-   {
-      filestream_close(lock_file);
-      lock_file = NULL;
-   }
-
-   return false;
 }
 
 /* Fetches 'locked' status of specified core
@@ -1631,13 +1591,13 @@ error:
  *   must be checked externally */
 bool core_info_get_core_lock(const char *core_path, bool validate_path)
 {
+   char lock_file_path[PATH_MAX_LENGTH];
    const char *core_file_path = NULL;
-   char *lock_file_path       = NULL;
    bool is_locked             = false;
    core_info_ctx_find_t core_info;
 
    if (string_is_empty(core_path))
-      goto end;
+      return false;
 
    core_info.inf  = NULL;
    core_info.path = NULL;
@@ -1656,13 +1616,16 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    /* A core cannot be locked if it does not exist... */
    if (string_is_empty(core_file_path) ||
        !path_is_valid(core_file_path))
-      goto end;
+      return false;
 
    /* Get lock file path */
-   lock_file_path = core_info_get_core_lock_file_path(core_file_path);
+   strlcpy(lock_file_path, core_file_path,
+         sizeof(lock_file_path));
+   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION,
+         sizeof(lock_file_path));
 
    if (string_is_empty(lock_file_path))
-      goto end;
+      return false;
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);
@@ -1673,13 +1636,6 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
     * up to date */
    if (validate_path && core_info.inf)
       core_info.inf->is_locked = is_locked;
-
-end:
-   if (lock_file_path)
-   {
-      free(lock_file_path);
-      lock_file_path = NULL;
-   }
 
    return is_locked;
 }
