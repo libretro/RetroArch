@@ -4370,9 +4370,12 @@ static int action_ok_download_generic(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          {
-            struct string_list *str_list = string_split(menu_label, ";");
-            strlcpy(s, str_list->elems[0].data, sizeof(s));
-            string_list_free(str_list);
+            struct string_list str_list  = {0};
+
+            string_list_initialize(&str_list);
+            if (string_split_noalloc(&str_list, menu_label, ";"))
+               strlcpy(s, str_list.elems[0].data, sizeof(s));
+            string_list_deinitialize(&str_list);
          }
          break;
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
@@ -4927,22 +4930,19 @@ static int action_ok_rdb_entry_submenu(const char *path,
    int ret                         = -1;
    char *rdb                       = NULL;
    int len                         = 0;
-   struct string_list *str_list    = NULL;
-   struct string_list *str_list2   = NULL;
+   struct string_list str_list     = {0};
+   struct string_list str_list2    = {0};
 
    if (!label)
       return menu_cbs_exit();
 
    new_label[0] = new_path[0]      = '\0';
 
-   str_list = string_split(label, "|");
-
-   if (!str_list)
+   string_list_initialize(&str_list);
+   if (!string_split_noalloc(&str_list, label, "|"))
       goto end;
 
-   str_list2 = string_list_new();
-   if (!str_list2)
-      goto end;
+   string_list_initialize(&str_list2);
 
    /* element 0 : label
     * element 1 : value
@@ -4951,23 +4951,23 @@ static int action_ok_rdb_entry_submenu(const char *path,
 
    attr.i = 0;
 
-   len += strlen(str_list->elems[1].data) + 1;
-   string_list_append(str_list2, str_list->elems[1].data, attr);
+   len += strlen(str_list.elems[1].data) + 1;
+   string_list_append(&str_list2, str_list.elems[1].data, attr);
 
-   len += strlen(str_list->elems[2].data) + 1;
-   string_list_append(str_list2, str_list->elems[2].data, attr);
+   len += strlen(str_list.elems[2].data) + 1;
+   string_list_append(&str_list2, str_list.elems[2].data, attr);
 
    rdb = (char*)calloc(len, sizeof(char));
 
    if (!rdb)
       goto end;
 
-   string_list_join_concat(rdb, len, str_list2, "|");
+   string_list_join_concat(rdb, len, &str_list2, "|");
    strlcpy(new_path, rdb, sizeof(new_path));
 
    fill_pathname_join_delim(new_label,
          msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-         str_list->elems[0].data, '_',
+         str_list.elems[0].data, '_',
          sizeof(new_label));
 
    ret = generic_action_ok_displaylist_push(new_path, NULL,
@@ -4977,10 +4977,8 @@ static int action_ok_rdb_entry_submenu(const char *path,
 end:
    if (rdb)
       free(rdb);
-   if (str_list)
-      string_list_free(str_list);
-   if (str_list2)
-      string_list_free(str_list2);
+   string_list_deinitialize(&str_list);
+   string_list_deinitialize(&str_list2);
 
    return ret;
 }

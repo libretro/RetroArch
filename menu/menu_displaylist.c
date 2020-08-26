@@ -1764,45 +1764,46 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
          for (j = 0; j < playlist_size(playlist); j++)
          {
             const struct playlist_entry *entry  = NULL;
-            bool match_found                 = false;
-            struct string_list *tmp_str_list = NULL;
+            bool match_found                    = false;
 
             playlist_get_index(playlist, j, &entry);
 
             if (entry->crc32)
-                tmp_str_list = string_split(entry->crc32, "|");
-
-            if (!tmp_str_list)
-               continue;
-
-            if (tmp_str_list->size > 0)
             {
-               if (tmp_str_list->size > 1)
-               {
-                  const char *elem0 = tmp_str_list->elems[0].data;
-                  const char *elem1 = tmp_str_list->elems[1].data;
+               struct string_list tmp_str_list = {0};
 
-                  switch (extension_to_file_hash_type(elem1))
+               string_list_initialize(&tmp_str_list);
+               string_split_noalloc(&tmp_str_list, entry->crc32, "|");
+
+               if (tmp_str_list.size > 0)
+               {
+                  if (tmp_str_list.size > 1)
                   {
-                     case FILE_TYPE_CRC:
-                        if (string_is_equal(crc_str, elem0))
-                           match_found = true;
-                        break;
-                     case FILE_TYPE_SHA1:
-                        if (string_is_equal(db_info_entry->sha1, elem0))
-                           match_found = true;
-                        break;
-                     case FILE_TYPE_MD5:
-                        if (string_is_equal(db_info_entry->md5, elem0))
-                           match_found = true;
-                        break;
-                     default:
-                        break;
+                     const char *elem0 = tmp_str_list.elems[0].data;
+                     const char *elem1 = tmp_str_list.elems[1].data;
+
+                     switch (extension_to_file_hash_type(elem1))
+                     {
+                        case FILE_TYPE_CRC:
+                           if (string_is_equal(crc_str, elem0))
+                              match_found = true;
+                           break;
+                        case FILE_TYPE_SHA1:
+                           if (string_is_equal(db_info_entry->sha1, elem0))
+                              match_found = true;
+                           break;
+                        case FILE_TYPE_MD5:
+                           if (string_is_equal(db_info_entry->md5, elem0))
+                              match_found = true;
+                           break;
+                        default:
+                           break;
+                     }
                   }
                }
-            }
 
-            string_list_free(tmp_str_list);
+               string_list_deinitialize(&tmp_str_list);
+            }
 
             if (!match_found)
                continue;
@@ -9904,14 +9905,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
 #ifdef HAVE_NETWORKING
             char new_label[PATH_MAX_LENGTH];
-            struct string_list *str_list = string_split(info->path, ";");
-
+            struct string_list str_list = {0};
+            
             new_label[0] = '\0';
 
-            if (str_list->elems[0].data)
-               strlcpy(new_label, str_list->elems[0].data, sizeof(new_label));
-            if (str_list->elems[1].data)
-               strlcpy(menu->core_buf, str_list->elems[1].data, menu->core_len);
+            string_list_initialize(&str_list);
+            string_split_noalloc(&str_list, info->path, ";");
+
+            if (str_list.elems[0].data)
+               strlcpy(new_label, str_list.elems[0].data, sizeof(new_label));
+            if (str_list.elems[1].data)
+               strlcpy(menu->core_buf, str_list.elems[1].data, menu->core_len);
 
             count = print_buf_lines(info->list, menu->core_buf, new_label,
                   (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL, false, false);
@@ -9927,7 +9931,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->need_refresh = true;
             info->need_clear   = true;
 
-            string_list_free(str_list);
+            string_list_deinitialize(&str_list);
 #endif
          }
          break;
@@ -11865,9 +11869,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (string_starts_with_size(info->path, "core_option_",
                      STRLEN_CONST("core_option_")))
             {
-               struct string_list *tmp_str_list = string_split(info->path, "_");
+               struct string_list tmp_str_list  = {0};
+               string_list_initialize(&tmp_str_list);
+               string_split_noalloc(&tmp_str_list, info->path, "_");
 
-               if (tmp_str_list && tmp_str_list->size > 0)
+               if (tmp_str_list.size > 0)
                {
                   core_option_manager_t *coreopts = NULL;
                   const char *val                 = NULL;
@@ -11877,8 +11883,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (coreopts)
                   {
                      unsigned i;
-                     unsigned size                   = (unsigned)tmp_str_list->size;
-                     unsigned menu_index             = atoi(tmp_str_list->elems[size-1].data);
+                     unsigned size                   = (unsigned)
+                        tmp_str_list.size;
+                     unsigned menu_index             = atoi(tmp_str_list.elems[size-1].data);
                      unsigned visible_index          = 0;
                      unsigned option_index           = 0;
                      bool option_found               = false;
@@ -11958,8 +11965,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
                }
 
-               if (tmp_str_list)
-                  string_list_free(tmp_str_list);
+               string_list_deinitialize(&tmp_str_list);
             }
             else
             {
@@ -11972,12 +11978,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      case ST_STRING_OPTIONS:
                         {
-                           struct string_list *tmp_str_list = string_split(setting->values, "|");
+                           struct string_list tmp_str_list = {0};
+                           string_list_initialize(&tmp_str_list);
+                           string_split_noalloc(&tmp_str_list,
+                                 setting->values, "|");
 
-                           if (tmp_str_list && tmp_str_list->size > 0)
+                           if (tmp_str_list.size > 0)
                            {
                               unsigned i;
-                              unsigned size        = (unsigned)tmp_str_list->size;
+                              unsigned size        = (unsigned)
+                                 tmp_str_list.size;
                               bool checked_found   = false;
                               unsigned checked     = 0;
 
@@ -11986,13 +11996,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  char val_d[256];
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                                  if (menu_entries_append_enum(info->list,
-                                       tmp_str_list->elems[i].data,
+                                       tmp_str_list.elems[i].data,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM, i, 0))
                                     count++;
 
-                                 if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
+                                 if (!checked_found && string_is_equal(
+                                          tmp_str_list.elems[i].data,
+                                          setting->value.target.string))
                                  {
                                     checked = i;
                                     checked_found = true;
@@ -12006,8 +12018,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               }
                            }
 
-                           if (tmp_str_list)
-                              string_list_free(tmp_str_list);
+                           string_list_deinitialize(&tmp_str_list);
                         }
                         break;
                      case ST_INT:
@@ -12285,9 +12296,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          if (string_starts_with_size(info->path, "core_option_",
                   STRLEN_CONST("core_option_")))
          {
-            struct string_list *tmp_str_list = string_split(info->path, "_");
+            struct string_list tmp_str_list  = {0};
 
-            if (tmp_str_list && tmp_str_list->size > 0)
+            string_list_initialize(&tmp_str_list);
+            string_split_noalloc(&tmp_str_list, info->path, "_");
+
+            if (tmp_str_list.size > 0)
             {
                core_option_manager_t *coreopts = NULL;
                const char *val                 = NULL;
@@ -12296,8 +12310,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                if (coreopts)
                {
-                  unsigned size                   = (unsigned)tmp_str_list->size;
-                  unsigned menu_index             = atoi(tmp_str_list->elems[size-1].data);
+                  unsigned size                   = (unsigned)
+                     tmp_str_list.size;
+                  unsigned menu_index             = atoi(tmp_str_list.elems[size-1].data);
                   unsigned visible_index          = 0;
                   unsigned option_index           = 0;
                   bool option_found               = false;
@@ -12375,8 +12390,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
             }
 
-            if (tmp_str_list)
-               string_list_free(tmp_str_list);
+            string_list_deinitialize(&tmp_str_list);
          }
          else
          {
@@ -12389,12 +12403,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   case ST_STRING_OPTIONS:
                      {
-                        struct string_list *tmp_str_list = string_split(setting->values, "|");
+                        struct string_list tmp_str_list = {0};
+                        
+                        string_list_initialize(&tmp_str_list);
+                        string_split_noalloc(&tmp_str_list,
+                              setting->values, "|");
 
-                        if (tmp_str_list && tmp_str_list->size > 0)
+                        if (tmp_str_list.size > 0)
                         {
                            unsigned i;
-                           unsigned size        = (unsigned)tmp_str_list->size;
+                           unsigned size        = (unsigned)tmp_str_list.size;
                            bool checked_found   = false;
                            unsigned checked     = 0;
 
@@ -12403,13 +12421,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               char val_d[256];
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               if (menu_entries_append_enum(info->list,
-                                    tmp_str_list->elems[i].data,
+                                    tmp_str_list.elems[i].data,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
                                     MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0))
                                  count++;
 
-                              if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
+                              if (!checked_found && 
+                                    string_is_equal(tmp_str_list.elems[i].data,
+                                       setting->value.target.string))
                               {
                                  checked = i;
                                  checked_found = true;
@@ -12423,8 +12443,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
                         }
 
-                        if (tmp_str_list)
-                           string_list_free(tmp_str_list);
+                        string_list_deinitialize(&tmp_str_list);
                      }
                      break;
                   case ST_INT:

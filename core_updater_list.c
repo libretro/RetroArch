@@ -312,36 +312,33 @@ bool core_updater_list_get_core(
 static bool core_updater_list_set_date(
       core_updater_list_entry_t *entry, const char *date_str)
 {
-   struct string_list *date_list = NULL;
+   struct string_list date_list = {0};
 
    if (!entry || string_is_empty(date_str))
       goto error;
 
    /* Split date string into component values */
-   date_list = string_split(date_str, "-");
-
-   if (!date_list)
-      goto error;
+   string_list_initialize(&date_list);
+   if (!string_split_noalloc(&date_list, date_str, "-"))
+         goto error;
 
    /* Date string must have 3 values:
     * [year] [month] [day] */
-   if (date_list->size < 3)
+   if (date_list.size < 3)
       goto error;
 
    /* Convert date string values */
-   entry->date.year  = string_to_unsigned(date_list->elems[0].data);
-   entry->date.month = string_to_unsigned(date_list->elems[1].data);
-   entry->date.day   = string_to_unsigned(date_list->elems[2].data);
+   entry->date.year  = string_to_unsigned(date_list.elems[0].data);
+   entry->date.month = string_to_unsigned(date_list.elems[1].data);
+   entry->date.day   = string_to_unsigned(date_list.elems[2].data);
 
    /* Clean up */
-   string_list_free(date_list);
+   string_list_deinitialize(&date_list);
 
    return true;
 
 error:
-
-   if (date_list)
-      string_list_free(date_list);
+   string_list_deinitialize(&date_list);
 
    return false;
 }
@@ -758,10 +755,9 @@ bool core_updater_list_parse_network_data(
       const char *network_buildbot_url,
       const char *data, size_t len)
 {
-   struct string_list *network_core_list       = NULL;
-   struct string_list *network_core_entry_list = NULL;
-   char *data_buf                              = NULL;
    size_t i;
+   char *data_buf                              = NULL;
+   struct string_list network_core_list        = {0};
 
    /* Sanity check */
    if (!core_list || string_is_empty(data) || (len < 1))
@@ -782,12 +778,11 @@ bool core_updater_list_parse_network_data(
    data_buf[len] = '\0';
 
    /* Split network listing request into lines */
-   network_core_list = string_split(data_buf, "\n");
-
-   if (!network_core_list)
+   string_list_initialize(&network_core_list);
+   if (!string_split_noalloc(&network_core_list, data_buf, "\n"))
       goto error;
 
-   if (network_core_list->size < 1)
+   if (network_core_list.size < 1)
       goto error;
 
    /* Temporary data buffer is no longer required */
@@ -795,15 +790,17 @@ bool core_updater_list_parse_network_data(
    data_buf = NULL;
 
    /* Loop over lines */
-   for (i = 0; i < network_core_list->size; i++)
+   for (i = 0; i < network_core_list.size; i++)
    {
-      const char *line = network_core_list->elems[i].data;
+      struct string_list network_core_entry_list  = {0};
+      const char *line = network_core_list.elems[i].data;
 
       if (string_is_empty(line))
          continue;
 
+      string_list_initialize(&network_core_entry_list);
       /* Split line into listings info components */
-      network_core_entry_list = string_split(line, " ");
+      string_split_noalloc(&network_core_entry_list, line, " ");
 
       /* Parse listings info and add to core updater
        * list */
@@ -812,11 +809,10 @@ bool core_updater_list_parse_network_data(
             path_dir_libretro,
             path_libretro_info,
             network_buildbot_url,
-            network_core_entry_list);
+            &network_core_entry_list);
 
       /* Clean up */
-      string_list_free(network_core_entry_list);
-      network_core_entry_list = NULL;
+      string_list_deinitialize(&network_core_entry_list);
    }
 
    /* Sanity check */
@@ -824,7 +820,7 @@ bool core_updater_list_parse_network_data(
       goto error;
 
    /* Clean up */
-   string_list_free(network_core_list);
+   string_list_deinitialize(&network_core_list);
 
    /* Sort completed list */
    core_updater_list_qsort(core_list);
@@ -832,12 +828,7 @@ bool core_updater_list_parse_network_data(
    return true;
 
 error:
-
-   if (network_core_list)
-      string_list_free(network_core_list);
-
-   if (network_core_entry_list)
-      string_list_free(network_core_entry_list);
+   string_list_deinitialize(&network_core_list);
 
    if (data_buf)
       free(data_buf);

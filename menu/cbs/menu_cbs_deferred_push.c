@@ -329,14 +329,18 @@ static int deferred_push_cursor_manager_list_generic(
    char query[PATH_MAX_LENGTH];
    int ret                       = -1;
    const char *path              = info->path;
-   struct string_list *str_list  = path ? string_split(path, "|") : NULL;
-
-   if (!str_list)
+   struct string_list str_list   = {0};
+   
+   if (!path)
       goto end;
+
+   string_list_initialize(&str_list);
+   string_split_noalloc(&str_list, path, "|");
 
    query[0] = '\0';
 
-   database_info_build_query_enum(query, sizeof(query), type, str_list->elems[0].data);
+   database_info_build_query_enum(query, sizeof(query), type,
+         str_list.elems[0].data);
 
    if (string_is_empty(query))
       goto end;
@@ -348,14 +352,14 @@ static int deferred_push_cursor_manager_list_generic(
    if (!string_is_empty(info->path))
       free(info->path);
 
-   info->path   = strdup(str_list->elems[1].data);
-   info->path_b = strdup(str_list->elems[0].data);
+   info->path   = strdup(str_list.elems[1].data);
+   info->path_b = strdup(str_list.elems[0].data);
    info->path_c = strdup(query);
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
-   string_list_free(str_list);
+   string_list_deinitialize(&str_list);
    return ret;
 }
 
@@ -375,43 +379,6 @@ GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query
 GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin, DATABASE_QUERY_ENTRY_ORIGIN)
 GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth, DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH)
 GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear, DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR)
-
-#endif
-
-#if 0
-static int deferred_push_cursor_manager_list_deferred_query_subsearch(
-      menu_displaylist_info_t *info)
-{
-   int ret                       = -1;
-#ifdef HAVE_LIBRETRODB
-   char query[PATH_MAX_LENGTH];
-   struct string_list *str_list  = string_split(info->path, "|");
-
-   query[0] = '\0';
-
-   database_info_build_query(query, sizeof(query),
-         info->label, str_list->elems[0].data);
-
-   if (string_is_empty(query))
-      goto end;
-
-   if (!string_is_empty(info->path))
-      free(info->path);
-   if (!string_is_empty(info->path_b))
-      free(info->path_b);
-   if (!string_is_empty(info->path_c))
-      free(info->path_c);
-   info->path   = strdup(str_list->elems[1].data);
-   info->path_b = strdup(str_list->elems[0].data);
-   info->path_c = strdup(query);
-
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-
-end:
-   string_list_free(str_list);
-#endif
-   return ret;
-}
 #endif
 
 static int general_push(menu_displaylist_info_t *info,

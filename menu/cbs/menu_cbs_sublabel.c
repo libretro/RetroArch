@@ -1172,15 +1172,19 @@ static int action_bind_sublabel_netplay_room(
       {
          char buf[4096];
          unsigned i               = 0;
-         struct string_list *list = string_split(gamename, "|");
+         struct string_list list  = {0};
+
+         string_list_initialize(&list);
+         string_split_noalloc(&list, gamename, "|");
 
          buf[0] = '\0';
-         for (i = 0; i < list->size; i++)
+
+         for (i = 0; i < list.size; i++)
          {
             strlcat(buf, "   ", sizeof(buf));
-            strlcat(buf, list->elems[i].data, sizeof(buf));
+            strlcat(buf, list.elems[i].data, sizeof(buf));
             /* Never terminate a UI string with a newline */
-            if (i != list->size - 1)
+            if (i != list.size - 1)
                strlcat(buf, "\n", sizeof(buf));
          }
          snprintf(s, len,
@@ -1192,7 +1196,7 @@ static int action_bind_sublabel_netplay_room(
             corename, core_ver, subsystem,
             !string_is_equal(gamename, na) ? buf : na
             );
-         string_list_free(list);
+         string_list_deinitialize(&list);
       }
       else
       {

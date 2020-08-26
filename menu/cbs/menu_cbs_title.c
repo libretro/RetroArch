@@ -189,10 +189,13 @@ static int action_get_title_dropdown_item(
    if (string_starts_with_size(path, "core_option_", STRLEN_CONST("core_option_")))
    {
       /* This is a core options item */
-      struct string_list *tmp_str_list = string_split(path, "_");
+      struct string_list tmp_str_list  = {0};
       int ret                          = 0;
 
-      if (tmp_str_list && tmp_str_list->size > 0)
+      string_list_initialize(&tmp_str_list);
+      string_split_noalloc(&tmp_str_list, path, "_");
+
+      if (tmp_str_list.size > 0)
       {
          core_option_manager_t *coreopts = NULL;
 
@@ -201,7 +204,8 @@ static int action_get_title_dropdown_item(
          if (coreopts)
          {
             unsigned i;
-            unsigned menu_index             = string_to_unsigned(tmp_str_list->elems[(unsigned)tmp_str_list->size - 1].data);
+            unsigned menu_index             = string_to_unsigned(
+                  tmp_str_list.elems[(unsigned)tmp_str_list.size - 1].data);
             unsigned visible_index          = 0;
             unsigned option_index           = 0;
             bool option_found               = false;
@@ -242,8 +246,7 @@ static int action_get_title_dropdown_item(
       }
 
       /* Clean up */
-      if (tmp_str_list)
-         string_list_free(tmp_str_list);
+      string_list_deinitialize(&tmp_str_list);
 
       return ret;
    }
@@ -795,20 +798,20 @@ static int action_get_title_group_settings(const char *path, const char *label,
    {
       char elem0[255];
       char elem1[255];
-      struct string_list *list_label = string_split(label, "|");
-
+      struct string_list list_label = {0};
+      
       elem0[0] = elem1[0] = '\0';
 
-      if (list_label)
+      string_list_initialize(&list_label);
+      string_split_noalloc(&list_label, label, "|");
+
+      if (list_label.size > 0)
       {
-         if (list_label->size > 0)
-         {
-            strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
-            if (list_label->size > 1)
-               strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
-         }
-         string_list_free(list_label);
+         strlcpy(elem0, list_label.elems[0].data, sizeof(elem0));
+         if (list_label.size > 1)
+            strlcpy(elem1, list_label.elems[1].data, sizeof(elem1));
       }
+      string_list_deinitialize(&list_label);
 
       strlcpy(s, elem0, len);
 
@@ -822,7 +825,8 @@ static int action_get_title_group_settings(const char *path, const char *label,
    return 0;
 }
 
-static int action_get_title_input_binds_list(const char *path, const char *label,
+static int action_get_title_input_binds_list(
+      const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
    unsigned val = (((unsigned)path[0]) - 49) + 1;
