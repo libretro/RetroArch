@@ -80,15 +80,6 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
    return true;
 }
 
-static bool string_list_initialize_internal(struct string_list *list)
-{
-   list->elems              = NULL;
-   list->size               = 0;
-   list->cap                = 0;
-
-   return string_list_capacity(list, 32);
-}
-
 /**
  * string_list_free
  * @list             : pointer to string list object
@@ -126,30 +117,42 @@ bool string_list_deinitialize(struct string_list *list)
  */
 struct string_list *string_list_new(void)
 {
+   struct string_list_elem *
+      elems                 = NULL;
    struct string_list *list = (struct string_list*)
       malloc(sizeof(*list));
-
    if (!list)
       return NULL;
 
-   if (!string_list_initialize_internal(list))
+   if (!(elems = (struct string_list_elem*)
+      calloc(32, sizeof(*elems))))
    {
       string_list_free(list);
       return NULL;
    }
+
+   list->elems              = elems;
+   list->size               = 0;
+   list->cap                = 32;
 
    return list;
 }
 
 bool string_list_initialize(struct string_list *list)
 {
+   struct string_list_elem *
+      elems                 = NULL;
    if (!list)
       return false;
-   if (!string_list_initialize_internal(list))
+   if (!(elems = (struct string_list_elem*)
+      calloc(32, sizeof(*elems))))
    {
       string_list_deinitialize(list);
       return false;
    }
+   list->elems              = elems;
+   list->size               = 0;
+   list->cap                = 32;
    return true;
 }
 
