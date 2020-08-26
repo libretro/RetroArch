@@ -414,30 +414,21 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
 bool video_shader_resolve_current_parameters(config_file_t *conf,
       struct video_shader *shader)
 {
-   size_t param_size     = 4096 * sizeof(char);
+   char parameters[4096];
    const char *id        = NULL;
-   char *parameters      = NULL;
    char *save            = NULL;
 
    if (!conf)
-      return false;
-
-   parameters            = (char*)malloc(param_size);
-
-   if (!parameters)
       return false;
 
    parameters[0]         = '\0';
 
    /* Read in parameters which override the defaults. */
    if (!config_get_array(conf, "parameters",
-            parameters, param_size))
-   {
-      free(parameters);
+            parameters, sizeof(parameters)))
       return true;
-   }
 
-   for (id = strtok_r(parameters, ";", &save); id;
+   for ( id = strtok_r(parameters, ";", &save); id;
          id = strtok_r(NULL, ";", &save))
    {
       struct video_shader_parameter *parameter =
@@ -456,7 +447,6 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
          RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
    }
 
-   free(parameters);
    return true;
 }
 
