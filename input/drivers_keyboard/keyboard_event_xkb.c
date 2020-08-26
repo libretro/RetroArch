@@ -58,7 +58,6 @@ void free_xkb(void)
 
 int init_xkb(int fd, size_t size)
 {
-   char *map_str        = NULL;
    mod_map_idx          = (xkb_mod_index_t *)calloc(
          MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
 
@@ -77,7 +76,7 @@ int init_xkb(int fd, size_t size)
    {
       if (fd >= 0)
       {
-         map_str = (char*)mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+         char *map_str = (char*)mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
          if (map_str == MAP_FAILED)
             goto error;
 
@@ -87,30 +86,33 @@ int init_xkb(int fd, size_t size)
       }
       else
       {
-         struct string_list *list          = NULL;
+         struct string_list list           = {0};
          struct xkb_rule_names rule        = {0};
          settings_t *settings              = config_get_ptr();
-         const char *input_keyboard_layout = settings->arrays.input_keyboard_layout;
+         const char *input_keyboard_layout = 
+            settings->arrays.input_keyboard_layout;
 
          rule.rules = "evdev";
 
+         string_list_initialize(&list);
+
          if (*input_keyboard_layout)
          {
-            list = string_split(input_keyboard_layout, ":");
-            if (list)
+            if (string_split_noalloc(&list, input_keyboard_layout, ":"))
             {
-               if (list->size >= 2)
-                  rule.variant = list->elems[1].data;
-               if (list->size >= 1)
-                  rule.layout = list->elems[0].data;
+               if (list.size >= 1)
+               {
+                  rule.layout     = list.elems[0].data;
+                  if (list.size >= 2)
+                     rule.variant = list.elems[1].data;
+               }
             }
          }
 
          xkb_map = xkb_keymap_new_from_names(xkb_ctx,
                &rule, XKB_MAP_COMPILE_NO_FLAGS);
 
-         if (list)
-            string_list_free(list);
+         string_list_deinitialize(&list);
       }
    }
 

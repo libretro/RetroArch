@@ -124,7 +124,7 @@ static bool task_overlay_load_desc(
    bool ret                             = true;
    bool by_pixel                        = false;
    char *key                            = NULL;
-   struct string_list *list             = NULL;
+   struct string_list list              = {0};
    const char *x                        = NULL;
    const char *y                        = NULL;
    const char *box                      = NULL;
@@ -157,26 +157,25 @@ static bool task_overlay_load_desc(
       goto end;
    }
 
-   list = string_split(overlay, ", ");
-
-   if (!list)
+   string_list_initialize(&list);
+   if (!string_split_noalloc(&list, overlay, ", "))
    {
       RARCH_ERR("[Overlay]: Failed to split overlay desc.\n");
       ret = false;
       goto end;
    }
 
-   if (list->size < 6)
+   if (list.size < 6)
    {
       RARCH_ERR("[Overlay]: Overlay desc is invalid. Requires at least 6 tokens.\n");
       ret = false;
       goto end;
    }
 
-   key            = list->elems[0].data;
-   x              = list->elems[1].data;
-   y              = list->elems[2].data;
-   box            = list->elems[3].data;
+   key            = list.elems[0].data;
+   x              = list.elems[1].data;
+   y              = list.elems[2].data;
+   box            = list.elems[3].data;
 
    desc->retro_key_idx = 0;
    BIT256_CLEAR_ALL(desc->button_mask);
@@ -269,8 +268,8 @@ static bool task_overlay_load_desc(
          break;
    }
 
-   desc->range_x = (float)strtod(list->elems[4].data, NULL) * width_mod;
-   desc->range_y = (float)strtod(list->elems[5].data, NULL) * height_mod;
+   desc->range_x = (float)strtod(list.elems[4].data, NULL) * width_mod;
+   desc->range_y = (float)strtod(list.elems[5].data, NULL) * height_mod;
 
    desc->mod_x   = desc->x - desc->range_x;
    desc->mod_w   = 2.0f * desc->range_x;
@@ -304,8 +303,7 @@ static bool task_overlay_load_desc(
    input_overlay->pos ++;
 
 end:
-   if (list)
-      string_list_free(list);
+   string_list_deinitialize(&list);
    return ret;
 }
 
@@ -611,21 +609,25 @@ static void task_overlay_deferred_load(retro_task_t *task)
       if (config_get_array(conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
-         struct string_list *list = string_split(overlay->config.rect.array, ", ");
+         struct string_list  list = {0};
 
-         if (!list || list->size < 4)
+         string_list_initialize(&list);
+
+         if (     !string_split_noalloc(
+                  &list, overlay->config.rect.array, ", ")  
+               || list.size < 4)
          {
             RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n",
                   overlay->config.rect.array);
-            string_list_free(list);
+            string_list_deinitialize(&list);
             goto error;
          }
 
-         overlay->x = (float)strtod(list->elems[0].data, NULL);
-         overlay->y = (float)strtod(list->elems[1].data, NULL);
-         overlay->w = (float)strtod(list->elems[2].data, NULL);
-         overlay->h = (float)strtod(list->elems[3].data, NULL);
-         string_list_free(list);
+         overlay->x = (float)strtod(list.elems[0].data, NULL);
+         overlay->y = (float)strtod(list.elems[1].data, NULL);
+         overlay->w = (float)strtod(list.elems[2].data, NULL);
+         overlay->h = (float)strtod(list.elems[3].data, NULL);
+         string_list_deinitialize(&list);
       }
 
       /* Assume for now that scaling center is in the middle.
