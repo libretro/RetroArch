@@ -1875,7 +1875,7 @@ end:
 bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
-   struct string_list *lines    = NULL;
+   struct string_list lines     = {0};
    size_t line_offset           = 0;
    bool success                 = false;
    bool is_active               = false;
@@ -1905,13 +1905,13 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
       goto end;
 
    /* Split into component lines */
-   lines = string_split(wrapped_str, "\n");
-   if (!lines)
+   string_list_initialize(&lines);
+   if (!string_split_noalloc(&lines, wrapped_str, "\n"))
       goto end;
 
    /* Check whether total number of lines fits within
     * the set limit */
-   if (lines->size <= line_ticker->max_lines)
+   if (lines.size <= line_ticker->max_lines)
    {
       strlcpy(line_ticker->s, wrapped_str, line_ticker->len);
       success = true;
@@ -1925,7 +1925,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
          gfx_animation_line_ticker_loop(
                line_ticker->idx,
                line_ticker->line_len,
-               lines->size,
+               lines.size,
                &line_offset);
          break;
       case TICKER_TYPE_BOUNCE:
@@ -1934,7 +1934,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
                line_ticker->idx,
                line_ticker->line_len,
                line_ticker->max_lines,
-               lines->size,
+               lines.size,
                &line_offset);
 
          break;
@@ -1942,7 +1942,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 
    /* Build output string from required lines */
    build_line_ticker_string(
-      line_ticker->max_lines, line_offset, lines,
+      line_ticker->max_lines, line_offset, &lines,
       line_ticker->s, line_ticker->len);
 
    success                  = true;
@@ -1957,12 +1957,7 @@ end:
       wrapped_str = NULL;
    }
 
-   if (lines)
-   {
-      string_list_free(lines);
-      lines = NULL;
-   }
-
+   string_list_deinitialize(&lines);
    if (!success)
       if (line_ticker->len > 0)
          line_ticker->s[0] = '\0';
@@ -1973,7 +1968,7 @@ end:
 bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
 {
    char *wrapped_str              = NULL;
-   struct string_list *lines      = NULL;
+   struct string_list lines       = {0};
    int glyph_width                = 0;
    int glyph_height               = 0;
    size_t line_len                = 0;
@@ -2040,14 +2035,14 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    if (string_is_empty(wrapped_str))
       goto end;
 
+   string_list_initialize(&lines);
    /* Split into component lines */
-   lines = string_split(wrapped_str, "\n");
-   if (!lines)
+   if (!string_split_noalloc(&lines, wrapped_str, "\n"))
       goto end;
 
    /* Check whether total number of lines fits within
     * the set field limit */
-   if (lines->size <= max_display_lines)
+   if (lines.size <= max_display_lines)
    {
       strlcpy(line_ticker->dst_str, wrapped_str, line_ticker->dst_str_len);
       *line_ticker->y_offset = 0.0f;
@@ -2081,7 +2076,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
                line_ticker->idx,
                line_ticker->fade_enabled,
                line_len, (size_t)glyph_height,
-               max_display_lines, lines->size,
+               max_display_lines, lines.size,
                &num_display_lines, &line_offset, line_ticker->y_offset,
                &fade_active,
                &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
@@ -2094,7 +2089,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
                line_ticker->idx,
                line_ticker->fade_enabled,
                line_len, (size_t)glyph_height,
-               max_display_lines, lines->size,
+               max_display_lines, lines.size,
                &num_display_lines, &line_offset, line_ticker->y_offset,
                &fade_active,
                &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
@@ -2105,7 +2100,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
 
    /* Build output string from required lines */
    build_line_ticker_string(
-         num_display_lines, line_offset, lines,
+         num_display_lines, line_offset, &lines,
          line_ticker->dst_str, line_ticker->dst_str_len);
 
    /* Extract top/bottom fade strings, if required */
@@ -2115,11 +2110,11 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
        * build_line_ticker_string() here, but it saves
        * rewriting a heap of code... */
       build_line_ticker_string(
-            1, top_fade_line_offset, lines,
+            1, top_fade_line_offset, &lines,
             line_ticker->top_fade_str, line_ticker->top_fade_str_len);
 
       build_line_ticker_string(
-            1, bottom_fade_line_offset, lines,
+            1, bottom_fade_line_offset, &lines,
             line_ticker->bottom_fade_str, line_ticker->bottom_fade_str_len);
    }
 
@@ -2135,11 +2130,7 @@ end:
       wrapped_str = NULL;
    }
 
-   if (lines)
-   {
-      string_list_free(lines);
-      lines = NULL;
-   }
+   string_list_deinitialize(&lines);
 
    if (!success)
    {
