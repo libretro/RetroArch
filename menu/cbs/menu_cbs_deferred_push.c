@@ -551,15 +551,19 @@ static int general_push(menu_displaylist_info_t *info,
                if (!string_is_empty(system->valid_extensions))
                {
                   unsigned x;
-                  struct string_list *str_list    = string_split(system->valid_extensions, "|");
+                  struct string_list  str_list    = {0};
 
-                  for (x = 0; x < str_list->size; x++)
+                  string_list_initialize(&str_list);
+                  string_split_noalloc(&str_list,
+                        system->valid_extensions, "|");
+
+                  for (x = 0; x < str_list.size; x++)
                   {
-                     const char *elem = str_list->elems[x].data;
+                     const char *elem = str_list.elems[x].data;
                      string_list_append(&str_list2, elem, attr);
                   }
 
-                  string_list_free(str_list);
+                  string_list_deinitialize(&str_list);
                }
             }
 
@@ -568,20 +572,23 @@ static int general_push(menu_displaylist_info_t *info,
                if (list && !string_is_empty(list->all_ext))
                {
                   unsigned x;
-                  struct string_list *str_list = string_split(
+                  struct string_list str_list  = {0};
+                  string_list_initialize(&str_list);
+
+                  string_split_noalloc(&str_list, 
                         list->all_ext, "|");
 
-                  for (x = 0; x < str_list->size; x++)
+                  for (x = 0; x < str_list.size; x++)
                   {
                      if (!string_list_find_elem(&str_list2,
-                              str_list->elems[x].data))
+                              str_list.elems[x].data))
                      {
-                        const char *elem = str_list->elems[x].data;
+                        const char *elem = str_list.elems[x].data;
                         string_list_append(&str_list2, elem, attr);
                      }
                   }
 
-                  string_list_free(str_list);
+                  string_list_deinitialize(&str_list);
                }
             }
 
