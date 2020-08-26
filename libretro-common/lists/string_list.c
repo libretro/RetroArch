@@ -286,7 +286,7 @@ struct string_list *string_split(const char *str, const char *delim)
    struct string_list *list = string_list_new();
 
    if (!list)
-      goto error;
+      return NULL;
 
    copy = strdup(str);
    if (!copy)
@@ -312,6 +312,40 @@ error:
    string_list_free(list);
    free(copy);
    return NULL;
+}
+
+bool string_split_noalloc(struct string_list *list,
+      const char *str, const char *delim)
+{
+   char *save      = NULL;
+   char *copy      = NULL;
+   const char *tmp = NULL;
+
+   if (!list)
+      return false;
+
+   copy            = strdup(str);
+   if (!copy)
+      return false;
+
+   tmp             = strtok_r(copy, delim, &save);
+   while (tmp)
+   {
+      union string_list_elem_attr attr;
+
+      attr.i = 0;
+
+      if (!string_list_append(list, tmp, attr))
+      {
+         free(copy);
+         return false;
+      }
+
+      tmp = strtok_r(NULL, delim, &save);
+   }
+
+   free(copy);
+   return true;
 }
 
 /**
