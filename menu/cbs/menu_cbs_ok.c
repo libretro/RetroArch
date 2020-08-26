@@ -4623,12 +4623,15 @@ static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu                 = menu_driver_get_ptr();
+   size_t playlist_index;
 
    if (!menu)
       return menu_cbs_exit();
 
+   playlist_index = (size_t)menu->rpl_entry_selection_ptr;
+
    if (!command_event(CMD_EVENT_RESET_CORE_ASSOCIATION,
-            (void *)&menu->rpl_entry_selection_ptr))
+            (void *)&playlist_index))
       return menu_cbs_exit();
    return 0;
 }
