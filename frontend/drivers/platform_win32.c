@@ -85,7 +85,7 @@ bool USE_NVDA_BRAILLE   = false;
 /* static public global variable */
 VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
-/* static global variables */
+/* TODO/FIXME - static global variables */
 static bool dwm_composition_disabled = false;
 static bool console_needs_free       = false;
 static char win32_cpu_model_name[64] = {0};
