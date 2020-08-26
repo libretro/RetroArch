@@ -2599,32 +2599,33 @@ json_cleanup:
                      STRLEN_CONST("thumbnail_mode")) == 0)
             {
                char thumbnail_mode_str[8]          = {0};
-               struct string_list *thumbnail_modes = NULL;
+               struct string_list thumbnail_modes  = {0};
 
                get_old_format_metadata_value(
-                     line_buf[3], thumbnail_mode_str, sizeof(thumbnail_mode_str));
-
-               thumbnail_modes = string_split(thumbnail_mode_str, "|");
-
-               if (thumbnail_modes)
+                     line_buf[3], thumbnail_mode_str,
+                     sizeof(thumbnail_mode_str));
+               string_list_initialize(&thumbnail_modes);
+               if (string_split_noalloc(&thumbnail_modes,
+                        thumbnail_mode_str, "|"))
                {
-                  if (thumbnail_modes->size == 2)
+                  if (thumbnail_modes.size == 2)
                   {
                      unsigned thumbnail_mode;
 
                      /* Right thumbnail mode */
-                     thumbnail_mode = string_to_unsigned(thumbnail_modes->elems[0].data);
+                     thumbnail_mode = string_to_unsigned(
+                           thumbnail_modes.elems[0].data);
                      if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
                         playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
 
                      /* Left thumbnail mode */
-                     thumbnail_mode = string_to_unsigned(thumbnail_modes->elems[1].data);
+                     thumbnail_mode = string_to_unsigned(
+                           thumbnail_modes.elems[1].data);
                      if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
                         playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                   }
-
-                  string_list_free(thumbnail_modes);
                }
+               string_list_deinitialize(&thumbnail_modes);
             }
 
             /* Get sort_mode */
