@@ -30,6 +30,7 @@
 /* TODO/FIXME -
  * fix game focus toggle */
 
+/* TODO/FIXME - static global variable */
 static uint64_t state[DEFAULT_MAX_PADS];
 
 static void xenon360_input_poll(void *data)

@@ -114,14 +114,13 @@ typedef struct
 
 struct udev_input_device
 {
-   int fd;
-   dev_t dev;
    void (*handle_cb)(void *data,
          const struct input_event *event, udev_input_device_t *dev);
-   char devnode[PATH_MAX_LENGTH];
-   enum udev_input_dev_type type;
-
+   int fd;
+   dev_t dev;
    udev_input_mouse_t mouse;
+   enum udev_input_dev_type type;
+   char devnode[PATH_MAX_LENGTH];
 };
 
 typedef void (*device_handle_cb)(void *data,

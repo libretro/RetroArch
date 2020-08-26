@@ -141,29 +141,27 @@ typedef struct state_device
 {
    int id;
    int port;
-   char name[256];
    uint16_t rumble_last_strength_strong;
    uint16_t rumble_last_strength_weak;
    uint16_t rumble_last_strength;
+   char name[256];
 } state_device_t;
 
 typedef struct android_input
 {
+   int64_t quick_tap_time;
    const input_device_driver_t *joypad;
-
-   state_device_t pad_states[MAX_USERS];
+   state_device_t pad_states[MAX_USERS];        /* int alignment */
+   int mouse_x_delta, mouse_y_delta;
+   int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
+   unsigned pads_connected;
+   unsigned pointer_count;
+   sensor_t accelerometer_state;                /* float alignment */
+   float mouse_x_prev, mouse_y_prev;
+   struct input_pointer pointer[MAX_TOUCH];     /* int16_t alignment */
    int16_t analog_state[MAX_USERS][MAX_AXIS];
    int8_t hat_state[MAX_USERS][2];
    char device_model[256];
-
-   unsigned pads_connected;
-   sensor_t accelerometer_state;
-   struct input_pointer pointer[MAX_TOUCH];
-   unsigned pointer_count;
-   int mouse_x_delta, mouse_y_delta;
-   float mouse_x_prev, mouse_y_prev;
-   int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
-   int64_t quick_tap_time;
 } android_input_t;
 
 static void frontend_android_get_version_sdk(int32_t *sdk);

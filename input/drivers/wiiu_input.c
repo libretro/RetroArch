@@ -35,6 +35,7 @@
 
 #include "wiiu_dbg.h"
 
+/* TODO/FIXME - static global variables */
 static uint8_t keyboard_channel         = 0x00;
 static bool keyboard_state[RETROK_LAST] = { 0 };
 

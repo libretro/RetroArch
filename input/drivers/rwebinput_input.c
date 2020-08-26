@@ -54,13 +54,17 @@ typedef struct rwebinput_keyboard_event
 
 typedef struct rwebinput_keyboard_event_queue
 {
+   rwebinput_keyboard_event_t *events;
    size_t count;
    size_t max_size;
-   rwebinput_keyboard_event_t *events;
 } rwebinput_keyboard_event_queue_t;
 
 typedef struct rwebinput_mouse_states
 {
+   double pending_scroll_x;
+   double pending_scroll_y;
+   double scroll_x;
+   double scroll_y;
    signed x;
    signed y;
    signed pending_delta_x;
@@ -68,18 +72,14 @@ typedef struct rwebinput_mouse_states
    signed delta_x;
    signed delta_y;
    uint8_t buttons;
-   double pending_scroll_x;
-   double pending_scroll_y;
-   double scroll_x;
-   double scroll_y;
 } rwebinput_mouse_state_t;
 
 typedef struct rwebinput_input
 {
-   bool keys[RETROK_LAST];
-   rwebinput_mouse_state_t mouse;
-   rwebinput_keyboard_event_queue_t keyboard;
+   rwebinput_mouse_state_t mouse;             /* double alignment */
    const input_device_driver_t *joypad;
+   rwebinput_keyboard_event_queue_t keyboard; /* ptr alignment */
+   bool keys[RETROK_LAST];
 } rwebinput_input_t;
 
 /* KeyboardEvent.keyCode has been deprecated for a while and doesn't have

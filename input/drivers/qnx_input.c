@@ -49,26 +49,24 @@ typedef struct
    int type;
    int analogCount;
    int buttonCount;
-   char id[64];
-   char vid[64];
-   char pid[64];
-
    int device;
    int port;
    int index;
-
    /* Current state. */
    int buttons;
    int analog0[3];
    int analog1[3];
+   char id[64];
+   char vid[64];
+   char pid[64];
 } qnx_input_device_t;
 
 struct input_pointer
 {
-   int16_t x, y;
-   int16_t full_x, full_y;
    int contact_id;
    int map;
+   int16_t x, y;
+   int16_t full_x, full_y;
 };
 
 #define QNX_MAX_KEYS (65535 + 7) / 8
@@ -77,25 +75,24 @@ struct input_pointer
 
 typedef struct qnx_input
 {
-   unsigned pads_connected;
+   uint64_t pad_state[DEFAULT_MAX_PADS];
+
+   const input_device_driver_t *joypad;
 
    /*
     * The first pointer_count indices of touch_map will be a valid,
     * active index in pointer array.
     * Saves us from searching through pointer array when polling state.
     */
-   struct input_pointer pointer[MAX_TOUCH];
-   unsigned pointer_count;
+   struct input_pointer pointer[MAX_TOUCH]; /* int alignment */
    int touch_map[MAX_TOUCH];
+   int trackpad_acc[2];
+   unsigned pointer_count;
+   unsigned pads_connected;
 
    qnx_input_device_t devices[DEFAULT_MAX_PADS];
-   const input_device_driver_t *joypad;
 
    uint8_t keyboard_state[QNX_MAX_KEYS];
-
-   uint64_t pad_state[DEFAULT_MAX_PADS];
-
-   int trackpad_acc[2];
 } qnx_input_t;
 
 extern screen_context_t screen_ctx;

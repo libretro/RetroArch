@@ -51,13 +51,13 @@ typedef struct
 
 typedef struct ps3_input
 {
+   const input_device_driver_t *joypad;
+   int connected[MAX_KB_PORT_NUM];
 #ifdef HAVE_MOUSE
    unsigned mice_connected;
 #endif
-   const input_device_driver_t *joypad;
    KbInfo kbinfo;
    KbData kbdata[MAX_KB_PORT_NUM];
-   int connected[MAX_KB_PORT_NUM];
 } ps3_input_t;
 
 static int mod_table[] = {

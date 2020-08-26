@@ -76,18 +76,16 @@ typedef struct psp_input
    const input_device_driver_t *joypad;
 #ifdef VITA
    int keyboard_hid_handle;
-   uint8_t prev_keys[6];
-   bool keyboard_state[VITA_MAX_SCANCODE + 1];
-
    int mouse_hid_handle;
    int32_t mouse_x;
    int32_t mouse_y;
    int32_t mouse_x_delta;
    int32_t mouse_y_delta;
+   uint8_t prev_keys[6];
+   bool keyboard_state[VITA_MAX_SCANCODE + 1];
    bool mouse_button_left;
    bool mouse_button_right;
    bool mouse_button_middle;
-   
    bool sensors_enabled;
 #endif
 } psp_input_t;

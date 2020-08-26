@@ -37,7 +37,6 @@
 typedef struct sdl_input
 {
    const input_device_driver_t *joypad;
-
    int mouse_x, mouse_y;
    int mouse_abs_x, mouse_abs_y;
    int mouse_l, mouse_r, mouse_m, mouse_b4, mouse_b5, mouse_wu, mouse_wd, mouse_wl, mouse_wr;

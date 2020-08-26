@@ -39,11 +39,10 @@ typedef struct x11_input
    Display *display;
    Window win;
 
-   char state[32];
-   bool mouse_l, mouse_r, mouse_m;
    int mouse_x, mouse_y;
    int mouse_last_x, mouse_last_y;
-
+   char state[32];
+   bool mouse_l, mouse_r, mouse_m;
    bool grab_mouse;
 } x11_input_t;
 
