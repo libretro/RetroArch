@@ -198,15 +198,16 @@ typedef struct input_overlay input_overlay_t;
 
 typedef struct
 {
-    bool hide_in_menu;
-    bool overlay_enable;
-    size_t size;
-    float overlay_opacity;
-    float overlay_scale;
-    float overlay_center_x;
-    float overlay_center_y;
-    struct overlay *overlays;
-    struct overlay *active;
+   struct overlay *overlays;
+   struct overlay *active;
+   size_t size;
+   float overlay_opacity;
+   float overlay_scale;
+   float overlay_center_x;
+   float overlay_center_y;
+   bool overlay_enable;
+   bool hide_in_menu;
+   bool hide_when_gamepad_connected;
 } overlay_task_data_t;
 
 void input_overlay_free_overlay(struct overlay *overlay);

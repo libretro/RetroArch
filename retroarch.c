@@ -23241,14 +23241,20 @@ static void input_overlay_loaded(retro_task_t *task,
    if (err)
       return;
 
-#ifdef HAVE_MENU
-   /* We can't display when the menu is up */
-   if (data->hide_in_menu && p_rarch->menu_driver_alive)
+   if (data->overlay_enable)
    {
-      if (data->overlay_enable)
+#ifdef HAVE_MENU
+      /* We can't display when the menu is up */
+      if (data->hide_in_menu && p_rarch->menu_driver_alive)
+         goto abort_load;
+#endif
+
+      /* If 'hide_when_gamepad_connected' is enabled,
+       * we can't display when a gamepad is connected */
+      if (data->hide_when_gamepad_connected &&
+          (input_config_get_device_name(0) != NULL))
          goto abort_load;
    }
-#endif
 
    if (  !data->overlay_enable                   ||
          !video_driver_overlay_interface(&iface) ||
@@ -23507,22 +23513,23 @@ static void retroarch_overlay_deinit(struct rarch_state *p_rarch)
 
 static void retroarch_overlay_init(struct rarch_state *p_rarch)
 {
-   settings_t *settings        = p_rarch->configuration_settings;
-   bool input_overlay_enable   = settings->bools.input_overlay_enable;
-   const char *path_overlay    = settings->paths.path_overlay;
-   float overlay_opacity       = settings->floats.input_overlay_opacity;
-   float overlay_scale         = settings->floats.input_overlay_scale;
-   float overlay_center_x      = settings->floats.input_overlay_center_x;
-   float overlay_center_y      = settings->floats.input_overlay_center_y;
-   bool load_enabled           = input_overlay_enable;
+   settings_t *settings                     = p_rarch->configuration_settings;
+   bool input_overlay_enable                = settings->bools.input_overlay_enable;
+   const char *path_overlay                 = settings->paths.path_overlay;
+   float overlay_opacity                    = settings->floats.input_overlay_opacity;
+   float overlay_scale                      = settings->floats.input_overlay_scale;
+   float overlay_center_x                   = settings->floats.input_overlay_center_x;
+   float overlay_center_y                   = settings->floats.input_overlay_center_y;
+   bool load_enabled                        = input_overlay_enable;
 #ifdef HAVE_MENU
-   bool overlay_hide_in_menu   = settings->bools.input_overlay_hide_in_menu;
+   bool overlay_hide_in_menu                = settings->bools.input_overlay_hide_in_menu;
 #else
-   bool overlay_hide_in_menu   = false;
+   bool overlay_hide_in_menu                = false;
 #endif
+   bool overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
-   uint64_t memory_free        = frontend_driver_get_free_memory();
+   uint64_t memory_free                     = frontend_driver_get_free_memory();
    if (memory_free < (3 * 1024 * 1024))
       return;
 #endif
@@ -23536,10 +23543,16 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
       load_enabled = load_enabled && !p_rarch->menu_driver_alive;
 #endif
 
+   /* Cancel load if 'hide_when_gamepad_connected' is
+    * enabled and a gamepad is currently connected */
+   if (overlay_hide_when_gamepad_connected)
+      load_enabled = load_enabled && (input_config_get_device_name(0) == NULL);
+
    if (load_enabled)
       task_push_overlay_load_default(input_overlay_loaded,
             path_overlay,
             overlay_hide_in_menu,
+            overlay_hide_when_gamepad_connected,
             input_overlay_enable,
             overlay_opacity,
             overlay_scale,
@@ -38772,12 +38785,31 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)
    {
-      static char prev_overlay_restore = false;
-      static unsigned last_width       = 0;
-      static unsigned last_height      = 0;
-      bool check_next_rotation         = true;
-      bool input_overlay_hide_in_menu  = settings->bools.input_overlay_hide_in_menu;
-      bool input_overlay_auto_rotate   = settings->bools.input_overlay_auto_rotate;
+      static char prev_overlay_restore               = false;
+      static unsigned last_width                     = 0;
+      static unsigned last_height                    = 0;
+      bool check_next_rotation                       = true;
+      bool input_overlay_hide_in_menu                = settings->bools.input_overlay_hide_in_menu;
+      bool input_overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
+      bool input_overlay_auto_rotate                 = settings->bools.input_overlay_auto_rotate;
+
+      /* Check whether overlay should be hidden
+       * when a gamepad is connected */
+      if (input_overlay_hide_when_gamepad_connected)
+      {
+         static bool last_controller_connected = false;
+         bool controller_connected             = (input_config_get_device_name(0) != NULL);
+
+         if (controller_connected != last_controller_connected)
+         {
+            if (controller_connected)
+               retroarch_overlay_deinit(p_rarch);
+            else
+               retroarch_overlay_init(p_rarch);
+
+            last_controller_connected = controller_connected;
+         }
+      }
 
       /* Check next overlay */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);

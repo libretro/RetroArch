@@ -158,6 +158,7 @@ bool task_push_overlay_load_default(
       retro_task_callback_t cb,
       const char *overlay_path,
       bool overlay_hide_in_menu,
+      bool overlay_hide_when_gamepad_connected,
       bool input_overlay_enable,
       float input_overlay_opacity,
       float input_overlay_scale,

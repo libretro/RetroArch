@@ -56,6 +56,7 @@ struct overlay_loader
    bool driver_rgba_support;
    bool overlay_enable;
    bool overlay_hide_in_menu;
+   bool overlay_hide_when_gamepad_connected;
 };
 
 static void task_overlay_image_done(struct overlay *overlay)
@@ -704,15 +705,16 @@ static void task_overlay_handler(retro_task_t *task)
       overlay_task_data_t *data = (overlay_task_data_t*)
          calloc(1, sizeof(*data));
 
-      data->overlays         = loader->overlays;
-      data->size             = loader->size;
-      data->active           = loader->active;
-      data->hide_in_menu     = loader->overlay_hide_in_menu;
-      data->overlay_enable   = loader->overlay_enable;
-      data->overlay_opacity  = loader->overlay_opacity;
-      data->overlay_scale    = loader->overlay_scale;
-      data->overlay_center_x = loader->overlay_center_x;
-      data->overlay_center_y = loader->overlay_center_y;
+      data->overlays                    = loader->overlays;
+      data->active                      = loader->active;
+      data->size                        = loader->size;
+      data->overlay_opacity             = loader->overlay_opacity;
+      data->overlay_scale               = loader->overlay_scale;
+      data->overlay_center_x            = loader->overlay_center_x;
+      data->overlay_center_y            = loader->overlay_center_y;
+      data->overlay_enable              = loader->overlay_enable;
+      data->hide_in_menu                = loader->overlay_hide_in_menu;
+      data->hide_when_gamepad_connected = loader->overlay_hide_when_gamepad_connected;
 
       task_set_data(task, data);
    }
@@ -739,6 +741,7 @@ bool task_push_overlay_load_default(
       retro_task_callback_t cb,
       const char *overlay_path,
       bool overlay_hide_in_menu,
+      bool overlay_hide_when_gamepad_connected,
       bool input_overlay_enable,
       float input_overlay_opacity,
       float input_overlay_scale,
@@ -750,7 +753,7 @@ bool task_push_overlay_load_default(
    retro_task_t *t          = NULL;
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = NULL;
-   
+
    if (string_is_empty(overlay_path))
       return false;
 
@@ -790,19 +793,20 @@ bool task_push_overlay_load_default(
       return false;
    }
 
-   loader->overlay_hide_in_menu = overlay_hide_in_menu;
-   loader->overlay_enable       = input_overlay_enable;
-   loader->overlay_opacity      = input_overlay_opacity;
-   loader->overlay_scale        = input_overlay_scale;
-   loader->overlay_center_x     = input_overlay_center_x;
-   loader->overlay_center_y     = input_overlay_center_y;
-   loader->conf                 = conf;
-   loader->state                = OVERLAY_STATUS_DEFERRED_LOAD;
-   loader->pos_increment        = (loader->size / 4) ? (loader->size / 4) : 4;
+   loader->overlay_hide_in_menu                = overlay_hide_in_menu;
+   loader->overlay_hide_when_gamepad_connected = overlay_hide_when_gamepad_connected;
+   loader->overlay_enable                      = input_overlay_enable;
+   loader->overlay_opacity                     = input_overlay_opacity;
+   loader->overlay_scale                       = input_overlay_scale;
+   loader->overlay_center_x                    = input_overlay_center_x;
+   loader->overlay_center_y                    = input_overlay_center_y;
+   loader->conf                                = conf;
+   loader->state                               = OVERLAY_STATUS_DEFERRED_LOAD;
+   loader->pos_increment                       = (loader->size / 4) ? (loader->size / 4) : 4;
 #ifdef RARCH_INTERNAL
-   loader->driver_rgba_support  = video_driver_supports_rgba();
+   loader->driver_rgba_support                 = video_driver_supports_rgba();
 #endif
-   t                            = task_init();
+   t                                           = task_init();
 
    if (!t)
    {

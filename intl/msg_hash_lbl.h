@@ -1393,6 +1393,10 @@ MSG_HASH(
    "overlay_hide_in_menu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "overlay_hide_when_gamepad_connected"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "overlay_show_physical_inputs"
    )
