@@ -126,15 +126,11 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char scale_type_x[64];
    char scale_type_y[64];
    char frame_count_mod[64];
-   size_t path_size             = PATH_MAX_LENGTH;
-   char *tmp_path               = (char*)malloc(path_size);
+   char tmp_path[PATH_MAX_LENGTH];
    struct gfx_fbo_scale *scale  = NULL;
    bool tmp_bool                = false;
    float fattr                  = 0.0f;
    int iattr                    = 0;
-
-   if (!tmp_path)
-      return false;
 
    fp_fbo_buf[0]      = mipmap_buf[0]          = alias_buf[0]       =
    scale_name_buf[0]  = attr_name_buf[0]       = scale_type[0]      =
@@ -144,16 +140,14 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
    /* Source */
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
-   if (!config_get_path(conf, shader_name, tmp_path, path_size))
+   if (!config_get_path(conf, shader_name, tmp_path, sizeof(tmp_path)))
    {
       RARCH_ERR("[Shaders]: Couldn't parse shader source (%s).\n", shader_name);
-      free(tmp_path);
       return false;
    }
 
    fill_pathname_resolve_relative(pass->source.path,
          conf->path, tmp_path, sizeof(pass->source.path));
-   free(tmp_path);
 
    /* Smooth */
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
