@@ -168,8 +168,15 @@ bool string_list_append(struct string_list *list, const char *elem,
 {
    char *data_dup = NULL;
 
+   /* Note: If 'list' is incorrectly initialised
+    * (i.e. if struct is zero initialised and
+    * string_list_initialize() is not called on
+    * it) capacity will be zero. This will cause
+    * a segfault. Handle this case by forcing the new
+    * capacity to a fixed size of 32 */
    if (list->size >= list->cap &&
-         !string_list_capacity(list, list->cap * 2))
+         !string_list_capacity(list,
+               (list->cap > 0) ? (list->cap * 2) : 32))
       return false;
 
    data_dup = strdup(elem);

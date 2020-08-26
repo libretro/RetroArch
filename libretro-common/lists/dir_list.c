@@ -264,14 +264,17 @@ struct string_list *dir_list_new(const char *dir,
    return list;
 }
 
+/* Warning: 'list' must zero initialised before
+ * calling this function, otherwise memory leaks/
+ * undefined behaviour will occur */
 bool dir_list_initialize(struct string_list *list,
       const char *dir,
       const char *ext, bool include_dirs,
       bool include_hidden, bool include_compressed,
       bool recursive)
 {
-   if (!list)
-      return NULL;
+   if (!list || !string_list_initialize(list))
+      return false;
    return dir_list_append(list, dir, ext, include_dirs,
             include_hidden, include_compressed, recursive);
 }

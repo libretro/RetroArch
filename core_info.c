@@ -911,7 +911,7 @@ void core_info_get_name(const char *path, char *s, size_t len,
       bool get_display_name)
 {
    size_t i;
-   struct string_list contents;
+   struct string_list contents      = {0};
    const char       *path_basedir   = !string_is_empty(path_info) ?
       path_info : dir_cores;
    const char *core_path_basename   = path_basename(path);
