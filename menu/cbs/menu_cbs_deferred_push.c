@@ -510,18 +510,22 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!string_is_empty(new_exts))
             {
-               struct string_list *str_list3  = string_split(new_exts, "|");
+               struct string_list str_list3   = {0};
+               string_list_initialize(&str_list3);
+               string_split_noalloc(&str_list3, new_exts, "|");
+
 #ifdef HAVE_IBXM
-               union string_list_elem_attr attr;
-               attr.i = 0;
-               string_list_append(str_list3, "s3m", attr);
-               string_list_append(str_list3, "mod", attr);
-               string_list_append(str_list3, "xm", attr);
+               {
+                  union string_list_elem_attr attr;
+                  attr.i = 0;
+                  string_list_append(&str_list3, "s3m", attr);
+                  string_list_append(&str_list3, "mod", attr);
+                  string_list_append(&str_list3, "xm", attr);
+               }
 #endif
                string_list_join_concat(newstring2, sizeof(newstring2),
-                     str_list3, "|");
-               string_list_free(str_list3);
-
+                     &str_list3, "|");
+               string_list_deinitialize(&str_list3);
             }
 
             if (new_exts_allocated)
@@ -596,20 +600,22 @@ static int general_push(menu_displaylist_info_t *info,
                   &str_list2, "|");
 
             {
-               struct string_list *str_list3  = string_split(newstring, "|");
+               struct string_list  str_list3  = {0};
+               string_list_initialize(&str_list3);
+               string_split_noalloc(&str_list3, newstring, "|");
 
 #ifdef HAVE_IBXM
                {
                   union string_list_elem_attr attr;
                   attr.i = 0;
-                  string_list_append(str_list3, "s3m", attr);
-                  string_list_append(str_list3, "mod", attr);
-                  string_list_append(str_list3, "xm", attr);
+                  string_list_append(&str_list3, "s3m", attr);
+                  string_list_append(&str_list3, "mod", attr);
+                  string_list_append(&str_list3, "xm", attr);
                }
 #endif
                string_list_join_concat(newstring2, sizeof(newstring2),
-                     str_list3, "|");
-               string_list_free(str_list3);
+                     &str_list3, "|");
+               string_list_deinitialize(&str_list3);
             }
             string_list_deinitialize(&str_list2);
          }
