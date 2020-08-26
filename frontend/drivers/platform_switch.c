@@ -363,13 +363,16 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
             svcExitProcess();
       }
 #endif
-      char *argBuffer = (char *)malloc(PATH_MAX);
+      char *arg_buffer = (char *)malloc(PATH_MAX);
       if (should_load_game)
-         snprintf(argBuffer, PATH_MAX, "%s \"%s\"", path, game_path);
+         snprintf(arg_buffer, PATH_MAX, "%s \"%s\"", path, game_path);
       else
-         snprintf(argBuffer, PATH_MAX, "%s", path);
+      {
+         arg_buffer[0] = '\0';
+         strlcpy(arg_buffer, path, PATH_MAX);
+      }
 
-      envSetNextLoad(path, argBuffer);
+      envSetNextLoad(path, arg_buffer);
    }
 }
 
