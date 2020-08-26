@@ -56,7 +56,7 @@ unsigned print_buf_lines(file_list_t *list, char *buf,
       const char *core_date        = NULL;
       const char *core_crc         = NULL;
       const char *core_pathname    = NULL;
-      struct string_list *str_list = NULL;
+      struct string_list str_list  = {0};
 
       /* The end of the buffer, print the last bit */
       if (*(buf + i) == '\0')
@@ -77,14 +77,15 @@ unsigned print_buf_lines(file_list_t *list, char *buf,
       if (line_start[ln] == '\n')
          line_start[ln] = '\0';
 
-      str_list         = string_split(line_start, " ");
+      string_list_initialize(&str_list);
+      string_split_noalloc(&str_list, line_start, " ");
 
-      if (str_list->elems[0].data)
-         core_date     = str_list->elems[0].data;
-      if (str_list->elems[1].data)
-         core_crc      = str_list->elems[1].data;
-      if (str_list->elems[2].data)
-         core_pathname = str_list->elems[2].data;
+      if (str_list.elems[0].data)
+         core_date     = str_list.elems[0].data;
+      if (str_list.elems[1].data)
+         core_crc      = str_list.elems[1].data;
+      if (str_list.elems[2].data)
+         core_pathname = str_list.elems[2].data;
 
       (void)core_date;
       (void)core_crc;
@@ -120,7 +121,7 @@ unsigned print_buf_lines(file_list_t *list, char *buf,
          }
       }
 
-      string_list_free(str_list);
+      string_list_deinitialize(&str_list);
 
       /* Restore the saved char */
       *(buf + i + 1) = c;
