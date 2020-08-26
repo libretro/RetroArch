@@ -680,20 +680,24 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU
 static int action_get_title_generic(char *s, size_t len, const char *path,
       const char *text)
 {
-   struct string_list *list_path    = NULL;
+   bool ret                     = false;
+   struct string_list list_path = {0};
 
    if (!string_is_empty(path))
-      list_path = string_split(path, "|");
+   {
+      string_list_initialize(&list_path);
+      ret = string_split_noalloc(&list_path, path, "|");
+   }
 
-   if (list_path)
+   if (ret)
    {
       char elem0_path[255];
 
       elem0_path[0] = '\0';
 
-      if (list_path->size > 0)
-         strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
-      string_list_free(list_path);
+      if (list_path.size > 0)
+         strlcpy(elem0_path, list_path.elems[0].data, sizeof(elem0_path));
+      string_list_deinitialize(&list_path);
       strlcpy(s, text, len);
 
       if (!string_is_empty(elem0_path))
