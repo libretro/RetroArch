@@ -147,7 +147,7 @@ bool string_list_initialize(struct string_list *list)
       return false;
    if (!string_list_initialize_internal(list))
    {
-      string_list_free(list);
+      string_list_deinitialize(list);
       return false;
    }
    return true;
