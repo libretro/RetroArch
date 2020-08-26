@@ -32,15 +32,16 @@ typedef struct
   const char* memaddr;
   unsigned points;
   unsigned id;
+  unsigned active;
 } rcheevos_racheevo_t;
 
 typedef struct
 {
   const char* title;
   const char* description;
-  const char* format;
   const char* mem;
   unsigned id;
+  unsigned format;
 } rcheevos_ralboard_t;
 
 typedef struct

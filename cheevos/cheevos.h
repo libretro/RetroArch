@@ -37,7 +37,8 @@ typedef struct rcheevos_ctx_desc
 enum
 {
    RCHEEVOS_ACTIVE_SOFTCORE = 1 << 0,
-   RCHEEVOS_ACTIVE_HARDCORE = 1 << 1
+   RCHEEVOS_ACTIVE_HARDCORE = 1 << 1,
+   RCHEEVOS_ACTIVE_UNOFFICIAL = 1 << 2
 };
 
 bool rcheevos_load(const void *data);

@@ -407,23 +407,28 @@ static int rcheevos_new_cheevo(rcheevos_readud_t* ud)
 static int rcheevos_new_lboard(rcheevos_readud_t* ud)
 {
    rcheevos_ralboard_t* lboard = ud->patchdata->lboards + ud->lboard_count++;
+   char format[32];
 
    lboard->title       = rcheevos_unescape_string(ud->title.string, ud->title.length);
    lboard->description = rcheevos_unescape_string(ud->desc.string, ud->desc.length);
-   lboard->format      = rcheevos_unescape_string(ud->format.string, ud->format.length);
    lboard->mem         = rcheevos_unescape_string(ud->memaddr.string, ud->memaddr.length);
    lboard->id          = (unsigned)strtol(ud->id.string, NULL, 10);
 
    if (   !lboard->title
        || !lboard->description
-       || !lboard->format
        || !lboard->mem)
    {
       CHEEVOS_FREE(lboard->title);
       CHEEVOS_FREE(lboard->description);
-      CHEEVOS_FREE(lboard->format);
       CHEEVOS_FREE(lboard->mem);
       return -1;
+   }
+
+   if (ud->format.length > 0 && ud->format.length < sizeof(format) - 1)
+   {
+      memcpy(format, ud->format.string, ud->format.length);
+      format[ud->format.length] = '\0';
+      lboard->format = rc_parse_format(format);
    }
 
    return 0;
@@ -693,7 +698,6 @@ void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata)
    {
       CHEEVOS_FREE(lboard->title);
       CHEEVOS_FREE(lboard->description);
-      CHEEVOS_FREE(lboard->format);
       CHEEVOS_FREE(lboard->mem);
    }
 
