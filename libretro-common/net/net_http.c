@@ -361,7 +361,7 @@ void net_http_urlencode(char **dest, const char *source)
    {
       int written = 0;
 
-      /* any non-ascii character will just be encoded without question */
+      /* any non-ASCII character will just be encoded without question */
       if ((unsigned)*source < sizeof(urlencode_lut) && urlencode_lut[(unsigned)*source])
          written = snprintf(enc, count, "%c", urlencode_lut[(unsigned)*source]);
       else
