@@ -83,63 +83,75 @@ enum gfx_wrap_type
 
 struct gfx_fbo_scale
 {
-   enum gfx_scale_type type_x;
-   enum gfx_scale_type type_y;
+   unsigned abs_x;
+   unsigned abs_y;
    float scale_x;
    float scale_y;
+   enum gfx_scale_type type_x;
+   enum gfx_scale_type type_y;
    bool fp_fbo;
    bool srgb_fbo;
    bool valid;
-   unsigned abs_x;
-   unsigned abs_y;
 };
 
 struct video_shader_parameter
 {
-   char id[64];
-   char desc[64];
+   int pass;
    float current;
    float minimum;
    float initial;
    float maximum;
    float step;
-   int pass;
+   char id[64];
+   char desc[64];
 };
 
 struct video_shader_pass
 {
+   struct gfx_fbo_scale fbo; /* unsigned alignment */
+   unsigned filter;
+   unsigned frame_count_mod;
+   enum gfx_wrap_type wrap;
    struct
    {
-      char path[PATH_MAX_LENGTH];
       struct
       {
          char *vertex; /* Dynamically allocated. Must be free'd. */
          char *fragment; /* Dynamically allocated. Must be free'd. */
       } string;
+      char path[PATH_MAX_LENGTH];
    } source;
-
    char alias[64];
-   struct gfx_fbo_scale fbo;
-   enum gfx_wrap_type wrap;
    bool mipmap;
-   unsigned filter;
-   unsigned frame_count_mod;
    bool feedback;
 };
 
 struct video_shader_lut
 {
+   unsigned filter;
+   enum gfx_wrap_type wrap;
    char id[64];
    char path[PATH_MAX_LENGTH];
-   enum gfx_wrap_type wrap;
    bool mipmap;
-   unsigned filter;
 };
 
 /* This is pretty big, shouldn't be put on the stack.
  * Avoid lots of allocation for convenience. */
 struct video_shader
 {
+   struct video_shader_parameter parameters[GFX_MAX_PARAMETERS]; /* int alignment */
+   /* If < 0, no feedback pass is used. Otherwise,
+    * the FBO after pass #N is passed a texture to next frame. */
+   int feedback_pass;
+   int history_size;
+
+   struct video_shader_pass pass[GFX_MAX_SHADERS]; /* unsigned alignment */
+   struct video_shader_lut lut[GFX_MAX_TEXTURES];  /* unsigned alignment */
+   unsigned passes;
+   unsigned luts;
+   unsigned num_parameters;
+   unsigned variables;
+
    char prefix[64];
    char path[PATH_MAX_LENGTH];
 
@@ -147,19 +159,6 @@ struct video_shader
    /* indicative of whether shader was modified - 
     * for instance from the menus */
    bool modified;
-
-   unsigned passes;
-   unsigned luts;
-   unsigned num_parameters;
-   unsigned variables;
-   /* If < 0, no feedback pass is used. Otherwise,
-    * the FBO after pass #N is passed a texture to next frame. */
-   int feedback_pass;
-   int history_size;
-
-   struct video_shader_pass pass[GFX_MAX_SHADERS];
-   struct video_shader_lut lut[GFX_MAX_TEXTURES];
-   struct video_shader_parameter parameters[GFX_MAX_PARAMETERS];
 };
 
 /**
