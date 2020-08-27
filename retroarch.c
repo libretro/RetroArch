@@ -2978,12 +2978,22 @@ gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
    return &p_rarch->gfx_thumb_state;
 }
 
+static void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time)
+{
+   if (!timer)
+      return;
+   timer->current    = current_time;
+   timer->timeout_us = (timer->timeout_end - timer->current);
+}
+
 #define RARCH_TIMER_GET_TIMEOUT(timer) ((int)(timer.timeout_us / 1000000))
 
 #define RARCH_TIMER_HAS_EXPIRED(timer) ((timer.timeout_us <= 0) ? true : false)
 
 static void rarch_timer_end(rarch_timer_t *timer)
 {
+   if (!timer)
+      return;
    timer->timer_end   = true;
    timer->timer_begin = false;
    timer->timeout_end = 0;
@@ -2991,15 +3001,11 @@ static void rarch_timer_end(rarch_timer_t *timer)
 
 static void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
 {
+   if (!timer)
+      return;
    timer->timeout_us  = usec;
    timer->current     = cpu_features_get_time_usec();
    timer->timeout_end = timer->current + timer->timeout_us;
-}
-
-static void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time)
-{
-   timer->current    = current_time;
-   timer->timeout_us = (timer->timeout_end - timer->current);
 }
 
 #ifdef HAVE_MENU
@@ -3389,6 +3395,9 @@ static void menu_dialog_push(menu_dialog_t *p_dialog)
    const char *label;
    menu_displaylist_info_t info;
 
+   if (!p_dialog->pending_push)
+      return;
+
    menu_displaylist_info_init(&info);
 
    info.list                 = menu_entries_get_menu_stack_ptr(0);
@@ -3412,6 +3421,9 @@ void menu_dialog_set_current_id(unsigned id)
 
 static void menu_dialog_reset(menu_dialog_t *p_dialog)
 {
+   if (!p_dialog)
+      return;
+
    p_dialog->pending_push  = false;
    p_dialog->current_id    = 0;
    p_dialog->current_type  = MENU_DIALOG_NONE;
@@ -3427,15 +3439,15 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
    /* store key in bind */
-   binds->buffer.key              = (enum retro_key)code;
+   binds->buffer.key = (enum retro_key)code;
 
    /* write out the bind */
-   *(binds->output)               = binds->buffer;
+   *(binds->output)  = binds->buffer;
 
    /* next bind */
    binds->begin++;
    binds->output++;
-   binds->buffer                  =* (binds->output);
+   binds->buffer    =* (binds->output);
    rarch_timer_begin_new_time_us(
          &binds->timer_hold, input_bind_hold_us);
    rarch_timer_begin_new_time_us(
@@ -3462,7 +3474,7 @@ static int menu_input_key_bind_set_mode_common(
    switch (state)
    {
       case MENU_INPUT_BINDS_CTL_BIND_SINGLE:
-         keybind                  = (struct retro_keybind*)setting->value.target.keybind;
+         keybind    = (struct retro_keybind*)setting->value.target.keybind;
 
          if (!keybind)
             return -1;
@@ -3556,6 +3568,8 @@ static void menu_input_key_bind_poll_bind_state_internal(
       bool timed_out)
 {
    unsigned b, a, h;
+   if (!joypad)
+      return;
 
    if (joypad->poll)
       joypad->poll();
@@ -3623,9 +3637,8 @@ static void menu_input_key_bind_poll_bind_state(
          NULL,
          0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
-   if (joypad)
-      menu_input_key_bind_poll_bind_state_internal(
-            joypad, state, port, timed_out);
+   menu_input_key_bind_poll_bind_state_internal(
+         joypad, state, port, timed_out);
 
    if (sec_joypad)
       menu_input_key_bind_poll_bind_state_internal(
@@ -3829,6 +3842,9 @@ static bool menu_input_key_bind_poll_find_trigger(
    unsigned i;
    unsigned max_users          = p_rarch->input_driver_max_users;
 
+   if (!state || !new_state)
+      return false;
+
    for (i = 0; i < max_users; i++)
    {
       if (!menu_input_key_bind_poll_find_trigger_pad(
@@ -3849,6 +3865,9 @@ static bool menu_input_key_bind_poll_find_hold(
    unsigned i;
    struct rarch_state *p_rarch = &rarch_st;
    unsigned        max_users   = p_rarch->input_driver_max_users;
+
+   if (!new_state)
+      return false;
 
    for (i = 0; i < max_users; i++)
    {
@@ -3939,6 +3958,9 @@ static bool menu_input_key_bind_iterate(
    menu_input_t *menu_input       = &p_rarch->menu_input_state;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+
+   if (!bind)
+      return false;
 
    snprintf(bind->s, bind->len,
          "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
@@ -4098,7 +4120,7 @@ static bool menu_input_key_bind_iterate(
  */
 static void menu_cbs_init(
       struct rarch_state *p_rarch,
-      file_list_t *list,
+      void *data,
       menu_file_list_cbs_t *cbs,
       const char *path, const char *label,
       unsigned type, size_t idx)
@@ -4106,6 +4128,9 @@ static void menu_cbs_init(
    menu_ctx_bind_t bind_info;
    const char *menu_label        = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+   file_list_t *list             = (file_list_t*)data;
+   if (!list)
+      return;
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
@@ -4304,19 +4329,23 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
  **/
 static int generic_menu_iterate(
       struct rarch_state *p_rarch,
-      menu_handle_t *menu,
+      void *data,
       void *userdata, enum menu_action action,
       retro_time_t current_time)
 {
-   enum action_iterate_type iterate_type;
 #ifdef HAVE_ACCESSIBILITY
    static enum action_iterate_type
-      last_iterate_type            = ITERATE_TYPE_DEFAULT;
+      last_iterate_type           = ITERATE_TYPE_DEFAULT;
 #endif
+   enum action_iterate_type iterate_type;
    unsigned file_type              = 0;
    int ret                         = 0;
    const char *label               = NULL;
+   menu_handle_t *menu             = (menu_handle_t*)data;
    struct menu_state *menu_st      = &p_rarch->menu_driver_state;
+
+   if (!menu)
+      return 0;
 
    menu_entries_get_last_stack(NULL, &label, &file_type, NULL, NULL);
 
@@ -6964,8 +6993,7 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
          return true;
    }
    else
-      if (p_rarch->menu_driver_data 
-            && generic_menu_iterate(
+      if (generic_menu_iterate(
                p_rarch,
                p_rarch->menu_driver_data,
                p_rarch->menu_userdata, iterate->action,
