@@ -210,16 +210,22 @@ static void vulkan_raster_font_render_line(
       width  = glyph->width;
       height = glyph->height;
 
-      vulkan_write_quad_vbo(font->pv + font->vertices,
-            (x + (off_x + delta_x) * scale) * inv_win_width,
-            (y + (off_y + delta_y) * scale) * inv_win_height,
-            width * scale * inv_win_width,
-            height * scale * inv_win_height,
-            tex_x * inv_tex_size_x,
-            tex_y * inv_tex_size_y,
-            width * inv_tex_size_x,
-            height * inv_tex_size_y,
-            &vk_color);
+      {
+         struct vk_vertex *pv         = font->pv + font->vertices;
+         float _x                     = (x + (off_x + delta_x) * scale)
+            * inv_win_width;
+         float _y                     = (y + (off_y + delta_y) * scale)
+            * inv_win_height;
+         float _width                 = width  * scale * inv_win_width;
+         float _height                = height * scale * inv_win_height;
+         float _tex_x                 = tex_x * inv_tex_size_x;
+         float _tex_y                 = tex_y * inv_tex_size_y;
+         float _tex_width             = width * inv_tex_size_x;
+         float _tex_height            = height * inv_tex_size_y;
+         const struct vk_color *color = &vk_color;
+
+         VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, color);
+      }
 
       font->vertices += 6;
 

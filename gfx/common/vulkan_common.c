@@ -1124,10 +1124,12 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
                6 * sizeof(struct vk_vertex), &range))
          return;
 
-      vulkan_write_quad_vbo((struct vk_vertex*)range.data,
-            0.0f, 0.0f, 1.0f, 1.0f,
-            0.0f, 0.0f, 1.0f, 1.0f,
-            &quad->color);
+      {
+         struct vk_vertex         *pv = (struct vk_vertex*)range.data;
+         const struct vk_color *color = &quad->color;
+
+         VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, color);
+      }
 
       vkCmdBindVertexBuffers(vk->cmd, 0, 1,
             &range.buffer, &range.offset);
