@@ -110,17 +110,13 @@ static unsigned input_autoconfigure_get_config_file_affinity(
    uint16_t config_pid = 0;
    bool pid_match      = false;
    unsigned affinity   = 0;
-   char config_device_name[256];
-
-   config_device_name[0] = '\0';
+   struct config_entry_list 
+      *entry           = NULL;
 
    if (!autoconfig_handle || !config)
       return 0;
 
    /* Parse config file */
-   config_get_array(config, "input_device", config_device_name,
-         sizeof(config_device_name));
-
    if (config_get_int(config, "input_vendor_id", &tmp_int))
       config_vid = (uint16_t)tmp_int;
 
@@ -150,9 +146,10 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       affinity += 3;
 
    /* Check for matching device name */
-   if (!string_is_empty(config_device_name) &&
-       string_is_equal(config_device_name,
-            autoconfig_handle->device_info.name))
+   if (      (entry  = config_get_entry(config, "input_device"))
+         && !string_is_empty(entry->value)
+         &&  string_is_equal(entry->value,
+             autoconfig_handle->device_info.name))
       affinity += 2;
 
    return affinity;
@@ -164,10 +161,7 @@ static void input_autoconfigure_set_config_file(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config)
 {
-   char device_display_name[256];
-
-   device_display_name[0] = '\0';
-
+   struct config_entry_list *entry    = NULL;
    if (!autoconfig_handle || !config)
       return;
 
@@ -190,12 +184,10 @@ static void input_autoconfigure_set_config_file(
    }
 
    /* Read device display name */
-   config_get_array(config, "input_device_display_name",
-         device_display_name, sizeof(device_display_name));
-
-   if (!string_is_empty(device_display_name))
+   if (  (entry = config_get_entry(config, "input_device_display_name"))
+         && !string_is_empty(entry->value))
       strlcpy(autoconfig_handle->device_info.display_name,
-            device_display_name,
+            entry->value,
             sizeof(autoconfig_handle->device_info.display_name));
 
    /* Set auto-configured status to 'true' */
