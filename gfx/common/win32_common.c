@@ -843,27 +843,11 @@ static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   bool keydown          = true;
    win32_common_state_t 
       *g_win32           = (win32_common_state_t*)&win32_st;
 
    switch (message)
    {
-      case WM_NCLBUTTONDBLCLK:
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
-#endif
-#ifdef HAVE_DINPUT
-         if (input_get_ptr() == &input_dinput)
-         {
-            void* input_data = input_get_data();
-            if (input_data && dinput_handle_message(input_data,
-                     message, wparam, lparam))
-               return 0;
-         }
-#endif
-         break;
       case WM_SYSCOMMAND:
          /* Prevent screensavers, etc, while running. */
          switch (wparam)
@@ -903,14 +887,59 @@ static LRESULT CALLBACK wnd_proc_common(
                   RETRO_DEVICE_KEYBOARD);
          }
          return TRUE;
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-         /* Key released */
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+         g_win32->quit  = true;
+         *quit          = true;
+         /* fall-through */
+      case WM_MOVE:
+         win32_save_position();
+         break;
+      case WM_SIZE:
+         /* Do not send resize message if we minimize. */
+         if (  wparam != SIZE_MAXHIDE &&
+               wparam != SIZE_MINIMIZED)
+         {
+            if (LOWORD(lparam) != g_win32_resize_width ||
+                  HIWORD(lparam) != g_win32_resize_height)
+            {
+               g_win32_resize_width  = LOWORD(lparam);
+               g_win32_resize_height = HIWORD(lparam);
+               g_win32->resized      = true;
+            }
+         }
+         *quit = true;
+         break;
+      case WM_COMMAND:
+         {
+            settings_t *settings     = config_get_ptr();
+            bool ui_menubar_enable   = settings ? settings->bools.ui_menubar_enable : false;
+            if (ui_menubar_enable)
+               win32_menu_loop(main_window.hwnd, wparam);
+         }
+         break;
+   }
+   return 0;
+}
+
+static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
+      UINT message, WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   bool keydown                  = true;
+   bool quit                     = false;
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   switch (message)
+   {
+      case WM_KEYUP:                /* Key released */
+      case WM_SYSKEYUP:             /* Key released */
          keydown                  = false;
          /* fall-through */
-      case WM_KEYDOWN:
-      case WM_SYSKEYDOWN:
-         *quit = true;
+      case WM_KEYDOWN:              /* Key pressed  */
+      case WM_SYSKEYDOWN:           /* Key pressed  */
+         quit                     = true;
          {
             uint16_t mod          = 0;
             unsigned keycode      = 0;
@@ -963,53 +992,7 @@ static LRESULT CALLBACK wnd_proc_common(
                )
                return 0;
          }
-         return DefWindowProc(hwnd, message, wparam, lparam);
-
-      case WM_CLOSE:
-      case WM_DESTROY:
-      case WM_QUIT:
-         g_win32->quit  = true;
-         *quit          = true;
-         /* fall-through */
-      case WM_MOVE:
-         win32_save_position();
          break;
-      case WM_SIZE:
-         /* Do not send resize message if we minimize. */
-         if (  wparam != SIZE_MAXHIDE &&
-               wparam != SIZE_MINIMIZED)
-         {
-            if (LOWORD(lparam) != g_win32_resize_width ||
-                  HIWORD(lparam) != g_win32_resize_height)
-            {
-               g_win32_resize_width  = LOWORD(lparam);
-               g_win32_resize_height = HIWORD(lparam);
-               g_win32->resized      = true;
-            }
-         }
-         *quit = true;
-         break;
-      case WM_COMMAND:
-         {
-            settings_t *settings     = config_get_ptr();
-            bool ui_menubar_enable   = settings ? settings->bools.ui_menubar_enable : false;
-            if (ui_menubar_enable)
-               win32_menu_loop(main_window.hwnd, wparam);
-         }
-         break;
-   }
-   return 0;
-}
-
-static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
-      UINT message, WPARAM wparam, LPARAM lparam)
-{
-   LRESULT ret;
-   bool quit = false;
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
-   switch (message)
-   {
       case WM_MOUSEMOVE:
       case WM_POINTERDOWN:
       case WM_POINTERUP:
@@ -1035,10 +1018,6 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:
-      case WM_KEYDOWN:
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_SYSKEYDOWN:
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
@@ -1082,7 +1061,6 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
-   bool quit = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
    if (message == WM_CREATE)
@@ -1120,7 +1098,6 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
-   bool quit = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
    
    if (message == WM_CREATE)
