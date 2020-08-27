@@ -269,35 +269,36 @@ static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
    char rdb_path[PATH_MAX_LENGTH];
-   int ret                        = -1;
-   char *query                    = NULL;
-   char *rdb                      = NULL;
    const char *path               = info->path;
+   settings_t *settings           = NULL;
    config_file_t *conf            = NULL;
+   struct config_entry_list 
+      *query_entry                = NULL;
+   struct config_entry_list 
+      *rdb_entry                  = NULL;
    
    if (!(conf = config_file_new_from_path_to_string(path)))
       return -1;
 
-   if (!config_get_string(conf, "query", &query))
-      goto end;
+   if (     
+            !(query_entry  = config_get_entry(conf, "query"))
+         ||  (string_is_empty(query_entry->value))
+         || !(rdb_entry    = config_get_entry(conf, "rdb"))
+         ||  (string_is_empty(rdb_entry->value))
+      )
+   {
+      config_file_free(conf);
+      return -1;
+   }
 
-   if (!config_get_string(conf, "rdb", &rdb))
-      goto end;
+   config_file_free(conf);
 
    rdb_path[0] = '\0';
 
-   {
-      settings_t *settings                 = config_get_ptr();
-      if (settings)
-      {
-         const char *path_content_database = 
-            settings->paths.path_content_database;
-
-         fill_pathname_join(rdb_path,
-               path_content_database,
-               rdb, sizeof(rdb_path));
-      }
-   }
+   settings = config_get_ptr();
+   fill_pathname_join(rdb_path,
+         settings->paths.path_content_database,
+         rdb_entry->value, sizeof(rdb_path));
 
    if (!string_is_empty(info->path_b))
       free(info->path_b);
@@ -310,16 +311,10 @@ static int deferred_push_cursor_manager_list_deferred(
    if (!string_is_empty(info->path))
       free(info->path);
 
-   info->path_c    = strdup(query);
+   info->path_c    = strdup(query_entry->value);
    info->path      = strdup(rdb_path);
 
-   ret             = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-
-end:
-   config_file_free(conf);
-   free(rdb);
-   free(query);
-   return ret;
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
 
 #ifdef HAVE_LIBRETRODB
