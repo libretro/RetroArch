@@ -417,7 +417,7 @@ error:
 }
 #endif
 
-void create_graphics_context(HWND hwnd, bool *quit)
+void create_wgl_context(HWND hwnd, bool *quit)
 {
    switch (win32_api)
    {

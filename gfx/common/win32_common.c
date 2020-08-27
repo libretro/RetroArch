@@ -1065,7 +1065,7 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
 
    if (message == WM_CREATE)
    {
-      create_graphics_context(hwnd, &g_win32->quit);
+      create_wgl_context(hwnd, &g_win32->quit);
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
       return 0;
