@@ -254,19 +254,6 @@ struct vk_buffer_range
    VkBuffer buffer;     /* ptr alignment */
 };
 
-struct vk_buffer_chain vulkan_buffer_chain_init(
-      VkDeviceSize block_size,
-      VkDeviceSize alignment,
-      VkBufferUsageFlags usage);
-
-bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
-      struct vk_buffer_chain *chain, size_t size,
-      struct vk_buffer_range *range);
-
-void vulkan_buffer_chain_free(
-      VkDevice device,
-      struct vk_buffer_chain *chain);
-
 struct vk_descriptor_pool
 {
    struct vk_descriptor_pool *next;
@@ -286,9 +273,9 @@ struct vk_descriptor_manager
 
 struct vk_per_frame
 {
-   struct vk_texture texture;
+   struct vk_texture texture;          /* uint64_t alignment */
    struct vk_texture texture_optimal;
-   struct vk_buffer_chain vbo;
+   struct vk_buffer_chain vbo;         /* uint64_t alignment */
    struct vk_buffer_chain ubo;
    struct vk_descriptor_manager descriptor_manager;
 
@@ -525,6 +512,20 @@ typedef struct vk
    write.pTexelBufferView     = NULL; \
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
 }
+
+
+struct vk_buffer_chain vulkan_buffer_chain_init(
+      VkDeviceSize block_size,
+      VkDeviceSize alignment,
+      VkBufferUsageFlags usage);
+
+bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
+      struct vk_buffer_chain *chain, size_t size,
+      struct vk_buffer_range *range);
+
+void vulkan_buffer_chain_free(
+      VkDevice device,
+      struct vk_buffer_chain *chain);
 
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
