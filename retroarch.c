@@ -27531,53 +27531,50 @@ static void input_config_parse_joy_button(
       config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
-   if (bind)
+   char str[256];
+   char tmp[64];
+   char key[64];
+   char key_label[64];
+   char *tmp_a              = NULL;
+
+   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
+
+   fill_pathname_join_delim(str, prefix, btn,
+         '_', sizeof(str));
+   fill_pathname_join_delim(key, str,
+         "btn", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str,
+         "btn_label", '_', sizeof(key_label));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      char str[256];
-      char tmp[64];
-      char key[64];
-      char key_label[64];
-      char *tmp_a              = NULL;
-
-      str[0] = tmp[0] = key[0] = key_label[0] = '\0';
-
-      fill_pathname_join_delim(str, prefix, btn,
-            '_', sizeof(str));
-      fill_pathname_join_delim(key, str,
-            "btn", '_', sizeof(key));
-      fill_pathname_join_delim(key_label, str,
-            "btn_label", '_', sizeof(key_label));
-
-      if (config_get_array(conf, key, tmp, sizeof(tmp)))
+      btn = tmp;
+      if (     btn[0] == 'n'
+            && btn[1] == 'u'
+            && btn[2] == 'l'
+            && btn[3] == '\0'
+         )
+         bind->joykey = NO_BTN;
+      else
       {
-         btn = tmp;
-         if (     btn[0] == 'n'
-               && btn[1] == 'u'
-               && btn[2] == 'l'
-               && btn[3] == '\0'
-            )
-            bind->joykey = NO_BTN;
-         else
+         if (*btn == 'h')
          {
-            if (*btn == 'h')
-            {
-               const char *str = btn + 1;
-               if (str && isdigit((int)*str))
-                  parse_hat(bind, str);
-            }
-            else
-               bind->joykey = strtoull(tmp, NULL, 0);
+            const char *str = btn + 1;
+            if (str && isdigit((int)*str))
+               parse_hat(bind, str);
          }
+         else
+            bind->joykey = strtoull(tmp, NULL, 0);
       }
+   }
 
-      if (config_get_string(conf, key_label, &tmp_a))
-      {
-         if (!string_is_empty(bind->joykey_label))
-            free(bind->joykey_label);
+   if (config_get_string(conf, key_label, &tmp_a))
+   {
+      if (!string_is_empty(bind->joykey_label))
+         free(bind->joykey_label);
 
-         bind->joykey_label = strdup(tmp_a);
-         free(tmp_a);
-      }
+      bind->joykey_label = strdup(tmp_a);
+      free(tmp_a);
    }
 }
 
@@ -27585,52 +27582,49 @@ static void input_config_parse_joy_axis(
       config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
-   if (bind)
+   char str[256];
+   char       tmp[64];
+   char       key[64];
+   char key_label[64];
+   char        *tmp_a       = NULL;
+
+   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
+
+   fill_pathname_join_delim(str, prefix, axis,
+         '_', sizeof(str));
+   fill_pathname_join_delim(key, str,
+         "axis", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str,
+         "axis_label", '_', sizeof(key_label));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      char str[256];
-      char       tmp[64];
-      char       key[64];
-      char key_label[64];
-      char        *tmp_a       = NULL;
-
-      str[0] = tmp[0] = key[0] = key_label[0] = '\0';
-
-      fill_pathname_join_delim(str, prefix, axis,
-            '_', sizeof(str));
-      fill_pathname_join_delim(key, str,
-            "axis", '_', sizeof(key));
-      fill_pathname_join_delim(key_label, str,
-            "axis_label", '_', sizeof(key_label));
-
-      if (config_get_array(conf, key, tmp, sizeof(tmp)))
+      if (     tmp[0] == 'n'
+            && tmp[1] == 'u'
+            && tmp[2] == 'l'
+            && tmp[3] == '\0'
+         )
+         bind->joyaxis = AXIS_NONE;
+      else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
       {
-         if (     tmp[0] == 'n'
-               && tmp[1] == 'u'
-               && tmp[2] == 'l'
-               && tmp[3] == '\0'
-            )
-            bind->joyaxis = AXIS_NONE;
-         else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
-         {
-            int i_axis = (int)strtol(tmp + 1, NULL, 0);
-            if (*tmp == '+')
-               bind->joyaxis = AXIS_POS(i_axis);
-            else
-               bind->joyaxis = AXIS_NEG(i_axis);
-         }
-
-         /* Ensure that D-pad emulation doesn't screw this over. */
-         bind->orig_joyaxis = bind->joyaxis;
+         int i_axis = (int)strtol(tmp + 1, NULL, 0);
+         if (*tmp == '+')
+            bind->joyaxis = AXIS_POS(i_axis);
+         else
+            bind->joyaxis = AXIS_NEG(i_axis);
       }
 
-      if (config_get_string(conf, key_label, &tmp_a))
-      {
-         if (bind->joyaxis_label &&
-               !string_is_empty(bind->joyaxis_label))
-            free(bind->joyaxis_label);
-         bind->joyaxis_label = strdup(tmp_a);
-         free(tmp_a);
-      }
+      /* Ensure that D-pad emulation doesn't screw this over. */
+      bind->orig_joyaxis = bind->joyaxis;
+   }
+
+   if (config_get_string(conf, key_label, &tmp_a))
+   {
+      if (bind->joyaxis_label &&
+            !string_is_empty(bind->joyaxis_label))
+         free(bind->joyaxis_label);
+      bind->joyaxis_label = strdup(tmp_a);
+      free(tmp_a);
    }
 }
 
@@ -27638,68 +27632,65 @@ static void input_config_parse_mouse_button(
       config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
-   if (bind)
+   int val;
+   char str[256];
+   char tmp[64];
+   char key[64];
+
+   str[0] = tmp[0] = key[0] = '\0';
+
+   fill_pathname_join_delim(str, prefix, btn,
+         '_', sizeof(str));
+   fill_pathname_join_delim(key, str,
+         "mbtn", '_', sizeof(key));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      int val;
-      char str[256];
-      char tmp[64];
-      char key[64];
+      bind->mbutton = NO_BTN;
 
-      str[0] = tmp[0] = key[0] = '\0';
-
-      fill_pathname_join_delim(str, prefix, btn,
-            '_', sizeof(str));
-      fill_pathname_join_delim(key, str,
-            "mbtn", '_', sizeof(key));
-
-      if (config_get_array(conf, key, tmp, sizeof(tmp)))
+      if (tmp[0]=='w')
       {
-         bind->mbutton = NO_BTN;
-
-         if (tmp[0]=='w')
+         switch (tmp[1])
          {
-            switch (tmp[1])
-            {
-               case 'u':
-                  bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP;
-                  break;
-               case 'd':
-                  bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
-                  break;
-               case 'h':
-                  switch (tmp[2])
-                  {
-                     case 'u':
-                        bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
-                        break;
-                     case 'd':
-                        bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
-                        break;
-                  }
-                  break;
-            }
+            case 'u':
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+               break;
+            case 'd':
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+               break;
+            case 'h':
+               switch (tmp[2])
+               {
+                  case 'u':
+                     bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+                     break;
+                  case 'd':
+                     bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
+                     break;
+               }
+               break;
          }
-         else
+      }
+      else
+      {
+         val = atoi(tmp);
+         switch (val)
          {
-            val = atoi(tmp);
-            switch (val)
-            {
-               case 1:
-                  bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT;
-                  break;
-               case 2:
-                  bind->mbutton = RETRO_DEVICE_ID_MOUSE_RIGHT;
-                  break;
-               case 3:
-                  bind->mbutton = RETRO_DEVICE_ID_MOUSE_MIDDLE;
-                  break;
-               case 4:
-                  bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_4;
-                  break;
-               case 5:
-                  bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_5;
-                  break;
-            }
+            case 1:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT;
+               break;
+            case 2:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_RIGHT;
+               break;
+            case 3:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_MIDDLE;
+               break;
+            case 4:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_4;
+               break;
+            case 5:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_5;
+               break;
          }
       }
    }
@@ -27710,55 +27701,52 @@ static void input_config_get_bind_string_joykey(
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   if (bind)
+   settings_t  *settings       = 
+      p_rarch->configuration_settings;
+   bool  label_show            = 
+      settings->bools.input_descriptor_label_show;
+
+   if (GET_HAT_DIR(bind->joykey))
    {
-      settings_t  *settings       = 
-         p_rarch->configuration_settings;
-      bool  label_show            = 
-         settings->bools.input_descriptor_label_show;
-
-      if (GET_HAT_DIR(bind->joykey))
-      {
-         if (bind->joykey_label &&
-               !string_is_empty(bind->joykey_label) && label_show)
-            fill_pathname_join_delim_concat(buf, prefix,
-                  bind->joykey_label, ' ', " (hat)", size);
-         else
-         {
-            const char *dir = "?";
-
-            switch (GET_HAT_DIR(bind->joykey))
-            {
-               case HAT_UP_MASK:
-                  dir = "up";
-                  break;
-               case HAT_DOWN_MASK:
-                  dir = "down";
-                  break;
-               case HAT_LEFT_MASK:
-                  dir = "left";
-                  break;
-               case HAT_RIGHT_MASK:
-                  dir = "right";
-                  break;
-               default:
-                  break;
-            }
-            snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
-                  (unsigned)GET_HAT(bind->joykey), dir,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-         }
-      }
+      if (bind->joykey_label &&
+            !string_is_empty(bind->joykey_label) && label_show)
+         fill_pathname_join_delim_concat(buf, prefix,
+               bind->joykey_label, ' ', " (hat)", size);
       else
       {
-         if (bind->joykey_label &&
-               !string_is_empty(bind->joykey_label) && label_show)
-            fill_pathname_join_delim_concat(buf, prefix,
-                  bind->joykey_label, ' ', " (btn)", size);
-         else
-            snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+         const char *dir = "?";
+
+         switch (GET_HAT_DIR(bind->joykey))
+         {
+            case HAT_UP_MASK:
+               dir = "up";
+               break;
+            case HAT_DOWN_MASK:
+               dir = "down";
+               break;
+            case HAT_LEFT_MASK:
+               dir = "left";
+               break;
+            case HAT_RIGHT_MASK:
+               dir = "right";
+               break;
+            default:
+               break;
+         }
+         snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
+               (unsigned)GET_HAT(bind->joykey), dir,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       }
+   }
+   else
+   {
+      if (bind->joykey_label &&
+            !string_is_empty(bind->joykey_label) && label_show)
+         fill_pathname_join_delim_concat(buf, prefix,
+               bind->joykey_label, ' ', " (btn)", size);
+      else
+         snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
 
@@ -27767,35 +27755,32 @@ static void input_config_get_bind_string_joyaxis(
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   if (bind)
-   {
-      settings_t *settings             = 
-         p_rarch->configuration_settings;
-      bool input_descriptor_label_show = 
-         settings->bools.input_descriptor_label_show;
+   settings_t *settings             = 
+      p_rarch->configuration_settings;
+   bool input_descriptor_label_show = 
+      settings->bools.input_descriptor_label_show;
 
-      if (bind->joyaxis_label &&
-            !string_is_empty(bind->joyaxis_label)
-            && input_descriptor_label_show)
-         fill_pathname_join_delim_concat(buf, prefix,
-               bind->joyaxis_label, ' ', " (axis)", size);
-      else
+   if (bind->joyaxis_label &&
+         !string_is_empty(bind->joyaxis_label)
+         && input_descriptor_label_show)
+      fill_pathname_join_delim_concat(buf, prefix,
+            bind->joyaxis_label, ' ', " (axis)", size);
+   else
+   {
+      unsigned axis        = 0;
+      char dir             = '\0';
+      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
       {
-         unsigned axis        = 0;
-         char dir             = '\0';
-         if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         {
-            dir = '-';
-            axis = AXIS_NEG_GET(bind->joyaxis);
-         }
-         else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         {
-            dir = '+';
-            axis = AXIS_POS_GET(bind->joyaxis);
-         }
-         snprintf(buf, size, "%s%c%u (%s)", prefix, dir, axis,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+         dir = '-';
+         axis = AXIS_NEG_GET(bind->joyaxis);
       }
+      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '+';
+         axis = AXIS_POS_GET(bind->joyaxis);
+      }
+      snprintf(buf, size, "%s%c%u (%s)", prefix, dir, axis,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
 
@@ -27809,14 +27794,16 @@ void input_config_get_bind_string(char *buf,
 
    *buf = '\0';
 
-   if (bind->joykey != NO_BTN)
+   if      (bind      && bind->joykey  != NO_BTN)
       input_config_get_bind_string_joykey(p_rarch, buf, "", bind, size);
-   else if (bind->joyaxis != AXIS_NONE)
+   else if (bind      && bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(p_rarch, buf, "", bind, size);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
-      input_config_get_bind_string_joykey(p_rarch, buf, "Auto: ", auto_bind, size);
+      input_config_get_bind_string_joykey(p_rarch, buf, "Auto: ",
+            auto_bind, size);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(p_rarch, buf, "Auto: ", auto_bind, size);
+      input_config_get_bind_string_joyaxis(p_rarch, buf, "Auto: ",
+            auto_bind, size);
 
    if (*buf)
       delim = 1;
@@ -28281,7 +28268,7 @@ void config_read_keybinds_conf(void *data)
          const char *prefix         = input_config_get_prefix(i, input_config_bind_map_get_meta(j));
          const char *btn            = input_config_bind_map_get_base(j);
 
-         if (!bind->valid)
+         if (!bind || !bind->valid)
             continue;
          if (!input_config_bind_map_get_valid(j))
             continue;
@@ -28311,7 +28298,7 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    {
       input_config_parse_joy_button(config, "input",
             input_config_bind_map_get_base(i), &binds[i]);
-      input_config_parse_joy_axis(config, "input",
+      input_config_parse_joy_axis  (config, "input",
             input_config_bind_map_get_base(i), &binds[i]);
    }
 }
