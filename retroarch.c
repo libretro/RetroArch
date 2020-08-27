@@ -27397,15 +27397,18 @@ static void input_config_parse_key(
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
-   char tmp[64];
    char key[64];
+   struct config_entry_list *entry = NULL;
 
-   tmp[0] = key[0] = '\0';
+   key[0] = '\0';
 
    fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
 
-   if (config_get_array(conf, key, tmp, sizeof(tmp)))
-      bind->key = input_config_translate_str_to_rk(tmp);
+   if (
+            (entry = config_get_entry(conf, key))
+         && (!string_is_empty(entry->value))
+      )
+      bind->key = input_config_translate_str_to_rk(entry->value);
 }
 
 static const char *input_config_get_prefix(unsigned user, bool meta)
