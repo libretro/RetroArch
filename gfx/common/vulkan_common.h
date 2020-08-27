@@ -513,6 +513,62 @@ typedef struct vk
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
 }
 
+#define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, color) \
+{ \
+   float r        = color->r; \
+   float g        = color->g; \
+   float b        = color->b; \
+   float a        = color->a; \
+   pv[0].x        = (_x)  + 0.0f * (_width); \
+   pv[0].y        = (_y)  + 0.0f * (_height); \
+   pv[0].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
+   pv[0].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[0].color.r  = r; \
+   pv[0].color.g  = g; \
+   pv[0].color.b  = b; \
+   pv[0].color.a  = a; \
+   pv[1].x        = (_x)     + 0.0f * (_width); \
+   pv[1].y        = (_y)     + 1.0f * (_height); \
+   pv[1].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
+   pv[1].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[1].color.r  = r; \
+   pv[1].color.g  = g; \
+   pv[1].color.b  = b; \
+   pv[1].color.a  = a; \
+   pv[2].x        = (_x)     + 1.0f * (_width); \
+   pv[2].y        = (_y)     + 0.0f * (_height); \
+   pv[2].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
+   pv[2].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[2].color.r  = r; \
+   pv[2].color.g  = g; \
+   pv[2].color.b  = b; \
+   pv[2].color.a  = a; \
+   pv[3].x        = (_x)     + 1.0f * (_width); \
+   pv[3].y        = (_y)     + 1.0f * (_height); \
+   pv[3].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
+   pv[3].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[3].color.r  = r; \
+   pv[3].color.g  = g; \
+   pv[3].color.b  = b; \
+   pv[3].color.a  = a; \
+   pv[4].x        = (_x)     + 1.0f * (_width); \
+   pv[4].y        = (_y)     + 0.0f * (_height); \
+   pv[4].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
+   pv[4].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[4].color.r  = r; \
+   pv[4].color.g  = g; \
+   pv[4].color.b  = b; \
+   pv[4].color.a  = a; \
+   pv[5].x        = (_x)     + 0.0f * (_width); \
+   pv[5].y        = (_y)     + 1.0f * (_height); \
+   pv[5].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
+   pv[5].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[5].color.r  = r; \
+   pv[5].color.g  = g; \
+   pv[5].color.b  = b; \
+   pv[5].color.a  = a; \
+}
+
 
 struct vk_buffer_chain vulkan_buffer_chain_init(
       VkDeviceSize block_size,
@@ -580,62 +636,6 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
          RARCH_ERR("[Vulkan]: Unknown format.\n");
          abort();
    }
-}
-
-#define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, color) \
-{ \
-   float r        = color->r; \
-   float g        = color->g; \
-   float b        = color->b; \
-   float a        = color->a; \
-   pv[0].x        = (_x)  + 0.0f * (_width); \
-   pv[0].y        = (_y)  + 0.0f * (_height); \
-   pv[0].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[0].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[0].color.r  = r; \
-   pv[0].color.g  = g; \
-   pv[0].color.b  = b; \
-   pv[0].color.a  = a; \
-   pv[1].x        = (_x)     + 0.0f * (_width); \
-   pv[1].y        = (_y)     + 1.0f * (_height); \
-   pv[1].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[1].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[1].color.r  = r; \
-   pv[1].color.g  = g; \
-   pv[1].color.b  = b; \
-   pv[1].color.a  = a; \
-   pv[2].x        = (_x)     + 1.0f * (_width); \
-   pv[2].y        = (_y)     + 0.0f * (_height); \
-   pv[2].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[2].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[2].color.r  = r; \
-   pv[2].color.g  = g; \
-   pv[2].color.b  = b; \
-   pv[2].color.a  = a; \
-   pv[3].x        = (_x)     + 1.0f * (_width); \
-   pv[3].y        = (_y)     + 1.0f * (_height); \
-   pv[3].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[3].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[3].color.r  = r; \
-   pv[3].color.g  = g; \
-   pv[3].color.b  = b; \
-   pv[3].color.a  = a; \
-   pv[4].x        = (_x)     + 1.0f * (_width); \
-   pv[4].y        = (_y)     + 0.0f * (_height); \
-   pv[4].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[4].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[4].color.r  = r; \
-   pv[4].color.g  = g; \
-   pv[4].color.b  = b; \
-   pv[4].color.a  = a; \
-   pv[5].x        = (_x)     + 0.0f * (_width); \
-   pv[5].y        = (_y)     + 1.0f * (_height); \
-   pv[5].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[5].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[5].color.r  = r; \
-   pv[5].color.g  = g; \
-   pv[5].color.b  = b; \
-   pv[5].color.a  = a; \
 }
 
 struct vk_buffer vulkan_create_buffer(
