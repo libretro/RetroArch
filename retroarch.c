@@ -27535,7 +27535,7 @@ static void input_config_parse_joy_button(
    char tmp[64];
    char key[64];
    char key_label[64];
-   char *tmp_a              = NULL;
+   struct config_entry_list *tmp_a         = NULL;
 
    str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 
@@ -27568,13 +27568,14 @@ static void input_config_parse_joy_button(
       }
    }
 
-   if (config_get_string(conf, key_label, &tmp_a))
+   tmp_a = config_get_entry(conf, key_label);
+
+   if (tmp_a && !string_is_empty(tmp_a->value))
    {
       if (!string_is_empty(bind->joykey_label))
          free(bind->joykey_label);
 
-      bind->joykey_label = strdup(tmp_a);
-      free(tmp_a);
+      bind->joykey_label = strdup(tmp_a->value);
    }
 }
 
@@ -27586,7 +27587,7 @@ static void input_config_parse_joy_axis(
    char       tmp[64];
    char       key[64];
    char key_label[64];
-   char        *tmp_a       = NULL;
+   struct config_entry_list *tmp_a         = NULL;
 
    str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 
@@ -27618,13 +27619,14 @@ static void input_config_parse_joy_axis(
       bind->orig_joyaxis = bind->joyaxis;
    }
 
-   if (config_get_string(conf, key_label, &tmp_a))
+   tmp_a = config_get_entry(conf, key_label);
+
+   if (tmp_a && (!string_is_empty(tmp_a->value)))
    {
       if (bind->joyaxis_label &&
             !string_is_empty(bind->joyaxis_label))
          free(bind->joyaxis_label);
-      bind->joyaxis_label = strdup(tmp_a);
-      free(tmp_a);
+      bind->joyaxis_label = strdup(tmp_a->value);
    }
 }
 
