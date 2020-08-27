@@ -53,6 +53,9 @@ typedef struct
 
 static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
+   if (!autoconfig_handle)
+      return;
+
    if (autoconfig_handle->dir_autoconfig)
    {
       free(autoconfig_handle->dir_autoconfig);
@@ -84,8 +87,7 @@ static void input_autoconfigure_free(retro_task_t *task)
 
    autoconfig_handle = (autoconfig_handle_t*)task->state;
 
-   if (autoconfig_handle)
-      free_autoconfig_handle(autoconfig_handle);
+   free_autoconfig_handle(autoconfig_handle);
 }
 
 /******************************/
@@ -737,8 +739,7 @@ error:
       task = NULL;
    }
 
-   if (autoconfig_handle)
-      free_autoconfig_handle(autoconfig_handle);
+   free_autoconfig_handle(autoconfig_handle);
    autoconfig_handle = NULL;
 }
 
@@ -898,8 +899,7 @@ error:
       task = NULL;
    }
 
-   if (autoconfig_handle)
-      free_autoconfig_handle(autoconfig_handle);
+   free_autoconfig_handle(autoconfig_handle);
    autoconfig_handle = NULL;
 
    return false;
