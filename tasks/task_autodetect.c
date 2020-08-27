@@ -53,9 +53,6 @@ typedef struct
 
 static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
-   if (!autoconfig_handle)
-      return;
-
    if (autoconfig_handle->dir_autoconfig)
    {
       free(autoconfig_handle->dir_autoconfig);
@@ -87,7 +84,8 @@ static void input_autoconfigure_free(retro_task_t *task)
 
    autoconfig_handle = (autoconfig_handle_t*)task->state;
 
-   free_autoconfig_handle(autoconfig_handle);
+   if (autoconfig_handle)
+      free_autoconfig_handle(autoconfig_handle);
 }
 
 /******************************/
@@ -113,9 +111,6 @@ static unsigned input_autoconfigure_get_config_file_affinity(
    struct config_entry_list 
       *entry           = NULL;
 
-   if (!autoconfig_handle || !config)
-      return 0;
-
    /* Parse config file */
    if (config_get_int(config, "input_vendor_id", &tmp_int))
       config_vid = (uint16_t)tmp_int;
@@ -132,7 +127,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
    /* Check for matching VID+PID */
    pid_match = (autoconfig_handle->device_info.vid == config_vid) &&
                (autoconfig_handle->device_info.pid == config_pid) &&
-               (autoconfig_handle->device_info.vid != 0) &&
+               (autoconfig_handle->device_info.vid != 0)          &&
                (autoconfig_handle->device_info.pid != 0);
 
    /* > More Bliss-Box shenanigans... */
@@ -162,8 +157,6 @@ static void input_autoconfigure_set_config_file(
       config_file_t *config)
 {
    struct config_entry_list *entry    = NULL;
-   if (!autoconfig_handle || !config)
-      return;
 
    /* Attach config file */
    autoconfig_handle->autoconfig_file = config;
@@ -201,13 +194,13 @@ static void input_autoconfigure_set_config_file(
 static bool input_autoconfigure_scan_config_files_external(
       autoconfig_handle_t *autoconfig_handle)
 {
+   size_t i;
    const char *dir_autoconfig           = autoconfig_handle->dir_autoconfig;
    const char *dir_driver_autoconfig    = autoconfig_handle->dir_driver_autoconfig;
    struct string_list *config_file_list = NULL;
    config_file_t *best_config           = NULL;
    unsigned max_affinity                = 0;
    bool match_found                     = false;
-   size_t i;
 
    /* Attempt to fetch file listing from driver-specific
     * autoconfig directory */
@@ -254,8 +247,9 @@ static bool input_autoconfigure_scan_config_files_external(
          continue;
 
       /* Check for a match */
-      affinity = input_autoconfigure_get_config_file_affinity(
-            autoconfig_handle, config);
+      if (autoconfig_handle && config)
+         affinity = input_autoconfigure_get_config_file_affinity(
+               autoconfig_handle, config);
 
       if (affinity > max_affinity)
       {
@@ -287,8 +281,9 @@ static bool input_autoconfigure_scan_config_files_external(
     * been cached, then we have a match */
    if (best_config)
    {
-      input_autoconfigure_set_config_file(
-            autoconfig_handle, best_config);
+      if (autoconfig_handle && best_config)
+         input_autoconfigure_set_config_file(
+               autoconfig_handle, best_config);
       match_found = true;
    }
 
@@ -332,15 +327,17 @@ static bool input_autoconfigure_scan_config_files_internal(
       autoconfig_str = NULL;
 
       /* Check for a match */
-      affinity = input_autoconfigure_get_config_file_affinity(
-            autoconfig_handle, config);
+      if (autoconfig_handle && config)
+         affinity = input_autoconfigure_get_config_file_affinity(
+               autoconfig_handle, config);
 
       /* > In the case of internal autoconfigs, any kind
        *   of match is considered to be a success */
       if (affinity > 0)
       {
-         input_autoconfigure_set_config_file(
-               autoconfig_handle, config);
+         if (autoconfig_handle && config)
+            input_autoconfigure_set_config_file(
+                  autoconfig_handle, config);
          return true;
       }
 
@@ -740,10 +737,9 @@ error:
       task = NULL;
    }
 
-   free_autoconfig_handle(autoconfig_handle);
+   if (autoconfig_handle)
+      free_autoconfig_handle(autoconfig_handle);
    autoconfig_handle = NULL;
-
-   return;
 }
 
 /****************************/
@@ -754,8 +750,8 @@ static void cb_input_autoconfigure_disconnect(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   autoconfig_handle_t *autoconfig_handle = NULL;
    unsigned port;
+   autoconfig_handle_t *autoconfig_handle = NULL;
 
    if (!task)
       return;
@@ -902,7 +898,8 @@ error:
       task = NULL;
    }
 
-   free_autoconfig_handle(autoconfig_handle);
+   if (autoconfig_handle)
+      free_autoconfig_handle(autoconfig_handle);
    autoconfig_handle = NULL;
 
    return false;
