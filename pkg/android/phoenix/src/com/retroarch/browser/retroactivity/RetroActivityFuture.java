@@ -1,11 +1,14 @@
 package com.retroarch.browser.retroactivity;
 
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.content.Intent;
 import android.content.Context;
 import android.hardware.input.InputManager;
 import android.os.Build;
+import com.retroarch.browser.preferences.util.ConfigFile;
+import com.retroarch.browser.preferences.util.UserPreferences;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -59,6 +62,18 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       // This requires NVIDIA Android extensions (available on NVIDIA Shield), if they are not
       // available then nothing will be done
       if (retro.hasExtra("HIDEMOUSE")) hideMouseCursor();
+    }
+
+    //Checks if Android versions is above 9.0 (28) and enable the screen to write over notch if the user desires
+    if (Build.VERSION.SDK_INT >= 28) {
+      ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
+      try {
+        if (configFile.getBoolean("video_notch_write_over_enable")) {
+          getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+      } catch (Exception e) {
+        Log.w("Key doesn't exist yet.", e.getMessage());
+      }
     }
   }
 
