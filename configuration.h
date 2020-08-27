@@ -114,6 +114,22 @@ typedef struct settings
    struct
    {
       unsigned placeholder;
+
+      unsigned input_split_joycon[MAX_USERS];
+      unsigned input_joypad_map[MAX_USERS];
+      unsigned input_device[MAX_USERS];
+      unsigned input_mouse_index[MAX_USERS];
+      /* Set by autoconfiguration in joypad_autoconfig_dir.
+       * Does not override main binds. */
+      unsigned input_libretro_device[MAX_USERS];
+      unsigned input_analog_dpad_mode[MAX_USERS];
+
+      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+
+      unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+
+      unsigned led_map[MAX_LEDS];
+
       unsigned audio_out_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
@@ -234,21 +250,6 @@ typedef struct settings
       unsigned camera_height;
 
       unsigned input_overlay_show_physical_inputs_port;
-
-      unsigned input_split_joycon[MAX_USERS];
-      unsigned input_joypad_map[MAX_USERS];
-      unsigned input_device[MAX_USERS];
-      unsigned input_mouse_index[MAX_USERS];
-      /* Set by autoconfiguration in joypad_autoconfig_dir.
-       * Does not override main binds. */
-      unsigned input_libretro_device[MAX_USERS];
-      unsigned input_analog_dpad_mode[MAX_USERS];
-
-      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
-
-      unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
-
-      unsigned led_map[MAX_LEDS];
 
       unsigned run_ahead_frames;
 
