@@ -114,7 +114,6 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char shader_name[64];
    char filter_name_buf[64];
    char wrap_name_buf[64];
-   char wrap_mode[64];
    char frame_count_mod_buf[64];
    char srgb_output_buf[64];
    char fp_fbo_buf[64];
@@ -125,18 +124,19 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char scale_type[64];
    char scale_type_x[64];
    char scale_type_y[64];
-   char frame_count_mod[64];
    char tmp_path[PATH_MAX_LENGTH];
    struct gfx_fbo_scale *scale  = NULL;
    bool tmp_bool                = false;
    float fattr                  = 0.0f;
    int iattr                    = 0;
+   struct config_entry_list 
+      *entry                    = NULL;
 
    fp_fbo_buf[0]      = mipmap_buf[0]          = alias_buf[0]       =
    scale_name_buf[0]  = attr_name_buf[0]       = scale_type[0]      =
-   scale_type_x[0]    = scale_type_y[0]        = frame_count_mod[0] =
+   scale_type_x[0]    = scale_type_y[0]        =
    shader_name[0]     = filter_name_buf[0]     = wrap_name_buf[0]   = 
-   wrap_mode[0]       = frame_count_mod_buf[0] = srgb_output_buf[0] = '\0';
+                        frame_count_mod_buf[0] = srgb_output_buf[0] = '\0';
 
    /* Source */
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
@@ -161,15 +161,20 @@ static bool video_shader_parse_pass(config_file_t *conf,
       pass->filter = RARCH_FILTER_UNSPEC;
 
    /* Wrapping mode */
-   snprintf(wrap_name_buf, sizeof(wrap_name_buf), "wrap_mode%u", i);
-   if (config_get_array(conf, wrap_name_buf, wrap_mode, sizeof(wrap_mode)))
-      pass->wrap = wrap_str_to_mode(wrap_mode);
+   snprintf(wrap_name_buf,
+         sizeof(wrap_name_buf), "wrap_mode%u", i);
+   if ((entry = config_get_entry(conf, wrap_name_buf))
+            && !string_is_empty(entry->value))
+      pass->wrap = wrap_str_to_mode(entry->value);
+   entry = NULL;
 
    /* Frame count mod */
-   snprintf(frame_count_mod_buf, sizeof(frame_count_mod_buf), "frame_count_mod%u", i);
-   if (config_get_array(conf, frame_count_mod_buf,
-            frame_count_mod, sizeof(frame_count_mod)))
-      pass->frame_count_mod = (unsigned)strtoul(frame_count_mod, NULL, 0);
+   snprintf(frame_count_mod_buf,
+         sizeof(frame_count_mod_buf), "frame_count_mod%u", i);
+   if ((entry = config_get_entry(conf, frame_count_mod_buf))
+         && !string_is_empty(entry->value))
+      pass->frame_count_mod = (unsigned)strtoul(entry->value, NULL, 0);
+   entry = NULL;
 
    /* FBO types and mipmapping */
    snprintf(srgb_output_buf, sizeof(srgb_output_buf), "srgb_framebuffer%u", i);
@@ -313,7 +318,6 @@ static bool video_shader_parse_textures(config_file_t *conf,
    const char *id       = NULL;
    char *save           = NULL;
    char *textures       = (char*)malloc(1024 + path_size);
-   char *tmp_path       = textures + 1024;
 
    if (!textures)
       return false;
@@ -332,14 +336,16 @@ static bool video_shader_parse_textures(config_file_t *conf,
    {
       char id_filter[64];
       char id_wrap[64];
-      char wrap_mode[64];
       char id_mipmap[64];
       bool mipmap         = false;
       bool smooth         = false;
+      struct config_entry_list 
+         *entry           = NULL;
 
-      id_filter[0] = id_wrap[0] = wrap_mode[0] = id_mipmap[0] = '\0';
+      id_filter[0] = id_wrap[0] = id_mipmap[0] = '\0';
 
-      if (!config_get_array(conf, id, tmp_path, path_size))
+      if (!(entry = config_get_entry(conf, id)) ||
+            string_is_empty(entry->value))
       {
          RARCH_ERR("[Shaders]: Cannot find path to texture \"%s\" ...\n", id);
          free(textures);
@@ -347,7 +353,8 @@ static bool video_shader_parse_textures(config_file_t *conf,
       }
 
       fill_pathname_resolve_relative(shader->lut[shader->luts].path,
-            conf->path, tmp_path, sizeof(shader->lut[shader->luts].path));
+            conf->path, entry->value, sizeof(shader->lut[shader->luts].path));
+      entry = NULL;
 
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
@@ -362,8 +369,10 @@ static bool video_shader_parse_textures(config_file_t *conf,
 
       strlcpy(id_wrap, id, sizeof(id_wrap));
       strlcat(id_wrap, "_wrap_mode", sizeof(id_wrap));
-      if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
-         shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
+      if ((entry = config_get_entry(conf, id_wrap))
+            && !string_is_empty(entry->value))
+         shader->lut[shader->luts].wrap = wrap_str_to_mode(entry->value);
+      entry = NULL;
 
       strlcpy(id_mipmap, id, sizeof(id_mipmap));
       strlcat(id_mipmap, "_mipmap", sizeof(id_mipmap));
