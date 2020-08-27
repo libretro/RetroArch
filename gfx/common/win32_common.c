@@ -1001,9 +1001,8 @@ static LRESULT CALLBACK wnd_proc_common(
    return 0;
 }
 
-#if defined(HAVE_D3D) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
-LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
+      UINT message, WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
    bool quit = false;
@@ -1054,15 +1053,27 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
             taskbar_is_created = true;
 #endif
          break;
-      case WM_CREATE:
-         if (DragAcceptFiles_func)
-            DragAcceptFiles_func(hwnd, true);
-
-         g_win32_inited        = true;
-         return 0;
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+#if defined(HAVE_D3D) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
+LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   if (message == WM_CREATE)
+   {
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+
+      g_win32_inited        = true;
+      return 0;
+   }
+
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
@@ -1074,59 +1085,15 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
    bool quit = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
-   switch (message)
+   if (message == WM_CREATE)
    {
-      case WM_MOUSEMOVE:
-      case WM_POINTERDOWN:
-      case WM_POINTERUP:
-      case WM_POINTERUPDATE:
-      case WM_DEVICECHANGE:
-      case WM_MOUSEWHEEL:
-      case WM_MOUSEHWHEEL:
-      case WM_NCLBUTTONDBLCLK:
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
-#endif
-#ifdef HAVE_DINPUT
-         if (input_get_ptr() == &input_dinput)
-         {
-            void* input_data = input_get_data();
-            if (input_data && dinput_handle_message(input_data,
-                     message, wparam, lparam))
-               return 0;
-         }
-#endif
-         break;
-      case WM_DROPFILES:
-      case WM_SYSCOMMAND:
-      case WM_CHAR:
-      case WM_KEYDOWN:
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_SYSKEYDOWN:
-      case WM_CLOSE:
-      case WM_DESTROY:
-      case WM_QUIT:
-      case WM_MOVE:
-      case WM_SIZE:
-      case WM_COMMAND:
-         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
-         if (quit)
-            return ret;
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
-#endif
-         break;
-      case WM_CREATE:
-         create_graphics_context(hwnd, &g_win32->quit);
-         if (DragAcceptFiles_func)
-            DragAcceptFiles_func(hwnd, true);
-         return 0;
+      create_graphics_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      return 0;
    }
 
-   return DefWindowProc(hwnd, message, wparam, lparam);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
@@ -1134,63 +1101,17 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
 LRESULT CALLBACK WndProcVK(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   LRESULT ret;
-   bool quit = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
-   switch (message)
+   if (message == WM_CREATE)
    {
-      case WM_MOUSEMOVE:
-      case WM_POINTERDOWN:
-      case WM_POINTERUP:
-      case WM_POINTERUPDATE:
-      case WM_DEVICECHANGE:
-      case WM_MOUSEWHEEL:
-      case WM_MOUSEHWHEEL:
-      case WM_NCLBUTTONDBLCLK:
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
-#endif
-#ifdef HAVE_DINPUT
-         if (input_get_ptr() == &input_dinput)
-         {
-            void* input_data = input_get_data();
-            if (input_data && dinput_handle_message(input_data,
-                     message, wparam, lparam))
-               return 0;
-         }
-#endif
-         break;
-      case WM_DROPFILES:
-      case WM_SYSCOMMAND:
-      case WM_CHAR:
-      case WM_KEYDOWN:
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_SYSKEYDOWN:
-      case WM_CLOSE:
-      case WM_DESTROY:
-      case WM_QUIT:
-      case WM_MOVE:
-      case WM_SIZE:
-      case WM_COMMAND:
-         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
-         if (quit)
-            return ret;
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
-#endif
-         break;
-      case WM_CREATE:
-         create_vk_context(hwnd, &g_win32->quit);
-         if (DragAcceptFiles_func)
-            DragAcceptFiles_func(hwnd, true);
-         return 0;
+      create_vk_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      return 0;
    }
 
-   return DefWindowProc(hwnd, message, wparam, lparam);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
@@ -1201,92 +1122,47 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
    LRESULT ret;
    bool quit = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
-   switch (message)
+   
+   if (message == WM_CREATE)
    {
-      case WM_MOUSEMOVE:
-      case WM_POINTERDOWN:
-      case WM_POINTERUP:
-      case WM_POINTERUPDATE:
-      case WM_DEVICECHANGE:
-      case WM_MOUSEWHEEL:
-      case WM_MOUSEHWHEEL:
-      case WM_NCLBUTTONDBLCLK:
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
-#endif
-#ifdef HAVE_DINPUT
-         if (input_get_ptr() == &input_dinput)
-         {
-            void* input_data = input_get_data();
-            if (input_data && dinput_handle_message(input_data,
-                     message, wparam, lparam))
-               return 0;
-         }
-#endif
-         break;
-      case WM_PAINT:
+      create_gdi_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      return 0;
+   }
+   else if (message == WM_PAINT)
+   {
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+
+      if (gdi && gdi->memDC)
       {
-         gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+         gdi->bmp_old    = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
-         if (gdi && gdi->memDC)
-         {
-            gdi->bmp_old    = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+         /* Draw video content */
+         StretchBlt(
+               gdi->winDC,
+               0,
+               0,
+               gdi->screen_width,
+               gdi->screen_height,
+               gdi->memDC,
+               0,
+               0,
+               gdi->video_width,
+               gdi->video_height,
+               SRCCOPY);
 
-            /* Draw video content */
-            StretchBlt(
-                  gdi->winDC,
-                  0,
-                  0,
-                  gdi->screen_width,
-                  gdi->screen_height,
-                  gdi->memDC,
-                  0,
-                  0,
-                  gdi->video_width,
-                  gdi->video_height,
-                  SRCCOPY);
-
-            SelectObject(gdi->memDC, gdi->bmp_old);
-         }
-
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (     g_win32->taskbar_message 
-               && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
-#endif
-        break;
+         SelectObject(gdi->memDC, gdi->bmp_old);
       }
-      case WM_DROPFILES:
-      case WM_SYSCOMMAND:
-      case WM_CHAR:
-      case WM_KEYDOWN:
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_SYSKEYDOWN:
-      case WM_CLOSE:
-      case WM_DESTROY:
-      case WM_QUIT:
-      case WM_MOVE:
-      case WM_SIZE:
-      case WM_COMMAND:
-         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
-         if (quit)
-            return ret;
+
 #if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+      if (     g_win32->taskbar_message 
+            && message == g_win32->taskbar_message)
+         taskbar_is_created = true;
 #endif
-         break;
-      case WM_CREATE:
-         create_gdi_context(hwnd, &g_win32->quit);
-         if (DragAcceptFiles_func)
-            DragAcceptFiles_func(hwnd, true);
-         return 0;
    }
 
-   return DefWindowProc(hwnd, message, wparam, lparam);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
