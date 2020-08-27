@@ -1520,8 +1520,9 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
 {
    core_info_ctx_find_t core_info;
    char lock_file_path[PATH_MAX_LENGTH];
-   RFILE *lock_file      = NULL;
    bool lock_file_exists = false;
+
+   lock_file_path[0] = '\0';
 
    if (string_is_empty(core_path))
       return false;
@@ -1595,6 +1596,8 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    const char *core_file_path = NULL;
    bool is_locked             = false;
    core_info_ctx_find_t core_info;
+
+   lock_file_path[0] = '\0';
 
    if (string_is_empty(core_path))
       return false;
