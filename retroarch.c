@@ -29722,8 +29722,8 @@ static void audio_driver_sample(int16_t left, int16_t right)
    }
 
    if (!(p_rarch->runloop_paused           ||
-		   !p_rarch->audio_driver_active     ||
-		   !p_rarch->audio_driver_output_samples_buf))
+		   !p_rarch->audio_driver_active
+         ))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
@@ -29747,8 +29747,7 @@ static void audio_driver_menu_sample(void)
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    bool check_flush                       = !(
          p_rarch->runloop_paused           ||
-         !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_output_samples_buf);
+         !p_rarch->audio_driver_active);
 
    while (sample_count > 1024)
    {
@@ -29833,8 +29832,7 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 
    if (!(
          p_rarch->runloop_paused           ||
-         !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_output_samples_buf))
+         !p_rarch->audio_driver_active))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
@@ -30715,8 +30713,7 @@ void audio_driver_frame_is_reverse(void)
 
    if (!(
           p_rarch->runloop_paused          ||
-         !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_output_samples_buf))
+         !p_rarch->audio_driver_active))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
@@ -39991,12 +39988,12 @@ void rarch_favorites_init(void)
 
 void rarch_favorites_deinit(void)
 {
-   if (g_defaults.content_favorites)
-   {
-      playlist_write_file(g_defaults.content_favorites);
-      playlist_free(g_defaults.content_favorites);
-      g_defaults.content_favorites = NULL;
-   }
+   if (!g_defaults.content_favorites)
+      return;
+
+   playlist_write_file(g_defaults.content_favorites);
+   playlist_free(g_defaults.content_favorites);
+   g_defaults.content_favorites = NULL;
 }
 
 /* Libretro core loader */
@@ -40622,9 +40619,8 @@ void frontend_driver_process_args(int *argc, char *argv[])
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
 
-   if (!frontend || !frontend->process_args)
-      return;
-   frontend->process_args(argc, argv);
+   if (frontend && frontend->process_args)
+      frontend->process_args(argc, argv);
 }
 
 bool frontend_driver_is_inited(void)
@@ -40685,27 +40681,24 @@ void frontend_driver_exitspawn(char *s, size_t len, char *args)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->exitspawn)
-      return;
-   frontend->exitspawn(s, len, args);
+   if (frontend && frontend->exitspawn)
+      frontend->exitspawn(s, len, args);
 }
 
 void frontend_driver_deinit(void *args)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->deinit)
-      return;
-   frontend->deinit(args);
+   if (frontend && frontend->deinit)
+      frontend->deinit(args);
 }
 
 void frontend_driver_shutdown(bool a)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->shutdown)
-      return;
-   frontend->shutdown(a);
+   if (frontend && frontend->shutdown)
+      frontend->shutdown(a);
 }
 
 enum frontend_architecture frontend_driver_get_cpu_architecture(void)
@@ -40799,36 +40792,32 @@ void frontend_driver_set_signal_handler_state(int value)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->set_signal_handler_state)
-      return;
-   frontend->set_signal_handler_state(value);
+   if (frontend && frontend->set_signal_handler_state)
+      frontend->set_signal_handler_state(value);
 }
 
 void frontend_driver_attach_console(void)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->attach_console)
-      return;
-   frontend->attach_console();
+   if (frontend && frontend->attach_console)
+      frontend->attach_console();
 }
 
 void frontend_driver_detach_console(void)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->detach_console)
-      return;
-   frontend->detach_console();
+   if (frontend && frontend->detach_console)
+      frontend->detach_console();
 }
 
 void frontend_driver_destroy_signal_handler_state(void)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->destroy_signal_handler_state)
-      return;
-   frontend->destroy_signal_handler_state();
+   if (frontend && frontend->destroy_signal_handler_state)
+      frontend->destroy_signal_handler_state();
 }
 
 bool frontend_driver_can_watch_for_changes(void)
@@ -40846,9 +40835,8 @@ void frontend_driver_watch_path_for_changes(
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->watch_path_for_changes)
-      return;
-   frontend->watch_path_for_changes(list, flags, change_data);
+   if (frontend && frontend->watch_path_for_changes)
+      frontend->watch_path_for_changes(list, flags, change_data);
 }
 
 bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
@@ -40864,9 +40852,8 @@ void frontend_driver_set_sustained_performance_mode(bool on)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend || !frontend->set_sustained_performance_mode)
-      return;
-   frontend->set_sustained_performance_mode(on);
+   if (frontend && frontend->set_sustained_performance_mode)
+      frontend->set_sustained_performance_mode(on);
 }
 
 const char* frontend_driver_get_cpu_model_name(void)
