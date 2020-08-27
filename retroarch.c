@@ -2666,6 +2666,7 @@ static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NUL
       DECLARE_META_BIND(1, load_state,            RARCH_LOAD_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY),
       DECLARE_META_BIND(1, save_state,            RARCH_SAVE_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY),
       DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
+      DECLARE_META_BIND(2, toggle_overlay,        RARCH_OVERLAY_TOGGLE_KEY,    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_TOGGLE_KEY),
 #ifdef HAVE_LAKKA
       DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY),
 #else
@@ -12756,6 +12757,7 @@ static const struct cmd_map map[] = {
    { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
    { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
    { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
+   { "OVERLAY_TOGGLE",         RARCH_OVERLAY_TOGGLE_KEY },
    { "QUIT",                   RARCH_QUIT_KEY },
    { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
    { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
@@ -16932,7 +16934,13 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_cached_frame();
          }
          break;
-      case CMD_EVENT_LOG_FILE_DEINIT:
+      case CMD_EVENT_OVERLAY_TOGGLE:
+         {
+            settings->bools.input_overlay_enable = !settings->bools.input_overlay_enable;
+            retroarch_overlay_init(p_rarch);
+         }
+         break;
+       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
       case CMD_EVENT_DISK_APPEND_IMAGE:
@@ -38783,6 +38791,9 @@ static enum runloop_state runloop_check_state(
    HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
 
 #ifdef HAVE_OVERLAY
+   /* Check overlay toggle */
+   HOTKEY_CHECK(RARCH_OVERLAY_TOGGLE_KEY, CMD_EVENT_OVERLAY_TOGGLE, true, NULL);
+
    if (settings->bools.input_overlay_enable)
    {
       static char prev_overlay_restore               = false;

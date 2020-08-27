@@ -2212,8 +2212,16 @@ MSG_HASH(
    "Fullscreen (Toggle)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_TOGGLE_KEY,
+   "Overlay (Toggle)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Switches between fullscreen and windowed display modes."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_TOGGLE_KEY,
+   "Toggles display overlay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,

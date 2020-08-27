@@ -184,6 +184,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Toggles fullscreen.");
              break;
+          case RARCH_OVERLAY_TOGGLE_KEY:
+             snprintf(s, len,
+                   "Toggles overlay.");
+             break;
           case RARCH_QUIT_KEY:
              snprintf(s, len,
                    "Key to exit RetroArch cleanly. \n"

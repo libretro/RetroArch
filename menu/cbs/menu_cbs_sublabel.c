@@ -229,6 +229,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_slowmotion_hold_key,   ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_key,        MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_key,        MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fullscreen_toggle_key, MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_overlay_toggle_key,    MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_TOGGLE_KEY)
 #ifdef HAVE_LAKKA
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_restart_key,           MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY)
 #else
@@ -1553,6 +1554,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                return 0;
             case RARCH_FULLSCREEN_TOGGLE_KEY:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fullscreen_toggle_key);
+               return 0;
+            case RARCH_OVERLAY_TOGGLE_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_overlay_toggle_key);
                return 0;
             case RARCH_QUIT_KEY:
 #ifdef HAVE_LAKKA

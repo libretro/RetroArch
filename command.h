@@ -186,6 +186,8 @@ enum event_command
    CMD_EVENT_UI_COMPANION_TOGGLE,
    /* Toggles fullscreen mode. */
    CMD_EVENT_FULLSCREEN_TOGGLE,
+   /* Toggles overlay. */
+   CMD_EVENT_OVERLAY_TOGGLE,
    CMD_EVENT_VOLUME_UP,
    CMD_EVENT_VOLUME_DOWN,
    CMD_EVENT_MIXER_VOLUME_UP,
