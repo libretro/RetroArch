@@ -31,24 +31,24 @@ int16_t x_mouse_state_wheel(unsigned id)
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         ret = x11_mouse_wu;
+         ret          = x11_mouse_wu;
          x11_mouse_wu = 0;
-         return ret;
+         break;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         ret = x11_mouse_wd;
+         ret          = x11_mouse_wd;
          x11_mouse_wd = 0;
-         return ret;
+         break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         ret = x11_mouse_hwu;
+         ret           = x11_mouse_hwu;
          x11_mouse_hwu = 0;
-         return ret;
+         break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         ret = x11_mouse_hwd;
+         ret           = x11_mouse_hwd;
          x11_mouse_hwd = 0;
-         return ret;
+         break;
    }
 
-   return 0;
+   return ret;
 }
 
 void x_input_poll_wheel(XButtonEvent *event, bool latch)
