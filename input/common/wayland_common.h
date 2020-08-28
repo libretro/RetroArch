@@ -45,8 +45,8 @@
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
 
-#define UDEV_KEY_MAX			0x2ff
-#define UDEV_MAX_KEYS (UDEV_KEY_MAX + 7) / 8
+#define UDEV_KEY_MAX			     0x2ff
+#define UDEV_MAX_KEYS           (UDEV_KEY_MAX + 7) / 8
 
 #define MAX_TOUCHES             16
 
@@ -57,37 +57,42 @@
 
 typedef struct
 {
-   bool active;
    int16_t x;
    int16_t y;
+   bool active;
 } wayland_touch_data_t;
 
 typedef struct touch_pos
 {
-   bool active;
    int32_t id;
    unsigned x;
    unsigned y;
+   bool active;
 } touch_pos_t;
 
 typedef struct output_info
 {
    struct wl_output *output;
+   int refresh_rate;
    uint32_t global_id;
    unsigned width;
    unsigned height;
    unsigned physical_width;
    unsigned physical_height;
-   int refresh_rate;
    unsigned scale;
    struct wl_list link; /* wl->all_outputs */
 } output_info_t;
 
 typedef struct input_ctx_wayland_data
 {
+   struct wl_display *dpy;
+   const input_device_driver_t *joypad;
+
+   int fd;
+
+   wayland_touch_data_t touches[MAX_TOUCHES]; /* int16_t alignment */
    /* Wayland uses Linux keysyms. */
    uint8_t key_state[UDEV_MAX_KEYS];
-   bool keyboard_focus;
 
    struct
    {
@@ -99,14 +104,8 @@ typedef struct input_ctx_wayland_data
       bool left, right, middle;
    } mouse;
 
-   struct wl_display *dpy;
-   int fd;
-
-   const input_device_driver_t *joypad;
+   bool keyboard_focus;
    bool blocked;
-
-   wayland_touch_data_t touches[MAX_TOUCHES];
-
 } input_ctx_wayland_data_t;
 
 typedef struct gfx_ctx_wayland_data
@@ -115,15 +114,6 @@ typedef struct gfx_ctx_wayland_data
    egl_ctx_data_t egl;
    struct wl_egl_window *win;
 #endif
-   bool fullscreen;
-   bool maximized;
-   bool resize;
-   bool configured;
-   bool activated;
-   unsigned prev_width;
-   unsigned prev_height;
-   unsigned width;
-   unsigned height;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
@@ -142,13 +132,12 @@ typedef struct gfx_ctx_wayland_data
    struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
-   struct wl_list all_outputs;
    output_info_t *current_output;
-   int swap_interval;
-   bool core_hw_context_enable;
-
-   unsigned last_buffer_scale;
-   unsigned buffer_scale;
+#ifdef HAVE_VULKAN
+   gfx_ctx_vulkan_data_t vk;
+#endif
+   input_ctx_wayland_data_t input; /* ptr alignment */
+   struct wl_list all_outputs;
 
    struct
    {
@@ -159,13 +148,22 @@ typedef struct gfx_ctx_wayland_data
       bool visible;
    } cursor;
 
-   input_ctx_wayland_data_t input;
-
-#ifdef HAVE_VULKAN
-   gfx_ctx_vulkan_data_t vk;
-#endif
    int num_active_touches;
-   touch_pos_t active_touch_positions[MAX_TOUCHES];
+   int swap_interval;
+   touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
+   unsigned prev_width;
+   unsigned prev_height;
+   unsigned width;
+   unsigned height;
+   unsigned last_buffer_scale;
+   unsigned buffer_scale;
+
+   bool core_hw_context_enable;
+   bool fullscreen;
+   bool maximized;
+   bool resize;
+   bool configured;
+   bool activated;
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_XKBCOMMON
