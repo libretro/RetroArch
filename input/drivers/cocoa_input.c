@@ -208,7 +208,6 @@ static int16_t cocoa_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
             int16_t ret = 
                  apple->joypad->state(
                   joypad_info, binds[port], port)
@@ -218,7 +217,7 @@ static int16_t cocoa_input_state(void *data,
 #endif
                      ;
 
-            if (!input_dinput.keyboard_mapping_blocked)
+            if (!input_cocoa.keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
