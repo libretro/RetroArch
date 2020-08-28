@@ -1,5 +1,6 @@
 # Future
 - ANDROID: Implementation of fullscreen over notch function (for Android 9.0 and up)
+- CHEATS: Maximum search value corrections
 - CHEEVOS: Generic memory mapping using rcheevos
 - CHEEVOS: Ensure badge textures are released before video driver is deinitialized. Should fix crashes with slang shaders.
 - CORE DOWNLOADER: Enhanced core downloader search functionality
