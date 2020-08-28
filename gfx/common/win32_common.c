@@ -1156,7 +1156,6 @@ LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   LRESULT ret;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
    if (message == WM_CREATE)
@@ -1174,7 +1173,6 @@ LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   LRESULT ret;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
    if (message == WM_CREATE)
@@ -1230,7 +1228,6 @@ LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   LRESULT ret;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
    
    if (message == WM_CREATE)
@@ -1279,7 +1276,6 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   LRESULT ret;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
    
    if (message == WM_CREATE)

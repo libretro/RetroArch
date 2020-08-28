@@ -1006,7 +1006,6 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
    /* Upload descriptors */
    {
-      unsigned i;
       VkDescriptorSet set;
       /* Upload UBO */
       struct vk_buffer_range range;
