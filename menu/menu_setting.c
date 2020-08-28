@@ -9932,7 +9932,7 @@ static bool setting_append_list(
                   &settings->bools.video_notch_write_over_enable,
                   MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER,
                   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-                  video_notch_write_over_enable,
+                  DEFAULT_NOTCH_WRITE_OVER_ENABLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
