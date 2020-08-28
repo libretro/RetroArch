@@ -9926,6 +9926,23 @@ static bool setting_append_list(
             /* prevent unused function warning on unsupported builds */
             (void)setting_get_string_representation_int_gpu_index;
 
+#ifdef ANDROID
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_notch_write_over_enable,
+                  MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+                  DEFAULT_NOTCH_WRITE_OVER_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
+
 #ifdef HAVE_VULKAN
             if (string_is_equal(video_driver_get_ident(), "vulkan"))
             {

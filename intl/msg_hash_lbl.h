@@ -3097,6 +3097,10 @@ MSG_HASH(
    "video_synchronization_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER,
+   "video_notch_write_over"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
    "video_output_settings"
    )

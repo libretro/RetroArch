@@ -462,6 +462,7 @@ typedef struct settings
       bool video_memory_show;
       bool video_msg_bgcolor_enable;
       bool video_3ds_lcd_bottom;
+      bool video_notch_write_over_enable;
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif

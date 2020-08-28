@@ -320,6 +320,10 @@
 /* On resize and fullscreen, rendering area will stay 4:3 */
 #define DEFAULT_FORCE_ASPECT true
 
+/* Only applies to Android 9.0 (API 28) and up */
+/* Choose if the screen will be able to write around the notch or not */
+#define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
+
 /* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
 #define DEFAULT_SHADER_ENABLE true
