@@ -209,22 +209,22 @@ static int16_t cocoa_input_state(void *data,
          {
             unsigned i;
             int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (binds[port][i].valid)
-               {
-                  if (button_is_pressed(
-                           apple->joypad,
-                           joypad_info, binds[port], port, i))
-                     ret |= (1 << i);
+            int16_t ret = 
+                 apple->joypad->state(
+                  joypad_info, binds[port], port)
 #ifdef HAVE_MFI
-                  else if (button_is_pressed(
-                           apple->sec_joypad,
-                           joypad_info, binds[port], port, i))
-                     ret |= (1 << i);
+               | apple->sec_joypad->state(
+                     joypad_info, binds[port], port)
 #endif
-                  else if (apple_key_state[rarch_keysym_lut[binds[port][i].key]])
-                     ret |= (1 << i);
+                     ;
+
+            if (!input_dinput.keyboard_mapping_blocked)
+            {
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               {
+                  if ((binds[port][i].key < RETROK_LAST) &&
+                        apple_key_state[rarch_keysym_lut[binds[port][i].key]] & 0x80)
+                        ret |= (1 << i);
                }
             }
             return ret;
