@@ -582,7 +582,7 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
    input_autoconfigure_connect(
          device_name,
          NULL,
-         driver_name,
+         "hid",
          idx,
          dev_vid,
          dev_pid
