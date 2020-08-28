@@ -349,12 +349,10 @@ static void* psp_input_initialize(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_vita);
    unsigned int i;
-   for (i = 0; i <= VITA_MAX_SCANCODE; i++) {
+   for (i = 0; i <= VITA_MAX_SCANCODE; i++)
       psp->keyboard_state[i] = false;
-   }
-   for (i = 0; i < 6; i++) {
+   for (i = 0; i < 6; i++)
       psp->prev_keys[i] = 0;
-   }
    psp->mouse_x = 0;
    psp->mouse_y = 0;
 #endif

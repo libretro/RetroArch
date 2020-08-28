@@ -315,14 +315,16 @@ static int qnx_discover_controllers(qnx_input_t *qnx)
 
    ret = screen_get_context_property_iv(screen_ctx,
          SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
-   if (ret < 0) {
+   if (ret < 0)
+   {
      RARCH_ERR("Error querying SCREEN_PROPERTY_DEVICE_COUNT: [%d] %s\n",
 	       errno, strerror(errno));
      return false;
    }
    screen_device_t* devices_found = (screen_device_t*)
       calloc(deviceCount, sizeof(screen_device_t));
-   if (!devices_found) {
+   if (!devices_found)
+   {
      RARCH_ERR("Error allocating devices_found, deviceCount=%d\n",
 	       deviceCount);
      return false;
@@ -330,7 +332,8 @@ static int qnx_discover_controllers(qnx_input_t *qnx)
 
    ret = screen_get_context_property_pv(screen_ctx,
          SCREEN_PROPERTY_DEVICES, (void**)devices_found);
-   if (ret < 0) {
+   if (ret < 0)
+   {
      RARCH_ERR("Error querying SCREEN_PROPERTY_DEVICES: [%d] %s\n",
 	       errno, strerror(errno));
      return false;
