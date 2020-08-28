@@ -47,6 +47,10 @@ import java.util.Locale;
  */
 public class RetroActivityCommon extends NativeActivity
 {
+  static {
+    System.loadLibrary("retroarch-activity");
+  }
+
   public static int FRONTEND_POWERSTATE_NONE = 0;
   public static int FRONTEND_POWERSTATE_NO_SOURCE = 1;
   public static int FRONTEND_POWERSTATE_CHARGING = 2;
