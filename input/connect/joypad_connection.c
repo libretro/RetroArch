@@ -24,7 +24,13 @@
 
 #include "joypad_connection.h"
 
-static bool joypad_is_end_of_list(joypad_connection_t *pad);
+static bool joypad_is_end_of_list(joypad_connection_t *pad)
+{
+  return pad 
+     && !pad->connected 
+     && !pad->iface 
+     &&  (pad->data == (void *)0xdeadbeef);
+}
 
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 {
@@ -45,14 +51,11 @@ int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 static void set_end_of_list(joypad_connection_t *list, unsigned end)
 {
   joypad_connection_t *entry = (joypad_connection_t *)&list[end];
-  entry->connected = false;
-  entry->iface = NULL;
-  entry->data = (void *)0xdeadbeef;
+  entry->connected           = false;
+  entry->iface               = NULL;
+  entry->data                = (void*)0xdeadbeef;
 }
 
-static bool joypad_is_end_of_list(joypad_connection_t *pad) {
-  return pad && !pad->connected && !pad->iface && pad->data == (void *)0xdeadbeef;
-}
 
 /**
  * Since the pad_connection_destroy() call needs to iterate through this
@@ -195,8 +198,8 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
        * set up one without an interface */
       if (!s->connected)
       {
-         s->iface = NULL;
-         s->data = data;
+         s->iface     = NULL;
+         s->data      = data;
          s->connected = true;
       }
    }
