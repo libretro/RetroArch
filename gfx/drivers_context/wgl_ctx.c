@@ -633,13 +633,10 @@ static void *gfx_ctx_wgl_init(void *video_driver)
 
    {
       settings_t *settings     = config_get_ptr();
+      wndclass.lpfnWndProc   = wnd_proc_wgl_common;
 #ifdef HAVE_DINPUT
       if (string_is_equal(settings->arrays.input_driver, "dinput"))
          wndclass.lpfnWndProc   = wnd_proc_wgl_dinput;
-#endif
-#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
-      if (string_is_equal(settings->arrays.input_driver, "raw"))
-         wndclass.lpfnWndProc   = wnd_proc_wgl_raw;
 #endif
    }
 

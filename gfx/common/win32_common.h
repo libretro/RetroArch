@@ -125,27 +125,27 @@ float win32_get_refresh_rate(void *data);
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_d3d_raw(HWND hwnd, UINT message,
+LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_wgl_raw(HWND hwnd, UINT message,
+LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 
 #if defined(HAVE_VULKAN)
 LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_vk_raw(HWND hwnd, UINT message,
+LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 
 LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_gdi_raw(HWND hwnd, UINT message,
+LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
 #ifdef _XBOX

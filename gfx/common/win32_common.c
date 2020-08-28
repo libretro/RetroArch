@@ -923,9 +923,7 @@ static LRESULT CALLBACK wnd_proc_common(
    return 0;
 }
 
-/* XP and higher */
-#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
-static LRESULT CALLBACK wnd_proc_common_raw_internal(HWND hwnd,
+static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       UINT message, WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
@@ -1014,7 +1012,6 @@ static LRESULT CALLBACK wnd_proc_common_raw_internal(HWND hwnd,
 
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
-#endif
 
 #ifdef HAVE_DINPUT
 static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
@@ -1116,8 +1113,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 
 #if defined(HAVE_D3D) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 
-#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
-LRESULT CALLBACK wnd_proc_d3d_raw(HWND hwnd, UINT message,
+LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
@@ -1131,9 +1127,8 @@ LRESULT CALLBACK wnd_proc_d3d_raw(HWND hwnd, UINT message,
       return 0;
    }
 
-   return wnd_proc_common_raw_internal(hwnd, message, wparam, lparam);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
-#endif
 
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
@@ -1176,8 +1171,7 @@ LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
 }
 #endif
 
-#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
-LRESULT CALLBACK wnd_proc_wgl_raw(HWND hwnd, UINT message,
+LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
@@ -1191,9 +1185,8 @@ LRESULT CALLBACK wnd_proc_wgl_raw(HWND hwnd, UINT message,
       return 0;
    }
 
-   return wnd_proc_common_raw_internal(hwnd, message, wparam, lparam);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
-#endif
 #endif
 
 #ifdef HAVE_VULKAN
@@ -1215,8 +1208,7 @@ LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
 }
 #endif
 
-#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
-LRESULT CALLBACK wnd_proc_vk_raw(HWND hwnd, UINT message,
+LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
@@ -1229,9 +1221,8 @@ LRESULT CALLBACK wnd_proc_vk_raw(HWND hwnd, UINT message,
       return 0;
    }
 
-   return wnd_proc_common_raw_internal(hwnd, message, wparam, lparam);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
-#endif
 #endif
 
 #ifdef HAVE_GDI
@@ -1285,8 +1276,7 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
 }
 #endif
 
-#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
-LRESULT CALLBACK wnd_proc_gdi_raw(HWND hwnd, UINT message,
+LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
@@ -1331,9 +1321,8 @@ LRESULT CALLBACK wnd_proc_gdi_raw(HWND hwnd, UINT message,
 #endif
    }
 
-   return wnd_proc_common_raw_internal(hwnd, message, wparam, lparam);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
-#endif
 #endif
 
 bool win32_window_create(void *data, unsigned style,
