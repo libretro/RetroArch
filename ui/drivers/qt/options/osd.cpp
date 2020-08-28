@@ -94,7 +94,9 @@ QWidget *OverlayPage::widget()
    CheckableSettingsGroup  *inputsGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS);
 
    overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED);
+   overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE);
    overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU);
+   overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED);
    overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR);
 
    inputsGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT);
@@ -104,6 +106,8 @@ QWidget *OverlayPage::widget()
    overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_PRESET);
    overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_OPACITY);
    overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_SCALE);
+   overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_CENTER_X);
+   overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_CENTER_Y);
 
    layout->addWidget(overlayGroup);
 
