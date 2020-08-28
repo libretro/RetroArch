@@ -893,7 +893,7 @@ bool dinput_handle_message(void *data,
          }
       case WM_POINTERUPDATE:
          {
-            int pointer_id = GET_POINTERID_WPARAM(wParam);
+            int pointer_id                 = GET_POINTERID_WPARAM(wParam);
             struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
             if (pointer)
                dinput_pointer_store_pos(pointer, lParam);
@@ -901,36 +901,37 @@ bool dinput_handle_message(void *data,
          }
       case WM_DEVICECHANGE:
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-            if (wParam == DBT_DEVICEARRIVAL  || wParam == DBT_DEVICEREMOVECOMPLETE)
+         if (  wParam == DBT_DEVICEARRIVAL  || 
+               wParam == DBT_DEVICEREMOVECOMPLETE)
+         {
+            PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
+            if(pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
             {
-               PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
-               if(pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-               {
 #if 0
-                  PDEV_BROADCAST_DEVICEINTERFACE pDevInf = (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
+               PDEV_BROADCAST_DEVICEINTERFACE pDevInf = 
+                  (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
 #endif
 
-                  /* To-Do: Don't destroy everything, lets just handle new devices gracefully */
-                  if (di->joypad)
-                     di->joypad->destroy();
-                  di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
-               }
+               /* TODO/FIXME: Don't destroy everything, let's just 
+                * handle new devices gracefully */
+               if (di->joypad)
+                  di->joypad->destroy();
+               di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
             }
+         }
 #endif
          break;
       case WM_MOUSEWHEEL:
-            if (((short) HIWORD(wParam))/120 > 0)
-               di->mouse_wu = true;
-            if (((short) HIWORD(wParam))/120 < 0)
-               di->mouse_wd = true;
+         if (((short) HIWORD(wParam))/120 > 0)
+            di->mouse_wu = true;
+         if (((short) HIWORD(wParam))/120 < 0)
+            di->mouse_wd = true;
          break;
       case WM_MOUSEHWHEEL:
-         {
-            if (((short) HIWORD(wParam))/120 > 0)
-               di->mouse_hwu = true;
-            if (((short) HIWORD(wParam))/120 < 0)
-               di->mouse_hwd = true;
-         }
+         if (((short) HIWORD(wParam))/120 > 0)
+            di->mouse_hwu = true;
+         if (((short) HIWORD(wParam))/120 < 0)
+            di->mouse_hwd = true;
          break;
    }
 
@@ -976,7 +977,7 @@ static void dinput_grab_mouse(void *data, bool state)
    IDirectInputDevice8_SetCooperativeLevel(di->mouse,
       (HWND)video_driver_window_get(),
       state ?
-      (DISCL_EXCLUSIVE | DISCL_FOREGROUND) :
+      (DISCL_EXCLUSIVE    | DISCL_FOREGROUND) :
       (DISCL_NONEXCLUSIVE | DISCL_FOREGROUND));
    IDirectInputDevice8_Acquire(di->mouse);
 }
