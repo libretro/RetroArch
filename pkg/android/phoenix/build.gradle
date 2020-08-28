@@ -14,6 +14,12 @@ allprojects {
         google()
         jcenter()
     }
+
+    Properties props = new Properties()
+    props.load(new FileInputStream(new File(project.rootDir, "retroarch.properties")))
+    props.each { prop ->
+        project.ext.set(prop.key, prop.value)
+    }
 }
 
 apply plugin: 'com.android.application'
