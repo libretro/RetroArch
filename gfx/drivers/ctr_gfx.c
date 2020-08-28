@@ -567,12 +567,6 @@ static bool ctr_frame(void* data, const void* frame,
       return true;
    }
 
-   if(!aptMainLoop())
-   {
-      command_event(CMD_EVENT_QUIT, NULL);
-      return true;
-   }
-
    state_tmp = hidKeysDown();
    hidTouchRead(&state_tmp_touch);
    if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py < 120))

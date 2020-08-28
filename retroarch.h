@@ -605,6 +605,7 @@ extern audio_driver_t audio_psp;
 extern audio_driver_t audio_ps2;
 extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;
+extern audio_driver_t audio_ctr_dsp_thread;
 extern audio_driver_t audio_switch;
 extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;

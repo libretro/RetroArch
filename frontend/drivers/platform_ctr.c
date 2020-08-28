@@ -482,8 +482,10 @@ static void frontend_ctr_init(void* data)
    if (csndInit() != 0)
       audio_ctr_csnd = audio_null;
    ctr_check_dspfirm();
-   if (ndspInit() != 0)
+   if (ndspInit() != 0) {
       audio_ctr_dsp = audio_null;
+      audio_ctr_dsp_thread = audio_null;
+   }
    cfguInit();
    ptmuInit();
    mcuHwcInit();

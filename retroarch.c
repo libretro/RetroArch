@@ -375,6 +375,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef _3DS
    &audio_ctr_csnd,
    &audio_ctr_dsp,
+   &audio_ctr_dsp_thread,
 #endif
 #ifdef SWITCH
    &audio_switch,
@@ -38458,6 +38459,13 @@ static enum runloop_state runloop_check_state(
    if (!appletMainLoop())
       return RUNLOOP_STATE_QUIT;
 #endif
+
+#ifdef _3DS
+   /* Should be called once per frame */
+   if (!aptMainLoop())
+      return RUNLOOP_STATE_QUIT;
+#endif
+
 
    BIT256_CLEAR_ALL_PTR(&current_bits);
 
