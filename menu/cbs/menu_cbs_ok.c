@@ -89,6 +89,10 @@
 #include "../../uwp/uwp_func.h"
 #endif
 
+#if defined(ANDROID)
+#include "../../play_feature_delivery/play_feature_delivery.h"
+#endif
+
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
@@ -4021,7 +4025,9 @@ static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    core_updater_list_t *core_list = NULL;
-   bool refresh                   = true;
+   settings_t *settings           = config_get_ptr();
+   const char *path_dir_libretro  = settings->paths.directory_libretro;
+   const char *path_libretro_info = settings->paths.path_libretro_info;
 
    /* Get cached core updater list, initialising
     * it if required */
@@ -4036,12 +4042,49 @@ static int action_ok_core_updater_list(const char *path,
          return menu_cbs_exit();
    }
 
-   /* Initial setup... */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
+#if defined(ANDROID)
+   if (play_feature_delivery_enabled())
+   {
+      /* Core downloads are handled via play
+       * feature delivery
+       * > Core list can be populated directly
+       *   using the play feature delivery
+       *   interface */
+      struct string_list *available_cores =
+            play_feature_delivery_available_cores();
+      bool success                        = false;
 
-   /* Push core list update task */
-   task_push_get_core_updater_list(core_list, false, true);
+      if (!available_cores)
+         return menu_cbs_exit();
+
+      core_updater_list_reset(core_list);
+
+      success = core_updater_list_parse_pfd_data(
+            core_list,
+            path_dir_libretro,
+            path_libretro_info,
+            available_cores);
+
+      string_list_free(available_cores);
+
+      if (!success)
+         return menu_cbs_exit();
+
+      /* Ensure network is initialised */
+      generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
+   }
+   else
+#endif
+   {
+      bool refresh = true;
+
+      /* Initial setup... */
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
+
+      /* Push core list update task */
+      task_push_get_core_updater_list(core_list, false, true);
+   }
 
    return generic_action_ok_displaylist_push(
          path, NULL, label, type, idx, entry_idx,
@@ -4466,10 +4509,18 @@ static int action_ok_core_updater_download(const char *path,
    if (!core_list)
       return menu_cbs_exit();
 
-   task_push_core_updater_download(
-         core_list, path, 0, false,
-         auto_backup, (size_t)auto_backup_history_size,
-         path_dir_libretro, path_dir_core_assets);
+#if defined(ANDROID)
+   /* Play Store builds install cores via
+    * the play feature delivery interface */
+   if (play_feature_delivery_enabled())
+      task_push_play_feature_delivery_core_install(
+            core_list, path);
+   else
+#endif
+      task_push_core_updater_download(
+            core_list, path, 0, false,
+            auto_backup, (size_t)auto_backup_history_size,
+            path_dir_libretro, path_dir_core_assets);
 
 #endif
    return 0;
@@ -6677,7 +6728,24 @@ static int action_ok_core_delete(const char *path,
       generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
    /* Delete core file */
-   filestream_delete(core_path);
+#if defined(ANDROID)
+   /* If this is a Play Store build and the
+    * core is currently installed via
+    * play feature delivery, must delete
+    * the core via the play feature delivery
+    * interface */
+   if (play_feature_delivery_enabled())
+   {
+      const char *core_filename = path_basename(core_path);
+
+      if (play_feature_delivery_core_installed(core_filename))
+         play_feature_delivery_delete(core_filename);
+      else
+         filestream_delete(core_path);
+   }
+   else
+#endif
+      filestream_delete(core_path);
 
    /* Reload core info files */
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);

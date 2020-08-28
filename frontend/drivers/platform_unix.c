@@ -1938,6 +1938,16 @@ static void frontend_unix_init(void *data)
          "doVibrate", "(IIII)V");
    GET_METHOD_ID(env, android_app->getUserLanguageString, class,
          "getUserLanguageString", "()Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->isPlayStoreBuild, class,
+         "isPlayStoreBuild", "()Z");
+   GET_METHOD_ID(env, android_app->getAvailableCores, class,
+         "getAvailableCores", "()[Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->getInstalledCores, class,
+         "getInstalledCores", "()[Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->downloadCore, class,
+         "downloadCore", "(Ljava/lang/String;)V");
+   GET_METHOD_ID(env, android_app->deleteCore, class,
+         "deleteCore", "(Ljava/lang/String;)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 

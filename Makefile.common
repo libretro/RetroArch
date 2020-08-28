@@ -2212,6 +2212,15 @@ ifeq ($(HAVE_VITAGL), 1)
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 
+#####################################
+### Android Play Feature Delivery ###
+### (Play Store build core        ###
+###  downloader)                  ###
+###############WIP###################
+ifeq ($(ANDROID), 1)
+   OBJ += play_feature_delivery/play_feature_delivery.o
+endif
+
 ##################################
 ### Classic Platform specifics ###
 ###############WIP################

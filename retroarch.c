@@ -120,6 +120,10 @@
 #include "switch_performance_profiles.h"
 #endif
 
+#if defined(ANDROID)
+#include "play_feature_delivery/play_feature_delivery.h"
+#endif
+
 #ifdef HAVE_DISCORD
 #include <discord_rpc.h>
 #include "deps/discord-rpc/include/discord_rpc.h"
@@ -17539,6 +17543,10 @@ void main_exit(void *args)
 
    rtime_deinit();
 
+#if defined(ANDROID)
+   play_feature_delivery_deinit();
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CoUninitialize();
 #endif
@@ -17576,6 +17584,10 @@ int rarch_main(int argc, char *argv[], void *data)
 #endif
 
    rtime_init();
+
+#if defined(ANDROID)
+   play_feature_delivery_init();
+#endif
 
    libretro_free_system_info(&p_rarch->runloop_system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);

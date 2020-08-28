@@ -38,6 +38,10 @@
 #include "../verbosity.h"
 #include "../core_updater_list.h"
 
+#if defined(ANDROID)
+#include "../play_feature_delivery/play_feature_delivery.h"
+#endif
+
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
 #include "../menu/menu_entries.h"
 #endif
@@ -48,29 +52,6 @@ enum core_updater_list_status
    CORE_UPDATER_LIST_BEGIN = 0,
    CORE_UPDATER_LIST_WAIT,
    CORE_UPDATER_LIST_END
-};
-
-/* Download core */
-enum core_updater_download_status
-{
-   CORE_UPDATER_DOWNLOAD_BEGIN = 0,
-   CORE_UPDATER_DOWNLOAD_START_BACKUP,
-   CORE_UPDATER_DOWNLOAD_WAIT_BACKUP,
-   CORE_UPDATER_DOWNLOAD_START_TRANSFER,
-   CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER,
-   CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS,
-   CORE_UPDATER_DOWNLOAD_END
-};
-
-/* Update installed cores */
-enum update_installed_cores_status
-{
-   UPDATE_INSTALLED_CORES_BEGIN = 0,
-   UPDATE_INSTALLED_CORES_WAIT_LIST,
-   UPDATE_INSTALLED_CORES_ITERATE,
-   UPDATE_INSTALLED_CORES_UPDATE_CORE,
-   UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD,
-   UPDATE_INSTALLED_CORES_END
 };
 
 typedef struct core_updater_list_handle
@@ -84,6 +65,18 @@ typedef struct core_updater_list_handle
    bool http_task_complete;
    bool http_task_success;
 } core_updater_list_handle_t;
+
+/* Download core */
+enum core_updater_download_status
+{
+   CORE_UPDATER_DOWNLOAD_BEGIN = 0,
+   CORE_UPDATER_DOWNLOAD_START_BACKUP,
+   CORE_UPDATER_DOWNLOAD_WAIT_BACKUP,
+   CORE_UPDATER_DOWNLOAD_START_TRANSFER,
+   CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER,
+   CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS,
+   CORE_UPDATER_DOWNLOAD_END
+};
 
 typedef struct core_updater_download_handle
 {
@@ -110,6 +103,17 @@ typedef struct core_updater_download_handle
    bool backup_enabled;
 } core_updater_download_handle_t;
 
+/* Update installed cores */
+enum update_installed_cores_status
+{
+   UPDATE_INSTALLED_CORES_BEGIN = 0,
+   UPDATE_INSTALLED_CORES_WAIT_LIST,
+   UPDATE_INSTALLED_CORES_ITERATE,
+   UPDATE_INSTALLED_CORES_UPDATE_CORE,
+   UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD,
+   UPDATE_INSTALLED_CORES_END
+};
+
 typedef struct update_installed_cores_handle
 {
    char *path_dir_libretro;
@@ -126,6 +130,26 @@ typedef struct update_installed_cores_handle
    enum update_installed_cores_status status;
    bool auto_backup;
 } update_installed_cores_handle_t;
+
+/* Play feature delivery core install */
+#if defined(ANDROID)
+enum play_feature_delivery_install_task_status
+{
+   PLAY_FEATURE_DELIVERY_INSTALL_BEGIN = 0,
+   PLAY_FEATURE_DELIVERY_INSTALL_WAIT,
+   PLAY_FEATURE_DELIVERY_INSTALL_END
+};
+
+typedef struct play_feature_delivery_install_handle
+{
+   char *core_filename;
+   char *local_core_path;
+   char *display_name;
+   enum play_feature_delivery_install_task_status status;
+   bool success;
+   bool core_already_installed;
+} play_feature_delivery_install_handle_t;
+#endif
 
 /*********************/
 /* Utility functions */
@@ -392,6 +416,13 @@ void *task_push_get_core_updater_list(
    retro_task_t *task                      = NULL;
    core_updater_list_handle_t *list_handle = (core_updater_list_handle_t*)
          calloc(1, sizeof(core_updater_list_handle_t));
+
+#if defined(ANDROID)
+   /* Regular core updater is disabled in
+    * Play Store builds */
+   if (play_feature_delivery_enabled())
+      goto error;
+#endif
 
    /* Sanity check */
    if (!core_list || !list_handle)
@@ -952,6 +983,13 @@ void *task_push_core_updater_download(
    task_title[0]          = '\0';
    local_download_path[0] = '\0';
 
+#if defined(ANDROID)
+   /* Regular core updater is disabled in
+    * Play Store builds */
+   if (play_feature_delivery_enabled())
+      goto error;
+#endif
+
    /* Sanity check */
    if (!core_list ||
        string_is_empty(filename) ||
@@ -1410,6 +1448,13 @@ void task_push_update_installed_cores(
          (update_installed_cores_handle_t*)
                calloc(1, sizeof(update_installed_cores_handle_t));
 
+#if defined(ANDROID)
+   /* Regular core updater is disabled in
+    * Play Store builds */
+   if (play_feature_delivery_enabled())
+      goto error;
+#endif
+
    /* Sanity check */
    if (!update_installed_handle ||
        string_is_empty(path_dir_libretro))
@@ -1471,3 +1516,265 @@ error:
    /* Clean up handle */
    free_update_installed_cores_handle(update_installed_handle);
 }
+
+/**************************************/
+/* Play feature delivery core install */
+/**************************************/
+
+#if defined(ANDROID)
+
+static void free_play_feature_delivery_install_handle(
+      play_feature_delivery_install_handle_t *pfd_install_handle)
+{
+   if (!pfd_install_handle)
+      return;
+
+   if (pfd_install_handle->core_filename)
+      free(pfd_install_handle->core_filename);
+
+   if (pfd_install_handle->local_core_path)
+      free(pfd_install_handle->local_core_path);
+
+   if (pfd_install_handle->display_name)
+      free(pfd_install_handle->display_name);
+
+   free(pfd_install_handle);
+   pfd_install_handle = NULL;
+}
+
+static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
+{
+   play_feature_delivery_install_handle_t *pfd_install_handle = NULL;
+
+   if (!task)
+      goto task_finished;
+
+   pfd_install_handle = (play_feature_delivery_install_handle_t*)task->state;
+
+   if (!pfd_install_handle)
+      goto task_finished;
+
+   if (task_get_cancelled(task))
+      goto task_finished;
+
+   switch (pfd_install_handle->status)
+   {
+      case PLAY_FEATURE_DELIVERY_INSTALL_BEGIN:
+         {
+            /* Check whether core has already been
+             * installed via play feature delivery */
+            if (play_feature_delivery_core_installed(
+                  pfd_install_handle->core_filename))
+            {
+               pfd_install_handle->success                = true;
+               pfd_install_handle->core_already_installed = true;
+               pfd_install_handle->status                 =
+                     PLAY_FEATURE_DELIVERY_INSTALL_END;
+               break;
+            }
+
+            /* If core is already installed via other
+             * means, must delete it before attempting
+             * play feature delivery transaction */
+            if (path_is_valid(pfd_install_handle->local_core_path))
+               filestream_delete(pfd_install_handle->local_core_path);
+
+            /* Start download */
+            if (play_feature_delivery_download(
+                  pfd_install_handle->core_filename))
+               pfd_install_handle->status = PLAY_FEATURE_DELIVERY_INSTALL_WAIT;
+            else
+               pfd_install_handle->status = PLAY_FEATURE_DELIVERY_INSTALL_END;
+         }
+         break;
+      case PLAY_FEATURE_DELIVERY_INSTALL_WAIT:
+         {
+            bool install_active;
+            enum play_feature_delivery_install_status install_status;
+            unsigned install_progress;
+            char task_title[PATH_MAX_LENGTH];
+
+            task_title[0] = '\0';
+
+            /* Get current install status */
+            install_active = play_feature_delivery_download_status(
+                  &install_status, &install_progress);
+
+            /* In all cases, update task progress */
+            task_set_progress(task, install_progress);
+
+            /* Interpret status */
+            switch (install_status)
+            {
+               case PLAY_FEATURE_DELIVERY_INSTALLED:
+                  pfd_install_handle->success = true;
+                  pfd_install_handle->status  = PLAY_FEATURE_DELIVERY_INSTALL_END;
+                  break;
+               case PLAY_FEATURE_DELIVERY_FAILED:
+                  pfd_install_handle->status  = PLAY_FEATURE_DELIVERY_INSTALL_END;
+                  break;
+               case PLAY_FEATURE_DELIVERY_DOWNLOADING:
+                  task_free_title(task);
+                  strlcpy(task_title, msg_hash_to_str(MSG_DOWNLOADING_CORE),
+                        sizeof(task_title));
+                  strlcat(task_title, pfd_install_handle->display_name,
+                        sizeof(task_title));
+                  task_set_title(task, strdup(task_title));
+                  break;
+               case PLAY_FEATURE_DELIVERY_INSTALLING:
+                  task_free_title(task);
+                  strlcpy(task_title, msg_hash_to_str(MSG_INSTALLING_CORE),
+                        sizeof(task_title));
+                  strlcat(task_title, pfd_install_handle->display_name,
+                        sizeof(task_title));
+                  task_set_title(task, strdup(task_title));
+                  break;
+               default:
+                  break;
+            }
+
+            /* If install is inactive, end task (regardless
+             * of status) */
+            if (!install_active)
+               pfd_install_handle->status = PLAY_FEATURE_DELIVERY_INSTALL_END;
+         }
+         break;
+      case PLAY_FEATURE_DELIVERY_INSTALL_END:
+         {
+            const char *msg_str = msg_hash_to_str(MSG_CORE_INSTALL_FAILED);
+            char task_title[PATH_MAX_LENGTH];
+
+            task_title[0] = '\0';
+
+            /* Set final task title */
+            task_free_title(task);
+
+            if (pfd_install_handle->success)
+               msg_str = pfd_install_handle->core_already_installed ?
+                     msg_hash_to_str(MSG_LATEST_CORE_INSTALLED) :
+                     msg_hash_to_str(MSG_CORE_INSTALLED);
+
+            strlcpy(task_title, msg_str, sizeof(task_title));
+            strlcat(task_title, pfd_install_handle->display_name,
+                  sizeof(task_title));
+
+            task_set_title(task, strdup(task_title));
+         }
+         /* fall-through */
+      default:
+         task_set_progress(task, 100);
+         goto task_finished;
+   }
+
+   return;
+
+task_finished:
+
+   if (task)
+      task_set_finished(task, true);
+
+   free_play_feature_delivery_install_handle(pfd_install_handle);
+}
+
+static bool task_play_feature_delivery_core_install_finder(
+      retro_task_t *task, void *user_data)
+{
+   if (!task)
+      return false;
+
+   if (task->handler == task_play_feature_delivery_core_install_handler)
+      return true;
+
+   return false;
+}
+
+void task_push_play_feature_delivery_core_install(
+      core_updater_list_t* core_list,
+      const char *filename)
+{
+   task_finder_data_t find_data;
+   char task_title[PATH_MAX_LENGTH];
+   const core_updater_list_entry_t *list_entry                = NULL;
+   retro_task_t *task                                         = NULL;
+   play_feature_delivery_install_handle_t *pfd_install_handle = (play_feature_delivery_install_handle_t*)
+         calloc(1, sizeof(play_feature_delivery_install_handle_t));
+
+   task_title[0] = '\0';
+
+   /* Sanity check */
+   if (!core_list ||
+       string_is_empty(filename) ||
+       !pfd_install_handle ||
+       !play_feature_delivery_enabled())
+      goto error;
+
+   /* Get core updater list entry */
+   if (!core_updater_list_get_filename(
+         core_list, filename, &list_entry))
+      goto error;
+
+   if (string_is_empty(list_entry->local_core_path) ||
+       string_is_empty(list_entry->display_name))
+      goto error;
+
+   /* Only one core may be downloaded at a time */
+   find_data.func     = task_play_feature_delivery_core_install_finder;
+   find_data.userdata = NULL;
+
+   if (task_queue_find(&find_data))
+      goto error;
+
+   /* Configure handle */
+   pfd_install_handle->core_filename          = strdup(list_entry->remote_filename);
+   pfd_install_handle->local_core_path        = strdup(list_entry->local_core_path);
+   pfd_install_handle->display_name           = strdup(list_entry->display_name);
+   pfd_install_handle->success                = false;
+   pfd_install_handle->core_already_installed = false;
+   pfd_install_handle->status                 = PLAY_FEATURE_DELIVERY_INSTALL_BEGIN;
+
+   /* Create task */
+   task = task_init();
+
+   if (!task)
+      goto error;
+
+   /* Configure task */
+   strlcpy(task_title, msg_hash_to_str(MSG_UPDATING_CORE),
+         sizeof(task_title));
+   strlcat(task_title, pfd_install_handle->display_name,
+         sizeof(task_title));
+
+   task->handler          = task_play_feature_delivery_core_install_handler;
+   task->state            = pfd_install_handle;
+   task->mute             = false;
+   task->title            = strdup(task_title);
+   task->alternative_look = true;
+   task->progress         = 0;
+   task->callback         = cb_task_core_updater_download;
+
+   /* Install process may involve the *deletion*
+    * of an existing core file. If core is
+    * already running, must therefore unload it
+    * to prevent undefined behaviour */
+   if (rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)list_entry->local_core_path))
+      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+   /* Push task */
+   task_queue_push(task);
+
+   return;
+
+error:
+
+   /* Clean up task */
+   if (task)
+   {
+      free(task);
+      task = NULL;
+   }
+
+   /* Clean up handle */
+   free_play_feature_delivery_install_handle(pfd_install_handle);
+}
+
+#endif
