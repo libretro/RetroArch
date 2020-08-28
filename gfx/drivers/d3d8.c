@@ -1148,7 +1148,14 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
 
 #ifdef HAVE_WINDOW
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
-   d3d->windowClass.lpfnWndProc = WndProcD3D;
+#ifdef HAVE_DINPUT
+   if (string_is_equal(settings->arrays.input_driver, "dinput"))
+      d3d->windowClass.lpfnWndProc = wnd_proc_d3d_dinput;
+#endif
+#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      d3d->windowClass.lpfnWndProc = wnd_proc_d3d_raw;
+#endif
    win32_window_init(&d3d->windowClass, true, NULL);
 #endif
 

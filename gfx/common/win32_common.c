@@ -923,7 +923,9 @@ static LRESULT CALLBACK wnd_proc_common(
    return 0;
 }
 
-static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
+/* XP and higher */
+#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
+static LRESULT CALLBACK wnd_proc_common_raw_internal(HWND hwnd,
       UINT message, WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
@@ -958,24 +960,9 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
-            {
-               input_driver_t *driver = input_get_ptr();
-
-#if _WIN32_WINNT >= 0x0501 /* XP */
-#ifdef HAVE_WINRAWINPUT
-               if (driver == &input_winraw)
-                  keysym             = (unsigned)wparam;
-               else
-#endif
-#endif
-#ifdef HAVE_DINPUT
-                  /* extended keys will map to dinput if the high bit is set */
-                  if (driver == &input_dinput && (lparam >> 24 & 0x1))
-                     keysym |= 0x80;
-#else
-               /* fix key binding issues on winraw when DirectInput is not available */
-#endif
-            }
+            keysym             = (unsigned)wparam;
+            /* fix key binding issues on winraw when 
+             * DirectInput is not available */
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
@@ -1005,15 +992,6 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
             taskbar_is_created = true;
 #endif
-#ifdef HAVE_DINPUT
-         if (input_get_ptr() == &input_dinput)
-         {
-            void* input_data = input_get_data();
-            if (input_data && dinput_handle_message(input_data,
-                     message, wparam, lparam))
-               return 0;
-         }
-#endif
          break;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
@@ -1036,9 +1014,110 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
 
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
+
+#ifdef HAVE_DINPUT
+static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
+      UINT message, WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   bool keydown                  = true;
+   bool quit                     = false;
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   switch (message)
+   {
+      case WM_KEYUP:                /* Key released */
+      case WM_SYSKEYUP:             /* Key released */
+         keydown                  = false;
+         /* fall-through */
+      case WM_KEYDOWN:              /* Key pressed  */
+      case WM_SYSKEYDOWN:           /* Key pressed  */
+         quit                     = true;
+         {
+            uint16_t mod          = 0;
+            unsigned keycode      = 0;
+            unsigned keysym       = (lparam >> 16) & 0xff;
+
+            if (GetKeyState(VK_SHIFT)   & 0x80)
+               mod |= RETROKMOD_SHIFT;
+            if (GetKeyState(VK_CONTROL) & 0x80)
+               mod |=  RETROKMOD_CTRL;
+            if (GetKeyState(VK_MENU)    & 0x80)
+               mod |=  RETROKMOD_ALT;
+            if (GetKeyState(VK_CAPITAL) & 0x81)
+               mod |= RETROKMOD_CAPSLOCK;
+            if (GetKeyState(VK_SCROLL)  & 0x81)
+               mod |= RETROKMOD_SCROLLOCK;
+            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+               mod |= RETROKMOD_META;
+
+            /* extended keys will map to dinput if the high bit is set */
+            if ((lparam >> 24 & 0x1))
+               keysym |= 0x80;
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
+
+            input_keyboard_event(keydown, keycode,
+                  0, mod, RETRO_DEVICE_KEYBOARD);
+
+            if (message != WM_SYSKEYDOWN)
+               return 0;
+
+            if (
+                  wparam == VK_F10  ||
+                  wparam == VK_MENU ||
+                  wparam == VK_RSHIFT
+               )
+               return 0;
+         }
+         break;
+      case WM_MOUSEMOVE:
+      case WM_POINTERDOWN:
+      case WM_POINTERUP:
+      case WM_POINTERUPDATE:
+      case WM_DEVICECHANGE:
+      case WM_MOUSEWHEEL:
+      case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
+            taskbar_is_created = true;
+#endif
+         {
+            void* input_data = input_get_data();
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+         break;
+      case WM_DROPFILES:
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_MOVE:
+      case WM_SIZE:
+      case WM_COMMAND:
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
+            taskbar_is_created = true;
+#endif
+         break;
+   }
+
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+#endif
 
 #if defined(HAVE_D3D) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
-LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
+
+#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
+LRESULT CALLBACK wnd_proc_d3d_raw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
@@ -1052,12 +1131,34 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       return 0;
    }
 
-   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
+   return wnd_proc_common_raw_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
+#ifdef HAVE_DINPUT
+LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   if (message == WM_CREATE)
+   {
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+
+      g_win32_inited        = true;
+      return 0;
+   }
+
+   return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+#endif
+
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
+#ifdef HAVE_DINPUT
+LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
@@ -1071,12 +1172,33 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
       return 0;
    }
 
-   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
+   return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
+#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
+LRESULT CALLBACK wnd_proc_wgl_raw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   if (message == WM_CREATE)
+   {
+      create_wgl_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      return 0;
+   }
+
+   return wnd_proc_common_raw_internal(hwnd, message, wparam, lparam);
+}
+#endif
+#endif
+
 #ifdef HAVE_VULKAN
-LRESULT CALLBACK WndProcVK(HWND hwnd, UINT message,
+#ifdef HAVE_DINPUT
+LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
@@ -1089,12 +1211,32 @@ LRESULT CALLBACK WndProcVK(HWND hwnd, UINT message,
       return 0;
    }
 
-   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
+   return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
+#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
+LRESULT CALLBACK wnd_proc_vk_raw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   if (message == WM_CREATE)
+   {
+      create_vk_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      return 0;
+   }
+
+   return wnd_proc_common_raw_internal(hwnd, message, wparam, lparam);
+}
+#endif
+#endif
+
 #ifdef HAVE_GDI
-LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
+#ifdef HAVE_DINPUT
+LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
@@ -1139,8 +1281,59 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 #endif
    }
 
-   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
+   return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
 }
+#endif
+
+#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
+LRESULT CALLBACK wnd_proc_gdi_raw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+   
+   if (message == WM_CREATE)
+   {
+      create_gdi_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      return 0;
+   }
+   else if (message == WM_PAINT)
+   {
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+
+      if (gdi && gdi->memDC)
+      {
+         gdi->bmp_old    = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+
+         /* Draw video content */
+         StretchBlt(
+               gdi->winDC,
+               0,
+               0,
+               gdi->screen_width,
+               gdi->screen_height,
+               gdi->memDC,
+               0,
+               0,
+               gdi->video_width,
+               gdi->video_height,
+               SRCCOPY);
+
+         SelectObject(gdi->memDC, gdi->bmp_old);
+      }
+
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+      if (     g_win32->taskbar_message 
+            && message == g_win32->taskbar_message)
+         taskbar_is_created = true;
+#endif
+   }
+
+   return wnd_proc_common_raw_internal(hwnd, message, wparam, lparam);
+}
+#endif
 #endif
 
 bool win32_window_create(void *data, unsigned style,

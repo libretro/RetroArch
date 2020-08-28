@@ -631,7 +631,17 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    win32_window_reset();
    win32_monitor_init();
 
-   wndclass.lpfnWndProc   = WndProcWGL;
+   {
+      settings_t *settings     = config_get_ptr();
+#ifdef HAVE_DINPUT
+      if (string_is_equal(settings->arrays.input_driver, "dinput"))
+         wndclass.lpfnWndProc   = wnd_proc_wgl_dinput;
+#endif
+#if _WIN32_WINNT >= 0x0501 && defined(HAVE_WINRAWINPUT)
+      if (string_is_equal(settings->arrays.input_driver, "raw"))
+         wndclass.lpfnWndProc   = wnd_proc_wgl_raw;
+#endif
+   }
 
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
