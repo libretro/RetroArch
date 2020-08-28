@@ -54,6 +54,17 @@ static const unsigned char MAC_NATIVE_TO_HID[128] = {
 uint32_t apple_key_state[MAX_KEYS];
 
 #if TARGET_OS_IPHONE
+typedef struct icade_map
+{
+   bool up;
+   enum retro_key key;
+} icade_map_t;
+
+#define MAX_ICADE_PROFILES 4
+#define MAX_ICADE_KEYS     0x100
+
+static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
+
 static bool handle_small_keyboard(unsigned* code, bool down)
 {
    static uint8_t mapping[128];
@@ -92,7 +103,8 @@ static bool handle_small_keyboard(unsigned* code, bool down)
       return true;
    }
 
-   translated_code = (*code < 128) ? mapping[*code] : 0;
+   if (*code < 128)
+      translated_code = mapping[*code];
 
    /* Allow old keys to be released. */
    if (!down && apple_key_state[*code])
@@ -107,17 +119,6 @@ static bool handle_small_keyboard(unsigned* code, bool down)
 
    return false;
 }
-
-typedef struct icade_map
-{
-   bool up;
-   enum retro_key key;
-} icade_map_t;
-
-#define MAX_ICADE_PROFILES 4
-#define MAX_ICADE_KEYS     0x100
-
-static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
 
 static bool handle_icade_event(unsigned *code, bool *keydown)
 {
@@ -304,15 +305,4 @@ void apple_input_keyboard_event(bool down,
    input_keyboard_event(down,
          input_keymaps_translate_keysym_to_rk(code),
          character, (enum retro_mod)mod, device);
-}
-
-int32_t apple_keyboard_find_any_key(void)
-{
-   unsigned i;
-
-   for (i = 0; apple_key_name_map[i].hid_id; i++)
-      if (apple_key_state[apple_key_name_map[i].hid_id])
-         return apple_key_name_map[i].hid_id;
-
-   return 0;
 }

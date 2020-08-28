@@ -86,7 +86,6 @@ int init_xkb(int fd, size_t size)
       }
       else
       {
-         struct string_list list           = {0};
          struct xkb_rule_names rule        = {0};
          settings_t *settings              = config_get_ptr();
          const char *input_keyboard_layout = 
@@ -94,10 +93,11 @@ int init_xkb(int fd, size_t size)
 
          rule.rules = "evdev";
 
-         string_list_initialize(&list);
-
          if (*input_keyboard_layout)
          {
+            struct string_list list        = {0};
+            string_list_initialize(&list);
+
             if (string_split_noalloc(&list, input_keyboard_layout, ":"))
             {
                if (list.size >= 1)
@@ -107,12 +107,12 @@ int init_xkb(int fd, size_t size)
                      rule.variant = list.elems[1].data;
                }
             }
+
+            string_list_deinitialize(&list);
          }
 
          xkb_map = xkb_keymap_new_from_names(xkb_ctx,
                &rule, XKB_MAP_COMPILE_NO_FLAGS);
-
-         string_list_deinitialize(&list);
       }
    }
 
@@ -121,26 +121,31 @@ int init_xkb(int fd, size_t size)
       xkb_mod_index_t *map_idx = (xkb_mod_index_t*)&mod_map_idx[0];
       uint16_t        *map_bit = (uint16_t*)&mod_map_bit[0];
 
-      xkb_state = xkb_state_new(xkb_map);
+      xkb_state                = xkb_state_new(xkb_map);
 
-      *map_idx = xkb_keymap_mod_get_index(xkb_map, XKB_MOD_NAME_CAPS);
+      *map_idx                 = xkb_keymap_mod_get_index(
+            xkb_map, XKB_MOD_NAME_CAPS);
       map_idx++;
-      *map_bit = RETROKMOD_CAPSLOCK;
+      *map_bit                 = RETROKMOD_CAPSLOCK;
       map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(xkb_map, XKB_MOD_NAME_SHIFT);
+      *map_idx                 = xkb_keymap_mod_get_index(
+            xkb_map, XKB_MOD_NAME_SHIFT);
       map_idx++;
-      *map_bit = RETROKMOD_SHIFT;
+      *map_bit                 = RETROKMOD_SHIFT;
       map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(xkb_map, XKB_MOD_NAME_CTRL);
+      *map_idx                 = xkb_keymap_mod_get_index(
+            xkb_map, XKB_MOD_NAME_CTRL);
       map_idx++;
-      *map_bit = RETROKMOD_CTRL;
+      *map_bit                 = RETROKMOD_CTRL;
       map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(xkb_map, XKB_MOD_NAME_ALT);
+      *map_idx                 = xkb_keymap_mod_get_index(
+            xkb_map, XKB_MOD_NAME_ALT);
       map_idx++;
-      *map_bit = RETROKMOD_ALT;
+      *map_bit                 = RETROKMOD_ALT;
       map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(xkb_map, XKB_MOD_NAME_LOGO);
-      *map_bit = RETROKMOD_META;
+      *map_idx                 = xkb_keymap_mod_get_index(
+            xkb_map, XKB_MOD_NAME_LOGO);
+      *map_bit                 = RETROKMOD_META;
    }
 
    return 0;
