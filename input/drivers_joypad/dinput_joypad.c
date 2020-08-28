@@ -57,8 +57,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (FAILED(IDirectInput8_CreateDevice(
                g_dinput_ctx, inst->guidInstance, pad, NULL)))
 #else
-      if (FAILED(IDirectInput8_CreateDevice(
-                  g_dinput_ctx, &inst->guidInstance, pad, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(
+               g_dinput_ctx, &inst->guidInstance, pad, NULL)))
 #endif
          return DIENUM_CONTINUE;
 

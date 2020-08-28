@@ -175,7 +175,8 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    pad->vid = pad->pid = 0;
 
-   if (ioctl(fd, EVIOCGID, &inputid) >= 0) {
+   if (ioctl(fd, EVIOCGID, &inputid) >= 0)
+   {
       pad->vid = inputid.vendor;
       pad->pid = inputid.product;
    }
