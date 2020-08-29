@@ -116,36 +116,10 @@ static uint64_t xdk_input_get_capabilities(void *data)
 static bool xdk_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-#ifdef _XBOX360
-#if 0
-   XINPUT_VIBRATION rumble_state;
-#endif
-#endif
    xdk_input_t *xdk = (xdk_input_t*)data;
-   bool val         = false;
-
-   (void)xdk;
-
-#if 0
-#if defined(_XBOX360)
-   if (effect == RETRO_RUMBLE_STRONG)
-      rumble_state.wLeftMotorSpeed = strength;
-   else if (effect == RETRO_RUMBLE_WEAK)
-      rumble_state.wRightMotorSpeed = strength;
-   val = XInputSetState(port, &rumble_state) == ERROR_SUCCESS;
-#elif defined(_XBOX1)
-#if 0
-   XINPUT_FEEDBACK rumble_state;
-
-   if (effect == RETRO_RUMBLE_STRONG)
-      rumble_state.Rumble.wLeftMotorSpeed = strength;
-   else if (effect == RETRO_RUMBLE_WEAK)
-      rumble_state.Rumble.wRightMotorSpeed = strength;
-   val = XInputSetState(xdk->gamepads[port], &rumble_state) == ERROR_SUCCESS;
-#endif
-#endif
-#endif
-   return val;
+   if (xdk)
+      return input_joypad_set_rumble(xdk->joypad, port, effect, strength);
+   return false;
 }
 
 static const input_device_driver_t *xdk_input_get_joypad_driver(void *data)
