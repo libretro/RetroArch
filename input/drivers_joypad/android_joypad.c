@@ -153,6 +153,14 @@ static void android_joypad_destroy(void)
       for (j = 0; j < MAX_AXIS; j++)
          android_app->analog_state[i][j] = 0;
    }
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      android_app->rumble_last_strength_strong[i] = 0;
+      android_app->rumble_last_strength_weak  [i] = 0;
+      android_app->rumble_last_strength       [i] = 0;
+      android_app->id                         [i] = 0;
+   }
 }
 
 input_device_driver_t android_joypad = {
