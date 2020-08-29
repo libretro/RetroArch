@@ -175,9 +175,6 @@ static void* ps3_input_init(const char *joypad_driver)
 
    ps3->joypad = input_joypad_init_driver(joypad_driver, ps3);
 
-   if (ps3->joypad)
-      ps3->joypad->init(ps3);
-
    return ps3;
 }
 
