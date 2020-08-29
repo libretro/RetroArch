@@ -1310,7 +1310,6 @@ static void *udev_input_init(const char *joypad_driver)
    if (!udev->num_devices)
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event*?\n");
 
-   udev->joypad = input_joypad_init_driver(joypad_driver, udev);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
 #ifdef __linux__
@@ -1321,6 +1320,8 @@ static void *udev_input_init(const char *joypad_driver)
    /* TODO/FIXME - this can't be hidden behind a compile-time ifdef */
    RARCH_WARN("[udev]: Full-screen pointer won't be available.\n");
 #endif
+
+   udev->joypad = input_joypad_init_driver(joypad_driver, udev);
 
    return udev;
 

@@ -819,24 +819,22 @@ static void switch_input_free_input(void *data)
 
 static void* switch_input_init(const char *joypad_driver)
 {
+#ifdef HAVE_LIBNX
+   unsigned int i;
+#endif
    switch_input_t *sw = (switch_input_t*) calloc(1, sizeof(*sw));
    if (!sw)
       return NULL;
 
 #ifdef HAVE_LIBNX
    hidInitialize();
-#endif
 
-   sw->joypad = input_joypad_init_driver(joypad_driver, sw);
-
-#ifdef HAVE_LIBNX
    /*
       Here we assume that the touch screen is always 1280x720
       Call me back when a Nintendo Switch XL is out
    */
 
    input_keymaps_init_keyboard_lut(rarch_key_map_switch);
-   unsigned int i;
    for (i = 0; i <= SWITCH_MAX_SCANCODE; i++)
       sw->keyboard_state[i]     = false;
 
@@ -859,6 +857,8 @@ static void* switch_input_init(const char *joypad_driver)
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
       sw->sixaxis_handles_count[i]      = 0;
 #endif
+
+   sw->joypad = input_joypad_init_driver(joypad_driver, sw);
 
    return sw;
 }

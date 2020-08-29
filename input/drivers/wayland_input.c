@@ -383,12 +383,13 @@ bool input_wl_init(void *data, const char *joypad_name)
    if (!wl)
       return false;
 
+   input_keymaps_init_keyboard_lut(rarch_key_map_linux);
+
    wl->joypad = input_joypad_init_driver(joypad_name, wl);
 
    if (!wl->joypad)
       return false;
 
-   input_keymaps_init_keyboard_lut(rarch_key_map_linux);
    return true;
 }
 

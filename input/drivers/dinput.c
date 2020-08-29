@@ -182,11 +182,12 @@ static void *dinput_init(const char *joypad_driver)
    }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
-   di->joypad = input_joypad_init_driver(joypad_driver, di);
 
 #ifndef _XBOX
    win32_set_input_userdata(di);
 #endif
+
+   di->joypad = input_joypad_init_driver(joypad_driver, di);
 
    return di;
 }

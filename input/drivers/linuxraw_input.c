@@ -66,10 +66,11 @@ static void *linuxraw_input_init(const char *joypad_driver)
       return NULL;
    }
 
-   linuxraw->joypad = input_joypad_init_driver(joypad_driver, linuxraw);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    linux_terminal_claim_stdin();
+
+   linuxraw->joypad = input_joypad_init_driver(joypad_driver, linuxraw);
 
    return linuxraw;
 }

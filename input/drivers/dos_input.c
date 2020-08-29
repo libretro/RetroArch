@@ -145,11 +145,9 @@ static void* dos_input_init(const char *joypad_driver)
    if (!dos)
       return NULL;
 
-   dos_keyboard_free();
+   input_keymaps_init_keyboard_lut(rarch_key_map_dos);
 
    dos->joypad = input_joypad_init_driver(joypad_driver, dos);
-
-   input_keymaps_init_keyboard_lut(rarch_key_map_dos);
 
    return dos;
 }

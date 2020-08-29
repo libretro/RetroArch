@@ -524,7 +524,6 @@ static void *android_input_init(const char *joypad_driver)
 
    android->pads_connected = 0;
    android->quick_tap_time = 0;
-   android->joypad         = input_joypad_init_driver(joypad_driver, android);
 
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
 
@@ -546,6 +545,8 @@ static void *android_input_init(const char *joypad_driver)
          sizeof(android->device_model));
 
    android_app->input_alive = true;
+
+   android->joypad         = input_joypad_init_driver(joypad_driver, android);
 
    return android;
 }

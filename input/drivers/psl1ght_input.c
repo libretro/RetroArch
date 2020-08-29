@@ -270,11 +270,6 @@ static void* ps3_input_init(const char *joypad_driver)
    if (!ps3)
       return NULL;
 
-   ps3->joypad = input_joypad_init_driver(joypad_driver, ps3);
-
-   if (ps3->joypad)
-      ps3->joypad->init(ps3);
-
    /* Keyboard  */
 
    input_keymaps_init_keyboard_lut(rarch_key_map_psl1ght);
@@ -287,6 +282,11 @@ static void* ps3_input_init(const char *joypad_driver)
       if (ps3->kbinfo.status[i])
          ps3_connect_keyboard(ps3, i);
    }
+
+   ps3->joypad = input_joypad_init_driver(joypad_driver, ps3);
+
+   if (ps3->joypad)
+      ps3->joypad->init(ps3);
 
    return ps3;
 }

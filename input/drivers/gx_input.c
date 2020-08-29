@@ -216,13 +216,14 @@ static void *gx_input_init(const char *joypad_driver)
    if (!gx)
       return NULL;
 
-   gx->joypad     = input_joypad_init_driver(joypad_driver, gx);
 #ifdef HW_RVL
    /* Allocate at least 1 mouse at startup */
    gx->mouse_max  = 1;
    gx->mouse      = (gx_input_mouse_t*)calloc(
          gx->mouse_max, sizeof(gx_input_mouse_t));
 #endif
+
+   gx->joypad     = input_joypad_init_driver(joypad_driver, gx);
    return gx;
 }
 

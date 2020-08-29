@@ -177,13 +177,13 @@ static void* wiiu_input_init(const char *joypad_driver)
    if (!wiiu)
       return NULL;
 
-   DEBUG_STR(joypad_driver);
-   wiiu->joypad = input_joypad_init_driver(joypad_driver, wiiu);
-
    KBDSetup(&kb_connection_callback,
          &kb_disconnection_callback,&kb_key_callback);
 
    input_keymaps_init_keyboard_lut(rarch_key_map_wiiu);
+
+   DEBUG_STR(joypad_driver);
+   wiiu->joypad = input_joypad_init_driver(joypad_driver, wiiu);
 
    return wiiu;
 }
