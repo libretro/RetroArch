@@ -434,7 +434,6 @@ static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
 
 static LRESULT CALLBACK winraw_callback(HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
 {
-   UINT r;
    unsigned i;
    static uint8_t data[1024];
    RAWINPUT *ri = (RAWINPUT*)data;
@@ -443,35 +442,35 @@ static LRESULT CALLBACK winraw_callback(HWND wnd, UINT msg, WPARAM wpar, LPARAM 
    if (msg != WM_INPUT)
       return DefWindowProcA(wnd, msg, wpar, lpar);
 
-   /* app is in the background */
-   if (GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT)
-      goto end;
-
-   r = GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
-         data, &size, sizeof(RAWINPUTHEADER));
-   if (r == (UINT)-1)
-      goto end;
-
-   if (ri->header.dwType == RIM_TYPEKEYBOARD)
+   if (
+          GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT  /* app is in the background */
+       || GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
+         data, &size, sizeof(RAWINPUTHEADER)) == (UINT)-1)
    {
-      if (ri->data.keyboard.Message == WM_KEYDOWN)
-         g_keyboard->keys[ri->data.keyboard.VKey] = 1;
-      else if (ri->data.keyboard.Message == WM_KEYUP)
-         g_keyboard->keys[ri->data.keyboard.VKey] = 0;
+      DefWindowProcA(wnd, msg, wpar, lpar);
+      return 0;
    }
-   else if (ri->header.dwType == RIM_TYPEMOUSE)
+
+   switch (ri->header.dwType)
    {
-      for (i = 0; i < g_mouse_cnt; ++i)
-      {
-         if (g_mice[i].hnd == ri->header.hDevice)
+      case RIM_TYPEKEYBOARD:
+         if (ri->data.keyboard.Message == WM_KEYDOWN)
+            g_keyboard->keys[ri->data.keyboard.VKey] = 1;
+         else if (ri->data.keyboard.Message == WM_KEYUP)
+            g_keyboard->keys[ri->data.keyboard.VKey] = 0;
+         break;
+      case RIM_TYPEMOUSE:
+         for (i = 0; i < g_mouse_cnt; ++i)
          {
-            winraw_update_mouse_state(&g_mice[i], &ri->data.mouse);
-            break;
+            if (g_mice[i].hnd == ri->header.hDevice)
+            {
+               winraw_update_mouse_state(&g_mice[i], &ri->data.mouse);
+               break;
+            }
          }
-      }
+         break;
    }
 
-end:
    DefWindowProcA(wnd, msg, wpar, lpar);
    return 0;
 }
