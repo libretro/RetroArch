@@ -130,20 +130,21 @@ struct udev_input
 {
    struct udev *udev;
    struct udev_monitor *monitor;
-
    const input_device_driver_t *joypad;
+   udev_input_device_t **devices;
 
    int fd;
-   udev_input_device_t **devices;
+   /* OS pointer coords (zeros if we don't have X11) */
+   int pointer_x;
+   int pointer_y;
+
    unsigned num_devices;
+
+   static uint8_t state[UDEV_MAX_KEYS];
 
 #ifdef UDEV_XKB_HANDLING
    bool xkb_handling;
 #endif
-
-   /* OS pointer coords (zeros if we don't have X11) */
-   int pointer_x;
-   int pointer_y;
 };
 
 #ifdef UDEV_XKB_HANDLING
@@ -151,8 +152,6 @@ int init_xkb(int fd, size_t size);
 void free_xkb(void);
 int handle_xkb(int code, int value);
 #endif
-
-static uint8_t udev_key_state[UDEV_MAX_KEYS];
 
 static unsigned input_unify_ev_key_code(unsigned code)
 {
@@ -183,9 +182,9 @@ static void udev_handle_keyboard(void *data,
       case EV_KEY:
          keysym = input_unify_ev_key_code(event->code);
          if (event->value && video_driver_has_focus())
-            BIT_SET(udev_key_state, keysym);
+            BIT_SET(udev->state, keysym);
          else
-            BIT_CLEAR(udev_key_state, keysym);
+            BIT_CLEAR(udev->state, keysym);
 
 #ifdef UDEV_XKB_HANDLING
          if (udev->xkb_handling && handle_xkb(keysym, event->value) == 0)
@@ -202,12 +201,12 @@ static void udev_handle_keyboard(void *data,
    }
 }
 
-static void udev_input_kb_free(void)
+static void udev_input_kb_free(struct udev_input *udev)
 {
    unsigned i;
 
    for (i = 0; i < UDEV_MAX_KEYS; i++)
-      udev_key_state[i] = 0;
+      udev->state[i] = 0;
 
 #ifdef UDEV_XKB_HANDLING
    free_xkb();
@@ -901,7 +900,7 @@ static int16_t udev_mouse_state(udev_input_t *udev,
 static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
 {
    int bit = rarch_keysym_lut[key];
-   return BIT_GET(udev_key_state,bit);
+   return BIT_GET(udev->state, bit);
 }
 
 static bool udev_mouse_button_pressed(
@@ -937,7 +936,8 @@ static bool udev_mouse_button_pressed(
    return false;
 }
 
-static int16_t udev_analog_pressed(const struct retro_keybind *binds,
+static int16_t udev_analog_pressed(udev_input_t *udev,
+      const struct retro_keybind *binds,
       unsigned idx, unsigned id)
 {
    unsigned id_minus     = 0;
@@ -948,11 +948,11 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds,
    input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    if (     binds[id_minus].valid
-         && BIT_GET(udev_key_state,
+         && BIT_GET(udev->state,
             rarch_keysym_lut[binds[id_minus].key]))
       pressed_minus = -0x7fff;
    if (     binds[id_plus].valid
-         && BIT_GET(udev_key_state,
+         && BIT_GET(udev->state,
          rarch_keysym_lut[binds[id_plus].key]))
       pressed_plus = 0x7fff;
 
@@ -1069,7 +1069,7 @@ static int16_t udev_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return udev_analog_pressed(binds[port], idx, id);
+            return udev_analog_pressed(udev, binds[port], idx, id);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
@@ -1194,7 +1194,7 @@ static void udev_input_free(void *data)
    if (udev->udev)
       udev_unref(udev->udev);
 
-   udev_input_kb_free();
+   udev_input_kb_free(udev);
 
    free(udev);
 }
