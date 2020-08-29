@@ -4024,14 +4024,9 @@ static void cb_decompressed(retro_task_t *task,
 static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   core_updater_list_t *core_list = NULL;
-   settings_t *settings           = config_get_ptr();
-   const char *path_dir_libretro  = settings->paths.directory_libretro;
-   const char *path_libretro_info = settings->paths.path_libretro_info;
-
    /* Get cached core updater list, initialising
     * it if required */
-   core_list = core_updater_list_get_cached();
+   core_updater_list_t *core_list = core_updater_list_get_cached();
 
    if (!core_list)
    {
@@ -4045,13 +4040,16 @@ static int action_ok_core_updater_list(const char *path,
 #if defined(ANDROID)
    if (play_feature_delivery_enabled())
    {
+      settings_t *settings                = config_get_ptr();
+      const char *path_dir_libretro       = settings->paths.directory_libretro;
+      const char *path_libretro_info      = settings->paths.path_libretro_info;
       /* Core downloads are handled via play
        * feature delivery
        * > Core list can be populated directly
        *   using the play feature delivery
        *   interface */
       struct string_list *available_cores =
-            play_feature_delivery_available_cores();
+         play_feature_delivery_available_cores();
       bool success                        = false;
 
       if (!available_cores)
