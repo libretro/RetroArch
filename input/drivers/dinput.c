@@ -45,6 +45,10 @@
 
 #include <string/stdstring.h>
 
+#ifndef _XBOX
+#include "../../gfx/common/win32_common.h"
+#endif
+
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
@@ -179,6 +183,10 @@ static void *dinput_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
    di->joypad = input_joypad_init_driver(joypad_driver, di);
+
+#ifndef _XBOX
+   win32_set_input_userdata(di);
+#endif
 
    return di;
 }
@@ -943,28 +951,33 @@ static void dinput_free(void *data)
    struct dinput_input *di = (struct dinput_input*)data;
    LPDIRECTINPUT8 hold_ctx = g_dinput_ctx;
 
-   if (di)
-   {
-      /* Prevent a joypad driver to kill our context prematurely. */
-      g_dinput_ctx = NULL;
-      if (di->joypad)
-         di->joypad->destroy();
-      g_dinput_ctx = hold_ctx;
+   if (!di)
+      return;
 
-      /* Clear any leftover pointers. */
-      dinput_clear_pointers(di);
+   /* Prevent a joypad driver to kill our context prematurely. */
+   g_dinput_ctx = NULL;
+   if (di->joypad)
+      di->joypad->destroy();
 
-      if (di->keyboard)
-         IDirectInputDevice8_Release(di->keyboard);
+#ifndef _XBOX
+   win32_unset_input_userdata();
+#endif
 
-      if (di->mouse)
-         IDirectInputDevice8_Release(di->mouse);
+   g_dinput_ctx = hold_ctx;
 
-      if (di->joypad_driver_name)
-         free(di->joypad_driver_name);
+   /* Clear any leftover pointers. */
+   dinput_clear_pointers(di);
 
-      free(di);
-   }
+   if (di->keyboard)
+      IDirectInputDevice8_Release(di->keyboard);
+
+   if (di->mouse)
+      IDirectInputDevice8_Release(di->mouse);
+
+   if (di->joypad_driver_name)
+      free(di->joypad_driver_name);
+
+   free(di);
 
    dinput_destroy_context();
 }

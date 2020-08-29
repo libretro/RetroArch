@@ -156,6 +156,10 @@ bool win32_load_content_from_gui(const char *szFilename);
 
 void win32_setup_pixel_format(HDC hdc, bool supports_gl);
 
+void win32_unset_input_userdata(void);
+
+void win32_set_input_userdata(void *data);
+
 RETRO_END_DECLS
 
 #endif

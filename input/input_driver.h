@@ -301,8 +301,6 @@ void *input_driver_get_data(void);
 
 input_driver_t *input_get_ptr(void);
 
-void *input_get_data(void);
-
 void input_driver_set_nonblock_state(void);
 
 void input_driver_unset_nonblock_state(void);

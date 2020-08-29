@@ -23688,12 +23688,6 @@ const char* config_get_input_driver_options(void)
    return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
 }
 
-void *input_get_data(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->current_input_data;
-}
-
 /**
  * input_driver_set_rumble_state:
  * @port               : User number.

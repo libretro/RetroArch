@@ -1081,12 +1081,14 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
             taskbar_is_created = true;
 #endif
+#if !defined(_XBOX)
          {
-            void* input_data = input_get_data();
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
             if (input_data && dinput_handle_message(input_data,
                      message, wparam, lparam))
                return 0;
          }
+#endif
          break;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
@@ -1430,6 +1432,16 @@ bool win32_get_metrics(void *data,
 #endif
 
    return false;
+}
+
+void win32_unset_input_userdata(void)
+{
+   SetWindowLongPtr(main_window.hwnd, GWLP_USERDATA, 0);
+}
+
+void win32_set_input_userdata(void *data)
+{
+   SetWindowLongPtr(main_window.hwnd, GWLP_USERDATA, (LONG_PTR)data);
 }
 
 void win32_monitor_init(void)
