@@ -307,10 +307,7 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port,
 }
 
 static bool ps3_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   return false;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { return false; }
 
 static const input_device_driver_t *ps3_input_get_joypad_driver(void *data)
 {

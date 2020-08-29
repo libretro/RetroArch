@@ -754,9 +754,9 @@ static bool x_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   if (!x11)
-      return false;
-   return input_joypad_set_rumble(x11->joypad, port, effect, strength);
+   if (x11)
+      return input_joypad_set_rumble(x11->joypad, port, effect, strength);
+   return false;
 }
 
 static const input_device_driver_t *x_get_joypad_driver(void *data)

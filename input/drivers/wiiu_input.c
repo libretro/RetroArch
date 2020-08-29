@@ -211,15 +211,7 @@ static void wiiu_input_grab_mouse(void *data, bool state)
 }
 
 static bool wiiu_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   (void)data;
-   (void)port;
-   (void)effect;
-   (void)strength;
-
-   return false;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { return false; }
 
 input_driver_t input_wiiu = {
    wiiu_input_init,

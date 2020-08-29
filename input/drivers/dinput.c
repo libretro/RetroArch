@@ -1000,9 +1000,9 @@ static bool dinput_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    struct dinput_input *di = (struct dinput_input*)data;
-   if (!di)
-      return false;
-   return input_joypad_set_rumble(di->joypad, port, effect, strength);
+   if (di)
+      return input_joypad_set_rumble(di->joypad, port, effect, strength);
+   return false;
 }
 
 static const input_device_driver_t *dinput_get_joypad_driver(void *data)

@@ -133,15 +133,7 @@ static void xenon360_input_grab_mouse(void *data, bool state)
 }
 
 static bool xenon360_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   (void)data;
-   (void)port;
-   (void)effect;
-   (void)strength;
-
-   return false;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { return false; }
 
 static const input_device_driver_t *xenon360_get_joypad_driver(void *data)
 {

@@ -117,15 +117,7 @@ static void ctr_input_grab_mouse(void *data, bool state)
 }
 
 static bool ctr_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   (void)data;
-   (void)port;
-   (void)effect;
-   (void)strength;
-
-   return false;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { return false; }
 
 input_driver_t input_ctr = {
    ctr_input_init,

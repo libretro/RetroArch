@@ -304,22 +304,9 @@ static const input_device_driver_t  *gx_input_get_joypad_driver(void *data)
    return gx->joypad;
 }
 
-static void gx_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
+static void gx_input_grab_mouse(void *data, bool state) { }
 static bool gx_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   (void)data;
-   (void)port;
-   (void)effect;
-   (void)strength;
-
-   return false;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { return false; }
 
 input_driver_t input_gx = {
    gx_input_init,

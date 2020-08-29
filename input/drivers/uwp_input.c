@@ -87,9 +87,9 @@ static bool uwp_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    struct uwp_input *uwp = (struct uwp_input*)data;
-   if (!uwp)
-      return false;
-   return input_joypad_set_rumble(uwp->joypad, port, effect, strength);
+   if (uwp)
+      return input_joypad_set_rumble(uwp->joypad, port, effect, strength);
+   return false;
 }
 
 static const input_device_driver_t *uwp_input_get_joypad_driver(void *data)

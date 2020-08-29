@@ -298,9 +298,9 @@ static bool sdl_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    sdl_input_t *sdl = (sdl_input_t*)data;
-   if (!sdl)
-      return false;
-   return input_joypad_set_rumble(sdl->joypad, port, effect, strength);
+   if (sdl)
+      return input_joypad_set_rumble(sdl->joypad, port, effect, strength);
+   return false;
 }
 
 static const input_device_driver_t *sdl_get_joypad_driver(void *data)
