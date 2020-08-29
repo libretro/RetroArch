@@ -141,9 +141,6 @@ typedef struct state_device
 {
    int id;
    int port;
-   uint16_t rumble_last_strength_strong;
-   uint16_t rumble_last_strength_weak;
-   uint16_t rumble_last_strength;
    char name[256];
 } state_device_t;
 
@@ -1203,7 +1200,8 @@ static void handle_hotplug(android_input_t *android,
          vendorId,
          productId);
 
-   android->pad_states[android->pads_connected].id   = id;
+   android->pad_states[android->pads_connected].id   = 
+      g_android->id[android->pads_connected]         = id;
    android->pad_states[android->pads_connected].port = *port;
 
    strlcpy(android->pad_states[*port].name, name_buf,
@@ -1673,28 +1671,19 @@ static bool android_input_set_rumble(void *data, unsigned port,
             &last_strength,
             -1,
             effect);
-
-      return true;
    }
    else
    {
-      android_input_t *android = (android_input_t*)data;
-      state_device_t *state    = android ? &android->pad_states[port] : NULL;
-
-      if (state)
-      {
-         android_input_set_rumble_internal(
-               strength,
-               &state->rumble_last_strength_strong,
-               &state->rumble_last_strength_weak,
-               &state->rumble_last_strength,
-               state->id,
-               effect);
-         return true;
-      }
+      android_input_set_rumble_internal(
+            strength,
+            &g_android->rumble_last_strength_strong[port],
+            &g_android->rumble_last_strength_weak[port],
+            &g_android->rumble_last_strength[port],
+            g_android->id[port],
+            effect);
    }
 
-   return false;
+   return true;
 }
 
 input_driver_t input_android = {
