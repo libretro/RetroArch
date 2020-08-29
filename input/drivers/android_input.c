@@ -1312,26 +1312,6 @@ static void android_input_poll_memcpy(android_input_t *android)
    }
 }
 
-static bool android_input_key_pressed(android_input_t *android, int key)
-{
-   rarch_joypad_info_t joypad_info;
-   joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = input_autoconf_binds[0];
-   joypad_info.axis_threshold = *
-      (input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
-
-   if((key < RARCH_BIND_LIST_END)
-         && android_keyboard_port_input_pressed(input_config_binds[0],
-            key))
-      return true;
-   return button_is_pressed(
-         android->joypad,
-         &joypad_info,
-         input_config_binds[0],
-         joypad_info.joy_idx,
-         key);
-}
-
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
@@ -1344,7 +1324,9 @@ static void android_input_poll(void *data)
 
    while ((ident =
             ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
-               && android_input_key_pressed(android, RARCH_PAUSE_TOGGLE))
+               && input_key_pressed(android->joypad, RARCH_PAUSE_TOGGLE,
+                  android_keyboard_port_input_pressed(input_config_binds[0],
+            key)))
                ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {

@@ -1980,6 +1980,9 @@ void retroarch_init_task_queue(void);
 
 bool is_input_keyboard_display_on(void);
 
+bool input_key_pressed(const void *data,
+      int key, bool keyboard_pressed);
+
 /* creates folder and core options stub file for subsequent runs */
 bool create_folder_and_core_options(void);
 

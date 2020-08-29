@@ -26617,6 +26617,27 @@ bool input_joypad_set_rumble(const input_device_driver_t *drv,
    return drv->set_rumble(joy_idx, effect, strength);
 }
 
+bool input_key_pressed(const void *data, int key, bool keyboard_pressed)
+{
+   rarch_joypad_info_t joypad_info;
+   struct rarch_state           
+      *p_rarch                = &rarch_st;
+   const input_device_driver_t
+      *joypad                 = (const input_device_driver_t*)data;
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = input_autoconf_binds[0];
+   joypad_info.axis_threshold = p_rarch->input_driver_axis_threshold;
+
+   if((key < RARCH_BIND_LIST_END)
+         && keyboard_pressed)
+      return true;
+   return button_is_pressed(
+         joypad, &joypad_info,
+         input_config_binds[0],
+         joypad_info.joy_idx,
+         key);
+}
+
 int16_t button_is_pressed(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
