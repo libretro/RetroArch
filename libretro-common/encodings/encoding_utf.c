@@ -284,9 +284,7 @@ bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
 static char *mb_to_mb_string_alloc(const char *str,
       enum CodePage cp_in, enum CodePage cp_out)
 {
-   char *path_buf         = NULL;
    wchar_t *path_buf_wide = NULL;
-   int path_buf_len       = 0;
    int path_buf_wide_len  = MultiByteToWideChar(cp_in, 0, str, -1, NULL, 0);
 
    /* Windows 95 will return 0 from these functions with 
@@ -299,54 +297,51 @@ static char *mb_to_mb_string_alloc(const char *str,
     *   MultiByteToWideChar also supports CP_UTF7 and CP_UTF8.
     */
 
-   if (path_buf_wide_len)
-   {
-      path_buf_wide = (wchar_t*)
-         calloc(path_buf_wide_len + sizeof(wchar_t), sizeof(wchar_t));
-
-      if (path_buf_wide)
-      {
-         MultiByteToWideChar(cp_in, 0,
-               str, -1, path_buf_wide, path_buf_wide_len);
-
-         if (*path_buf_wide)
-         {
-            path_buf_len = WideCharToMultiByte(cp_out, 0,
-                  path_buf_wide, -1, NULL, 0, NULL, NULL);
-
-            if (path_buf_len)
-            {
-               path_buf = (char*)
-                  calloc(path_buf_len + sizeof(char), sizeof(char));
-
-               if (path_buf)
-               {
-                  WideCharToMultiByte(cp_out, 0,
-                        path_buf_wide, -1, path_buf,
-                        path_buf_len, NULL, NULL);
-
-                  free(path_buf_wide);
-
-                  if (*path_buf)
-                     return path_buf;
-
-                  free(path_buf);
-                  return NULL;
-               }
-            }
-            else
-            {
-               free(path_buf_wide);
-               return strdup(str);
-            }
-         }
-      }
-   }
-   else
+   if (!path_buf_wide_len)
       return strdup(str);
 
+   path_buf_wide = (wchar_t*)
+      calloc(path_buf_wide_len + sizeof(wchar_t), sizeof(wchar_t));
+
    if (path_buf_wide)
+   {
+      MultiByteToWideChar(cp_in, 0,
+            str, -1, path_buf_wide, path_buf_wide_len);
+
+      if (*path_buf_wide)
+      {
+         int path_buf_len = WideCharToMultiByte(cp_out, 0,
+               path_buf_wide, -1, NULL, 0, NULL, NULL);
+
+         if (path_buf_len)
+         {
+            char *path_buf = (char*)
+               calloc(path_buf_len + sizeof(char), sizeof(char));
+
+            if (path_buf)
+            {
+               WideCharToMultiByte(cp_out, 0,
+                     path_buf_wide, -1, path_buf,
+                     path_buf_len, NULL, NULL);
+
+               free(path_buf_wide);
+
+               if (*path_buf)
+                  return path_buf;
+
+               free(path_buf);
+               return NULL;
+            }
+         }
+         else
+         {
+            free(path_buf_wide);
+            return strdup(str);
+         }
+      }
+
       free(path_buf_wide);
+   }
 
    return NULL;
 }
