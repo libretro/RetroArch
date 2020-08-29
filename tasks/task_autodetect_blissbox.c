@@ -187,10 +187,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    HidD_GetHidGuid(&guidDeviceInterface);
 
    if (!memcmp(&guidDeviceInterface, &GUID_NULL, sizeof(GUID_NULL)))
-   {
-     RARCH_ERR("[Autoconf]: null guid\n");
      return NULL;
-   }
 
    /* Get information about all the installed devices for the specified
     * device interface class.
