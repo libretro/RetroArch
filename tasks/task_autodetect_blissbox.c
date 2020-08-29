@@ -169,7 +169,6 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    LPTSTR lp_device_path                = NULL;
    char *device_path                    = NULL;
    DWORD index                          = 0;
-   DWORD intIndex                       = 0;
    unsigned len                         = 0;
    unsigned i                           = 0;
    char vidPidString[32]                = {0};
@@ -236,12 +235,12 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
       deviceInterfaceData.cbSize = sizeof(SP_INTERFACE_DEVICE_DATA);
 
       /* Get information about the device interface. */
-      for (intIndex = 0; (bResult = SetupDiEnumDeviceInterfaces(
+      for (i = 0; (bResult = SetupDiEnumDeviceInterfaces(
          hDeviceInfo,
          &device_info_data,
          &guidDeviceInterface,
-         intIndex,
-         &deviceInterfaceData)); intIndex++)
+         i,
+         &deviceInterfaceData)); i++)
       {
          /* Check if this is the last item */
          if (GetLastError() == ERROR_NO_MORE_ITEMS)
