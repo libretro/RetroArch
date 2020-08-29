@@ -92,6 +92,7 @@ typedef struct psp_input
 
 static void psp_input_poll(void *data)
 {
+   psp_input_t *psp = (psp_input_t*)data;
 #ifdef VITA
    unsigned int i       = 0;
    int key_sym          = 0;
@@ -105,13 +106,7 @@ static void psp_input_poll(void *data)
    int mouse_velocity_y = 0;
    SceHidKeyboardReport k_reports[SCE_HID_MAX_REPORT];
    SceHidMouseReport m_reports[SCE_HID_MAX_REPORT];
-#endif
-   psp_input_t *psp = (psp_input_t*)data;
 
-   if (psp && psp->joypad)
-      psp->joypad->poll();
-
-#ifdef VITA
    if (psp->keyboard_hid_handle > 0)
    {
       numReports = sceHidKeyboardRead(
@@ -225,6 +220,7 @@ static void psp_input_poll(void *data)
          }
       }
    }
+
    psp->mouse_x_delta = mouse_velocity_x;
    psp->mouse_y_delta = mouse_velocity_y;
    psp->mouse_x += mouse_velocity_x;
@@ -239,6 +235,9 @@ static void psp_input_poll(void *data)
    else if (psp->mouse_y > MOUSE_MAX_Y)
       psp->mouse_y = MOUSE_MAX_Y;
 #endif
+
+   if (psp && psp->joypad)
+      psp->joypad->poll();
 }
 
 #ifdef VITA
@@ -337,18 +336,18 @@ static void psp_input_free_input(void *data)
 
 static void* psp_input_initialize(const char *joypad_driver)
 {
+#ifdef VITA
+   unsigned i;
+#endif
    psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
    if (!psp)
       return NULL;
-
-   psp->joypad = input_joypad_init_driver(joypad_driver, psp);
 
 #ifdef VITA
    sceHidKeyboardEnumerate(&(psp->keyboard_hid_handle), 1);
    sceHidMouseEnumerate(&(psp->mouse_hid_handle), 1);
 
    input_keymaps_init_keyboard_lut(rarch_key_map_vita);
-   unsigned int i;
    for (i = 0; i <= VITA_MAX_SCANCODE; i++)
       psp->keyboard_state[i] = false;
    for (i = 0; i < 6; i++)
@@ -356,6 +355,9 @@ static void* psp_input_initialize(const char *joypad_driver)
    psp->mouse_x = 0;
    psp->mouse_y = 0;
 #endif
+
+   psp->joypad = input_joypad_init_driver(joypad_driver, psp);
+
    return psp;
 }
 

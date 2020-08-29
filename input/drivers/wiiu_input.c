@@ -56,12 +56,12 @@ static void kb_disconnection_callback(KBDKeyEvent *key)
 
 static void kb_key_callback(KBDKeyEvent *key)
 {
-   uint16_t mod           = 0;
-   unsigned code          = 0;
-   bool pressed           = false;
+   uint16_t mod            = 0;
+   unsigned code           = 0;
+   bool pressed            = false;
 
    if (key->state > 0)
-      pressed = true;
+      pressed              = true;
 
    code                    = input_keymaps_translate_keysym_to_rk(
          key->scancode);
@@ -69,22 +69,22 @@ static void kb_key_callback(KBDKeyEvent *key)
       keyboard_state[code] = pressed;
 
    if (key->modifier & KBD_WIIU_SHIFT)
-      mod |= RETROKMOD_SHIFT;
+      mod                 |= RETROKMOD_SHIFT;
 
    if (key->modifier & KBD_WIIU_CTRL)
-      mod |= RETROKMOD_CTRL;
+      mod                 |= RETROKMOD_CTRL;
 
    if (key->modifier & KBD_WIIU_ALT)
-      mod |= RETROKMOD_ALT;
+      mod                 |= RETROKMOD_ALT;
 
    if (key->modifier & KBD_WIIU_NUM_LOCK)
-      mod |= RETROKMOD_NUMLOCK;
+      mod                 |= RETROKMOD_NUMLOCK;
 
    if (key->modifier & KBD_WIIU_CAPS_LOCK)
-      mod |= RETROKMOD_CAPSLOCK;
+      mod                 |= RETROKMOD_CAPSLOCK;
 
    if (key->modifier & KBD_WIIU_SCROLL_LOCK)
-      mod |= RETROKMOD_SCROLLOCK;
+      mod                 |= RETROKMOD_SCROLLOCK;
 
    input_keyboard_event(pressed, code, (char)key->UTF16, mod,
          RETRO_DEVICE_KEYBOARD);
@@ -190,8 +190,6 @@ static void* wiiu_input_init(const char *joypad_driver)
 
 static uint64_t wiiu_input_get_capabilities(void *data)
 {
-   (void)data;
-
    return (1 << RETRO_DEVICE_JOYPAD) |
           (1 << RETRO_DEVICE_ANALOG) |
           (1 << RETRO_DEVICE_KEYBOARD) |
