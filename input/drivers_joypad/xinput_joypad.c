@@ -65,7 +65,11 @@ static bool g_xinput_guide_button_supported = false;
 static unsigned g_xinput_num_buttons        = 0;
 static XInputSetState_t g_XInputSetState;
 static XInputGetStateEx_t g_XInputGetStateEx;
+#ifdef _XBOX1
+static XINPUT_FEEDBACK     g_xinput_rumble_states[4];
+#else
 static XINPUT_VIBRATION    g_xinput_rumble_states[4];
+#endif
 static xinput_joypad_state g_xinput_states[4];
 
 /* Buttons are provided by XInput as bits of a uint16.
