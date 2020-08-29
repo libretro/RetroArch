@@ -118,6 +118,10 @@
 #include <3ds/services/cfgu.h>
 #endif
 
+#if defined(ANDROID)
+#include "../play_feature_delivery/play_feature_delivery.h"
+#endif
+
 #define _3_SECONDS  3000000
 #define _6_SECONDS  6000000
 #define _9_SECONDS  9000000
@@ -16682,21 +16686,29 @@ static bool setting_append_list(
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS);
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 #ifdef HAVE_NETWORKING
-         CONFIG_STRING(
-               list, list_info,
-               settings->paths.network_buildbot_url,
-               sizeof(settings->paths.network_buildbot_url),
-               MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
-               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-               DEFAULT_BUILDBOT_SERVER_URL,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+#if defined(ANDROID)
+         /* Play Store builds do not fetch cores
+          * from the buildbot */
+         if (!play_feature_delivery_enabled())
+#endif
+         {
+            CONFIG_STRING(
+                  list, list_info,
+                  settings->paths.network_buildbot_url,
+                  sizeof(settings->paths.network_buildbot_url),
+                  MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
+                  MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
+                  DEFAULT_BUILDBOT_SERVER_URL,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         }
 
          CONFIG_STRING(
                list, list_info,
@@ -16746,37 +16758,44 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.core_updater_auto_backup,
-               MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP,
-               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
-               DEFAULT_CORE_UPDATER_AUTO_BACKUP,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-            CONFIG_UINT(
+#if defined(ANDROID)
+         /* Play Store builds do not support automatic
+          * core backups */
+         if (!play_feature_delivery_enabled())
+#endif
+         {
+            CONFIG_BOOL(
                   list, list_info,
-                  &settings->uints.core_updater_auto_backup_history_size,
-                  MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-                  MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-                  DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+                  &settings->bools.core_updater_auto_backup,
+                  MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP,
+                  MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
+                  DEFAULT_CORE_UPDATER_AUTO_BACKUP,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 1;
-            menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 500, 1, true, true);
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.core_updater_auto_backup_history_size,
+                     MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+                     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+                     DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].offset_by = 1;
+               menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 500, 1, true, true);
+         }
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

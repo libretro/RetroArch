@@ -10085,6 +10085,10 @@ MSG_HASH(
    "Core installed: "
    )
 MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Failed to install core: "
+   )
+MSG_HASH(
    MSG_SCANNING_CORES,
    "Scanning cores..."
    )

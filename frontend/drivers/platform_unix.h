@@ -166,6 +166,12 @@ struct android_app
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
 
+   jmethodID isPlayStoreBuild;
+   jmethodID getAvailableCores;
+   jmethodID getInstalledCores;
+   jmethodID downloadCore;
+   jmethodID deleteCore;
+
    struct
    {
       unsigned width, height;

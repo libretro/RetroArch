@@ -36,6 +36,10 @@
 #include "uwp/uwp_func.h"
 #endif
 
+#if defined(ANDROID)
+#include "play_feature_delivery/play_feature_delivery.h"
+#endif
+
 enum compare_op
 {
    COMPARE_OP_EQUAL = 0,
@@ -1524,6 +1528,13 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
 
    lock_file_path[0] = '\0';
 
+#if defined(ANDROID)
+   /* Play Store builds do not support
+    * core locking */
+   if (play_feature_delivery_enabled())
+      return false;
+#endif
+
    if (string_is_empty(core_path))
       return false;
 
@@ -1598,6 +1609,13 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    core_info_ctx_find_t core_info;
 
    lock_file_path[0] = '\0';
+
+#if defined(ANDROID)
+   /* Play Store builds do not support
+    * core locking */
+   if (play_feature_delivery_enabled())
+      return false;
+#endif
 
    if (string_is_empty(core_path))
       return false;

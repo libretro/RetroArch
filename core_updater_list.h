@@ -32,6 +32,18 @@
 
 RETRO_BEGIN_DECLS
 
+/* Defines all possible 'types' of core
+ * updater list - corresponds to core
+ * delivery method:
+ * > Buildbot
+ * > Play feature delivery (PFD) */
+enum core_updater_list_type
+{
+   CORE_UPDATER_LIST_TYPE_UNKNOWN = 0,
+   CORE_UPDATER_LIST_TYPE_BUILDBOT,
+   CORE_UPDATER_LIST_TYPE_PFD
+};
+
 /* Holds all date info for a core file
  * on the buildbot */
 typedef struct
@@ -99,6 +111,11 @@ void core_updater_list_free_cached(void);
 /* Returns number of entries in core updater list */
 size_t core_updater_list_size(core_updater_list_t *core_list);
 
+/* Returns 'type' (core delivery method) of
+ * specified core updater list */
+enum core_updater_list_type core_updater_list_get_type(
+      core_updater_list_t *core_list);
+
 /* Fetches core updater list entry corresponding
  * to the specified entry index.
  * Returns false if index is invalid. */
@@ -137,6 +154,16 @@ bool core_updater_list_parse_network_data(
       const char *path_libretro_info,
       const char *network_buildbot_url,
       const char *data, size_t len);
+
+/* Reads the list of cores currently available
+ * via play feature delivery (PFD) into the
+ * specified core_updater_list_t object.
+ * Returns false in the event of an error. */
+bool core_updater_list_parse_pfd_data(
+      core_updater_list_t *core_list,
+      const char *path_dir_libretro,
+      const char *path_libretro_info,
+      const struct string_list *pfd_cores);
 
 RETRO_END_DECLS
 

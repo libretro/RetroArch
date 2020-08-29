@@ -96,6 +96,11 @@ void task_push_update_installed_cores(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets);
+#if defined(ANDROID)
+void task_push_play_feature_delivery_core_install(
+      core_updater_list_t* core_list,
+      const char *filename);
+#endif
 
 bool task_push_pl_entry_thumbnail_download(
       const char *system,

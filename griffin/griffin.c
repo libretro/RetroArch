@@ -1671,3 +1671,10 @@ MISC FILE FORMATS
 TIME
 ============================================================ */
 #include "../libretro-common/time/rtime.c"
+
+/*============================================================
+ANDROID PLAY FEATURE DELIVERY
+============================================================ */
+#if defined(ANDROID)
+#include "../play_feature_delivery/play_feature_delivery.c"
+#endif

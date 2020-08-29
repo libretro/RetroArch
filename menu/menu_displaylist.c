@@ -62,6 +62,10 @@
 #include "../frontend/drivers/platform_unix.h"
 #endif
 
+#if defined(ANDROID)
+#include "../play_feature_delivery/play_feature_delivery.h"
+#endif
+
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
 #include <media/media_detect_cd.h>
@@ -670,21 +674,28 @@ end:
       /* Check whether core is currently locked */
       bool core_locked = core_info_get_core_lock(core_path, true);
 
-      /* Lock core
-       * > Note: Have to set core_path as both the
-       *   'path' and 'label' parameters (otherwise
-       *   cannot access it in menu_cbs_get_value.c
-       *   or menu_cbs_left/right.c), which means
-       *   entry name must be set as 'alt' text */
-      if (menu_entries_append_enum(info->list,
-            core_path,
-            core_path,
-            MENU_ENUM_LABEL_CORE_LOCK,
-            MENU_SETTING_ACTION_CORE_LOCK, 0, 0))
+#if defined(ANDROID)
+      /* Play Store builds do not support
+       * core locking */
+      if (!play_feature_delivery_enabled())
+#endif
       {
-         file_list_set_alt_at_offset(
-               info->list, count, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LOCK));
-         count++;
+         /* Lock core
+          * > Note: Have to set core_path as both the
+          *   'path' and 'label' parameters (otherwise
+          *   cannot access it in menu_cbs_get_value.c
+          *   or menu_cbs_left/right.c), which means
+          *   entry name must be set as 'alt' text */
+         if (menu_entries_append_enum(info->list,
+               core_path,
+               core_path,
+               MENU_ENUM_LABEL_CORE_LOCK,
+               MENU_SETTING_ACTION_CORE_LOCK, 0, 0))
+         {
+            file_list_set_alt_at_offset(
+                  info->list, count, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LOCK));
+            count++;
+         }
       }
 
       /* Backup core */
@@ -11054,12 +11065,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES),
-                        msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES),
-                        MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
+#if defined(ANDROID)
+               /* Play Store builds auto-update installed
+                * cores, rendering the 'update installed
+                * cores' option irrelevant/useless */
+               if (!play_feature_delivery_enabled())
+#endif
+                  if (menu_entries_append_enum(info->list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES),
+                           msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES),
+                           MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
+                           MENU_SETTING_ACTION, 0, 0))
+                     count++;
             }
 #endif
 #endif
