@@ -1325,7 +1325,8 @@ static void android_input_poll(void *data)
    while ((ident =
             ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
                && input_key_pressed(android->joypad, RARCH_PAUSE_TOGGLE,
-                  android_keyboard_port_input_pressed(input_config_binds[0])))
+                  android_keyboard_port_input_pressed(input_config_binds[0],
+                     RARCH_PAUSE_TOGGLE)))
                ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
