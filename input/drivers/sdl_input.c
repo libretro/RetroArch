@@ -36,9 +36,19 @@
 
 typedef struct sdl_input
 {
-   int mouse_x, mouse_y;
-   int mouse_abs_x, mouse_abs_y;
-   int mouse_l, mouse_r, mouse_m, mouse_b4, mouse_b5, mouse_wu, mouse_wd, mouse_wl, mouse_wr;
+   int mouse_x;
+   int mouse_y;
+   int mouse_abs_x;
+   int mouse_abs_y;
+   int mouse_l;
+   int mouse_r;
+   int mouse_m;
+   int mouse_b4;
+   int mouse_b5;
+   int mouse_wu;
+   int mouse_wd;
+   int mouse_wl;
+   int mouse_wr;
 } sdl_input_t;
 
 static void *sdl_input_init(const char *joypad_driver)
@@ -69,7 +79,8 @@ static bool sdl_key_pressed(int key)
    return keymap[sym];
 }
 
-static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *binds,
+static int16_t sdl_analog_pressed(sdl_input_t *sdl,
+      const struct retro_keybind *binds,
       unsigned idx, unsigned id)
 {
    int16_t pressed_minus = 0, pressed_plus = 0;

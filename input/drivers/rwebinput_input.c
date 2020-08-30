@@ -302,7 +302,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
       (rwebinput_input_t*)calloc(1, sizeof(*rwebinput));
 
    if (!rwebinput)
-      goto error;
+      return NULL;
 
    rwebinput_generate_lut();
 
