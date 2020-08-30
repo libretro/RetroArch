@@ -50,8 +50,14 @@
 #include "../../defines/psp_defines.h"
 
 #include "../input_driver.h"
+
+/* TODO/FIXME -
+ * fix game focus toggle */
+
 #ifdef VITA
+
 #include "../input_keymaps.h"
+
 uint8_t modifier_lut[VITA_NUM_MODIFIERS][2] =
 {
    { 0xE0, 0x01 }, /* LCTRL */
@@ -66,14 +72,9 @@ uint8_t modifier_lut[VITA_NUM_MODIFIERS][2] =
    { 0x39, 0x02 }, /* CAPSLOCK */
    { 0x47, 0x04 }  /* SCROLLOCK */
 };
-#endif
-
-/* TODO/FIXME -
- * fix game focus toggle */
 
 typedef struct psp_input
 {
-#ifdef VITA
    int keyboard_hid_handle;
    int mouse_hid_handle;
    int32_t mouse_x;
@@ -86,10 +87,8 @@ typedef struct psp_input
    bool mouse_button_right;
    bool mouse_button_middle;
    bool sensors_enabled;
-#endif
 } psp_input_t;
 
-#ifdef VITA
 static void vita_input_poll(void *data)
 {
    psp_input_t *psp = (psp_input_t*)data;
@@ -265,6 +264,11 @@ static int16_t psp_input_mouse_state(
 
    return val;
 }
+#else
+typedef struct psp_input
+{
+   void *empty;
+} psp_input_t;
 #endif
 
 static int16_t psp_input_state(
@@ -346,8 +350,6 @@ static void* psp_input_initialize(const char *joypad_driver)
 
 static uint64_t psp_input_get_capabilities(void *data)
 {
-   (void)data;
-
    uint64_t caps = (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 
 #ifdef VITA
@@ -377,7 +379,7 @@ static bool psp_input_set_sensor_state(void *data, unsigned port,
 {
    psp_input_t *psp = (psp_input_t*)data;
 	
-   if(!psp)
+   if (!psp)
       return false;
   
    switch (action)
