@@ -140,7 +140,7 @@ struct udev_input
 
    unsigned num_devices;
 
-   static uint8_t state[UDEV_MAX_KEYS];
+   uint8_t state[UDEV_MAX_KEYS];
 
 #ifdef UDEV_XKB_HANDLING
    bool xkb_handling;
