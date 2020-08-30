@@ -122,16 +122,12 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;
 
-   if (!id_minus_valid || !id_plus_valid)
-      return 0;
-
    if (id_plus_valid && id_plus_key < RETROK_LAST)
    {
       unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
       if (x11->state[sym >> 3] & (1 << (sym & 7)))
          ret = 0x7fff;
    }
-
    if (id_minus_valid && id_minus_key < RETROK_LAST)
    {
       unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];

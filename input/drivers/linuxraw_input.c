@@ -72,7 +72,7 @@ static void *linuxraw_input_init(const char *joypad_driver)
    return linuxraw;
 }
 
-static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
+static int16_t linuxraw_pressed_analog(linuxraw_input_t *linuxraw,
       const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
    int id_minus_key      = 0;
@@ -89,9 +89,6 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
    id_plus_valid         = binds[id_plus].valid;
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;
-
-   if (!id_minus_valid || !id_plus_valid)
-      return 0;
 
    if (id_plus_valid && id_plus_key < RETROK_LAST)
    {
@@ -164,7 +161,7 @@ static int16_t linuxraw_input_state(
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return linuxraw_analog_pressed(
+            return linuxraw_pressed_analog(
                   linuxraw, binds[port], idx, id);
          break;
    }

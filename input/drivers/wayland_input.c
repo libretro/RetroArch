@@ -154,7 +154,7 @@ static void input_wl_poll(void *data)
    input_wl_touch_pool(wl);
 }
 
-static int16_t input_wl_analog_pressed(
+static int16_t input_wl_pressed_analog(
       input_ctx_wayland_data_t *wl,
       const struct retro_keybind *binds,
       unsigned idx, unsigned id)
@@ -174,17 +174,16 @@ static int16_t input_wl_analog_pressed(
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;
 
-   if (!id_minus_valid || !id_plus_valid)
-      return 0;
-
    if (id_plus_valid && id_plus_key < RETROK_LAST)
    {
-      if (BIT_GET(wl->key_state, rarch_keysym_lut[(enum retro_key)id_plus_key]))
+      unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
+      if (BIT_GET(wl->key_state, sym))
          ret = 0x7fff;
    }
    if (id_minus_valid && id_minus_key < RETROK_LAST)
    {
-      if (BIT_GET(wl->key_state, rarch_keysym_lut[(enum retro_key)id_minus_key]))
+      unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
+      if (BIT_GET(wl->key_state, sym))
          ret += -0x7fff;
    }
 
@@ -352,7 +351,7 @@ static int16_t input_wl_state(
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return input_wl_analog_pressed(wl, binds[port], idx, id);
+            return input_wl_pressed_analog(wl, binds[port], idx, id);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return input_wl_state_kb(wl, binds, port, device, idx, id);

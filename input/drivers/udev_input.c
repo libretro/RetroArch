@@ -932,7 +932,7 @@ static bool udev_mouse_button_pressed(
    return false;
 }
 
-static int16_t udev_analog_pressed(
+static int16_t udev_pressed_analog(
       udev_input_t *udev,
       const struct retro_keybind *binds,
       unsigned idx, unsigned id)
@@ -951,9 +951,6 @@ static int16_t udev_analog_pressed(
    id_plus_valid         = binds[id_plus].valid;
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;
-
-   if (!id_minus_valid || !id_plus_valid)
-      return 0;
 
    if (id_plus_valid && id_plus_key < RETROK_LAST)
    {
@@ -1085,7 +1082,7 @@ static int16_t udev_input_state(
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return udev_analog_pressed(udev, binds[port], idx, id);
+            return udev_pressed_analog(udev, binds[port], idx, id);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);

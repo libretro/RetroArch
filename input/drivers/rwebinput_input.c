@@ -262,23 +262,19 @@ static EM_BOOL rwebinput_keyboard_cb(int event_type,
 static EM_BOOL rwebinput_mouse_cb(int event_type,
    const EmscriptenMouseEvent *mouse_event, void *user_data)
 {
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)user_data;
+   rwebinput_input_t *rwebinput      = (rwebinput_input_t*)user_data;
 
-   uint8_t mask = 1 << mouse_event->button;
+   uint8_t mask                      = 1 << mouse_event->button;
 
-   rwebinput->mouse.x = mouse_event->targetX;
-   rwebinput->mouse.y = mouse_event->targetY;
+   rwebinput->mouse.x                = mouse_event->targetX;
+   rwebinput->mouse.y                = mouse_event->targetY;
    rwebinput->mouse.pending_delta_x += mouse_event->movementX;
    rwebinput->mouse.pending_delta_y += mouse_event->movementY;
 
    if (event_type ==  EMSCRIPTEN_EVENT_MOUSEDOWN)
-   {
       rwebinput->mouse.buttons |= mask;
-   }
    else if (event_type == EMSCRIPTEN_EVENT_MOUSEUP)
-   {
       rwebinput->mouse.buttons &= ~mask;
-   }
 
    return EM_TRUE;
 }
@@ -286,8 +282,7 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
 static EM_BOOL rwebinput_wheel_cb(int event_type,
    const EmscriptenWheelEvent *wheel_event, void *user_data)
 {
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)user_data;
-   (void)event_type;
+   rwebinput_input_t       *rwebinput = (rwebinput_input_t*)user_data;
 
    rwebinput->mouse.pending_scroll_x += wheel_event->deltaX;
    rwebinput->mouse.pending_scroll_y += wheel_event->deltaY;
@@ -496,7 +491,7 @@ static int16_t rwebinput_is_pressed(
    return 0;
 }
 
-static int16_t rwebinput_analog_pressed(
+static int16_t rwebinput_pressed_analog(
       rwebinput_input_t *rwebinput,
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
@@ -517,9 +512,6 @@ static int16_t rwebinput_analog_pressed(
    id_plus_valid         = binds[id_plus].valid;
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;
-
-   if (!id_minus_valid || !id_plus_valid)
-      return 0;
 
    if (id_plus_valid && id_plus_key < RETROK_LAST)
    {
@@ -583,7 +575,7 @@ static int16_t rwebinput_input_state(
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return rwebinput_analog_pressed(
+            return rwebinput_pressed_analog(
                   rwebinput, joypad, joypad_info, binds[port],
                   idx, id);
          break;

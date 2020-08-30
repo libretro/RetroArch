@@ -104,9 +104,6 @@ static int16_t uwp_pressed_analog(uwp_input_t *uwp,
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;
 
-   if (!id_minus_valid || !id_plus_valid)
-      return 0;
-
    if (id_plus_valid && id_plus_key < RETROK_LAST)
    {
       if (uwp_keyboard_pressed(bind_plus_key))
