@@ -394,140 +394,6 @@ static int16_t dinput_lightgun_aiming_state(
    return 0;
 }
 
-static int16_t dinput_mouse_state(struct dinput_input *di,
-      unsigned port, unsigned id)
-{
-   int16_t        state = 0;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return di->mouse_rel_x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return di->mouse_rel_y;
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return di->mouse_l;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return di->mouse_r;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         if (di->mouse_wu)
-            state = 1;
-         di->mouse_wu = false;
-         return state;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         if (di->mouse_wd)
-            state = 1;
-         di->mouse_wd = false;
-         return state;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         if (di->mouse_hwu)
-            state = 1;
-         di->mouse_hwu = false;
-         return state;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         if (di->mouse_hwd)
-            state = 1;
-         di->mouse_hwd = false;
-         return state;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return di->mouse_m;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return di->mouse_b4;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return di->mouse_b5;
-   }
-
-   return 0;
-}
-
-static int16_t dinput_mouse_state_screen(struct dinput_input *di,
-      unsigned port, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return di->mouse_x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return di->mouse_y;
-      default:
-         break;
-   }
-
-   return dinput_mouse_state(di, port, id);
-}
-
-static int16_t dinput_pointer_state(struct dinput_input *di,
-      unsigned idx, unsigned id, bool screen)
-{
-   struct video_viewport vp;
-   bool pointer_down           = false;
-   bool inside                 = false;
-   int x                       = 0;
-   int y                       = 0;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-   unsigned num                = 0;
-   struct pointer_status *
-      check_pos                = di->pointer_head.next;
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-
-   while (check_pos && num < idx)
-   {
-      num++;
-      check_pos    = check_pos->next;
-   }
-   if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
-      return 0;
-
-   x               = di->mouse_x;
-   y               = di->mouse_y;
-   pointer_down    = di->mouse_l;
-
-   if (check_pos)
-   {
-      x            = check_pos->pointer_x;
-      y            = check_pos->pointer_y;
-      pointer_down = true;
-   }
-
-   if (!(video_driver_translate_coord_viewport_wrap(&vp, x, y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   if (screen)
-   {
-      res_x        = res_screen_x;
-      res_y        = res_screen_y;
-   }
-
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-   if (!inside)
-      return 0;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_POINTER_X:
-         return res_x;
-      case RETRO_DEVICE_ID_POINTER_Y:
-         return res_y;
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return pointer_down;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 static int16_t dinput_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -651,25 +517,134 @@ static int16_t dinput_input_state(
             return ret;
          }
          break;
-      case RETRO_DEVICE_MOUSE:
-         {
-            settings                   = config_get_ptr();
-            if (settings->uints.input_mouse_index[port] == 0)
-               return dinput_mouse_state(di, port, id);
-         }
-         break;
       case RARCH_DEVICE_MOUSE_SCREEN:
+         settings                   = config_get_ptr();
+         if (settings->uints.input_mouse_index[ port ] != 0)
+            break;
+
+         switch (id)
          {
-            settings                   = config_get_ptr();
-            if (settings->uints.input_mouse_index[ port ] == 0)
-               return dinput_mouse_state_screen(di, port, id);
+            case RETRO_DEVICE_ID_MOUSE_X:
+               return di->mouse_x;
+            case RETRO_DEVICE_ID_MOUSE_Y:
+               return di->mouse_y;
+            default:
+               break;
+         }
+         /* fall-through */
+      case RETRO_DEVICE_MOUSE:
+         settings                   = config_get_ptr();
+         if (settings->uints.input_mouse_index[port] == 0)
+         {
+            int16_t        state = 0;
+
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return di->mouse_rel_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return di->mouse_rel_y;
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return di->mouse_l;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return di->mouse_r;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  if (di->mouse_wu)
+                     state = 1;
+                  di->mouse_wu = false;
+                  return state;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  if (di->mouse_wd)
+                     state = 1;
+                  di->mouse_wd = false;
+                  return state;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+                  if (di->mouse_hwu)
+                     state = 1;
+                  di->mouse_hwu = false;
+                  return state;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+                  if (di->mouse_hwd)
+                     state = 1;
+                  di->mouse_hwd = false;
+                  return state;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return di->mouse_m;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+                  return di->mouse_b4;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+                  return di->mouse_b5;
+            }
          }
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return dinput_pointer_state(di, idx, id,
-               device == RARCH_DEVICE_POINTER_SCREEN);
+         {
+            struct video_viewport vp;
+            bool pointer_down           = false;
+            bool inside                 = false;
+            int x                       = 0;
+            int y                       = 0;
+            int16_t res_x               = 0;
+            int16_t res_y               = 0;
+            int16_t res_screen_x        = 0;
+            int16_t res_screen_y        = 0;
+            unsigned num                = 0;
+            struct pointer_status *
+               check_pos                = di->pointer_head.next;
 
+            vp.x                        = 0;
+            vp.y                        = 0;
+            vp.width                    = 0;
+            vp.height                   = 0;
+            vp.full_width               = 0;
+            vp.full_height              = 0;
+
+            while (check_pos && num < idx)
+            {
+               num++;
+               check_pos    = check_pos->next;
+            }
+            if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
+               return 0;
+
+            x               = di->mouse_x;
+            y               = di->mouse_y;
+            pointer_down    = di->mouse_l;
+
+            if (check_pos)
+            {
+               x            = check_pos->pointer_x;
+               y            = check_pos->pointer_y;
+               pointer_down = true;
+            }
+
+            if (!(video_driver_translate_coord_viewport_wrap(&vp, x, y,
+                        &res_x, &res_y, &res_screen_x, &res_screen_y)))
+               return 0;
+
+            if (device == RARCH_DEVICE_POINTER_SCREEN)
+            {
+               res_x        = res_screen_x;
+               res_y        = res_screen_y;
+            }
+
+            if (!(inside = (res_x >= -0x7fff) && (res_y >= -0x7fff)))
+               return 0;
+
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return res_x;
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return res_y;
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return pointer_down;
+               default:
+                  break;
+            }
+         }
+         break;
       case RETRO_DEVICE_LIGHTGUN:
          switch (id)
          {
