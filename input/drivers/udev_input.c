@@ -932,42 +932,6 @@ static bool udev_mouse_button_pressed(
    return false;
 }
 
-static int16_t udev_pressed_analog(
-      udev_input_t *udev,
-      const struct retro_keybind *binds,
-      unsigned idx, unsigned id)
-{
-   int id_minus_key      = 0;
-   int id_plus_key       = 0;
-   unsigned id_minus     = 0;
-   unsigned id_plus      = 0;
-   int16_t ret           = 0;
-   bool id_plus_valid    = false;
-   bool id_minus_valid   = false;
-
-   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-   id_minus_valid        = binds[id_minus].valid;
-   id_plus_valid         = binds[id_plus].valid;
-   id_minus_key          = binds[id_minus].key;
-   id_plus_key           = binds[id_plus].key;
-
-   if (id_plus_valid && id_plus_key < RETROK_LAST)
-   {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-      if BIT_GET(udev->state, sym)
-         ret = 0x7fff;
-   }
-   if (id_minus_valid && id_minus_key < RETROK_LAST)
-   {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-      if (BIT_GET(udev->state, sym))
-         ret += -0x7fff;
-   }
-
-   return ret;
-}
-
 static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned port, unsigned id, bool screen)
 {
@@ -1082,7 +1046,37 @@ static int16_t udev_input_state(
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return udev_pressed_analog(udev, binds[port], idx, id);
+         {
+            int id_minus_key      = 0;
+            int id_plus_key       = 0;
+            unsigned id_minus     = 0;
+            unsigned id_plus      = 0;
+            int16_t ret           = 0;
+            bool id_plus_valid    = false;
+            bool id_minus_valid   = false;
+
+            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+            id_minus_valid        = binds[port][id_minus].valid;
+            id_plus_valid         = binds[port][id_plus].valid;
+            id_minus_key          = binds[port][id_minus].key;
+            id_plus_key           = binds[port][id_plus].key;
+
+            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
+               if BIT_GET(udev->state, sym)
+                  ret = 0x7fff;
+            }
+            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
+               if (BIT_GET(udev->state, sym))
+                  ret += -0x7fff;
+            }
+
+            return ret;
+         }
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);

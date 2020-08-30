@@ -102,42 +102,6 @@ static bool x_mouse_button_pressed(
    return false;
 }
 
-static int16_t x_pressed_analog(x11_input_t *x11,
-      const struct retro_keybind *binds, unsigned idx, unsigned id)
-{
-   int id_minus_key      = 0;
-   int id_plus_key       = 0;
-   unsigned id_minus     = 0;
-   unsigned id_plus      = 0;
-   int16_t pressed_minus = 0;
-   int16_t pressed_plus  = 0;
-   int16_t ret           = 0;
-   bool id_plus_valid    = false;
-   bool id_minus_valid   = false;
-
-   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-   id_minus_valid        = binds[id_minus].valid;
-   id_plus_valid         = binds[id_plus].valid;
-   id_minus_key          = binds[id_minus].key;
-   id_plus_key           = binds[id_plus].key;
-
-   if (id_plus_valid && id_plus_key < RETROK_LAST)
-   {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-      if (x11->state[sym >> 3] & (1 << (sym & 7)))
-         ret = 0x7fff;
-   }
-   if (id_minus_valid && id_minus_key < RETROK_LAST)
-   {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-      if (x11->state[sym >> 3] & (1 << (sym & 7)))
-         ret += -0x7fff;
-   }
-
-   return ret;
-}
-
 static int16_t x_lightgun_aiming_state(
       x11_input_t *x11, unsigned idx, unsigned id )
 {
@@ -347,7 +311,39 @@ static int16_t x_input_state(
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return x_pressed_analog(x11, binds[port], idx, id);
+         {
+            int id_minus_key      = 0;
+            int id_plus_key       = 0;
+            unsigned id_minus     = 0;
+            unsigned id_plus      = 0;
+            int16_t pressed_minus = 0;
+            int16_t pressed_plus  = 0;
+            int16_t ret           = 0;
+            bool id_plus_valid    = false;
+            bool id_minus_valid   = false;
+
+            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+            id_minus_valid        = binds[port][id_minus].valid;
+            id_plus_valid         = binds[port][id_plus].valid;
+            id_minus_key          = binds[port][id_minus].key;
+            id_plus_key           = binds[port][id_plus].key;
+
+            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
+               if (x11->state[sym >> 3] & (1 << (sym & 7)))
+                  ret = 0x7fff;
+            }
+            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
+               if (x11->state[sym >> 3] & (1 << (sym & 7)))
+                  ret += -0x7fff;
+            }
+
+            return ret;
+         }
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);

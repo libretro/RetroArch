@@ -72,40 +72,6 @@ static void *linuxraw_input_init(const char *joypad_driver)
    return linuxraw;
 }
 
-static int16_t linuxraw_pressed_analog(linuxraw_input_t *linuxraw,
-      const struct retro_keybind *binds, unsigned idx, unsigned id)
-{
-   int id_minus_key      = 0;
-   int id_plus_key       = 0;
-   unsigned id_minus     = 0;
-   unsigned id_plus      = 0;
-   int16_t ret           = 0;
-   bool id_plus_valid    = false;
-   bool id_minus_valid   = false;
-
-   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-   id_minus_valid        = binds[id_minus].valid;
-   id_plus_valid         = binds[id_plus].valid;
-   id_minus_key          = binds[id_minus].key;
-   id_plus_key           = binds[id_plus].key;
-
-   if (id_plus_valid && id_plus_key < RETROK_LAST)
-   {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-      if (linuxraw->state[sym] & 0x80)
-         ret = 0x7fff;
-   }
-   if (id_minus_valid && id_minus_key < RETROK_LAST)
-   {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-      if (linuxraw->state[sym] & 0x80)
-         ret += -0x7fff;
-   }
-
-   return ret;
-}
-
 static int16_t linuxraw_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -161,8 +127,37 @@ static int16_t linuxraw_input_state(
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return linuxraw_pressed_analog(
-                  linuxraw, binds[port], idx, id);
+         {
+            int id_minus_key      = 0;
+            int id_plus_key       = 0;
+            unsigned id_minus     = 0;
+            unsigned id_plus      = 0;
+            int16_t ret           = 0;
+            bool id_plus_valid    = false;
+            bool id_minus_valid   = false;
+
+            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+            id_minus_valid        = binds[port][id_minus].valid;
+            id_plus_valid         = binds[port][id_plus].valid;
+            id_minus_key          = binds[port][id_minus].key;
+            id_plus_key           = binds[port][id_plus].key;
+
+            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
+               if (linuxraw->state[sym] & 0x80)
+                  ret = 0x7fff;
+            }
+            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
+               if (linuxraw->state[sym] & 0x80)
+                  ret += -0x7fff;
+            }
+
+            return ret;
+         }
          break;
    }
 

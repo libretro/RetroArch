@@ -491,44 +491,6 @@ static int16_t rwebinput_is_pressed(
    return 0;
 }
 
-static int16_t rwebinput_pressed_analog(
-      rwebinput_input_t *rwebinput,
-      const input_device_driver_t *joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned idx, unsigned id)
-{
-   int id_minus_key      = 0;
-   int id_plus_key       = 0;
-   unsigned id_minus     = 0;
-   unsigned id_plus      = 0;
-   int16_t ret           = 0;
-   bool id_plus_valid    = false;
-   bool id_minus_valid   = false;
-
-   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-   id_minus_valid        = binds[id_minus].valid;
-   id_plus_valid         = binds[id_plus].valid;
-   id_minus_key          = binds[id_minus].key;
-   id_plus_key           = binds[id_plus].key;
-
-   if (id_plus_valid && id_plus_key < RETROK_LAST)
-   {
-      if (rwebinput_is_pressed(rwebinput,
-               joypad, joypad_info, binds, idx, id_plus))
-         ret = 0x7fff;
-   }
-   if (id_minus_valid && id_minus_key < RETROK_LAST)
-   {
-      if (rwebinput_is_pressed(rwebinput, 
-               joypad, joypad_info, binds, idx, id_minus))
-         ret += -0x7fff;
-   }
-
-   return ret;
-}
-
 static int16_t rwebinput_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -575,9 +537,37 @@ static int16_t rwebinput_input_state(
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return rwebinput_pressed_analog(
-                  rwebinput, joypad, joypad_info, binds[port],
-                  idx, id);
+         {
+            int id_minus_key      = 0;
+            int id_plus_key       = 0;
+            unsigned id_minus     = 0;
+            unsigned id_plus      = 0;
+            int16_t ret           = 0;
+            bool id_plus_valid    = false;
+            bool id_minus_valid   = false;
+
+            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+            id_minus_valid        = binds[port][id_minus].valid;
+            id_plus_valid         = binds[port][id_plus].valid;
+            id_minus_key          = binds[port][id_minus].key;
+            id_plus_key           = binds[port][id_plus].key;
+
+            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            {
+               if (rwebinput_is_pressed(rwebinput,
+                        joypad, joypad_info, binds[port], idx, id_plus))
+                  ret = 0x7fff;
+            }
+            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            {
+               if (rwebinput_is_pressed(rwebinput, 
+                        joypad, joypad_info, binds[port], idx, id_minus))
+                  ret += -0x7fff;
+            }
+
+            return ret;
+         }
          break;
       case RETRO_DEVICE_KEYBOARD:
          return rwebinput_key_pressed(rwebinput, id);
