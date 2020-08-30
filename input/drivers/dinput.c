@@ -344,7 +344,7 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    if (!id_minus_valid || !id_plus_valid)
       return 0;
 
-   if (id_plus_key  < RETROK_LAST)
+   if (id_plus_valid && id_plus_key < RETROK_LAST)
    {
       unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
       if (di->state[sym] & 0x80)
