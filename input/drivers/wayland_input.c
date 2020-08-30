@@ -271,7 +271,11 @@ static int16_t input_wl_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
 
@@ -431,6 +435,5 @@ input_driver_t input_wayland = {
    "wayland",
    input_wl_grab_mouse,
    NULL,
-   input_wl_set_rumble,
-   false
+   input_wl_set_rumble
 };

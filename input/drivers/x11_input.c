@@ -238,8 +238,12 @@ static int16_t x_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds, unsigned port,
-      unsigned device, unsigned idx, unsigned id)
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    x11_input_t *x11     = (x11_input_t*)data;
    settings_t *settings = config_get_ptr();
@@ -268,7 +272,7 @@ static int16_t x_input_state(
                   }
                }
             }
-            if (!input_x.keyboard_mapping_blocked)
+            if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
@@ -296,7 +300,7 @@ static int16_t x_input_state(
                         ((binds[port][id].key < RETROK_LAST) && 
                          x_keyboard_pressed(x11, binds[port][id].key)) 
                         && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                           || !input_x.keyboard_mapping_blocked)
+                           || !keyboard_mapping_blocked)
                      )
                      return 1;
                   else if (settings->uints.input_mouse_index[port] == 0)
@@ -371,7 +375,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                {
                   unsigned new_id = RARCH_LIGHTGUN_TRIGGER;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -394,7 +398,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
                {
                   unsigned new_id = RARCH_LIGHTGUN_RELOAD;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -417,7 +421,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
                {
                   unsigned new_id = RARCH_LIGHTGUN_AUX_A;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -440,7 +444,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
                {
                   unsigned new_id = RARCH_LIGHTGUN_AUX_B;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -463,7 +467,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
                {
                   unsigned new_id = RARCH_LIGHTGUN_AUX_C;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -486,7 +490,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_START:
                {
                   unsigned new_id = RARCH_LIGHTGUN_START;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -509,7 +513,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                {
                   unsigned new_id = RARCH_LIGHTGUN_SELECT;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -532,7 +536,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
                {
                   unsigned new_id = RARCH_LIGHTGUN_DPAD_UP;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -555,7 +559,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
                {
                   unsigned new_id = RARCH_LIGHTGUN_DPAD_DOWN;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -578,7 +582,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
                {
                   unsigned new_id = RARCH_LIGHTGUN_DPAD_LEFT;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -601,7 +605,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
                {
                   unsigned new_id = RARCH_LIGHTGUN_DPAD_RIGHT;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -629,7 +633,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                {
                   unsigned new_id = RARCH_LIGHTGUN_START;
-                  if (!input_x.keyboard_mapping_blocked)
+                  if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
                               [new_id].key) )
@@ -780,6 +784,5 @@ input_driver_t input_x = {
    "x",
    x_grab_mouse,
    NULL,
-   x_set_rumble,
-   false
+   x_set_rumble
 };

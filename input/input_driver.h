@@ -185,6 +185,7 @@ struct input_driver
          const input_device_driver_t *sec_joypad_data,
          rarch_joypad_info_t *joypad_info,
          const struct retro_keybind **retro_keybinds,
+         bool keyboard_mapping_blocked,
          unsigned port, unsigned device, unsigned index, unsigned id);
 
    /* Frees the input struct. */
@@ -203,7 +204,6 @@ struct input_driver
          const input_device_driver_t *sec_joypad_data,
          unsigned port,
          enum retro_rumble_effect effect, uint16_t state);
-   bool keyboard_mapping_blocked;
 };
 
 struct rarch_joypad_driver

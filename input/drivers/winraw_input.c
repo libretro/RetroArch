@@ -563,9 +563,13 @@ static int16_t winraw_input_lightgun_state(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
-   if (!input_winraw.keyboard_mapping_blocked)
+   if (!keyboard_mapping_blocked)
       if ((binds[port][id].key < RETROK_LAST) 
             && winraw_keyboard_pressed(wr, binds[port]
                [id].key))
@@ -589,7 +593,11 @@ static int16_t winraw_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    settings_t *settings  = NULL;
    winraw_mouse_t *mouse = NULL;
@@ -639,7 +647,7 @@ static int16_t winraw_input_state(
                }
             }
 
-            if (!input_winraw.keyboard_mapping_blocked)
+            if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
@@ -668,7 +676,7 @@ static int16_t winraw_input_state(
                         (binds[port][id].key < RETROK_LAST) 
                         && winraw_keyboard_pressed(wr, binds[port][id].key)
                         && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                           || !input_winraw.keyboard_mapping_blocked)
+                           || !keyboard_mapping_blocked)
                         )
                      return 1;
                   else if (mouse && winraw_mouse_button_pressed(wr,
@@ -704,47 +712,69 @@ static int16_t winraw_input_state(
 				case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_TRIGGER);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_TRIGGER);
 				case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_RELOAD);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_RELOAD);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_AUX_A);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_AUX_A);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_AUX_B);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_AUX_B);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_AUX_C);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_AUX_C);
 				case RETRO_DEVICE_ID_LIGHTGUN_START:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_START);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_START);
 				case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_SELECT);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_SELECT);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_DPAD_UP);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_DPAD_UP);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_DPAD_DOWN);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_DPAD_DOWN);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_DPAD_LEFT);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_DPAD_LEFT);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_DPAD_RIGHT);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_DPAD_RIGHT);
 				/*deprecated*/
 				case RETRO_DEVICE_ID_LIGHTGUN_X:
 				case RETRO_DEVICE_ID_LIGHTGUN_Y:
@@ -754,7 +784,9 @@ static int16_t winraw_input_state(
 				case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                return winraw_input_lightgun_state(wr, mouse, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_START);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_START);
 			}
 			break;
    }
@@ -823,6 +855,5 @@ input_driver_t input_winraw = {
    "raw",
    winraw_grab_mouse,
    NULL,
-   winraw_set_rumble,
-   false
+   winraw_set_rumble
 };

@@ -277,8 +277,11 @@ static int16_t psp_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    psp_input_t *psp           = (psp_input_t*)data;
 
@@ -474,6 +477,5 @@ input_driver_t input_psp = {
 
    NULL,                         /* grab_mouse */
    NULL,
-   psp_input_set_rumble,
-   false
+   psp_input_set_rumble
 };

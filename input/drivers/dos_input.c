@@ -68,8 +68,11 @@ static int16_t dos_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    dos_input_t *dos                   = (dos_input_t*)data;
 
@@ -158,6 +161,5 @@ input_driver_t input_dos = {
    "dos",
    NULL,                         /* grab_mouse */
    NULL,
-   NULL,                         /* set_rumble */
-   false
+   NULL                          /* set_rumble */
 };

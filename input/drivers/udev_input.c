@@ -958,9 +958,13 @@ static int16_t udev_input_lightgun_state(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
-   if (!input_udev.keyboard_mapping_blocked)
+   if (!keyboard_mapping_blocked)
       if ((binds[port][id].key < RETROK_LAST) 
             && udev_keyboard_pressed(udev, binds[port]
                [id].key) )
@@ -985,7 +989,11 @@ static int16_t udev_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    udev_input_t *udev         = (udev_input_t*)data;
 
@@ -1006,7 +1014,7 @@ static int16_t udev_input_state(
                      ret |= (1 << i);
                }
             }
-            if (!input_udev.keyboard_mapping_blocked)
+            if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
@@ -1034,7 +1042,7 @@ static int16_t udev_input_state(
                         (binds[port][id].key < RETROK_LAST) && 
                         udev_keyboard_pressed(udev, binds[port][id].key)
                         && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                           || !input_udev.keyboard_mapping_blocked)
+                           || !keyboard_mapping_blocked)
                         )
                      return 1;
                   else if (udev_mouse_button_pressed(udev, port,
@@ -1108,47 +1116,69 @@ static int16_t udev_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_TRIGGER);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_TRIGGER);
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_RELOAD);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_RELOAD);
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_AUX_A);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_AUX_A);
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_AUX_B);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_AUX_B);
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_AUX_C);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_AUX_C);
             case RETRO_DEVICE_ID_LIGHTGUN_START:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_START);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_START);
             case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_SELECT);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_SELECT);
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_DPAD_UP);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_DPAD_UP);
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_DPAD_DOWN);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_DPAD_DOWN);
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_DPAD_LEFT);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_DPAD_LEFT);
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
-                     binds, port, device, idx, RARCH_LIGHTGUN_DPAD_RIGHT);
+                     binds,
+                     keyboard_mapping_blocked,
+                     port, device, idx, RARCH_LIGHTGUN_DPAD_RIGHT);
             /*deprecated*/
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                {
@@ -1408,6 +1438,5 @@ input_driver_t input_udev = {
 #else
    NULL,
 #endif
-   udev_input_set_rumble,
-   false
+   udev_input_set_rumble
 };

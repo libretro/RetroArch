@@ -77,8 +77,12 @@ static int16_t linuxraw_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds, unsigned port,
-      unsigned device, unsigned idx, unsigned id)
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
@@ -230,6 +234,5 @@ input_driver_t input_linuxraw = {
    "linuxraw",
    NULL,                         /* grab_mouse */
    linux_terminal_grab_stdin,
-   linuxraw_set_rumble,
-   false
+   linuxraw_set_rumble
 };

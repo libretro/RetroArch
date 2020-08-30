@@ -187,8 +187,12 @@ static int16_t cocoa_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds, unsigned port,
-      unsigned device, unsigned idx, unsigned id)
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
@@ -208,7 +212,7 @@ static int16_t cocoa_input_state(
 #endif
                  ;
 
-            if (!input_cocoa.keyboard_mapping_blocked)
+            if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {

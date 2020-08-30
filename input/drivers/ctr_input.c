@@ -41,8 +41,11 @@ static int16_t ctr_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    ctr_input_t *ctr                   = (ctr_input_t*)data;
 
@@ -87,8 +90,6 @@ static void* ctr_input_init(const char *joypad_driver)
 
 static uint64_t ctr_input_get_capabilities(void *data)
 {
-   (void)data;
-
    return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 }
 
@@ -103,6 +104,5 @@ input_driver_t input_ctr = {
    "ctr",
    NULL,                         /* grab_mouse */
    NULL,
-   NULL,                         /* set_rumble */
-   false
+   NULL                          /* set_rumble */
 };

@@ -46,8 +46,11 @@ static int16_t xdk_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned index,
+      unsigned id)
 {
    xdk_input_t *xdk           = (xdk_input_t*)data;
 
@@ -123,6 +126,5 @@ input_driver_t input_xinput = {
    "xinput",
    NULL,                         /* grab_mouse */
    NULL,
-   xdk_input_set_rumble,
-   false
+   xdk_input_set_rumble
 };

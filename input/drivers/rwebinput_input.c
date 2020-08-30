@@ -467,7 +467,8 @@ static int16_t rwebinput_is_pressed(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
-      unsigned port, unsigned id)
+      unsigned port, unsigned id,
+      bool keyboard_mapping_blocked)
 {
    const struct retro_keybind *bind = &binds[id];
    /* Auto-binds are per joypad, not per user. */
@@ -478,7 +479,7 @@ static int16_t rwebinput_is_pressed(
    int key                          = bind->key;
 
    if ((key < RETROK_LAST) && rwebinput_key_pressed(rwebinput, key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_rwebinput.keyboard_mapping_blocked)
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !keyboard_mapping_blocked)
          return 1;
    if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse,
             bind->mbutton, false))
@@ -497,7 +498,11 @@ static int16_t rwebinput_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
 
@@ -514,7 +519,8 @@ static int16_t rwebinput_input_state(
                {
                   if (rwebinput_is_pressed(
                            rwebinput, joypad,
-                           joypad_info, binds[port], port, i))
+                           joypad_info, binds[port], port, i,
+                           keyboard_mapping_blocked))
                      ret |= (1 << i);
                }
             }
@@ -529,7 +535,8 @@ static int16_t rwebinput_input_state(
                {
                   if (rwebinput_is_pressed(rwebinput, joypad,
                            joypad_info, binds[port],
-                           port, id))
+                           port, id,
+                           keyboard_mapping_blocked))
                      return 1;
                }
             }
@@ -556,13 +563,15 @@ static int16_t rwebinput_input_state(
             if (id_plus_valid && id_plus_key < RETROK_LAST)
             {
                if (rwebinput_is_pressed(rwebinput,
-                        joypad, joypad_info, binds[port], idx, id_plus))
+                        joypad, joypad_info, binds[port], idx, id_plus,
+                        keyboard_mapping_blocked))
                   ret = 0x7fff;
             }
             if (id_minus_valid && id_minus_key < RETROK_LAST)
             {
                if (rwebinput_is_pressed(rwebinput, 
-                        joypad, joypad_info, binds[port], idx, id_minus))
+                        joypad, joypad_info, binds[port], idx, id_minus,
+                        keyboard_mapping_blocked))
                   ret += -0x7fff;
             }
 
@@ -694,6 +703,5 @@ input_driver_t input_rwebinput = {
    "rwebinput",
    rwebinput_grab_mouse,
    NULL,
-   NULL,                         /* set_rumble */
-   false
+   NULL                          /* set_rumble */
 };

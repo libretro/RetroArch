@@ -90,8 +90,11 @@ static int16_t uwp_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned index,
+      unsigned id)
 {
    uwp_input_t *uwp           = (uwp_input_t*)data;
 
@@ -104,7 +107,7 @@ static int16_t uwp_input_state(
             int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
-            if (!input_uwp.keyboard_mapping_blocked)
+            if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
@@ -143,7 +146,7 @@ static int16_t uwp_input_state(
                   else if ((binds[port][id].key < RETROK_LAST) 
                         && uwp_keyboard_pressed(binds[port][id].key)
                         && ((id == RARCH_GAME_FOCUS_TOGGLE) || 
-                           !input_uwp.keyboard_mapping_blocked)
+                           !keyboard_mapping_blocked)
                         )
                      return 1;
                   else if (uwp_mouse_state(port,
@@ -211,6 +214,5 @@ input_driver_t input_uwp = {
    "uwp",
    NULL,                         /* grab_mouse */
    NULL,
-   uwp_input_set_rumble,
-   false
+   uwp_input_set_rumble
 };

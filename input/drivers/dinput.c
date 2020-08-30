@@ -533,8 +533,12 @@ static int16_t dinput_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds, unsigned port,
-      unsigned device, unsigned idx, unsigned id)
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    settings_t *settings;
    struct dinput_input *di    = (struct dinput_input*)data;
@@ -568,7 +572,7 @@ static int16_t dinput_input_state(
                   }
                }
 
-               if (!input_dinput.keyboard_mapping_blocked)
+               if (!keyboard_mapping_blocked)
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
@@ -597,7 +601,7 @@ static int16_t dinput_input_state(
                            && (di->state[rarch_keysym_lut
                               [(enum retro_key)binds[port][id].key]] & 0x80)
                            && (   (id == RARCH_GAME_FOCUS_TOGGLE) 
-                              || !input_dinput.keyboard_mapping_blocked)
+                              || !keyboard_mapping_blocked)
                            )
                         return 1;
                      else if (
@@ -738,7 +742,7 @@ static int16_t dinput_input_state(
                         return 1;
                      else if (
                                binds[port][new_id].key < RETROK_LAST
-                           && !input_dinput.keyboard_mapping_blocked
+                           && !keyboard_mapping_blocked
                            && di->state[rarch_keysym_lut
                            [(enum retro_key)binds[port][new_id].key]] & 0x80
                            )
@@ -1024,6 +1028,5 @@ input_driver_t input_dinput = {
    "dinput",
    dinput_grab_mouse,
    NULL,
-   dinput_set_rumble,
-   false
+   dinput_set_rumble
 };

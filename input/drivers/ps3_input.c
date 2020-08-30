@@ -97,8 +97,11 @@ static int16_t ps3_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    ps3_input_t *ps3           = (ps3_input_t*)data;
 
@@ -236,6 +239,5 @@ input_driver_t input_ps3 = {
 
    NULL,                         /* grab_mouse */
    NULL,
-   ps3_input_set_rumble,
-   false
+   ps3_input_set_rumble
 };

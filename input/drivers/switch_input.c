@@ -370,11 +370,15 @@ static int16_t switch_input_mouse_state(
 }
 #endif
 
-static int16_t switch_input_state(void *data,
+static int16_t switch_input_state(
+      void *data,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    switch_input_t *sw = (switch_input_t*) data;
 
@@ -982,6 +986,5 @@ input_driver_t input_switch = {
    "switch",
    NULL,                            /* grab_mouse */
    NULL,
-   switch_input_set_rumble,
-   false
+   switch_input_set_rumble
 };

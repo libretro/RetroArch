@@ -682,6 +682,7 @@ static int16_t input_null_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **retro_keybinds,
+      bool keyboard_mapping_blocked,
       unsigned port, unsigned device, unsigned index, unsigned id) { return 0; }
 static void input_null_free(void *data) { }
 static bool input_null_set_sensor_state(void *data, unsigned port,
@@ -707,8 +708,7 @@ static input_driver_t input_null = {
    "null",
    input_null_grab_mouse,
    input_null_grab_stdin,
-   input_null_set_rumble,
-   false,
+   input_null_set_rumble
 };
 
 static input_driver_t *input_drivers[] = {
@@ -2553,6 +2553,7 @@ struct rarch_state
    bool midi_drv_output_pending;
 
    bool main_ui_companion_is_on_foreground;
+   bool keyboard_mapping_blocked;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool shader_presets_need_reload;
@@ -3644,6 +3645,7 @@ static void menu_input_key_bind_poll_bind_state(
             sec_joypad,
             &joypad_info,
             NULL,
+            p_rarch->keyboard_mapping_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
    menu_input_key_bind_poll_bind_state_internal(
@@ -3984,8 +3986,7 @@ static bool menu_input_key_bind_iterate(
 
    if (RARCH_TIMER_HAS_EXPIRED(_binds->timer_timeout))
    {
-      if (input_drv)
-         input_drv->keyboard_mapping_blocked = false;
+      p_rarch->keyboard_mapping_blocked = false;
 
       /*skip to next bind*/
       _binds->begin++;
@@ -4015,11 +4016,10 @@ static bool menu_input_key_bind_iterate(
    }
 
    {
-      bool complete                    = false;
-      struct menu_bind_state new_binds = *_binds;
+      bool complete                     = false;
+      struct menu_bind_state new_binds  = *_binds;
 
-      if (input_drv)
-         input_drv->keyboard_mapping_blocked = true;
+      p_rarch->keyboard_mapping_blocked = false;
 
       menu_input_key_bind_poll_bind_state(p_rarch,
             &new_binds, timed_out);
@@ -4064,8 +4064,7 @@ static bool menu_input_key_bind_iterate(
          /* Update bind */
          *(new_binds.output)          = new_binds.buffer;
 
-         if (input_drv)
-            input_drv->keyboard_mapping_blocked = false;
+         p_rarch->keyboard_mapping_blocked      = false;
 
          /* Avoid new binds triggering things right away. */
          /* Inhibits input for 2 frames
@@ -17157,7 +17156,7 @@ bool command_event(enum event_command cmd, void *data)
                input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
                p_rarch->input_driver_block_hotkey               = true;
-               p_rarch->current_input->keyboard_mapping_blocked = true;
+               p_rarch->keyboard_mapping_blocked                = false;
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
                         1, 120, true,
@@ -17169,7 +17168,7 @@ bool command_event(enum event_command cmd, void *data)
                if (!video_fullscreen)
                   video_driver_show_mouse();
                p_rarch->input_driver_block_hotkey               = false;
-               p_rarch->current_input->keyboard_mapping_blocked = false;
+               p_rarch->keyboard_mapping_blocked                = false;
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
                         1, 120, true,
@@ -23422,6 +23421,7 @@ static void input_poll_overlay(
             sec_joypad,
             &joypad_info,
             NULL,
+            p_rarch->keyboard_mapping_blocked,
             0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
@@ -23432,6 +23432,7 @@ static void input_poll_overlay(
             sec_joypad,
             &joypad_info,
             NULL,
+            p_rarch->keyboard_mapping_blocked,
             0, device, i, RETRO_DEVICE_ID_POINTER_X);
       int16_t y = input_ptr->input_state(
             input_data,
@@ -23439,6 +23440,7 @@ static void input_poll_overlay(
             sec_joypad,
             &joypad_info,
             NULL,
+            p_rarch->keyboard_mapping_blocked,
             0, device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       memset(&polled_data, 0, sizeof(struct input_overlay_state));
@@ -23883,6 +23885,7 @@ static void input_driver_poll(void)
             sec_joypad,
             &joypad_info[i],
             p_rarch->libretro_input_binds,
+            p_rarch->keyboard_mapping_blocked,
             (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
@@ -23934,6 +23937,7 @@ static void input_driver_poll(void)
                         sec_joypad,
                         &joypad_info[i],
                         p_rarch->libretro_input_binds,
+                        p_rarch->keyboard_mapping_blocked,
                         (unsigned)i, RETRO_DEVICE_JOYPAD,
                         0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -24629,7 +24633,9 @@ static int16_t input_state(unsigned port, unsigned device,
          p_rarch->joypad,
          sec_joypad,
          &joypad_info,
-         p_rarch->libretro_input_binds, port, device, idx, id);
+         p_rarch->libretro_input_binds,
+         p_rarch->keyboard_mapping_blocked,
+         port, device, idx, id);
 
    if (  (device == RETRO_DEVICE_ANALOG) &&
          (ret == 0))
@@ -24838,7 +24844,9 @@ static int16_t menu_input_read_mouse_hw(
          p_rarch->joypad,
          sec_joypad,
          &joypad_info,
-         NULL, 0, device, 0, type);
+         NULL,
+         p_rarch->keyboard_mapping_blocked,
+         0, device, 0, type);
 }
 
 static void menu_input_get_mouse_hw_state(
@@ -25035,7 +25043,10 @@ static void menu_input_get_touchscreen_hw_state(
          p_rarch->joypad,
          sec_joypad,
          &joypad_info, binds,
-         0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
+         0,
+         pointer_device,
+         p_rarch->keyboard_mapping_blocked,
+         0, RETRO_DEVICE_ID_POINTER_X);
    hw_state->x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
 
    /* > An annoyance - we get different starting positions
@@ -25062,7 +25073,9 @@ static void menu_input_get_touchscreen_hw_state(
          p_rarch->joypad,
          sec_joypad,
          &joypad_info, binds,
-         0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
+         0, pointer_device,
+         p_rarch->keyboard_mapping_blocked,
+         0, RETRO_DEVICE_ID_POINTER_Y);
    hw_state->y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
 
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
@@ -25085,7 +25098,9 @@ static void menu_input_get_touchscreen_hw_state(
          p_rarch->joypad,
          sec_joypad,
          &joypad_info, binds,
-         0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
+         p_rarch->keyboard_mapping_blocked,
+         0, pointer_device,
+         0, RETRO_DEVICE_ID_POINTER_PRESSED);
    if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
       hw_state->active = true;
    last_select_pressed = hw_state->select_pressed;
@@ -25097,7 +25112,9 @@ static void menu_input_get_touchscreen_hw_state(
          p_rarch->joypad,
          sec_joypad,
          &joypad_info, binds,
-         0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
+         p_rarch->keyboard_mapping_blocked,
+         0, pointer_device,
+         0, RARCH_DEVICE_ID_POINTER_BACK);
    if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
       hw_state->active = true;
    last_cancel_pressed = hw_state->cancel_pressed;
@@ -26354,7 +26371,9 @@ static void input_keys_pressed(
             p_rarch->joypad,
             sec_joypad,
             joypad_info,
-            &binds[port], port, RETRO_DEVICE_JOYPAD, 0,
+            &binds[port], 
+            p_rarch->keyboard_mapping_blocked,
+            port, RETRO_DEVICE_JOYPAD, 0,
             RARCH_ENABLE_HOTKEY))
       {
          if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
@@ -26387,7 +26406,9 @@ static void input_keys_pressed(
                   p_rarch->joypad,
                   sec_joypad,
                   joypad_info,
-                  &binds[port], port,
+                  &binds[port],
+                  p_rarch->keyboard_mapping_blocked,
+                  port,
                   RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
             p_rarch->input_driver_block_hotkey = false;
       }
@@ -26411,7 +26432,9 @@ static void input_keys_pressed(
             p_rarch->current_input_data,
             p_rarch->joypad,
             sec_joypad,
-            joypad_info, &binds[port], port, RETRO_DEVICE_JOYPAD, 0,
+            joypad_info, &binds[port],
+            p_rarch->keyboard_mapping_blocked,
+            port, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
 
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
@@ -26449,7 +26472,9 @@ static void input_keys_pressed(
                   p_rarch->joypad,
                   sec_joypad,
                   joypad_info,
-                  &binds[port], port, RETRO_DEVICE_JOYPAD, 0, i);
+                  &binds[port],
+                  p_rarch->keyboard_mapping_blocked,
+                  port, RETRO_DEVICE_JOYPAD, 0, i);
          if (     bit_pressed
                || BIT64_GET(lifecycle_state, i)
                || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
@@ -27077,6 +27102,7 @@ static bool input_mouse_button_raw(
             sec_joypad,
             &joypad_info,
             p_rarch->libretro_input_binds,
+            p_rarch->keyboard_mapping_blocked,
             port,
             RETRO_DEVICE_MOUSE, 0, id);
    return false;
@@ -27337,7 +27363,7 @@ static const char **input_keyboard_start_line(void *userdata,
    p_rarch->keyboard_line->userdata = userdata;
 
    /* While reading keyboard line input, we have to block all hotkeys. */
-   p_rarch->current_input->keyboard_mapping_blocked = true;
+   p_rarch->keyboard_mapping_blocked                = true;
 
    return (const char**)&p_rarch->keyboard_line->buffer;
 }
@@ -27457,7 +27483,7 @@ void input_keyboard_event(bool down, unsigned code,
 
       p_rarch->keyboard_press_cb                       = NULL;
       p_rarch->keyboard_press_data                     = NULL;
-      p_rarch->current_input->keyboard_mapping_blocked = false;
+      p_rarch->keyboard_mapping_blocked                = false;
       deferred_wait_keys                               = false;
    }
    else if (p_rarch->keyboard_press_cb)
@@ -27496,7 +27522,7 @@ void input_keyboard_event(bool down, unsigned code,
       p_rarch->keyboard_line                           = NULL;
 
       /* Unblock all hotkeys. */
-      p_rarch->current_input->keyboard_mapping_blocked = false;
+      p_rarch->keyboard_mapping_blocked                = false;
    }
    else
    {
@@ -27537,12 +27563,12 @@ static bool input_keyboard_ctl(
          }
 
          /* While waiting for input, we have to block all hotkeys. */
-         p_rarch->current_input->keyboard_mapping_blocked = true;
+         p_rarch->keyboard_mapping_blocked                = true;
          break;
       case RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS:
          p_rarch->keyboard_press_cb                       = NULL;
          p_rarch->keyboard_press_data                     = NULL;
-         p_rarch->current_input->keyboard_mapping_blocked = false;
+         p_rarch->keyboard_mapping_blocked                = false;
          break;
       case RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED:
          return p_rarch->input_driver_keyboard_linefeed_enable;
@@ -31626,7 +31652,7 @@ static void video_driver_free_internal(void)
 #endif
             p_rarch->joypad = NULL;
          }
-         p_rarch->current_input->keyboard_mapping_blocked = false;
+         p_rarch->keyboard_mapping_blocked                = false;
       }
       p_rarch->current_input_data                         = NULL;
    }
@@ -34755,7 +34781,8 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch)
       unsigned video_swap_interval = settings->uints.video_swap_interval;
 
       if (p_rarch->current_video->set_nonblock_state)
-         p_rarch->current_video->set_nonblock_state(p_rarch->video_driver_data, true,
+         p_rarch->current_video->set_nonblock_state(
+               p_rarch->video_driver_data, true,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
                video_adaptive_vsync,
                video_swap_interval
@@ -38783,7 +38810,7 @@ static enum runloop_state runloop_check_state(
    p_rarch->input_driver_block_libretro_input   = false;
    p_rarch->input_driver_block_hotkey           = false;
 
-   if (p_rarch->current_input->keyboard_mapping_blocked)
+   if (p_rarch->keyboard_mapping_blocked)
       p_rarch->input_driver_block_hotkey        = true;
 
    {
@@ -38909,7 +38936,9 @@ static enum runloop_state runloop_check_state(
                         p_rarch->current_input_data,
                         p_rarch->joypad,
                         sec_joypad,
-                        &joypad_info, &binds, port,
+                        &joypad_info, &binds,
+                        p_rarch->keyboard_mapping_blocked,
+                        port,
                         RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
                   BIT256_SET_PTR(&current_bits, ids[i][1]);
             }

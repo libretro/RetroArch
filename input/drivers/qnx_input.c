@@ -775,7 +775,11 @@ static int16_t qnx_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    qnx_input_t *qnx           = (qnx_input_t*)data;
 
@@ -788,7 +792,7 @@ static int16_t qnx_input_state(
             int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
-            if (!input_qnx.keyboard_mapping_blocked)
+            if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
@@ -813,7 +817,7 @@ static int16_t qnx_input_state(
                      return 1;
                   else if (
                         ((id == RARCH_GAME_FOCUS_TOGGLE) || 
-                         !input_qnx.keyboard_mapping_blocked) && 
+                         !keyboard_mapping_blocked) && 
                         qnx_keyboard_pressed(qnx, key)
                         )
                      return 1;
@@ -865,6 +869,5 @@ input_driver_t input_qnx = {
    "qnx_input",
    NULL,
    NULL,
-   NULL,
-   false
+   NULL
 };

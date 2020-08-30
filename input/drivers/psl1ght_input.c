@@ -213,8 +213,11 @@ static int16_t ps3_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    ps3_input_t *ps3           = (ps3_input_t*)data;
 
@@ -296,7 +299,6 @@ static void* ps3_input_init(const char *joypad_driver)
 
 static uint64_t ps3_input_get_capabilities(void *data)
 {
-   (void)data;
    return
 #ifdef HAVE_MOUSE
       (1 << RETRO_DEVICE_MOUSE)  |
@@ -307,10 +309,7 @@ static uint64_t ps3_input_get_capabilities(void *data)
 }
 
 static bool ps3_input_set_sensor_state(void *data, unsigned port,
-      enum retro_sensor_action action, unsigned event_rate)
-{
-   return false;
-}
+      enum retro_sensor_action action, unsigned event_rate) { return false; }
 
 input_driver_t input_ps3 = {
    ps3_input_init,
@@ -324,8 +323,7 @@ input_driver_t input_ps3 = {
 
    NULL,                         /* grab_mouse */
    NULL,
-   NULL,                         /* set_rumble */
-   false
+   NULL                          /* set_rumble */
 };
 
 /*  RetroArch - A frontend for libretro.
@@ -542,14 +540,9 @@ static bool ps3_joypad_query_pad(unsigned pad)
 }
 
 static bool ps3_joypad_rumble(unsigned pad,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   return true;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { return true; }
 
-static void ps3_joypad_destroy(void)
-{
-}
+static void ps3_joypad_destroy(void) { }
 
 input_device_driver_t ps3_joypad = {
    ps3_joypad_init,

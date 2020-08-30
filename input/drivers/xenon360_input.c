@@ -67,8 +67,11 @@ static int16_t xenon360_input_state(
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      bool port, unsigned device,
-      unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    uint64_t button            = binds[port][id].joykey;
 
@@ -137,6 +140,5 @@ input_driver_t input_xenon360 = {
    "xenon360",
    NULL,                            /* grab_mouse */
    NULL,
-   NULL,                            /* set_rumble */
-   false
+   NULL                             /* set_rumble */
 };
