@@ -313,6 +313,5 @@ input_driver_t input_cocoa = {
    "cocoa",
    NULL,                         /* grab_mouse */
    NULL,
-   cocoa_input_set_rumble,
-   false
+   cocoa_input_set_rumble
 };
