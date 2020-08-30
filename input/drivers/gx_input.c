@@ -50,6 +50,8 @@ typedef struct gx_input
 #ifdef HW_RVL
    int mouse_max;
    gx_input_mouse_t *mouse;
+#else
+   void *empty;
 #endif
 } gx_input_t;
 
@@ -129,8 +131,10 @@ static int16_t gx_mouse_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_MOUSE_RIGHT);
       default:
-         return 0;
+         break;
    }
+
+   return 0;
 }
 #endif
 
@@ -235,9 +239,7 @@ static void gx_input_poll_mouse(gx_input_t *gx)
       unsigned i;
       if (count != gx->mouse_max)
       {
-         gx_input_mouse_t* tmp = NULL;
-
-         tmp = (gx_input_mouse_t*)realloc(
+         gx_input_mouse_t *tmp = (gx_input_mouse_t*)realloc(
                gx->mouse, count * sizeof(gx_input_mouse_t));
          if (!tmp) 
             free(gx->mouse);
