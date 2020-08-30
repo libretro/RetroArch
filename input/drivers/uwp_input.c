@@ -89,27 +89,36 @@ static int16_t uwp_pressed_analog(uwp_input_t *uwp,
    const struct retro_keybind *binds,
    unsigned port, unsigned idx, unsigned id)
 {
-   const struct retro_keybind *bind_minus, *bind_plus;
-   int16_t pressed_minus = 0, pressed_plus = 0;
-   unsigned id_minus = 0, id_plus = 0;
+   int id_minus_key      = 0;
+   int id_plus_key       = 0;
+   unsigned id_minus     = 0;
+   unsigned id_plus      = 0;
+   int16_t ret           = 0;
+   bool id_plus_valid    = false;
+   bool id_minus_valid   = false;
 
-   /* First, process the keyboard bindings */
    input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-   bind_minus = &binds[id_minus];
-   bind_plus = &binds[id_plus];
+   id_minus_valid        = binds[id_minus].valid;
+   id_plus_valid         = binds[id_plus].valid;
+   id_minus_key          = binds[id_minus].key;
+   id_plus_key           = binds[id_plus].key;
 
-   if (!bind_minus->valid || !bind_plus->valid)
+   if (!id_minus_valid || !id_plus_valid)
       return 0;
 
-   if ((bind_minus->key < RETROK_LAST) 
-         && uwp_keyboard_pressed(bind_minus->key))
-      pressed_minus = -0x7fff;
-   if ((bind_plus->key < RETROK_LAST) 
-         && uwp_keyboard_pressed(bind_plus->key))
-      pressed_plus = 0x7fff;
+   if (id_plus_valid && id_plus_key < RETROK_LAST)
+   {
+      if (uwp_keyboard_pressed(bind_plus_key))
+         ret = 0x7fff;
+   }
+   if (id_minus_valid && id_minus_key < RETROK_LAST)
+   {
+      if (uwp_keyboard_pressed(bind_minus_key))
+         ret += -0x7fff;
+   }
 
-   return pressed_plus + pressed_minus;
+   return ret;
 }
 
 static int16_t uwp_input_state(

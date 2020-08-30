@@ -322,7 +322,8 @@ static bool dinput_mouse_button_pressed(
 	return false;
 }
 
-static int16_t dinput_pressed_analog(struct dinput_input *di,
+static int16_t dinput_pressed_analog(
+      struct dinput_input *di,
       const struct retro_keybind *binds,
       unsigned idx, unsigned id)
 {
@@ -350,7 +351,7 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
       if (di->state[sym] & 0x80)
          ret = 0x7fff;
    }
-   if (id_minus_key < RETROK_LAST)
+   if (id_minus_valid && id_minus_key < RETROK_LAST)
    {
       unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
       if (di->state[sym] & 0x80)
