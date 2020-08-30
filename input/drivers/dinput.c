@@ -326,32 +326,38 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
       const struct retro_keybind *binds,
       unsigned idx, unsigned id)
 {
-   const struct retro_keybind *bind_minus, *bind_plus;
-   int16_t pressed_minus = 0, pressed_plus = 0;
-   unsigned id_minus = 0, id_plus = 0;
+   int id_minus_key      = 0;
+   int id_plus_key       = 0;
+   unsigned id_minus     = 0;
+   unsigned id_plus      = 0;
+   int16_t ret           = 0;
+   bool id_plus_valid    = false;
+   bool id_minus_valid   = false;
 
    input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-   bind_minus = &binds[id_minus];
-   bind_plus  = &binds[id_plus];
+   id_minus_valid        = binds[id_minus].valid;
+   id_plus_valid         = binds[id_plus].valid;
+   id_minus_key          = binds[id_minus].key;
+   id_plus_key           = binds[id_plus].key;
 
-   if (!bind_minus->valid || !bind_plus->valid)
+   if (!id_minus_valid || !id_plus_valid)
       return 0;
 
-   if (bind_minus->key < RETROK_LAST)
+   if (id_plus_key  < RETROK_LAST)
    {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)bind_minus->key];
+      unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
       if (di->state[sym] & 0x80)
-         pressed_minus = -0x7fff;
+         ret = 0x7fff;
    }
-   if (bind_plus->key  < RETROK_LAST)
+   if (id_minus_key < RETROK_LAST)
    {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)bind_plus->key];
+      unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
       if (di->state[sym] & 0x80)
-         pressed_plus  = 0x7fff;
+         ret += -0x7fff;
    }
 
-   return pressed_plus + pressed_minus;
+   return ret;
 }
 
 static int16_t dinput_lightgun_aiming_state(
