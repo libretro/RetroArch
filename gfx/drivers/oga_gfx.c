@@ -119,7 +119,7 @@ static void *oga_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      void* udev = input_udev.init(settings->arrays.input_joypad_driver);
+      void* udev = input_driver_init_wrap(&input_udev, settings->arrays.input_joypad_driver);
       if (udev)
       {
          *input       = &input_udev;

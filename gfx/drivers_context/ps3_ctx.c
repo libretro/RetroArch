@@ -288,7 +288,7 @@ static void gfx_ctx_ps3_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   void *ps3input       = input_ps3.init(joypad_name);
+   void *ps3input       = input_driver_init_wrap(&input_ps3, joypad_name);
 
    *input               = ps3input ? &input_ps3 : NULL;
    *input_data          = ps3input;

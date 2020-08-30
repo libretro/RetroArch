@@ -34,8 +34,6 @@
 
 typedef struct x11_input
 {
-   const input_device_driver_t *joypad;
-
    Display *display;
    Window win;
 
@@ -65,8 +63,6 @@ static void *x_input_init(const char *joypad_driver)
    x11->win     = (Window)video_driver_window_get();
 
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);
-
-   x11->joypad  = input_joypad_init_driver(joypad_driver, x11);
 
    return x11;
 }
@@ -268,7 +264,10 @@ static int16_t x_pointer_state(x11_input_t *x11,
    return 0;
 }
 
-static int16_t x_input_state(void *data,
+static int16_t x_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
@@ -285,7 +284,7 @@ static int16_t x_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = x11->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
             if (settings->uints.input_mouse_index[port] == 0)
@@ -321,7 +320,7 @@ static int16_t x_input_state(void *data,
             {
                if (binds[port][id].valid)
                {
-                  if (button_is_pressed( x11->joypad,
+                  if (button_is_pressed(joypad,
                         joypad_info, binds[port], port, id))
                      return 1;
                   else if (
@@ -378,7 +377,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -401,7 +400,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -424,7 +423,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -447,7 +446,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -470,7 +469,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -493,7 +492,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -516,7 +515,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -539,7 +538,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -562,7 +561,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -585,7 +584,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -608,7 +607,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -636,7 +635,7 @@ static int16_t x_input_state(void *data,
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed( x11->joypad,
+                     if (button_is_pressed(joypad,
                            joypad_info, binds[port],
                            port, new_id))
                         return 1;
@@ -662,9 +661,6 @@ static void x_input_free(void *data)
 
    if (!x11)
       return;
-
-   if (x11->joypad)
-      x11->joypad->destroy();
 
    free(x11);
 }
@@ -738,9 +734,6 @@ static void x_input_poll(void *data)
       memset(x11->state, 0, sizeof(x11->state));
 
    x_input_poll_mouse(x11, video_has_focus);
-
-   if (x11->joypad)
-      x11->joypad->poll();
 }
 
 static void x_grab_mouse(void *data, bool state)
@@ -750,22 +743,15 @@ static void x_grab_mouse(void *data, bool state)
       x11->grab_mouse = state;
 }
 
-static bool x_set_rumble(void *data, unsigned port,
+static bool x_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   x11_input_t *x11 = (x11_input_t*)data;
-   if (x11)
-      return input_joypad_set_rumble(x11->joypad, port, effect, strength);
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
    return false;
-}
-
-static const input_device_driver_t *x_get_joypad_driver(void *data)
-{
-   x11_input_t *x11 = (x11_input_t*)data;
-
-   if (!x11)
-      return NULL;
-   return x11->joypad;
 }
 
 static uint64_t x_input_get_capabilities(void *data)
@@ -794,7 +780,5 @@ input_driver_t input_x = {
    x_grab_mouse,
    NULL,
    x_set_rumble,
-   x_get_joypad_driver,
-   NULL,
    false
 };

@@ -47,7 +47,6 @@ typedef struct
 
 typedef struct gx_input
 {
-   const input_device_driver_t *joypad;
 #ifdef HW_RVL
    int mouse_max;
    gx_input_mouse_t *mouse;
@@ -55,7 +54,8 @@ typedef struct gx_input
 } gx_input_t;
 
 #ifdef HW_RVL
-static int16_t gx_lightgun_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
+static int16_t gx_lightgun_state(gx_input_t *gx,
+      unsigned id, uint16_t joy_idx)
 {
    struct video_viewport vp = {0};
    video_driver_get_viewport_info(&vp);
@@ -134,7 +134,10 @@ static int16_t gx_mouse_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
 }
 #endif
 
-static int16_t gx_input_state(void *data,
+static int16_t gx_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
@@ -149,12 +152,12 @@ static int16_t gx_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return gx->joypad->state(
+            return joypad->state(
                   joypad_info, binds[port], port);
 
          if (binds[port][id].valid)
             if (
-                  button_is_pressed(gx->joypad, joypad_info, binds[port],
+                  button_is_pressed(joypad, joypad_info, binds[port],
                      port, id))
                return 1;
          break;
@@ -179,8 +182,6 @@ static void gx_input_free_input(void *data)
    if (!gx)
       return;
 
-   if (gx->joypad)
-      gx->joypad->destroy();
 #ifdef HW_RVL
    if (gx->mouse)
       free(gx->mouse);
@@ -188,27 +189,6 @@ static void gx_input_free_input(void *data)
    free(gx);
 }
 
-#ifdef HW_RVL
-static inline int gx_count_mouse(gx_input_t *gx)
-{
-   unsigned i;
-   int count = 0;
-
-   if (gx)
-   {
-      for (i = 0; i < DEFAULT_MAX_PADS; i++)
-      {
-         if (gx->joypad->name(i))
-         {
-            if (string_is_equal(gx->joypad->name(i), "Wiimote Controller"))
-               count++;
-         }
-      }
-   }
-
-   return count;
-}
-#endif
 
 static void *gx_input_init(const char *joypad_driver)
 {
@@ -223,11 +203,29 @@ static void *gx_input_init(const char *joypad_driver)
          gx->mouse_max, sizeof(gx_input_mouse_t));
 #endif
 
-   gx->joypad     = input_joypad_init_driver(joypad_driver, gx);
    return gx;
 }
 
 #ifdef HW_RVL
+static inline int gx_count_mouse(gx_input_t *gx)
+{
+   unsigned i;
+   int count = 0;
+
+   if (!gx)
+      return 0;
+
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
+   {
+      const char *joypad_name = joypad_driver_name(i);
+      if (!string_is_empty(joypad_name))
+         if (string_is_equal(joypad_name, "Wiimote Controller"))
+            count++;
+   }
+
+   return count;
+}
+
 static void gx_input_poll_mouse(gx_input_t *gx)
 {
    int count = gx_count_mouse(gx);
@@ -266,25 +264,17 @@ static void gx_input_poll_mouse(gx_input_t *gx)
       } 
    }
 }
-#endif
 
-static void gx_input_poll(void *data)
+static void rvl_input_poll(void *data)
 {
    gx_input_t *gx = (gx_input_t*)data;
-
-   if (gx && gx->joypad)
-   {
-      gx->joypad->poll();
-#ifdef HW_RVL
-      if (gx->mouse)
-         gx_input_poll_mouse(gx);
-#endif
-   }
+   if (gx && gx->mouse)
+      gx_input_poll_mouse(gx);
 }
+#endif
 
 static uint64_t gx_input_get_capabilities(void *data)
 {
-   (void)data;
 #ifdef HW_RVL
    return (1 << RETRO_DEVICE_JOYPAD) |
           (1 << RETRO_DEVICE_ANALOG) |
@@ -296,21 +286,13 @@ static uint64_t gx_input_get_capabilities(void *data)
 #endif
 }
 
-static const input_device_driver_t  *gx_input_get_joypad_driver(void *data)
-{
-   gx_input_t *gx = (gx_input_t*)data;
-   if (!gx)
-      return NULL;
-   return gx->joypad;
-}
-
-static void gx_input_grab_mouse(void *data, bool state) { }
-static bool gx_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength) { return false; }
-
 input_driver_t input_gx = {
    gx_input_init,
-   gx_input_poll,
+#ifdef HW_RVL
+   rvl_input_poll,
+#else
+   NULL,                         /* poll */
+#endif
    gx_input_state,
    gx_input_free_input,
    NULL,
@@ -318,10 +300,8 @@ input_driver_t input_gx = {
    gx_input_get_capabilities,
    "gx",
 
-   gx_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
-   gx_input_set_rumble,
-   gx_input_get_joypad_driver,
-   NULL,
+   NULL,                         /* set_rumble */
    false
 };

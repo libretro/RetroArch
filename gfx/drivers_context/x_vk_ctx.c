@@ -464,7 +464,7 @@ static void gfx_ctx_x_vk_input_driver(void *data,
 
    if (string_is_equal(input_driver, "udev"))
    {
-      *input_data = input_udev.init(joypad_name);
+      *input_data = input_driver_init_wrap(&input_udev.init, joypad_name);
       if (*input_data)
       {
          *input = &input_udev;
@@ -473,7 +473,7 @@ static void gfx_ctx_x_vk_input_driver(void *data,
    }
 #endif
 
-   x_input      = input_x.init(joypad_name);
+   x_input      = input_driver_init_wrap(&input_x, joypad_name);
    *input       = x_input ? &input_x : NULL;
    *input_data  = x_input;
 }

@@ -147,7 +147,6 @@ typedef struct state_device
 typedef struct android_input
 {
    int64_t quick_tap_time;
-   const input_device_driver_t *joypad;
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x_delta, mouse_y_delta;
    int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
@@ -542,8 +541,6 @@ static void *android_input_init(const char *joypad_driver)
          sizeof(android->device_model));
 
    android_app->input_alive = true;
-
-   android->joypad         = input_joypad_init_driver(joypad_driver, android);
 
    return android;
 }
@@ -1313,16 +1310,18 @@ static void android_input_poll_memcpy(android_input_t *android)
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
-static void android_input_poll(void *data)
+static void android_input_poll(void *data, const void *joypad_data)
 {
    int ident;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
+   const input_device_driver_t 
+      *joypad                      = (const input_device_driver_t*)joypad_data;
    settings_t            *settings = config_get_ptr();
 
    while ((ident =
             ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
-               && input_key_pressed(android->joypad, RARCH_PAUSE_TOGGLE,
+               && input_key_pressed(joypad, RARCH_PAUSE_TOGGLE,
                   android_keyboard_port_input_pressed(input_config_binds[0],
                      RARCH_PAUSE_TOGGLE)))
                ? -1 : settings->uints.input_block_timeout,
@@ -1389,7 +1388,10 @@ bool android_run_events(void *data)
    return true;
 }
 
-static int16_t android_input_state(void *data,
+static int16_t android_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
@@ -1402,7 +1404,7 @@ static int16_t android_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = android->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
@@ -1420,7 +1422,7 @@ static int16_t android_input_state(void *data,
             {
                if ( 
                      button_is_pressed(
-                        android->joypad, joypad_info, binds[port],
+                        joypad, joypad_info, binds[port],
                         port, id)
                      || android_keyboard_port_input_pressed(binds[port], id)
                   )
@@ -1493,10 +1495,6 @@ static void android_input_free_input(void *data)
    if (android_app->sensorManager)
       ASensorManager_destroyEventQueue(android_app->sensorManager,
             android_app->sensorEventQueue);
-
-   if (android->joypad)
-      android->joypad->destroy();
-   android->joypad = NULL;
 
    android_app->input_alive = false;
 
@@ -1593,26 +1591,20 @@ static float android_input_get_sensor_input(void *data,
    return 0;
 }
 
-static const input_device_driver_t *android_input_get_joypad_driver(void *data)
-{
-   android_input_t *android = (android_input_t*)data;
-   if (!android)
-      return NULL;
-   return android->joypad;
-}
-
 static void android_input_grab_mouse(void *data, bool state)
 {
    (void)data;
    (void)state;
 }
 
-static bool android_input_set_rumble(void *data, unsigned port,
+static bool android_input_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   android_input_t *android = (android_input_t*)data;
-   if (android)
-      return input_joypad_set_rumble(android->joypad, port, effect, strength);
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
    return false;
 }
 
@@ -1629,7 +1621,5 @@ input_driver_t input_android = {
    android_input_grab_mouse,
    NULL,
    android_input_set_rumble,
-   android_input_get_joypad_driver,
-   NULL,
    false
 };

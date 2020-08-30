@@ -48,19 +48,17 @@ typedef struct ps3_input
 {
 #ifdef HAVE_MOUSE
    unsigned mice_connected;
+#else
+   void *empty;
 #endif
-   const input_device_driver_t *joypad;
 } ps3_input_t;
 
 static void ps3_input_poll(void *data)
 {
-   ps3_input_t *ps3 = (ps3_input_t*)data;
-
-   if (ps3 && ps3->joypad)
-      ps3->joypad->poll();
-
 #ifdef HAVE_MOUSE
    CellMouseInfo mouse_info;
+   ps3_input_t *ps3 = (ps3_input_t*)data;
+
    cellMouseGetInfo(&mouse_info);
    ps3->mice_connected = mouse_info.now_connect;
 #endif
@@ -93,7 +91,10 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 }
 #endif
 
-static int16_t ps3_input_state(void *data,
+static int16_t ps3_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
@@ -108,11 +109,11 @@ static int16_t ps3_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return ps3->joypad->state(
+            return joypad->state(
                   joypad_info, binds[port], port);
 
          if (binds[port][id].valid)
-            if (button_is_pressed(ps3->joypad, joypad_info, binds[port],
+            if (button_is_pressed(joypad, joypad_info, binds[port],
                      port, id))
                return 1;
 
@@ -154,9 +155,6 @@ static void ps3_input_free_input(void *data)
    if (!ps3)
       return;
 
-   if (ps3->joypad)
-      ps3->joypad->destroy();
-
 #ifdef HAVE_MOUSE
    cellMouseEnd();
 #endif
@@ -172,8 +170,6 @@ static void* ps3_input_init(const char *joypad_driver)
 #ifdef HAVE_MOUSE
    cellMouseInit(MAX_MICE);
 #endif
-
-   ps3->joypad = input_joypad_init_driver(joypad_driver, ps3);
 
    return ps3;
 }
@@ -193,7 +189,6 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
    CellPadInfo2 pad_info;
-   (void)event_rate;
 
    switch (action)
    {
@@ -201,43 +196,32 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port,
          cellPadGetInfo2(&pad_info);
          if ((pad_info.device_capability[port]
                   & CELL_PAD_CAPABILITY_SENSOR_MODE)
-               != CELL_PAD_CAPABILITY_SENSOR_MODE)
-            return false;
-
-         cellPadSetPortSetting(port, CELL_PAD_SETTING_SENSOR_ON);
-         return true;
+               == CELL_PAD_CAPABILITY_SENSOR_MODE)
+         {
+            cellPadSetPortSetting(port, CELL_PAD_SETTING_SENSOR_ON);
+            return true;
+         }
+         break;
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
          cellPadSetPortSetting(port, 0);
          return true;
-
       default:
-         return false;
+         break;
    }
-}
 
-static bool ps3_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   ps3_input_t *ps3 = (ps3_input_t*)data;
-
-   if (ps3 && ps3->joypad)
-      return input_joypad_set_rumble(ps3->joypad,
-            port, effect, strength);
    return false;
 }
 
-static const input_device_driver_t *ps3_input_get_joypad_driver(void *data)
+static bool ps3_input_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
-   ps3_input_t *ps3 = (ps3_input_t*)data;
-   if (ps3)
-      return ps3->joypad;
-   return NULL;
-}
-
-static void ps3_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
+   if (joypad)
+      return input_joypad_set_rumble(joypad,
+            port, effect, strength);
+   return false;
 }
 
 input_driver_t input_ps3 = {
@@ -250,10 +234,8 @@ input_driver_t input_ps3 = {
    ps3_input_get_capabilities,
    "ps3",
 
-   ps3_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
    ps3_input_set_rumble,
-   ps3_input_get_joypad_driver,
-   NULL,
    false
 };

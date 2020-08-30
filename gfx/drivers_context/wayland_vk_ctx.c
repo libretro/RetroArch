@@ -556,6 +556,7 @@ static void gfx_ctx_wl_input_driver(void *data,
    {
       *input      = &input_wayland;
       *input_data = &wl->input;
+      input_driver_init_joypads();
    }
 }
 

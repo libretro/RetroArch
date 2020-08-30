@@ -92,8 +92,6 @@ typedef struct
 
 typedef struct switch_input
 {
-   const input_device_driver_t *joypad;
-
 #ifdef HAVE_LIBNX
    /* pointer */
    bool touch_state[MULTITOUCH_LIMIT];
@@ -131,6 +129,8 @@ typedef struct switch_input
    /* sensor handles */
    uint32_t sixaxis_handles[DEFAULT_MAX_PADS][4];
    unsigned sixaxis_handles_count[DEFAULT_MAX_PADS];
+#else
+   void *empty;
 #endif
 } switch_input_t;
 
@@ -147,24 +147,17 @@ static void finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTi
 /* end of touch mouse function declarations */
 #endif
 
+#ifdef HAVE_LIBNX
 static void switch_input_poll(void *data)
 {
-#ifdef HAVE_LIBNX
    MousePosition mouse_pos;
-   uint32_t touch_count;
    unsigned int i                = 0;
    int keySym                    = 0;
    unsigned keyCode              = 0;
    uint16_t mod                  = 0;
    uint64_t mouse_current_report = 0;
-#endif
    switch_input_t *sw            = (switch_input_t*) data;
-
-   if (sw->joypad)
-      sw->joypad->poll();
-
-#ifdef HAVE_LIBNX
-   touch_count = hidTouchCount();
+   uint32_t touch_count          = hidTouchCount();
    for (i = 0; i < MULTITOUCH_LIMIT; i++)
    {
       sw->previous_touch_state[i] = sw->touch_state[i];
@@ -283,10 +276,8 @@ static void switch_input_poll(void *data)
       sw->mouse_y = MOUSE_MAX_Y;
 
    sw->mouse_wheel = mouse_pos.scrollVelocityY;
-#endif
 }
 
-#ifdef HAVE_LIBNX
 static int16_t switch_pointer_screen_device_state(switch_input_t *sw,
       unsigned id, unsigned idx)
 {
@@ -394,12 +385,12 @@ static int16_t switch_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return sw->joypad->state(
+            return joypad->state(
                   joypad_info, binds[port], port);
 
          if (binds[port][id].valid)
             if (
-                  button_is_pressed(sw->joypad, joypad_info, binds[port],
+                  button_is_pressed(joypad, joypad_info, binds[port],
                      port, id))
                return 1;
          break;
@@ -799,18 +790,15 @@ static void switch_input_free_input(void *data)
    unsigned i,j;
    switch_input_t *sw = (switch_input_t*) data;
 
-   if (sw)
-   {
-      if(sw->joypad)
-         sw->joypad->destroy();
+   if (!sw)
+      return;
 
-      for (i = 0; i < DEFAULT_MAX_PADS; i++)
-         if (sw->sixaxis_handles_count[i] > 0)
-            for (j = 0; j < sw->sixaxis_handles_count[i]; j++)
-               hidStopSixAxisSensor(sw->sixaxis_handles[i][j]);
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
+      if (sw->sixaxis_handles_count[i] > 0)
+         for (j = 0; j < sw->sixaxis_handles_count[i]; j++)
+            hidStopSixAxisSensor(sw->sixaxis_handles[i][j]);
 
-      free(sw);
-   }
+   free(sw);
 
 #ifdef HAVE_LIBNX
    hidExit();
@@ -858,8 +846,6 @@ static void* switch_input_init(const char *joypad_driver)
       sw->sixaxis_handles_count[i]      = 0;
 #endif
 
-   sw->joypad = input_joypad_init_driver(joypad_driver, sw);
-
    return sw;
 }
 
@@ -876,27 +862,15 @@ static uint64_t switch_input_get_capabilities(void *data)
    return caps;
 }
 
-static const input_device_driver_t *switch_input_get_joypad_driver(void *data)
-{
-   switch_input_t *sw = (switch_input_t*) data;
-   if (sw)
-      return sw->joypad;
-   return NULL;
-}
-
-static void switch_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
-static bool switch_input_set_rumble(void *data, unsigned port,
+static bool switch_input_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
 #ifdef HAVE_LIBNX
-   switch_input_t *sw = (switch_input_t*) data;
-   if (sw)
-      return input_joypad_set_rumble(sw->joypad, port, effect, strength);
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
 #endif
    return false;
 }
@@ -995,17 +969,19 @@ static float switch_input_get_sensor_input(void *data,
 
 input_driver_t input_switch = {
    switch_input_init,
+#ifdef HAVE_LIBNX
    switch_input_poll,
+#else
+   NULL,                            /* poll       */
+#endif
    switch_input_state,
    switch_input_free_input,
    switch_input_set_sensor_state,
    switch_input_get_sensor_input,
    switch_input_get_capabilities,
    "switch",
-   switch_input_grab_mouse,
+   NULL,                            /* grab_mouse */
    NULL,
    switch_input_set_rumble,
-   switch_input_get_joypad_driver,
-   NULL,
    false
 };

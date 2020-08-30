@@ -743,7 +743,7 @@ static void gfx_ctx_drm_input_driver(void *data,
 #ifdef HAVE_UDEV
       {
          /* Try to set it to udev instead */
-         void *udev = input_udev.init(joypad_name);
+         void *udev = input_driver_init_wrap(&input_udev, joypad_name);
          if (udev)
          {
             *input       = &input_udev;
@@ -755,7 +755,7 @@ static void gfx_ctx_drm_input_driver(void *data,
 #if defined(__linux__) && !defined(ANDROID)
       {
          /* Try to set it to linuxraw instead */
-         void *linuxraw = input_linuxraw.init(joypad_name);
+         void *linuxraw = input_driver_init_wrap(&input_linuxraw, joypad_name);
          if (linuxraw)
          {
             *input       = &input_linuxraw;

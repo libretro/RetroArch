@@ -46,12 +46,6 @@ static void *cocoa_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_apple_hid);
 
-   apple->joypad = input_joypad_init_driver(joypad_driver, apple);
-
-#ifdef HAVE_MFI
-   apple->sec_joypad = input_joypad_init_driver("mfi", apple);
-#endif
-
    return apple;
 }
 
@@ -90,13 +84,6 @@ static void cocoa_input_poll(void *data)
             &apple->touches[i].full_x,
             &apple->touches[i].full_y);
    }
-
-   if (apple->joypad)
-      apple->joypad->poll();
-#ifdef HAVE_MFI
-   if (apple->sec_joypad)
-       apple->sec_joypad->poll();
-#endif
 }
 
 static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
@@ -195,7 +182,10 @@ static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
    return 0;
 }
 
-static int16_t cocoa_input_state(void *data,
+static int16_t cocoa_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
@@ -210,10 +200,10 @@ static int16_t cocoa_input_state(void *data,
             unsigned i;
             /* Do a bitwise OR to combine both input
              * states together */
-            int16_t ret = apple->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port)
 #ifdef HAVE_MFI
-                 | apple->sec_joypad->state(
+                 | sec_joypad->state(
                      joypad_info, binds[port], port)
 #endif
                  ;
@@ -235,12 +225,12 @@ static int16_t cocoa_input_state(void *data,
             if (binds[port][id].valid)
             {
                if (button_is_pressed(
-                        apple->joypad,
+                        joypad,
                         joypad_info, binds[port], port, id))
                   return 1;
 #ifdef HAVE_MFI
                else if (button_is_pressed(
-                        apple->sec_joypad,
+                        sec_joypad,
                         joypad_info, binds[port], port, id))
                   return 1;
 #endif
@@ -274,31 +264,23 @@ static void cocoa_input_free(void *data)
    if (!apple || !data)
       return;
 
-   if (apple->joypad)
-      apple->joypad->destroy();
-
-#ifdef HAVE_MFI
-   if (apple->sec_joypad)
-       apple->sec_joypad->destroy();
-#endif
-
    for (i = 0; i < MAX_KEYS; i++)
       apple_key_state[i] = 0;
 
    free(apple);
 }
 
-static bool cocoa_input_set_rumble(void *data,
-   unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+static bool cocoa_input_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-
-   if (apple && apple->joypad)
-      return input_joypad_set_rumble(apple->joypad,
+   if (joypad)
+      return input_joypad_set_rumble(joypad,
             port, effect, strength);
 #ifdef HAVE_MFI
-    if (apple && apple->sec_joypad)
-        return input_joypad_set_rumble(apple->sec_joypad,
+    if (sec_joypad)
+        return input_joypad_set_rumble(sec_joypad,
             port, effect, strength);
 #endif
    return false;
@@ -316,33 +298,6 @@ static uint64_t cocoa_input_get_capabilities(void *data)
       (1 << RETRO_DEVICE_ANALOG);
 }
 
-static void cocoa_input_grab_mouse(void *data, bool state)
-{
-   /* Dummy for now. Might be useful in the future. */
-   (void)data;
-   (void)state;
-}
-
-static const input_device_driver_t *cocoa_input_get_sec_joypad_driver(void *data)
-{
-#ifdef HAVE_MFI
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-
-   if (apple && apple->sec_joypad)
-      return apple->sec_joypad;
-#endif
-   return NULL;
-}
-
-static const input_device_driver_t *cocoa_input_get_joypad_driver(void *data)
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-
-   if (apple && apple->joypad)
-      return apple->joypad;
-   return NULL;
-}
-
 input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
@@ -352,10 +307,8 @@ input_driver_t input_cocoa = {
    NULL,
    cocoa_input_get_capabilities,
    "cocoa",
-   cocoa_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
    cocoa_input_set_rumble,
-   cocoa_input_get_joypad_driver,
-   cocoa_input_get_sec_joypad_driver,
    false
 };

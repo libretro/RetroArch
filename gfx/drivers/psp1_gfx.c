@@ -534,7 +534,7 @@ static void *psp_init(const video_info_t *video,
    if (input && input_data)
    {
       settings_t *settings = config_get_ptr();
-      pspinput             = input_psp.init(
+      pspinput             = input_driver_init_wrap(&input_psp,
             settings->arrays.input_joypad_driver);
       *input               = pspinput ? &input_psp : NULL;
       *input_data          = pspinput;

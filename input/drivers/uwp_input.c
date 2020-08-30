@@ -31,16 +31,11 @@
 
 typedef struct uwp_input
 {
-   const input_device_driver_t *joypad;
+   void *empty;
 } uwp_input_t;
 
 static void uwp_input_poll(void *data)
 {
-   uwp_input_t *uwp = (uwp_input_t*)data;
-
-   if (uwp && uwp->joypad)
-      uwp->joypad->poll();
-
    uwp_input_next_frame();
 }
 
@@ -50,9 +45,6 @@ static void uwp_input_free_input(void *data)
 
    if (!uwp)
       return;
-
-   if (uwp->joypad)
-      uwp->joypad->destroy();
 
    free(uwp);
 }
@@ -64,8 +56,6 @@ static void *uwp_input_init(const char *joypad_driver)
       return NULL;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_uwp);
-
-   uwp->joypad = input_joypad_init_driver(joypad_driver, uwp);
 
    return uwp;
 }
@@ -83,27 +73,15 @@ static uint64_t uwp_input_get_capabilities(void *data)
    return caps;
 }
 
-static bool uwp_input_set_rumble(void *data, unsigned port,
+static bool uwp_input_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   struct uwp_input *uwp = (struct uwp_input*)data;
-   if (uwp)
-      return input_joypad_set_rumble(uwp->joypad, port, effect, strength);
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
    return false;
-}
-
-static const input_device_driver_t *uwp_input_get_joypad_driver(void *data)
-{
-   uwp_input_t *uwp = (uwp_input_t*)data;
-   if (!uwp)
-      return NULL;
-   return uwp->joypad;
-}
-
-static void uwp_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
 }
 
 static int16_t uwp_pressed_analog(uwp_input_t *uwp,
@@ -134,7 +112,10 @@ static int16_t uwp_pressed_analog(uwp_input_t *uwp,
    return pressed_plus + pressed_minus;
 }
 
-static int16_t uwp_input_state(void *data,
+static int16_t uwp_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
@@ -148,7 +129,7 @@ static int16_t uwp_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = uwp->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
             if (!input_uwp.keyboard_mapping_blocked)
@@ -184,7 +165,7 @@ static int16_t uwp_input_state(void *data,
             {
                if (binds[port][id].valid)
                {
-                  if (button_is_pressed(uwp->joypad, joypad_info,
+                  if (button_is_pressed(joypad, joypad_info,
                            binds[port], port, id))
                      return 1;
                   else if ((binds[port][id].key < RETROK_LAST) 
@@ -228,10 +209,8 @@ input_driver_t input_uwp = {
    NULL,
    uwp_input_get_capabilities,
    "uwp",
-   uwp_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
    uwp_input_set_rumble,
-   uwp_input_get_joypad_driver,
-   NULL,
    false
 };

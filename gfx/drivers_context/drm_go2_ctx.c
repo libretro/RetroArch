@@ -97,7 +97,7 @@ static void gfx_ctx_go2_drm_input_driver(void *data,
 {
 #ifdef HAVE_UDEV
    /* Try to set it to udev instead */
-   void *udev = input_udev.init(joypad_name);
+   void *udev = input_driver_init_wrap(&input_udev, joypad_name);
    if (udev)
    {
       *input       = &input_udev;

@@ -148,7 +148,7 @@ static void gfx_ctx_gdi_input_driver(
    /* winraw only available since XP */
    if (string_is_equal(settings->arrays.input_driver, "raw"))
    {
-      *input_data = input_winraw.init(settings->arrays.input_driver);
+      *input_data = input_driver_init_wrap(&input_winraw, settings->arrays.input_driver);
       if (*input_data)
       {
          *input     = &input_winraw;
@@ -160,7 +160,7 @@ static void gfx_ctx_gdi_input_driver(
 #endif
 
 #ifdef HAVE_DINPUT
-   dinput_gdi  = input_dinput.init(settings->arrays.input_driver);
+   dinput_gdi  = input_driver_init_wrap(&input_dinput, settings->arrays.input_driver);
    *input      = dinput_gdi ? &input_dinput : NULL;
 #else
    dinput_gdi  = NULL;

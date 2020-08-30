@@ -271,10 +271,10 @@ static void gfx_ctx_w_vk_input_driver(void *data,
    /* winraw only available since XP */
    if (string_is_equal(input_driver, "raw"))
    {
-      *input_data = input_winraw.init(joypad_name);
+      *input_data = input_driver_init_wrap(&input_winraw, joypad_name);
       if (*input_data)
       {
-         *input     = &input_winraw;
+         *input        = &input_winraw;
          dinput_vk_wgl = NULL;
          return;
       }
@@ -283,7 +283,7 @@ static void gfx_ctx_w_vk_input_driver(void *data,
 #endif
 
 #ifdef HAVE_DINPUT
-   dinput_vk_wgl  = input_dinput.init(joypad_name);
+   dinput_vk_wgl  = input_driver_init_wrap(&input_dinput, joypad_name);
    *input         = dinput_vk_wgl ? &input_dinput : NULL;
    *input_data    = dinput_vk_wgl;
 #endif

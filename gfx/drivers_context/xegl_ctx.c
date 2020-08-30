@@ -456,7 +456,7 @@ static void gfx_ctx_xegl_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   void *xinput = input_x.init(joypad_name);
+   void *xinput = input_driver_init_wrap(&input_x, joypad_name);
 
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;

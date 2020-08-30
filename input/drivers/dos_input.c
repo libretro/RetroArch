@@ -33,7 +33,7 @@
 
 typedef struct dos_input
 {
-   const input_device_driver_t *joypad;
+   void *empty;
 } dos_input_t;
 
 /* First ports are used to keeping track of gamepad states. Last port is used for keyboard state */
@@ -62,15 +62,10 @@ static void dos_keyboard_free(void)
          dos_key_state[i][j] = 0;
 }
 
-static void dos_input_poll(void *data)
-{
-   dos_input_t *dos = (dos_input_t*)data;
-
-   if (dos->joypad)
-      dos->joypad->poll();
-}
-
-static int16_t dos_input_state(void *data,
+static int16_t dos_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
@@ -87,7 +82,7 @@ static int16_t dos_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = dos->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -108,7 +103,7 @@ static int16_t dos_input_state(void *data,
             {
                if (
                      button_is_pressed(
-                        dos->joypad, joypad_info, binds[port],
+                        joypad, joypad_info, binds[port],
                         port, id)
                      || dos_keyboard_port_input_pressed(binds[port], id)
                   )
@@ -129,9 +124,6 @@ static void dos_input_free_input(void *data)
 {
    dos_input_t *dos = (dos_input_t*)data;
 
-   if (dos && dos->joypad)
-      dos->joypad->destroy();
-
    dos_keyboard_free();
 
    if (data)
@@ -147,58 +139,25 @@ static void* dos_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dos);
 
-   dos->joypad = input_joypad_init_driver(joypad_driver, dos);
-
    return dos;
 }
 
 static uint64_t dos_input_get_capabilities(void *data)
 {
-   uint64_t caps = 0;
-
-   caps |= UINT64_C(1) << RETRO_DEVICE_JOYPAD;
-
-   return caps;
-}
-
-static const input_device_driver_t *dos_input_get_joypad_driver(void *data)
-{
-   dos_input_t *dos = (dos_input_t*)data;
-   if (dos)
-      return dos->joypad;
-   return NULL;
-}
-
-static void dos_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
-static bool dos_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   (void)data;
-   (void)port;
-   (void)effect;
-   (void)strength;
-
-   return false;
+   return UINT64_C(1) << RETRO_DEVICE_JOYPAD;
 }
 
 input_driver_t input_dos = {
    dos_input_init,
-   dos_input_poll,
+   NULL,                         /* poll */
    dos_input_state,
    dos_input_free_input,
    NULL,
    NULL,
    dos_input_get_capabilities,
    "dos",
-   dos_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
-   dos_input_set_rumble,
-   dos_input_get_joypad_driver,
-   NULL,
+   NULL,                         /* set_rumble */
    false
 };

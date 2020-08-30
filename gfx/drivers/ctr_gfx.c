@@ -482,7 +482,7 @@ static void* ctr_init(const video_info_t* video,
 
    if (input && input_data)
    {
-      ctrinput             = input_ctr.init(settings->arrays.input_joypad_driver);
+      ctrinput             = input_driver_init_wrap(&input_ctr, settings->arrays.input_joypad_driver);
       *input               = ctrinput ? &input_ctr : NULL;
       *input_data          = ctrinput;
    }

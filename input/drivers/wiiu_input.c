@@ -41,7 +41,7 @@ static bool keyboard_state[RETROK_LAST] = { 0 };
 
 typedef struct wiiu_input
 {
-   const input_device_driver_t *joypad;
+   void *empty;
 } wiiu_input_t;
 
 static void kb_connection_callback(KBDKeyEvent *key)
@@ -94,35 +94,32 @@ static void kb_key_callback(KBDKeyEvent *key)
    hard to get working nicely.
 */
 
-static int16_t wiiu_pointer_device_state(wiiu_input_t* wiiu, unsigned id)
+static int16_t wiiu_pointer_device_state(
+      wiiu_input_t* wiiu,
+      const input_device_driver_t *joypad,
+      unsigned id)
 {
 	switch (id)
 	{
 		case RETRO_DEVICE_ID_POINTER_PRESSED:
 		{
 			input_bits_t state;
-			wiiu->joypad->get_buttons(0, &state);
+			joypad->get_buttons(0, &state);
 			return BIT256_GET(state, VPAD_BUTTON_TOUCH_BIT) ? 1 : 0;
 		}
 		case RETRO_DEVICE_ID_POINTER_X:
-			return wiiu->joypad->axis(0, 0xFFFF0004UL);
+			return joypad->axis(0, 0xFFFF0004UL);
 		case RETRO_DEVICE_ID_POINTER_Y:
-			return wiiu->joypad->axis(0, 0xFFFF0005UL);
+			return joypad->axis(0, 0xFFFF0005UL);
 	}
 
 	return 0;
 }
 
-static void wiiu_input_poll(void *data)
-{
-   wiiu_input_t *wiiu = (wiiu_input_t*)data;
-
-   if (wiiu)
-      if (wiiu->joypad)
-         wiiu->joypad->poll();
-}
-
-static int16_t wiiu_input_state(void *data,
+static int16_t wiiu_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
@@ -137,12 +134,12 @@ static int16_t wiiu_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return wiiu->joypad->state(
+            return joypad->state(
                   joypad_info, binds[port], port);
 
          if (binds[port][id].valid)
             return button_is_pressed(
-                  wiiu->joypad,
+                  joypad,
                   joypad_info, binds[port], port, id);
          break;
       case RETRO_DEVICE_KEYBOARD:
@@ -153,7 +150,7 @@ static int16_t wiiu_input_state(void *data,
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return wiiu_pointer_device_state(wiiu, id);
+         return wiiu_pointer_device_state(wiiu, joypad, id);
    }
 
    return 0;
@@ -162,9 +159,6 @@ static int16_t wiiu_input_state(void *data,
 static void wiiu_input_free_input(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
-
-   if (wiiu && wiiu->joypad)
-      wiiu->joypad->destroy();
 
    KBDTeardown();
 
@@ -182,9 +176,6 @@ static void* wiiu_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_wiiu);
 
-   DEBUG_STR(joypad_driver);
-   wiiu->joypad = input_joypad_init_driver(joypad_driver, wiiu);
-
    return wiiu;
 }
 
@@ -196,36 +187,17 @@ static uint64_t wiiu_input_get_capabilities(void *data)
           (1 << RETRO_DEVICE_POINTER);
 }
 
-static const input_device_driver_t *wiiu_input_get_joypad_driver(void *data)
-{
-   wiiu_input_t *wiiu = (wiiu_input_t*)data;
-   if (wiiu)
-      return wiiu->joypad;
-   return NULL;
-}
-
-static void wiiu_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
-static bool wiiu_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength) { return false; }
-
 input_driver_t input_wiiu = {
    wiiu_input_init,
-   wiiu_input_poll,
+   NULL,                            /* poll */
    wiiu_input_state,
    wiiu_input_free_input,
    NULL,
    NULL,
    wiiu_input_get_capabilities,
    "wiiu",
-   wiiu_input_grab_mouse,
+   NULL,                            /* grab_mouse */
    NULL,
-   wiiu_input_set_rumble,
-   wiiu_input_get_joypad_driver,
-   NULL,
+   NULL,                            /* set_rumble */
    false
 };

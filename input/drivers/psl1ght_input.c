@@ -51,7 +51,6 @@ typedef struct
 
 typedef struct ps3_input
 {
-   const input_device_driver_t *joypad;
    int connected[MAX_KB_PORT_NUM];
 #ifdef HAVE_MOUSE
    unsigned mice_connected;
@@ -89,10 +88,8 @@ static void ps3_input_poll(void *data)
    ps3_input_t *ps3 = (ps3_input_t*)data;
    KbData last_kbdata[MAX_KB_PORT_NUM];
 
-   if (ps3 && ps3->joypad)
-      ps3->joypad->poll();
-
    ioKbGetInfo(&ps3->kbinfo);
+
    for (i = 0; i < MAX_KB_PORT_NUM; i++)
    {
       if (ps3->kbinfo.status[i] && !ps3->connected[i])
@@ -125,9 +122,11 @@ static void ps3_input_poll(void *data)
 
       for (j = 0; j < last_kbdata[i].nb_keycode; j++)
       {
-         int code = last_kbdata[i].keycode[j];
+         unsigned k;
+         int code            = last_kbdata[i].keycode[j];
          int newly_depressed = 1;
-         for (int k = 0; k < MAX_KB_PORT_NUM; i++)
+
+         for (k = 0; k < MAX_KB_PORT_NUM; i++)
             if (ps3->kbdata[i].keycode[k] == code)
             {
                newly_depressed = 0;
@@ -143,14 +142,19 @@ static void ps3_input_poll(void *data)
 
       for (j = 0; j < ps3->kbdata[i].nb_keycode; j++)
       {
-         int code = ps3->kbdata[i].keycode[j];
+         unsigned k;
+         int code          = ps3->kbdata[i].keycode[j];
          int newly_pressed = 1;
-         for (int k = 0; k < MAX_KB_PORT_NUM; i++)
+
+         for (k = 0; k < MAX_KB_PORT_NUM; i++)
+         {
             if (last_kbdata[i].keycode[k] == code)
             {
                newly_pressed = 0;
                break;
             }
+         }
+
          if (newly_pressed)
          {
             unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(code);
@@ -203,7 +207,10 @@ static bool psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
    return false;
 }
 
-static int16_t ps3_input_state(void *data,
+static int16_t ps3_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
@@ -220,14 +227,15 @@ static int16_t ps3_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = ps3->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
                {
-                  if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][i].key))
+                  if (psl1ght_keyboard_port_input_pressed(
+                           ps3, binds[port][i].key))
                      ret |= (1 << i);
                }
             }
@@ -239,7 +247,7 @@ static int16_t ps3_input_state(void *data,
             if (binds[port][id].valid)
             {
                if (
-                     button_is_pressed(ps3->joypad, joypad_info, binds[port],
+                     button_is_pressed(joypad, joypad_info, binds[port],
                         port, id))
                   return 1;
                else if (psl1ght_keyboard_port_input_pressed(
@@ -283,8 +291,6 @@ static void* ps3_input_init(const char *joypad_driver)
          ps3_connect_keyboard(ps3, i);
    }
 
-   ps3->joypad = input_joypad_init_driver(joypad_driver, ps3);
-
    return ps3;
 }
 
@@ -306,23 +312,6 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port,
    return false;
 }
 
-static bool ps3_input_set_rumble(void *data, unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength) { return false; }
-
-static const input_device_driver_t *ps3_input_get_joypad_driver(void *data)
-{
-   ps3_input_t *ps3 = (ps3_input_t*)data;
-   if (ps3)
-      return ps3->joypad;
-   return NULL;
-}
-
-static void ps3_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
 input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
@@ -333,11 +322,9 @@ input_driver_t input_ps3 = {
    ps3_input_get_capabilities,
    "ps3",
 
-   ps3_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
-   ps3_input_set_rumble,
-   ps3_input_get_joypad_driver,
-   NULL,
+   NULL,                         /* set_rumble */
    false
 };
 

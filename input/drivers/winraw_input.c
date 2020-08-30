@@ -39,7 +39,6 @@ typedef struct
    winraw_keyboard_t keyboard;
    HWND window;
    winraw_mouse_t *mice;
-   const input_device_driver_t *joypad;
    bool mouse_grab;
 } winraw_input_t;
 
@@ -510,8 +509,6 @@ static void *winraw_init(const char *joypad_driver)
    if (!winraw_set_mouse_input(wr->window, false))
       goto error;
 
-   wr->joypad = input_joypad_init_driver(joypad_driver, wr);
-
    return wr;
 
 error:
@@ -558,14 +555,12 @@ static void winraw_poll(void *d)
       wr->mice[i].btn_b4          = g_mice[i].btn_b4;
       wr->mice[i].btn_b5          = g_mice[i].btn_b5;
    }
-
-   if (wr->joypad)
-      wr->joypad->poll();
 }
 
 static int16_t winraw_input_lightgun_state(
       winraw_input_t *wr,
       winraw_mouse_t *mouse,
+      const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
@@ -582,20 +577,23 @@ static int16_t winraw_input_lightgun_state(
                [id].mbutton))
          return 1;
       return button_is_pressed(
-            wr->joypad, joypad_info, binds[port],
+            joypad, joypad_info, binds[port],
             port, id);
    }
    return 0;
 }
 
-static int16_t winraw_input_state(void *d,
+static int16_t winraw_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    settings_t *settings  = NULL;
    winraw_mouse_t *mouse = NULL;
-   winraw_input_t *wr    = (winraw_input_t*)d;
+   winraw_input_t *wr    = (winraw_input_t*)data;
    bool process_mouse    = 
          (device == RETRO_DEVICE_JOYPAD)
       || (device == RETRO_DEVICE_MOUSE)
@@ -625,7 +623,7 @@ static int16_t winraw_input_state(void *d,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = wr->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
             if (mouse)
@@ -663,7 +661,7 @@ static int16_t winraw_input_state(void *d,
                if (binds[port][id].valid)
                {
                   if (button_is_pressed(
-                        wr->joypad,
+                        joypad,
                         joypad_info, binds[port], port, id))
                      return 1;
                   else if (
@@ -704,37 +702,48 @@ static int16_t winraw_input_state(void *d,
                break;
 				/*buttons*/
 				case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_TRIGGER);
 				case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_RELOAD);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_AUX_A);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_AUX_B);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_AUX_C);
 				case RETRO_DEVICE_ID_LIGHTGUN_START:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_START);
 				case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_SELECT);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_DPAD_UP);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_DPAD_DOWN);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_DPAD_LEFT);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_DPAD_RIGHT);
 				/*deprecated*/
 				case RETRO_DEVICE_ID_LIGHTGUN_X:
@@ -743,7 +752,8 @@ static int16_t winraw_input_state(void *d,
                   return winraw_deprecated_lightgun_state(wr, mouse, port, id);
                break;
 				case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-               return winraw_input_lightgun_state(wr, mouse, joypad_info,
+               return winraw_input_lightgun_state(wr, mouse, joypad,
+                     joypad_info,
                      binds, port, device, idx, RARCH_LIGHTGUN_START);
 			}
 			break;
@@ -756,8 +766,6 @@ static void winraw_free(void *d)
 {
    winraw_input_t *wr = (winraw_input_t*)d;
 
-   if (wr->joypad)
-      wr->joypad->destroy();
    winraw_set_mouse_input(NULL, false);
    winraw_set_keyboard_input(NULL);
    winraw_destroy_window(wr->window);
@@ -793,19 +801,15 @@ static void winraw_grab_mouse(void *d, bool grab)
    wr->mouse_grab = grab;
 }
 
-static bool winraw_set_rumble(void *d, unsigned port,
+static bool winraw_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   winraw_input_t *wr = (winraw_input_t*)d;
-
-   return input_joypad_set_rumble(wr->joypad, port, effect, strength);
-}
-
-static const input_device_driver_t *winraw_get_joypad_driver(void *d)
-{
-   winraw_input_t *wr = (winraw_input_t*)d;
-
-   return wr->joypad;
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
+   return false;
 }
 
 input_driver_t input_winraw = {
@@ -820,7 +824,5 @@ input_driver_t input_winraw = {
    winraw_grab_mouse,
    NULL,
    winraw_set_rumble,
-   winraw_get_joypad_driver,
-   NULL,
    false
 };

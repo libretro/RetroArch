@@ -306,7 +306,7 @@ static void gfx_ctx_qnx_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   void *qnxinput       = input_qnx.init(joypad_name);
+   void *qnxinput       = input_driver_init_wrap(&input_qnx, joypad_name);
 
    *input               = qnxinput ? &input_qnx : NULL;
    *input_data          = qnxinput;

@@ -114,9 +114,9 @@ static void *xshm_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      void *xinput                           = NULL;
       settings_t *settings                   = config_get_ptr();
-      xinput = input_x.init(settings->arrays.input_joypad_driver);
+      void *xinput                           = input_driver_init_wrap(&input_x, 
+            settings->arrays.input_joypad_driver);
       if (xinput)
       {
          *input = &input_x;

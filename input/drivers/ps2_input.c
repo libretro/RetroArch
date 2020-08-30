@@ -28,18 +28,13 @@
 
 typedef struct ps2_input
 {
-   const input_device_driver_t *joypad;
+   void *empty;
 } ps2_input_t;
 
-static void ps2_input_poll(void *data)
-{
-   ps2_input_t *ps2 = (ps2_input_t*)data;
-
-   if (ps2 && ps2->joypad)
-      ps2->joypad->poll();
-}
-
-static int16_t ps2_input_state(void *data,
+static int16_t ps2_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
@@ -51,11 +46,11 @@ static int16_t ps2_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return ps2->joypad->state(
+            return joypad->state(
                   joypad_info, binds[port], port);
 
          if (binds[port][id].valid)
-            if (button_is_pressed(ps2->joypad, joypad_info, binds[port],
+            if (button_is_pressed(joypad, joypad_info, binds[port],
                      port, id))
                return 1;
          break;
@@ -70,9 +65,6 @@ static void ps2_input_free_input(void *data)
 {
    ps2_input_t *ps2 = (ps2_input_t*)data;
 
-   if (ps2 && ps2->joypad)
-      ps2->joypad->destroy();
-
    free(data);
 }
 
@@ -81,8 +73,6 @@ static void* ps2_input_initialize(const char *joypad_driver)
    ps2_input_t *ps2 = (ps2_input_t*)calloc(1, sizeof(*ps2));
    if (!ps2)
       return NULL;
-
-   ps2->joypad = input_joypad_init_driver(joypad_driver, ps2);
 
    return ps2;
 }
@@ -94,44 +84,29 @@ static uint64_t ps2_input_get_capabilities(void *data)
    return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 }
 
-static const input_device_driver_t *ps2_input_get_joypad_driver(void *data)
-{
-   ps2_input_t *ps2 = (ps2_input_t*)data;
-   if (ps2)
-      return ps2->joypad;
-   return NULL;
-}
-
-static void ps2_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
-static bool ps2_input_set_rumble(void *data, unsigned port,
+static bool ps2_input_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   ps2_input_t *ps2 = (ps2_input_t*)data;
-
-   if (ps2 && ps2->joypad)
-      return input_joypad_set_rumble(ps2->joypad,
+   if (joypad)
+      return input_joypad_set_rumble(joypad,
          port, effect, strength);
    return false;
 }
 
 input_driver_t input_ps2 = {
    ps2_input_initialize,
-   ps2_input_poll,
+   NULL,                         /* poll */
    ps2_input_state,
    ps2_input_free_input,
    NULL,
    NULL,
    ps2_input_get_capabilities,
    "ps2",
-   ps2_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
    ps2_input_set_rumble,
-   ps2_input_get_joypad_driver,
-   NULL,
    false
 };

@@ -181,6 +181,8 @@ struct input_driver
     * Analog values have same range as a signed 16-bit integer.
     */
    int16_t (*input_state)(void *data,
+         const input_device_driver_t *joypad_data,
+         const input_device_driver_t *sec_joypad_data,
          rarch_joypad_info_t *joypad_info,
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
@@ -196,10 +198,11 @@ struct input_driver
 
    void (*grab_mouse)(void *data, bool state);
    bool (*grab_stdin)(void *data);
-   bool (*set_rumble)(void *data, unsigned port,
+   bool (*set_rumble)(
+         const input_device_driver_t *joypad_data,
+         const input_device_driver_t *sec_joypad_data,
+         unsigned port,
          enum retro_rumble_effect effect, uint16_t state);
-   const input_device_driver_t *(*get_joypad_driver)(void *data);
-   const input_device_driver_t *(*get_sec_joypad_driver)(void *data);
    bool keyboard_mapping_blocked;
 };
 

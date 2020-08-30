@@ -858,7 +858,8 @@ static void *xv_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      xinput = input_x.init(settings->arrays.input_joypad_driver);
+      xinput = input_driver_init_wrap(&input_x,
+            settings->arrays.input_joypad_driver);
       if (xinput)
       {
          *input = &input_x;

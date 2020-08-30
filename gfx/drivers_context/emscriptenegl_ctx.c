@@ -271,7 +271,7 @@ static void gfx_ctx_emscripten_input_driver(void *data,
       const char *name,
       input_driver_t **input, void **input_data)
 {
-   void *rwebinput = input_rwebinput.init(name);
+   void *rwebinput = input_driver_init_wrap(&input_rwebinput, name);
 
    *input      = rwebinput ? &input_rwebinput : NULL;
    *input_data = rwebinput;

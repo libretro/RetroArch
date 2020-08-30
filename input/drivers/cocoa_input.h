@@ -52,11 +52,6 @@ typedef struct
    int16_t mouse_wd;
    int16_t mouse_wl;
    int16_t mouse_wr;
-
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad;
-#endif
-   const input_device_driver_t *joypad;
 } cocoa_input_data_t;
 
 #endif

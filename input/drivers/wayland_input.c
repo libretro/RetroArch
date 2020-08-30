@@ -151,9 +151,6 @@ static void input_wl_poll(void *data)
       wl->mouse.delta_y = 0;
    }
 
-   if (wl->joypad)
-      wl->joypad->poll();
-
    input_wl_touch_pool(wl);
 }
 
@@ -295,7 +292,10 @@ static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
    return 0;
 }
 
-static int16_t input_wl_state(void *data,
+static int16_t input_wl_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
@@ -308,7 +308,7 @@ static int16_t input_wl_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = wl->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -329,7 +329,8 @@ static int16_t input_wl_state(void *data,
             {
                if (binds[port][id].valid)
                {
-                  if (button_is_pressed(wl->joypad, joypad_info, binds[port],
+                  if (button_is_pressed(joypad,
+                           joypad_info, binds[port],
                            port, id))
                      return 1;
                   else if (BIT_GET(wl->key_state,
@@ -371,9 +372,7 @@ static void input_wl_free(void *data)
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
    if (!wl)
       return;
-
-   if (wl->joypad)
-      wl->joypad->destroy();
+   free(data);
 }
 
 bool input_wl_init(void *data, const char *joypad_name)
@@ -384,11 +383,6 @@ bool input_wl_init(void *data, const char *joypad_name)
       return false;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
-
-   wl->joypad = input_joypad_init_driver(joypad_name, wl);
-
-   if (!wl->joypad)
-      return false;
 
    return true;
 }
@@ -412,21 +406,15 @@ static void input_wl_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static bool input_wl_set_rumble(void *data, unsigned port,
+static bool input_wl_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   if (wl && wl->joypad)
-      return input_joypad_set_rumble(wl->joypad, port, effect, strength);
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
    return false;
-}
-
-static const input_device_driver_t *input_wl_get_joypad_driver(void *data)
-{
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   if (!wl)
-      return NULL;
-   return wl->joypad;
 }
 
 input_driver_t input_wayland = {
@@ -441,7 +429,5 @@ input_driver_t input_wayland = {
    input_wl_grab_mouse,
    NULL,
    input_wl_set_rumble,
-   input_wl_get_joypad_driver,
-   NULL,
    false
 };

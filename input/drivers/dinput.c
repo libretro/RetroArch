@@ -187,8 +187,6 @@ static void *dinput_init(const char *joypad_driver)
    win32_set_input_userdata(di);
 #endif
 
-   di->joypad = input_joypad_init_driver(joypad_driver, di);
-
    return di;
 }
 
@@ -280,9 +278,6 @@ static void dinput_poll(void *data)
       di->mouse_x = point.x;
       di->mouse_y = point.y;
    }
-
-   if (di->joypad)
-      di->joypad->poll();
 }
 
 static bool dinput_mouse_button_pressed(
@@ -565,7 +560,10 @@ static int16_t dinput_pointer_state(struct dinput_input *di,
    return 0;
 }
 
-static int16_t dinput_input_state(void *data,
+static int16_t dinput_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
@@ -585,7 +583,7 @@ static int16_t dinput_input_state(void *data,
             if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
             {
                unsigned i;
-               int16_t ret = di->joypad->state(
+               int16_t ret = joypad->state(
                               joypad_info, binds[port], port);
 
                if (settings->uints.input_mouse_index[port] == 0)
@@ -624,7 +622,7 @@ static int16_t dinput_input_state(void *data,
                   if (binds[port][id].valid)
                   {
                      if (button_is_pressed(
-                              di->joypad,
+                              joypad,
                               joypad_info, binds[port], port, id))
                         return 1;
                      else if  (binds[port][id].key < RETROK_LAST
@@ -737,7 +735,7 @@ static int16_t dinput_input_state(void *data,
                   }
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed(di->joypad,
+                     if (button_is_pressed(joypad,
                               joypad_info,
                               binds[port], port, new_id))
                         return 1;
@@ -923,9 +921,7 @@ bool dinput_handle_message(void *data,
 
                /* TODO/FIXME: Don't destroy everything, let's just 
                 * handle new devices gracefully */
-               if (di->joypad)
-                  di->joypad->destroy();
-               di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+               joypad_driver_reinit(di, di->joypad_driver_name);
             }
          }
 #endif
@@ -957,8 +953,6 @@ static void dinput_free(void *data)
 
    /* Prevent a joypad driver to kill our context prematurely. */
    g_dinput_ctx = NULL;
-   if (di->joypad)
-      di->joypad->destroy();
 
 #ifndef _XBOX
    win32_unset_input_userdata();
@@ -977,6 +971,7 @@ static void dinput_free(void *data)
 
    if (di->joypad_driver_name)
       free(di->joypad_driver_name);
+   di->joypad_driver_name = NULL;
 
    free(di);
 
@@ -996,21 +991,15 @@ static void dinput_grab_mouse(void *data, bool state)
    IDirectInputDevice8_Acquire(di->mouse);
 }
 
-static bool dinput_set_rumble(void *data, unsigned port,
+static bool dinput_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   struct dinput_input *di = (struct dinput_input*)data;
-   if (di)
-      return input_joypad_set_rumble(di->joypad, port, effect, strength);
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
    return false;
-}
-
-static const input_device_driver_t *dinput_get_joypad_driver(void *data)
-{
-   struct dinput_input *di = (struct dinput_input*)data;
-   if (!di)
-      return NULL;
-   return di->joypad;
 }
 
 static uint64_t dinput_get_capabilities(void *data)
@@ -1036,11 +1025,8 @@ input_driver_t input_dinput = {
    NULL,
    dinput_get_capabilities,
    "dinput",
-
    dinput_grab_mouse,
    NULL,
    dinput_set_rumble,
-   dinput_get_joypad_driver,
-   NULL,
    false
 };
