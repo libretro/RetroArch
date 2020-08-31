@@ -178,11 +178,11 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
 
-#define AMotionEvent_getButtonState (*p_AMotionEvent_getButtonState)
-
 extern int32_t AMotionEvent_getButtonState(const AInputEvent* motion_event);
 
 static typeof(AMotionEvent_getButtonState) *p_AMotionEvent_getButtonState;
+
+#define AMotionEvent_getButtonState (*p_AMotionEvent_getButtonState)
 
 #ifdef HAVE_DYNAMIC
 static void *libandroid_handle;
