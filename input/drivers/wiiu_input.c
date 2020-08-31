@@ -90,32 +90,6 @@ static void kb_key_callback(KBDKeyEvent *key)
          RETRO_DEVICE_KEYBOARD);
 }
 
-/* TODO: emulate a relative mouse. This is suprisingly
-   hard to get working nicely.
-*/
-
-static int16_t wiiu_pointer_device_state(
-      wiiu_input_t* wiiu,
-      const input_device_driver_t *joypad,
-      unsigned id)
-{
-	switch (id)
-	{
-		case RETRO_DEVICE_ID_POINTER_PRESSED:
-		{
-			input_bits_t state;
-			joypad->get_buttons(0, &state);
-			return BIT256_GET(state, VPAD_BUTTON_TOUCH_BIT) ? 1 : 0;
-		}
-		case RETRO_DEVICE_ID_POINTER_X:
-			return joypad->axis(0, 0xFFFF0004UL);
-		case RETRO_DEVICE_ID_POINTER_Y:
-			return joypad->axis(0, 0xFFFF0005UL);
-	}
-
-	return 0;
-}
-
 static int16_t wiiu_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -153,7 +127,23 @@ static int16_t wiiu_input_state(
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return wiiu_pointer_device_state(wiiu, joypad, id);
+         /* TODO: Emulate a relative mouse. 
+          * This is suprisingly hard to get working nicely.
+            */
+         switch (id)
+         {
+            case RETRO_DEVICE_ID_POINTER_PRESSED:
+               {
+                  input_bits_t state;
+                  joypad->get_buttons(0, &state);
+                  return BIT256_GET(state, VPAD_BUTTON_TOUCH_BIT) ? 1 : 0;
+               }
+            case RETRO_DEVICE_ID_POINTER_X:
+               return joypad->axis(0, 0xFFFF0004UL);
+            case RETRO_DEVICE_ID_POINTER_Y:
+               return joypad->axis(0, 0xFFFF0005UL);
+         }
+         break;
    }
 
    return 0;
@@ -174,8 +164,10 @@ static void* wiiu_input_init(const char *joypad_driver)
    if (!wiiu)
       return NULL;
 
-   KBDSetup(&kb_connection_callback,
-         &kb_disconnection_callback,&kb_key_callback);
+   KBDSetup(
+         &kb_connection_callback,
+         &kb_disconnection_callback,
+         &kb_key_callback);
 
    input_keymaps_init_keyboard_lut(rarch_key_map_wiiu);
 

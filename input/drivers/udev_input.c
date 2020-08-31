@@ -1090,17 +1090,15 @@ static int16_t udev_input_state(
          return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
 
       case RETRO_DEVICE_MOUSE:
-         return udev_mouse_state(udev, port, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return udev_mouse_state(udev, port, id, true);
+         return udev_mouse_state(udev, port, id, 
+               device == RARCH_DEVICE_MOUSE_SCREEN);
 
       case RETRO_DEVICE_POINTER:
-         if (idx == 0) /* multi-touch unsupported (for now) */
-            return udev_pointer_state(udev, port, id, false);
-         break;
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0) /* multi-touch unsupported (for now) */
-            return udev_pointer_state(udev, port, id, true);
+            return udev_pointer_state(udev, port, id,
+                  device == RARCH_DEVICE_POINTER_SCREEN);
          break;
 
       case RETRO_DEVICE_LIGHTGUN:
@@ -1112,7 +1110,7 @@ static int16_t udev_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                return udev_lightgun_aiming_state( udev, port, id );
 
-            /*buttons*/
+               /*buttons*/
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return udev_input_lightgun_state(udev, joypad,
                      joypad_info,
@@ -1179,7 +1177,7 @@ static int16_t udev_input_state(
                      binds,
                      keyboard_mapping_blocked,
                      port, device, idx, RARCH_LIGHTGUN_DPAD_RIGHT);
-            /*deprecated*/
+               /*deprecated*/
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                {
                   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
@@ -1375,8 +1373,6 @@ error:
 
 static uint64_t udev_input_get_capabilities(void *data)
 {
-   (void)data;
-
    return
       (1 << RETRO_DEVICE_JOYPAD)   |
       (1 << RETRO_DEVICE_ANALOG)   |

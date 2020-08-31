@@ -86,102 +86,6 @@ static void cocoa_input_poll(void *data)
    }
 }
 
-static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
-      unsigned id)
-{
-  int16_t val;
-  switch (id)
-  {
-     case RETRO_DEVICE_ID_MOUSE_X:
-        val = apple->window_pos_x - apple->mouse_x_last;
-        apple->mouse_x_last = apple->window_pos_x;
-        return val;
-     case RETRO_DEVICE_ID_MOUSE_Y:
-        val = apple->window_pos_y - apple->mouse_y_last;
-        apple->mouse_y_last = apple->window_pos_y;
-        return val;
-     case RETRO_DEVICE_ID_MOUSE_LEFT:
-          return apple->mouse_buttons & 1;
-     case RETRO_DEVICE_ID_MOUSE_RIGHT:
-          return apple->mouse_buttons & 2;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-          return apple->mouse_wu;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-          return apple->mouse_wd;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-          return apple->mouse_wl;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-          return apple->mouse_wr;
-  }
-
-  return 0;
-}
-
-static int16_t cocoa_mouse_state_screen(cocoa_input_data_t *apple,
-                                        unsigned id)
-{
-   int16_t val;
-#ifndef IOS
-   float   backing_scale_factor = get_backing_scale_factor();
-#endif
-
-    switch (id)
-    {
-        case RETRO_DEVICE_ID_MOUSE_X:
-            val = apple->window_pos_x;
-            break;
-        case RETRO_DEVICE_ID_MOUSE_Y:
-            val = apple->window_pos_y;
-            break;
-        default:
-            return cocoa_mouse_state(apple, id);
-    }
-
-#ifndef IOS
-    val *= backing_scale_factor;
-#endif
-    return val;
-}
-
-static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
-      unsigned device, unsigned idx, unsigned id)
-{
-   const bool want_full = (device == RARCH_DEVICE_POINTER_SCREEN);
-
-   if (idx < apple->touch_count && (idx < MAX_TOUCHES))
-   {
-      int16_t x, y;
-      const cocoa_touch_data_t *touch = (const cocoa_touch_data_t *)
-         &apple->touches[idx];
-
-       if (!touch)
-           return 0;
-
-      x = touch->fixed_x;
-      y = touch->fixed_y;
-
-      if (want_full)
-      {
-         x = touch->full_x;
-         y = touch->full_y;
-      }
-
-      switch (id)
-      {
-         case RETRO_DEVICE_ID_POINTER_PRESSED:
-            return (x != -0x8000) && (y != -0x8000);
-         case RETRO_DEVICE_ID_POINTER_X:
-            return x;
-         case RETRO_DEVICE_ID_POINTER_Y:
-            return y;
-         case RETRO_DEVICE_ID_POINTER_COUNT:
-            return apple->touch_count;
-      }
-   }
-
-   return 0;
-}
-
 static int16_t cocoa_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -249,12 +153,87 @@ static int16_t cocoa_input_state(
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
-         return cocoa_mouse_state(apple, id);
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return cocoa_mouse_state_screen(apple, id);
+         {
+            int16_t val = 0;
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
+                  {
+#ifdef IOS
+                     return apple->window_pos_x;
+#else
+                     return apple->window_pos_x * get_backing_scale_factor();
+#endif
+                  }
+                  val = apple->window_pos_x - apple->mouse_x_last;
+                  apple->mouse_x_last = apple->window_pos_x;
+                  return val;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
+                  {
+#ifdef IOS
+                     return apple->window_pos_y;
+#else
+                     return apple->window_pos_y * get_backing_scale_factor();
+#endif
+                  }
+                  val = apple->window_pos_y - apple->mouse_y_last;
+                  apple->mouse_y_last = apple->window_pos_y;
+                  return val;
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return apple->mouse_buttons & 1;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return apple->mouse_buttons & 2;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  return apple->mouse_wu;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  return apple->mouse_wd;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+                  return apple->mouse_wl;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+                  return apple->mouse_wr;
+            }
+         }
+         break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return cocoa_pointer_state(apple, device, idx, id);
+         {
+            const bool want_full = (device == RARCH_DEVICE_POINTER_SCREEN);
+
+            if (idx < apple->touch_count && (idx < MAX_TOUCHES))
+            {
+               int16_t x, y;
+               const cocoa_touch_data_t *touch = (const cocoa_touch_data_t *)
+                  &apple->touches[idx];
+
+               if (!touch)
+                  return 0;
+
+               x = touch->fixed_x;
+               y = touch->fixed_y;
+
+               if (want_full)
+               {
+                  x = touch->full_x;
+                  y = touch->full_y;
+               }
+
+               switch (id)
+               {
+                  case RETRO_DEVICE_ID_POINTER_PRESSED:
+                     return (x != -0x8000) && (y != -0x8000);
+                  case RETRO_DEVICE_ID_POINTER_X:
+                     return x;
+                  case RETRO_DEVICE_ID_POINTER_Y:
+                     return y;
+                  case RETRO_DEVICE_ID_POINTER_COUNT:
+                     return apple->touch_count;
+               }
+            }
+         }
+         break;
    }
 
    return 0;
@@ -292,8 +271,6 @@ static bool cocoa_input_set_rumble(
 
 static uint64_t cocoa_input_get_capabilities(void *data)
 {
-   (void)data;
-
    return
       (1 << RETRO_DEVICE_JOYPAD)   |
       (1 << RETRO_DEVICE_MOUSE)    |

@@ -55,7 +55,6 @@
  * fix game focus toggle */
 
 #ifdef VITA
-
 #include "../input_keymaps.h"
 
 uint8_t modifier_lut[VITA_NUM_MODIFIERS][2] =
@@ -91,7 +90,7 @@ typedef struct psp_input
 
 static void vita_input_poll(void *data)
 {
-   psp_input_t *psp = (psp_input_t*)data;
+   psp_input_t *psp     = (psp_input_t*)data;
    unsigned int i       = 0;
    int key_sym          = 0;
    unsigned key_code    = 0;
@@ -99,7 +98,6 @@ static void vita_input_poll(void *data)
    uint16_t mod         = 0;
    uint8_t modifiers[2] = { 0, 0 };
    bool key_held        = false;
-   int numReports       = 0;
    int mouse_velocity_x = 0;
    int mouse_velocity_y = 0;
    SceHidKeyboardReport k_reports[SCE_HID_MAX_REPORT];
@@ -107,7 +105,7 @@ static void vita_input_poll(void *data)
 
    if (psp->keyboard_hid_handle > 0)
    {
-      numReports = sceHidKeyboardRead(
+      int numReports = sceHidKeyboardRead(
             psp->keyboard_hid_handle,
             (SceHidKeyboardReport**)&k_reports, SCE_HID_MAX_REPORT);
 
@@ -135,9 +133,9 @@ static void vita_input_poll(void *data)
 
          for (i = 0; i < VITA_NUM_MODIFIERS; i++)
          {
-            key_sym = (int) modifier_lut[i][0];
-            mod_code = modifier_lut[i][1];
-            key_code = input_keymaps_translate_keysym_to_rk(key_sym);
+            key_sym     = (int)modifier_lut[i][0];
+            mod_code    = modifier_lut[i][1];
+            key_code    = input_keymaps_translate_keysym_to_rk(key_sym);
             if (i < 8)
                key_held = (modifiers[0] & mod_code);
             else
@@ -189,7 +187,7 @@ static void vita_input_poll(void *data)
 
    if (psp->mouse_hid_handle > 0)
    {
-      numReports = sceHidMouseRead(psp->mouse_hid_handle,
+      int numReports = sceHidMouseRead(psp->mouse_hid_handle,
             (SceHidMouseReport**)&m_reports, SCE_HID_MAX_REPORT);
 
       if (numReports > 0)
@@ -219,50 +217,19 @@ static void vita_input_poll(void *data)
       }
    }
 
-   psp->mouse_x_delta = mouse_velocity_x;
-   psp->mouse_y_delta = mouse_velocity_y;
-   psp->mouse_x += mouse_velocity_x;
-   psp->mouse_y += mouse_velocity_y;
+   psp->mouse_x_delta  = mouse_velocity_x;
+   psp->mouse_y_delta  = mouse_velocity_y;
+   psp->mouse_x       += mouse_velocity_x;
+   psp->mouse_y       += mouse_velocity_y;
    if (psp->mouse_x < 0)
-      psp->mouse_x = 0;
+      psp->mouse_x     = 0;
    else if (psp->mouse_x > MOUSE_MAX_X)
-      psp->mouse_x = MOUSE_MAX_X;
+      psp->mouse_x     = MOUSE_MAX_X;
 
    if (psp->mouse_y < 0)
-      psp->mouse_y = 0;
+      psp->mouse_y     = 0;
    else if (psp->mouse_y > MOUSE_MAX_Y)
-      psp->mouse_y = MOUSE_MAX_Y;
-}
-
-static int16_t psp_input_mouse_state(
-      psp_input_t *psp, unsigned id, bool screen)
-{
-   int val = 0;
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return psp->mouse_button_left;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return psp->mouse_button_right;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return psp->mouse_button_middle;
-      case RETRO_DEVICE_ID_MOUSE_X:
-         if (screen)
-            return psp->mouse_x;
-
-         val = psp->mouse_x_delta;
-         psp->mouse_x_delta = 0; /* flush delta after it has been read */
-         break;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         if (screen)
-            return psp->mouse_y;
-
-         val = psp->mouse_y_delta;
-         psp->mouse_y_delta = 0; /* flush delta after it has been read */
-         break;
-   }
-
-   return val;
+      psp->mouse_y     = MOUSE_MAX_Y;
 }
 #else
 typedef struct psp_input
@@ -307,13 +274,39 @@ static int16_t psp_input_state(
          break;
 #ifdef VITA
       case RETRO_DEVICE_KEYBOARD:
-         return ((id < RETROK_LAST) && psp->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
-         break;
+         return ((id < RETROK_LAST) && 
+               psp->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
       case RETRO_DEVICE_MOUSE:
-         return psp_input_mouse_state(psp, id, false);
-         break;
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return psp_input_mouse_state(psp, id, true);
+         {
+            bool screen = device == RARCH_DEVICE_MOUSE_SCREEN;
+            int val     = 0;
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return psp->mouse_button_left;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return psp->mouse_button_right;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return psp->mouse_button_middle;
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  if (screen)
+                     return psp->mouse_x;
+
+                  val                = psp->mouse_x_delta;
+                  psp->mouse_x_delta = 0;
+                  /* flush delta after it has been read */
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  if (screen)
+                     return psp->mouse_y;
+                  val                = psp->mouse_y_delta;
+                  psp->mouse_y_delta = 0;
+                  /* flush delta after it has been read */
+                  break;
+            }
+            return val;
+         }
          break;
 #endif
    }

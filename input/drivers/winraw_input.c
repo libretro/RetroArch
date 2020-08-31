@@ -79,21 +79,15 @@ error:
 
 static void winraw_destroy_window(HWND wnd)
 {
-   BOOL r;
-
    if (!wnd)
       return;
 
-   r = DestroyWindow(wnd);
-
-   if (!r)
+   if (!DestroyWindow(wnd))
    {
       RARCH_WARN("[WINRAW]: DestroyWindow failed with error %lu.\n", GetLastError());
    }
 
-   r = UnregisterClassA("winraw-input", NULL);
-
-   if (!r)
+   if (!UnregisterClassA("winraw-input", NULL))
    {
       RARCH_WARN("[WINRAW]: UnregisterClassA failed with error %lu.\n", GetLastError());
    }
@@ -117,7 +111,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
    char name[256];
    UINT name_size = sizeof(name);
 
-   name[0] = '\0';
+   name[0]        = '\0';
 
    for (i = 0; i < mouse_cnt; ++i)
    {
@@ -237,7 +231,7 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
             && (res_x <= edge_detect)
             && (res_y <= edge_detect);
 
-   switch ( id )
+   switch (id)
    {
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
          if (inside)
@@ -256,7 +250,7 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
    return 0;
 }
 
-static int16_t winraw_mouse_state(winraw_input_t *wr,
+static int16_t winraw_mouse_state(
       winraw_mouse_t *mouse,
       unsigned port, bool abs, unsigned id)
 {
@@ -338,22 +332,6 @@ static void winraw_init_mouse_xy_mapping(void)
    }
 }
 
-static int16_t winraw_deprecated_lightgun_state(
-      winraw_input_t *wr,
-      winraw_mouse_t *mouse,
-      unsigned port, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return mouse->dlt_x;
-      case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return mouse->dlt_y;
-   }
-
-   return 0;
-}
-
 static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
@@ -431,7 +409,8 @@ static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
    }
 }
 
-static LRESULT CALLBACK winraw_callback(HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
+static LRESULT CALLBACK winraw_callback(
+      HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
 {
    unsigned i;
    static uint8_t data[1024];
@@ -693,9 +672,8 @@ static int16_t winraw_input_state(
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (mouse)
-            return winraw_mouse_state(wr, mouse, port,
-                  (device == RARCH_DEVICE_MOUSE_SCREEN) 
-                  ? true : false,
+            return winraw_mouse_state(mouse, port,
+                  (device == RARCH_DEVICE_MOUSE_SCREEN),
                   id);
          break;
       case RETRO_DEVICE_LIGHTGUN:
@@ -779,7 +757,15 @@ static int16_t winraw_input_state(
 				case RETRO_DEVICE_ID_LIGHTGUN_X:
 				case RETRO_DEVICE_ID_LIGHTGUN_Y:
                if (mouse)
-                  return winraw_deprecated_lightgun_state(wr, mouse, port, id);
+               {
+                  switch (id)
+                  {
+                     case RETRO_DEVICE_ID_LIGHTGUN_X:
+                        return mouse->dlt_x;
+                     case RETRO_DEVICE_ID_LIGHTGUN_Y:
+                        return mouse->dlt_y;
+                  }
+               }
                break;
 				case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                return winraw_input_lightgun_state(wr, mouse, joypad,

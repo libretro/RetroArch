@@ -203,8 +203,8 @@ static void linuxraw_input_poll(void *data)
       if (c == KEY_C && (linuxraw->state[KEY_LEFTCTRL] || linuxraw->state[KEY_RIGHTCTRL]))
          kill(getpid(), SIGINT);
 
-      pressed = !(c & 0x80);
-      c &= ~0x80;
+      pressed  = !(c & 0x80);
+      c       &= ~0x80;
 
       /* ignore extended scancodes */
       if (!c)

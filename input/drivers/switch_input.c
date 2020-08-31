@@ -277,97 +277,6 @@ static void switch_input_poll(void *data)
 
    sw->mouse_wheel = mouse_pos.scrollVelocityY;
 }
-
-static int16_t switch_pointer_screen_device_state(switch_input_t *sw,
-      unsigned id, unsigned idx)
-{
-   if (idx >= MULTITOUCH_LIMIT)
-      return 0;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return sw->touch_state[idx];
-      case RETRO_DEVICE_ID_POINTER_X:
-         return sw->touch_x_screen[idx];
-      case RETRO_DEVICE_ID_POINTER_Y:
-         return sw->touch_y_screen[idx];
-   }
-
-   return 0;
-}
-
-static int16_t switch_pointer_device_state(
-      switch_input_t *sw,
-      unsigned id, unsigned idx)
-{
-   if (idx >= MULTITOUCH_LIMIT)
-      return 0;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return sw->touch_state[idx];
-      case RETRO_DEVICE_ID_POINTER_X:
-         return sw->touch_x_viewport[idx];
-      case RETRO_DEVICE_ID_POINTER_Y:
-         return sw->touch_y_viewport[idx];
-   }
-
-   return 0;
-}
-
-static int16_t switch_input_mouse_state(
-      switch_input_t *sw, unsigned id, bool screen)
-{
-   int val = 0;
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         val = sw->mouse_button_left;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         val = sw->mouse_button_right;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         val = sw->mouse_button_middle;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_X:
-         if (screen)
-            val = sw->mouse_x;
-         else
-         {
-            val = sw->mouse_x_delta;
-            sw->mouse_x_delta = 0; /* flush delta after it has been read */
-         }
-         break;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         if (screen)
-            val = sw->mouse_y;
-         else
-         {
-            val = sw->mouse_y_delta;
-            sw->mouse_y_delta = 0; /* flush delta after it has been read */
-         }
-         break;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         if (sw->mouse_wheel > 0)
-         {
-            val = sw->mouse_wheel;
-            sw->mouse_wheel = 0;
-         }
-         break;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         if (sw->mouse_wheel < 0)
-         {
-            val = sw->mouse_wheel;
-            sw->mouse_wheel = 0;
-         }
-         break;
-   }
-
-   return val;
-}
 #endif
 
 static int16_t switch_input_state(
@@ -402,15 +311,84 @@ static int16_t switch_input_state(
          break;
 #ifdef HAVE_LIBNX
       case RETRO_DEVICE_KEYBOARD:
-         return ((id < RETROK_LAST) && sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
+         return ((id < RETROK_LAST) && 
+               sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
       case RETRO_DEVICE_MOUSE:
-         return switch_input_mouse_state(sw, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return switch_input_mouse_state(sw, id, true);
+         {
+            int16_t val = 0;
+            bool screen = (device == RARCH_DEVICE_MOUSE_SCREEN);
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return sw->mouse_button_left;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return sw->mouse_button_right;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return sw->mouse_button_middle;
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  if (screen)
+                     return sw->mouse_x;
+
+                  val = sw->mouse_x_delta;
+                  sw->mouse_x_delta = 0;
+                  /* flush delta after it has been read */
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  if (screen)
+                     return sw->mouse_y;
+
+                  val = sw->mouse_y_delta;
+                  sw->mouse_y_delta = 0;
+                  /* flush delta after it has been read */
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  if (sw->mouse_wheel > 0)
+                  {
+                     val = sw->mouse_wheel;
+                     sw->mouse_wheel = 0;
+                  }
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  if (sw->mouse_wheel < 0)
+                  {
+                     val = sw->mouse_wheel;
+                     sw->mouse_wheel = 0;
+                  }
+                  break;
+            }
+
+            return val;
+         }
+         break;
       case RETRO_DEVICE_POINTER:
-         return switch_pointer_device_state(sw, id, idx);
+         if (idx < MULTITOUCH_LIMIT)
+         {
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return sw->touch_state[idx];
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return sw->touch_x_viewport[idx];
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return sw->touch_y_viewport[idx];
+            }
+         }
+         break;
       case RARCH_DEVICE_POINTER_SCREEN:
-         return switch_pointer_screen_device_state(sw, id, idx);
+         if (idx < MULTITOUCH_LIMIT)
+         {
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return sw->touch_state[idx];
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return sw->touch_x_screen[idx];
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return sw->touch_y_screen[idx];
+            }
+         }
+         break;
 #endif
    }
 

@@ -112,12 +112,16 @@ static void ps3_input_poll(void *data)
       /* Set keyboard modifier based on shift,ctrl and alt state */
       uint16_t mod          = 0;
 
-      if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_alt || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_alt)
+      if (     ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_alt 
+            || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_alt)
          mod |= RETROKMOD_ALT;
-      if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_ctrl || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_ctrl)
+      if (     ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_ctrl 
+            || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_ctrl)
          mod |= RETROKMOD_CTRL;
-      if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_shift || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_shift)
+      if (     ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_shift
+            || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_shift)
          mod |= RETROKMOD_SHIFT;
+
       /* TODO: windows keys.  */
 
       for (j = 0; j < last_kbdata[i].nb_keycode; j++)
@@ -127,11 +131,13 @@ static void ps3_input_poll(void *data)
          int newly_depressed = 1;
 
          for (k = 0; k < MAX_KB_PORT_NUM; i++)
+         {
             if (ps3->kbdata[i].keycode[k] == code)
             {
                newly_depressed = 0;
                break;
             }
+         }
 
          if (newly_depressed)
          {
@@ -164,12 +170,8 @@ static void ps3_input_poll(void *data)
    }
 }
 
-#ifdef HAVE_MOUSE
-static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
-      unsigned user, unsigned id) { }
-#endif
-
-static bool psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
+static bool psl1ght_keyboard_port_input_pressed(
+      ps3_input_t *ps3, unsigned id)
 {
    int code;
    unsigned i, j;
@@ -183,8 +185,8 @@ static bool psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
       {
          for (j = 0; j < MAX_KB_PORT_NUM; j++)
          {
-            if (ps3->kbinfo.status[j] && (ps3->kbdata[j].mkey._KbMkeyU.mkeys &
-                     (1 << i)))
+            if (ps3->kbinfo.status[j] 
+                  && (ps3->kbdata[j].mkey._KbMkeyU.mkeys & (1 << i)))
                return true;
          }
          return false;
@@ -197,11 +199,13 @@ static bool psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
    for (i = 0; i < MAX_KB_PORT_NUM; i++)
    {
       if (ps3->kbinfo.status[i])
+      {
          for (j = 0; j < ps3->kbdata[i].nb_keycode; j++)
          {
             if (ps3->kbdata[i].keycode[j] == code)
                return true;
          }
+      }
    }
 
    return false;

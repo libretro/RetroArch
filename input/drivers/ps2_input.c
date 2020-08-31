@@ -82,8 +82,6 @@ static void* ps2_input_initialize(const char *joypad_driver)
 
 static uint64_t ps2_input_get_capabilities(void *data)
 {
-   (void)data;
-
    return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 }
 

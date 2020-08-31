@@ -40,14 +40,6 @@ typedef struct dos_input
 /* TODO/FIXME - static globals */
 static uint16_t dos_key_state[DEFAULT_MAX_PADS+1][MAX_KEYS];
 
-static bool dos_keyboard_port_input_pressed(
-      const struct retro_keybind *binds, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-      return dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[binds[id].key]];
-   return false;
-}
-
 uint16_t *dos_keyboard_state_get(unsigned port)
 {
    return dos_key_state[port];
@@ -74,7 +66,7 @@ static int16_t dos_input_state(
       unsigned idx,
       unsigned id)
 {
-   dos_input_t *dos                   = (dos_input_t*)data;
+   dos_input_t *dos = (dos_input_t*)data;
 
    if (port > 0)
       return 0;
@@ -93,7 +85,8 @@ static int16_t dos_input_state(
                if (binds[port][i].valid)
                {
                   if (id < RARCH_BIND_LIST_END)
-                     if (dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[binds[i].key]])
+                     if (dos_key_state[DOS_KEYBOARD_PORT]
+                           [rarch_keysym_lut[binds[i].key]])
                         ret |= (1 << i);
                }
             }
@@ -108,7 +101,9 @@ static int16_t dos_input_state(
                      button_is_pressed(
                         joypad, joypad_info, binds[port],
                         port, id)
-                     || dos_keyboard_port_input_pressed(binds[port], id)
+                     || (id < RARCH_BIND_LIST_END
+                     && dos_key_state[DOS_KEYBOARD_PORT]
+                     [rarch_keysym_lut[binds[port][id].key]])
                   )
                   return 1;
             }
@@ -116,7 +111,8 @@ static int16_t dos_input_state(
          break;
       case RETRO_DEVICE_KEYBOARD:
          if (id < RARCH_BIND_LIST_END)
-            return (dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[binds[id].key]]);
+            return (dos_key_state[DOS_KEYBOARD_PORT]
+                  [rarch_keysym_lut[binds[id].key]]);
          break;
    }
 

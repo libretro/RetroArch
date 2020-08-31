@@ -35,8 +35,9 @@ static uint64_t state[DEFAULT_MAX_PADS];
 
 static void xenon360_input_poll(void *data)
 {
-   (void)data;
-   for (unsigned i = 0; i < DEFAULT_MAX_PADS; i++)
+   unsigned i;
+
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       struct controller_data_s pad;
       uint64_t *cur_state;

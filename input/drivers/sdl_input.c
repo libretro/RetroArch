@@ -79,105 +79,6 @@ static bool sdl_key_pressed(int key)
    return keymap[sym];
 }
 
-static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return sdl->mouse_l;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return sdl->mouse_r;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return sdl->mouse_wu;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return sdl->mouse_wd;
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return sdl->mouse_x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return sdl->mouse_y;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return sdl->mouse_m;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return sdl->mouse_b4;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return sdl->mouse_b5;
-   }
-
-   return 0;
-}
-
-static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
-      unsigned idx, unsigned id, bool screen)
-{
-   struct video_viewport vp;
-   const int edge_detect       = 32700;
-   bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-
-   if (!(video_driver_translate_coord_viewport_wrap(
-               &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   if (screen)
-   {
-      res_x = res_screen_x;
-      res_y = res_screen_y;
-   }
-
-   inside =    (res_x >= -edge_detect) 
-            && (res_y >= -edge_detect)
-            && (res_x <= edge_detect)
-            && (res_y <= edge_detect);
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_POINTER_X:
-         return res_x;
-      case RETRO_DEVICE_ID_POINTER_Y:
-         return res_y;
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return sdl->mouse_l;
-      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return !inside;
-   }
-
-   return 0;
-}
-
-static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return sdl->mouse_x;
-      case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return sdl->mouse_y;
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return sdl->mouse_l;
-      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
-         return sdl->mouse_m;
-      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
-         return sdl->mouse_r;
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return sdl->mouse_m && sdl->mouse_r;
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return sdl->mouse_m && sdl->mouse_l;
-   }
-
-   return 0;
-}
-
 static int16_t sdl_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -260,23 +161,103 @@ static int16_t sdl_input_state(
          }
          break;
       case RETRO_DEVICE_MOUSE:
-         if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
-            return sdl_mouse_device_state(sdl, id);
-         break;
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
-            return sdl_mouse_device_state(sdl, id);
+         {
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return sdl->mouse_l;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return sdl->mouse_r;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  return sdl->mouse_wu;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  return sdl->mouse_wd;
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return sdl->mouse_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return sdl->mouse_y;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return sdl->mouse_m;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+                  return sdl->mouse_b4;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+                  return sdl->mouse_b5;
+            }
+         }
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
-            return sdl_pointer_device_state(sdl, idx, id,
-                  device == RARCH_DEVICE_POINTER_SCREEN);
+         {
+            struct video_viewport vp;
+            bool screen                 = device == 
+               RARCH_DEVICE_POINTER_SCREEN;
+            const int edge_detect       = 32700;
+            bool inside                 = false;
+            int16_t res_x               = 0;
+            int16_t res_y               = 0;
+            int16_t res_screen_x        = 0;
+            int16_t res_screen_y        = 0;
+
+            vp.x                        = 0;
+            vp.y                        = 0;
+            vp.width                    = 0;
+            vp.height                   = 0;
+            vp.full_width               = 0;
+            vp.full_height              = 0;
+
+            if (video_driver_translate_coord_viewport_wrap(
+                        &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
+                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+            {
+               if (screen)
+               {
+                  res_x = res_screen_x;
+                  res_y = res_screen_y;
+               }
+
+               inside =    (res_x >= -edge_detect) 
+                  && (res_y >= -edge_detect)
+                  && (res_x <= edge_detect)
+                  && (res_y <= edge_detect);
+
+               switch (id)
+               {
+                  case RETRO_DEVICE_ID_POINTER_X:
+                     return res_x;
+                  case RETRO_DEVICE_ID_POINTER_Y:
+                     return res_y;
+                  case RETRO_DEVICE_ID_POINTER_PRESSED:
+                     return sdl->mouse_l;
+                  case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+                     return !inside;
+               }
+            }
+         }
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && sdl_key_pressed(id);
       case RETRO_DEVICE_LIGHTGUN:
-         return sdl_lightgun_device_state(sdl, id);
+         switch (id)
+         {
+            case RETRO_DEVICE_ID_LIGHTGUN_X:
+               return sdl->mouse_x;
+            case RETRO_DEVICE_ID_LIGHTGUN_Y:
+               return sdl->mouse_y;
+            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+               return sdl->mouse_l;
+            case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+               return sdl->mouse_m;
+            case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+               return sdl->mouse_r;
+            case RETRO_DEVICE_ID_LIGHTGUN_START:
+               return sdl->mouse_m && sdl->mouse_r;
+            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+               return sdl->mouse_m && sdl->mouse_l;
+         }
+         break;
    }
 
    return 0;

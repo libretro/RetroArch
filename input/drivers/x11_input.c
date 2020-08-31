@@ -44,6 +44,9 @@ typedef struct x11_input
    bool grab_mouse;
 } x11_input_t;
 
+/* Public global variable */
+extern bool g_x11_entered;
+
 static void *x_input_init(const char *joypad_driver)
 {
    x11_input_t *x11;
@@ -76,9 +79,7 @@ static bool x_keyboard_pressed(x11_input_t *x11, unsigned key)
 static bool x_mouse_button_pressed(
       x11_input_t *x11, unsigned port, unsigned key)
 {
-   bool result;
-
-   switch ( key )
+   switch (key)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return x11->mouse_l;
@@ -100,137 +101,6 @@ static bool x_mouse_button_pressed(
    }
 
    return false;
-}
-
-static int16_t x_lightgun_aiming_state(
-      x11_input_t *x11, unsigned idx, unsigned id )
-{
-   struct video_viewport vp;
-   const int edge_detect       = 32700;
-   bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-
-   if (!(video_driver_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   inside =    (res_x >= -edge_detect) 
-            && (res_y >= -edge_detect)
-            && (res_x <= edge_detect)
-            && (res_y <= edge_detect);
-
-   switch ( id )
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         if (inside)
-            return res_x;
-         break;
-      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         if (inside)
-            return res_y;
-         break;
-      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return !inside;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return x11->mouse_x - x11->mouse_last_x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return x11->mouse_y - x11->mouse_last_y;
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return x11->mouse_l;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return x11->mouse_r;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return x_mouse_state_wheel(id);
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return x11->mouse_m;
-   }
-
-   return 0;
-}
-
-static int16_t x_mouse_state_screen(x11_input_t *x11, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return x11->mouse_x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return x11->mouse_y;
-      default:
-         break;
-   }
-
-   return x_mouse_state(x11, id);
-}
-
-static int16_t x_pointer_state(x11_input_t *x11,
-      unsigned idx, unsigned id, bool screen)
-{
-   struct video_viewport vp;
-   bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-
-   if (!(video_driver_translate_coord_viewport_wrap(
-               &vp, x11->mouse_x, x11->mouse_y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   if (screen)
-   {
-      res_x = res_screen_x;
-      res_y = res_screen_y;
-   }
-
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-   if (!inside)
-      return 0;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_POINTER_X:
-         return res_x;
-      case RETRO_DEVICE_ID_POINTER_Y:
-         return res_y;
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return x11->mouse_l;
-   }
-
-   return 0;
 }
 
 static int16_t x_input_state(
@@ -352,15 +222,75 @@ static int16_t x_input_state(
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
       case RETRO_DEVICE_MOUSE:
-         return x_mouse_state(x11, id);
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return x_mouse_state_screen(x11, id);
-
+         switch (id)
+         {
+            case RETRO_DEVICE_ID_MOUSE_X:
+               if (device == RARCH_DEVICE_MOUSE_SCREEN)
+                  return x11->mouse_x;
+               return x11->mouse_x - x11->mouse_last_x;
+            case RETRO_DEVICE_ID_MOUSE_Y:
+               if (device == RARCH_DEVICE_MOUSE_SCREEN)
+                  return x11->mouse_y;
+               return x11->mouse_y - x11->mouse_last_y;
+            case RETRO_DEVICE_ID_MOUSE_LEFT:
+               return x11->mouse_l;
+            case RETRO_DEVICE_ID_MOUSE_RIGHT:
+               return x11->mouse_r;
+            case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+            case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+            case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+            case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+               return x_mouse_state_wheel(id);
+            case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+               return x11->mouse_m;
+         }
+         break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
-            return x_pointer_state(x11, idx, id,
-                  device == RARCH_DEVICE_POINTER_SCREEN);
+         {
+            struct video_viewport vp;
+            bool screen                 = device == RARCH_DEVICE_POINTER_SCREEN;
+            bool inside                 = false;
+            int16_t res_x               = 0;
+            int16_t res_y               = 0;
+            int16_t res_screen_x        = 0;
+            int16_t res_screen_y        = 0;
+
+            vp.x                        = 0;
+            vp.y                        = 0;
+            vp.width                    = 0;
+            vp.height                   = 0;
+            vp.full_width               = 0;
+            vp.full_height              = 0;
+
+            if (video_driver_translate_coord_viewport_wrap(
+                     &vp, x11->mouse_x, x11->mouse_y,
+                     &res_x, &res_y, &res_screen_x, &res_screen_y))
+            {
+               if (screen)
+               {
+                  res_x = res_screen_x;
+                  res_y = res_screen_y;
+               }
+
+               inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+
+               if (!inside)
+                  return 0;
+
+               switch (id)
+               {
+                  case RETRO_DEVICE_ID_POINTER_X:
+                     return res_x;
+                  case RETRO_DEVICE_ID_POINTER_Y:
+                     return res_y;
+                  case RETRO_DEVICE_ID_POINTER_PRESSED:
+                     return x11->mouse_l;
+               }
+            }
+         }
          break;
       case RETRO_DEVICE_LIGHTGUN:
          switch ( id )
@@ -369,8 +299,49 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
             case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               return x_lightgun_aiming_state( x11, idx, id );
+               {
+                  struct video_viewport vp;
+                  const int edge_detect       = 32700;
+                  bool inside                 = false;
+                  int16_t res_x               = 0;
+                  int16_t res_y               = 0;
+                  int16_t res_screen_x        = 0;
+                  int16_t res_screen_y        = 0;
 
+                  vp.x                        = 0;
+                  vp.y                        = 0;
+                  vp.width                    = 0;
+                  vp.height                   = 0;
+                  vp.full_width               = 0;
+                  vp.full_height              = 0;
+
+                  if (video_driver_translate_coord_viewport_wrap(&vp,
+                           x11->mouse_x, x11->mouse_y,
+                           &res_x, &res_y, &res_screen_x, &res_screen_y))
+                  {
+                     inside =    (res_x >= -edge_detect) 
+                        && (res_y >= -edge_detect)
+                        && (res_x <= edge_detect)
+                        && (res_y <= edge_detect);
+
+                     switch ( id )
+                     {
+                        case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+                           if (inside)
+                              return res_x;
+                           break;
+                        case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+                           if (inside)
+                              return res_y;
+                           break;
+                        case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+                           return !inside;
+                        default:
+                           break;
+                     }
+                  }
+               }
+               break;
             /*buttons*/
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                {
@@ -670,14 +641,18 @@ static void x_input_free(void *data)
    free(x11);
 }
 
-extern bool g_x11_entered;
-
-static void x_input_poll_mouse(x11_input_t *x11,
-      bool video_has_focus)
+static void x_input_poll(void *data)
 {
    unsigned mask;
    int root_x, root_y, win_x, win_y;
    Window root_win, child_win;
+   x11_input_t *x11     = (x11_input_t*)data;
+   bool video_has_focus = video_driver_has_focus();
+
+   if (video_has_focus)
+      XQueryKeymap(x11->display, x11->state);
+   else
+      memset(x11->state, 0, sizeof(x11->state));
 
    x11->mouse_last_x = x11->mouse_x;
    x11->mouse_last_y = x11->mouse_y;
@@ -726,19 +701,6 @@ static void x_input_poll_mouse(x11_input_t *x11,
          x11->mouse_last_y = mid_h;
       }
    }
-}
-
-static void x_input_poll(void *data)
-{
-   x11_input_t *x11     = (x11_input_t*)data;
-   bool video_has_focus = video_driver_has_focus();
-
-   if (video_has_focus)
-      XQueryKeymap(x11->display, x11->state);
-   else
-      memset(x11->state, 0, sizeof(x11->state));
-
-   x_input_poll_mouse(x11, video_has_focus);
 }
 
 static void x_grab_mouse(void *data, bool state)

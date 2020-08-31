@@ -22,6 +22,7 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include <retro_inline.h>
 
 #include <libretro.h>
 
@@ -35,7 +36,9 @@
 #ifdef HW_RVL
 /* gx joypad functions */
 bool gxpad_mousevalid(unsigned port);
-void gx_joypad_read_mouse(unsigned port, int *irx, int *iry, uint32_t *button);
+
+void gx_joypad_read_mouse(unsigned port,
+      int *irx, int *iry, uint32_t *button);
 
 typedef struct
 {
@@ -48,95 +51,12 @@ typedef struct
 typedef struct gx_input
 {
 #ifdef HW_RVL
-   int mouse_max;
    gx_input_mouse_t *mouse;
+   int mouse_max;
 #else
    void *empty;
 #endif
 } gx_input_t;
-
-#ifdef HW_RVL
-static int16_t gx_lightgun_state(gx_input_t *gx,
-      unsigned id, uint16_t joy_idx)
-{
-   struct video_viewport vp = {0};
-   video_driver_get_viewport_info(&vp);
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-   int16_t x = 0;
-   int16_t y = 0;
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-
-   x = gx->mouse[joy_idx].x_abs;
-   y = gx->mouse[joy_idx].y_abs;
-
-   if (!(video_driver_translate_coord_viewport_wrap(&vp, x, y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         return res_screen_x;
-      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         return res_screen_y;
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_A);
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_B);
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_C);
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_START);
-      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_SELECT);
-      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return !gxpad_mousevalid(joy_idx);
-      default:
-         return 0;
-   }
-
-   return 0;
-}
-
-static int16_t gx_mouse_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
-{
-   settings_t *settings       = config_get_ptr();
-   unsigned input_mouse_scale = settings->uints.input_mouse_scale;
-   int x_scale                = input_mouse_scale;
-   int y_scale                = input_mouse_scale;
-   int x                      = (gx->mouse[joy_idx].x_abs 
-         - gx->mouse[joy_idx].x_last) * x_scale;
-   int y                      = (gx->mouse[joy_idx].y_abs 
-         - gx->mouse[joy_idx].y_last) * y_scale;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return y;
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_MOUSE_LEFT);
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_MOUSE_RIGHT);
-      default:
-         break;
-   }
-
-   return 0;
-}
-#endif
 
 static int16_t gx_input_state(
       void *data,
@@ -172,10 +92,92 @@ static int16_t gx_input_state(
          break;
 #ifdef HW_RVL
       case RETRO_DEVICE_MOUSE:
-         return gx_mouse_state(gx, id, joypad_info->joy_idx);
+         {
+            settings_t *settings       = config_get_ptr();
+            uint16_t joy_idx           = joypad_info->joy_idx;
+            unsigned input_mouse_scale = settings->uints.input_mouse_scale;
+            int x_scale                = input_mouse_scale;
+            int y_scale                = input_mouse_scale;
+            int x                      = (gx->mouse[joy_idx].x_abs 
+                  - gx->mouse[joy_idx].x_last) * x_scale;
+            int y                      = (gx->mouse[joy_idx].y_abs 
+                  - gx->mouse[joy_idx].y_last) * y_scale;
 
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return y;
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return gx->mouse[joy_idx].button & 
+                     (1 << RETRO_DEVICE_ID_MOUSE_LEFT);
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return gx->mouse[joy_idx].button & 
+                     (1 << RETRO_DEVICE_ID_MOUSE_RIGHT);
+               default:
+                  break;
+            }
+         }
+         break;
       case RETRO_DEVICE_LIGHTGUN:
-         return gx_lightgun_state(gx, id, joypad_info->joy_idx);
+         {
+            struct video_viewport vp    = {0};
+            uint16_t joy_idx            = joypad_info->joy_idx;
+            int16_t res_x               = 0;
+            int16_t res_y               = 0;
+            int16_t res_screen_x        = 0;
+            int16_t res_screen_y        = 0;
+            int16_t x                   = 0;
+            int16_t y                   = 0;
+
+            video_driver_get_viewport_info(&vp);
+
+            vp.x                        = 0;
+            vp.y                        = 0;
+            vp.width                    = 0;
+            vp.height                   = 0;
+            vp.full_width               = 0;
+            vp.full_height              = 0;
+
+            x                           = gx->mouse[joy_idx].x_abs;
+            y                           = gx->mouse[joy_idx].y_abs;
+
+            if (video_driver_translate_coord_viewport_wrap(&vp, x, y,
+                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+            {
+               switch (id)
+               {
+                  case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+                     return res_screen_x;
+                  case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+                     return res_screen_y;
+                  case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+                     return gx->mouse[joy_idx].button & 
+                        (1 << RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
+                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+                     return gx->mouse[joy_idx].button & 
+                        (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_A);
+                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+                     return gx->mouse[joy_idx].button & 
+                        (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_B);
+                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+                     return gx->mouse[joy_idx].button & 
+                        (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_C);
+                  case RETRO_DEVICE_ID_LIGHTGUN_START:
+                     return gx->mouse[joy_idx].button & 
+                        (1 << RETRO_DEVICE_ID_LIGHTGUN_START);
+                  case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+                     return gx->mouse[joy_idx].button & 
+                        (1 << RETRO_DEVICE_ID_LIGHTGUN_SELECT);
+                  case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+                     return !gxpad_mousevalid(joy_idx);
+                  default:
+                     break;
+               }
+            }
+         }
+         break;
 #endif
    }
 
@@ -214,13 +216,10 @@ static void *gx_input_init(const char *joypad_driver)
 }
 
 #ifdef HW_RVL
-static inline int gx_count_mouse(gx_input_t *gx)
+static INLINE int rvl_count_mouse(gx_input_t *gx)
 {
    unsigned i;
    int count = 0;
-
-   if (!gx)
-      return 0;
 
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
@@ -233,63 +232,61 @@ static inline int gx_count_mouse(gx_input_t *gx)
    return count;
 }
 
-static void gx_input_poll_mouse(gx_input_t *gx)
-{
-   int count = gx_count_mouse(gx);
-
-   if (gx && count > 0)
-   {
-      unsigned i;
-      if (count != gx->mouse_max)
-      {
-         gx_input_mouse_t *tmp = (gx_input_mouse_t*)realloc(
-               gx->mouse, count * sizeof(gx_input_mouse_t));
-         if (!tmp) 
-            free(gx->mouse);
-         else
-         {
-            unsigned i;
-            gx->mouse     = tmp;
-            gx->mouse_max = count;
-
-            for (i = 0; i < gx->mouse_max; i++)
-            {
-               gx->mouse[i].x_last = 0;
-               gx->mouse[i].y_last = 0;
-            }
-         }
-      }
-      
-      for (i = 0; i < gx->mouse_max; i++)
-      {
-         gx->mouse[i].x_last = gx->mouse[i].x_abs;
-         gx->mouse[i].y_last = gx->mouse[i].y_abs;
-         gx_joypad_read_mouse(i, &gx->mouse[i].x_abs,
-               &gx->mouse[i].y_abs, &gx->mouse[i].button);
-      } 
-   }
-}
-
 static void rvl_input_poll(void *data)
 {
    gx_input_t *gx = (gx_input_t*)data;
    if (gx && gx->mouse)
-      gx_input_poll_mouse(gx);
-}
-#endif
+   {
+      int count = rvl_count_mouse(gx);
 
-static uint64_t gx_input_get_capabilities(void *data)
+      if (gx && count > 0)
+      {
+         unsigned i;
+         if (count != gx->mouse_max)
+         {
+            gx_input_mouse_t *tmp = (gx_input_mouse_t*)realloc(
+                  gx->mouse, count * sizeof(gx_input_mouse_t));
+            if (!tmp) 
+               free(gx->mouse);
+            else
+            {
+               unsigned i;
+               gx->mouse     = tmp;
+               gx->mouse_max = count;
+
+               for (i = 0; i < gx->mouse_max; i++)
+               {
+                  gx->mouse[i].x_last = 0;
+                  gx->mouse[i].y_last = 0;
+               }
+            }
+         }
+
+         for (i = 0; i < gx->mouse_max; i++)
+         {
+            gx->mouse[i].x_last = gx->mouse[i].x_abs;
+            gx->mouse[i].y_last = gx->mouse[i].y_abs;
+            gx_joypad_read_mouse(i, &gx->mouse[i].x_abs,
+                  &gx->mouse[i].y_abs, &gx->mouse[i].button);
+         } 
+      }
+   }
+}
+
+static uint64_t rvl_input_get_capabilities(void *data)
 {
-#ifdef HW_RVL
    return (1 << RETRO_DEVICE_JOYPAD) |
           (1 << RETRO_DEVICE_ANALOG) |
           (1 << RETRO_DEVICE_MOUSE) |
           (1 << RETRO_DEVICE_LIGHTGUN);
+}
 #else
+static uint64_t gx_input_get_capabilities(void *data)
+{
    return (1 << RETRO_DEVICE_JOYPAD) |
           (1 << RETRO_DEVICE_ANALOG);
-#endif
 }
+#endif
 
 input_driver_t input_gx = {
    gx_input_init,
@@ -302,7 +299,11 @@ input_driver_t input_gx = {
    gx_input_free_input,
    NULL,
    NULL,
+#ifdef HW_RVL
+   rvl_input_get_capabilities,
+#else
    gx_input_get_capabilities,
+#endif
    "gx",
 
    NULL,                         /* grab_mouse */

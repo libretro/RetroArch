@@ -53,18 +53,16 @@ typedef struct ps3_input
 #endif
 } ps3_input_t;
 
+#ifdef HAVE_MOUSE
 static void ps3_input_poll(void *data)
 {
-#ifdef HAVE_MOUSE
    CellMouseInfo mouse_info;
    ps3_input_t *ps3 = (ps3_input_t*)data;
 
    cellMouseGetInfo(&mouse_info);
    ps3->mice_connected = mouse_info.now_connect;
-#endif
 }
 
-#ifdef HAVE_MOUSE
 static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
       unsigned user, unsigned id)
 {
@@ -129,16 +127,13 @@ static int16_t ps3_input_state(
          {
             /* Fixed range of 0x000 - 0x3ff */
             case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
-               retval = ps3->accelerometer_state[port].x;
-               break;
+               return ps3->accelerometer_state[port].x;
             case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
-               retval = ps3->accelerometer_state[port].y;
-               break;
+               return ps3->accelerometer_state[port].y;
             case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
-               retval = ps3->accelerometer_state[port].z;
-               break;
+               return ps3->accelerometer_state[port].z;
             default:
-               retval = 0;
+               break;
          }
          break;
 #endif
@@ -179,7 +174,6 @@ static void* ps3_input_init(const char *joypad_driver)
 
 static uint64_t ps3_input_get_capabilities(void *data)
 {
-   (void)data;
    return
 #ifdef HAVE_MOUSE
       (1 << RETRO_DEVICE_MOUSE)  |
@@ -229,7 +223,11 @@ static bool ps3_input_set_rumble(
 
 input_driver_t input_ps3 = {
    ps3_input_init,
+#ifdef HAVE_MOUSE
    ps3_input_poll,
+#else
+   NULL,                         /* poll */
+#endif
    ps3_input_state,
    ps3_input_free_input,
    ps3_input_set_sensor_state,
