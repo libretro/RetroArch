@@ -28,40 +28,21 @@
 
 #include "keyboard_event_apple.h"
 
+uint32_t apple_key_state[MAX_KEYS];
+
 #if TARGET_OS_IPHONE
 /* TODO/FIXME - static globals */
 static bool small_keyboard_active = false;
 
 #define HIDKEY(X) X
-#else
-/* Taken from https://github.com/depp/keycode,
- * check keycode.h for license. */
+#define MAX_ICADE_PROFILES 4
+#define MAX_ICADE_KEYS     0x100
 
-static const unsigned char MAC_NATIVE_TO_HID[128] = {
-   4, 22,  7,  9, 11, 10, 29, 27,  6, 25,255,  5, 20, 26,  8, 21,
-   28, 23, 30, 31, 32, 33, 35, 34, 46, 38, 36, 45, 37, 39, 48, 18,
-   24, 47, 12, 19, 40, 15, 13, 52, 14, 51, 49, 54, 56, 17, 16, 55,
-   43, 44, 53, 42,255, 41,231,227,225, 57,226,224,229,230,228,255,
-   108, 99,255, 85,255, 87,255, 83,255,255,255, 84, 88,255, 86,109,
-   110,103, 98, 89, 90, 91, 92, 93, 94, 95,111, 96, 97,255,255,255,
-   62, 63, 64, 60, 65, 66,255, 68,255,104,107,105,255, 67,255, 69,
-   255,106,117, 74, 75, 76, 61, 77, 59, 78, 58, 80, 79, 81, 82,255
-};
-
-#define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
-#endif
-
-uint32_t apple_key_state[MAX_KEYS];
-
-#if TARGET_OS_IPHONE
 typedef struct icade_map
 {
    bool up;
    enum retro_key key;
 } icade_map_t;
-
-#define MAX_ICADE_PROFILES 4
-#define MAX_ICADE_KEYS     0x100
 
 static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
 
@@ -270,19 +251,15 @@ static bool handle_icade_event(unsigned *code, bool *keydown)
 
    return ret;
 }
-#endif
 
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
-#if TARGET_OS_IPHONE
    settings_t *settings         = config_get_ptr();
    bool keyboard_gamepad_enable = settings->bools.input_keyboard_gamepad_enable;
    bool small_keyboard_enable   = settings->bools.input_small_keyboard_enable;
-#endif
    code                         = HIDKEY(code);
 
-#if TARGET_OS_IPHONE
    if (keyboard_gamepad_enable)
    {
       if (handle_icade_event(&code, &down))
@@ -295,7 +272,6 @@ void apple_input_keyboard_event(bool down,
       if (handle_small_keyboard(&code, down))
          character = 0;
    }
-#endif
 
    if (code == 0 || code >= MAX_KEYS)
       return;
@@ -306,3 +282,35 @@ void apple_input_keyboard_event(bool down,
          input_keymaps_translate_keysym_to_rk(code),
          character, (enum retro_mod)mod, device);
 }
+#else
+/* Taken from https://github.com/depp/keycode,
+ * check keycode.h for license. */
+
+static const unsigned char MAC_NATIVE_TO_HID[128] = {
+   4, 22,  7,  9, 11, 10, 29, 27,  6, 25,255,  5, 20, 26,  8, 21,
+   28, 23, 30, 31, 32, 33, 35, 34, 46, 38, 36, 45, 37, 39, 48, 18,
+   24, 47, 12, 19, 40, 15, 13, 52, 14, 51, 49, 54, 56, 17, 16, 55,
+   43, 44, 53, 42,255, 41,231,227,225, 57,226,224,229,230,228,255,
+   108, 99,255, 85,255, 87,255, 83,255,255,255, 84, 88,255, 86,109,
+   110,103, 98, 89, 90, 91, 92, 93, 94, 95,111, 96, 97,255,255,255,
+   62, 63, 64, 60, 65, 66,255, 68,255,104,107,105,255, 67,255, 69,
+   255,106,117, 74, 75, 76, 61, 77, 59, 78, 58, 80, 79, 81, 82,255
+};
+
+#define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
+
+void apple_input_keyboard_event(bool down,
+      unsigned code, uint32_t character, uint32_t mod, unsigned device)
+{
+   code                         = HIDKEY(code);
+   if (code == 0 || code >= MAX_KEYS)
+      return;
+
+   apple_key_state[code] = down;
+
+   input_keyboard_event(down,
+         input_keymaps_translate_keysym_to_rk(code),
+         character, (enum retro_mod)mod, device);
+}
+#endif
+
