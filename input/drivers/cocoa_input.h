@@ -38,10 +38,10 @@ typedef struct
 
 typedef struct
 {
-   cocoa_touch_data_t touches[MAX_TOUCHES];
    uint32_t touch_count;
 
    uint32_t mouse_buttons;
+   cocoa_touch_data_t touches[MAX_TOUCHES]; /* int16_t alignment */
    int16_t mouse_x_last;
    int16_t mouse_y_last;
    int16_t window_pos_x;
