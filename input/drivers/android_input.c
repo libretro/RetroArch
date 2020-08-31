@@ -155,8 +155,6 @@ typedef struct android_input
    sensor_t accelerometer_state;                /* float alignment */
    float mouse_x_prev, mouse_y_prev;
    struct input_pointer pointer[MAX_TOUCH];     /* int16_t alignment */
-   int16_t analog_state[MAX_USERS][MAX_AXIS];
-   int8_t hat_state[MAX_USERS][2];
    char device_model[256];
 } android_input_t;
 
@@ -165,8 +163,7 @@ static void frontend_android_get_name(char *s, size_t len);
 
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
-
-void (*engine_handle_dpad)(android_input_t *, AInputEvent*, int, int);
+void (*engine_handle_dpad)(struct android_app *, AInputEvent*, int, int);
 
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate);
@@ -431,7 +428,7 @@ static void android_input_poll_main_cmd(void)
    }
 }
 
-static void engine_handle_dpad_default(android_input_t *android,
+static void engine_handle_dpad_default(struct android_app *android,
       AInputEvent *event, int port, int source)
 {
    size_t motion_ptr = AMotionEvent_getAction(event) >>
@@ -444,7 +441,7 @@ static void engine_handle_dpad_default(android_input_t *android,
 }
 
 #ifdef HAVE_DYNAMIC
-static void engine_handle_dpad_getaxisvalue(android_input_t *android,
+static void engine_handle_dpad_getaxisvalue(struct android_app *android,
       AInputEvent *event, int port, int source)
 {
    size_t motion_ptr = AMotionEvent_getAction(event) >>
@@ -1194,7 +1191,7 @@ static void android_input_poll_input(android_input_t *android,
                   android_input_poll_event_type_motion(android, event,
                         port, source, vibrate_on_keypress);
                else
-                  engine_handle_dpad(android, event, port, source);
+                  engine_handle_dpad(android_app, event, port, source);
                break;
             case AINPUT_EVENT_TYPE_KEY:
                {
@@ -1241,20 +1238,6 @@ static void android_input_poll_user(android_input_t *android)
          android->accelerometer_state.y = event.acceleration.y;
          android->accelerometer_state.z = event.acceleration.z;
       }
-   }
-}
-
-static void android_input_poll_memcpy(android_input_t *android)
-{
-   unsigned i, j;
-   struct android_app *android_app = (struct android_app*)g_android;
-
-   for (i = 0; i < DEFAULT_MAX_PADS; i++)
-   {
-      for (j = 0; j < 2; j++)
-         android_app->hat_state[i][j]    = android->hat_state[i][j];
-      for (j = 0; j < MAX_AXIS; j++)
-         android_app->analog_state[i][j] = android->analog_state[i][j];
    }
 }
 
@@ -1310,9 +1293,6 @@ static void android_input_poll(void *data, const void *joypad_data)
          return;
       }
    }
-
-   if (android_app->input_alive)
-      android_input_poll_memcpy(android);
 }
 
 bool android_run_events(void *data)
