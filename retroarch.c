@@ -20319,6 +20319,17 @@ static bool load_dynamic_core(
       struct rarch_state *p_rarch,
       const char *path, char *buf, size_t size)
 {
+#if defined(ANDROID)
+   /* Can't resolve symlinks when dealing with cores
+    * installed via play feature delivery, because the
+    * source files have non-standard file names (which
+    * will not be recognised by regular core handling
+    * routines) */
+   bool resolve_symlinks = !play_feature_delivery_enabled();
+#else
+   bool resolve_symlinks = true;
+#endif
+
    /* Can't lookup symbols in itself on UWP */
 #if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    if (dylib_proc(NULL, "retro_init"))
@@ -20337,7 +20348,7 @@ static bool load_dynamic_core(
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(buf, size, true);
+   path_resolve_realpath(buf, size, resolve_symlinks);
    if ((p_rarch->lib_handle = dylib_load(path)))
       return true;
    return false;

@@ -334,7 +334,8 @@ static bool playlist_core_path_equal(const char *real_core_path, const char *ent
    strlcpy(entry_real_core_path, entry_core_path, sizeof(entry_real_core_path));
    if (!string_is_equal(entry_real_core_path, FILE_PATH_DETECT) &&
        !string_is_equal(entry_real_core_path, FILE_PATH_BUILTIN))
-      path_resolve_realpath(entry_real_core_path, sizeof(entry_real_core_path), true);
+      playlist_resolve_path(PLAYLIST_SAVE, true, entry_real_core_path,
+            sizeof(entry_real_core_path));
 
    if (string_is_empty(entry_real_core_path))
       return false;
@@ -764,14 +765,15 @@ bool playlist_push_runtime(playlist_t *playlist,
    if (!string_is_empty(entry->path))
    {
       strlcpy(real_path, entry->path, sizeof(real_path));
-      path_resolve_realpath(real_path, sizeof(real_path), true);
+      playlist_resolve_path(PLAYLIST_SAVE, false, real_path, sizeof(real_path));
    }
 
    /* Get 'real' core path */
    strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, FILE_PATH_DETECT) &&
        !string_is_equal(real_core_path, FILE_PATH_BUILTIN))
-      path_resolve_realpath(real_core_path, sizeof(real_core_path), true);
+      playlist_resolve_path(PLAYLIST_SAVE, true, real_core_path,
+             sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
    {
@@ -869,6 +871,7 @@ success:
 /**
  * playlist_resolve_path:
  * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
+ * @is_core   : Set true if path to be resolved is a core file
  * @path      : The path to be modified
  *
  * Resolves the path of an item, such as the content path or path to the core, to a format
@@ -879,7 +882,7 @@ success:
  * install (iOS)
 **/
 void playlist_resolve_path(enum playlist_file_mode mode,
-      char *path, size_t len)
+      bool is_core, char *path, size_t len)
 {
 #ifdef HAVE_COCOATOUCH
    char tmp[PATH_MAX_LENGTH];
@@ -903,10 +906,22 @@ void playlist_resolve_path(enum playlist_file_mode mode,
       fill_pathname_abbreviate_special(path, tmp2, len);
    }
 #else
+   bool resolve_symlinks = true;
+
    if (mode == PLAYLIST_LOAD)
       return;
 
-   path_resolve_realpath(path, len, true);
+#if defined(ANDROID)
+   /* Can't resolve symlinks when dealing with cores
+    * installed via play feature delivery, because the
+    * source files have non-standard file names (which
+    * will not be recognised by regular core handling
+    * routines) */
+   if (is_core)
+      resolve_symlinks = !play_feature_delivery_enabled();
+#endif
+
+   path_resolve_realpath(path, len, resolve_symlinks);
 #endif
 }
 
@@ -941,14 +956,14 @@ bool playlist_push(playlist_t *playlist,
    if (!string_is_empty(entry->path))
    {
       strlcpy(real_path, entry->path, sizeof(real_path));
-      playlist_resolve_path(PLAYLIST_SAVE, real_path, sizeof(real_path));
+      playlist_resolve_path(PLAYLIST_SAVE, false, real_path, sizeof(real_path));
    }
 
    /* Get 'real' core path */
    strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, FILE_PATH_DETECT) &&
        !string_is_equal(real_core_path, FILE_PATH_BUILTIN))
-       playlist_resolve_path(PLAYLIST_SAVE, real_core_path,
+      playlist_resolve_path(PLAYLIST_SAVE, true, real_core_path,
              sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
@@ -2976,7 +2991,8 @@ bool playlist_entries_are_equal(
       strlcpy(real_core_path_a, entry_a->core_path, sizeof(real_core_path_a));
       if (!string_is_equal(real_core_path_a, FILE_PATH_DETECT) &&
           !string_is_equal(real_core_path_a, FILE_PATH_BUILTIN))
-         path_resolve_realpath(real_core_path_a, sizeof(real_core_path_a), true);
+         playlist_resolve_path(PLAYLIST_SAVE, true,
+               real_core_path_a, sizeof(real_core_path_a));
    }
 
    return playlist_core_path_equal(real_core_path_a, entry_b->core_path, config);
@@ -3076,7 +3092,7 @@ void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
    strlcpy(real_core_path, core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, FILE_PATH_DETECT) &&
        !string_is_equal(real_core_path, FILE_PATH_BUILTIN))
-       playlist_resolve_path(PLAYLIST_SAVE,
+       playlist_resolve_path(PLAYLIST_SAVE, true,
              real_core_path, sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))

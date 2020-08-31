@@ -2168,7 +2168,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    if (!string_is_empty(entry->path))
    {
       strlcpy(content_path, entry->path, sizeof(content_path));
-      playlist_resolve_path(PLAYLIST_LOAD, content_path, sizeof(content_path));
+      playlist_resolve_path(PLAYLIST_LOAD, false, content_path, sizeof(content_path));
    }
 
    /* Cache entry label */
@@ -2239,7 +2239,7 @@ static int action_ok_playlist_entry_collection(const char *path,
             /* Core path is invalid - just copy what we have
              * and hope for the best... */
             strlcpy(core_path, entry->core_path, sizeof(core_path));
-            playlist_resolve_path(PLAYLIST_LOAD, core_path, sizeof(core_path));
+            playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
          }
       }
    }
@@ -3284,7 +3284,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          true);
 
    strlcpy(resolved_core_path, new_core_path, sizeof(resolved_core_path));
-   playlist_resolve_path(PLAYLIST_SAVE, resolved_core_path, sizeof(resolved_core_path));
+   playlist_resolve_path(PLAYLIST_SAVE, true, resolved_core_path, sizeof(resolved_core_path));
 
    /* the update function reads our entry
     * as const, so these casts are safe */
