@@ -34,9 +34,9 @@
 /* Holds all entries in a core backup list */
 struct core_backup_list
 {
+   core_backup_list_entry_t *entries;
    size_t size;
    size_t capacity;
-   core_backup_list_entry_t *entries;
 };
 
 /*********************/
