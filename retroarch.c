@@ -30306,8 +30306,6 @@ static void audio_driver_mixer_play_stream_internal(
       struct rarch_state *p_rarch,
       unsigned i, unsigned type)
 {
-   bool set_state              = false;
-
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
@@ -30318,7 +30316,7 @@ static void audio_driver_mixer_play_stream_internal(
             audio_mixer_play(p_rarch->audio_mixer_streams[i].handle,
                (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
                1.0f, p_rarch->audio_mixer_streams[i].stop_cb);
-         set_state = true;
+         p_rarch->audio_mixer_streams[i].state = (enum audio_mixer_state)type;
          break;
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
@@ -30326,9 +30324,6 @@ static void audio_driver_mixer_play_stream_internal(
       case AUDIO_STREAM_STATE_NONE:
          break;
    }
-
-   if (set_state)
-      p_rarch->audio_mixer_streams[i].state   = (enum audio_mixer_state)type;
 }
 
 static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
