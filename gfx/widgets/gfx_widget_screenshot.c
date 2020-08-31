@@ -26,45 +26,45 @@
 
 struct gfx_widget_screenshot_state
 {
-   float alpha;
    uintptr_t texture;
    unsigned texture_width;
    unsigned texture_height;
-   char shotname[256];
-   char filename[256];
-   bool loaded;
 
-   float scale_factor;
-   float y;
    unsigned height;
    unsigned width;
    unsigned thumbnail_width;
    unsigned thumbnail_height;
-   gfx_timer_t timer;
-
    unsigned shotname_length;
+
+   float scale_factor;
+   float y;
+   float alpha;
+   gfx_timer_t timer;         /* float alignment */
+
+   char shotname[256];
+   char filename[256];
+   bool loaded;
 };
 
 typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
 
 static gfx_widget_screenshot_state_t p_w_screenshot_st = {
-   0.0f,
-   0,
-   0,
-   0,
-   {0},
-   {0},
-   false,
+   0,             /* texture */
+   0,             /* texture_width */
+   0,             /* texture_height */
+   0,             /* height */
+   0,             /* width */
+   0,             /* thumbnail_width */
+   0,             /* thumbnail_height */
+   0,             /* shotname_length */
+   0.0f,          /* scale_factor */
+   0.0f,          /* y */
+   0.0f,          /* alpha */
+   0.0f,          /* timer */
 
-   0.0f,
-   0.0f,
-   0,
-   0,
-   0,
-   0,
-   0.0f,
-
-   0
+   {0},           /* shotname */
+   {0},           /* filename */
+   false          /* loaded */
 };
 
 static gfx_widget_screenshot_state_t* gfx_widget_screenshot_get_ptr(void)

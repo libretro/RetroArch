@@ -43,14 +43,8 @@ static const char* const ICONS_NAMES[ICON_LAST] = {
 /* Widget state */
 struct gfx_widget_volume_state
 {
-   float db;
-   float percent;
-   gfx_timer_t timer;
-
-   float alpha;
-   float text_alpha;
    uintptr_t tag;
-   bool mute;
+   uintptr_t textures[ICON_LAST];
 
    unsigned widget_width;
    unsigned widget_height;
@@ -59,31 +53,32 @@ struct gfx_widget_volume_state
    float bar_normal[16];
    float bar_loud[16];
    float bar_loudest[16];
+   float alpha;
+   float text_alpha;
+   float db;
+   float percent;
+   gfx_timer_t timer;   /* float alignment */
 
-   uintptr_t textures[ICON_LAST];
+   bool mute;
 };
 
 typedef struct gfx_widget_volume_state gfx_widget_volume_state_t;
 
 static gfx_widget_volume_state_t p_w_volume_st = {
-   0.0f,
-   1.0f,
-   0.0f,
-
-   0.0f,
-   0.0f,
    (uintptr_t) &p_w_volume_st,
-   false,
-
+   {0},
    0,
    0,
-
    COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f),
    COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f),
    COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f),
    COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f),
-
-   {0},
+   0.0f,
+   0.0f,
+   0.0f,
+   1.0f,
+   0.0f,
+   false
 };
 
 gfx_widget_volume_state_t* gfx_widget_volume_get_ptr(void)
@@ -93,13 +88,13 @@ gfx_widget_volume_state_t* gfx_widget_volume_get_ptr(void)
 
 static void gfx_widget_volume_frame(void* data, void *user_data)
 {
-   static float pure_white[16]      = {
+   static float pure_white[16]             = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
    };
-   gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
+   gfx_widget_volume_state_t* state        = gfx_widget_volume_get_ptr();
 
    if (state->alpha > 0.0f)
    {
