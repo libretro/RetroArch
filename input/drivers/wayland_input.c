@@ -255,7 +255,7 @@ static int16_t input_wl_state(
                   /* TODO: Rest of the mouse inputs. */
             }
          }
-         breka;
+         break;
       case RETRO_DEVICE_POINTER:
          if (idx == 0)
          {
