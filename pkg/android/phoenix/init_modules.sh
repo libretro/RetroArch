@@ -47,7 +47,7 @@ done
 
 # Time to generate a module for each core!
 while IFS= read -r core; do
-  SANITIZED_CORE_NAME=$(echo $core | sed "s/-/_/g")
+  SANITIZED_CORE_NAME="core_$(echo $core | sed "s/-/_/g")"
   DISPLAY_NAME=$(cat $INFO_PATH/${core}_libretro.info | grep "display_name" | cut -d'"' -f 2)
 
   echo "Generating module for $core..."
@@ -83,7 +83,7 @@ while IFS= read -r core; do
   done
 
   # Write metadata about the module into the corresponding files
-  echo "<string name=\"core_name_$SANITIZED_CORE_NAME\">$DISPLAY_NAME</string>" >> res/values/core_names.xml
+  echo "<string name=\"$SANITIZED_CORE_NAME\">$DISPLAY_NAME</string>" >> res/values/core_names.xml
   echo "':modules:$SANITIZED_CORE_NAME'," >> dynamic_features.gradle
   echo "include ':modules:$SANITIZED_CORE_NAME'" >> settings.gradle
 done <<< "$CORES_LIST"

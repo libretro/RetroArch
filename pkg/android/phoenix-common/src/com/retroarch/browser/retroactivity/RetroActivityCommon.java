@@ -388,7 +388,7 @@ public class RetroActivityCommon extends NativeActivity
    * @return the list of available cores
    */
   public String[] getAvailableCores() {
-    int id = getResources().getIdentifier("module_names_" + sanitizeCoreName(Build.CPU_ABI), "array", getPackageName());
+    int id = getResources().getIdentifier("module_names_" + Build.CPU_ABI.replace('-', '_'), "array", getPackageName());
 
     String[] returnVal = getResources().getStringArray(id);
     Log.i("RetroActivity", "getAvailableCores: " + Arrays.toString(returnVal));
@@ -512,7 +512,7 @@ public class RetroActivityCommon extends NativeActivity
    * @return The sanitized core name.
    */
   private String sanitizeCoreName(String coreName) {
-    return coreName.replace('-', '_');
+    return "core_" + coreName.replace('-', '_');
   }
 
   /**
@@ -522,11 +522,11 @@ public class RetroActivityCommon extends NativeActivity
    * @return The unsanitized core name.
    */
   private String unsanitizeCoreName(String coreName) {
-    if(coreName.equals("mesen_s")) {
+    if(coreName.equals("core_mesen_s")) {
       return "mesen-s";
     }
 
-    return coreName;
+    return coreName.substring(5);
   }
 
   /**
