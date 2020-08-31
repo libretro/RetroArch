@@ -104,7 +104,7 @@ static void ozone_draw_entry_value(
          if (string_is_equal(entry->value, "..."))
             return;
          if (string_starts_with_size(entry->value, "(", STRLEN_CONST("(")) &&
-             string_ends_with  (entry->value, ")")
+               string_ends_with  (entry->value, ")")
             )
          {
             if (
@@ -129,15 +129,11 @@ static void ozone_draw_entry_value(
    }
 
    if (do_draw_text)
-   {
-      ozone_draw_text(ozone, value, x, y, TEXT_ALIGN_RIGHT, video_width, video_height, &ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32), false);
-   }
+      ozone_draw_text(value, x, y, TEXT_ALIGN_RIGHT, video_width, video_height, &ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32), false);
    else
-   {
-      ozone_draw_text(ozone, (switch_is_on ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)),
-               x, y, TEXT_ALIGN_RIGHT, video_width, video_height, &ozone->fonts.entries_label,
-               COLOR_TEXT_ALPHA((switch_is_on ? ozone->theme->text_selected_rgba : ozone->theme->text_sublabel_rgba), alpha_uint32), false);
-   }
+      ozone_draw_text((switch_is_on ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)),
+            x, y, TEXT_ALIGN_RIGHT, video_width, video_height, &ozone->fonts.entries_label,
+            COLOR_TEXT_ALPHA((switch_is_on ? ozone->theme->text_selected_rgba : ozone->theme->text_sublabel_rgba), alpha_uint32), false);
 }
 
 static void ozone_thumbnail_bar_hide_end(void *userdata)
@@ -173,7 +169,6 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
    gfx_display_blend_end(userdata);
 
    ozone_draw_text(
-      ozone,
       msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE),
       x_position + sidebar_width/2,
       video_height/2 + icon_size/2 + ozone->fonts.footer.line_ascender - y_offset,
@@ -195,7 +190,7 @@ static void ozone_content_metadata_line(
       uint32_t color,
       unsigned lines_count)
 {
-   ozone_draw_text(ozone,
+   ozone_draw_text(
       text,
       column_x,
       *y + ozone->fonts.footer.line_ascender,
@@ -775,7 +770,7 @@ border_iterate:
       }
 
       /* Draw text */
-      ozone_draw_text(ozone, rich_label,
+      ozone_draw_text(rich_label,
             ticker_x_offset + text_offset + (unsigned)
             ozone->dimensions_sidebar_width + x_offset        + 
             entry_padding + ozone->dimensions.entry_icon_size + 
@@ -786,7 +781,7 @@ border_iterate:
       if (menu_show_sublabels)
       {
          if (!string_is_empty(sublabel_str))
-            ozone_draw_text(ozone, sublabel_str,
+            ozone_draw_text(sublabel_str,
                   (unsigned) ozone->dimensions_sidebar_width + 
                   x_offset + entry_padding                   + 
                   ozone->dimensions.entry_icon_padding,

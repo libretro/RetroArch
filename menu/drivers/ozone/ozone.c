@@ -2010,7 +2010,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
       gfx_animation_ticker(&ticker);
    }
 
-   ozone_draw_text(ozone, title,
+   ozone_draw_text(title,
          ticker_x_offset + 128 * scale_factor,
          ozone->dimensions.header_height / 2 + ozone->fonts.title.line_centre_offset,
          TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.title, ozone->theme->text_rgba, false);
@@ -2064,7 +2064,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
       {
          timedate_offset = 95 * scale_factor;
 
-         ozone_draw_text(ozone, msg,
+         ozone_draw_text(msg,
                video_width - 85 * scale_factor,
                ozone->dimensions.header_height / 2 + ozone->fonts.time.line_centre_offset,
                TEXT_ALIGN_RIGHT, video_width, video_height, &ozone->fonts.time, ozone->theme->text_rgba, false);
@@ -2101,7 +2101,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
 
       menu_display_timedate(&datetime);
 
-      ozone_draw_text(ozone, timedate,
+      ozone_draw_text(timedate,
             video_width - (85 * scale_factor) - timedate_offset,
             ozone->dimensions.header_height / 2 + ozone->fonts.time.line_centre_offset,
             TEXT_ALIGN_RIGHT, video_width, video_height, &ozone->fonts.time, ozone->theme->text_rgba, false);
@@ -2274,21 +2274,21 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
    /* Draw labels */
 
    /* > ok */
-   ozone_draw_text(ozone,
+   ozone_draw_text(
          ozone->footer_labels.ok.str,
          ok_x + icon_size + icon_padding,
          footer_text_y,
          TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.footer, ozone->theme->text_rgba, false);
 
    /* > back */
-   ozone_draw_text(ozone,
+   ozone_draw_text(
          ozone->footer_labels.back.str,
          back_x + icon_size + icon_padding,
          footer_text_y,
          TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.footer, ozone->theme->text_rgba, false);
 
    /* > search */
-   ozone_draw_text(ozone,
+   ozone_draw_text(
          ozone->footer_labels.search.str,
          search_x + icon_size + icon_padding,
          footer_text_y,
@@ -2296,7 +2296,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
 
    /* > fullscreen_thumbs */
    if (fullscreen_thumbnails_available)
-      ozone_draw_text(ozone,
+      ozone_draw_text(
          ozone->footer_labels.fullscreen_thumbs.str,
          fullscreen_thumbs_x + icon_size + icon_padding,
          footer_text_y,
@@ -2304,7 +2304,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
 
    /* > metadata_toggle */
    if (metadata_override_available)
-      ozone_draw_text(ozone,
+      ozone_draw_text(
          ozone->footer_labels.metadata_toggle.str,
          metadata_toggle_x + icon_size + icon_padding,
          footer_text_y,
@@ -2376,7 +2376,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          }
 
          /* Draw text */
-         ozone_draw_text(ozone, core_title_buf,
+         ozone_draw_text(core_title_buf,
                ticker_x_offset + footer_margin,
                footer_text_y,
                TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.footer, ozone->theme->text_rgba, false);

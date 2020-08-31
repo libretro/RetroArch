@@ -22,7 +22,6 @@
 #include "../../menu_driver.h"
 
 void ozone_draw_text(
-      ozone_handle_t *ozone,
       const char *str, float x,
       float y,
       enum text_alignment text_align,

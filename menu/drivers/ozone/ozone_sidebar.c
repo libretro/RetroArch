@@ -338,7 +338,7 @@ void ozone_draw_sidebar(
 
       /* Text */
       if (!ozone->sidebar_collapsed)
-         ozone_draw_text(ozone, title,
+         ozone_draw_text(title,
                ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
                y + ozone->dimensions.sidebar_entry_height / 2.0f + ozone->fonts.sidebar.line_centre_offset + ozone->animations.scroll_y_sidebar,
                TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.sidebar, text_color, true);
@@ -422,7 +422,7 @@ void ozone_draw_sidebar(
             gfx_animation_ticker(&ticker);
          }
 
-         ozone_draw_text(ozone, console_title,
+         ozone_draw_text(console_title,
                ticker_x_offset + ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
                y + ozone->dimensions.sidebar_entry_height / 2 + ozone->fonts.sidebar.line_centre_offset + ozone->animations.scroll_y_sidebar,
                TEXT_ALIGN_LEFT,

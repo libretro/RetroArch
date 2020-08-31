@@ -251,7 +251,6 @@ void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 }
 
 void ozone_draw_text(
-      ozone_handle_t *ozone,
       const char *str, float x,
       float y,
       enum text_alignment text_align,
@@ -470,7 +469,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    {
       const char *msg = list.elems[i].data;
 
-      ozone_draw_text(ozone, msg,
+      ozone_draw_text(msg,
             margin + padding * 2,
             margin + padding + ozone->fonts.entries_label.line_height + y_offset,
             TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.entries_label, text_color, false);
@@ -633,7 +632,7 @@ void ozone_draw_messagebox(
       const char *msg = list.elems[i].data;
 
       if (msg)
-         ozone_draw_text(ozone,
+         ozone_draw_text(
             msg,
             x - longest_width/2.0,
             y + (i * ozone->fonts.footer.line_height) + ozone->fonts.footer.line_ascender,
