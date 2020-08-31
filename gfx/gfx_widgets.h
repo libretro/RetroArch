@@ -270,8 +270,6 @@ struct gfx_widget
 
 uintptr_t gfx_widgets_get_generic_tag(void *data);
 
-float* gfx_widgets_get_pure_white(void);
-
 unsigned gfx_widgets_get_padding(void *data);
 
 unsigned gfx_widgets_get_divider_width(void *data);

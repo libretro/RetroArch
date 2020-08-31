@@ -93,6 +93,12 @@ gfx_widget_volume_state_t* gfx_widget_volume_get_ptr(void)
 
 static void gfx_widget_volume_frame(void* data, void *user_data)
 {
+   static float pure_white[16]      = {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
    gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
 
    if (state->alpha > 0.0f)
@@ -109,7 +115,6 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       unsigned padding                     = gfx_widgets_get_padding(user_data);
 
       float* backdrop_orig                 = gfx_widgets_get_backdrop_orig();
-      float* pure_white                    = gfx_widgets_get_pure_white();
 
       uintptr_t volume_icon                = 0;
       unsigned icon_size                   = state->textures[ICON_MED] ? state->widget_height : padding;

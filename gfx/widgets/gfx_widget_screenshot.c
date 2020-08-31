@@ -197,6 +197,12 @@ static void gfx_widget_screenshot_free(void)
 
 static void gfx_widget_screenshot_frame(void* data, void *user_data)
 {
+   static float pure_white[16]          = {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
    video_frame_info_t *video_info       = (video_frame_info_t*)data;
    void *userdata                       = video_info->userdata;
    unsigned video_width                 = video_info->width;
@@ -204,7 +210,6 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular(p_dispwidget);
-   float* pure_white                    = gfx_widgets_get_pure_white();
    int padding                          = (state->height - (font_regular->line_height * 2.0f)) / 2.0f;
 
    /* Screenshot */
@@ -216,24 +221,24 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       gfx_display_set_alpha(gfx_widgets_get_backdrop_orig(), DEFAULT_BACKDROP);
 
       gfx_display_draw_quad(userdata,
-         video_width, video_height,
-         0, state->y,
-         state->width, state->height,
-         video_width, video_height,
-         gfx_widgets_get_backdrop_orig()
-      );
+            video_width, video_height,
+            0, state->y,
+            state->width, state->height,
+            video_width, video_height,
+            gfx_widgets_get_backdrop_orig()
+            );
 
       gfx_display_set_alpha(pure_white, 1.0f);
       gfx_widgets_draw_icon(
-         userdata,
-         video_width,
-         video_height,
-         state->thumbnail_width,
-         state->thumbnail_height,
-         state->texture,
-         0, state->y,
-         0, 1, pure_white
-      );
+            userdata,
+            video_width,
+            video_height,
+            state->thumbnail_width,
+            state->thumbnail_height,
+            state->texture,
+            0, state->y,
+            0, 1, pure_white
+            );
 
       gfx_widgets_draw_text(font_regular,
             msg_hash_to_str(MSG_SCREENSHOT_SAVED),
@@ -267,13 +272,13 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    {
       gfx_display_set_alpha(pure_white, state->alpha);
       gfx_display_draw_quad(userdata,
-         video_width,
-         video_height,
-         0, 0,
-         video_width, video_height,
-         video_width, video_height,
-         pure_white
-      );
+            video_width,
+            video_height,
+            0, 0,
+            video_width, video_height,
+            video_width, video_height,
+            pure_white
+            );
    }
 }
 

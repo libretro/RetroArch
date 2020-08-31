@@ -118,11 +118,6 @@ gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void *data)
    return &p_dispwidget->gfx_widget_fonts.msg_queue;
 }
 
-float* gfx_widgets_get_pure_white(void)
-{
-   return gfx_widgets_pure_white;
-}
-
 float* gfx_widgets_get_backdrop_orig(void)
 {
    return gfx_widgets_backdrop_orig;

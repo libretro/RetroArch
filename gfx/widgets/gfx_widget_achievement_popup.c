@@ -106,6 +106,12 @@ static void gfx_widget_achievement_popup_context_destroy(void)
 
 static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 {
+   static float pure_white[16]                 = {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
    gfx_widget_achievement_popup_state_t* state = gfx_widget_achievement_popup_get_ptr();
 
    /* if there's nothing in the queue, just bail */
@@ -126,7 +132,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       int scissor_me_timbers = 0;
 
       gfx_display_set_alpha(gfx_widgets_get_backdrop_orig(), DEFAULT_BACKDROP);
-      gfx_display_set_alpha(gfx_widgets_get_pure_white(), 1.0f);
+      gfx_display_set_alpha(pure_white, 1.0f);
 
       /* Default icon */
       if (!state->queue[state->queue_read_index].badge)
@@ -150,10 +156,11 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                video_height,
                state->height,
                state->height,
-               p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT],
+               p_dispwidget->gfx_widgets_icons_textures[
+               MENU_WIDGETS_ICON_ACHIEVEMENT],
                0,
                state->y,
-               0, 1, gfx_widgets_get_pure_white());
+               0, 1, pure_white);
             gfx_display_blend_end(video_info->userdata);
          }
       }
@@ -171,7 +178,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             state->y,
             0,
             1,
-            gfx_widgets_get_pure_white());
+            pure_white);
       }
 
       /* I _think_ state->unfold changes in another thread */
