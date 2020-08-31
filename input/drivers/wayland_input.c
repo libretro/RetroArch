@@ -336,13 +336,7 @@ static int16_t input_wl_state(
    return 0;
 }
 
-static void input_wl_free(void *data)
-{
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   if (!wl)
-      return;
-   free(data);
-}
+static void input_wl_free(void *data) { }
 
 bool input_wl_init(void *data, const char *joypad_name)
 {
