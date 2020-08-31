@@ -172,10 +172,8 @@ static unsigned input_unify_ev_key_code(unsigned code)
 static void udev_handle_keyboard(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
-#ifdef UDEV_XKB_HANDLING
-   udev_input_t *udev = (udev_input_t*)data;
-#endif
    unsigned keysym;
+   udev_input_t *udev = (udev_input_t*)data;
 
    switch (event->type)
    {
