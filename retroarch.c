@@ -30785,7 +30785,7 @@ bool *audio_get_bool_ptr(enum audio_action action)
 const char *video_display_server_get_ident(void)
 {
    if (!current_display_server)
-      return "null";
+      return FILE_PATH_UNKNOWN;
    return current_display_server->ident;
 }
 
@@ -31312,10 +31312,6 @@ static void video_driver_monitor_compute_fps_statistics(void)
 static void video_driver_pixel_converter_free(
       struct rarch_state *p_rarch)
 {
-   if (     !p_rarch 
-         || !p_rarch->video_driver_scaler_ptr)
-      return;
-
    if (p_rarch->video_driver_scaler_ptr->scaler)
    {
       scaler_ctx_gen_reset(p_rarch->video_driver_scaler_ptr->scaler);
@@ -31388,7 +31384,8 @@ static void video_driver_free_internal(void)
          && p_rarch->current_video->free)
       p_rarch->current_video->free(p_rarch->video_driver_data);
 
-   video_driver_pixel_converter_free(p_rarch);
+   if (p_rarch && p_rarch->video_driver_scaler_ptr)
+      video_driver_pixel_converter_free(p_rarch);
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
@@ -31462,7 +31459,8 @@ static bool video_driver_pixel_converter_init(
    return true;
 
 error:
-   video_driver_pixel_converter_free(p_rarch);
+   if (p_rarch && p_rarch->video_driver_scaler_ptr)
+      video_driver_pixel_converter_free(p_rarch);
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
