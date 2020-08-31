@@ -169,8 +169,6 @@ RETRO_BEGIN_DECLS
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device);
 
-extern uint32_t apple_key_state[MAX_KEYS];
-
 RETRO_END_DECLS
 
 #endif

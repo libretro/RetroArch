@@ -813,11 +813,6 @@ INPUT (HID)
 /*============================================================
  KEYBOARD EVENT
  ============================================================ */
-
-#ifdef __APPLE__
-#include "../input/drivers_keyboard/keyboard_event_apple.c"
-#endif
-
 #ifdef HAVE_XKBCOMMON
 #include "../input/drivers_keyboard/keyboard_event_xkb.c"
 #endif
