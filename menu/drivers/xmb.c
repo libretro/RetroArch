@@ -3749,7 +3749,6 @@ static bool xmb_shader_pipeline_active(unsigned menu_shader_pipeline)
 }
  
 static void xmb_draw_bg(
-      xmb_handle_t *xmb,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -4542,7 +4541,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    gfx_display_set_alpha(coord_white, xmb->alpha);
 
    xmb_draw_bg(
-         xmb,
          userdata,
          video_width,
          video_height,
@@ -4562,7 +4560,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (selection > 1)
    {
-      /* skip 25 utf8 multi-byte chars */
+      /* skip 25 UTF8 multi-byte chars */
       char *end = title_truncated;
 
       for (i = 0; i < 25 && *end; i++)
