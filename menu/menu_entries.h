@@ -155,7 +155,6 @@ typedef struct menu_entry
    bool sublabel_enabled;
 } menu_entry_t;
 
-
 int menu_entries_get_title(char *title, size_t title_len);
 
 int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
@@ -184,7 +183,8 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx, const char **alt);
 
-void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
+void menu_entries_prepend(file_list_t *list,
+      const char *path, const char *label,
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
@@ -198,48 +198,12 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
       bool checked);
 
-enum menu_entry_type menu_entry_get_type(uint32_t i);
-
-uint32_t menu_entry_get_bool_value(uint32_t i);
-
-struct string_list *menu_entry_enum_values(uint32_t i);
-
-void menu_entry_enum_set_value_with_string(uint32_t i, const char *s);
-
-int32_t menu_entry_bind_index(uint32_t i);
-
-void menu_entry_bind_key_set(uint32_t i, int32_t value);
-
-void menu_entry_bind_joykey_set(uint32_t i, int32_t value);
-
-void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value);
-
-void menu_entry_pathdir_selected(uint32_t i);
-
-bool menu_entry_pathdir_allow_empty(uint32_t i);
-
-uint32_t menu_entry_pathdir_for_directory(uint32_t i);
-
-void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len);
-
-void menu_entry_reset(uint32_t i);
-
 void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label);
 
 void menu_entry_get_value(menu_entry_t *entry, const char **value);
 
-void menu_entry_set_value(uint32_t i, const char *s);
-
-uint32_t menu_entry_num_has_range(uint32_t i);
-
-float menu_entry_num_min(uint32_t i);
-
-float menu_entry_num_max(uint32_t i);
-
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation);
-
-int menu_entry_select(uint32_t i);
 
 int menu_entry_action(
       menu_entry_t *entry, size_t i, enum menu_action action);
