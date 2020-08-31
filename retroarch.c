@@ -3965,7 +3965,6 @@ static bool menu_input_key_bind_iterate(
    bool               timed_out   = false;
    settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *_binds = &p_rarch->menu_input_binds;
-   input_driver_t *input_drv      = p_rarch->current_input;
    menu_input_t *menu_input       = &p_rarch->menu_input_state;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
@@ -15621,11 +15620,6 @@ static void command_event_reinit(struct rarch_state *p_rarch,
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
    unsigned swap_interval      = settings->uints.video_swap_interval;
 #endif
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = p_rarch->sec_joypad;
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
 
    video_driver_reinit(flags);
    /* Poll input to avoid possibly stale data to corrupt things. */
@@ -26507,7 +26501,6 @@ void input_driver_init_joypads(void)
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    void *ret                   = NULL;
    if (!input)
       return NULL;
