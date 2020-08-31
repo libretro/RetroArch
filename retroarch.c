@@ -3646,7 +3646,10 @@ static void menu_input_key_bind_poll_bind_state(
             &joypad_info,
             NULL,
             p_rarch->keyboard_mapping_blocked,
-            0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
+            0,
+            RETRO_DEVICE_KEYBOARD,
+            0,
+            RETROK_RETURN);
 
    menu_input_key_bind_poll_bind_state_internal(
          joypad, state, port, timed_out);
@@ -23416,7 +23419,10 @@ static void input_poll_overlay(
             &joypad_info,
             NULL,
             p_rarch->keyboard_mapping_blocked,
-            0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+            0,
+            device,
+            i,
+            RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       input_overlay_state_t polled_data;
@@ -23427,7 +23433,10 @@ static void input_poll_overlay(
             &joypad_info,
             NULL,
             p_rarch->keyboard_mapping_blocked,
-            0, device, i, RETRO_DEVICE_ID_POINTER_X);
+            0,
+            device,
+            i,
+            RETRO_DEVICE_ID_POINTER_X);
       int16_t y = input_ptr->input_state(
             input_data,
             p_rarch->joypad,
@@ -23435,7 +23444,10 @@ static void input_poll_overlay(
             &joypad_info,
             NULL,
             p_rarch->keyboard_mapping_blocked,
-            0, device, i, RETRO_DEVICE_ID_POINTER_Y);
+            0,
+            device,
+            i,
+            RETRO_DEVICE_ID_POINTER_Y);
 
       memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
@@ -23880,7 +23892,10 @@ static void input_driver_poll(void)
             &joypad_info[i],
             p_rarch->libretro_input_binds,
             p_rarch->keyboard_mapping_blocked,
-            (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+            (unsigned)i,
+            RETRO_DEVICE_JOYPAD,
+            0,
+            RARCH_TURBO_ENABLE);
    }
 
 #ifdef HAVE_OVERLAY
@@ -25037,9 +25052,8 @@ static void menu_input_get_touchscreen_hw_state(
          p_rarch->joypad,
          sec_joypad,
          &joypad_info, binds,
-         0,
-         pointer_device,
          p_rarch->keyboard_mapping_blocked,
+         0, pointer_device,
          0, RETRO_DEVICE_ID_POINTER_X);
    hw_state->x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
 
@@ -25067,8 +25081,8 @@ static void menu_input_get_touchscreen_hw_state(
          p_rarch->joypad,
          sec_joypad,
          &joypad_info, binds,
-         0, pointer_device,
          p_rarch->keyboard_mapping_blocked,
+         0, pointer_device,
          0, RETRO_DEVICE_ID_POINTER_Y);
    hw_state->y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
 
