@@ -1452,13 +1452,22 @@ static int16_t android_input_state(
          }
          break;
       case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
+               if (device == RARCH_DEVICE_POINTER_SCREEN)
+                  return android->pointer[idx].full_x;
                return android->pointer[idx].x;
             case RETRO_DEVICE_ID_POINTER_Y:
+               if (device == RARCH_DEVICE_POINTER_SCREEN)
+                  return android->pointer[idx].full_y;
                return android->pointer[idx].y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
+               if (device == RARCH_DEVICE_POINTER_SCREEN)
+                  return (idx < android->pointer_count) &&
+                     (android->pointer[idx].full_x != -0x8000) &&
+                     (android->pointer[idx].full_y != -0x8000);
                return (idx < android->pointer_count) &&
                   (android->pointer[idx].x != -0x8000) &&
                   (android->pointer[idx].y != -0x8000);
@@ -1471,28 +1480,6 @@ static int16_t android_input_state(
                if (keyptr->joykey == 0)
                   return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
             }
-         }
-         break;
-      case RARCH_DEVICE_POINTER_SCREEN:
-         switch (id)
-         {
-            case RETRO_DEVICE_ID_POINTER_X:
-               return android->pointer[idx].full_x;
-            case RETRO_DEVICE_ID_POINTER_Y:
-               return android->pointer[idx].full_y;
-            case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (idx < android->pointer_count) &&
-                  (android->pointer[idx].full_x != -0x8000) &&
-                  (android->pointer[idx].full_y != -0x8000);
-            case RETRO_DEVICE_ID_POINTER_COUNT:
-               return android->pointer_count;
-            case RARCH_DEVICE_ID_POINTER_BACK:
-               {
-                  const struct retro_keybind *keyptr = 
-                     &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
-                  if (keyptr->joykey == 0)
-                     return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
-               }
          }
          break;
    }
