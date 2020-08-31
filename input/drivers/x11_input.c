@@ -39,7 +39,7 @@ typedef struct x11_input
 
    int mouse_x, mouse_y;
    int mouse_last_x, mouse_last_y;
-   uint8_t state[32];
+   char state[32];
    bool mouse_l, mouse_r, mouse_m;
    bool grab_mouse;
 } x11_input_t;
