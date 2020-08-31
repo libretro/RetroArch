@@ -273,6 +273,7 @@ bool core_updater_list_get_core(
       const char *local_core_path,
       const core_updater_list_entry_t **entry)
 {
+   bool resolve_symlinks;
    size_t num_entries;
    size_t i;
    char real_core_path[PATH_MAX_LENGTH];
@@ -289,7 +290,14 @@ bool core_updater_list_get_core(
 
    /* Resolve absolute pathname of local_core_path */
    strlcpy(real_core_path, local_core_path, sizeof(real_core_path));
-   path_resolve_realpath(real_core_path, sizeof(real_core_path), true);
+   /* Can't resolve symlinks when dealing with cores
+    * installed via play feature delivery, because the
+    * source files have non-standard file names (which
+    * will not be recognised by regular core handling
+    * routines) */
+   resolve_symlinks = (core_list->type != CORE_UPDATER_LIST_TYPE_PFD);
+   path_resolve_realpath(real_core_path, sizeof(real_core_path),
+         resolve_symlinks);
 
    if (string_is_empty(real_core_path))
       return false;
@@ -391,10 +399,16 @@ static bool core_updater_list_set_paths(
 {
    char *last_underscore                  = NULL;
    char *tmp_url                          = NULL;
+   bool is_archive                        = true;
+   /* Can't resolve symlinks when dealing with cores
+    * installed via play feature delivery, because the
+    * source files have non-standard file names (which
+    * will not be recognised by regular core handling
+    * routines) */
+   bool resolve_symlinks                  = (list_type != CORE_UPDATER_LIST_TYPE_PFD);
    char remote_core_path[PATH_MAX_LENGTH];
    char local_core_path[PATH_MAX_LENGTH];
    char local_info_path[PATH_MAX_LENGTH];
-   bool is_archive;
 
    remote_core_path[0] = '\0';
    local_core_path[0]  = '\0';
@@ -460,7 +474,8 @@ static bool core_updater_list_set_paths(
    if (is_archive)
       path_remove_extension(local_core_path);
 
-   path_resolve_realpath(local_core_path, sizeof(local_core_path), true);
+   path_resolve_realpath(local_core_path, sizeof(local_core_path),
+         resolve_symlinks);
 
    if (entry->local_core_path)
    {

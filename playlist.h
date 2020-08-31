@@ -223,7 +223,8 @@ void playlist_delete_by_path(playlist_t *playlist,
 /**
  * playlist_resolve_path:
  * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
- * @path        : The path to be modified
+ * @is_core   : Set true if path to be resolved is a core file
+ * @path      : The path to be modified
  *
  * Resolves the path of an item, such as the content path or path to the core, to a format
  * appropriate for saving or loading depending on the @mode parameter
@@ -233,7 +234,7 @@ void playlist_delete_by_path(playlist_t *playlist,
  * install (iOS)
  **/
 void playlist_resolve_path(enum playlist_file_mode mode,
-      char *path, size_t len);
+      bool is_core, char *path, size_t len);
 
 /**
  * playlist_push:

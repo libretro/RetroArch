@@ -44,22 +44,28 @@
 typedef struct
 {
 #ifdef HAVE_THREADS
-   slock_t *lock;
+   slock_t *enabled_lock;
+   slock_t *status_lock;
 #endif
    unsigned download_progress;
    enum play_feature_delivery_install_status last_status;
    char last_core_name[256];
+   bool enabled;
+   bool enabled_set;
    bool active;
 } play_feature_delivery_state_t;
 
 static play_feature_delivery_state_t play_feature_delivery_state = {
 
 #ifdef HAVE_THREADS
-   NULL,                       /* lock */
+   NULL,                       /* enabled_lock */
+   NULL,                       /* status_lock */
 #endif
    0,                          /* download_progress */
    PLAY_FEATURE_DELIVERY_IDLE, /* last_status */
    {'\0'},                     /* last_core_name */
+   false,                      /* enabled */
+   false,                      /* enabled_set */
    false,                      /* active */
 };
 
@@ -85,7 +91,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
 
    /* Lock mutex */
 #ifdef HAVE_THREADS
-   slock_lock(state->lock);
+   slock_lock(state->status_lock);
 #endif
 
    /* Only update status if an install is active */
@@ -114,7 +120,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
 
    /* Unlock mutex */
 #ifdef HAVE_THREADS
-   slock_unlock(state->lock);
+   slock_unlock(state->status_lock);
 #endif
 }
 
@@ -130,7 +136,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
 
    /* Lock mutex */
 #ifdef HAVE_THREADS
-   slock_lock(state->lock);
+   slock_lock(state->status_lock);
 #endif
 
    /* Only update status if an install is active */
@@ -184,7 +190,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
 
    /* Unlock mutex */
 #ifdef HAVE_THREADS
-   slock_unlock(state->lock);
+   slock_unlock(state->status_lock);
 #endif
 }
 
@@ -198,12 +204,23 @@ void play_feature_delivery_init(void)
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
 
    play_feature_delivery_deinit();
-#ifdef HAVE_THREADS
-   if (!state->lock)
-      state->lock = slock_new();
 
-   retro_assert(state->lock);
+#ifdef HAVE_THREADS
+   if (!state->enabled_lock)
+      state->enabled_lock = slock_new();
+
+   retro_assert(state->enabled_lock);
+
+   if (!state->status_lock)
+      state->status_lock = slock_new();
+
+   retro_assert(state->status_lock);
 #endif
+
+   /* Note: Would like to cache whether this
+    * is a Play Store build here, but
+    * play_feature_delivery_init() is called
+    * too early in the startup sequence... */
 }
 
 /* Must be called upon program termination */
@@ -212,10 +229,16 @@ void play_feature_delivery_deinit(void)
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
 
 #ifdef HAVE_THREADS
-   if (state->lock)
+   if (state->enabled_lock)
    {
-      slock_free(state->lock);
-      state->lock = NULL;
+      slock_free(state->enabled_lock);
+      state->enabled_lock = NULL;
+   }
+
+   if (state->status_lock)
+   {
+      slock_free(state->status_lock);
+      state->status_lock = NULL;
    }
 #endif
 }
@@ -251,8 +274,10 @@ static bool play_feature_delivery_get_core_name(
 }
 
 /* Returns true if current build utilises
- * play feature delivery */
-bool play_feature_delivery_enabled(void)
+ * play feature delivery
+ * > Relies on a Java function call, and is
+ *   therefore slow */
+static bool play_feature_delivery_enabled_internal(void)
 {
    JNIEnv *env             = jni_thread_getenv();
    struct android_app *app = (struct android_app*)g_android;
@@ -265,6 +290,39 @@ bool play_feature_delivery_enabled(void)
 
    CALL_BOOLEAN_METHOD(env, enabled, app->activity->clazz,
          app->isPlayStoreBuild);
+
+   return enabled;
+}
+
+/* Returns true if current build utilises
+ * play feature delivery */
+bool play_feature_delivery_enabled(void)
+{
+   play_feature_delivery_state_t* state = play_feature_delivery_get_state();
+   bool enabled;
+
+   /* Lock mutex */
+#ifdef HAVE_THREADS
+   slock_lock(state->enabled_lock);
+#endif
+
+   /* Calling Java functions is slow. We need to
+    * check Play Store build status frequently,
+    * often in loops, so rely on a cached global
+    * status flag instead dealing with Java
+    * interfaces */
+   if (!state->enabled_set)
+   {
+      state->enabled     = play_feature_delivery_enabled_internal();
+      state->enabled_set = true;
+   }
+
+   enabled = state->enabled;
+
+   /* Unlock mutex */
+#ifdef HAVE_THREADS
+   slock_unlock(state->enabled_lock);
+#endif
 
    return enabled;
 }
@@ -408,7 +466,7 @@ bool play_feature_delivery_download_status(
 
    /* Lock mutex */
 #ifdef HAVE_THREADS
-   slock_lock(state->lock);
+   slock_lock(state->status_lock);
 #endif
 
    /* Copy status parameters */
@@ -422,7 +480,7 @@ bool play_feature_delivery_download_status(
 
    /* Unlock mutex */
 #ifdef HAVE_THREADS
-   slock_unlock(state->lock);
+   slock_unlock(state->status_lock);
 #endif
 
    return active;
@@ -459,7 +517,7 @@ bool play_feature_delivery_download(const char *core_file)
 
    /* Lock mutex */
 #ifdef HAVE_THREADS
-   slock_lock(state->lock);
+   slock_lock(state->status_lock);
 #endif
 
    /* We only support one download at a time */
@@ -487,7 +545,7 @@ bool play_feature_delivery_download(const char *core_file)
 
    /* Unlock mutex */
 #ifdef HAVE_THREADS
-   slock_unlock(state->lock);
+   slock_unlock(state->status_lock);
 #endif
 
    return success;
