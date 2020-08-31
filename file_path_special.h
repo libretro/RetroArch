@@ -71,6 +71,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_INDEX_DIRS_URL ".index-dirs"
 #define FILE_PATH_INDEX_EXTENDED_URL ".index-extended"
 #define FILE_PATH_NETPLAY_ROOM_LIST_URL "registry.lpl"
+#define FILE_PATH_LOBBY_LIBRETRO_URL "http://lobby.libretro.com/"
 #define FILE_PATH_CORE_THUMBNAILS_URL "http://thumbnails.libretro.com"
 #define FILE_PATH_CORE_THUMBNAILPACKS_URL "http://thumbnailpacks.libretro.com"
 #ifdef HAVE_LAKKA_NIGHTLY
