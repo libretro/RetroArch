@@ -164,8 +164,10 @@ static unsigned input_unify_ev_key_code(unsigned code)
       case KEY_BACK:
          return KEY_BACKSPACE;
       default:
-         return code;
+         break;
    }
+
+   return code;
 }
 
 static void udev_handle_keyboard(void *data,
@@ -350,13 +352,13 @@ static int16_t udev_mouse_get_pointer_x(const udev_input_mouse_t *mouse, bool sc
          src_width = vp.width;
    }
 
-   x = -32767.0 + 65535.0 / src_width * (mouse->x_abs - src_min);
+   x  = -32767.0 + 65535.0 / src_width * (mouse->x_abs - src_min);
    x += (x < 0 ? -0.5 : 0.5);
 
    if (x < -0x7fff)
-      x = -0x7fff;
+      return -0x7fff;
    else if(x > 0x7fff)
-      x = 0x7fff;
+      return 0x7fff;
 
    return x;
 }
@@ -389,9 +391,9 @@ static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool sc
    y += (y < 0 ? -0.5 : 0.5);
 
    if (y < -0x7fff)
-      y = -0x7fff;
+      return -0x7fff;
    else if(y > 0x7fff)
-      y = 0x7fff;
+      return 0x7fff;
 
    return y;
 }
