@@ -793,7 +793,7 @@ static void *gx_init(const video_info_t *video,
    if (!gx)
       return NULL;
 
-   gxinput     = input_gx.init(input_joypad_driver);
+   gxinput     = input_driver_init_wrap(&input_gx, input_joypad_driver);
    *input      = gxinput ? &input_gx : NULL;
    *input_data = gxinput;
 

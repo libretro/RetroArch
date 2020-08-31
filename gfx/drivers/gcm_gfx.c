@@ -318,7 +318,7 @@ static void* gcm_init(const video_info_t* video,
 
    if (input && input_data)
    {
-      void *ps3input             = input_ps3.init(ps3_joypad.ident);
+      void *ps3input       = input_driver_init_wrap(&input_ps3, ps3_joypad.ident);
       *input               = ps3input ? &input_ps3 : NULL;
       *input_data          = ps3input;
    }

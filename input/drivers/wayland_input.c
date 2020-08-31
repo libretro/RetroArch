@@ -52,58 +52,11 @@
 
 void flush_wayland_fd(void *data);
 
-static int16_t input_wl_mouse_state(
-      input_ctx_wayland_data_t *wl, unsigned id, bool screen)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return screen ? wl->mouse.x : wl->mouse.delta_x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return screen ? wl->mouse.y : wl->mouse.delta_y;
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return wl->mouse.left;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return wl->mouse.right;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return wl->mouse.middle;
-
-      /* TODO: Rest of the mouse inputs. */
-   }
-
-   return 0;
-}
-
-static int16_t input_wl_lightgun_state(
-      input_ctx_wayland_data_t *wl, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return wl->mouse.delta_x;
-      case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return wl->mouse.delta_y;
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return wl->mouse.left;
-      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
-         return wl->mouse.middle;
-      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
-         return wl->mouse.right;
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return wl->mouse.middle && wl->mouse.right;
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return wl->mouse.middle && wl->mouse.left;
-   }
-
-   return 0;
-}
-
-/* forward declaration */
-static bool wayland_context_gettouchpos(void *data, unsigned id,
+static bool wayland_context_gettouchpos(
+      gfx_ctx_wayland_data_t *wl,
+      unsigned id,
       unsigned* touch_x, unsigned* touch_y)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
    if (id >= MAX_TOUCHES)
        return false;
    *touch_x = wl->active_touch_positions[id].x;
@@ -111,29 +64,11 @@ static bool wayland_context_gettouchpos(void *data, unsigned id,
    return wl->active_touch_positions[id].active;
 }
 
-static void input_wl_touch_pool(void *data)
+static void input_wl_poll(void *data)
 {
    int id;
    unsigned touch_x             = 0;
    unsigned touch_y             = 0;
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-
-   if (!wl)
-      return;
-
-   for (id = 0; id < MAX_TOUCHES; id++)
-   {
-      if (wayland_context_gettouchpos(wl, id, &touch_x, &touch_y))
-         wl->touches[id].active = true;
-      else
-         wl->touches[id].active = false;
-      wl->touches[id].x         = touch_x;
-      wl->touches[id].y         = touch_y;
-   }
-}
-
-static void input_wl_poll(void *data)
-{
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
    if (!wl)
       return;
@@ -151,98 +86,15 @@ static void input_wl_poll(void *data)
       wl->mouse.delta_y = 0;
    }
 
-   if (wl->joypad)
-      wl->joypad->poll();
-
-   input_wl_touch_pool(wl);
-}
-
-static int16_t input_wl_analog_pressed(input_ctx_wayland_data_t *wl,
-      const struct retro_keybind *binds,
-      unsigned idx, unsigned id)
-{
-   unsigned id_minus     = 0;
-   unsigned id_plus      = 0;
-   int16_t pressed_minus = 0;
-   int16_t pressed_plus  = 0;
-
-   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-   if (binds
-         && binds[id_minus].valid
-         && (id_minus < RARCH_BIND_LIST_END)
-         && BIT_GET(wl->key_state, rarch_keysym_lut[binds[id_minus].key])
-      )
-      pressed_minus = -0x7fff;
-   if (binds
-         && binds[id_plus].valid
-         && (id_plus < RARCH_BIND_LIST_END)
-         && BIT_GET(wl->key_state, rarch_keysym_lut[binds[id_plus].key])
-      )
-      pressed_plus = 0x7fff;
-
-   return pressed_plus + pressed_minus;
-}
-
-static bool input_wl_state_kb(input_ctx_wayland_data_t *wl,
-      const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
-{
-   unsigned bit = rarch_keysym_lut[(enum retro_key)id];
-   return id < RETROK_LAST && BIT_GET(wl->key_state, bit);
-}
-
-static int16_t input_wl_pointer_state(input_ctx_wayland_data_t *wl,
-      unsigned idx, unsigned id, bool screen)
-{
-   struct video_viewport vp;
-
-   bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-
-   if (!(video_driver_translate_coord_viewport_wrap(&vp,
-         wl->mouse.x, wl->mouse.y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
-
-      return 0;
-
-   if (screen)
+   for (id = 0; id < MAX_TOUCHES; id++)
    {
-      res_x = res_screen_x;
-      res_y = res_screen_y;
+      if (wayland_context_gettouchpos(wl->gfx, id, &touch_x, &touch_y))
+         wl->touches[id].active = true;
+      else
+         wl->touches[id].active = false;
+      wl->touches[id].x         = touch_x;
+      wl->touches[id].y         = touch_y;
    }
-
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_POINTER_X:
-         if (inside)
-            return res_x;
-         break;
-      case RETRO_DEVICE_ID_POINTER_Y:
-         if (inside)
-            return res_y;
-         break;
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return wl->mouse.left;
-      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return !inside;
-      default:
-         break;
-   }
-
-   return 0;
 }
 
 static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
@@ -295,10 +147,17 @@ static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
    return 0;
 }
 
-static int16_t input_wl_state(void *data,
+static int16_t input_wl_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
 
@@ -308,7 +167,7 @@ static int16_t input_wl_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = wl->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -329,7 +188,8 @@ static int16_t input_wl_state(void *data,
             {
                if (binds[port][id].valid)
                {
-                  if (button_is_pressed(wl->joypad, joypad_info, binds[port],
+                  if (button_is_pressed(joypad,
+                           joypad_info, binds[port],
                            port, id))
                      return 1;
                   else if (BIT_GET(wl->key_state,
@@ -341,18 +201,111 @@ static int16_t input_wl_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return input_wl_analog_pressed(wl, binds[port], idx, id);
+         {
+            int id_minus_key      = 0;
+            int id_plus_key       = 0;
+            unsigned id_minus     = 0;
+            unsigned id_plus      = 0;
+            int16_t ret           = 0;
+            bool id_plus_valid    = false;
+            bool id_minus_valid   = false;
+
+            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+            id_minus_valid        = binds[port][id_minus].valid;
+            id_plus_valid         = binds[port][id_plus].valid;
+            id_minus_key          = binds[port][id_minus].key;
+            id_plus_key           = binds[port][id_plus].key;
+
+            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
+               if (BIT_GET(wl->key_state, sym))
+                  ret = 0x7fff;
+            }
+            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
+               if (BIT_GET(wl->key_state, sym))
+                  ret += -0x7fff;
+            }
+
+            return ret;
+         }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return input_wl_state_kb(wl, binds, port, device, idx, id);
+         return id < RETROK_LAST && 
+            BIT_GET(wl->key_state, rarch_keysym_lut[(enum retro_key)id]);
       case RETRO_DEVICE_MOUSE:
-         return input_wl_mouse_state(wl, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return input_wl_mouse_state(wl, id, true);
+         {
+            bool screen = device == RARCH_DEVICE_MOUSE_SCREEN;
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return screen ? wl->mouse.x : wl->mouse.delta_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return screen ? wl->mouse.y : wl->mouse.delta_y;
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return wl->mouse.left;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return wl->mouse.right;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return wl->mouse.middle;
+                  /* TODO: Rest of the mouse inputs. */
+            }
+         }
+         break;
       case RETRO_DEVICE_POINTER:
          if (idx == 0)
-            return input_wl_pointer_state(wl, idx, id,
-                  device == RARCH_DEVICE_POINTER_SCREEN);
+         {
+            struct video_viewport vp;
+            bool screen                 = 
+               (device == RARCH_DEVICE_POINTER_SCREEN);
+            bool inside                 = false;
+            int16_t res_x               = 0;
+            int16_t res_y               = 0;
+            int16_t res_screen_x        = 0;
+            int16_t res_screen_y        = 0;
+
+            vp.x                        = 0;
+            vp.y                        = 0;
+            vp.width                    = 0;
+            vp.height                   = 0;
+            vp.full_width               = 0;
+            vp.full_height              = 0;
+
+            if (video_driver_translate_coord_viewport_wrap(&vp,
+                        wl->mouse.x, wl->mouse.y,
+                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+            {
+               if (screen)
+               {
+                  res_x = res_screen_x;
+                  res_y = res_screen_y;
+               }
+
+               inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+
+               switch (id)
+               {
+                  case RETRO_DEVICE_ID_POINTER_X:
+                     if (inside)
+                        return res_x;
+                     break;
+                  case RETRO_DEVICE_ID_POINTER_Y:
+                     if (inside)
+                        return res_y;
+                     break;
+                  case RETRO_DEVICE_ID_POINTER_PRESSED:
+                     return wl->mouse.left;
+                  case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+                     return !inside;
+                  default:
+                     break;
+               }
+            }
+         }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx < MAX_TOUCHES)
@@ -360,21 +313,30 @@ static int16_t input_wl_state(void *data,
                   device == RARCH_DEVICE_POINTER_SCREEN);
          break;
       case RETRO_DEVICE_LIGHTGUN:
-         return input_wl_lightgun_state(wl, id);
+         switch (id)
+         {
+            case RETRO_DEVICE_ID_LIGHTGUN_X:
+               return wl->mouse.delta_x;
+            case RETRO_DEVICE_ID_LIGHTGUN_Y:
+               return wl->mouse.delta_y;
+            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+               return wl->mouse.left;
+            case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+               return wl->mouse.middle;
+            case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+               return wl->mouse.right;
+            case RETRO_DEVICE_ID_LIGHTGUN_START:
+               return wl->mouse.middle && wl->mouse.right;
+            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+               return wl->mouse.middle && wl->mouse.left;
+         }
+         break;
    }
 
    return 0;
 }
 
-static void input_wl_free(void *data)
-{
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   if (!wl)
-      return;
-
-   if (wl->joypad)
-      wl->joypad->destroy();
-}
+static void input_wl_free(void *data) { }
 
 bool input_wl_init(void *data, const char *joypad_name)
 {
@@ -385,18 +347,11 @@ bool input_wl_init(void *data, const char *joypad_name)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
-   wl->joypad = input_joypad_init_driver(joypad_name, wl);
-
-   if (!wl->joypad)
-      return false;
-
    return true;
 }
 
 static uint64_t input_wl_get_capabilities(void *data)
 {
-   (void)data;
-
    return
       (1 << RETRO_DEVICE_JOYPAD)   |
       (1 << RETRO_DEVICE_ANALOG)   |
@@ -405,28 +360,15 @@ static uint64_t input_wl_get_capabilities(void *data)
       (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
-static void input_wl_grab_mouse(void *data, bool state)
-{
-   /* Dummy for now. Might be useful in the future. */
-   (void)data;
-   (void)state;
-}
-
-static bool input_wl_set_rumble(void *data, unsigned port,
+static bool input_wl_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   if (wl && wl->joypad)
-      return input_joypad_set_rumble(wl->joypad, port, effect, strength);
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
    return false;
-}
-
-static const input_device_driver_t *input_wl_get_joypad_driver(void *data)
-{
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   if (!wl)
-      return NULL;
-   return wl->joypad;
 }
 
 input_driver_t input_wayland = {
@@ -438,10 +380,7 @@ input_driver_t input_wayland = {
    NULL,
    input_wl_get_capabilities,
    "wayland",
-   input_wl_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
-   input_wl_set_rumble,
-   input_wl_get_joypad_driver,
-   NULL,
-   false
+   input_wl_set_rumble
 };

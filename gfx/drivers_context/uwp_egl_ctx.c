@@ -213,13 +213,13 @@ static void gfx_ctx_uwp_input_driver(void *data,
     * supports joypad only (uwp driver was added later) */
    if (string_is_equal(settings->arrays.input_driver, "xinput"))
    {
-      void* xinput = input_xinput.init(joypad_name);
+      void* xinput = input_driver_init_wrap(&input_xinput, joypad_name);
       *input       = xinput ? (input_driver_t*)&input_xinput : NULL;
       *input_data  = xinput;
    }
    else
    {
-      void* uwp   = input_uwp.init(joypad_name);
+      void* uwp   = input_driver_init_wrap(&input_uwp, joypad_name);
       *input      = uwp ? (input_driver_t*)&input_uwp : NULL;
       *input_data = uwp;
    }

@@ -748,11 +748,7 @@ INPUT
 
 #ifdef HAVE_DINPUT
 #include "../input/drivers/dinput.c"
-#ifdef HAVE_XINPUT
-#include "../input/drivers_joypad/dinput_hybrid_joypad.c"
-#else
 #include "../input/drivers_joypad/dinput_joypad.c"
-#endif
 #endif
 
 #ifdef HAVE_XINPUT

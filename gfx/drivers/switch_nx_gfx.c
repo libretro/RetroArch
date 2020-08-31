@@ -210,9 +210,10 @@ static void *switch_init(const video_info_t *video,
     if (input && input_data)
     {
         settings_t *settings = config_get_ptr();
-        switchinput = input_switch.init(settings->arrays.input_joypad_driver);
-        *input = switchinput ? &input_switch : NULL;
-        *input_data = switchinput;
+        switchinput          = input_driver_init_wrap(&input_switch,
+              settings->arrays.input_joypad_driver);
+        *input               = switchinput ? &input_switch : NULL;
+        *input_data          = switchinput;
     }
 
     font_driver_init_osd(sw,

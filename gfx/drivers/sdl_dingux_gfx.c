@@ -108,7 +108,8 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      void *sdl_input = input_sdl.init(settings->arrays.input_joypad_driver);
+      void *sdl_input = input_driver_init_wrap(&input_sdl,
+            settings->arrays.input_joypad_driver);
 
       if (sdl_input)
       {

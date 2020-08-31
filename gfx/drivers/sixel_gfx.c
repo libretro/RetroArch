@@ -221,7 +221,8 @@ static void *sixel_gfx_init(const video_info_t *video,
    }
 
 #ifdef HAVE_UDEV
-   *input_data    = input_udev.init(settings->arrays.input_driver);
+   *input_data    = input_driver_init_wrap(&input_udev,
+         settings->arrays.input_driver);
 
    if (*input_data)
       *input      = &input_udev;

@@ -45,11 +45,11 @@ static int16_t android_joypad_button_state(
          case HAT_LEFT_MASK:
             return (android_app->hat_state[port][0] == -1);
          case HAT_RIGHT_MASK:
-            return (android_app->hat_state[port][0] == 1);
+            return (android_app->hat_state[port][0] ==  1);
          case HAT_UP_MASK:
             return (android_app->hat_state[port][1] == -1);
          case HAT_DOWN_MASK:
-            return (android_app->hat_state[port][1] == 1);
+            return (android_app->hat_state[port][1] ==  1);
          default:
             break;
       }

@@ -37,22 +37,20 @@
 
 typedef struct xdk_input
 {
-   const input_device_driver_t *joypad;
+   void *empty;
 } xdk_input_t;
 
-static void xdk_input_poll(void *data)
-{
-   xdk_input_t *xdk = (xdk_input_t*)data;
-
-   if (xdk && xdk->joypad)
-      xdk->joypad->poll();
-}
-
-static int16_t xdk_input_state(void *data,
+static int16_t xdk_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned index,
+      unsigned id)
 {
    xdk_input_t *xdk           = (xdk_input_t*)data;
 
@@ -63,12 +61,12 @@ static int16_t xdk_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return xdk->joypad->state(
+            return joypad->state(
                   joypad_info, binds[port], port);
 
          if (binds[port][id].valid)
             if (
-                  button_is_pressed(xdk->joypad, joypad_info, binds[port],
+                  button_is_pressed(joypad, joypad_info, binds[port],
                      port, id))
                return 1;
          break;
@@ -86,9 +84,6 @@ static void xdk_input_free_input(void *data)
    if (!xdk)
       return;
 
-   if (xdk->joypad)
-      xdk->joypad->destroy();
-
    free(xdk);
 }
 
@@ -98,57 +93,38 @@ static void *xdk_input_init(const char *joypad_driver)
    if (!xdk)
       return NULL;
 
-   xdk->joypad = input_joypad_init_driver(joypad_driver, xdk);
-
    return xdk;
 }
 
 static uint64_t xdk_input_get_capabilities(void *data)
 {
-   (void)data;
-
    return (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
 }
 
 /* FIXME - are we sure about treating low frequency motor as the
  * "strong" motor? Does it apply for Xbox too? */
 
-static bool xdk_input_set_rumble(void *data, unsigned port,
+static bool xdk_input_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   xdk_input_t *xdk = (xdk_input_t*)data;
-   if (xdk)
-      return input_joypad_set_rumble(xdk->joypad, port, effect, strength);
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
    return false;
-}
-
-static const input_device_driver_t *xdk_input_get_joypad_driver(void *data)
-{
-   xdk_input_t *xdk = (xdk_input_t*)data;
-   if (!xdk)
-      return NULL;
-   return xdk->joypad;
-}
-
-static void xdk_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
 }
 
 input_driver_t input_xinput = {
    xdk_input_init,
-   xdk_input_poll,
+   NULL,                         /* poll */
    xdk_input_state,
    xdk_input_free_input,
    NULL,
    NULL,
    xdk_input_get_capabilities,
    "xinput",
-   xdk_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
-   xdk_input_set_rumble,
-   xdk_input_get_joypad_driver,
-   NULL,
-   false
+   xdk_input_set_rumble
 };

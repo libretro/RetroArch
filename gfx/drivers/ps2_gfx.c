@@ -251,7 +251,7 @@ static void *ps2_gfx_init(const video_info_t *video,
    if (input && input_data)
    {
       settings_t *settings = config_get_ptr();
-      ps2input             = input_ps2.init(
+      ps2input             = input_driver_init_wrap(&input_ps2,
             settings->arrays.input_joypad_driver);
       *input               = ps2input ? &input_ps2 : NULL;
       *input_data          = ps2input;

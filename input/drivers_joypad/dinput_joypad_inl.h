@@ -1,7 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016-2019 - Brad Parker
+ *  Copyright (C) 2011-2020 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -34,48 +33,6 @@ extern LPDIRECTINPUT8 g_dinput_ctx;
 /* Function prototype forward declarations */
 void dinput_destroy_context(void);
 bool dinput_init_context(void);
-
-/* Keep track of which pad indexes are 360 controllers.
- * Not static, will be read in xinput_joypad.c
- * -1 = not xbox pad, otherwise 0..3
- */
-static void dinput_joypad_destroy(void)
-{
-   unsigned i;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      if (g_pads[i].joypad)
-      {
-         if (g_pads[i].rumble_iface[0])
-         {
-            IDirectInputEffect_Stop(g_pads[i].rumble_iface[0]);
-            IDirectInputEffect_Release(g_pads[i].rumble_iface[0]);
-         }
-         if (g_pads[i].rumble_iface[1])
-         {
-            IDirectInputEffect_Stop(g_pads[i].rumble_iface[1]);
-            IDirectInputEffect_Release(g_pads[i].rumble_iface[1]);
-         }
-
-         IDirectInputDevice8_Unacquire(g_pads[i].joypad);
-         IDirectInputDevice8_Release(g_pads[i].joypad);
-      }
-
-      free(g_pads[i].joy_name);
-      g_pads[i].joy_name = NULL;
-      free(g_pads[i].joy_friendly_name);
-      g_pads[i].joy_friendly_name = NULL;
-
-      input_config_clear_device_name(i);
-   }
-
-   g_joypad_cnt = 0;
-   memset(g_pads, 0, sizeof(g_pads));
-
-   /* Can be blocked by global Dinput context. */
-   dinput_destroy_context();
-}
 
 static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
 {
@@ -144,13 +101,6 @@ static BOOL CALLBACK enum_axes_cb(
    IDirectInputDevice8_SetProperty(joypad, DIPROP_RANGE, &range.diph);
 
    return DIENUM_CONTINUE;
-}
-
-static const char *dinput_joypad_name(unsigned port)
-{
-   if (port < MAX_USERS)
-      return g_pads[port].joy_name;
-   return NULL;
 }
 
 static int16_t dinput_joypad_button_state(
@@ -356,5 +306,55 @@ static bool dinput_joypad_set_rumble(unsigned port,
 
    return true;
 }
+
+/* Keep track of which pad indexes are 360 controllers.
+ * Not static, will be read in xinput_joypad.c
+ * -1 = not xbox pad, otherwise 0..3
+ */
+static void dinput_joypad_destroy(void)
+{
+   unsigned i;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (g_pads[i].joypad)
+      {
+         if (g_pads[i].rumble_iface[0])
+         {
+            IDirectInputEffect_Stop(g_pads[i].rumble_iface[0]);
+            IDirectInputEffect_Release(g_pads[i].rumble_iface[0]);
+         }
+         if (g_pads[i].rumble_iface[1])
+         {
+            IDirectInputEffect_Stop(g_pads[i].rumble_iface[1]);
+            IDirectInputEffect_Release(g_pads[i].rumble_iface[1]);
+         }
+
+         IDirectInputDevice8_Unacquire(g_pads[i].joypad);
+         IDirectInputDevice8_Release(g_pads[i].joypad);
+      }
+
+      free(g_pads[i].joy_name);
+      g_pads[i].joy_name = NULL;
+      free(g_pads[i].joy_friendly_name);
+      g_pads[i].joy_friendly_name = NULL;
+
+      input_config_clear_device_name(i);
+   }
+
+   g_joypad_cnt = 0;
+   memset(g_pads, 0, sizeof(g_pads));
+
+   /* Can be blocked by global Dinput context. */
+   dinput_destroy_context();
+}
+
+static const char *dinput_joypad_name(unsigned port)
+{
+   if (port < MAX_USERS)
+      return g_pads[port].joy_name;
+   return NULL;
+}
+
 
 #endif

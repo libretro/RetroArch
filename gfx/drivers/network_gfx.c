@@ -69,7 +69,7 @@ static void gfx_ctx_network_input_driver(
       input_driver_t **input, void **input_data)
 {
 #ifdef HAVE_UDEV
-   *input_data = input_udev.init(joypad_driver);
+   *input_data = input_driver_init_wrap(&input_udev, joypad_driver);
 
    if (*input_data)
    {

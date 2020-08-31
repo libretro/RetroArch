@@ -220,7 +220,7 @@ static void android_gfx_ctx_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   void *androidinput   = input_android.init(joypad_name);
+   void *androidinput   = input_driver_init_wrap(&input_android, joypad_name);
 
    *input               = androidinput ? &input_android : NULL;
    *input_data          = androidinput;

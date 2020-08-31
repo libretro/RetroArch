@@ -83,10 +83,13 @@ typedef struct output_info
    struct wl_list link; /* wl->all_outputs */
 } output_info_t;
 
+typedef struct gfx_ctx_wayland_data gfx_ctx_wayland_data_t;
+
 typedef struct input_ctx_wayland_data
 {
    struct wl_display *dpy;
    const input_device_driver_t *joypad;
+   gfx_ctx_wayland_data_t *gfx;
 
    int fd;
 

@@ -50,8 +50,13 @@
 #include "../../defines/psp_defines.h"
 
 #include "../input_driver.h"
+
+/* TODO/FIXME -
+ * fix game focus toggle */
+
 #ifdef VITA
 #include "../input_keymaps.h"
+
 uint8_t modifier_lut[VITA_NUM_MODIFIERS][2] =
 {
    { 0xE0, 0x01 }, /* LCTRL */
@@ -66,15 +71,9 @@ uint8_t modifier_lut[VITA_NUM_MODIFIERS][2] =
    { 0x39, 0x02 }, /* CAPSLOCK */
    { 0x47, 0x04 }  /* SCROLLOCK */
 };
-#endif
-
-/* TODO/FIXME -
- * fix game focus toggle */
 
 typedef struct psp_input
 {
-   const input_device_driver_t *joypad;
-#ifdef VITA
    int keyboard_hid_handle;
    int mouse_hid_handle;
    int32_t mouse_x;
@@ -87,13 +86,11 @@ typedef struct psp_input
    bool mouse_button_right;
    bool mouse_button_middle;
    bool sensors_enabled;
-#endif
 } psp_input_t;
 
-static void psp_input_poll(void *data)
+static void vita_input_poll(void *data)
 {
-   psp_input_t *psp = (psp_input_t*)data;
-#ifdef VITA
+   psp_input_t *psp     = (psp_input_t*)data;
    unsigned int i       = 0;
    int key_sym          = 0;
    unsigned key_code    = 0;
@@ -101,7 +98,6 @@ static void psp_input_poll(void *data)
    uint16_t mod         = 0;
    uint8_t modifiers[2] = { 0, 0 };
    bool key_held        = false;
-   int numReports       = 0;
    int mouse_velocity_x = 0;
    int mouse_velocity_y = 0;
    SceHidKeyboardReport k_reports[SCE_HID_MAX_REPORT];
@@ -109,7 +105,7 @@ static void psp_input_poll(void *data)
 
    if (psp->keyboard_hid_handle > 0)
    {
-      numReports = sceHidKeyboardRead(
+      int numReports = sceHidKeyboardRead(
             psp->keyboard_hid_handle,
             (SceHidKeyboardReport**)&k_reports, SCE_HID_MAX_REPORT);
 
@@ -137,9 +133,9 @@ static void psp_input_poll(void *data)
 
          for (i = 0; i < VITA_NUM_MODIFIERS; i++)
          {
-            key_sym = (int) modifier_lut[i][0];
-            mod_code = modifier_lut[i][1];
-            key_code = input_keymaps_translate_keysym_to_rk(key_sym);
+            key_sym     = (int)modifier_lut[i][0];
+            mod_code    = modifier_lut[i][1];
+            key_code    = input_keymaps_translate_keysym_to_rk(key_sym);
             if (i < 8)
                key_held = (modifiers[0] & mod_code);
             else
@@ -191,7 +187,7 @@ static void psp_input_poll(void *data)
 
    if (psp->mouse_hid_handle > 0)
    {
-      numReports = sceHidMouseRead(psp->mouse_hid_handle,
+      int numReports = sceHidMouseRead(psp->mouse_hid_handle,
             (SceHidMouseReport**)&m_reports, SCE_HID_MAX_REPORT);
 
       if (numReports > 0)
@@ -221,70 +217,38 @@ static void psp_input_poll(void *data)
       }
    }
 
-   psp->mouse_x_delta = mouse_velocity_x;
-   psp->mouse_y_delta = mouse_velocity_y;
-   psp->mouse_x += mouse_velocity_x;
-   psp->mouse_y += mouse_velocity_y;
+   psp->mouse_x_delta  = mouse_velocity_x;
+   psp->mouse_y_delta  = mouse_velocity_y;
+   psp->mouse_x       += mouse_velocity_x;
+   psp->mouse_y       += mouse_velocity_y;
    if (psp->mouse_x < 0)
-      psp->mouse_x = 0;
+      psp->mouse_x     = 0;
    else if (psp->mouse_x > MOUSE_MAX_X)
-      psp->mouse_x = MOUSE_MAX_X;
+      psp->mouse_x     = MOUSE_MAX_X;
 
    if (psp->mouse_y < 0)
-      psp->mouse_y = 0;
+      psp->mouse_y     = 0;
    else if (psp->mouse_y > MOUSE_MAX_Y)
-      psp->mouse_y = MOUSE_MAX_Y;
-#endif
-
-   if (psp && psp->joypad)
-      psp->joypad->poll();
+      psp->mouse_y     = MOUSE_MAX_Y;
 }
-
-#ifdef VITA
-static int16_t psp_input_mouse_state(
-      psp_input_t *psp, unsigned id, bool screen)
+#else
+typedef struct psp_input
 {
-   int val = 0;
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         val = psp->mouse_button_left;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         val = psp->mouse_button_right;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         val = psp->mouse_button_middle;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_X:
-         if (screen)
-            val = psp->mouse_x;
-         else
-         {
-            val = psp->mouse_x_delta;
-            psp->mouse_x_delta = 0; /* flush delta after it has been read */
-         }
-         break;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         if (screen)
-            val = psp->mouse_y;
-         else
-         {
-            val = psp->mouse_y_delta;
-            psp->mouse_y_delta = 0; /* flush delta after it has been read */
-         }
-         break;
-   }
-
-   return val;
-}
+   void *empty;
+} psp_input_t;
 #endif
 
-static int16_t psp_input_state(void *data,
+static int16_t psp_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    psp_input_t *psp           = (psp_input_t*)data;
 
@@ -297,12 +261,12 @@ static int16_t psp_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return psp->joypad->state(
+            return joypad->state(
                   joypad_info, binds[port], port);
 
          if (binds[port][id].valid)
             if (
-                  button_is_pressed(psp->joypad, joypad_info, binds[port],
+                  button_is_pressed(joypad, joypad_info, binds[port],
                      port, id))
                return 1;
          break;
@@ -310,13 +274,39 @@ static int16_t psp_input_state(void *data,
          break;
 #ifdef VITA
       case RETRO_DEVICE_KEYBOARD:
-         return ((id < RETROK_LAST) && psp->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
-         break;
+         return ((id < RETROK_LAST) && 
+               psp->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
       case RETRO_DEVICE_MOUSE:
-         return psp_input_mouse_state(psp, id, false);
-         break;
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return psp_input_mouse_state(psp, id, true);
+         {
+            bool screen = device == RARCH_DEVICE_MOUSE_SCREEN;
+            int val     = 0;
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return psp->mouse_button_left;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return psp->mouse_button_right;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return psp->mouse_button_middle;
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  if (screen)
+                     return psp->mouse_x;
+
+                  val                = psp->mouse_x_delta;
+                  psp->mouse_x_delta = 0;
+                  /* flush delta after it has been read */
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  if (screen)
+                     return psp->mouse_y;
+                  val                = psp->mouse_y_delta;
+                  psp->mouse_y_delta = 0;
+                  /* flush delta after it has been read */
+                  break;
+            }
+            return val;
+         }
          break;
 #endif
    }
@@ -326,11 +316,6 @@ static int16_t psp_input_state(void *data,
 
 static void psp_input_free_input(void *data)
 {
-   psp_input_t *psp = (psp_input_t*)data;
-
-   if (psp && psp->joypad)
-      psp->joypad->destroy();
-
    free(data);
 }
 
@@ -356,15 +341,11 @@ static void* psp_input_initialize(const char *joypad_driver)
    psp->mouse_y = 0;
 #endif
 
-   psp->joypad = input_joypad_init_driver(joypad_driver, psp);
-
    return psp;
 }
 
 static uint64_t psp_input_get_capabilities(void *data)
 {
-   (void)data;
-
    uint64_t caps = (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 
 #ifdef VITA
@@ -374,27 +355,16 @@ static uint64_t psp_input_get_capabilities(void *data)
    return caps;
 }
 
-static const input_device_driver_t *psp_input_get_joypad_driver(void *data)
-{
-   psp_input_t *psp = (psp_input_t*)data;
-   if (psp)
-      return psp->joypad;
-   return NULL;
-}
-
-static void psp_input_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
-
-static bool psp_input_set_rumble(void *data, unsigned port,
+static bool psp_input_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    psp_input_t *psp = (psp_input_t*)data;
 
-   if (psp && psp->joypad)
-      return input_joypad_set_rumble(psp->joypad,
+   if (joypad)
+      return input_joypad_set_rumble(joypad,
          port, effect, strength);
    return false;
 }
@@ -405,7 +375,7 @@ static bool psp_input_set_sensor_state(void *data, unsigned port,
 {
    psp_input_t *psp = (psp_input_t*)data;
 	
-   if(!psp)
+   if (!psp)
       return false;
   
    switch (action)
@@ -477,7 +447,11 @@ static float psp_input_get_sensor_input(void *data,
 
 input_driver_t input_psp = {
    psp_input_initialize,
-   psp_input_poll,
+#ifdef VITA
+   vita_input_poll,
+#else
+   NULL,                         /* poll */
+#endif
    psp_input_state,
    psp_input_free_input,
 #ifdef VITA
@@ -494,10 +468,7 @@ input_driver_t input_psp = {
    "psp",
 #endif
 
-   psp_input_grab_mouse,
+   NULL,                         /* grab_mouse */
    NULL,
-   psp_input_set_rumble,
-   psp_input_get_joypad_driver,
-   NULL,
-   false
+   psp_input_set_rumble
 };

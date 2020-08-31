@@ -736,13 +736,16 @@ static void gfx_ctx_wl_input_driver(void *data,
     * on Wayland, so just implement the input driver here. */
    if (!input_wl_init(&wl->input, joypad_name))
    {
-      *input      = NULL;
-      *input_data = NULL;
+      wl->input.gfx = NULL;
+      *input        = NULL;
+      *input_data   = NULL;
    }
    else
    {
-      *input      = &input_wayland;
-      *input_data = &wl->input;
+      wl->input.gfx = wl;
+      *input        = &input_wayland;
+      *input_data   = &wl->input;
+      input_driver_init_joypads();
    }
 }
 

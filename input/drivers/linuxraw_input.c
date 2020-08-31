@@ -37,7 +37,6 @@
 
 typedef struct linuxraw_input
 {
-   const input_device_driver_t *joypad;
    bool state[0x80];
 } linuxraw_input_t;
 
@@ -70,47 +69,20 @@ static void *linuxraw_input_init(const char *joypad_driver)
 
    linux_terminal_claim_stdin();
 
-   linuxraw->joypad = input_joypad_init_driver(joypad_driver, linuxraw);
-
    return linuxraw;
 }
 
-static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
-      const struct retro_keybind *binds, unsigned idx, unsigned id)
-{
-   const struct retro_keybind *bind_minus, *bind_plus;
-   int16_t pressed_minus = 0, pressed_plus = 0;
-   unsigned id_minus = 0;
-   unsigned id_plus  = 0;
-
-   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-   bind_minus = &binds[id_minus];
-   bind_plus  = &binds[id_plus];
-
-   if (!bind_minus->valid || !bind_plus->valid)
-      return 0;
-
-   if (bind_minus->key < RETROK_LAST)
-   {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)bind_minus->key];
-      if (linuxraw->state[sym] & 0x80)
-         pressed_minus = -0x7fff;
-   }
-   if (bind_plus->key  < RETROK_LAST)
-   {
-      unsigned sym = rarch_keysym_lut[(enum retro_key)bind_minus->key];
-      if (linuxraw->state[sym] & 0x80)
-         pressed_plus = 0x7fff;
-   }
-
-   return pressed_plus + pressed_minus;
-}
-
-static int16_t linuxraw_input_state(void *data,
+static int16_t linuxraw_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds, unsigned port,
-      unsigned device, unsigned idx, unsigned id)
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
@@ -120,7 +92,7 @@ static int16_t linuxraw_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = linuxraw->joypad->state(
+            int16_t ret = joypad->state(
                   joypad_info, binds[port], port);
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -145,7 +117,7 @@ static int16_t linuxraw_input_state(void *data,
                {
                   if (
                         button_is_pressed(
-                           linuxraw->joypad, joypad_info, binds[port],
+                           joypad, joypad_info, binds[port],
                            port, id)
                      )
                      return 1;
@@ -159,8 +131,37 @@ static int16_t linuxraw_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return linuxraw_analog_pressed(
-                  linuxraw, binds[port], idx, id);
+         {
+            int id_minus_key      = 0;
+            int id_plus_key       = 0;
+            unsigned id_minus     = 0;
+            unsigned id_plus      = 0;
+            int16_t ret           = 0;
+            bool id_plus_valid    = false;
+            bool id_minus_valid   = false;
+
+            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+            id_minus_valid        = binds[port][id_minus].valid;
+            id_plus_valid         = binds[port][id_plus].valid;
+            id_minus_key          = binds[port][id_minus].key;
+            id_plus_key           = binds[port][id_plus].key;
+
+            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
+               if (linuxraw->state[sym] & 0x80)
+                  ret = 0x7fff;
+            }
+            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            {
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
+               if (linuxraw->state[sym] & 0x80)
+                  ret += -0x7fff;
+            }
+
+            return ret;
+         }
          break;
    }
 
@@ -174,28 +175,19 @@ static void linuxraw_input_free(void *data)
    if (!linuxraw)
       return;
 
-   if (linuxraw->joypad)
-      linuxraw->joypad->destroy();
-
    linux_terminal_restore_input();
    free(data);
 }
 
-static bool linuxraw_set_rumble(void *data, unsigned port,
+static bool linuxraw_set_rumble(
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   if (!linuxraw)
-      return false;
-   return input_joypad_set_rumble(linuxraw->joypad, port, effect, strength);
-}
-
-static const input_device_driver_t *linuxraw_get_joypad_driver(void *data)
-{
-   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   if (!linuxraw)
-      return NULL;
-   return linuxraw->joypad;
+   if (joypad)
+      return input_joypad_set_rumble(joypad, port, effect, strength);
+   return false;
 }
 
 static void linuxraw_input_poll(void *data)
@@ -211,8 +203,8 @@ static void linuxraw_input_poll(void *data)
       if (c == KEY_C && (linuxraw->state[KEY_LEFTCTRL] || linuxraw->state[KEY_RIGHTCTRL]))
          kill(getpid(), SIGINT);
 
-      pressed = !(c & 0x80);
-      c &= ~0x80;
+      pressed  = !(c & 0x80);
+      c       &= ~0x80;
 
       /* ignore extended scancodes */
       if (!c)
@@ -220,27 +212,15 @@ static void linuxraw_input_poll(void *data)
       else
          linuxraw->state[c] = pressed;
    }
-
-   if (linuxraw->joypad)
-      linuxraw->joypad->poll();
 }
 
 static uint64_t linuxraw_get_capabilities(void *data)
 {
    uint64_t caps = 0;
-
-   (void)data;
-
    caps |= (1 << RETRO_DEVICE_JOYPAD);
    caps |= (1 << RETRO_DEVICE_ANALOG);
 
    return caps;
-}
-
-static void linuxraw_grab_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
 }
 
 input_driver_t input_linuxraw = {
@@ -252,10 +232,7 @@ input_driver_t input_linuxraw = {
    NULL,
    linuxraw_get_capabilities,
    "linuxraw",
-   linuxraw_grab_mouse,
+   NULL,                         /* grab_mouse */
    linux_terminal_grab_stdin,
-   linuxraw_set_rumble,
-   linuxraw_get_joypad_driver,
-   NULL,
-   false
+   linuxraw_set_rumble
 };

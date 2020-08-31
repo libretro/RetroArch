@@ -1983,6 +1983,13 @@ bool is_input_keyboard_display_on(void);
 bool input_key_pressed(const void *data,
       int key, bool keyboard_pressed);
 
+const char *joypad_driver_name(unsigned i);
+void joypad_driver_reinit(void *data, const char *joypad_driver_name);
+
+void input_driver_init_joypads(void);
+
+void *input_driver_init_wrap(input_driver_t *input, const char *name);
+
 /* creates folder and core options stub file for subsequent runs */
 bool create_folder_and_core_options(void);
 
