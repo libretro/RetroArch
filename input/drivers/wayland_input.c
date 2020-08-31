@@ -88,7 +88,7 @@ static void input_wl_poll(void *data)
 
    for (id = 0; id < MAX_TOUCHES; id++)
    {
-      if (wayland_context_gettouchpos(wl, id, &touch_x, &touch_y))
+      if (wayland_context_gettouchpos(wl->gfx, id, &touch_x, &touch_y))
          wl->touches[id].active = true;
       else
          wl->touches[id].active = false;
