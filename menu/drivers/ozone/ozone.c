@@ -1196,10 +1196,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       /* Missing assets message */
       if (!ozone->has_all_assets)
-      {
-         RARCH_WARN("[OZONE] Assets missing\n");
          runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
 
       /* Thumbnails */
       ozone_update_thumbnail_image(ozone);
