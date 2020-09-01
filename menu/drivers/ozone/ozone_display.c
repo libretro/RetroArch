@@ -670,7 +670,7 @@ void ozone_draw_fullscreen_thumbnails(
       float left_thumbnail_draw_width   = 0.0f;
       float left_thumbnail_draw_height  = 0.0f;
       float background_alpha            = 0.85f;
-      float background_color[16]        = {
+      static float background_color[16] = {
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
