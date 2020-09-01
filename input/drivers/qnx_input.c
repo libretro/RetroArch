@@ -868,6 +868,5 @@ input_driver_t input_qnx = {
    qnx_input_get_capabilities,
    "qnx_input",
    NULL,
-   NULL,
    NULL
 };

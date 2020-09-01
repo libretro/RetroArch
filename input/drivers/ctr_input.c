@@ -103,6 +103,5 @@ input_driver_t input_ctr = {
    ctr_input_get_capabilities,
    "ctr",
    NULL,                         /* grab_mouse */
-   NULL,
-   NULL                          /* set_rumble */
+   NULL
 };

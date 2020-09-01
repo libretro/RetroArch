@@ -1569,17 +1569,6 @@ static float android_input_get_sensor_input(void *data,
    return 0;
 }
 
-static bool android_input_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-   return false;
-}
-
 input_driver_t input_android = {
    android_input_init,
    android_input_poll,
@@ -1591,6 +1580,5 @@ input_driver_t input_android = {
    "android",
 
    NULL,                            /* grab_mouse */
-   NULL,
-   android_input_set_rumble
+   NULL
 };

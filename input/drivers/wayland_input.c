@@ -360,17 +360,6 @@ static uint64_t input_wl_get_capabilities(void *data)
       (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
-static bool input_wl_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-   return false;
-}
-
 input_driver_t input_wayland = {
    NULL,
    input_wl_poll,
@@ -381,6 +370,5 @@ input_driver_t input_wayland = {
    input_wl_get_capabilities,
    "wayland",
    NULL,                         /* grab_mouse */
-   NULL,
-   input_wl_set_rumble
+   NULL
 };

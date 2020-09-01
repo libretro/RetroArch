@@ -209,18 +209,6 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port,
    return false;
 }
 
-static bool ps3_input_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad,
-            port, effect, strength);
-   return false;
-}
-
 input_driver_t input_ps3 = {
    ps3_input_init,
 #ifdef HAVE_MOUSE
@@ -236,6 +224,5 @@ input_driver_t input_ps3 = {
    "ps3",
 
    NULL,                         /* grab_mouse */
-   NULL,
-   ps3_input_set_rumble
+   NULL
 };

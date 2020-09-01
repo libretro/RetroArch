@@ -1407,18 +1407,6 @@ static void udev_input_grab_mouse(void *data, bool state)
 #endif
 }
 
-static bool udev_input_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad,
-            port, effect, strength);
-   return false;
-}
-
 input_driver_t input_udev = {
    udev_input_init,
    udev_input_poll,
@@ -1430,9 +1418,8 @@ input_driver_t input_udev = {
    "udev",
    udev_input_grab_mouse,
 #ifdef __linux__
-   linux_terminal_grab_stdin,
+   linux_terminal_grab_stdin
 #else
-   NULL,
+   NULL
 #endif
-   udev_input_set_rumble
 };

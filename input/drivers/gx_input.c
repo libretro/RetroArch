@@ -307,6 +307,5 @@ input_driver_t input_gx = {
    "gx",
 
    NULL,                         /* grab_mouse */
-   NULL,
-   NULL                          /* set_rumble */
+   NULL
 };

@@ -844,19 +844,6 @@ static uint64_t switch_input_get_capabilities(void *data)
    return caps;
 }
 
-static bool switch_input_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-#ifdef HAVE_LIBNX
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-#endif
-   return false;
-}
-
 static bool switch_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
@@ -963,6 +950,5 @@ input_driver_t input_switch = {
    switch_input_get_capabilities,
    "switch",
    NULL,                            /* grab_mouse */
-   NULL,
-   switch_input_set_rumble
+   NULL
 };

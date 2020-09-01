@@ -967,17 +967,6 @@ static void dinput_grab_mouse(void *data, bool state)
    IDirectInputDevice8_Acquire(di->mouse);
 }
 
-static bool dinput_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-   return false;
-}
-
 static uint64_t dinput_get_capabilities(void *data)
 {
    uint64_t caps = 0;
@@ -1002,6 +991,5 @@ input_driver_t input_dinput = {
    dinput_get_capabilities,
    "dinput",
    dinput_grab_mouse,
-   NULL,
-   dinput_set_rumble
+   NULL
 };

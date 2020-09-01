@@ -326,8 +326,7 @@ input_driver_t input_ps3 = {
    "ps3",
 
    NULL,                         /* grab_mouse */
-   NULL,
-   NULL                          /* set_rumble */
+   NULL
 };
 
 /*  RetroArch - A frontend for libretro.

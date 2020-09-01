@@ -537,22 +537,6 @@ static void cocoa_input_free(void *data)
    free(apple);
 }
 
-static bool cocoa_input_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port, enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad,
-            port, effect, strength);
-#ifdef HAVE_MFI
-    if (sec_joypad)
-        return input_joypad_set_rumble(sec_joypad,
-            port, effect, strength);
-#endif
-   return false;
-}
-
 static uint64_t cocoa_input_get_capabilities(void *data)
 {
    return
@@ -573,6 +557,5 @@ input_driver_t input_cocoa = {
    cocoa_input_get_capabilities,
    "cocoa",
    NULL,                         /* grab_mouse */
-   NULL,
-   cocoa_input_set_rumble
+   NULL
 };

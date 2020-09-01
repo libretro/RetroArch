@@ -179,17 +179,6 @@ static void linuxraw_input_free(void *data)
    free(data);
 }
 
-static bool linuxraw_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-   return false;
-}
-
 static void linuxraw_input_poll(void *data)
 {
    uint8_t c;
@@ -233,6 +222,5 @@ input_driver_t input_linuxraw = {
    linuxraw_get_capabilities,
    "linuxraw",
    NULL,                         /* grab_mouse */
-   linux_terminal_grab_stdin,
-   linuxraw_set_rumble
+   linux_terminal_grab_stdin
 };

@@ -355,20 +355,6 @@ static uint64_t psp_input_get_capabilities(void *data)
    return caps;
 }
 
-static bool psp_input_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   psp_input_t *psp = (psp_input_t*)data;
-
-   if (joypad)
-      return input_joypad_set_rumble(joypad,
-         port, effect, strength);
-   return false;
-}
-
 #ifdef VITA
 static bool psp_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
@@ -469,6 +455,5 @@ input_driver_t input_psp = {
 #endif
 
    NULL,                         /* grab_mouse */
-   NULL,
-   psp_input_set_rumble
+   NULL
 };

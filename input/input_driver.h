@@ -199,11 +199,6 @@ struct input_driver
 
    void (*grab_mouse)(void *data, bool state);
    bool (*grab_stdin)(void *data);
-   bool (*set_rumble)(
-         const input_device_driver_t *joypad_data,
-         const input_device_driver_t *sec_joypad_data,
-         unsigned port,
-         enum retro_rumble_effect effect, uint16_t state);
 };
 
 struct rarch_joypad_driver
@@ -371,20 +366,6 @@ const input_device_driver_t *input_joypad_init_driver(
          ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS; \
          break; \
    }
-
-/**
- * input_joypad_set_rumble:
- * @drv                     : Input device driver handle.
- * @port                    : User number.
- * @effect                  : Rumble effect to set.
- * @strength                : Strength of rumble effect.
- *
- * Sets rumble effect @effect with strength @strength.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool input_joypad_set_rumble(const input_device_driver_t *driver,
-      unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 
 /**
  * input_pad_connect:

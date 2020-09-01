@@ -73,17 +73,6 @@ static uint64_t uwp_input_get_capabilities(void *data)
    return caps;
 }
 
-static bool uwp_input_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-   return false;
-}
-
 static int16_t uwp_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -213,6 +202,5 @@ input_driver_t input_uwp = {
    uwp_input_get_capabilities,
    "uwp",
    NULL,                         /* grab_mouse */
-   NULL,
-   uwp_input_set_rumble
+   NULL
 };

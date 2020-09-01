@@ -819,17 +819,6 @@ static void winraw_grab_mouse(void *d, bool grab)
    wr->mouse_grab = grab;
 }
 
-static bool winraw_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-   return false;
-}
-
 input_driver_t input_winraw = {
    winraw_init,
    winraw_poll,
@@ -840,6 +829,5 @@ input_driver_t input_winraw = {
    winraw_get_capabilities,
    "raw",
    winraw_grab_mouse,
-   NULL,
-   winraw_set_rumble
+   NULL
 };

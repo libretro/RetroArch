@@ -140,6 +140,5 @@ input_driver_t input_xenon360 = {
    xenon360_input_get_capabilities,
    "xenon360",
    NULL,                            /* grab_mouse */
-   NULL,
-   NULL                             /* set_rumble */
+   NULL
 };

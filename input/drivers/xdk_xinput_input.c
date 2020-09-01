@@ -101,20 +101,6 @@ static uint64_t xdk_input_get_capabilities(void *data)
    return (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
 }
 
-/* FIXME - are we sure about treating low frequency motor as the
- * "strong" motor? Does it apply for Xbox too? */
-
-static bool xdk_input_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-   return false;
-}
-
 input_driver_t input_xinput = {
    xdk_input_init,
    NULL,                         /* poll */
@@ -125,6 +111,5 @@ input_driver_t input_xinput = {
    xdk_input_get_capabilities,
    "xinput",
    NULL,                         /* grab_mouse */
-   NULL,
-   xdk_input_set_rumble
+   NULL
 };

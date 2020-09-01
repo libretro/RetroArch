@@ -300,17 +300,6 @@ static void sdl2_grab_mouse(void *data, bool state)
 }
 #endif
 
-static bool sdl_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (joypad)
-      return input_joypad_set_rumble(joypad, port, effect, strength);
-   return false;
-}
-
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
    Uint8 btn = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
@@ -411,6 +400,5 @@ input_driver_t input_sdl = {
    "sdl",
    NULL,                   /* grab_mouse */
 #endif
-   NULL,
-   sdl_set_rumble
+   NULL
 };

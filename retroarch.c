@@ -691,11 +691,6 @@ static float input_null_get_sensor_input(void *data, unsigned port, unsigned id)
 static uint64_t input_null_get_capabilities(void *data) { return 0; }
 static void input_null_grab_mouse(void *data, bool state) { }
 static bool input_null_grab_stdin(void *data) { return false; }
-static bool input_null_set_rumble(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      unsigned port,
-      enum retro_rumble_effect effect, uint16_t state) { return false; }
 
 static input_driver_t input_null = {
    input_null_init,
@@ -707,8 +702,7 @@ static input_driver_t input_null = {
    input_null_get_capabilities,
    "null",
    input_null_grab_mouse,
-   input_null_grab_stdin,
-   input_null_set_rumble
+   input_null_grab_stdin
 };
 
 static input_driver_t *input_drivers[] = {
@@ -23589,18 +23583,24 @@ bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    struct rarch_state *p_rarch             = &rarch_st;
-   if (p_rarch->current_input && p_rarch->current_input->set_rumble)
-   {
+   settings_t *settings                    = p_rarch->configuration_settings;
 #ifdef HAVE_MFI
-      const input_device_driver_t *sec_joypad = p_rarch->sec_joypad;
+   const input_device_driver_t *sec_joypad = p_rarch->sec_joypad;
 #else
-      const input_device_driver_t *sec_joypad = NULL;
+   const input_device_driver_t *sec_joypad = NULL;
 #endif
-      return p_rarch->current_input->set_rumble(p_rarch->joypad,
-            sec_joypad,
-            port, effect, strength);
-   }
-   return false;
+   bool rumble_state                       = false;
+   unsigned  joy_idx                       = settings->uints.input_joypad_map[port];
+
+   if (joy_idx >= MAX_USERS)
+      return false;
+   if (p_rarch->joypad && p_rarch->joypad->set_rumble)
+      rumble_state = p_rarch->joypad->set_rumble(
+            joy_idx, effect, strength);
+   if (sec_joypad      && sec_joypad->set_rumble)
+      rumble_state = sec_joypad->set_rumble(
+            joy_idx, effect, strength);
+   return rumble_state;
 }
 
 const char *joypad_driver_name(unsigned i)
@@ -26624,30 +26624,6 @@ const input_device_driver_t *input_joypad_init_driver(
    }
 
    return input_joypad_init_first(data);
-}
-
-/**
- * input_joypad_set_rumble:
- * @drv                     : Input device driver handle.
- * @port                    : User number.
- * @effect                  : Rumble effect to set.
- * @strength                : Strength of rumble effect.
- *
- * Sets rumble effect @effect with strength @strength.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool input_joypad_set_rumble(const input_device_driver_t *drv,
-      unsigned port, enum retro_rumble_effect effect, uint16_t strength)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t  *settings       = p_rarch->configuration_settings;
-   unsigned  joy_idx           = settings->uints.input_joypad_map[port];
-
-   if (!drv || !drv->set_rumble || joy_idx >= MAX_USERS)
-      return false;
-
-   return drv->set_rumble(joy_idx, effect, strength);
 }
 
 bool input_key_pressed(int key, bool keyboard_pressed)
