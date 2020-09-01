@@ -1686,7 +1686,7 @@ void gfx_display_draw_keyboard(
    unsigned i;
    int ptr_width, ptr_height;
 
-   float white[16]=  {
+   static float white[16] =  {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
