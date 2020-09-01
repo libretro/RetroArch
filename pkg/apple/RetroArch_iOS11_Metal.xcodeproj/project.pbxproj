@@ -1371,6 +1371,11 @@
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 					"-DHAVE_CHEATS",
+					"-DHAVE_BTSTACK",
+					"-DHAVE_RWAV",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_REWIND",
+					"-DHAVE_PATCH",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
@@ -1469,6 +1474,11 @@
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
 					"-DHAVE_CHEATS",
+					"-DHAVE_BTSTACK",
+					"-DHAVE_RWAV",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_REWIND",
+					"-DHAVE_PATCH",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1539,6 +1549,11 @@
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 					"-DHAVE_CHEATS",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_REWIND",
+					"-DHAVE_PATCH",
+					"-DHAVE_RWAV",
+					"-DHAVE_BTSTACK",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
@@ -1817,6 +1832,12 @@
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_CHEATS",
+					"-DHAVE_SCREENSHOTS",
+					"-DHAVE_REWIND",
+					"-DHAVE_PATCH",
+					"-DHAVE_RWAV",
+					"-DHAVE_BTSTACK",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
