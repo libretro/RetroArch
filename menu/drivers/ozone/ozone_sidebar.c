@@ -120,7 +120,7 @@ unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
 
 static void ozone_sidebar_collapse_end(void *userdata)
 {
-   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
+   ozone_handle_t *ozone    = (ozone_handle_t*)userdata;
 
    ozone->sidebar_collapsed = true;
 }
@@ -248,9 +248,13 @@ void ozone_draw_sidebar(
             video_width,
             video_height,
             ozone->sidebar_offset,
-            video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_gradient_height - ozone->dimensions.spacer_1px,
+              video_height 
+            - ozone->dimensions.footer_height 
+            - ozone->dimensions.sidebar_gradient_height 
+            - ozone->dimensions.spacer_1px,
             (unsigned)ozone->dimensions_sidebar_width,
-            ozone->dimensions.sidebar_gradient_height + ozone->dimensions.spacer_1px,
+              ozone->dimensions.sidebar_gradient_height 
+            + ozone->dimensions.spacer_1px,
             video_width,
             video_height,
             ozone->theme->sidebar_bottom_gradient);
@@ -575,7 +579,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
          ozone->animations.sidebar_text_alpha = 0.0f;
          ozone->dimensions_sidebar_width      = 
             ozone->dimensions.sidebar_width_collapsed;
-         ozone_sidebar_collapse_end(ozone);
+         ozone->sidebar_collapsed             = true;
       }
    }
    /* Show it */

@@ -27,6 +27,8 @@
 #include "../../../cheevos/badges.h"
 #endif
 
+#include "../../../file_path_special.h"
+
 #include "../../../verbosity.h"
 
 static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
@@ -449,7 +451,7 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          (type < MENU_SETTINGS_NETPLAY_ROOMS_START)
       )
    {
-      int index = type - MENU_SETTINGS_CHEEVOS_START;
+      int               index = type - MENU_SETTINGS_CHEEVOS_START;
       uintptr_t badge_texture = cheevos_get_menu_badge_texture(index);
       if (badge_texture)
          return badge_texture;
@@ -846,14 +848,10 @@ bool ozone_reset_theme_textures(ozone_handle_t *ozone)
          char filename[PATH_MAX_LENGTH];
          strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i],
                sizeof(filename));
-         strlcat(filename, ".png", sizeof(filename));
+         strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
 
          if (!gfx_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-         {
-            RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", theme_path,
-                  PATH_DEFAULT_SLASH(), filename);
             result = false;
-         }
       }
    }
 

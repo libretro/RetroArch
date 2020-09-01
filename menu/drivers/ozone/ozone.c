@@ -174,12 +174,7 @@ static size_t ozone_get_onscreen_category_selection(
 
 /* Returns true if specified entry is currently
  * displayed on screen */
-static bool INLINE ozone_entry_onscreen(
-      ozone_handle_t *ozone, size_t idx)
-{
-   return (idx >= ozone->first_onscreen_entry) &&
-          (idx <= ozone->last_onscreen_entry);
-}
+#define OZONE_ENTRY_ONSCREEN(ozone, idx) (((idx) >= (ozone)->first_onscreen_entry) && ((idx) <= (ozone)->last_onscreen_entry))
 
 /* If currently selected entry is off screen,
  * moves selection to specified on screen target
@@ -192,7 +187,7 @@ static void ozone_auto_select_onscreen_entry(
    size_t selection = menu_navigation_get_selection();
 
    /* Check whether selected item is already on screen */
-   if (ozone_entry_onscreen(ozone, selection))
+   if (OZONE_ENTRY_ONSCREEN(ozone, selection))
       return;
 
    /* Update selection index */
@@ -227,13 +222,15 @@ static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone)
     * Short circuiting means that in most cases
     * only 'ozone->is_playlist' will be evaluated,
     * so this isn't too much of a performance hog... */
-   return ozone->is_playlist &&
-          ozone->show_thumbnail_bar &&
-          !ozone->selection_core_is_viewer &&
-          (ozone->thumbnails.left.status != GFX_THUMBNAIL_STATUS_MISSING) &&
-          gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_LEFT) &&
-          (ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_MISSING) &&
-          gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
+   return ozone->is_playlist
+      &&  ozone->show_thumbnail_bar 
+      && !ozone->selection_core_is_viewer 
+      && (ozone->thumbnails.left.status != GFX_THUMBNAIL_STATUS_MISSING)
+      && gfx_thumbnail_is_enabled(ozone->thumbnail_path_data,
+            GFX_THUMBNAIL_LEFT)
+      && (ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_MISSING) 
+      && gfx_thumbnail_is_enabled(ozone->thumbnail_path_data,
+            GFX_THUMBNAIL_RIGHT);
 }
 
 
@@ -306,17 +303,19 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t selection = (ozone->cursor_mode) ?
-                  ozone_get_onscreen_category_selection(ozone) : ozone->categories_selection_ptr;
+            size_t selection = (ozone->cursor_mode) 
+               ? ozone_get_onscreen_category_selection(ozone) 
+               : ozone->categories_selection_ptr;
 
-            new_selection = (int)(selection + 1);
+            new_selection    = (int)(selection + 1);
 
-            if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
+            if (new_selection >= (int)(ozone->system_tab_end 
+                     + horizontal_list_size + 1))
                new_selection = 0;
 
             ozone_sidebar_goto(ozone, new_selection);
 
-            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             ozone->cursor_mode = false;
             break;
          }
@@ -333,17 +332,17 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t selection = (ozone->cursor_mode) ?
-                  ozone_get_onscreen_category_selection(ozone) : ozone->categories_selection_ptr;
-
-            new_selection = (int)selection - 1;
+            size_t selection   = (ozone->cursor_mode) 
+               ? ozone_get_onscreen_category_selection(ozone) 
+               : ozone->categories_selection_ptr;
+            new_selection      = (int)selection - 1;
 
             if (new_selection < 0)
-               new_selection = horizontal_list_size + ozone->system_tab_end;
+               new_selection   = horizontal_list_size + ozone->system_tab_end;
 
             ozone_sidebar_goto(ozone, new_selection);
 
-            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             ozone->cursor_mode = false;
             break;
          }
@@ -360,7 +359,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          if (ozone->cursor_in_sidebar)
          {
-            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
          else if (ozone->depth > 1)
@@ -399,8 +398,8 @@ static enum menu_action ozone_parse_menu_entry_action(
           * of a search, if required */
          if (ozone->is_playlist)
          {
-            struct string_list *menu_search_terms = menu_driver_search_get_terms();
-
+            struct string_list *menu_search_terms = 
+               menu_driver_search_get_terms();
             if (menu_search_terms &&
                 (menu_search_terms->size > 0))
                break;
@@ -498,17 +497,15 @@ static int ozone_menu_entry_action(
       void *userdata, menu_entry_t *entry,
       size_t i, enum menu_action action)
 {
+   menu_entry_t new_entry;
    ozone_handle_t *ozone       = (ozone_handle_t*)userdata;
    menu_entry_t *entry_ptr     = entry;
    size_t selection            = i;
-   size_t new_selection;
-   menu_entry_t new_entry;
    /* Process input action */
    enum menu_action new_action = ozone_parse_menu_entry_action(ozone, action);
-
    /* Check whether current selection has changed
     * (due to automatic on screen entry selection...) */
-   new_selection = menu_navigation_get_selection();
+   size_t new_selection        = menu_navigation_get_selection();
 
    if (new_selection != selection)
    {
@@ -528,7 +525,6 @@ static int ozone_menu_entry_action(
    return generic_menu_entry_action(userdata, entry_ptr,
          new_selection, new_action);
 }
-
 
 static void ozone_free_node(ozone_node_t *node)
 {
@@ -591,25 +587,25 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    file_list_initialize(&ozone->selection_buf_old);
 
-   ozone->draw_sidebar              = true;
-   ozone->sidebar_offset            = 0;
-   ozone->pending_message           = NULL;
-   ozone->is_playlist               = false;
-   ozone->categories_selection_ptr  = 0;
-   ozone->pending_message           = NULL;
-   ozone->show_cursor               = false;
+   ozone->draw_sidebar                          = true;
+   ozone->sidebar_offset                        = 0;
+   ozone->pending_message                       = NULL;
+   ozone->is_playlist                           = false;
+   ozone->categories_selection_ptr              = 0;
+   ozone->pending_message                       = NULL;
+   ozone->show_cursor                           = false;
 
-   ozone->first_frame                     = true;
-   ozone->cursor_mode                     = false;
+   ozone->first_frame                           = true;
+   ozone->cursor_mode                           = false;
 
-   ozone->sidebar_collapsed               = false;
-   ozone->animations.sidebar_text_alpha   = 1.0f;
+   ozone->sidebar_collapsed                     = false;
+   ozone->animations.sidebar_text_alpha         = 1.0f;
 
-   ozone->animations.thumbnail_bar_position  = 0.0f;
-   ozone->show_thumbnail_bar                 = false;
-   ozone->dimensions_sidebar_width           = 0.0f;
+   ozone->animations.thumbnail_bar_position     = 0.0f;
+   ozone->show_thumbnail_bar                    = false;
+   ozone->dimensions_sidebar_width              = 0.0f;
 
-   ozone->num_search_terms_old             = 0;
+   ozone->num_search_terms_old                  = 0;
 
    ozone->thumbnail_path_data = gfx_thumbnail_path_init();
    if (!ozone->thumbnail_path_data)
@@ -630,35 +626,37 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone_sidebar_update_collapse(ozone, false);
 
-   ozone->system_tab_end                = 0;
-   ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
-   if (settings->bools.menu_content_show_settings && !settings->bools.kiosk_mode_enable)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_SETTINGS;
+   ozone->system_tab_end                        = 0;
+   ozone->tabs[ozone->system_tab_end]           = OZONE_SYSTEM_TAB_MAIN;
+   if (      settings->bools.menu_content_show_settings 
+         && !settings->bools.kiosk_mode_enable)
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_SETTINGS;
    if (settings->bools.menu_content_show_favorites)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_FAVORITES;
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_FAVORITES;
    if (settings->bools.menu_content_show_history)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_HISTORY;
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_HISTORY;
 #ifdef HAVE_IMAGEVIEWER
    if (settings->bools.menu_content_show_images)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_IMAGES;
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_IMAGES;
 #endif
    if (settings->bools.menu_content_show_music)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_MUSIC;
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_MUSIC;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    if (settings->bools.menu_content_show_video)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_VIDEO;
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_VIDEO;
 #endif
 #ifdef HAVE_NETWORKING
    if (settings->bools.menu_content_show_netplay)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_NETPLAY;
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_NETPLAY;
 #endif
 
-   if (settings->bools.menu_content_show_add && !settings->bools.kiosk_mode_enable)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_ADD;
+   if (      settings->bools.menu_content_show_add 
+         && !settings->bools.kiosk_mode_enable)
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_ADD;
 
 #if defined(HAVE_LIBRETRODB)
    if (settings->bools.menu_content_show_explore)
-      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_EXPLORE;
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_EXPLORE;
 #endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
@@ -693,7 +691,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
          fallback_color_theme = true;
    }
    else
-      fallback_color_theme = true;
+      fallback_color_theme    = true;
 
    if (fallback_color_theme)
    {
@@ -705,10 +703,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->animations.scroll_y          = 0.0f;
    ozone->animations.scroll_y_sidebar  = 0.0f;
 
-   ozone->first_onscreen_entry    = 0;
-   ozone->last_onscreen_entry     = 0;
-   ozone->first_onscreen_category = 0;
-   ozone->last_onscreen_category  = 0;
+   ozone->first_onscreen_entry         = 0;
+   ozone->last_onscreen_entry          = 0;
+   ozone->first_onscreen_category      = 0;
+   ozone->last_onscreen_category       = 0;
 
    /* Assets path */
    fill_pathname_join(
@@ -897,18 +895,15 @@ static bool ozone_init_font(
 static void ozone_cache_footer_label(ozone_handle_t *ozone,
       ozone_footer_label_t *label, enum msg_hash_enums enum_idx)
 {
-   unsigned length;
+   const char *str = msg_hash_to_str(enum_idx);
+   /* Determine pixel width */
+   unsigned length = (unsigned)strlen(str);
 
    /* Assign string */
-   label->str = msg_hash_to_str(enum_idx);
-
-   /* Determine pixel width */
-   length = (unsigned)strlen(label->str);
-
-   label->width = font_driver_get_message_width(
+   label->str      = str;
+   label->width    = font_driver_get_message_width(
          ozone->fonts.footer.font,
          label->str, length, 1.0f);
-
    /* If font_driver_get_message_width() fails,
     * use predetermined glyph_width as a fallback */
    if (label->width < 0)
@@ -959,8 +954,8 @@ static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
    scale_factor = ozone->last_scale_factor;
 
    /* Calculate dimensions */
-   ozone->dimensions.header_height = HEADER_HEIGHT * scale_factor;
-   ozone->dimensions.footer_height = FOOTER_HEIGHT * scale_factor;
+   ozone->dimensions.header_height                 = HEADER_HEIGHT * scale_factor;
+   ozone->dimensions.footer_height                 = FOOTER_HEIGHT * scale_factor;
 
    ozone->dimensions.entry_padding_horizontal_half = ENTRY_PADDING_HORIZONTAL_HALF * scale_factor;
    ozone->dimensions.entry_padding_horizontal_full = ENTRY_PADDING_HORIZONTAL_FULL * scale_factor;
@@ -987,12 +982,12 @@ static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
    if (ozone->dimensions_sidebar_width == 0)
       ozone->dimensions_sidebar_width = (float)ozone->dimensions.sidebar_width_normal;
 
-   ozone->dimensions.thumbnail_bar_width =
+   ozone->dimensions.thumbnail_bar_width          =
          ozone->dimensions.sidebar_width_normal -
          ozone->dimensions.sidebar_entry_icon_size -
          ozone->dimensions.sidebar_entry_icon_padding;
 
-   ozone->dimensions.cursor_size = CURSOR_SIZE * scale_factor;
+   ozone->dimensions.cursor_size                  = CURSOR_SIZE * scale_factor;
 
    ozone->dimensions.fullscreen_thumbnail_padding = FULLSCREEN_THUMBNAIL_PADDING * scale_factor;
 
@@ -1116,7 +1111,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 #endif
             strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
 
-         strlcat(filename, ".png", sizeof(filename));
+         strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
 
 #if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
@@ -1133,11 +1128,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
          {
 #endif
             if (!gfx_display_reset_textures_list(filename, ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-            {
                ozone->has_all_assets = false;
-               RARCH_WARN("[OZONE] Asset missing: %s%s%s\n", ozone->png_path,
-                     PATH_DEFAULT_SLASH(), filename);
-            }
 #if 0
          }
 #endif
@@ -1151,7 +1142,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
          filename[0]        = '\0';
          strlcpy(filename,
                OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
-         strlcat(filename, ".png", sizeof(filename));
+         strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
 
          if (!gfx_display_reset_textures_list(filename, ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
          {
