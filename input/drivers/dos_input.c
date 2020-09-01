@@ -125,8 +125,7 @@ static void dos_input_free_input(void *data)
 
    dos_keyboard_free();
 
-   if (data)
-      free(data);
+   free(data);
 }
 
 static void* dos_input_init(const char *joypad_driver)
