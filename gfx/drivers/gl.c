@@ -87,7 +87,7 @@
 #define GL_UNSIGNED_INT_8_8_8_8_REV       0x8367
 #endif
 
-#define set_texture_coords(coords, xamt, yamt) \
+#define SET_TEXTURE_COORDS(coords, xamt, yamt) \
    coords[2] = xamt; \
    coords[6] = xamt; \
    coords[5] = yamt; \
@@ -159,13 +159,11 @@ typedef struct __GLsync *GLsync;
 
 typedef struct gl2_renderchain_data
 {
-   bool egl_images;
-   bool has_fp_fbo;
-   bool has_srgb_fbo_gles3;
-   bool has_srgb_fbo;
-   bool hw_render_depth_init;
-
    int fbo_pass;
+
+#ifdef HAVE_GL_SYNC
+   GLsync fences[MAX_FENCES];
+#endif
 
    GLuint vao;
    GLuint fbo[GFX_MAX_SHADERS];
@@ -174,11 +172,13 @@ typedef struct gl2_renderchain_data
 
    unsigned fence_count;
 
-#ifdef HAVE_GL_SYNC
-   GLsync fences[MAX_FENCES];
-#endif
-
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
+
+   bool egl_images;
+   bool has_fp_fbo;
+   bool has_srgb_fbo_gles3;
+   bool has_srgb_fbo;
+   bool hw_render_depth_init;
 } gl2_renderchain_data_t;
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
@@ -186,12 +186,6 @@ typedef struct gl2_renderchain_data
 #define HAVE_GL_ASYNC_READBACK
 #endif
 #endif
-
-#define set_texture_coords(coords, xamt, yamt) \
-   coords[2] = xamt; \
-   coords[6] = xamt; \
-   coords[5] = yamt; \
-   coords[7] = yamt
 
 #if defined(HAVE_PSGL)
 #define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DOES(a, b, c, d, e)
@@ -512,7 +506,7 @@ static void gl2_renderchain_render(
       xamt      = (GLfloat)prev_rect->img_width / prev_rect->width;
       yamt      = (GLfloat)prev_rect->img_height / prev_rect->height;
 
-      set_texture_coords(fbo_tex_coords, xamt, yamt);
+      SET_TEXTURE_COORDS(fbo_tex_coords, xamt, yamt);
 
       fbo_info->tex           = chain->fbo_texture[i - 1];
       fbo_info->input_size[0] = prev_rect->img_width;
@@ -575,7 +569,7 @@ static void gl2_renderchain_render(
    xamt      = (GLfloat)prev_rect->img_width / prev_rect->width;
    yamt      = (GLfloat)prev_rect->img_height / prev_rect->height;
 
-   set_texture_coords(fbo_tex_coords, xamt, yamt);
+   SET_TEXTURE_COORDS(fbo_tex_coords, xamt, yamt);
 
    /* Push final FBO to list. */
    fbo_info                = &fbo_tex_info[chain->fbo_pass - 1];
@@ -809,7 +803,7 @@ static void gl2_create_fbo_texture(gl_t *gl,
 
    wrap_enum  = gl2_wrap_type_to_enum(wrap_type);
 
-   gl_bind_texture(texture, wrap_enum, mag_filter, min_filter);
+   GL_BIND_TEXTURE(texture, wrap_enum, mag_filter, min_filter);
 
    fp_fbo   = chain->fbo_scale[i].fp_fbo;
 
@@ -1700,7 +1694,7 @@ static void gl_load_texture_data(
          break;
    }
 
-   gl_bind_texture(id, wrap, mag_filter, min_filter);
+   GL_BIND_TEXTURE(id, wrap, mag_filter, min_filter);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
    glTexImage2D(GL_TEXTURE_2D,
@@ -2149,7 +2143,7 @@ static void gl2_update_input_size(gl_t *gl, unsigned width,
 
    xamt = (float)width  / gl->tex_w;
    yamt = (float)height / gl->tex_h;
-   set_texture_coords(gl->tex_info.coord, xamt, yamt);
+   SET_TEXTURE_COORDS(gl->tex_info.coord, xamt, yamt);
 }
 
 static void gl2_init_textures_data(gl_t *gl)
@@ -2216,7 +2210,7 @@ static void gl2_init_textures(gl_t *gl)
 
    for (i = 0; i < gl->textures; i++)
    {
-      gl_bind_texture(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
+      GL_BIND_TEXTURE(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
             gl->tex_min_filter);
 
       gl2_renderchain_init_texture_reference(
@@ -2994,7 +2988,7 @@ static bool gl2_frame(void *data, const void *frame,
       feedback_info.tex_size[0]       = rect->width;
       feedback_info.tex_size[1]       = rect->height;
 
-      set_texture_coords(feedback_info.coord, xamt, yamt);
+      SET_TEXTURE_COORDS(feedback_info.coord, xamt, yamt);
    }
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -4043,7 +4037,7 @@ static void gl2_update_tex_filter_frame(gl_t *gl)
       if (!gl->texture[i])
          continue;
 
-      gl_bind_texture(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
+      GL_BIND_TEXTURE(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
             gl->tex_min_filter);
    }
 

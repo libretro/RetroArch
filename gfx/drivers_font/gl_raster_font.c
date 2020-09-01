@@ -207,7 +207,7 @@ static void *gl_raster_font_init_font(void *data,
 
    glGenTextures(1, &font->tex);
 
-   gl_bind_texture(font->tex, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR);
+   GL_BIND_TEXTURE(font->tex, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR);
 
    font->atlas      = font->font_driver->get_atlas(font->font_data);
    font->tex_width  = next_pow2(font->atlas->width);
