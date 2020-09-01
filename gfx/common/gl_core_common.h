@@ -54,36 +54,22 @@ typedef struct gl_core
    const gfx_ctx_driver_t *ctx_driver;
    void *ctx_data;
    gl_core_filter_chain_t *filter_chain;
+   GLuint *overlay_tex;
+   float *overlay_vertex_coord;
+   float *overlay_tex_coord;
+   float *overlay_color_coord;
+   GLsync fences[GL_CORE_NUM_FENCES];
+   void *readback_buffer_screenshot;
+   struct scaler_ctx pbo_readback_scaler;
 
    video_info_t video_info;
-
-   bool vsync;
-   bool fullscreen;
-   bool quitting;
-   bool should_resize;
-   bool keep_aspect;
-   unsigned version_major;
-   unsigned version_minor;
-
    video_viewport_t vp;
    struct gl_core_viewport filter_chain_vp;
-   unsigned vp_out_width;
-   unsigned vp_out_height;
-
-   math_matrix_4x4 mvp;
-   math_matrix_4x4 mvp_yflip;
-   math_matrix_4x4 mvp_no_rot;
-   math_matrix_4x4 mvp_no_rot_yflip;
-   unsigned rotation;
+   struct gl_core_streamed_texture textures[GL_CORE_NUM_TEXTURES];
 
    GLuint vao;
-   struct gl_core_streamed_texture textures[GL_CORE_NUM_TEXTURES];
-   unsigned textures_index;
-
    GLuint menu_texture;
-   float menu_texture_alpha;
-   bool menu_texture_enable;
-   bool menu_texture_full_screen;
+   GLuint pbo_readback[GL_CORE_NUM_PBOS];
 
    struct
    {
@@ -103,38 +89,46 @@ typedef struct gl_core
       struct gl_core_buffer_locations bokeh_loc;
    } pipelines;
 
+
    unsigned video_width;
    unsigned video_height;
-
-   GLuint *overlay_tex;
-   float *overlay_vertex_coord;
-   float *overlay_tex_coord;
-   float *overlay_color_coord;
    unsigned overlays;
-   bool overlay_enable;
-   bool overlay_full_screen;
-
-   GLuint scratch_vbos[GL_CORE_NUM_VBOS];
+   unsigned version_major;
+   unsigned version_minor;
+   unsigned vp_out_width;
+   unsigned vp_out_height;
+   unsigned rotation;
+   unsigned textures_index;
    unsigned scratch_vbo_index;
-
-   bool use_shared_context;
+   unsigned fence_count;
+   unsigned pbo_readback_index;
+   unsigned hw_render_max_width;
+   unsigned hw_render_max_height;
+   GLuint scratch_vbos[GL_CORE_NUM_VBOS];
    GLuint hw_render_texture;
    GLuint hw_render_fbo;
    GLuint hw_render_rb_ds;
-   bool hw_render_enable;
-   unsigned hw_render_max_width;
-   unsigned hw_render_max_height;
-   bool hw_render_bottom_left;
 
-   GLsync fences[GL_CORE_NUM_FENCES];
-   unsigned fence_count;
+   float menu_texture_alpha;
+   math_matrix_4x4 mvp;                /* float alignment */
+   math_matrix_4x4 mvp_yflip;
+   math_matrix_4x4 mvp_no_rot;
+   math_matrix_4x4 mvp_no_rot_yflip;
 
-   void *readback_buffer_screenshot;
-   struct scaler_ctx pbo_readback_scaler;
-   bool pbo_readback_enable;
-   unsigned pbo_readback_index;
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
-   GLuint pbo_readback[GL_CORE_NUM_PBOS];
+   bool pbo_readback_enable;
+   bool hw_render_bottom_left;
+   bool hw_render_enable;
+   bool use_shared_context;
+   bool overlay_enable;
+   bool overlay_full_screen;
+   bool menu_texture_enable;
+   bool menu_texture_full_screen;
+   bool vsync;
+   bool fullscreen;
+   bool quitting;
+   bool should_resize;
+   bool keep_aspect;
 } gl_core_t;
 
 void gl_core_bind_scratch_vbo(gl_core_t *gl, const void *data, size_t size);
