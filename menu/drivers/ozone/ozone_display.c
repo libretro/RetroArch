@@ -30,20 +30,6 @@
 
 #include "../../../input/input_osk.h"
 
-static float ozone_backdrop[16] = {
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-};
-
-static float ozone_osk_backdrop[16] = {
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-};
-
 static void ozone_cursor_animation_cb(void *userdata);
 
 static void ozone_animate_cursor(ozone_handle_t *ozone,
@@ -325,6 +311,12 @@ void ozone_draw_backdrop(
       unsigned video_height,
       float alpha)
 {
+   static float ozone_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+   };
    /* TODO: Replace this backdrop by a blur shader 
     * on the whole screen if available */
    gfx_display_set_alpha(ozone_backdrop, alpha);
@@ -351,6 +343,12 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    const char *text;
    char message[2048];
    unsigned text_color;
+   static float ozone_osk_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+   };
    static retro_time_t last_time  = 0;
    struct string_list list        = {0};
    float scale_factor             = ozone->last_scale_factor;
@@ -500,9 +498,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          }
       }
       else
-      {
          y_offset += 25 * scale_factor;
-      }
    }
 
    /* Keyboard */
