@@ -41,12 +41,7 @@ static void uwp_input_poll(void *data)
 
 static void uwp_input_free_input(void *data)
 {
-   uwp_input_t *uwp = (uwp_input_t*)data;
-
-   if (!uwp)
-      return;
-
-   free(uwp);
+   free(data);
 }
 
 static void *uwp_input_init(const char *joypad_driver)

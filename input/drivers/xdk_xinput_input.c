@@ -79,12 +79,7 @@ static int16_t xdk_input_state(
 
 static void xdk_input_free_input(void *data)
 {
-   xdk_input_t *xdk = (xdk_input_t*)data;
-
-   if (!xdk)
-      return;
-
-   free(xdk);
+   free(data);
 }
 
 static void *xdk_input_init(const char *joypad_driver)

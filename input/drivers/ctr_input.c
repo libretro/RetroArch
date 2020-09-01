@@ -74,8 +74,6 @@ static int16_t ctr_input_state(
 
 static void ctr_input_free_input(void *data)
 {
-   ctr_input_t *ctr = (ctr_input_t*)data;
-
    free(data);
 }
 

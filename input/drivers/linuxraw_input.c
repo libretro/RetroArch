@@ -205,11 +205,7 @@ static void linuxraw_input_poll(void *data)
 
 static uint64_t linuxraw_get_capabilities(void *data)
 {
-   uint64_t caps = 0;
-   caps |= (1 << RETRO_DEVICE_JOYPAD);
-   caps |= (1 << RETRO_DEVICE_ANALOG);
-
-   return caps;
+   return (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
 }
 
 input_driver_t input_linuxraw = {

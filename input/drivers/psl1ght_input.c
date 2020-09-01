@@ -266,7 +266,7 @@ static int16_t ps3_input_state(
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (psl1ght_keyboard_port_input_pressed(ps3, id));
+         return psl1ght_keyboard_port_input_pressed(ps3, id);
    }
 
    return 0;

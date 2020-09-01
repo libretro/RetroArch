@@ -598,7 +598,8 @@ static void rwebinput_input_free(void *data)
    emscripten_html5_remove_all_event_listeners();
 
    free(rwebinput->keyboard.events);
-   free(rwebinput);
+
+   free(data);
 }
 
 static void rwebinput_process_keyboard_events(
