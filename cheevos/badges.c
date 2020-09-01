@@ -78,7 +78,7 @@ uintptr_t cheevos_get_badge_texture(const char *badge, bool locked)
    strlcpy(badge_file, badge, sizeof(badge_file));
    if (locked)
       strlcat(badge_file, "_lock", sizeof(badge_file));
-   strlcat(badge_file, ".png", sizeof(badge_file));
+   strlcat(badge_file, FILE_PATH_PNG_EXTENSION, sizeof(badge_file));
 
    fill_pathname_application_special(fullpath, sizeof(fullpath),
       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);

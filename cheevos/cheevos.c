@@ -1861,11 +1861,13 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
                if (coro->j == 0)
                   snprintf(coro->badge_name,
                         sizeof(coro->badge_name),
-                        "%s.png", coro->cheevo->info->badge);
+                        "%s" FILE_PATH_PNG_EXTENSION,
+                        coro->cheevo->info->badge);
                else
                   snprintf(coro->badge_name,
                         sizeof(coro->badge_name),
-                        "%s_lock.png", coro->cheevo->info->badge);
+                        "%s_lock" FILE_PATH_PNG_EXTENSION,
+                        coro->cheevo->info->badge);
 
                fill_pathname_join(
                      coro->badge_fullpath,
@@ -1882,7 +1884,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 #endif
                   snprintf(coro->url,
                         sizeof(coro->url),
-                        "http://i.retroachievements.org/Badge/%s",
+                        FILE_PATH_RETROACHIEVEMENTS_URL "/Badge/%s",
                         coro->badge_name);
 
                   CORO_GOSUB(RCHEEVOS_HTTP_GET);
@@ -1891,7 +1893,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
                   {
                      if (!filestream_write_file(coro->badge_fullpath,
                               coro->json, coro->k))
-                        CHEEVOS_ERR(RCHEEVOS_TAG "error writing badge %s\n", coro->badge_fullpath);
+                        CHEEVOS_ERR(RCHEEVOS_TAG "Error writing badge %s\n", coro->badge_fullpath);
                      else
                      {
                         CHEEVOS_FREE(coro->json);
