@@ -338,10 +338,24 @@ void ozone_draw_sidebar(
 
       /* Text */
       if (!ozone->sidebar_collapsed)
-         ozone_draw_text(title,
-               ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
-               y + ozone->dimensions.sidebar_entry_height / 2.0f + ozone->fonts.sidebar.line_centre_offset + ozone->animations.scroll_y_sidebar,
-               TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.sidebar, text_color, true);
+         gfx_display_draw_text(
+               ozone->fonts.sidebar.font,
+               title,
+               ozone->sidebar_offset 
+               + ozone->dimensions.sidebar_padding_horizontal 
+               + ozone->dimensions.sidebar_entry_icon_padding * 2 
+               + ozone->dimensions.sidebar_entry_icon_size,
+               y + ozone->dimensions.sidebar_entry_height / 2.0f 
+               + ozone->fonts.sidebar.line_centre_offset 
+               + ozone->animations.scroll_y_sidebar,
+               video_width,
+               video_height,
+               text_color,
+               TEXT_ALIGN_LEFT,
+               1.0f,
+               false,
+               1.0f,
+               true);
 
       y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
    }
@@ -422,11 +436,24 @@ void ozone_draw_sidebar(
             gfx_animation_ticker(&ticker);
          }
 
-         ozone_draw_text(console_title,
-               ticker_x_offset + ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
-               y + ozone->dimensions.sidebar_entry_height / 2 + ozone->fonts.sidebar.line_centre_offset + ozone->animations.scroll_y_sidebar,
+         gfx_display_draw_text(
+               ozone->fonts.sidebar.font,
+               console_title,
+               ticker_x_offset + ozone->sidebar_offset 
+               + ozone->dimensions.sidebar_padding_horizontal 
+               + ozone->dimensions.sidebar_entry_icon_padding * 2 
+               + ozone->dimensions.sidebar_entry_icon_size,
+               y + ozone->dimensions.sidebar_entry_height / 2 
+               + ozone->fonts.sidebar.line_centre_offset 
+               + ozone->animations.scroll_y_sidebar,
+               video_width,
+               video_height,
+               text_color,
                TEXT_ALIGN_LEFT,
-               video_width, video_height, &ozone->fonts.sidebar, text_color, true);
+               1.0f,
+               false,
+               1.0f,
+               true);
 
 console_iterate:
          y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;

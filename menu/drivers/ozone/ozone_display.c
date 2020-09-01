@@ -250,20 +250,6 @@ void ozone_restart_cursor_animation(ozone_handle_t *ozone)
          ozone->theme->cursor_border_1);
 }
 
-void ozone_draw_text(
-      const char *str, float x,
-      float y,
-      enum text_alignment text_align,
-      unsigned width, unsigned height, ozone_font_data_t *font_data,
-      uint32_t color,
-      bool draw_outside)
-{
-   gfx_display_draw_text(font_data->font, str, x, y,
-         width, height, color, text_align, 1.0f,
-         false,
-         1.0f, draw_outside);
-}
-
 void ozone_draw_cursor(
       ozone_handle_t *ozone,
       void *userdata,
@@ -469,10 +455,20 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    {
       const char *msg = list.elems[i].data;
 
-      ozone_draw_text(msg,
-            margin + padding * 2,
-            margin + padding + ozone->fonts.entries_label.line_height + y_offset,
-            TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.entries_label, text_color, false);
+      gfx_display_draw_text(
+            ozone->fonts.entries_label.font,
+            msg,
+            margin + padding * 2,       /* x */
+            margin + padding + 
+            ozone->fonts.entries_label.line_height 
+            + y_offset,                /* y */
+            video_width, video_height,
+            text_color,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
 
       /* Cursor */
       if (i == list.size - 1)
@@ -632,16 +628,20 @@ void ozone_draw_messagebox(
       const char *msg = list.elems[i].data;
 
       if (msg)
-         ozone_draw_text(
-            msg,
-            x - longest_width/2.0,
-            y + (i * ozone->fonts.footer.line_height) + ozone->fonts.footer.line_ascender,
-            TEXT_ALIGN_LEFT,
-            width, height,
-            &ozone->fonts.footer,
-            COLOR_TEXT_ALPHA(ozone->theme->text_rgba, (uint32_t)(ozone->animations.messagebox_alpha*255.0f)),
-            false
-         );
+         gfx_display_draw_text(
+               ozone->fonts.footer.font,
+               msg,
+               x - longest_width/2.0,
+               y + (i * ozone->fonts.footer.line_height) + 
+               ozone->fonts.footer.line_ascender,
+               width,
+               height,
+               COLOR_TEXT_ALPHA(ozone->theme->text_rgba, (uint32_t)(ozone->animations.messagebox_alpha*255.0f)),
+               TEXT_ALIGN_LEFT,
+               1.0f,
+               false,
+               1.0f,
+               false);
    }
 
    string_list_deinitialize(&list);
