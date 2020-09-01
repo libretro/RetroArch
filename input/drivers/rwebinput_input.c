@@ -650,7 +650,7 @@ static void rwebinput_process_keyboard_events(
       rwebinput->keys[translated_keycode] = keydown;
 }
 
-static void rwebinput_input_poll(void *data)
+static void rwebinput_input_poll(void *data, const void *joypad_data)
 {
    size_t i;
    rwebinput_input_t *rwebinput      = (rwebinput_input_t*)data;

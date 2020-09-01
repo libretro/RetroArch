@@ -505,10 +505,10 @@ error:
    return NULL;
 }
 
-static void winraw_poll(void *d)
+static void winraw_poll(void *data, const void *joypad_data)
 {
    unsigned i;
-   winraw_input_t *wr = (winraw_input_t*)d;
+   winraw_input_t *wr = (winraw_input_t*)data;
 
    memcpy(&wr->keyboard, g_keyboard, sizeof(winraw_keyboard_t));
 

@@ -64,7 +64,7 @@ static bool wayland_context_gettouchpos(
    return wl->active_touch_positions[id].active;
 }
 
-static void input_wl_poll(void *data)
+static void input_wl_poll(void *data, const void *joypad_data)
 {
    int id;
    unsigned touch_x             = 0;

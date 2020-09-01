@@ -232,7 +232,7 @@ static INLINE int rvl_count_mouse(gx_input_t *gx)
    return count;
 }
 
-static void rvl_input_poll(void *data)
+static void rvl_input_poll(void *data, const void *joypad_data)
 {
    gx_input_t *gx = (gx_input_t*)data;
    if (gx && gx->mouse)

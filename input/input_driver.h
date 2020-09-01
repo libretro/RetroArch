@@ -173,7 +173,7 @@ struct input_driver
    void *(*init)(const char *joypad_driver);
 
    /* Polls input. Called once every frame. */
-   void (*poll)(void *data);
+   void (*poll)(void *data, const void *joypad_data);
 
    /* Queries input state for a certain key on a certain player.
     * Players are 1 - MAX_USERS.

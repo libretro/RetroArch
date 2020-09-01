@@ -333,10 +333,10 @@ static void *cocoa_input_init(const char *joypad_driver)
    return apple;
 }
 
-static void cocoa_input_poll(void *data)
+static void cocoa_input_poll(void *data, const void *joypad_data)
 {
    uint32_t i;
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+   cocoa_input_data_t *apple    = (cocoa_input_data_t*)data;
 #ifndef IOS
    float   backing_scale_factor = get_backing_scale_factor();
 #endif

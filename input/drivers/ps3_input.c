@@ -54,7 +54,7 @@ typedef struct ps3_input
 } ps3_input_t;
 
 #ifdef HAVE_MOUSE
-static void ps3_input_poll(void *data)
+static void ps3_input_poll(void *data, const void *joypad_data)
 {
    CellMouseInfo mouse_info;
    ps3_input_t *ps3 = (ps3_input_t*)data;

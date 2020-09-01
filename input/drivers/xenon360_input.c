@@ -33,7 +33,7 @@
 /* TODO/FIXME - static global variable */
 static uint64_t state[DEFAULT_MAX_PADS];
 
-static void xenon360_input_poll(void *data)
+static void xenon360_input_poll(void *data, const void *joypad_data)
 {
    unsigned i;
 

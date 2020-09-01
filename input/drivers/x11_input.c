@@ -641,7 +641,7 @@ static void x_input_free(void *data)
    free(x11);
 }
 
-static void x_input_poll(void *data)
+static void x_input_poll(void *data, const void *joypad_data)
 {
    unsigned mask;
    int root_x, root_y, win_x, win_y;

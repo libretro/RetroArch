@@ -88,7 +88,7 @@ typedef struct psp_input
    bool sensors_enabled;
 } psp_input_t;
 
-static void vita_input_poll(void *data)
+static void vita_input_poll(void *data, const void *joypad_data)
 {
    psp_input_t *psp     = (psp_input_t*)data;
    unsigned int i       = 0;

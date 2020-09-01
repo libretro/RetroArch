@@ -675,7 +675,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 };
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
-static void input_null_poll(void *data) { }
+static void input_null_poll(void *data, const void *joypad_data) { }
 static int16_t input_null_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -15443,7 +15443,8 @@ static void command_event_reinit(struct rarch_state *p_rarch,
       if (p_rarch->sec_joypad->poll)
          p_rarch->sec_joypad->poll();
 #endif
-      p_rarch->current_input->poll(p_rarch->current_input_data);
+      p_rarch->current_input->poll(p_rarch->current_input_data,
+            p_rarch->joypad);
    }
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 
@@ -23686,7 +23687,8 @@ static void input_driver_poll(void)
    if (p_rarch->sec_joypad->poll)
       p_rarch->sec_joypad->poll();
 #endif
-   p_rarch->current_input->poll(p_rarch->current_input_data);
+   p_rarch->current_input->poll(p_rarch->current_input_data,
+         p_rarch->joypad);
 
    p_rarch->input_driver_turbo_btns.count++;
 
