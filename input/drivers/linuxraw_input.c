@@ -190,7 +190,7 @@ static bool linuxraw_set_rumble(
    return false;
 }
 
-static void linuxraw_input_poll(void *data, const void *joypad_data)
+static void linuxraw_input_poll(void *data)
 {
    uint8_t c;
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;

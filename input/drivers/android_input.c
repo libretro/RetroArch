@@ -1244,18 +1244,16 @@ static void android_input_poll_user(android_input_t *android)
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
-static void android_input_poll(void *data, const void *joypad_data)
+static void android_input_poll(void *data)
 {
    int ident;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
-   const input_device_driver_t 
-      *joypad                      = (const input_device_driver_t*)joypad_data;
    settings_t            *settings = config_get_ptr();
 
    while ((ident =
             ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
-               && input_key_pressed(joypad, RARCH_PAUSE_TOGGLE,
+               && input_key_pressed(RARCH_PAUSE_TOGGLE,
                   ANDROID_KEYBOARD_PORT_INPUT_PRESSED(input_config_binds[0],
                      RARCH_PAUSE_TOGGLE)))
                ? -1 : settings->uints.input_block_timeout,

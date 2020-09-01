@@ -190,7 +190,7 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
-static void dinput_poll(void *data, const void *joypad_data)
+static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
    uint8_t *kb_state       = NULL;

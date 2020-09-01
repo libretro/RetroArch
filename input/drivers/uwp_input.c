@@ -34,7 +34,7 @@ typedef struct uwp_input
    void *empty;
 } uwp_input_t;
 
-static void uwp_input_poll(void *data, const void *joypad_data)
+static void uwp_input_poll(void *data)
 {
    uwp_input_next_frame();
 }

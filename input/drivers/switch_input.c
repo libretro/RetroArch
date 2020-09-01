@@ -148,7 +148,7 @@ static void finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTi
 #endif
 
 #ifdef HAVE_LIBNX
-static void switch_input_poll(void *data, const void *joypad_data)
+static void switch_input_poll(void *data)
 {
    MousePosition mouse_pos;
    unsigned int i                = 0;

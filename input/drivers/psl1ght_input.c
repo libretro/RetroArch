@@ -82,7 +82,7 @@ static void ps3_disconnect_keyboard(ps3_input_t *ps3, int port)
    ps3->connected[port] = 0;
 }
 
-static void ps3_input_poll(void *data, const void *joypad_data)
+static void ps3_input_poll(void *data)
 {
    unsigned i, j;
    ps3_input_t *ps3 = (ps3_input_t*)data;

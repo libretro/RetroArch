@@ -328,7 +328,7 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 #endif
 }
 
-static void sdl_input_poll(void *data, const void *joypad_data)
+static void sdl_input_poll(void *data)
 {
    SDL_Event event;
    sdl_input_t *sdl = (sdl_input_t*)data;

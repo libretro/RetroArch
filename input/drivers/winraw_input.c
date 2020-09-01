@@ -505,7 +505,7 @@ error:
    return NULL;
 }
 
-static void winraw_poll(void *data, const void *joypad_data)
+static void winraw_poll(void *data)
 {
    unsigned i;
    winraw_input_t *wr = (winraw_input_t*)data;

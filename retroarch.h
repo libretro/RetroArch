@@ -1980,8 +1980,7 @@ void retroarch_init_task_queue(void);
 
 bool is_input_keyboard_display_on(void);
 
-bool input_key_pressed(const void *data,
-      int key, bool keyboard_pressed);
+bool input_key_pressed(int key, bool keyboard_pressed);
 
 const char *joypad_driver_name(unsigned i);
 void joypad_driver_reinit(void *data, const char *joypad_driver_name);

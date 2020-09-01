@@ -704,7 +704,7 @@ static bool udev_input_poll_hotplug_available(struct udev_monitor *dev)
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
-static void udev_input_poll(void *data, const void *joypad_data)
+static void udev_input_poll(void *data)
 {
    int i, ret;
 #if defined(HAVE_EPOLL)

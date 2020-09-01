@@ -705,7 +705,7 @@ static void *qnx_input_init(const char *joypad_driver)
    return qnx;
 }
 
-static void qnx_input_poll(void *data, const void *joypad_data)
+static void qnx_input_poll(void *data)
 {
    qnx_input_t *qnx = (qnx_input_t*)data;
 

@@ -675,7 +675,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 };
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
-static void input_null_poll(void *data, const void *joypad_data) { }
+static void input_null_poll(void *data) { }
 static int16_t input_null_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -15456,8 +15456,7 @@ static void command_event_reinit(struct rarch_state *p_rarch,
       if (p_rarch->sec_joypad->poll)
          p_rarch->sec_joypad->poll();
 #endif
-      p_rarch->current_input->poll(p_rarch->current_input_data,
-            p_rarch->joypad);
+      p_rarch->current_input->poll(p_rarch->current_input_data);
    }
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 
@@ -23700,8 +23699,7 @@ static void input_driver_poll(void)
    if (p_rarch->sec_joypad->poll)
       p_rarch->sec_joypad->poll();
 #endif
-   p_rarch->current_input->poll(p_rarch->current_input_data,
-         p_rarch->joypad);
+   p_rarch->current_input->poll(p_rarch->current_input_data);
 
    p_rarch->input_driver_turbo_btns.count++;
 
@@ -26652,13 +26650,13 @@ bool input_joypad_set_rumble(const input_device_driver_t *drv,
    return drv->set_rumble(joy_idx, effect, strength);
 }
 
-bool input_key_pressed(const void *data, int key, bool keyboard_pressed)
+bool input_key_pressed(int key, bool keyboard_pressed)
 {
    rarch_joypad_info_t joypad_info;
    struct rarch_state           
       *p_rarch                = &rarch_st;
    const input_device_driver_t
-      *joypad                 = (const input_device_driver_t*)data;
+      *joypad                 = (const input_device_driver_t*)p_rarch->joypad;
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = input_autoconf_binds[0];
    joypad_info.axis_threshold = p_rarch->input_driver_axis_threshold;

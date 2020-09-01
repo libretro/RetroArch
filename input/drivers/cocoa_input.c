@@ -333,7 +333,7 @@ static void *cocoa_input_init(const char *joypad_driver)
    return apple;
 }
 
-static void cocoa_input_poll(void *data, const void *joypad_data)
+static void cocoa_input_poll(void *data)
 {
    uint32_t i;
    cocoa_input_data_t *apple    = (cocoa_input_data_t*)data;
