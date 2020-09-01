@@ -68,12 +68,16 @@ android {
       }
     }
     playStoreNormal {
+      minSdkVersion 21
+
       resValue "string", "app_name", "RetroArch"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
     }
     playStoreAarch64 {
+      minSdkVersion 21
+
       applicationIdSuffix '.aarch64'
       resValue "string", "app_name", "RetroArch (AArch64)"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
