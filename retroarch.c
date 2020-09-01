@@ -2141,6 +2141,9 @@ struct rarch_state
    rarch_system_info_t runloop_system;                   /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
    const input_device_driver_t *joypad;                  /* ptr alignment */
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad;              /* ptr alignment */
+#endif
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
 #endif
