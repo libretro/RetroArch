@@ -51,6 +51,7 @@
 
 #include "../../input/input_osk.h"
 
+#include "../../file_path_special.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -1097,7 +1098,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                   strlcpy(path, global->name.savestate, sizeof(path));
             }
 
-            strlcat(path, ".png", sizeof(path));
+            strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 
             if (path_is_valid(path))
                strlcpy(
@@ -1814,7 +1815,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
          free(tmp);
       }
 
-      strlcat(path, ".png", sizeof(path));
+      strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 
       if (!path_is_valid(path))
          fill_pathname_application_special(path, sizeof(path),
@@ -2211,13 +2212,13 @@ static void xmb_context_reset_horizontal_list(
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
          fill_pathname_join_concat(texturepath, iconpath, sysname,
-               ".png", sizeof(texturepath));
+               FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, iconpath, "default",
-               ".png", sizeof(texturepath));
+               FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
 
          ti.width         = 0;
          ti.height        = 0;
@@ -2236,7 +2237,8 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
-         fill_pathname_join_delim(sysname, sysname, "content.png", '-',
+         fill_pathname_join_delim(sysname, sysname,
+               FILE_PATH_CONTENT_BASENAME, '-',
                sizeof(sysname));
          strlcat(content_texturepath, iconpath, sizeof(content_texturepath));
          strlcat(content_texturepath, sysname,  sizeof(content_texturepath));
@@ -2247,7 +2249,7 @@ static void xmb_context_reset_horizontal_list(
          {
             strlcat(iconpath, "default", sizeof(iconpath));
             fill_pathname_join_delim(content_texturepath, iconpath,
-                  "content.png", '-', sizeof(content_texturepath));
+                  FILE_PATH_CONTENT_BASENAME, '-', sizeof(content_texturepath));
          }
 
          if (image_texture_load(&ti, content_texturepath))
@@ -5989,7 +5991,8 @@ static void xmb_context_reset_background(const char *iconpath)
       char path[PATH_MAX_LENGTH];
       path[0] = '\0';
 
-      fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
+      fill_pathname_join(path, iconpath,
+            FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
       if (path_is_valid(path))
          task_push_image_load(path,
                video_driver_supports_rgba(), 0,
@@ -5998,7 +6001,6 @@ static void xmb_context_reset_background(const char *iconpath)
 
 #ifdef ORBIS
    /* To avoid weird behaviour on orbis with remote host */
-   RARCH_LOG("[XMB] after task\n");
    sleep(5);
 #endif
 }

@@ -51,6 +51,7 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../runtime_file.h"
+#include "../../file_path_special.h"
 #include "../../list_special.h"
 
 /* Defines the 'device independent pixel' base
@@ -2192,7 +2193,7 @@ static void materialui_refresh_playlist_icon_list(materialui_handle_t *mui)
       /* Playlist is valid - generate image file name */
       strlcpy(image_file, playlist_file, sizeof(image_file));
       path_remove_extension(image_file);
-      strlcat(image_file, ".png", sizeof(image_file));
+      strlcat(image_file, FILE_PATH_PNG_EXTENSION, sizeof(image_file));
 
       if (string_is_empty(image_file))
          continue;
@@ -3316,7 +3317,7 @@ static bool materialui_render_process_entry_playlist_desktop(
 
             /* Get core name */
             if (string_is_empty(entry->core_name) ||
-                string_is_equal(entry->core_name, "DETECT"))
+                string_is_equal(entry->core_name, FILE_PATH_DETECT))
                core_name = msg_hash_to_str(MSG_AUTODETECT);
             else
                core_name = entry->core_name;
