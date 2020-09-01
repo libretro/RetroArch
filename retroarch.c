@@ -11746,8 +11746,13 @@ static void dir_init_shader(struct rarch_state *p_rarch)
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
    const char *directory_video_shader             = settings->paths.directory_video_shader;
    const char *directory_menu_config              = settings->paths.directory_menu_config;
+#if defined(HAVE_MENU)
    enum rarch_shader_type last_shader_preset_type = menu_driver_get_last_shader_preset_type();
    const char *last_shader_preset_dir             = menu_driver_get_last_shader_preset_dir();
+#else
+   enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
+   const char *last_shader_preset_dir             = NULL;
+#endif
 
    /* Always free existing shader list */
    dir_free_shader(p_rarch);
@@ -11813,8 +11818,13 @@ static void dir_check_shader(struct rarch_state *p_rarch,
          &p_rarch->dir_shader_list;
    settings_t *settings                           = p_rarch->configuration_settings;
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
+#if defined(HAVE_MENU)
    enum rarch_shader_type last_shader_preset_type = menu_driver_get_last_shader_preset_type();
    const char *last_shader_preset_dir             = menu_driver_get_last_shader_preset_dir();
+#else
+   enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
+   const char *last_shader_preset_dir             = NULL;
+#endif
 
    /* Check whether shader list needs to be
     * (re)initialised */
