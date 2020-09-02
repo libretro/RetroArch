@@ -408,6 +408,37 @@ static int16_t rwebinput_mouse_state(
 
 static int16_t rwebinput_is_pressed(
       rwebinput_input_t *rwebinput,
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port, unsigned id,
+      bool keyboard_mapping_blocked)
+{
+   const struct retro_keybind *bind = &binds[id];
+   /* Auto-binds are per joypad, not per user. */
+   const uint64_t joykey  = (binds[id].joykey != NO_BTN)
+      ? binds[id].joykey  : joypad_info->auto_binds[id].joykey;
+   const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
+      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
+   int key                          = bind->key;
+
+   if ((key < RETROK_LAST) && rwebinput_key_pressed(rwebinput, key))
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !keyboard_mapping_blocked)
+         return 1;
+   if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse,
+            bind->mbutton, false))
+      return 1;
+   if ((uint16_t)joykey != NO_BTN 
+         && joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
+      return 1;
+   if (((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis)) 
+            / 0x8000) > joypad_info->axis_threshold)
+      return 1;
+   return 0;
+}
+
+static int16_t rwebinput_is_pressed_no_joypad(
+      rwebinput_input_t *rwebinput,
       const struct retro_keybind *binds,
       unsigned port, unsigned id,
       bool keyboard_mapping_blocked)
@@ -449,7 +480,7 @@ static int16_t rwebinput_input_state(
             {
                if (binds[port][i].valid)
                {
-                  if (rwebinput_is_pressed(
+                  if (rwebinput_is_pressed_no_joypad(
                            rwebinput, binds[port], port, i,
                            keyboard_mapping_blocked))
                      ret |= (1 << i);
@@ -463,7 +494,7 @@ static int16_t rwebinput_input_state(
          {
             if (binds[port][id].valid)
             {
-               if (rwebinput_is_pressed(rwebinput,
+               if (rwebinput_is_pressed_no_joypad(rwebinput,
                         binds[port],
                         port, id,
                         keyboard_mapping_blocked))
@@ -492,14 +523,14 @@ static int16_t rwebinput_input_state(
             if (id_plus_valid && id_plus_key < RETROK_LAST)
             {
                if (rwebinput_is_pressed(rwebinput,
-                        binds[port], idx, id_plus,
+                        joypad, joypad_info, binds[port], idx, id_plus,
                         keyboard_mapping_blocked))
                   ret = 0x7fff;
             }
             if (id_minus_valid && id_minus_key < RETROK_LAST)
             {
                if (rwebinput_is_pressed(rwebinput, 
-                        binds[port], idx, id_minus,
+                        joypad, joypad_info, binds[port], idx, id_minus,
                         keyboard_mapping_blocked))
                   ret += -0x7fff;
             }
