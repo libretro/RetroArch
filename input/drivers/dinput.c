@@ -111,13 +111,9 @@ bool dinput_init_context(void)
                      &IID_IDirectInput8,
                      (void**)&g_dinput_ctx, NULL))))
 #endif
-      goto error;
+         return false;
 
    return true;
-
-error:
-   RARCH_ERR("[DINPUT]: Failed to initialize DirectInput.\n");
-   return false;
 }
 
 static void *dinput_init(const char *joypad_driver)
@@ -125,10 +121,7 @@ static void *dinput_init(const char *joypad_driver)
    struct dinput_input *di = NULL;
 
    if (!dinput_init_context())
-   {
-      RARCH_ERR("[DINPUT]: Failed to start DirectInput driver.\n");
       return NULL;
-   }
 
    di = (struct dinput_input*)calloc(1, sizeof(*di));
    if (!di)
@@ -147,7 +140,6 @@ static void *dinput_init(const char *joypad_driver)
                &di->keyboard, NULL)))
 #endif
    {
-      RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
@@ -161,7 +153,6 @@ static void *dinput_init(const char *joypad_driver)
                &di->mouse, NULL)))
 #endif
    {
-      RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
       di->mouse = NULL;
    }
 
@@ -858,10 +849,7 @@ bool dinput_handle_message(void *data,
                (struct pointer_status *)malloc(sizeof(struct pointer_status));
 
             if (!new_pointer)
-            {
-               RARCH_ERR("[DINPUT]: dinput_handle_message: pointer allocation in WM_POINTERDOWN failed.\n");
                return false;
-            }
 
             new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
             dinput_pointer_store_pos(new_pointer, lParam);
