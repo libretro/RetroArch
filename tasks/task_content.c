@@ -1813,8 +1813,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       ret = false;
       goto end;
    }
-   else
-      task_push_to_history_list(p_content, true, false, false);
+
+   task_push_to_history_list(p_content, true, false, false);
 
 #ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
@@ -1957,8 +1957,8 @@ bool task_push_load_content_with_new_core_from_menu(
       ret = false;
       goto end;
    }
-   else
-      task_push_to_history_list(p_content, true, false, false);
+
+   task_push_to_history_list(p_content, true, false, false);
 #else
    command_event_cmd_exec(p_content,
          path_get(RARCH_PATH_CONTENT), &content_ctx,
@@ -2340,15 +2340,14 @@ void content_set_subsystem(unsigned idx)
 bool content_set_subsystem_by_name(const char* subsystem_name)
 {
    rarch_system_info_t                  *system = runloop_get_system_info();
-   const struct retro_subsystem_info *subsystem;
-   unsigned i = 0;
+   unsigned i                                   = 0;
+   /* Core not loaded completely, use the data we peeked on load core */
+   const struct retro_subsystem_info 
+      *subsystem                                = subsystem_data;
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
       subsystem = system->subsystem.data;
-   /* Core not loaded completely, use the data we peeked on load core */
-   else
-      subsystem = subsystem_data;
 
    for (i = 0; i < subsystem_current_count; i++, subsystem++)
    {
@@ -2365,15 +2364,13 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
 void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len)
 {
    rarch_system_info_t                  *system = runloop_get_system_info();
-   const struct retro_subsystem_info *subsystem;
-   unsigned i = 0;
+   unsigned i                                   = 0;
+   /* Core not loaded completely, use the data we peeked on load core */
+   const struct retro_subsystem_info *subsystem = subsystem_data;
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
       subsystem = system->subsystem.data;
-   /* Core not loaded completely, use the data we peeked on load core */
-   else
-      subsystem = subsystem_data;
 
    for (i = 0; i < subsystem_current_count; i++, subsystem++)
    {
@@ -2427,7 +2424,8 @@ uint32_t content_get_crc(void)
       p_content->pending_rom_crc   = false;
       p_content->rom_crc           = file_crc32(0,
             (const char*)p_content->pending_rom_crc_path);
-      RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
+      RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x .\n",
+            (unsigned)p_content->rom_crc);
    }
    return p_content->rom_crc;
 }
