@@ -64,56 +64,6 @@ static void xenon360_input_poll(void *data)
    }
 }
 
-static int16_t xenon360_input_state(
-      void *data,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
-{
-   if (port >= DEFAULT_MAX_PADS)
-      return 0;
-
-   switch (device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-#if 0
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (binds[port][i].valid)
-               {
-                  if (state[port] & binds[port][i].joykey)
-                     ret |= (1 << i);
-               }
-            }
-
-            return ret;
-         }
-
-         if (binds[port][id].valid)
-         {
-            if (state[port] & binds[port][id].joykey)
-               return 1;
-         }
-#endif
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 static void xenon360_input_free_input(void *data)
 {
    free(data);
@@ -132,7 +82,7 @@ static uint64_t xenon360_input_get_capabilities(void *data)
 input_driver_t input_xenon360 = {
    xenon360_input_init,
    xenon360_input_poll,
-   xenon360_input_state,
+   NULL,                            /* input_state */
    xenon360_input_free_input,
    NULL,
    NULL,

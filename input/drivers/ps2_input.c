@@ -31,21 +31,6 @@ typedef struct ps2_input
    void *empty;
 } ps2_input_t;
 
-static int16_t ps2_input_state(
-      void *data,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
-{
-   return 0;
-}
-
 static void ps2_input_free_input(void *data)
 {
    free(data);
@@ -68,7 +53,7 @@ static uint64_t ps2_input_get_capabilities(void *data)
 input_driver_t input_ps2 = {
    ps2_input_initialize,
    NULL,                         /* poll */
-   ps2_input_state,
+   NULL,                         /* input_state */
    ps2_input_free_input,
    NULL,
    NULL,

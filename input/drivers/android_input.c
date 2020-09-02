@@ -1350,10 +1350,8 @@ static int16_t android_input_state(
          }
 
          if (binds[port][id].valid)
-         {
             if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id))
                return 1;
-         }
          break;
       case RETRO_DEVICE_ANALOG:
          break;

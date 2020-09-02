@@ -58,7 +58,8 @@ typedef struct gx_input
 #endif
 } gx_input_t;
 
-static int16_t gx_input_state(
+#ifdef HW_RVL
+static int16_t rvl_input_state(
       void *data,
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
@@ -80,7 +81,6 @@ static int16_t gx_input_state(
       case RETRO_DEVICE_JOYPAD:
       case RETRO_DEVICE_ANALOG:
          break;
-#ifdef HW_RVL
       case RETRO_DEVICE_MOUSE:
          {
             settings_t *settings       = config_get_ptr();
@@ -168,11 +168,11 @@ static int16_t gx_input_state(
             }
          }
          break;
-#endif
    }
 
    return 0;
 }
+#endif
 
 static void gx_input_free_input(void *data)
 {
@@ -282,10 +282,11 @@ input_driver_t input_gx = {
    gx_input_init,
 #ifdef HW_RVL
    rvl_input_poll,
+   rvl_input_state,
 #else
    NULL,                         /* poll */
+   NULL,                         /* input_state */
 #endif
-   gx_input_state,
    gx_input_free_input,
    NULL,
    NULL,
