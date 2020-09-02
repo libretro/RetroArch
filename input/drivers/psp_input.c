@@ -54,7 +54,7 @@
 /* TODO/FIXME -
  * fix game focus toggle */
 
-#ifdef VITA
+#if defined(SN_TARGET_PSP2) || defined(VITA)
 #include "../input_keymaps.h"
 
 uint8_t modifier_lut[VITA_NUM_MODIFIERS][2] =
@@ -231,14 +231,8 @@ static void vita_input_poll(void *data)
    else if (psp->mouse_y > MOUSE_MAX_Y)
       psp->mouse_y     = MOUSE_MAX_Y;
 }
-#else
-typedef struct psp_input
-{
-   void *empty;
-} psp_input_t;
-#endif
 
-static int16_t psp_input_state(
+static int16_t vita_input_state(
       void *data,
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
@@ -251,11 +245,6 @@ static int16_t psp_input_state(
       unsigned id)
 {
    psp_input_t *psp           = (psp_input_t*)data;
-
-#if !defined(SN_TARGET_PSP2) && !defined(VITA)
-   if (port > 0)
-      return 0;
-#endif
 
    switch (device)
    {
@@ -303,36 +292,18 @@ static int16_t psp_input_state(
 
    return 0;
 }
+#else
+typedef struct psp_input
+{
+   void *empty;
+} psp_input_t;
+#endif
 
 static void psp_input_free_input(void *data)
 {
    free(data);
 }
 
-static void* psp_input_initialize(const char *joypad_driver)
-{
-#ifdef VITA
-   unsigned i;
-#endif
-   psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
-   if (!psp)
-      return NULL;
-
-#ifdef VITA
-   sceHidKeyboardEnumerate(&(psp->keyboard_hid_handle), 1);
-   sceHidMouseEnumerate(&(psp->mouse_hid_handle), 1);
-
-   input_keymaps_init_keyboard_lut(rarch_key_map_vita);
-   for (i = 0; i <= VITA_MAX_SCANCODE; i++)
-      psp->keyboard_state[i] = false;
-   for (i = 0; i < 6; i++)
-      psp->prev_keys[i] = 0;
-   psp->mouse_x = 0;
-   psp->mouse_y = 0;
-#endif
-
-   return psp;
-}
 
 static uint64_t psp_input_get_capabilities(void *data)
 {
@@ -418,17 +389,47 @@ static float psp_input_get_sensor_input(void *data,
 
    return 0.0f;
 }
-	
+
+static void *vita_input_initialize(const char *joypad_driver)
+{
+   unsigned i;
+   psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
+   if (!psp)
+      return NULL;
+
+   sceHidKeyboardEnumerate(&(psp->keyboard_hid_handle), 1);
+   sceHidMouseEnumerate(&(psp->mouse_hid_handle), 1);
+
+   input_keymaps_init_keyboard_lut(rarch_key_map_vita);
+   for (i = 0; i <= VITA_MAX_SCANCODE; i++)
+      psp->keyboard_state[i] = false;
+   for (i = 0; i < 6; i++)
+      psp->prev_keys[i] = 0;
+   psp->mouse_x = 0;
+   psp->mouse_y = 0;
+
+   return psp;
+}
+#else
+static void* psp_input_initialize(const char *joypad_driver)
+{
+   psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
+   if (!psp)
+      return NULL;
+   return psp;
+}
 #endif
 
 input_driver_t input_psp = {
-   psp_input_initialize,
 #ifdef VITA
+   vita_input_initialize,
    vita_input_poll,
+   vita_input_state,
 #else
+   psp_input_initialize,
    NULL,                         /* poll */
+   NULL,                         /* input_state */
 #endif
-   psp_input_state,
    psp_input_free_input,
 #ifdef VITA
    psp_input_set_sensor_state,
