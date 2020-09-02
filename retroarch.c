@@ -3015,6 +3015,73 @@ static void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
    timer->timeout_end = timer->current + timer->timeout_us;
 }
 
+static int16_t input_state_wrap(
+      struct rarch_state *p_rarch,
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
+{
+   input_driver_t *current_input = p_rarch->current_input;
+   int16_t ret                   = 0;
+
+   /* Do a bitwise OR to combine input states together */
+
+   if (device == RETRO_DEVICE_JOYPAD)
+   {
+      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+      {
+         ret                       |= joypad->state(
+               joypad_info, binds[port], port);
+#ifdef HAVE_MFI
+         if (sec_joypad)
+            ret                    |= sec_joypad->state(
+                  joypad_info, binds[port], port);
+#endif
+      }
+      else
+      {
+         /* Do a bitwise OR to combine both input
+          * states together */
+         if (binds[port][id].valid)
+         {
+            if (button_is_pressed(
+                     joypad,
+                     joypad_info, binds[port], port, id))
+               return 1;
+#ifdef HAVE_MFI
+            else if (sec_joypad &&
+                  button_is_pressed(
+                     sec_joypad,
+                     joypad_info, binds[port], port, id))
+               return 1;
+#endif
+         }
+      }
+   }
+
+   if (current_input->input_state)
+      ret |= current_input->input_state(
+            data,
+            joypad,
+            sec_joypad,
+            joypad_info,
+            binds,
+            keyboard_mapping_blocked,
+            port,
+            device,
+            idx,
+            id);
+   return ret;
+}
+
+
 #ifdef HAVE_MENU
 /* TODO/FIXME - public global variables */
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
@@ -3607,72 +3674,6 @@ static void menu_input_key_bind_poll_bind_state_internal(
       if (joypad->button(port, HAT_MAP(h, HAT_RIGHT_MASK)))
          state->state[port].hats[h] |= HAT_RIGHT_MASK;
    }
-}
-
-static int16_t input_state_wrap(
-      struct rarch_state *p_rarch,
-      void *data,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
-{
-   input_driver_t *current_input = p_rarch->current_input;
-   int16_t ret                   = 0;
-
-   /* Do a bitwise OR to combine input states together */
-
-   if (device == RETRO_DEVICE_JOYPAD)
-   {
-      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-      {
-         ret                       |= joypad->state(
-               joypad_info, binds[port], port);
-#ifdef HAVE_MFI
-         if (sec_joypad)
-            ret                    |= sec_joypad->state(
-                  joypad_info, binds[port], port);
-#endif
-      }
-      else
-      {
-         /* Do a bitwise OR to combine both input
-          * states together */
-         if (binds[port][id].valid)
-         {
-            if (button_is_pressed(
-                     joypad,
-                     joypad_info, binds[port], port, id))
-               return 1;
-#ifdef HAVE_MFI
-            else if (sec_joypad &&
-                  button_is_pressed(
-                     sec_joypad,
-                     joypad_info, binds[port], port, id))
-               return 1;
-#endif
-         }
-      }
-   }
-
-   if (current_input->input_state)
-      ret |= current_input->input_state(
-            data,
-            joypad,
-            sec_joypad,
-            joypad_info,
-            binds,
-            keyboard_mapping_blocked,
-            port,
-            device,
-            idx,
-            id);
-   return ret;
 }
 
 static void menu_input_key_bind_poll_bind_state(
