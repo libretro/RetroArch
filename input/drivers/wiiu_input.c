@@ -102,9 +102,7 @@ static int16_t wiiu_input_state(
       unsigned idx,
       unsigned id)
 {
-   wiiu_input_t *wiiu         = (wiiu_input_t*)data;
-
-   if (!wiiu || !(port < DEFAULT_MAX_PADS) || !binds || !binds[port])
+   if (!(port < DEFAULT_MAX_PADS) || !binds || !binds[port])
       return 0;
 
    switch (device)
@@ -151,8 +149,6 @@ static int16_t wiiu_input_state(
 
 static void wiiu_input_free_input(void *data)
 {
-   wiiu_input_t *wiiu = (wiiu_input_t*)data;
-
    KBDTeardown();
 
    free(data);

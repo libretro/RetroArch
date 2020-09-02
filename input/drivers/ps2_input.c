@@ -43,8 +43,6 @@ static int16_t ps2_input_state(
       unsigned idx,
       unsigned id)
 {
-   ps2_input_t *ps2           = (ps2_input_t*)data;
-
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -66,8 +64,6 @@ static int16_t ps2_input_state(
 
 static void ps2_input_free_input(void *data)
 {
-   ps2_input_t *ps2 = (ps2_input_t*)data;
-
    free(data);
 }
 

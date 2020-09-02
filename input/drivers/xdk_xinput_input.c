@@ -52,8 +52,6 @@ static int16_t xdk_input_state(
       unsigned index,
       unsigned id)
 {
-   xdk_input_t *xdk           = (xdk_input_t*)data;
-
    if (port >= DEFAULT_MAX_PADS)
       return 0;
 

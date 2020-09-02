@@ -80,8 +80,6 @@ static int16_t uwp_input_state(
       unsigned index,
       unsigned id)
 {
-   uwp_input_t *uwp           = (uwp_input_t*)data;
-
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:

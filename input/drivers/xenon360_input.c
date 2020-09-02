@@ -74,8 +74,6 @@ static int16_t xenon360_input_state(
       unsigned idx,
       unsigned id)
 {
-   uint64_t button            = binds[port][id].joykey;
-
    if (port >= DEFAULT_MAX_PADS)
       return 0;
 

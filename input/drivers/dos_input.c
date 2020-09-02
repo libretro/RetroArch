@@ -66,8 +66,6 @@ static int16_t dos_input_state(
       unsigned idx,
       unsigned id)
 {
-   dos_input_t *dos = (dos_input_t*)data;
-
    if (port > 0)
       return 0;
 

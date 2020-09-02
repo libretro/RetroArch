@@ -49,8 +49,6 @@ static int16_t ps4_input_state(
       unsigned idx,
       unsigned id)
 {
-   ps4_input_t *ps4           = (ps4_input_t*)data;
-
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:

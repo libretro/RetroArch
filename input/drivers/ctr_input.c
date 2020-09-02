@@ -32,7 +32,7 @@
 
 typedef struct ctr_input
 {
-   const input_device_driver_t *joypad;
+   void *empty;
 } ctr_input_t;
 
 static int16_t ctr_input_state(
@@ -47,8 +47,6 @@ static int16_t ctr_input_state(
       unsigned idx,
       unsigned id)
 {
-   ctr_input_t *ctr                   = (ctr_input_t*)data;
-
    if (port >= MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS)
       return 0;
 
