@@ -3660,17 +3660,18 @@ static int16_t input_state_wrap(
       }
    }
 
-   ret |= current_input->input_state(
-         data,
-         joypad,
-         sec_joypad,
-         joypad_info,
-         binds,
-         keyboard_mapping_blocked,
-         port,
-         device,
-         idx,
-         id);
+   if (current_input->input_state)
+      ret |= current_input->input_state(
+            data,
+            joypad,
+            sec_joypad,
+            joypad_info,
+            binds,
+            keyboard_mapping_blocked,
+            port,
+            device,
+            idx,
+            id);
    return ret;
 }
 
@@ -3702,18 +3703,20 @@ static void menu_input_key_bind_poll_bind_state(
    joypad_info.auto_binds     = NULL;
    joypad_info.axis_threshold = 0.0f;
 
-   state->skip = 
-      timed_out || current_input->input_state(
-            input_data,
-            p_rarch->joypad,
-            sec_joypad,
-            &joypad_info,
-            NULL,
-            p_rarch->keyboard_mapping_blocked,
-            0,
-            RETRO_DEVICE_KEYBOARD,
-            0,
-            RETROK_RETURN);
+   state->skip                = timed_out;
+   if (current_input->input_state)
+      state->skip             |= 
+         current_input->input_state(
+               input_data,
+               p_rarch->joypad,
+               sec_joypad,
+               &joypad_info,
+               NULL,
+               p_rarch->keyboard_mapping_blocked,
+               0,
+               RETRO_DEVICE_KEYBOARD,
+               0,
+               RETROK_RETURN);
 
    menu_input_key_bind_poll_bind_state_internal(
          joypad, state, port, timed_out);
@@ -23270,9 +23273,8 @@ static void input_poll_overlay(
       unsigned analog_dpad_mode,
       float axis_threshold)
 {
-   rarch_joypad_info_t joypad_info;
    input_overlay_state_t old_key_state;
-   unsigned i, j, device;
+   unsigned i, j;
    uint16_t key_mod                                 = 0;
    bool polled                                      = false;
    bool button_pressed                              = false;
@@ -23282,85 +23284,92 @@ static void input_poll_overlay(
    settings_t *settings                             = p_rarch->configuration_settings;
    bool input_overlay_show_physical_inputs          = settings->bools.input_overlay_show_physical_inputs;
    unsigned input_overlay_show_physical_inputs_port = settings->uints.input_overlay_show_physical_inputs_port;
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad          = p_rarch->sec_joypad;
-#else
-   const input_device_driver_t *sec_joypad          = NULL;
-#endif
 
    if (!ol_state)
       return;
-
-   joypad_info.joy_idx             = 0;
-   joypad_info.auto_binds          = NULL;
-   joypad_info.axis_threshold      = 0.0f;
 
    memcpy(old_key_state.keys, ol_state->keys,
          sizeof(ol_state->keys));
    memset(ol_state, 0, sizeof(*ol_state));
 
-   device = ol->active->full_screen ?
-      RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
-
-   for (i = 0;
-         current_input->input_state(
-            input_data,
-            p_rarch->joypad,
-            sec_joypad,
-            &joypad_info,
-            NULL,
-            p_rarch->keyboard_mapping_blocked,
-            0,
-            device,
-            i,
-            RETRO_DEVICE_ID_POINTER_PRESSED);
-         i++)
+   if (current_input->input_state)
    {
-      input_overlay_state_t polled_data;
-      int16_t x = current_input->input_state(
-            input_data,
-            p_rarch->joypad,
-            sec_joypad,
-            &joypad_info,
-            NULL,
-            p_rarch->keyboard_mapping_blocked,
-            0,
-            device,
-            i,
-            RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = current_input->input_state(
-            input_data,
-            p_rarch->joypad,
-            sec_joypad,
-            &joypad_info,
-            NULL,
-            p_rarch->keyboard_mapping_blocked,
-            0,
-            device,
-            i,
-            RETRO_DEVICE_ID_POINTER_Y);
+      rarch_joypad_info_t joypad_info;
+      unsigned device                 = ol->active->full_screen 
+         ? RARCH_DEVICE_POINTER_SCREEN 
+         : RETRO_DEVICE_POINTER;
+#ifdef HAVE_MFI
+      const input_device_driver_t 
+         *sec_joypad                  = p_rarch->sec_joypad;
+#else
+      const input_device_driver_t 
+         *sec_joypad                  = NULL;
+#endif
 
-      memset(&polled_data, 0, sizeof(struct input_overlay_state));
+      joypad_info.joy_idx             = 0;
+      joypad_info.auto_binds          = NULL;
+      joypad_info.axis_threshold      = 0.0f;
 
-      if (ol->enable)
-         input_overlay_poll(ol, &polled_data, x, y);
-      else
-         ol->blocked = false;
+      for (i = 0;
+            current_input->input_state(
+               input_data,
+               p_rarch->joypad,
+               sec_joypad,
+               &joypad_info,
+               NULL,
+               p_rarch->keyboard_mapping_blocked,
+               0,
+               device,
+               i,
+               RETRO_DEVICE_ID_POINTER_PRESSED);
+            i++)
+      {
+         input_overlay_state_t polled_data;
+         int16_t x = current_input->input_state(
+               input_data,
+               p_rarch->joypad,
+               sec_joypad,
+               &joypad_info,
+               NULL,
+               p_rarch->keyboard_mapping_blocked,
+               0,
+               device,
+               i,
+               RETRO_DEVICE_ID_POINTER_X);
+         int16_t y = current_input->input_state(
+               input_data,
+               p_rarch->joypad,
+               sec_joypad,
+               &joypad_info,
+               NULL,
+               p_rarch->keyboard_mapping_blocked,
+               0,
+               device,
+               i,
+               RETRO_DEVICE_ID_POINTER_Y);
 
-      bits_or_bits(ol_state->buttons.data,
-            polled_data.buttons.data,
-            ARRAY_SIZE(polled_data.buttons.data));
+         memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
-      for (j = 0; j < ARRAY_SIZE(ol_state->keys); j++)
-         ol_state->keys[j] |= polled_data.keys[j];
+         if (ol->enable)
+            input_overlay_poll(ol, &polled_data, x, y);
+         else
+            ol->blocked = false;
 
-      /* Fingers pressed later take priority and matched up
-       * with overlay poll priorities. */
-      for (j = 0; j < 4; j++)
-         if (polled_data.analog[j])
-            ol_state->analog[j] = polled_data.analog[j];
+         bits_or_bits(ol_state->buttons.data,
+               polled_data.buttons.data,
+               ARRAY_SIZE(polled_data.buttons.data));
 
-      polled = true;
+         for (j = 0; j < ARRAY_SIZE(ol_state->keys); j++)
+            ol_state->keys[j] |= polled_data.keys[j];
+
+         /* Fingers pressed later take priority and matched up
+          * with overlay poll priorities. */
+         for (j = 0; j < 4; j++)
+            if (polled_data.analog[j])
+               ol_state->analog[j] = polled_data.analog[j];
+
+         polled = true;
+      }
    }
 
    if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
@@ -24749,6 +24758,8 @@ static int16_t menu_input_read_mouse_hw(
          break;
    }
 
+   if (!current_input->input_state)
+      return 0;
    return current_input->input_state(
          p_rarch->current_input_data,
          p_rarch->joypad,
@@ -24884,9 +24895,10 @@ static void menu_input_get_touchscreen_hw_state(
       menu_input_pointer_hw_state_t *hw_state)
 {
    rarch_joypad_info_t joypad_info;
-   int pointer_x, pointer_y;
    size_t fb_pitch;
    unsigned fb_width, fb_height;
+   int pointer_x                                = 0;
+   int pointer_y                                = 0;
    settings_t *settings                         = 
       p_rarch->configuration_settings;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
@@ -24949,14 +24961,15 @@ static void menu_input_get_touchscreen_hw_state(
    joypad_info.axis_threshold = 0.0f;
 
    /* X pos */
-   pointer_x                  = current_input->input_state(
-         p_rarch->current_input_data,
-         p_rarch->joypad,
-         sec_joypad,
-         &joypad_info, binds,
-         p_rarch->keyboard_mapping_blocked,
-         0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_X);
+   if (current_input->input_state)
+      pointer_x                  = current_input->input_state(
+            p_rarch->current_input_data,
+            p_rarch->joypad,
+            sec_joypad,
+            &joypad_info, binds,
+            p_rarch->keyboard_mapping_blocked,
+            0, pointer_device,
+            0, RETRO_DEVICE_ID_POINTER_X);
    hw_state->x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
 
    /* > An annoyance - we get different starting positions
@@ -24978,14 +24991,15 @@ static void menu_input_get_touchscreen_hw_state(
    }
 
    /* Y pos */
-   pointer_y = current_input->input_state(
-         p_rarch->current_input_data,
-         p_rarch->joypad,
-         sec_joypad,
-         &joypad_info, binds,
-         p_rarch->keyboard_mapping_blocked,
-         0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_Y);
+   if (current_input->input_state)
+      pointer_y = current_input->input_state(
+            p_rarch->current_input_data,
+            p_rarch->joypad,
+            sec_joypad,
+            &joypad_info, binds,
+            p_rarch->keyboard_mapping_blocked,
+            0, pointer_device,
+            0, RETRO_DEVICE_ID_POINTER_Y);
    hw_state->y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
 
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
@@ -25003,28 +25017,30 @@ static void menu_input_get_touchscreen_hw_state(
 
    /* Select (touch screen contact)
     * Note that releasing select also counts as activity */
-   hw_state->select_pressed = (bool)current_input->input_state(
-         p_rarch->current_input_data,
-         p_rarch->joypad,
-         sec_joypad,
-         &joypad_info, binds,
-         p_rarch->keyboard_mapping_blocked,
-         0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_PRESSED);
+   if (current_input->input_state)
+      hw_state->select_pressed = (bool)current_input->input_state(
+            p_rarch->current_input_data,
+            p_rarch->joypad,
+            sec_joypad,
+            &joypad_info, binds,
+            p_rarch->keyboard_mapping_blocked,
+            0, pointer_device,
+            0, RETRO_DEVICE_ID_POINTER_PRESSED);
    if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
       hw_state->active = true;
    last_select_pressed = hw_state->select_pressed;
 
    /* Cancel (touch screen 'back' - don't know what is this, but whatever...)
     * Note that releasing cancel also counts as activity */
-   hw_state->cancel_pressed = (bool)current_input->input_state(
-         p_rarch->current_input_data,
-         p_rarch->joypad,
-         sec_joypad,
-         &joypad_info, binds,
-         p_rarch->keyboard_mapping_blocked,
-         0, pointer_device,
-         0, RARCH_DEVICE_ID_POINTER_BACK);
+   if (current_input->input_state)
+      hw_state->cancel_pressed = (bool)current_input->input_state(
+            p_rarch->current_input_data,
+            p_rarch->joypad,
+            sec_joypad,
+            &joypad_info, binds,
+            p_rarch->keyboard_mapping_blocked,
+            0, pointer_device,
+            0, RARCH_DEVICE_ID_POINTER_BACK);
    if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
       hw_state->active = true;
    last_cancel_pressed = hw_state->cancel_pressed;
@@ -38733,7 +38749,8 @@ static enum runloop_state runloop_check_state(
             (general_binds)[j].joyaxis = (general_binds)[j].orig_joyaxis;
          }
 
-         if (!display_kb)
+         if (     !display_kb
+               &&  current_input->input_state)
          {
             unsigned i;
             unsigned ids[][2] =
