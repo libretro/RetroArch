@@ -87,7 +87,6 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (JNIEnv *env, jobject this_obj, jstring core_name, jboolean successful)
 {
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
-   const char *core_name_c              = NULL;
 
    /* Lock mutex */
 #ifdef HAVE_THREADS
@@ -523,7 +522,14 @@ bool play_feature_delivery_download(const char *core_file)
    /* We only support one download at a time */
    if (!state->active)
    {
-      /* Convert to a Java-style string */
+      /* Update status */
+      state->download_progress = 0;
+      state->last_status       = PLAY_FEATURE_DELIVERY_PENDING;
+      state->active            = true;
+      strlcpy(state->last_core_name, core_name,
+            sizeof(state->last_core_name));
+
+      /* Convert core name to a Java-style string */
       core_name_jni = (*env)->NewStringUTF(env, core_name);
 
       /* Request download */
@@ -532,13 +538,6 @@ bool play_feature_delivery_download(const char *core_file)
 
       /* Free core_name_jni reference */
       (*env)->DeleteLocalRef(env, core_name_jni);
-
-      /* Update status */
-      state->download_progress = 0;
-      state->last_status       = PLAY_FEATURE_DELIVERY_PENDING;
-      state->active            = true;
-      strlcpy(state->last_core_name, core_name,
-            sizeof(state->last_core_name));
 
       success = true;
    }
