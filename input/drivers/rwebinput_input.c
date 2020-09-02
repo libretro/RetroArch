@@ -437,6 +437,24 @@ static int16_t rwebinput_is_pressed(
    return 0;
 }
 
+static int16_t rwebinput_is_pressed_no_joypad(
+      rwebinput_input_t *rwebinput,
+      const struct retro_keybind *binds,
+      unsigned port, unsigned id,
+      bool keyboard_mapping_blocked)
+{
+   const struct retro_keybind *bind = &binds[id];
+   int key                          = bind->key;
+
+   if ((key < RETROK_LAST) && rwebinput_key_pressed(rwebinput, key))
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !keyboard_mapping_blocked)
+         return 1;
+   if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse,
+            bind->mbutton, false))
+      return 1;
+   return 0;
+}
+
 static int16_t rwebinput_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -462,9 +480,8 @@ static int16_t rwebinput_input_state(
             {
                if (binds[port][i].valid)
                {
-                  if (rwebinput_is_pressed(
-                           rwebinput, joypad,
-                           joypad_info, binds[port], port, i,
+                  if (rwebinput_is_pressed_no_joypad(
+                           rwebinput, binds[port], port, i,
                            keyboard_mapping_blocked))
                      ret |= (1 << i);
                }
@@ -472,18 +489,16 @@ static int16_t rwebinput_input_state(
 
             return ret;
          }
-         else
+
+         if (id < RARCH_BIND_LIST_END)
          {
-            if (id < RARCH_BIND_LIST_END)
+            if (binds[port][id].valid)
             {
-               if (binds[port][id].valid)
-               {
-                  if (rwebinput_is_pressed(rwebinput, joypad,
-                           joypad_info, binds[port],
-                           port, id,
-                           keyboard_mapping_blocked))
-                     return 1;
-               }
+               if (rwebinput_is_pressed_no_joypad(rwebinput,
+                        binds[port],
+                        port, id,
+                        keyboard_mapping_blocked))
+                  return 1;
             }
          }
          break;

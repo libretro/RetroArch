@@ -392,13 +392,7 @@ static int16_t cocoa_input_state(
             unsigned i;
             /* Do a bitwise OR to combine both input
              * states together */
-            int16_t ret = joypad->state(
-                  joypad_info, binds[port], port)
-#ifdef HAVE_MFI
-                 | sec_joypad->state(
-                     joypad_info, binds[port], port)
-#endif
-                 ;
+            int16_t ret = 0;
 
             if (!keyboard_mapping_blocked)
             {
@@ -412,24 +406,12 @@ static int16_t cocoa_input_state(
             }
             return ret;
          }
-         else
+
+         if (binds[port][id].valid)
          {
-            if (binds[port][id].valid)
-            {
-               if (button_is_pressed(
-                        joypad,
-                        joypad_info, binds[port], port, id))
+            if (id < RARCH_BIND_LIST_END)
+               if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
                   return 1;
-#ifdef HAVE_MFI
-               else if (button_is_pressed(
-                        sec_joypad,
-                        joypad_info, binds[port], port, id))
-                  return 1;
-#endif
-               else if (id < RARCH_BIND_LIST_END)
-                  if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
-                     return 1;
-            }
          }
          break;
       case RETRO_DEVICE_ANALOG:

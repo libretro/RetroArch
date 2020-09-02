@@ -1337,8 +1337,7 @@ static int16_t android_input_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = joypad->state(
-                  joypad_info, binds[port], port);
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].valid)
@@ -1349,18 +1348,11 @@ static int16_t android_input_state(
             }
             return ret;
          }
-         else
+
+         if (binds[port][id].valid)
          {
-            if (binds[port][id].valid)
-            {
-               if ( 
-                     button_is_pressed(
-                        joypad, joypad_info, binds[port],
-                        port, id)
-                     || ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id)
-                  )
-                  return 1;
-            }
+            if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id))
+               return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:

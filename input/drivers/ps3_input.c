@@ -109,16 +109,6 @@ static int16_t ps3_input_state(
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return joypad->state(
-                  joypad_info, binds[port], port);
-
-         if (binds[port][id].valid)
-            if (button_is_pressed(joypad, joypad_info, binds[port],
-                     port, id))
-               return 1;
-
-         break;
       case RETRO_DEVICE_ANALOG:
          break;
 #if 0

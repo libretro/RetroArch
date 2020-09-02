@@ -412,8 +412,7 @@ static int16_t dinput_input_state(
             if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
             {
                unsigned i;
-               int16_t ret = joypad->state(
-                              joypad_info, binds[port], port);
+               int16_t ret = 0;
 
                if (settings->uints.input_mouse_index[port] == 0)
                {
@@ -444,30 +443,24 @@ static int16_t dinput_input_state(
                }
                return ret;
             }
-            else
+
+            if (id < RARCH_BIND_LIST_END)
             {
-               if (id < RARCH_BIND_LIST_END)
+               if (binds[port][id].valid)
                {
-                  if (binds[port][id].valid)
-                  {
-                     if (button_is_pressed(
-                              joypad,
-                              joypad_info, binds[port], port, id))
-                        return 1;
-                     else if  (binds[port][id].key < RETROK_LAST
-                           && (di->state[rarch_keysym_lut
-                              [(enum retro_key)binds[port][id].key]] & 0x80)
-                           && (   (id == RARCH_GAME_FOCUS_TOGGLE) 
-                              || !keyboard_mapping_blocked)
-                           )
-                        return 1;
-                     else if (
-                           settings->uints.input_mouse_index[port] == 0
-                           && dinput_mouse_button_pressed(
-                              di, port, binds[port][id].mbutton)
-                           )
-                        return 1;
-                  }
+                  if  (binds[port][id].key < RETROK_LAST
+                        && (di->state[rarch_keysym_lut
+                           [(enum retro_key)binds[port][id].key]] & 0x80)
+                        && (   (id == RARCH_GAME_FOCUS_TOGGLE) 
+                           || !keyboard_mapping_blocked)
+                      )
+                     return 1;
+                  else if (
+                        settings->uints.input_mouse_index[port] == 0
+                        && dinput_mouse_button_pressed(
+                           di, port, binds[port][id].mbutton)
+                        )
+                     return 1;
                }
             }
          }

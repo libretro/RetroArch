@@ -27,6 +27,8 @@
 
 #include "../input_driver.h"
 
+/* TODO/FIXME - add joypad driver */
+
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -80,6 +82,7 @@ static int16_t xenon360_input_state(
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
+#if 0
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
@@ -96,14 +99,13 @@ static int16_t xenon360_input_state(
 
             return ret;
          }
-         else
+
+         if (binds[port][id].valid)
          {
-            if (binds[port][id].valid)
-            {
-               if (state[port] & binds[port][id].joykey)
-                  return 1;
-            }
+            if (state[port] & binds[port][id].joykey)
+               return 1;
          }
+#endif
          break;
       default:
          break;

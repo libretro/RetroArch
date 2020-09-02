@@ -624,8 +624,7 @@ static int16_t winraw_input_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = joypad->state(
-                  joypad_info, binds[port], port);
+            int16_t ret = 0;
 
             if (mouse)
             {
@@ -655,27 +654,21 @@ static int16_t winraw_input_state(
 
             return ret;
          }
-         else
+
+         if (id < RARCH_BIND_LIST_END)
          {
-            if (id < RARCH_BIND_LIST_END)
+            if (binds[port][id].valid)
             {
-               if (binds[port][id].valid)
-               {
-                  if (button_is_pressed(
-                        joypad,
-                        joypad_info, binds[port], port, id))
-                     return 1;
-                  else if (
-                        (binds[port][id].key < RETROK_LAST) 
-                        && WINRAW_KEYBOARD_PRESSED(wr, binds[port][id].key)
-                        && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                           || !keyboard_mapping_blocked)
-                        )
-                     return 1;
-                  else if (mouse && winraw_mouse_button_pressed(wr,
-                           mouse, port, binds[port][id].mbutton))
-                     return 1;
-               }
+               if (
+                     (binds[port][id].key < RETROK_LAST) 
+                     && WINRAW_KEYBOARD_PRESSED(wr, binds[port][id].key)
+                     && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
+                        || !keyboard_mapping_blocked)
+                     )
+                  return 1;
+               else if (mouse && winraw_mouse_button_pressed(wr,
+                        mouse, port, binds[port][id].mbutton))
+                  return 1;
             }
          }
          break;

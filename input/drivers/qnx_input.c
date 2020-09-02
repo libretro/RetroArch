@@ -789,8 +789,7 @@ static int16_t qnx_input_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = joypad->state(
-                  joypad_info, binds[port], port);
+            int16_t ret = 0;
 
             if (!keyboard_mapping_blocked)
             {
@@ -806,22 +805,17 @@ static int16_t qnx_input_state(
 
             return ret;
          }
-         else
+
+         if (id < RARCH_BIND_LIST_END)
          {
-            if (id < RARCH_BIND_LIST_END)
+            if (binds[port][id].valid)
             {
-               if (binds[port][id].valid)
-               {
-                  if (button_is_pressed(joypad,
-                           joypad_info, binds[port], port, id))
-                     return 1;
-                  else if (
-                        ((id == RARCH_GAME_FOCUS_TOGGLE) || 
-                         !keyboard_mapping_blocked) && 
-                        qnx_keyboard_pressed(qnx, key)
-                        )
-                     return 1;
-               }
+               if (
+                     ((id == RARCH_GAME_FOCUS_TOGGLE) || 
+                      !keyboard_mapping_blocked) && 
+                     qnx_keyboard_pressed(qnx, key)
+                  )
+                  return 1;
             }
          }
          break;

@@ -52,26 +52,6 @@ static int16_t xdk_input_state(
       unsigned index,
       unsigned id)
 {
-   if (port >= DEFAULT_MAX_PADS)
-      return 0;
-
-   switch (device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return joypad->state(
-                  joypad_info, binds[port], port);
-
-         if (binds[port][id].valid)
-            if (
-                  button_is_pressed(joypad, joypad_info, binds[port],
-                     port, id))
-               return 1;
-         break;
-      case RETRO_DEVICE_ANALOG:
-         break;
-   }
-
    return 0;
 }
 

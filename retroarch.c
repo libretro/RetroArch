@@ -3623,7 +3623,40 @@ static int16_t input_state_wrap(
       unsigned id)
 {
    input_driver_t *current_input = p_rarch->current_input;
-   int16_t ret                   = current_input->input_state(
+   int16_t ret                   = 0;
+
+   /* Do a bitwise OR to combine input states together */
+
+   if (device == RETRO_DEVICE_JOYPAD)
+   {
+      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+      {
+         ret                       |= joypad->state(
+               joypad_info, binds[port], port);
+         if (sec_joypad)
+            ret                    |= sec_joypad->state(
+                  joypad_info, binds[port], port);
+      }
+      else
+      {
+         /* Do a bitwise OR to combine both input
+          * states together */
+         if (binds[port][id].valid)
+         {
+            if (button_is_pressed(
+                     joypad,
+                     joypad_info, binds[port], port, id))
+               return 1;
+            else if (sec_joypad &&
+                  button_is_pressed(
+                     sec_joypad,
+                     joypad_info, binds[port], port, id))
+               return 1;
+         }
+      }
+   }
+
+   ret |= current_input->input_state(
          data,
          joypad,
          sec_joypad,

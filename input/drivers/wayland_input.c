@@ -167,8 +167,7 @@ static int16_t input_wl_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = joypad->state(
-                  joypad_info, binds[port], port);
+            int16_t ret = 0;
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
@@ -182,21 +181,13 @@ static int16_t input_wl_state(
 
             return ret;
          }
-         else
+
+         if (id < RARCH_BIND_LIST_END)
          {
-            if (id < RARCH_BIND_LIST_END)
-            {
-               if (binds[port][id].valid)
-               {
-                  if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           port, id))
-                     return 1;
-                  else if (BIT_GET(wl->key_state,
-                           rarch_keysym_lut[binds[port][id].key]))
-                     return 1;
-               }
-            }
+            if (binds[port][id].valid)
+               if (BIT_GET(wl->key_state,
+                        rarch_keysym_lut[binds[port][id].key]))
+                  return 1;
          }
          break;
       case RETRO_DEVICE_ANALOG:
