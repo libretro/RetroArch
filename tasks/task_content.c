@@ -1243,7 +1243,7 @@ static bool content_file_init(
    else if (!special)
    {
       *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
-      ret = false;
+      return false;
    }
 
    return ret;
