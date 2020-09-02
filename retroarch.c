@@ -17037,7 +17037,7 @@ bool command_event(enum event_command cmd, void *data)
                input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
                p_rarch->input_driver_block_hotkey               = true;
-               p_rarch->keyboard_mapping_blocked                = false;
+               p_rarch->keyboard_mapping_blocked                = true;
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
                         1, 120, true,
