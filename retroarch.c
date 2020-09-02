@@ -3633,9 +3633,11 @@ static int16_t input_state_wrap(
       {
          ret                       |= joypad->state(
                joypad_info, binds[port], port);
+#ifdef HAVE_MFI
          if (sec_joypad)
             ret                    |= sec_joypad->state(
                   joypad_info, binds[port], port);
+#endif
       }
       else
       {
@@ -3647,11 +3649,13 @@ static int16_t input_state_wrap(
                      joypad,
                      joypad_info, binds[port], port, id))
                return 1;
+#ifdef HAVE_MFI
             else if (sec_joypad &&
                   button_is_pressed(
                      sec_joypad,
                      joypad_info, binds[port], port, id))
                return 1;
+#endif
          }
       }
    }
