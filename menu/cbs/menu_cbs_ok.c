@@ -90,6 +90,7 @@
 #endif
 
 #if defined(ANDROID)
+#include "../../file_path_special.h"
 #include "../../play_feature_delivery/play_feature_delivery.h"
 #endif
 
@@ -4512,7 +4513,7 @@ static int action_ok_core_updater_download(const char *path,
     * the play feature delivery interface */
    if (play_feature_delivery_enabled())
       task_push_play_feature_delivery_core_install(
-            core_list, path);
+            core_list, path, false);
    else
 #endif
       task_push_core_updater_download(
@@ -4544,6 +4545,25 @@ static int action_ok_update_installed_cores(const char *path,
 
    return 0;
 }
+
+#if defined(ANDROID)
+static int action_ok_switch_installed_cores_pfd(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t          *settings     = config_get_ptr();
+   const char *path_dir_libretro     = settings->paths.directory_libretro;
+   const char *path_libretro_info    = settings->paths.path_libretro_info;
+
+   /* Ensure networking is initialised */
+   generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
+
+   /* Push core switch/update task */
+   task_push_play_feature_delivery_switch_installed_cores(
+         path_dir_libretro, path_libretro_info);
+
+   return 0;
+}
+#endif
 #endif
 
 static int action_ok_sideload_core(const char *path,
@@ -6735,11 +6755,32 @@ static int action_ok_core_delete(const char *path,
    if (play_feature_delivery_enabled())
    {
       const char *core_filename = path_basename(core_path);
+      char backup_core_path[PATH_MAX_LENGTH];
+
+      backup_core_path[0] = '\0';
 
       if (play_feature_delivery_core_installed(core_filename))
          play_feature_delivery_delete(core_filename);
       else
          filestream_delete(core_path);
+
+      /* When installing cores via play feature
+       * delivery, there is a low probability of
+       * backup core files being left behind if
+       * something interrupts the install process
+       * (i.e. a crash or user exit while the
+       * install task is running). To prevent the
+       * accumulation of mess, additionally check
+       * for and remove any such backups when deleting
+       * a core */
+      strlcpy(backup_core_path, core_path,
+            sizeof(backup_core_path));
+      strlcat(backup_core_path, FILE_PATH_BACKUP_EXTENSION,
+            sizeof(backup_core_path));
+
+      if (!string_is_empty(backup_core_path) &&
+          path_is_valid(backup_core_path))
+         filestream_delete(backup_core_path);
    }
    else
 #endif
@@ -7008,6 +7049,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,          action_ok_core_content_dirs_list},
          {MENU_ENUM_LABEL_CORE_UPDATER_LIST,                   action_ok_core_updater_list},
          {MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,              action_ok_update_installed_cores},
+#if defined(ANDROID)
+         {MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,          action_ok_switch_installed_cores_pfd},
+#endif
          {MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,             action_ok_thumbnails_updater_list},
          {MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,          action_ok_pl_thumbnails_updater_list},
          {MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,        action_ok_pl_entry_content_thumbnails},

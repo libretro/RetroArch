@@ -11065,18 +11065,36 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
+               /* Only show 'update installed cores' if
+                * one or more cores are installed */
+               if (core_info_count() > 0)
+               {
 #if defined(ANDROID)
-               /* Play Store builds auto-update installed
-                * cores, rendering the 'update installed
-                * cores' option irrelevant/useless */
-               if (!play_feature_delivery_enabled())
+                  /* When using Play Store builds, cores are
+                   * updated automatically - the 'update
+                   * installed cores' option is therefore
+                   * irrelevant/useless, so we instead present
+                   * an option for switching any existing buildbot
+                   * or sideloaded cores to the latest Play Store
+                   * version */
+                  if (play_feature_delivery_enabled())
+                  {
+                     if (menu_entries_append_enum(info->list,
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD),
+                              msg_hash_to_str(MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD),
+                              MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,
+                              MENU_SETTING_ACTION, 0, 0))
+                        count++;
+                  }
+                  else
 #endif
-                  if (menu_entries_append_enum(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES),
-                           msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES),
-                           MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
-                           MENU_SETTING_ACTION, 0, 0))
-                     count++;
+                     if (menu_entries_append_enum(info->list,
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES),
+                              msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES),
+                              MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
+                              MENU_SETTING_ACTION, 0, 0))
+                        count++;
+               }
             }
 #endif
 #endif

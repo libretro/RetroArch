@@ -97,9 +97,13 @@ void task_push_update_installed_cores(
       const char *path_dir_libretro,
       const char *path_dir_core_assets);
 #if defined(ANDROID)
-void task_push_play_feature_delivery_core_install(
+void *task_push_play_feature_delivery_core_install(
       core_updater_list_t* core_list,
-      const char *filename);
+      const char *filename,
+      bool mute);
+void task_push_play_feature_delivery_switch_installed_cores(
+      const char *path_dir_libretro,
+      const char *path_libretro_info);
 #endif
 
 bool task_push_pl_entry_thumbnail_download(

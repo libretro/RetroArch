@@ -105,6 +105,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_CORE_BACKUP_EXTENSION ".lcbk"
 #define FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT "lcbk"
 #define FILE_PATH_LOCK_EXTENSION ".lck"
+#define FILE_PATH_BACKUP_EXTENSION ".bak"
 
 enum application_special_type
 {

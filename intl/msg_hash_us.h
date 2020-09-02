@@ -292,6 +292,14 @@ MSG_HASH(
    "Update all installed cores to the latest version available."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Switch Cores to Play Store Versions"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Replace all legacy and manually installed cores with the latest versions from the Play Store, where available."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Thumbnails Updater"
    )
@@ -10099,6 +10107,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
    "All installed cores at latest version"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "All supported cores switched to Play Store versions"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,

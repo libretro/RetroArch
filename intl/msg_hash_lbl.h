@@ -1085,6 +1085,10 @@ MSG_HASH(
    "update_installed_cores"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,
+   "switch_installed_cores_pfd"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_DIR,
    "content_directory"
    )

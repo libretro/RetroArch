@@ -37,6 +37,10 @@
 #include "file_path_special.h"
 #include "core_info.h"
 
+#if defined(ANDROID)
+#include "play_feature_delivery/play_feature_delivery.h"
+#endif
+
 #ifndef PLAYLIST_ENTRIES
 #define PLAYLIST_ENTRIES 6
 #endif

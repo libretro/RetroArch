@@ -723,6 +723,15 @@ bool core_info_get_list(core_info_list_t **core)
    return true;
 }
 
+/* Returns number of installed cores */
+size_t core_info_count(void)
+{
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   if (!p_coreinfo || !p_coreinfo->curr_list)
+      return 0;
+   return p_coreinfo->curr_list->count;
+}
+
 bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
       bool *set_missing_bios)
 {
