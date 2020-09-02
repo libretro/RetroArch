@@ -3703,8 +3703,7 @@ static void menu_input_key_bind_poll_bind_state(
    joypad_info.axis_threshold = 0.0f;
 
    state->skip = 
-      timed_out || input_state_wrap(
-            p_rarch,
+      timed_out || current_input->input_state(
             input_data,
             p_rarch->joypad,
             sec_joypad,
@@ -23279,7 +23278,7 @@ static void input_poll_overlay(
    bool button_pressed                              = false;
    void *input_data                                 = p_rarch->current_input_data;
    input_overlay_state_t *ol_state                  = &ol->overlay_state;
-   input_driver_t *input_ptr                        = p_rarch->current_input;
+   input_driver_t *current_input                    = p_rarch->current_input;
    settings_t *settings                             = p_rarch->configuration_settings;
    bool input_overlay_show_physical_inputs          = settings->bools.input_overlay_show_physical_inputs;
    unsigned input_overlay_show_physical_inputs_port = settings->uints.input_overlay_show_physical_inputs_port;
@@ -23304,8 +23303,7 @@ static void input_poll_overlay(
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         input_state_wrap(
-            p_rarch,
+         current_input->input_state(
             input_data,
             p_rarch->joypad,
             sec_joypad,
@@ -23319,8 +23317,7 @@ static void input_poll_overlay(
          i++)
    {
       input_overlay_state_t polled_data;
-      int16_t x = input_state_wrap(
-            p_rarch,
+      int16_t x = current_input->input_state(
             input_data,
             p_rarch->joypad,
             sec_joypad,
@@ -23331,8 +23328,7 @@ static void input_poll_overlay(
             device,
             i,
             RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = input_state_wrap(
-            p_rarch,
+      int16_t y = current_input->input_state(
             input_data,
             p_rarch->joypad,
             sec_joypad,
@@ -24710,6 +24706,7 @@ static int16_t menu_input_read_mouse_hw(
    rarch_joypad_info_t joypad_info;
    unsigned type                   = 0;
    unsigned device                 = RETRO_DEVICE_MOUSE;
+   input_driver_t *current_input   = p_rarch->current_input;
 #ifdef HAVE_MFI
    const input_device_driver_t 
       *sec_joypad                  = p_rarch->sec_joypad;
@@ -24752,8 +24749,7 @@ static int16_t menu_input_read_mouse_hw(
          break;
    }
 
-   return input_state_wrap(
-         p_rarch,
+   return current_input->input_state(
          p_rarch->current_input_data,
          p_rarch->joypad,
          sec_joypad,
@@ -24894,6 +24890,7 @@ static void menu_input_get_touchscreen_hw_state(
    settings_t *settings                         = 
       p_rarch->configuration_settings;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
+   input_driver_t *current_input                = p_rarch->current_input;
    menu_handle_t             *menu              = p_rarch->menu_driver_data;
    /* Is a background texture set for the current menu driver?
     * Checks if the menu framebuffer is set.
@@ -24952,8 +24949,7 @@ static void menu_input_get_touchscreen_hw_state(
    joypad_info.axis_threshold = 0.0f;
 
    /* X pos */
-   pointer_x                  = input_state_wrap(
-         p_rarch,
+   pointer_x                  = current_input->input_state(
          p_rarch->current_input_data,
          p_rarch->joypad,
          sec_joypad,
@@ -24982,8 +24978,7 @@ static void menu_input_get_touchscreen_hw_state(
    }
 
    /* Y pos */
-   pointer_y = input_state_wrap(
-         p_rarch,
+   pointer_y = current_input->input_state(
          p_rarch->current_input_data,
          p_rarch->joypad,
          sec_joypad,
@@ -25008,8 +25003,7 @@ static void menu_input_get_touchscreen_hw_state(
 
    /* Select (touch screen contact)
     * Note that releasing select also counts as activity */
-   hw_state->select_pressed = (bool)input_state_wrap(
-         p_rarch,
+   hw_state->select_pressed = (bool)current_input->input_state(
          p_rarch->current_input_data,
          p_rarch->joypad,
          sec_joypad,
@@ -25023,8 +25017,7 @@ static void menu_input_get_touchscreen_hw_state(
 
    /* Cancel (touch screen 'back' - don't know what is this, but whatever...)
     * Note that releasing cancel also counts as activity */
-   hw_state->cancel_pressed = (bool)input_state_wrap(
-         p_rarch,
+   hw_state->cancel_pressed = (bool)current_input->input_state(
          p_rarch->current_input_data,
          p_rarch->joypad,
          sec_joypad,
@@ -26974,6 +26967,7 @@ static bool input_mouse_button_raw(
 {
    rarch_joypad_info_t joypad_info;
    settings_t              *settings = p_rarch->configuration_settings;
+   input_driver_t *current_input     = p_rarch->current_input;
 #ifdef HAVE_MFI
    const input_device_driver_t 
       *sec_joypad                    = p_rarch->sec_joypad;
@@ -26990,10 +26984,8 @@ static bool input_mouse_button_raw(
    joypad_info.joy_idx               = settings->uints.input_joypad_map[port];
    joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
 
-   if (     p_rarch->current_input 
-         && p_rarch->current_input->input_state)
-      return input_state_wrap(
-            p_rarch,
+   if (current_input->input_state)
+      return current_input->input_state(
             p_rarch->current_input_data,
             p_rarch->joypad,
             sec_joypad,
@@ -38667,6 +38659,7 @@ static enum runloop_state runloop_check_state(
       rarch_joypad_info_t joypad_info;
       unsigned port                                = 0;
       int input_hotkey_block_delay                 = settings->uints.input_hotkey_block_delay;
+      input_driver_t *current_input                = p_rarch->current_input;
       const struct retro_keybind *binds_norm       = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto       = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds            = input_config_binds[port];
@@ -38782,8 +38775,7 @@ static enum runloop_state runloop_check_state(
 
             for (i = 0; i < ARRAY_SIZE(ids); i++)
             {
-               if (input_state_wrap(
-                        p_rarch,
+               if (current_input->input_state(
                         p_rarch->current_input_data,
                         p_rarch->joypad,
                         sec_joypad,
