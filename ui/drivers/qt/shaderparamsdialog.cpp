@@ -17,6 +17,7 @@
 #include <QTimer>
 
 #include "shaderparamsdialog.h"
+#include "options/options.h"
 #include "../ui_qt.h"
 #include "../../../menu/menu_entries.h"
 
@@ -39,6 +40,7 @@ extern "C" {
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
 #include "../../../menu/menu_shader.h"
+#include "../../../menu/menu_driver.h"
 
 #ifndef CXX_BUILD
 }
@@ -486,9 +488,7 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    struct video_shader *menu_shader  = NULL;
    struct video_shader *video_shader = NULL;
    const char *pathData              = NULL;
-   settings_t *settings              = config_get_ptr();
    enum rarch_shader_type type       = RARCH_SHADER_NONE;
-   const char *path_dir_video_shader = settings->paths.directory_video_shader;
 
    getShaders(&menu_shader, &video_shader);
 
@@ -512,7 +512,7 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    path       = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
-         path_dir_video_shader,
+         menu_driver_get_last_shader_preset_dir(),
          filter);
 
    if (path.isEmpty())
@@ -521,6 +521,9 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    pathArray  = path.toUtf8();
    pathData   = pathArray.constData();
    type       = video_shader_parse_type(pathData);
+
+   /* Cache selected shader parent directory */
+   menu_driver_set_last_shader_preset_dir(pathData);
 
    menu_shader_manager_set_preset(menu_shader, type, pathData, true);
 }
@@ -627,9 +630,6 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    struct video_shader *video_shader     = NULL;
    struct video_shader_pass *shader_pass = NULL;
    const char *pathData                  = NULL;
-   settings_t *settings                  = config_get_ptr();
-   const char *path_dir_video_shader     = 
-      settings->paths.directory_video_shader;
 
    getShaders(&menu_shader, &video_shader);
 
@@ -654,7 +654,7 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    path = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
-         path_dir_video_shader,
+         menu_driver_get_last_shader_pass_dir(),
          filter);
 
    if (path.isEmpty())
@@ -683,6 +683,9 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    strlcpy(shader_pass->source.path,
          pathData,
          sizeof(shader_pass->source.path));
+
+   /* Cache selected shader parent directory */
+   menu_driver_set_last_shader_pass_dir(pathData);
 
    video_shader_resolve_parameters(NULL, menu_shader);
 
@@ -951,21 +954,22 @@ void ShaderParamsDialog::reload()
 void ShaderParamsDialog::buildLayout()
 {
    unsigned i;
-   bool hasPasses                    = false;
-   QPushButton *loadButton           = NULL;
-   QPushButton *saveButton           = NULL;
-   QPushButton *removeButton         = NULL;
-   QPushButton *removePassButton     = NULL;
-   QPushButton *applyButton          = NULL;
-   QHBoxLayout *topButtonLayout      = NULL;
-   QMenu *loadMenu                   = NULL;
-   QMenu *saveMenu                   = NULL;
-   QMenu *removeMenu                 = NULL;
-   QMenu *removePassMenu             = NULL;
-   struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
-   struct video_shader *avail_shader = NULL;
-   const char *shader_path           = NULL;
+   bool hasPasses                           = false;
+   CheckableSettingsGroup *topSettingsGroup = NULL;
+   QPushButton *loadButton                  = NULL;
+   QPushButton *saveButton                  = NULL;
+   QPushButton *removeButton                = NULL;
+   QPushButton *removePassButton            = NULL;
+   QPushButton *applyButton                 = NULL;
+   QHBoxLayout *topButtonLayout             = NULL;
+   QMenu *loadMenu                          = NULL;
+   QMenu *saveMenu                          = NULL;
+   QMenu *removeMenu                        = NULL;
+   QMenu *removePassMenu                    = NULL;
+   struct video_shader *menu_shader         = NULL;
+   struct video_shader *video_shader        = NULL;
+   struct video_shader *avail_shader        = NULL;
+   const char *shader_path                  = NULL;
 
    getShaders(&menu_shader, &video_shader);
 
@@ -1090,6 +1094,10 @@ void ShaderParamsDialog::buildLayout()
 
    connect(applyButton, SIGNAL(clicked()), this, SLOT(onShaderApplyClicked()));
 
+   topSettingsGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE);
+   topSettingsGroup->add(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES);
+   topSettingsGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR);
+
    topButtonLayout = new QHBoxLayout();
    topButtonLayout->addWidget(loadButton);
    topButtonLayout->addWidget(saveButton);
@@ -1097,6 +1105,7 @@ void ShaderParamsDialog::buildLayout()
    topButtonLayout->addWidget(removePassButton);
    topButtonLayout->addWidget(applyButton);
 
+   m_layout->addWidget(topSettingsGroup);
    m_layout->addLayout(topButtonLayout);
 
    /* NOTE: We assume that parameters are always grouped in order by the pass number, e.g., all parameters for pass 0 come first, then params for pass 1, etc. */
