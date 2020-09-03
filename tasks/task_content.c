@@ -740,6 +740,7 @@ static bool load_content_from_compressed_archive(
       struct string_list* additional_path_allocs,
       bool need_fullpath,
       const char *path,
+      enum msg_hash_enums *error_enum,
       char **error_string)
 {
    union string_list_elem_attr attr;
@@ -797,6 +798,7 @@ static bool content_file_init_extract(
       struct string_list *content,
       content_information_ctx_t *content_ctx,
       const struct retro_subsystem_info *special,
+      enum msg_hash_enums *error_enum,
       char **error_string,
       union string_list_elem_attr *attr
       )
@@ -878,6 +880,7 @@ static bool content_file_load(
       content_state_t *p_content,
       const struct string_list *content,
       content_information_ctx_t *content_ctx,
+      enum msg_hash_enums *error_enum,
       char **error_string,
       const struct retro_subsystem_info *special,
       struct string_list *additional_path_allocs
@@ -900,7 +903,7 @@ static bool content_file_load(
 
       if (require_content && path_empty)
       {
-         *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
+         *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
          return false;
       }
 
@@ -942,6 +945,7 @@ static bool content_file_load(
                   content_ctx,
                   &info[i], i,
                   additional_path_allocs, need_fullpath, path,
+                  error_enum,
                   error_string))
             return false;
 #endif
@@ -1041,11 +1045,9 @@ static bool content_file_load(
       /* This is probably going to fail on multifile ROMs etc.
        * so give a visible explanation of what is likely wrong */
       if (used_vfs_fallback_copy)
-         *error_string = strdup(msg_hash_to_str(
-                  MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS));
+         *error_enum   = MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS;
       else
-         *error_string = strdup(msg_hash_to_str(
-                  MSG_FAILED_TO_LOAD_CONTENT));
+         *error_enum   = MSG_FAILED_TO_LOAD_CONTENT;
 
       return false;
    }
@@ -1072,6 +1074,7 @@ static const struct
 retro_subsystem_info *content_file_init_subsystem(
       const struct retro_subsystem_info *subsystem_data,
       size_t subsystem_current_count,
+      enum msg_hash_enums *error_enum,
       char **error_string,
       bool *ret)
 {
@@ -1095,14 +1098,7 @@ retro_subsystem_info *content_file_init_subsystem(
    {
       if (!subsystem)
       {
-         char msg[1024];
-         msg[0] = '\0';
-         strlcpy(msg,
-               msg_hash_to_str(
-                  MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
-               sizeof(msg) 
-               );
-         *error_string = strdup(msg);
+         *error_enum   = MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT;
          goto error;
       }
 
@@ -1199,6 +1195,7 @@ static bool content_file_init(
       content_information_ctx_t *content_ctx,
       content_state_t *p_content,
       struct string_list *content,
+      enum msg_hash_enums *error_enum,
       char **error_string)
 {
    union string_list_elem_attr attr;
@@ -1208,14 +1205,14 @@ static bool content_file_init(
    const struct retro_subsystem_info *special =
      subsystem_path_is_empty 
      ? NULL : content_file_init_subsystem(content_ctx->subsystem.data,
-           content_ctx->subsystem.size, error_string, &ret);
+           content_ctx->subsystem.size, error_enum, error_string, &ret);
 
    if (!ret)
       return false;
 
    content_file_init_set_attribs(content, special, content_ctx, error_string, &attr);
 #ifdef HAVE_COMPRESSION
-   content_file_init_extract(content, content_ctx, special, error_string, &attr);
+   content_file_init_extract(content, content_ctx, special, error_enum, error_string, &attr);
 #endif
 
    if (content->size > 0)
@@ -1230,7 +1227,8 @@ static bool content_file_init(
       if (string_list_initialize(&additional_path_allocs))
       {
          ret = content_file_load(info, p_content,
-               content, content_ctx, error_string,
+               content, content_ctx, error_enum,
+               error_string,
                special, &additional_path_allocs);
          string_list_deinitialize(&additional_path_allocs);
       }
@@ -1242,7 +1240,7 @@ static bool content_file_init(
    }
    else if (!special)
    {
-      *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
+      *error_enum   = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
       return false;
    }
 
@@ -1557,7 +1555,11 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    retroarch_init_task_queue();
 
    /* Loads content into currently selected core. */
-   if (!content_load(content_info, p_content))
+   if ((ret = content_load(content_info, p_content)))
+      task_push_to_history_list(p_content, false, false, false);
+
+   /* Handle load content failure */
+   if (!ret)
    {
       if (error_string)
       {
@@ -1565,11 +1567,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
          RARCH_ERR("[CONTENT LOAD]: %s\n", error_string);
          free(error_string);
       }
-
-      ret =  false;
    }
-   else
-      task_push_to_history_list(p_content, false, false, false);
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
@@ -1688,10 +1686,8 @@ bool task_push_load_content_from_playlist_from_menu(
    /* Load content
     * > On targets that do not support dynamic core loading,
     *   command_event_cmd_exec() will fork a new instance */
-   ret = command_event_cmd_exec(p_content,
-         fullpath, &content_ctx, false, &error_string);
-
-   if (!ret)
+   if (!(ret = command_event_cmd_exec(p_content,
+         fullpath, &content_ctx, false, &error_string)))
       goto end;
 
 #ifdef HAVE_COCOATOUCH
@@ -1799,7 +1795,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       goto end;
 
    /* Loads content into currently selected core. */
-   if (!content_load(content_info, p_content))
+   if (!(ret = content_load(content_info, p_content)))
    {
       if (error_string)
       {
@@ -1809,8 +1805,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       }
 
       retroarch_menu_running();
-
-      ret = false;
       goto end;
    }
 
@@ -1943,7 +1937,7 @@ bool task_push_load_content_with_new_core_from_menu(
       goto end;
 
    /* Loads content into currently selected core. */
-   if (!content_load(content_info, p_content))
+   if (!(ret = content_load(content_info, p_content)))
    {
       if (error_string)
       {
@@ -1953,8 +1947,6 @@ bool task_push_load_content_with_new_core_from_menu(
       }
 
       retroarch_menu_running();
-
-      ret = false;
       goto end;
    }
 
@@ -2075,9 +2067,7 @@ static bool task_load_content_internal(
 #endif
 
    /* Loads content into currently selected core. */
-   ret = content_load(content_info, p_content);
-
-   if (ret)
+   if ((ret = content_load(content_info, p_content)))
       task_push_to_history_list(p_content,
             true, loading_from_cli, loading_from_companion_ui);
 
@@ -2488,6 +2478,7 @@ bool content_init(void)
 {
    struct string_list content;
    content_information_ctx_t content_ctx;
+   enum msg_hash_enums error_enum             = MSG_UNKNOWN;
    content_state_t *p_content                 = content_state_get_ptr();
 
    bool ret                                   = true;
@@ -2559,7 +2550,7 @@ bool content_init(void)
    {
       if (     !p_content->temporary_content
             || !content_file_init(&content_ctx, p_content,
-               &content, &error_string))
+               &content, &error_enum, &error_string))
       {
          content_deinit();
 
@@ -2580,6 +2571,23 @@ bool content_init(void)
       free(content_ctx.directory_cache);
    if (content_ctx.valid_extensions)
       free(content_ctx.valid_extensions);
+   
+   if (error_enum != MSG_UNKNOWN)
+   {
+      switch (error_enum)
+      {
+         case MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT:
+         case MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS:
+         case MSG_FAILED_TO_LOAD_CONTENT:
+         case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
+            RARCH_ERR("[CONTENT LOAD]: %s\n", msg_hash_to_str(error_enum));
+            runloop_msg_queue_push(msg_hash_to_str(error_enum), 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            break;
+         case MSG_UNKNOWN:
+         default:
+            break;
+      }
+   }
 
    if (error_string)
    {
