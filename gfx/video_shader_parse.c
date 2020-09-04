@@ -787,17 +787,15 @@ static char *video_shader_read_reference_path(const char *path)
  **/
 config_file_t *video_shader_read_preset(const char *path)
 {
-   config_file_t *conf;
    char *reference = video_shader_read_reference_path(path);
    if (reference)
    {
-      conf = config_file_new_from_path_to_string(reference);
+      config_file_t *conf = 
+         config_file_new_from_path_to_string(reference);
       free(reference);
+      return conf;
    }
-   else
-      conf = config_file_new_from_path_to_string(path);
-
-   return conf;
+   return config_file_new_from_path_to_string(path);
 }
 
 /**
