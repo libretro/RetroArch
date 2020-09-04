@@ -938,6 +938,8 @@ static void dinput_free(void *data)
 static void dinput_grab_mouse(void *data, bool state)
 {
    struct dinput_input *di = (struct dinput_input*)data;
+   if (!di->mouse)
+      return;
 
    IDirectInputDevice8_Unacquire(di->mouse);
    IDirectInputDevice8_SetCooperativeLevel(di->mouse,
