@@ -763,11 +763,8 @@ static char *video_shader_read_reference_path(const char *path)
       }
 
       /* rebase relative reference path */
-      if (!path_is_absolute(ref_path))
-         fill_pathname_resolve_relative(reference,
-               path, ref_path, PATH_MAX_LENGTH);
-      else
-         strlcpy(reference, ref_path, PATH_MAX_LENGTH);
+      fill_pathname_resolve_relative(reference,
+            path, ref_path, PATH_MAX_LENGTH);
    }
 
    if (line)
