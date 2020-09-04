@@ -169,7 +169,8 @@ static void filebrowser_parse(
 {
    size_t i, list_size;
    const struct retro_subsystem_info *subsystem;
-   struct string_list *str_list         = NULL;
+   bool ret                             = false;
+   struct string_list str_list          = {0};
    unsigned items_found                 = 0;
    unsigned files_count                 = 0;
    unsigned dirs_count                  = 0;
@@ -180,12 +181,16 @@ static void filebrowser_parse(
       ? path_is_compressed_file(path) : false;
    rarch_system_info_t *system          = runloop_get_system_info();
 
+   if (!string_list_initialize(&str_list))
+      return;
+
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
       subsystem = system->subsystem.data + content_get_subsystem();
    /* Core not loaded completely, use the data we peeked on load core */
    else
       subsystem = subsystem_data + content_get_subsystem();
+
 
    if (info)
    {
@@ -201,9 +206,11 @@ static void filebrowser_parse(
    if (info && path_is_compressed)
    {
       if (filebrowser_types != FILEBROWSER_SELECT_FILE_SUBSYSTEM)
-         str_list = file_archive_get_file_list(path, info->exts);
+         ret = file_archive_get_file_list_noalloc(&str_list,
+               path, info->exts);
       else if (subsystem && subsystem_current_count > 0)
-         str_list  = file_archive_get_file_list(path,
+         ret = file_archive_get_file_list_noalloc(&str_list,
+               path,
                subsystem->roms[
                content_get_subsystem_rom_id()].valid_extensions);
    }
@@ -212,15 +219,16 @@ static void filebrowser_parse(
       if (filebrowser_types == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
          if (subsystem && subsystem_current_count > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
-            str_list = dir_list_new(path,
+            ret = dir_list_initialize(&str_list,
+                  path,
                   (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, show_hidden_files, true, false);
       }
       else if (info && ((info->type_default == FILE_TYPE_MANUAL_SCAN_DAT) || (info->type_default == FILE_TYPE_SIDELOAD_CORE)))
-         str_list = dir_list_new(path,
+         ret = dir_list_initialize(&str_list, path,
                info->exts, true, show_hidden_files, false, false);
       else
-         str_list = dir_list_new(path,
+         ret = dir_list_initialize(&str_list, path,
                (filter_ext && info) ? info->exts : NULL,
                true, show_hidden_files, true, false);
    }
@@ -257,7 +265,7 @@ static void filebrowser_parse(
          break;
    }
 
-   if (!str_list)
+   if (!ret)
    {
       const char *str = path_is_compressed
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
@@ -269,16 +277,11 @@ static void filebrowser_parse(
       goto end;
    }
 
-   dir_list_sort(str_list, true);
+   dir_list_sort(&str_list, true);
 
-   list_size = str_list->size;
+   list_size = str_list.size;
 
-   if (list_size == 0)
-   {
-      string_list_free(str_list);
-      str_list = NULL;
-   }
-   else
+   if (list_size > 0)
    {
       for (i = 0; i < list_size; i++)
       {
@@ -286,11 +289,11 @@ static void filebrowser_parse(
          bool is_dir                   = false;
          enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
          enum msg_file_type file_type  = FILE_TYPE_NONE;
-         const char *path              = str_list->elems[i].data;
+         const char *path              = str_list.elems[i].data;
 
          label[0] = '\0';
 
-         switch (str_list->elems[i].attr.i)
+         switch (str_list.elems[i].attr.i)
          {
             case RARCH_DIRECTORY:
                file_type = FILE_TYPE_DIRECTORY;
@@ -416,8 +419,7 @@ static void filebrowser_parse(
       }
    }
 
-   if (str_list && str_list->size > 0)
-      string_list_free(str_list);
+   string_list_deinitialize(&str_list);
 
    if (items_found == 0)
    {

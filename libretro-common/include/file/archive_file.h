@@ -164,6 +164,10 @@ bool file_archive_extract_file(char *archive_path, size_t archive_path_size,
       const char *valid_exts, const char *extraction_dir,
       char *out_path, size_t len);
 
+bool file_archive_get_file_list_noalloc(struct string_list *list,
+      const char *path,
+      const char *valid_exts);
+
 /**
  * file_archive_get_file_list:
  * @path                        : filename path of archive

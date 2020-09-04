@@ -438,6 +438,33 @@ end:
    return ret;
 }
 
+bool file_archive_get_file_list_noalloc(struct string_list *list,
+      const char *path,
+      const char *valid_exts)
+{
+   struct archive_extract_userdata userdata;
+
+   strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
+   userdata.current_file_path[0]            = '\0';
+   userdata.first_extracted_file_path       = NULL;
+   userdata.extraction_directory            = NULL;
+   userdata.archive_path_size               = 0;
+   userdata.ext                             = NULL;
+   userdata.list                            = list;
+   userdata.found_file                      = false;
+   userdata.list_only                       = true;
+   userdata.crc                             = 0;
+   userdata.transfer                        = NULL;
+   userdata.dec                             = NULL;
+
+   if (!userdata.list)
+      return false;
+   if (!file_archive_walk(path, valid_exts,
+            file_archive_get_file_list_cb, &userdata))
+      return false;
+   return true;
+}
+
 /**
  * file_archive_get_file_list:
  * @path                        : filename path of archive
@@ -463,18 +490,14 @@ struct string_list *file_archive_get_file_list(const char *path,
    userdata.dec                             = NULL;
 
    if (!userdata.list)
-      goto error;
-
+      return NULL;
    if (!file_archive_walk(path, valid_exts,
          file_archive_get_file_list_cb, &userdata))
-      goto error;
-
-   return userdata.list;
-
-error:
-   if (userdata.list)
+   {
       string_list_free(userdata.list);
-   return NULL;
+      return NULL;
+   }
+   return userdata.list;
 }
 
 bool file_archive_perform_mode(const char *path, const char *valid_exts,
