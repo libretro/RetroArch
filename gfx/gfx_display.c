@@ -1797,8 +1797,10 @@ bool gfx_display_reset_textures_list(
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height)
 {
+   char texpath[PATH_MAX_LENGTH];
    struct texture_image ti;
-   char texpath[PATH_MAX_LENGTH] = {0};
+
+   texpath[0]                    = '\0';
 
    ti.width                      = 0;
    ti.height                     = 0;
