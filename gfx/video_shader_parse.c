@@ -666,7 +666,7 @@ bool video_shader_write_preset(const char *path,
  *
  * The returned string needs to be freed.
  */
-char *video_shader_read_reference_path(const char *path)
+static char *video_shader_read_reference_path(const char *path)
 {
    /* We want shader presets that point to other presets.
     *
@@ -694,17 +694,15 @@ char *video_shader_read_reference_path(const char *path)
    RFILE *file         = NULL;
    char *line          = NULL;
 
-   if (string_is_empty(path))
+   if (string_is_empty(path) || !path_is_valid(path))
       return NULL;
-   if (!path_is_valid(path))
-      return NULL;
-
-   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
+   file                = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return NULL;
 
-   line = filestream_getline(file);
+   line                = filestream_getline(file);
    filestream_close(file);
 
    if (line && !strncmp("#reference", line, STRLEN_CONST("#reference")))

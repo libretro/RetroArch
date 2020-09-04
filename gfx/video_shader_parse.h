@@ -175,17 +175,6 @@ bool video_shader_write_preset(const char *path,
       const struct video_shader *shader, bool reference);
 
 /**
- * video_shader_read_reference_path:
- * @path              : File to read
- *
- * Returns: the reference path of a preset if it exists,
- * otherwise returns NULL.
- *
- * The returned string needs to be freed.
- */
-char *video_shader_read_reference_path(const char *path);
-
-/**
  * video_shader_read_preset:
  * @path              : File to read
  *
