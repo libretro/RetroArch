@@ -1784,6 +1784,7 @@ struct input_keyboard_line
    input_keyboard_line_complete_t cb;
    size_t ptr;
    size_t size;
+   bool enabled;
 };
 
 #ifdef HAVE_RUNAHEAD
@@ -2082,8 +2083,6 @@ struct rarch_state
 
    pad_connection_listener_t *pad_connection_listener;
 
-   input_keyboard_line_t *keyboard_line;
-
    void *keyboard_press_data;
 
 #ifdef HAVE_COMMAND
@@ -2123,6 +2122,7 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
+   input_keyboard_line_t keyboard_line; /* ptr alignment */
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
@@ -12216,13 +12216,14 @@ bool menu_input_dialog_start_search(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(p_rarch->menu_input_dialog_keyboard_label));
 
-   if (p_rarch->keyboard_line)
-   {
-      if (p_rarch->keyboard_line->buffer)
-         free(p_rarch->keyboard_line->buffer);
-      free(p_rarch->keyboard_line);
-   }
-   p_rarch->keyboard_line = NULL;
+   if (p_rarch->keyboard_line.buffer)
+      free(p_rarch->keyboard_line.buffer);
+   p_rarch->keyboard_line.buffer                    = NULL;
+   p_rarch->keyboard_line.ptr                       = 0;
+   p_rarch->keyboard_line.size                      = 0;
+   p_rarch->keyboard_line.cb                        = NULL;
+   p_rarch->keyboard_line.userdata                  = NULL;
+   p_rarch->keyboard_line.enabled                   = false;
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
@@ -12259,13 +12260,14 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    p_rarch->menu_input_dialog_keyboard_type   = line->type;
    p_rarch->menu_input_dialog_keyboard_idx    = line->idx;
 
-   if (p_rarch->keyboard_line)
-   {
-      if (p_rarch->keyboard_line->buffer)
-         free(p_rarch->keyboard_line->buffer);
-      free(p_rarch->keyboard_line);
-   }
-   p_rarch->keyboard_line                     = NULL;
+   if (p_rarch->keyboard_line.buffer)
+      free(p_rarch->keyboard_line.buffer);
+   p_rarch->keyboard_line.buffer                    = NULL;
+   p_rarch->keyboard_line.ptr                       = 0;
+   p_rarch->keyboard_line.size                      = 0;
+   p_rarch->keyboard_line.cb                        = NULL;
+   p_rarch->keyboard_line.userdata                  = NULL;
+   p_rarch->keyboard_line.enabled                   = false;
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
@@ -27216,26 +27218,26 @@ static void input_keyboard_line_append(
    unsigned i                  = 0;
    unsigned len                = (unsigned)strlen(word);
    char *newbuf                = (char*)realloc(
-         p_rarch->keyboard_line->buffer,
-         p_rarch->keyboard_line->size + len*2);
+         p_rarch->keyboard_line.buffer,
+         p_rarch->keyboard_line.size + len*2);
 
    if (!newbuf)
       return;
 
-   memmove(newbuf + p_rarch->keyboard_line->ptr + len,
-         newbuf + p_rarch->keyboard_line->ptr,
-         p_rarch->keyboard_line->size - p_rarch->keyboard_line->ptr + len);
+   memmove(newbuf + p_rarch->keyboard_line.ptr + len,
+         newbuf + p_rarch->keyboard_line.ptr,
+         p_rarch->keyboard_line.size - p_rarch->keyboard_line.ptr + len);
 
    for (i = 0; i < len; i++)
    {
-      newbuf[p_rarch->keyboard_line->ptr] = word[i];
-      p_rarch->keyboard_line->ptr++;
-      p_rarch->keyboard_line->size++;
+      newbuf[p_rarch->keyboard_line.ptr] = word[i];
+      p_rarch->keyboard_line.ptr++;
+      p_rarch->keyboard_line.size++;
    }
 
-   newbuf[p_rarch->keyboard_line->size]      = '\0';
+   newbuf[p_rarch->keyboard_line.size]      = '\0';
 
-   p_rarch->keyboard_line->buffer            = newbuf;
+   p_rarch->keyboard_line.buffer            = newbuf;
 
    if (word[0] == 0)
    {
@@ -27263,25 +27265,17 @@ static const char **input_keyboard_start_line(void *userdata,
       struct rarch_state *p_rarch,
       input_keyboard_line_complete_t cb)
 {
-   input_keyboard_line_t *state = (input_keyboard_line_t*)
-      malloc(sizeof(*state));
-   if (!state)
-      return NULL;
-
-   state->buffer                    = NULL;
-   state->ptr                       = 0;
-   state->size                      = 0;
-   state->cb                        = NULL;
-   state->userdata                  = NULL;
-
-   p_rarch->keyboard_line           = state;
-   p_rarch->keyboard_line->cb       = cb;
-   p_rarch->keyboard_line->userdata = userdata;
+   p_rarch->keyboard_line.buffer    = NULL;
+   p_rarch->keyboard_line.ptr       = 0;
+   p_rarch->keyboard_line.size      = 0;
+   p_rarch->keyboard_line.cb        = cb;
+   p_rarch->keyboard_line.userdata  = userdata;
+   p_rarch->keyboard_line.enabled   = true;
 
    /* While reading keyboard line input, we have to block all hotkeys. */
-   p_rarch->keyboard_mapping_blocked                = true;
+   p_rarch->keyboard_mapping_blocked= true;
 
-   return (const char**)&p_rarch->keyboard_line->buffer;
+   return (const char**)&p_rarch->keyboard_line.buffer;
 }
 #endif
 
@@ -27410,7 +27404,7 @@ void input_keyboard_event(bool down, unsigned code,
          return;
       deferred_wait_keys = true;
    }
-   else if (p_rarch->keyboard_line)
+   else if (p_rarch->keyboard_line.enabled)
    {
       if (!down)
          return;
@@ -27423,19 +27417,20 @@ void input_keyboard_event(bool down, unsigned code,
             /* fall-through */
          default:
             if (!input_keyboard_line_event(p_rarch,
-                     p_rarch->keyboard_line, character))
+                     &p_rarch->keyboard_line, character))
                return;
             break;
       }
 
       /* Line is complete, can free it now. */
-      if (p_rarch->keyboard_line)
-      {
-         if (p_rarch->keyboard_line->buffer)
-            free(p_rarch->keyboard_line->buffer);
-         free(p_rarch->keyboard_line);
-      }
-      p_rarch->keyboard_line                           = NULL;
+      if (p_rarch->keyboard_line.buffer)
+         free(p_rarch->keyboard_line.buffer);
+      p_rarch->keyboard_line.buffer                    = NULL;
+      p_rarch->keyboard_line.ptr                       = 0;
+      p_rarch->keyboard_line.size                      = 0;
+      p_rarch->keyboard_line.cb                        = NULL;
+      p_rarch->keyboard_line.userdata                  = NULL;
+      p_rarch->keyboard_line.enabled                   = false;
 
       /* Unblock all hotkeys. */
       p_rarch->keyboard_mapping_blocked                = false;
