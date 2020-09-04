@@ -20123,7 +20123,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          /* If the above function failed [possibly because it is not
           * implemented], use the refresh rate set in the config instead. */
-         if (target_refresh_rate == 0.0 && video_refresh_rate != 0.0)
+         if (target_refresh_rate == 0.0f && video_refresh_rate != 0.0f)
             target_refresh_rate = video_refresh_rate;
 
          *(float *)data = target_refresh_rate;
@@ -29293,8 +29293,8 @@ static bool audio_compute_buffer_statistics(
          high_water_count++;
    }
 
-   stats->close_to_underrun      = (100.0 * low_water_count)  / (samples - 1);
-   stats->close_to_blocking      = (100.0 * high_water_count) / (samples - 1);
+   stats->close_to_underrun      = (100.0f * low_water_count)  / (samples - 1);
+   stats->close_to_blocking      = (100.0f * high_water_count) / (samples - 1);
 
    return true;
 }
@@ -31437,7 +31437,7 @@ static void video_driver_monitor_compute_fps_statistics(void)
    {
       RARCH_LOG("[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time"
             " deviation, based on %u last samples).\n",
-            avg_fps, 100.0 * stddev, samples);
+            avg_fps, 100.0f * stddev, samples);
    }
 }
 
@@ -33214,7 +33214,7 @@ static void video_driver_frame(const void *data, unsigned width,
             "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n",
             last_fps,
             frame_time / 1000.0f,
-            100.0 * stddev,
+            100.0f * stddev,
             p_rarch->video_driver_frame_count,
             video_info.width,
             video_info.height,
