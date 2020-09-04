@@ -3063,7 +3063,7 @@ static unsigned menu_displaylist_parse_playlists(
       menu_displaylist_info_t *info, bool horizontal)
 {
    size_t i, list_size;
-   struct string_list *str_list = NULL;
+   struct string_list str_list  = {0};
    unsigned count               = 0;
    settings_t *settings         = config_get_ptr();
    const char *path             = info->path;
@@ -3148,23 +3148,22 @@ static unsigned menu_displaylist_parse_playlists(
 #endif
    }
 
-   str_list = dir_list_new(path, NULL, true,
-         show_hidden_files, true, false);
-
-   if (!str_list)
+   string_list_initialize(&str_list);
+   if (!dir_list_initialize(&str_list, path, NULL, true,
+         show_hidden_files, true, false))
       return count;
 
-   dir_list_sort(str_list, true);
+   dir_list_sort(&str_list, true);
 
-   list_size = str_list->size;
+   list_size = str_list.size;
 
    for (i = 0; i < list_size; i++)
    {
-      const char *path             = str_list->elems[i].data;
+      const char *path             = str_list.elems[i].data;
       const char *playlist_file    = NULL;
       enum msg_file_type file_type = FILE_TYPE_NONE;
 
-      switch (str_list->elems[i].attr.i)
+      switch (str_list.elems[i].attr.i)
       {
          case RARCH_DIRECTORY:
             file_type = FILE_TYPE_DIRECTORY;
@@ -3210,7 +3209,7 @@ static unsigned menu_displaylist_parse_playlists(
          count++;
    }
 
-   string_list_free(str_list);
+   string_list_deinitialize(&str_list);
 
    return count;
 }
