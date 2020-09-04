@@ -808,6 +808,7 @@ INPUT (HID)
 #include "../input/connect/connect_ps2adapter.c"
 #include "../input/connect/connect_psxadapter.c"
 #include "../input/connect/connect_retrode.c"
+#include "../input/connect/connect_ps4_hori_mini.c"
 #endif
 
 /*============================================================
