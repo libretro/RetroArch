@@ -23773,13 +23773,14 @@ static void input_driver_poll(void)
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
    uint8_t max_users              = (uint8_t)p_rarch->input_driver_max_users;
 
-   if (p_rarch->joypad->poll)
+   if (p_rarch->joypad && p_rarch->joypad->poll)
       p_rarch->joypad->poll();
 #ifdef HAVE_MFI
-   if (p_rarch->sec_joypad->poll)
+   if (p_rarch->sec_joypad && p_rarch->sec_joypad->poll)
       p_rarch->sec_joypad->poll();
 #endif
-   p_rarch->current_input->poll(p_rarch->current_input_data);
+   if (p_rarch->current_input && p_rarch->current_input->poll)
+      p_rarch->current_input->poll(p_rarch->current_input_data);
 
    p_rarch->input_driver_turbo_btns.count++;
 
