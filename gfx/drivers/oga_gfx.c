@@ -297,7 +297,7 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
 
    if ((out_w != width || out_h != height))
    {
-      out_w = MIN(out_h * video_driver_get_aspect_ratio(), NATIVE_WIDTH);
+      out_w = MIN(out_h * video_driver_get_aspect_ratio() + 0.5, NATIVE_WIDTH);
       out_x = MAX((NATIVE_WIDTH - out_w) / 2, 0);
    }
 
