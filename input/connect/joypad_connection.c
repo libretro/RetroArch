@@ -118,6 +118,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       { "PSX to PS3 Controller Adapter", 0,     0,  &pad_connection_psxadapter },
       { "Mayflash DolphinBar",           0,     0,  &pad_connection_wii },
       { "Retrode",                       0,     0,  &pad_connection_retrode },
+      { "HORI mini wired PS4",           0,     0,  &pad_connection_ps4_hori_mini },
       { 0, 0}
    };
    joypad_connection_t *s = NULL;
@@ -152,6 +153,8 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    pad_map[10].pid        = 774;
    pad_map[11].vid        = VID_RETRODE;
    pad_map[11].pid        = PID_RETRODE;
+   pad_map[12].vid        = VID_HORI_1;
+   pad_map[12].pid        = PID_HORI_MINI_WIRED_PS4;
 
    if (s)
    {
