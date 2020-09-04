@@ -94,24 +94,6 @@ enum input_action
    INPUT_ACTION_MAX_USERS
 };
 
-enum rarch_input_keyboard_ctl_state
-{
-   RARCH_INPUT_KEYBOARD_CTL_NONE = 0,
-   RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED,
-
-   RARCH_INPUT_KEYBOARD_CTL_LINE_FREE,
-
-   /*
-    * Waits for keys to be pressed (used for binding
-    * keys in the menu).
-    * Callback returns false when all polling is done.
-    **/
-   RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS,
-
-   /* Cancels keyboard wait for keys function callback. */
-   RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS
-};
-
 struct retro_keybind
 {
    char     *joykey_label;

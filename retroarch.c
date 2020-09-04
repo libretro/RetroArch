@@ -2911,9 +2911,6 @@ static void input_keyboard_line_append(
 static const char **input_keyboard_start_line(void *userdata,
       struct rarch_state *p_rarch,
       input_keyboard_line_complete_t cb);
-static bool input_keyboard_ctl(
-      struct rarch_state *p_rarch,
-      enum rarch_input_keyboard_ctl_state state, void *data);
 
 static void menu_driver_list_free(
       struct rarch_state *p_rarch,
@@ -3967,7 +3964,6 @@ bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data)
 {
    unsigned index_offset;
-   input_keyboard_ctx_wait_t keys;
    rarch_setting_t  *setting      = (rarch_setting_t*)data;
    struct rarch_state *p_rarch    = &rarch_st;
    menu_handle_t       *menu      = p_rarch->menu_driver_data;
@@ -3999,18 +3995,19 @@ bool menu_input_key_bind_set_mode(
    rarch_timer_begin_new_time_us(
          &binds->timer_timeout, input_bind_timeout_us);
 
-   keys.userdata = menu;
-   keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
+   p_rarch->keyboard_press_cb         = 
+      menu_input_key_bind_custom_bind_keyboard_cb;
+   p_rarch->keyboard_press_data       = menu;
 
-   input_keyboard_ctl(p_rarch,
-         RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
+   /* While waiting for input, we have to block all hotkeys. */
+   p_rarch->keyboard_mapping_blocked  = true;
 
    /* Upon triggering an input bind operation,
     * pointer input must be inhibited - otherwise
     * attempting to bind mouse buttons will cause
     * spurious menu actions */
-   menu_input->select_inhibit     = true;
-   menu_input->cancel_inhibit     = true;
+   menu_input->select_inhibit         = true;
+   menu_input->cancel_inhibit         = true;
 
    return true;
 }
@@ -4079,8 +4076,11 @@ static bool menu_input_key_bind_iterate(
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
-         input_keyboard_ctl(p_rarch,
-               RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
+      {
+         p_rarch->keyboard_press_cb                       = NULL;
+         p_rarch->keyboard_press_data                     = NULL;
+         p_rarch->keyboard_mapping_blocked                = false;
+      }
 
       return true;
    }
@@ -4146,9 +4146,9 @@ static bool menu_input_key_bind_iterate(
 
          if (new_binds.begin > new_binds.last)
          {
-            input_keyboard_ctl(
-                  p_rarch,
-                  RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
+            p_rarch->keyboard_press_cb                       = NULL;
+            p_rarch->keyboard_press_data                     = NULL;
+            p_rarch->keyboard_mapping_blocked                = false;
             return true;
          }
 
@@ -12216,8 +12216,13 @@ bool menu_input_dialog_start_search(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(p_rarch->menu_input_dialog_keyboard_label));
 
-   input_keyboard_ctl(p_rarch,
-         RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+   if (p_rarch->keyboard_line)
+   {
+      if (p_rarch->keyboard_line->buffer)
+         free(p_rarch->keyboard_line->buffer);
+      free(p_rarch->keyboard_line);
+   }
+   p_rarch->keyboard_line = NULL;
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
@@ -12254,8 +12259,13 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    p_rarch->menu_input_dialog_keyboard_type   = line->type;
    p_rarch->menu_input_dialog_keyboard_idx    = line->idx;
 
-   input_keyboard_ctl(p_rarch,
-         RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+   if (p_rarch->keyboard_line)
+   {
+      if (p_rarch->keyboard_line->buffer)
+         free(p_rarch->keyboard_line->buffer);
+      free(p_rarch->keyboard_line);
+   }
+   p_rarch->keyboard_line                     = NULL;
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
@@ -27438,54 +27448,6 @@ void input_keyboard_event(bool down, unsigned code,
          (*key_event)(down, code, character, mod);
    }
 }
-
-#ifdef HAVE_MENU
-static bool input_keyboard_ctl(
-      struct rarch_state *p_rarch,
-      enum rarch_input_keyboard_ctl_state state,
-      void *data)
-{
-   switch (state)
-   {
-      case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
-         if (p_rarch->keyboard_line)
-         {
-            if (p_rarch->keyboard_line->buffer)
-               free(p_rarch->keyboard_line->buffer);
-            free(p_rarch->keyboard_line);
-         }
-         p_rarch->keyboard_line = NULL;
-         break;
-      case RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS:
-         {
-            input_keyboard_ctx_wait_t *keys      = 
-               (input_keyboard_ctx_wait_t*)data;
-
-            if (!keys)
-               return false;
-
-            p_rarch->keyboard_press_cb           = keys->cb;
-            p_rarch->keyboard_press_data         = keys->userdata;
-         }
-
-         /* While waiting for input, we have to block all hotkeys. */
-         p_rarch->keyboard_mapping_blocked                = true;
-         break;
-      case RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS:
-         p_rarch->keyboard_press_cb                       = NULL;
-         p_rarch->keyboard_press_data                     = NULL;
-         p_rarch->keyboard_mapping_blocked                = false;
-         break;
-      case RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED:
-         return p_rarch->input_driver_keyboard_linefeed_enable;
-      case RARCH_INPUT_KEYBOARD_CTL_NONE:
-      default:
-         break;
-   }
-
-   return true;
-}
-#endif
 
 static bool input_config_bind_map_get_valid(unsigned i)
 {
