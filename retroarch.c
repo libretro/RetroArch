@@ -4822,7 +4822,7 @@ int generic_menu_entry_action(
 #ifdef HAVE_ACCESSIBILITY
    if (     action != 0
          && is_accessibility_enabled(p_rarch)
-         && !is_input_keyboard_display_on())
+         && !menu_input_dialog_get_display_kb())
    {
       char current_label[255];
       char current_value[255];
@@ -40533,15 +40533,6 @@ unsigned int retroarch_get_rotation(void)
    settings_t     *settings    = p_rarch->configuration_settings;
    unsigned     video_rotation = settings->uints.video_rotation;
    return video_rotation + p_rarch->runloop_system.rotation;
-}
-
-bool is_input_keyboard_display_on(void)
-{
-#ifdef HAVE_MENU
-   return menu_input_dialog_get_display_kb();
-#else
-   return false;
-#endif
 }
 
 #ifdef HAVE_ACCESSIBILITY

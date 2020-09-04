@@ -1978,8 +1978,6 @@ unsigned int retroarch_get_rotation(void);
 
 void retroarch_init_task_queue(void);
 
-bool is_input_keyboard_display_on(void);
-
 bool input_key_pressed(int key, bool keyboard_pressed);
 
 const char *joypad_driver_name(unsigned i);
