@@ -12448,12 +12448,6 @@ global_t *global_get_ptr(void)
    return &p_rarch->g_extern;
 }
 
-input_driver_t *input_get_ptr(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->current_input;
-}
-
 /**
  * video_driver_get_ptr:
  *
