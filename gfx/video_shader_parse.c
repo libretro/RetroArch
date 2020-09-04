@@ -695,14 +695,14 @@ char *video_shader_read_reference_path(const char *path)
    char *line          = NULL;
 
    if (string_is_empty(path))
-     goto end;
+      return NULL;
    if (!path_is_valid(path))
-     goto end;
+      return NULL;
 
    file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
-     goto end;
+      return NULL;
 
    line = filestream_getline(file);
    filestream_close(file);
@@ -713,7 +713,10 @@ char *video_shader_read_reference_path(const char *path)
 
       /* have at least 1 whitespace */
       if (!isspace((unsigned char)*ref_path))
-         goto end;
+      {
+         free(line);
+         return NULL;
+      }
       ref_path++;
 
       while (isspace((unsigned char)*ref_path))
@@ -748,12 +751,18 @@ char *video_shader_read_reference_path(const char *path)
       }
 
       if (string_is_empty(ref_path))
-         goto end;
+      {
+         free(line);
+         return NULL;
+      }
 
       reference = (char *)malloc(PATH_MAX_LENGTH);
 
       if (!reference)
-         goto end;
+      {
+         free(line);
+         return NULL;
+      }
 
       /* rebase relative reference path */
       if (!path_is_absolute(ref_path))
@@ -763,7 +772,6 @@ char *video_shader_read_reference_path(const char *path)
          strlcpy(reference, ref_path, PATH_MAX_LENGTH);
    }
 
-end:
    if (line)
       free(line);
 
