@@ -32,7 +32,7 @@ char* uwp_trigger_picker(void);
 
 void* uwp_get_corewindow(void);
 
-void uwp_input_next_frame(void);
+void uwp_input_next_frame(void *data);
 bool uwp_keyboard_pressed(unsigned key);
 int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen);
 int16_t uwp_pointer_state(unsigned idx, unsigned id, bool screen);

@@ -695,7 +695,7 @@ extern "C" {
 		}
 	}
 
-	void uwp_input_next_frame(void)
+	void uwp_input_next_frame(void *data)
 	{
 		uwp_current_input                = uwp_next_input;
 		uwp_next_input.mouse_rel_x       = 0;

@@ -34,11 +34,6 @@ typedef struct uwp_input
    void *empty;
 } uwp_input_t;
 
-static void uwp_input_poll(void *data)
-{
-   uwp_input_next_frame();
-}
-
 static void uwp_input_free_input(void *data)
 {
    free(data);
@@ -181,7 +176,7 @@ static int16_t uwp_input_state(
 
 input_driver_t input_uwp = {
    uwp_input_init,
-   uwp_input_poll,
+   uwp_input_next_frame,         /* poll       */
    uwp_input_state,
    uwp_input_free_input,
    NULL,
