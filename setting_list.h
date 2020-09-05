@@ -92,7 +92,6 @@ enum settings_free_flags
 };
 
 typedef struct rarch_setting rarch_setting_t;
-typedef struct rarch_setting_info rarch_setting_info_t;
 typedef struct rarch_setting_group_info rarch_setting_group_info_t;
 
 typedef void (*change_handler_t               )(rarch_setting_t *setting);
@@ -204,12 +203,6 @@ struct rarch_setting
    bool                 enforce_maxrange;
 };
 
-struct rarch_setting_info
-{
-   int index;
-   int size;
-};
-
 /**
  * setting_set_with_string_representation:
  * @setting            : pointer to setting
@@ -228,16 +221,6 @@ int setting_string_action_start_generic(rarch_setting_t *setting);
 int setting_generic_action_ok_default(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int setting_generic_action_start_default(rarch_setting_t *setting);
-
-void settings_data_list_current_add_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values);
-
-void settings_data_list_current_add_free_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values);
 
 void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
       char *s, size_t len);

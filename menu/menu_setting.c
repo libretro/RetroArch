@@ -318,6 +318,12 @@ struct string_options_entry
    enum msg_hash_enums SHORT_enum_idx;
 };
 
+typedef struct rarch_setting_info
+{
+   int index;
+   int size;
+} rarch_setting_info_t;
+
 /* SETTINGS LIST */
 
 static void menu_input_st_uint_cb(void *userdata, const char *str)
