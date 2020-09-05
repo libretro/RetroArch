@@ -1353,10 +1353,6 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("video_layout_directory",
          settings->paths.directory_video_layout, true, NULL, true);
 #endif
-#ifndef HAVE_DYNAMIC
-   SETTING_PATH("libretro_path",
-         path_get_ptr(RARCH_PATH_CORE), false, NULL, false);
-#endif
    SETTING_PATH(
          "screenshot_directory",
          settings->paths.directory_screenshot, true, NULL, false);
@@ -2454,8 +2450,6 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->paths.network_buildbot_url,
             g_defaults.path_buildbot_server_url);
-   if (!string_is_empty(g_defaults.path_core))
-      path_set(RARCH_PATH_CORE, g_defaults.path_core);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_DATABASE]))
       configuration_set_string(settings,
             settings->paths.path_content_database,
@@ -2889,7 +2883,6 @@ static bool config_load_file(global_t *global,
    unsigned msg_color                              = 0;
    char *save                                      = NULL;
    char *override_username                         = NULL;
-   const char *path_core                           = NULL;
    const char *path_config                         = NULL;
    int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
@@ -3097,11 +3090,6 @@ static bool config_load_file(global_t *global,
       configuration_set_string(settings,
             settings->paths.directory_libretro, tmp_str);
 
-#ifndef HAVE_DYNAMIC
-   if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
-      path_set(RARCH_PATH_CORE, tmp_str);
-#endif
-
 #ifdef RARCH_CONSOLE
    video_driver_load_settings(conf);
 #endif
@@ -3131,7 +3119,6 @@ static bool config_load_file(global_t *global,
 #endif
 
    path_config = path_get(RARCH_PATH_CONFIG);
-   path_core   = path_get(RARCH_PATH_CORE);
 
    if (string_is_empty(settings->paths.path_content_history))
    {
@@ -3218,22 +3205,6 @@ static bool config_load_file(global_t *global,
          *settings->paths.directory_screenshot = '\0';
       }
    }
-
-#ifdef RARCH_CONSOLE
-   if (!string_is_empty(path_core))
-   {
-#endif
-      /* Safe-guard against older behavior. */
-      if (path_is_directory(path_core))
-      {
-         RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-         configuration_set_string(settings,
-               settings->paths.directory_libretro, path_core);
-         path_clear(RARCH_PATH_CORE);
-      }
-#ifdef RARCH_CONSOLE
-   }
-#endif
 
    if (string_is_equal(settings->paths.path_menu_wallpaper, "default"))
       *settings->paths.path_menu_wallpaper = '\0';
@@ -3431,7 +3402,6 @@ end:
  */
 bool config_load_override(void *data)
 {
-   char buf[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
@@ -3452,7 +3422,7 @@ bool config_load_override(void *data)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   config_directory[0] = core_path[0] = game_path[0] = buf[0] = '\0';
+   config_directory[0] = core_path[0] = game_path[0] = '\0';
 
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
@@ -3555,9 +3525,6 @@ bool config_load_override(void *data)
 
    /* Re-load the configuration with any overrides
     * that might have been found */
-   /* Store the libretro_path we're using since it will be
-    * overwritten by the override when reloading. */
-   strlcpy(buf, path_get(RARCH_PATH_CORE), sizeof(buf));
 
    /* Toggle has_save_path to false so it resets */
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -3567,9 +3534,6 @@ bool config_load_override(void *data)
             path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
-   /* Restore the libretro_path we're using
-    * since it will be overwritten by the override when reloading. */
-   path_set(RARCH_PATH_CORE, buf);
    if (settings->bools.notification_show_config_override_load)
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
             1, 100, false,
@@ -4408,7 +4372,7 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 
    rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
-   /* Load core in new config. */
+   /* Load core in new (salamander) config. */
    path_clear(RARCH_PATH_CORE);
 
    return task_push_start_dummy_core(&content_info);
@@ -4687,5 +4651,108 @@ void input_remapping_set_defaults(bool deinit)
          configuration_set_uint(settings,
                settings->uints.input_libretro_device[i], old_libretro_device[i]);
    }
+}
+#endif
+
+#if !defined(HAVE_DYNAMIC)
+/* Salamander config file contains a single
+ * entry (libretro_path), which is linked to
+ * RARCH_PATH_CORE
+ * > Used to select which core to load
+ *   when launching a salamander build */
+
+static bool config_file_salamander_get_path(char *s, size_t len)
+{
+   const char *rarch_config_path = g_defaults.path_config;
+
+   if (!string_is_empty(rarch_config_path))
+      fill_pathname_resolve_relative(s,
+            rarch_config_path,
+            FILE_PATH_SALAMANDER_CONFIG,
+            len);
+   else
+      strlcpy(s, FILE_PATH_SALAMANDER_CONFIG, len);
+
+   return !string_is_empty(s);
+}
+
+void config_load_file_salamander(void)
+{
+   config_file_t *config = NULL;
+   char config_path[PATH_MAX_LENGTH];
+   char libretro_path[PATH_MAX_LENGTH];
+
+   config_path[0]   = '\0';
+   libretro_path[0] = '\0';
+
+   /* Get config file path */
+   if (!config_file_salamander_get_path(
+         config_path, sizeof(config_path)))
+      return;
+
+   /* Open config file */
+   config = config_file_new_from_path_to_string(config_path);
+
+   if (!config)
+      return;
+
+   /* Read 'libretro_path' value and update
+    * RARCH_PATH_CORE */
+   RARCH_LOG("[config] Loading salamander config from: \"%s\".\n",
+         config_path);
+
+   if (config_get_path(config, "libretro_path",
+         libretro_path, sizeof(libretro_path)) &&
+       !string_is_empty(libretro_path) &&
+       !string_is_equal(libretro_path, "builtin"))
+      path_set(RARCH_PATH_CORE, libretro_path);
+
+   config_file_free(config);
+}
+
+void config_save_file_salamander(void)
+{
+   config_file_t *config     = NULL;
+   const char *libretro_path = path_get(RARCH_PATH_CORE);
+   bool success              = false;
+   char config_path[PATH_MAX_LENGTH];
+
+   config_path[0] = '\0';
+
+   if (string_is_empty(libretro_path) ||
+       string_is_equal(libretro_path, "builtin"))
+      return;
+
+   /* Get config file path */
+   if (!config_file_salamander_get_path(
+         config_path, sizeof(config_path)))
+      return;
+
+   /* Open config file */
+   config = config_file_new_from_path_to_string(config_path);
+
+   if (!config)
+      config = config_file_new_alloc();
+
+   if (!config)
+      goto end;
+
+   /* Update config file */
+   config_set_path(config, "libretro_path", libretro_path);
+
+   /* Save config file
+    * > Only one entry - no need to sort */
+   success = config_file_write(config, config_path, false);
+
+end:
+   if (success)
+      RARCH_LOG("[config] Saving salamander config to: \"%s\".\n",
+            config_path);
+   else
+      RARCH_ERR("[config] Failed to create new salamander config file in: \"%s\".\n",
+            config_path);
+
+   if (config)
+      config_file_free(config);
 }
 #endif

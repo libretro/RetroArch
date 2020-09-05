@@ -951,6 +951,16 @@ void config_set_defaults(void *data);
 
 void config_load(void *data);
 
+#if !defined(HAVE_DYNAMIC)
+/* Salamander config file contains a single
+ * entry (libretro_path), which is linked to
+ * RARCH_PATH_CORE
+ * > Used to select which core to load
+ *   when launching a salamander build */
+void config_load_file_salamander(void);
+void config_save_file_salamander(void);
+#endif
+
 settings_t *config_get_ptr(void);
 
 RETRO_END_DECLS
