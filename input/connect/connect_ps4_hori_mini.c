@@ -156,7 +156,8 @@ static void hidpad_ps4_hori_mini_packet_handler(void *data,
                           (device->data[7] << 4) |
                           (device->data[8] << 12);
 
-   for (i = 0; i < 15; i++) {
+   for (i = 0; i < 15; i++)
+   {
       device->buttons |= (pressed_keys & (1 << i)) ?
          (1 << button_mapping[i]) : 0;
    }
