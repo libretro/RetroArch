@@ -319,7 +319,7 @@ const struct rarch_key_map rarch_key_map_switch[] = {
 #endif
 
 #ifdef VITA
-// Vita scancodes are identical to USB 2.0 standard, e.g. SDL2
+/* Vita scancodes are identical to USB 2.0 standard, e.g. SDL2 */
 const struct rarch_key_map rarch_key_map_vita[] = {
    { 0x02A, RETROK_BACKSPACE },
    { 0x02B, RETROK_TAB },
