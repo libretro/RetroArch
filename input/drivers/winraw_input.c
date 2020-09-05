@@ -38,10 +38,10 @@ typedef struct
 {
    double view_abs_ratio_x;
    double view_abs_ratio_y;
-   winraw_keyboard_t keyboard;
    HWND window;
    winraw_mouse_t *mice;
    unsigned mouse_cnt;
+   winraw_keyboard_t keyboard;
    bool mouse_xy_mapping_ready;
    bool mouse_grab;
 } winraw_input_t;
