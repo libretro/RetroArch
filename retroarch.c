@@ -3640,36 +3640,31 @@ static void menu_input_key_bind_poll_bind_state_internal(
       unsigned port,
       bool timed_out)
 {
-   unsigned b, a, h;
-   if (!joypad)
-      return;
-
-   if (joypad->poll)
-      joypad->poll();
+   unsigned i;
 
    /* poll only the relevant port */
-   for (b = 0; b < MENU_MAX_BUTTONS; b++)
-      state->state[port].buttons[b] = joypad->button(port, b);
+   for (i = 0; i < MENU_MAX_BUTTONS; i++)
+      state->state[port].buttons[i] = joypad->button(port, i);
 
-   for (a = 0; a < MENU_MAX_AXES; a++)
+   for (i = 0; i < MENU_MAX_AXES; i++)
    {
-      if (AXIS_POS(a) != AXIS_NONE)
-         state->state[port].axes[a]  = joypad->axis(port, AXIS_POS(a));
+      if (AXIS_POS(i) != AXIS_NONE)
+         state->state[port].axes[i]  = joypad->axis(port, AXIS_POS(i));
 
-      if (AXIS_NEG(a) != AXIS_NONE)
-         state->state[port].axes[a] += joypad->axis(port, AXIS_NEG(a));
+      if (AXIS_NEG(i) != AXIS_NONE)
+         state->state[port].axes[i] += joypad->axis(port, AXIS_NEG(i));
    }
 
-   for (h = 0; h < MENU_MAX_HATS; h++)
+   for (i = 0; i < MENU_MAX_HATS; i++)
    {
-      if (joypad->button(port, HAT_MAP(h, HAT_UP_MASK)))
-         state->state[port].hats[h] |= HAT_UP_MASK;
-      if (joypad->button(port, HAT_MAP(h, HAT_DOWN_MASK)))
-         state->state[port].hats[h] |= HAT_DOWN_MASK;
-      if (joypad->button(port, HAT_MAP(h, HAT_LEFT_MASK)))
-         state->state[port].hats[h] |= HAT_LEFT_MASK;
-      if (joypad->button(port, HAT_MAP(h, HAT_RIGHT_MASK)))
-         state->state[port].hats[h] |= HAT_RIGHT_MASK;
+      if (joypad->button(port, HAT_MAP(i, HAT_UP_MASK)))
+         state->state[port].hats[i] |= HAT_UP_MASK;
+      if (joypad->button(port, HAT_MAP(i, HAT_DOWN_MASK)))
+         state->state[port].hats[i] |= HAT_DOWN_MASK;
+      if (joypad->button(port, HAT_MAP(i, HAT_LEFT_MASK)))
+         state->state[port].hats[i] |= HAT_LEFT_MASK;
+      if (joypad->button(port, HAT_MAP(i, HAT_RIGHT_MASK)))
+         state->state[port].hats[i] |= HAT_RIGHT_MASK;
    }
 }
 
@@ -3716,12 +3711,21 @@ static void menu_input_key_bind_poll_bind_state(
                0,
                RETROK_RETURN);
 
-   menu_input_key_bind_poll_bind_state_internal(
-         joypad, state, port, timed_out);
+   if (joypad)
+   {
+      if (joypad->poll)
+         joypad->poll();
+      menu_input_key_bind_poll_bind_state_internal(
+            joypad, state, port, timed_out);
+   }
 
    if (sec_joypad)
+   {
+      if (sec_joypad->poll)
+         sec_joypad->poll();
       menu_input_key_bind_poll_bind_state_internal(
             sec_joypad, state, port, timed_out);
+   }
 }
 
 static bool menu_input_key_bind_poll_find_trigger_pad(
@@ -15516,16 +15520,17 @@ static void command_event_reinit(struct rarch_state *p_rarch,
 
    video_driver_reinit(flags);
    /* Poll input to avoid possibly stale data to corrupt things. */
-   if (p_rarch->current_input && p_rarch->current_input->poll)
-   {
-      if (p_rarch->joypad->poll)
-         p_rarch->joypad->poll();
+   if (  p_rarch->joypad &&
+         p_rarch->joypad->poll)
+      p_rarch->joypad->poll();
 #ifdef HAVE_MFI
-      if (p_rarch->sec_joypad->poll)
-         p_rarch->sec_joypad->poll();
+   if (  p_rarch->sec_joypad &&
+         p_rarch->sec_joypad->poll)
+      p_rarch->sec_joypad->poll();
 #endif
+   if (  p_rarch->current_input && 
+         p_rarch->current_input->poll)
       p_rarch->current_input->poll(p_rarch->current_input_data);
-   }
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 
 #ifdef HAVE_MENU
@@ -23773,13 +23778,16 @@ static void input_driver_poll(void)
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
    uint8_t max_users              = (uint8_t)p_rarch->input_driver_max_users;
 
-   if (p_rarch->joypad && p_rarch->joypad->poll)
+   if (     p_rarch->joypad 
+         && p_rarch->joypad->poll)
       p_rarch->joypad->poll();
 #ifdef HAVE_MFI
-   if (p_rarch->sec_joypad && p_rarch->sec_joypad->poll)
+   if (     p_rarch->sec_joypad 
+         && p_rarch->sec_joypad->poll)
       p_rarch->sec_joypad->poll();
 #endif
-   if (p_rarch->current_input && p_rarch->current_input->poll)
+   if (     p_rarch->current_input
+         && p_rarch->current_input->poll)
       p_rarch->current_input->poll(p_rarch->current_input_data);
 
    p_rarch->input_driver_turbo_btns.count++;
