@@ -32,9 +32,8 @@ struct hidpad_ps4_hori_mini_data
 
 static void* hidpad_ps4_hori_mini_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-   struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_ps4_hori_mini_data* device    = (struct hidpad_ps4_hori_mini_data*)
-      calloc(1, sizeof(struct hidpad_ps4_hori_mini_data));
+   struct pad_connection            *connection = (struct pad_connection*)data;
+   struct hidpad_ps4_hori_mini_data *device     = (struct hidpad_ps4_hori_mini_data*)calloc(1, sizeof(struct hidpad_ps4_hori_mini_data));
 
    if (!device)
       return NULL;
@@ -53,7 +52,8 @@ static void* hidpad_ps4_hori_mini_init(void *data, uint32_t slot, hid_driver_t *
 
 static void hidpad_ps4_hori_mini_deinit(void *data)
 {
-   struct hidpad_ps4_hori_mini_data *device = (struct hidpad_ps4_hori_mini_data*)data;
+   struct hidpad_ps4_hori_mini_data *device = 
+      (struct hidpad_ps4_hori_mini_data*)data;
 
    if (device)
       free(device);
@@ -79,9 +79,7 @@ static int16_t hidpad_ps4_hori_mini_get_axis(void *data, unsigned axis)
    if (!device || axis >= 4)
       return 0;
 
-   val = device->data[2 + axis];
-
-   val = (val << 8) - 0x8000;
+   val = (device->data[2 + axis] << 8) - 0x8000;
 
    if (abs(val) > 0x1000)
       return val;
@@ -91,6 +89,7 @@ static int16_t hidpad_ps4_hori_mini_get_axis(void *data, unsigned axis)
 static void hidpad_ps4_hori_mini_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
+   uint8_t dpad = 0;
    uint32_t i, pressed_keys;
    static const uint32_t button_mapping[15] =
    {
@@ -119,7 +118,8 @@ static void hidpad_ps4_hori_mini_packet_handler(void *data,
 
    device->buttons = 0;
 
-   uint8_t dpad = device->data[6] & 0xF;
+   dpad            = device->data[6] & 0xF;
+
    switch(dpad)
    {
       case 0:
