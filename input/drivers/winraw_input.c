@@ -54,28 +54,28 @@ static winraw_mouse_t *g_mice        = NULL;
 static HWND winraw_create_window(WNDPROC wnd_proc)
 {
    HWND wnd;
-   WNDCLASSA wc = {0};
+   WNDCLASSA wc     = {0};
 
-   wc.hInstance = GetModuleHandleA(NULL);
+   wc.hInstance     = GetModuleHandleA(NULL);
 
    if (!wc.hInstance)
       return NULL;
 
    wc.lpfnWndProc   = wnd_proc;
    wc.lpszClassName = "winraw-input";
-   if (!RegisterClassA(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
+   if (     !RegisterClassA(&wc) 
+         &&  GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
       return NULL;
 
-   wnd = CreateWindowExA(0, wc.lpszClassName, NULL, 0, 0, 0, 0, 0,
-         HWND_MESSAGE, NULL, NULL, NULL);
-   if (!wnd)
-      goto error;
+   if (!(wnd = CreateWindowExA(0, wc.lpszClassName,
+               NULL, 0, 0, 0, 0, 0,
+               HWND_MESSAGE, NULL, NULL, NULL)))
+   {
+      UnregisterClassA(wc.lpszClassName, NULL);
+      return NULL;
+   }
 
    return wnd;
-
-error:
-   UnregisterClassA(wc.lpszClassName, NULL);
-   return NULL;
 }
 
 static void winraw_destroy_window(HWND wnd)
@@ -83,17 +83,8 @@ static void winraw_destroy_window(HWND wnd)
    if (!wnd)
       return;
 
-   if (!DestroyWindow(wnd))
-   {
-      RARCH_WARN("[WINRAW]: DestroyWindow failed with error %lu.\n",
-            GetLastError());
-   }
-
-   if (!UnregisterClassA("winraw-input", NULL))
-   {
-      RARCH_WARN("[WINRAW]: UnregisterClassA failed with error %lu.\n",
-            GetLastError());
-   }
+   DestroyWindow(wnd);
+   UnregisterClassA("winraw-input", NULL);
 }
 
 static BOOL winraw_set_keyboard_input(HWND window)
@@ -253,49 +244,6 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
    return 0;
 }
 
-static int16_t winraw_mouse_state(
-      winraw_mouse_t *mouse,
-      unsigned port, bool abs, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return abs ? mouse->x : mouse->dlt_x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return abs ? mouse->y : mouse->dlt_y;
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         if (mouse->btn_l)
-            return 1;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         if (mouse->btn_r)
-            return 1;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         if (mouse->whl_u)
-            return 1;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         if (mouse->whl_d)
-            return 1;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         if (mouse->btn_m)
-            return 1;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         if (mouse->btn_b4)
-            return 1;
-         break;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         if (mouse->btn_b5)
-            return 1;
-         break;
-   }
-
-   return 0;
-}
-
 static bool winraw_mouse_button_pressed(
       winraw_input_t *wr,
       winraw_mouse_t *mouse,
@@ -329,13 +277,13 @@ static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
    if (video_driver_get_viewport_info(&viewport))
    {
       unsigned i;
-      int center_x = viewport.x + viewport.width / 2;
-      int center_y = viewport.y + viewport.height / 2;
+      int center_x               = viewport.x + viewport.width / 2;
+      int center_y               = viewport.y + viewport.height / 2;
 
       for (i = 0; i < wr->mouse_cnt; ++i)
       {
-         g_mice[i].x = center_x;
-         g_mice[i].y = center_y;
+         g_mice[i].x             = center_x;
+         g_mice[i].y             = center_y;
       }
 
       wr->view_abs_ratio_x       = (double)viewport.full_width / 65535.0;
@@ -358,8 +306,8 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
          state->lLastY = (LONG)(wr->view_abs_ratio_y * state->lLastY);
          InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX - mouse->x);
          InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY - mouse->y);
-         mouse->x = state->lLastX;
-         mouse->y = state->lLastY;
+         mouse->x      = state->lLastX;
+         mouse->y      = state->lLastY;
       }
       else
          winraw_init_mouse_xy_mapping(wr);
@@ -430,7 +378,8 @@ static LRESULT CALLBACK winraw_callback(
    static uint8_t data[1024];
    RAWINPUT       *ri = (RAWINPUT*)data;
    UINT size          = sizeof(data);
-   winraw_input_t *wr = (winraw_input_t*)(LONG_PTR)GetWindowLongPtr(wnd, GWLP_USERDATA);
+   winraw_input_t *wr = (winraw_input_t*)(LONG_PTR)
+      GetWindowLongPtr(wnd, GWLP_USERDATA);
 
    if (msg != WM_INPUT)
       return DefWindowProcA(wnd, msg, wpar, lpar);
@@ -457,7 +406,8 @@ static LRESULT CALLBACK winraw_callback(
          {
             if (g_mice[i].hnd == ri->header.hDevice)
             {
-               winraw_update_mouse_state(wr, &g_mice[i], &ri->data.mouse);
+               winraw_update_mouse_state(wr,
+                     &g_mice[i], &ri->data.mouse);
                break;
             }
          }
@@ -677,9 +627,44 @@ static int16_t winraw_input_state(
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (mouse)
-            return winraw_mouse_state(mouse, port,
-                  (device == RARCH_DEVICE_MOUSE_SCREEN),
-                  id);
+         {
+            bool abs = (device == RARCH_DEVICE_MOUSE_SCREEN);
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return abs ? mouse->x : mouse->dlt_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return abs ? mouse->y : mouse->dlt_y;
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  if (mouse->btn_l)
+                     return 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  if (mouse->btn_r)
+                     return 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  if (mouse->whl_u)
+                     return 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  if (mouse->whl_d)
+                     return 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  if (mouse->btn_m)
+                     return 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+                  if (mouse->btn_b4)
+                     return 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+                  if (mouse->btn_b5)
+                     return 1;
+                  break;
+            }
+         }
          break;
       case RETRO_DEVICE_LIGHTGUN:
 			switch ( id )
