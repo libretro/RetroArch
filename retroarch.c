@@ -31496,21 +31496,17 @@ static void video_driver_free_internal(void)
    if (!(p_rarch->current_input_data == p_rarch->video_driver_data))
    {
       if (p_rarch->current_input)
-      {
          if (p_rarch->current_input->free)
-         {
             p_rarch->current_input->free(p_rarch->current_input_data);
-            if (p_rarch->joypad)
-               p_rarch->joypad->destroy();
+      if (p_rarch->joypad)
+         p_rarch->joypad->destroy();
+      p_rarch->joypad                                     = NULL;
 #ifdef HAVE_MFI
-            if (p_rarch->sec_joypad)
-               p_rarch->sec_joypad->destroy();
-            p_rarch->sec_joypad = NULL;
+      if (p_rarch->sec_joypad)
+         p_rarch->sec_joypad->destroy();
+      p_rarch->sec_joypad                                 = NULL;
 #endif
-            p_rarch->joypad = NULL;
-         }
-         p_rarch->keyboard_mapping_blocked                = false;
-      }
+      p_rarch->keyboard_mapping_blocked                   = false;
       p_rarch->current_input_data                         = NULL;
    }
 
