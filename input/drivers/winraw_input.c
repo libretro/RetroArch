@@ -810,14 +810,12 @@ static uint64_t winraw_get_capabilities(void *u)
 
 static void winraw_grab_mouse(void *d, bool grab)
 {
-   bool r             = false;
    winraw_input_t *wr = (winraw_input_t*)d;
 
    if (grab == wr->mouse_grab)
       return;
 
-   r = winraw_set_mouse_input(wr->window, grab);
-   if (!r)
+   if (!winraw_set_mouse_input(wr->window, grab))
       return;
 
    wr->mouse_grab = grab;
