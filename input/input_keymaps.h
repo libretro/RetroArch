@@ -36,16 +36,6 @@ struct input_key_map
    enum retro_key key;
 };
 
-#ifdef __APPLE__
-struct apple_key_name_map_entry
-{
-   const char* const keyname;
-   const uint32_t hid_id;
-};
-
-extern const struct apple_key_name_map_entry apple_key_name_map[];
-#endif
-
 #define RARCH_KEY_MAP_RWEBINPUT_SIZE 111
 
 extern const struct input_key_map input_config_key_map[];
