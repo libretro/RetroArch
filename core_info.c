@@ -468,11 +468,8 @@ static core_info_list_t *core_info_list_new(const char *path,
       core_info[i].is_locked = core_info_get_core_lock(core_info[i].path, false);
    }
 
-   if (core_info_list)
-   {
-      core_info_list_resolve_all_extensions(core_info_list);
-      core_info_list_resolve_all_firmware(core_info_list);
-   }
+   core_info_list_resolve_all_extensions(core_info_list);
+   core_info_list_resolve_all_firmware(core_info_list);
 
    string_list_deinitialize(&contents);
    return core_info_list;
