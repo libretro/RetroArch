@@ -22,12 +22,12 @@
 #include <retro_miscellaneous.h>
 #include <libretro.h>
 
-#if defined(_3DS)
-#include <3ds.h>
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
+#endif
+
+#if defined(_3DS)
+#include <3ds.h>
 #endif
 
 #include "frontend_driver.h"

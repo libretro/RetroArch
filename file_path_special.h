@@ -96,6 +96,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_CONTENT_IMAGE_HISTORY "content_image_history.lpl"
 #define FILE_PATH_CORE_OPTIONS_CONFIG "retroarch-core-options.cfg"
 #define FILE_PATH_MAIN_CONFIG "retroarch.cfg"
+#define FILE_PATH_SALAMANDER_CONFIG "retroarch-salamander.cfg"
 #define FILE_PATH_BACKGROUND_IMAGE "bg.png"
 #define FILE_PATH_TTF_FONT "font.ttf"
 #define FILE_PATH_RUNTIME_EXTENSION ".lrtl"

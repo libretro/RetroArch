@@ -16528,6 +16528,9 @@ bool command_event(enum event_command cmd, void *data)
          config_set_defaults(&p_rarch->g_extern);
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
+#if !defined(HAVE_DYNAMIC)
+         config_save_file_salamander();
+#endif
 #ifdef HAVE_CONFIGFILE
          command_event_save_current_config(p_rarch, OVERRIDE_NONE);
 #endif
@@ -36260,7 +36263,14 @@ static void retroarch_parse_input_and_config(
 #ifdef HAVE_CONFIGFILE
    if (!p_rarch->rarch_block_config_read)
 #endif
+   {
+      /* If this is a static build, load salamander
+       * config file first (sets RARCH_PATH_CORE) */
+#if !defined(HAVE_DYNAMIC)
+      config_load_file_salamander();
+#endif
       config_load(&p_rarch->g_extern);
+   }
 
    /* Second pass: All other arguments override the config file */
    optind = 1;

@@ -85,7 +85,6 @@ struct defaults
 
    char dirs [DEFAULT_DIR_LAST + 1][PATH_MAX_LENGTH];
    char path_config[PATH_MAX_LENGTH];
-   char path_core  [PATH_MAX_LENGTH];
    char path_buildbot_server_url[255];
    char settings_menu[32];
 
