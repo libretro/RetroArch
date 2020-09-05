@@ -43,7 +43,6 @@ typedef struct
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
-static winraw_keyboard_t *g_keyboard = NULL;
 static winraw_mouse_t *g_mice        = NULL;
 static unsigned g_mouse_cnt          = 0;
 static bool g_mouse_xy_mapping_ready = false;
@@ -428,8 +427,9 @@ static LRESULT CALLBACK winraw_callback(
 {
    unsigned i;
    static uint8_t data[1024];
-   RAWINPUT *ri = (RAWINPUT*)data;
-   UINT size    = sizeof(data);
+   RAWINPUT       *ri = (RAWINPUT*)data;
+   UINT size          = sizeof(data);
+   winraw_input_t *wr = (winraw_input_t*)(LONG_PTR)GetWindowLongPtr(wnd, GWLP_USERDATA);
 
    if (msg != WM_INPUT)
       return DefWindowProcA(wnd, msg, wpar, lpar);
@@ -447,9 +447,9 @@ static LRESULT CALLBACK winraw_callback(
    {
       case RIM_TYPEKEYBOARD:
          if (ri->data.keyboard.Message == WM_KEYDOWN)
-            g_keyboard->keys[ri->data.keyboard.VKey] = 1;
+            wr->keyboard.keys[ri->data.keyboard.VKey] = 1;
          else if (ri->data.keyboard.Message == WM_KEYUP)
-            g_keyboard->keys[ri->data.keyboard.VKey] = 0;
+            wr->keyboard.keys[ri->data.keyboard.VKey] = 0;
          break;
       case RIM_TYPEMOUSE:
          for (i = 0; i < g_mouse_cnt; ++i)
@@ -471,11 +471,9 @@ static void *winraw_init(const char *joypad_driver)
 {
    winraw_input_t *wr = (winraw_input_t *)
       calloc(1, sizeof(winraw_input_t));
-   g_keyboard         = (winraw_keyboard_t*)
-      calloc(1, sizeof(winraw_keyboard_t));
 
-   if (!wr || !g_keyboard)
-      goto error;
+   if (!wr)
+      return NULL;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_winraw);
 
@@ -502,6 +500,8 @@ static void *winraw_init(const char *joypad_driver)
    if (!winraw_set_mouse_input(wr->window, false))
       goto error;
 
+   SetWindowLongPtr(wr->window, GWLP_USERDATA, (LONG_PTR)wr);
+
    return wr;
 
 error:
@@ -511,7 +511,6 @@ error:
       winraw_set_keyboard_input(NULL);
       winraw_destroy_window(wr->window);
    }
-   free(g_keyboard);
    free(g_mice);
    if (wr)
       free(wr->mice);
@@ -523,8 +522,6 @@ static void winraw_poll(void *data)
 {
    unsigned i;
    winraw_input_t *wr = (winraw_input_t*)data;
-
-   memcpy(&wr->keyboard, g_keyboard, sizeof(winraw_keyboard_t));
 
    /* following keys are not handled by windows raw input api */
    wr->keyboard.keys[VK_LCONTROL] = GetAsyncKeyState(VK_LCONTROL) >> 1 ? 1 : 0;
@@ -793,9 +790,9 @@ static void winraw_free(void *data)
 
    winraw_set_mouse_input(NULL, false);
    winraw_set_keyboard_input(NULL);
+   SetWindowLongPtr(wr->window, GWLP_USERDATA, 0);
    winraw_destroy_window(wr->window);
    free(g_mice);
-   free(g_keyboard);
    free(wr->mice);
 
    g_mouse_xy_mapping_ready = false;
