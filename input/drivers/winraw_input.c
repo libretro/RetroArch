@@ -36,18 +36,18 @@ typedef struct
 
 typedef struct
 {
+   double view_abs_ratio_x;
+   double view_abs_ratio_y;
    winraw_keyboard_t keyboard;
    HWND window;
    winraw_mouse_t *mice;
+   unsigned mouse_cnt;
+   bool mouse_xy_mapping_ready;
    bool mouse_grab;
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
 static winraw_mouse_t *g_mice        = NULL;
-static unsigned g_mouse_cnt          = 0;
-static bool g_mouse_xy_mapping_ready = false;
-static double g_view_abs_ratio_x     = 0.0;
-static double g_view_abs_ratio_y     = 0.0;
 
 #define WINRAW_KEYBOARD_PRESSED(wr, key) (wr->keyboard.keys[rarch_keysym_lut[(enum retro_key)(key)]])
 
@@ -322,7 +322,7 @@ static bool winraw_mouse_button_pressed(
 	return false;
 }
 
-static void winraw_init_mouse_xy_mapping(void)
+static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
 {
    struct video_viewport viewport;
 
@@ -332,36 +332,37 @@ static void winraw_init_mouse_xy_mapping(void)
       int center_x = viewport.x + viewport.width / 2;
       int center_y = viewport.y + viewport.height / 2;
 
-      for (i = 0; i < g_mouse_cnt; ++i)
+      for (i = 0; i < wr->mouse_cnt; ++i)
       {
          g_mice[i].x = center_x;
          g_mice[i].y = center_y;
       }
 
-      g_view_abs_ratio_x = (double)viewport.full_width / 65535.0;
-      g_view_abs_ratio_y = (double)viewport.full_height / 65535.0;
+      wr->view_abs_ratio_x       = (double)viewport.full_width / 65535.0;
+      wr->view_abs_ratio_y       = (double)viewport.full_height / 65535.0;
 
-      g_mouse_xy_mapping_ready = true;
+      wr->mouse_xy_mapping_ready = true;
    }
 }
 
-static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
+static void winraw_update_mouse_state(winraw_input_t *wr, 
+      winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
 
    if (state->usFlags & MOUSE_MOVE_ABSOLUTE)
    {
-      if (g_mouse_xy_mapping_ready)
+      if (wr->mouse_xy_mapping_ready)
       {
-         state->lLastX = (LONG)(g_view_abs_ratio_x * state->lLastX);
-         state->lLastY = (LONG)(g_view_abs_ratio_y * state->lLastY);
+         state->lLastX = (LONG)(wr->view_abs_ratio_x * state->lLastX);
+         state->lLastY = (LONG)(wr->view_abs_ratio_y * state->lLastY);
          InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX - mouse->x);
          InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY - mouse->y);
          mouse->x = state->lLastX;
          mouse->y = state->lLastY;
       }
       else
-         winraw_init_mouse_xy_mapping();
+         winraw_init_mouse_xy_mapping(wr);
    }
    else if (state->lLastX || state->lLastY)
    {
@@ -452,11 +453,11 @@ static LRESULT CALLBACK winraw_callback(
             wr->keyboard.keys[ri->data.keyboard.VKey] = 0;
          break;
       case RIM_TYPEMOUSE:
-         for (i = 0; i < g_mouse_cnt; ++i)
+         for (i = 0; i < wr->mouse_cnt; ++i)
          {
             if (g_mice[i].hnd == ri->header.hDevice)
             {
-               winraw_update_mouse_state(&g_mice[i], &ri->data.mouse);
+               winraw_update_mouse_state(wr, &g_mice[i], &ri->data.mouse);
                break;
             }
          }
@@ -481,17 +482,17 @@ static void *winraw_init(const char *joypad_driver)
    if (!wr->window)
       goto error;
 
-   if (!winraw_init_devices(&g_mice, &g_mouse_cnt))
+   if (!winraw_init_devices(&g_mice, &wr->mouse_cnt))
       goto error;
 
-   if (g_mouse_cnt)
+   if (wr->mouse_cnt)
    {
       wr->mice = (winraw_mouse_t*)
-         malloc(g_mouse_cnt * sizeof(winraw_mouse_t));
+         malloc(wr->mouse_cnt * sizeof(winraw_mouse_t));
       if (!wr->mice)
          goto error;
 
-      memcpy(wr->mice, g_mice, g_mouse_cnt * sizeof(winraw_mouse_t));
+      memcpy(wr->mice, g_mice, wr->mouse_cnt * sizeof(winraw_mouse_t));
    }
 
    if (!winraw_set_keyboard_input(wr->window))
@@ -531,7 +532,7 @@ static void winraw_poll(void *data)
    wr->keyboard.keys[VK_LSHIFT]   = GetAsyncKeyState(VK_LSHIFT)   >> 1 ? 1 : 0;
    wr->keyboard.keys[VK_RSHIFT]   = GetAsyncKeyState(VK_RSHIFT)   >> 1 ? 1 : 0;
 
-   for (i = 0; i < g_mouse_cnt; ++i)
+   for (i = 0; i < wr->mouse_cnt; ++i)
    {
       wr->mice[i].x               = g_mice[i].x;
       wr->mice[i].y               = g_mice[i].y;
@@ -605,7 +606,7 @@ static int16_t winraw_input_state(
    {
       unsigned i;
       settings        = config_get_ptr();
-      for (i = 0; i < g_mouse_cnt; ++i)
+      for (i = 0; i < wr->mouse_cnt; ++i)
       {
          if (i == settings->uints.input_mouse_index[port])
          {
@@ -794,8 +795,6 @@ static void winraw_free(void *data)
    winraw_destroy_window(wr->window);
    free(g_mice);
    free(wr->mice);
-
-   g_mouse_xy_mapping_ready = false;
 
    free(data);
 }
