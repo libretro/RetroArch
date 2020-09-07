@@ -2004,14 +2004,14 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    glyph_width = font_driver_get_message_width(
          line_ticker->font, "a", 1, line_ticker->font_scale);
 
-   if (glyph_width < 0)
+   if (glyph_width <= 0)
       goto end;
 
    /* > Height */
    glyph_height = font_driver_get_line_height(
          line_ticker->font, line_ticker->font_scale);
 
-   if (glyph_height < 0)
+   if (glyph_height <= 0)
       goto end;
 
    /* Determine line wrap parameters */
