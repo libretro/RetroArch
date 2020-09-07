@@ -246,7 +246,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       unsigned _fmt)
 {
    unsigned i;
-   struct shader_pass pass;
+   struct shader_pass pass = { 0 };
    unsigned fmt =
       (_fmt == RETRO_PIXEL_FORMAT_RGB565) ?
       d3d9_get_rgb565_format() : d3d9_get_xrgb8888_format();

@@ -34,11 +34,11 @@ static const char *stock_hlsl_program = CG(
          float frame_rotation;
       };
 
-      output main_fragment(float2 texCoord : TEXCOORD0,
+      output main_fragment(float4 color : COLOR, float2 texCoord : TEXCOORD0,
       uniform sampler2D decal : TEXUNIT0, uniform input IN)
       {
          output OUT;
-         OUT.color = tex2D(decal, texCoord);
+         OUT.color = color * tex2D(decal, texCoord);
          return OUT;
       }
 );
