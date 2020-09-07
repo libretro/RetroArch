@@ -159,10 +159,12 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    if (s)
    {
       unsigned i;
+      
+      const bool has_name = !string_is_empty(name);
 
       for (i = 0; name && pad_map[i].name; i++)
       {
-         const char *name_match = strstr(pad_map[i].name, name);
+         const char *name_match = has_name ? strstr(pad_map[i].name, name) : NULL;
 
          /* Never change, Nintendo. */
          if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)
