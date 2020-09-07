@@ -1,8 +1,69 @@
-before_script:
-  - apt-get update -qq && apt-get install -y -qq git build-essential
-  - apt-get update -qq && apt-get build-dep -y retroarch
+image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-amd64-ubuntu:latest
 
-build:
+stages:
+  - build-prepare
+  - build
+  - prepare-for-static-cores
+  - trigger-static-cores
+
+build-retroarch-windows-x64:
+  stage: build
+  artifacts:
+    paths:
+    - retroarch.exe
+    expire_in: 1 month
+  dependencies: []
   script:
-    - ./configure
-    - make -j2
+    - "./configure --host=x86_64-w64-mingw32"
+    - "make -j10"
+    - "mv retroarch retroarch.exe"
+
+build-retroarch-linux-x64:
+  stage: build
+  artifacts:
+    paths:
+    - retroarch
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "./configure"
+    - "make -j10"
+
+build-static-retroarch-libnx-aarch64:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
+  stage: prepare-for-static-cores
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 1 day
+  dependencies: []
+  needs:
+    # Static dummy builds without a core so its a good check if it properly builds
+    - build-static-retroarch-dummy-libnx-aarch64
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.libnx -j10 ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    
+build-static-retroarch-dummy-libnx-aarch64:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
+  stage: build
+  artifacts:
+    paths:
+    -  retroarch_switch.nro
+    -  retroarch_switch.elf
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "make -f Makefile.libnx -j10 HAVE_STATIC_DUMMY=1"
+    
+trigger_static-cores:
+  stage: trigger-static-cores
+  needs:
+  - build-static-retroarch-libnx-aarch64
+  dependencies: []
+  script:
+    # Dummy for now
+    - /bin/true
