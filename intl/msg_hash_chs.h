@@ -9751,10 +9751,6 @@ MSG_HASH(
    "暂停。"
    )
 MSG_HASH(
-   MSG_PROGRAM,
-   "全能模拟器"
-   )
-MSG_HASH(
    MSG_READING_FIRST_DATA_TRACK,
    "读取第一条数据轨..."
    )
