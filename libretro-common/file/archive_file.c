@@ -438,11 +438,17 @@ end:
    return ret;
 }
 
+/* Warning: 'list' must zero initialised before
+ * calling this function, otherwise memory leaks/
+ * undefined behaviour will occur */
 bool file_archive_get_file_list_noalloc(struct string_list *list,
       const char *path,
       const char *valid_exts)
 {
    struct archive_extract_userdata userdata;
+
+   if (!list || !string_list_initialize(list))
+      return false;
 
    strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
    userdata.current_file_path[0]            = '\0';
@@ -457,8 +463,6 @@ bool file_archive_get_file_list_noalloc(struct string_list *list,
    userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
 
-   if (!userdata.list)
-      return false;
    if (!file_archive_walk(path, valid_exts,
             file_archive_get_file_list_cb, &userdata))
       return false;

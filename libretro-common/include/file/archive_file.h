@@ -164,6 +164,9 @@ bool file_archive_extract_file(char *archive_path, size_t archive_path_size,
       const char *valid_exts, const char *extraction_dir,
       char *out_path, size_t len);
 
+/* Warning: 'list' must zero initialised before
+ * calling this function, otherwise memory leaks/
+ * undefined behaviour will occur */
 bool file_archive_get_file_list_noalloc(struct string_list *list,
       const char *path,
       const char *valid_exts);
