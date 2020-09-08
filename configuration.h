@@ -301,9 +301,19 @@ typedef struct settings
       float audio_mixer_volume; /* dB scale. */
 
       float input_overlay_opacity;
-      float input_overlay_scale;
-      float input_overlay_center_x;
-      float input_overlay_center_y;
+
+      float input_overlay_scale_landscape;
+      float input_overlay_aspect_adjust_landscape;
+      float input_overlay_x_separation_landscape;
+      float input_overlay_y_separation_landscape;
+      float input_overlay_x_offset_landscape;
+      float input_overlay_y_offset_landscape;
+
+      float input_overlay_scale_portrait;
+      float input_overlay_aspect_adjust_portrait;
+      float input_overlay_x_separation_portrait;
+      float input_overlay_x_offset_portrait;
+      float input_overlay_y_offset_portrait;
 
       float slowmotion_ratio;
       float fastforward_ratio;

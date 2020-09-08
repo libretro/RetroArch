@@ -3323,30 +3323,92 @@ MSG_HASH(
    "Select an overlay from the file browser."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-   "Overlay Scale"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "(Landscape) Overlay Scale"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-   "Scale of all UI elements of the overlay."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_X,
-   "Overlay Offset X"
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Scale of all UI elements of the overlay when using landscape display orientations."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X,
-   "X offset of all UI elements of the overlay."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_Y,
-   "Overlay Offset Y"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "(Landscape) Overlay Aspect Adjustment"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y,
-   "Y offset of all UI elements of the overlay."
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Apply an aspect ratio correction factor to the overlay when using landscape display orientations. Positive values increase (while negative values decrease) effective overlay width."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "(Landscape) Overlay Horizontal Separation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Adjust the spacing between UI elements in the left and right halves of an overlay when using landscape display orientations. Positive values increase (while negative values decrease) the separation of the two halves."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "(Landscape) Overlay Vertical Separation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Adjust the spacing between UI elements in the top and bottom halves of an overlay when using landscape display orientations. Positive values increase (while negative values decrease) the separation of the two halves."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "(Landscape) Overlay X Offset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Horizontal overlay offset when using landscape display orientations. Positive values shift overlay to the right; negative values to the left."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "(Landscape) Overlay Y Offset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Vertical overlay offset when using landscape display orientations. Positive values shift overlay upwards; negative values downwards."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "(Portrait) Overlay Scale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "Scale of all UI elements of the overlay when using portrait display orientations."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "(Portrait) Overlay Aspect Adjustment"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Apply an aspect ratio correction factor to the overlay when using portrait display orientations. Positive values increase (while negative values decrease) effective overlay height."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "(Portrait) Overlay Horizontal Separation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Adjust the spacing between UI elements in the left and right halves of an overlay when using portrait display orientations. Positive values increase (while negative values decrease) the separation of the two halves."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "(Portrait) Overlay X Offset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "Horizontal overlay offset when using portrait display orientations. Positive values shift overlay to the right; negative values to the left."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "(Portrait) Overlay Y Offset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Vertical overlay offset when using portrait display orientations. Positive values shift overlay upwards; negative values downwards."
    )
 
 /* Settings > On-Screen Display > Video Layout */

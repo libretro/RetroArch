@@ -7563,9 +7563,17 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_OVERLAY_PRESET,                            PARSE_ONLY_PATH,  false },
                {MENU_ENUM_LABEL_OVERLAY_OPACITY,                           PARSE_ONLY_FLOAT, false },
-               {MENU_ENUM_LABEL_OVERLAY_SCALE,                             PARSE_ONLY_FLOAT, false },
-               {MENU_ENUM_LABEL_OVERLAY_CENTER_X,                          PARSE_ONLY_FLOAT, false },
-               {MENU_ENUM_LABEL_OVERLAY_CENTER_Y,                          PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,                   PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,           PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_LANDSCAPE,            PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,            PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_X_OFFSET_LANDSCAPE,                PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_LANDSCAPE,                PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_SCALE_PORTRAIT,                    PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,            PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT,             PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT,                 PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT,                 PARSE_ONLY_FLOAT, false },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7580,9 +7588,17 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
                   case MENU_ENUM_LABEL_OVERLAY_PRESET:
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
-                  case MENU_ENUM_LABEL_OVERLAY_SCALE:
-                  case MENU_ENUM_LABEL_OVERLAY_CENTER_X:
-                  case MENU_ENUM_LABEL_OVERLAY_CENTER_Y:
+                  case MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE:
+                  case MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE:
+                  case MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_LANDSCAPE:
+                  case MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_LANDSCAPE:
+                  case MENU_ENUM_LABEL_OVERLAY_X_OFFSET_LANDSCAPE:
+                  case MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_LANDSCAPE:
+                  case MENU_ENUM_LABEL_OVERLAY_SCALE_PORTRAIT:
+                  case MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT:
+                  case MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT:
+                  case MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT:
+                  case MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT:
                      if (input_overlay_enable)
                         build_list[i].checked = true;
                      break;

@@ -1778,10 +1778,18 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("audio_mixer_volume",       &settings->floats.audio_mixer_volume, true, DEFAULT_AUDIO_MIXER_VOLUME, false);
 #endif
 #ifdef HAVE_OVERLAY
-   SETTING_FLOAT("input_overlay_opacity",    &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
-   SETTING_FLOAT("input_overlay_scale",      &settings->floats.input_overlay_scale, true, 1.0f, false);
-   SETTING_FLOAT("input_overlay_center_x",   &settings->floats.input_overlay_center_x, true, 0.5f, false);
-   SETTING_FLOAT("input_overlay_center_y",   &settings->floats.input_overlay_center_y, true, 0.5f, false);
+   SETTING_FLOAT("input_overlay_opacity",                 &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
+   SETTING_FLOAT("input_overlay_scale_landscape",         &settings->floats.input_overlay_scale_landscape, true, DEFAULT_INPUT_OVERLAY_SCALE_LANDSCAPE, false);
+   SETTING_FLOAT("input_overlay_aspect_adjust_landscape", &settings->floats.input_overlay_aspect_adjust_landscape, true, DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_LANDSCAPE, false);
+   SETTING_FLOAT("input_overlay_x_separation_landscape",  &settings->floats.input_overlay_x_separation_landscape, true, DEFAULT_INPUT_OVERLAY_X_SEPARATION_LANDSCAPE, false);
+   SETTING_FLOAT("input_overlay_y_separation_landscape",  &settings->floats.input_overlay_y_separation_landscape, true, DEFAULT_INPUT_OVERLAY_Y_SEPARATION_LANDSCAPE, false);
+   SETTING_FLOAT("input_overlay_x_offset_landscape",      &settings->floats.input_overlay_x_offset_landscape, true, DEFAULT_INPUT_OVERLAY_X_OFFSET_LANDSCAPE, false);
+   SETTING_FLOAT("input_overlay_y_offset_landscape",      &settings->floats.input_overlay_y_offset_landscape, true, DEFAULT_INPUT_OVERLAY_Y_OFFSET_LANDSCAPE, false);
+   SETTING_FLOAT("input_overlay_scale_portrait",          &settings->floats.input_overlay_scale_portrait, true, DEFAULT_INPUT_OVERLAY_SCALE_PORTRAIT, false);
+   SETTING_FLOAT("input_overlay_aspect_adjust_portrait",  &settings->floats.input_overlay_aspect_adjust_portrait, true, DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_PORTRAIT, false);
+   SETTING_FLOAT("input_overlay_x_separation_portrait",   &settings->floats.input_overlay_x_separation_portrait, true, DEFAULT_INPUT_OVERLAY_X_SEPARATION_PORTRAIT, false);
+   SETTING_FLOAT("input_overlay_x_offset_portrait",       &settings->floats.input_overlay_x_offset_portrait, true, DEFAULT_INPUT_OVERLAY_X_OFFSET_PORTRAIT, false);
+   SETTING_FLOAT("input_overlay_y_offset_portrait",       &settings->floats.input_overlay_y_offset_portrait, true, DEFAULT_INPUT_OVERLAY_Y_OFFSET_PORTRAIT, false);
 #endif
 #ifdef HAVE_MENU
    SETTING_FLOAT("menu_scale_factor",        &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);

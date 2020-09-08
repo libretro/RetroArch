@@ -512,9 +512,17 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_exclusive_mode,   MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_float_format,     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_sh_buffer_length, MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_opacity,               MENU_ENUM_SUBLABEL_OVERLAY_OPACITY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_scale,                 MENU_ENUM_SUBLABEL_OVERLAY_SCALE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_center_x,                 MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_center_y,                 MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_scale_landscape,         MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_aspect_adjust_landscape, MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_x_separation_landscape,  MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_separation_landscape,  MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_x_offset_landscape,      MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_offset_landscape,      MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_scale_portrait,          MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_aspect_adjust_portrait,  MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_x_separation_portrait,   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_x_offset_portrait,       MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_offset_portrait,       MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_enable,                MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_preset,                MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
 #ifdef HAVE_VIDEO_LAYOUT
@@ -2687,14 +2695,38 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OVERLAY_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_opacity);
             break;
-         case MENU_ENUM_LABEL_OVERLAY_SCALE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_scale);
+         case MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_scale_landscape);
             break;
-         case MENU_ENUM_LABEL_OVERLAY_CENTER_X:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_center_x);
+         case MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_aspect_adjust_landscape);
             break;
-         case MENU_ENUM_LABEL_OVERLAY_CENTER_Y:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_center_y);
+         case MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_LANDSCAPE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_x_separation_landscape);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_LANDSCAPE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_y_separation_landscape);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_X_OFFSET_LANDSCAPE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_x_offset_landscape);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_LANDSCAPE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_y_offset_landscape);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_SCALE_PORTRAIT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_scale_portrait);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_aspect_adjust_portrait);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_x_separation_portrait);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_x_offset_portrait);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_y_offset_portrait);
             break;
 #ifdef HAVE_VIDEO_LAYOUT
          case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
