@@ -667,18 +667,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Input bind hold time (in seconds). \n"
                "Amount of seconds to hold an input to bind it.");
             break;
-        case MENU_ENUM_LABEL_OVERLAY_SCALE:
-            snprintf(s, len,
-                     "Overlay scale.");
-            break;
-        case MENU_ENUM_LABEL_OVERLAY_CENTER_X:
-            snprintf(s, len,
-                     "Overlay X offset.");
-            break;
-        case MENU_ENUM_LABEL_OVERLAY_CENTER_Y:
-            snprintf(s, len,
-                     "Overlay Y offset.");
-            break;
         case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
             snprintf(s, len,
                      "Audio output samplerate.");

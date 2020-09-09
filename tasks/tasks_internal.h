@@ -37,6 +37,10 @@
 /* Required for task_push_core_backup() */
 #include "../core_backup.h"
 
+#if defined(HAVE_OVERLAY)
+#include "../input/input_overlay.h"
+#endif
+
 RETRO_BEGIN_DECLS
 
 typedef struct nbio_buf
@@ -170,9 +174,7 @@ bool task_push_overlay_load_default(
       bool overlay_hide_when_gamepad_connected,
       bool input_overlay_enable,
       float input_overlay_opacity,
-      float input_overlay_scale,
-      float input_overlay_center_x,
-      float input_overlay_center_y,
+      overlay_layout_t *layout,
       void *user_data);
 #endif
 

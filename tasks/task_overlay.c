@@ -46,9 +46,7 @@ struct overlay_loader
    unsigned pos_increment;
 
    float overlay_opacity;
-   float overlay_scale;
-   float overlay_center_x;
-   float overlay_center_y;
+   overlay_layout_t layout;
 
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
@@ -223,8 +221,10 @@ static bool task_overlay_load_desc(
       height_mod /= height;
    }
 
-   desc->x = (float)strtod(x, NULL) * width_mod;
-   desc->y = (float)strtod(y, NULL) * height_mod;
+   desc->x       = (float)strtod(x, NULL) * width_mod;
+   desc->y       = (float)strtod(y, NULL) * height_mod;
+   desc->x_shift = desc->x;
+   desc->y_shift = desc->y;
 
    if (string_is_equal(box, "radial"))
       desc->hitbox = OVERLAY_HITBOX_RADIAL;
@@ -709,12 +709,11 @@ static void task_overlay_handler(retro_task_t *task)
       data->active                      = loader->active;
       data->size                        = loader->size;
       data->overlay_opacity             = loader->overlay_opacity;
-      data->overlay_scale               = loader->overlay_scale;
-      data->overlay_center_x            = loader->overlay_center_x;
-      data->overlay_center_y            = loader->overlay_center_y;
       data->overlay_enable              = loader->overlay_enable;
       data->hide_in_menu                = loader->overlay_hide_in_menu;
       data->hide_when_gamepad_connected = loader->overlay_hide_when_gamepad_connected;
+
+      memcpy(&data->layout, &loader->layout, sizeof(overlay_layout_t));
 
       task_set_data(task, data);
    }
@@ -744,9 +743,7 @@ bool task_push_overlay_load_default(
       bool overlay_hide_when_gamepad_connected,
       bool input_overlay_enable,
       float input_overlay_opacity,
-      float input_overlay_scale,
-      float input_overlay_center_x,
-      float input_overlay_center_y,
+      overlay_layout_t *layout,
       void *user_data)
 {
    task_finder_data_t find_data;
@@ -754,7 +751,7 @@ bool task_push_overlay_load_default(
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = NULL;
 
-   if (string_is_empty(overlay_path))
+   if (string_is_empty(overlay_path) || !layout)
       return false;
 
    /* Prevent overlay from being loaded if it already is being loaded */
@@ -797,15 +794,15 @@ bool task_push_overlay_load_default(
    loader->overlay_hide_when_gamepad_connected = overlay_hide_when_gamepad_connected;
    loader->overlay_enable                      = input_overlay_enable;
    loader->overlay_opacity                     = input_overlay_opacity;
-   loader->overlay_scale                       = input_overlay_scale;
-   loader->overlay_center_x                    = input_overlay_center_x;
-   loader->overlay_center_y                    = input_overlay_center_y;
    loader->conf                                = conf;
    loader->state                               = OVERLAY_STATUS_DEFERRED_LOAD;
    loader->pos_increment                       = (loader->size / 4) ? (loader->size / 4) : 4;
 #ifdef RARCH_INTERNAL
    loader->driver_rgba_support                 = video_driver_supports_rgba();
 #endif
+
+   memcpy(&loader->layout, layout, sizeof(overlay_layout_t));
+
    t                                           = task_init();
 
    if (!t)

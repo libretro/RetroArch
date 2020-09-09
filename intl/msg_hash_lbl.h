@@ -1993,16 +1993,48 @@ MSG_HASH(
    "input_overlay"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_OVERLAY_SCALE,
-   "input_overlay_scale"
+   MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,
+   "input_overlay_scale_landscape"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_OVERLAY_CENTER_X,
-   "input_overlay_center_x"
+   MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "input_overlay_aspect_adjust_landscape"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_OVERLAY_CENTER_Y,
-   "input_overlay_center_y"
+   MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "input_overlay_x_separation_landscape"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "input_overlay_y_separation_landscape"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "input_overlay_x_offset_landscape"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "input_overlay_y_offset_landscape"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_SCALE_PORTRAIT,
+   "input_overlay_scale_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "input_overlay_aspect_adjust_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "input_overlay_x_separation_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "input_overlay_x_offset_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "input_overlay_y_offset_portrait"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PAL60_ENABLE,

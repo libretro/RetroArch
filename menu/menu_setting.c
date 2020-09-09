@@ -13087,7 +13087,7 @@ static bool setting_append_list(
                &settings->floats.input_overlay_opacity,
                MENU_ENUM_LABEL_OVERLAY_OPACITY,
                MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-               0.7f,
+               DEFAULT_INPUT_OVERLAY_OPACITY,
                "%.2f",
                &group_info,
                &subgroup_info,
@@ -13101,11 +13101,11 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->floats.input_overlay_scale,
-               MENU_ENUM_LABEL_OVERLAY_SCALE,
-               MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-               1.0f,
-               "%.2f",
+               &settings->floats.input_overlay_scale_landscape,
+               MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+               DEFAULT_INPUT_OVERLAY_SCALE_LANDSCAPE,
+               "%.3f",
                &group_info,
                &subgroup_info,
                parent_group,
@@ -13113,16 +13113,16 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
-         menu_settings_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0.0f, 2.0f, 0.005, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->floats.input_overlay_center_x,
-               MENU_ENUM_LABEL_OVERLAY_CENTER_X,
-               MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_X,
-               0.5f,
-               "%.2f",
+               &settings->floats.input_overlay_aspect_adjust_landscape,
+               MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+               DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+               "%.3f",
                &group_info,
                &subgroup_info,
                parent_group,
@@ -13130,16 +13130,16 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+         menu_settings_list_current_add_range(list, list_info, -2.0f, 2.0f, 0.005f, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->floats.input_overlay_center_y,
-               MENU_ENUM_LABEL_OVERLAY_CENTER_Y,
-               MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_Y,
-               0.5f,
-               "%.2f",
+               &settings->floats.input_overlay_x_separation_landscape,
+               MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+               DEFAULT_INPUT_OVERLAY_X_SEPARATION_LANDSCAPE,
+               "%.3f",
                &group_info,
                &subgroup_info,
                parent_group,
@@ -13147,7 +13147,143 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+         menu_settings_list_current_add_range(list, list_info, -2.0f, 2.0f, 0.005f, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_y_separation_landscape,
+               MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+               DEFAULT_INPUT_OVERLAY_Y_SEPARATION_LANDSCAPE,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, -2.0f, 2.0f, 0.005f, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_x_offset_landscape,
+               MENU_ENUM_LABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+               DEFAULT_INPUT_OVERLAY_X_OFFSET_LANDSCAPE,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, -1.0f, 1.0f, 0.005f, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_y_offset_landscape,
+               MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+               DEFAULT_INPUT_OVERLAY_Y_OFFSET_LANDSCAPE,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, -1.0f, 1.0f, 0.005f, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_scale_portrait,
+               MENU_ENUM_LABEL_OVERLAY_SCALE_PORTRAIT,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+               DEFAULT_INPUT_OVERLAY_SCALE_PORTRAIT,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, 0.0f, 2.0f, 0.005, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_aspect_adjust_portrait,
+               MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+               DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, -2.0f, 2.0f, 0.005f, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_x_separation_portrait,
+               MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+               DEFAULT_INPUT_OVERLAY_X_SEPARATION_PORTRAIT,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, -2.0f, 2.0f, 0.005f, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_x_offset_portrait,
+               MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+               DEFAULT_INPUT_OVERLAY_X_OFFSET_PORTRAIT,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, -1.0f, 1.0f, 0.005f, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_y_offset_portrait,
+               MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+               DEFAULT_INPUT_OVERLAY_Y_OFFSET_PORTRAIT,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, -1.0f, 1.0f, 0.005f, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          END_SUB_GROUP(list, list_info, parent_group);
