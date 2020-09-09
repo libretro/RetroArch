@@ -15,6 +15,16 @@
 
 #include <windows.h>
 
+#ifdef CXX_BUILD
+extern "C" {
+#endif
+
+#include <hidsdi.h>
+
+#ifdef CXX_BUILD
+}
+#endif
+
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
@@ -104,8 +114,10 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
    unsigned i;
    char name[256];
    UINT name_size = sizeof(name);
+   char prod_name[128];
+   wchar_t prod_buf[128];
 
-   name[0]        = '\0';
+   name[0] = '\0';
 
    for (i = 0; i < mouse_cnt; ++i)
    {
@@ -113,6 +125,29 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
             name, &name_size);
       if (r == (UINT)-1 || r == 0)
          name[0] = '\0';
+
+      prod_name[0] = '\0';
+      prod_buf[0]  = '\0';
+      if (name[0])
+      {
+         HANDLE hhid = NULL;
+         hhid = CreateFile(name,
+                           0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+         if (hhid != INVALID_HANDLE_VALUE)
+         {
+            if (HidD_GetProductString (hhid, prod_buf, sizeof(prod_buf)))
+               wcstombs(prod_name, prod_buf, sizeof(prod_name));
+         }
+         CloseHandle(hhid);
+      }
+      if (prod_name[0])
+         snprintf(name, sizeof(name), "%s", prod_name);
+
+      if (!name[0])
+         snprintf(name, sizeof(name), "%s", "<name not found>");
+
+      RARCH_LOG("[WINRAW]: Mouse #%u: \"%s\".\n", i, name);
    }
 }
 
