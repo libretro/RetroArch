@@ -181,9 +181,6 @@ static void filebrowser_parse(
       ? path_is_compressed_file(path) : false;
    rarch_system_info_t *system          = runloop_get_system_info();
 
-   if (!string_list_initialize(&str_list))
-      return;
-
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
       subsystem = system->subsystem.data + content_get_subsystem();
@@ -419,7 +416,7 @@ static void filebrowser_parse(
       }
    }
 
-   string_list_deinitialize(&str_list);
+   dir_list_deinitialize(&str_list);
 
    if (items_found == 0)
    {
@@ -3148,7 +3145,6 @@ static unsigned menu_displaylist_parse_playlists(
 #endif
    }
 
-   string_list_initialize(&str_list);
    if (!dir_list_initialize(&str_list, path, NULL, true,
          show_hidden_files, true, false))
       return count;
@@ -3209,7 +3205,7 @@ static unsigned menu_displaylist_parse_playlists(
          count++;
    }
 
-   string_list_deinitialize(&str_list);
+   dir_list_deinitialize(&str_list);
 
    return count;
 }
