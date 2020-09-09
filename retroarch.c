@@ -1843,6 +1843,8 @@ struct menu_state
    /* Flagged when menu entries need to be refreshed */
    bool entries_need_refresh;
    bool entries_nonblocking_refresh;
+   /* 'Close Content'-hotkey menu resetting */
+   bool pending_close_content;
 };
 
 struct menu_bind_state_port
@@ -2674,6 +2676,7 @@ static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NUL
       DECLARE_META_BIND(1, load_state,            RARCH_LOAD_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY),
       DECLARE_META_BIND(1, save_state,            RARCH_SAVE_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY),
       DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
+      DECLARE_META_BIND(2, close_content,         RARCH_CLOSE_CONTENT_KEY,     MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY),
 #ifdef HAVE_LAKKA
       DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY),
 #else
@@ -4741,9 +4744,7 @@ int generic_menu_entry_action(
       void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
 {
    int ret                     = 0;
-#ifdef HAVE_ACCESSIBILITY
    struct rarch_state *p_rarch = &rarch_st;
-#endif
    file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr(0);
    menu_file_list_cbs_t *cbs   = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
@@ -4898,6 +4899,26 @@ int generic_menu_entry_action(
                speak_string, 10);
    }
 #endif
+   if (p_rarch->menu_driver_state.pending_close_content)
+   {
+      menu_handle_t       *menu = menu_driver_get_ptr();
+      const char *content_path  = path_get(RARCH_PATH_CONTENT);
+      const char *menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
+
+      /* Flush to playlist entry menu if launched via playlist */
+      if (menu &&
+          !string_is_empty(menu->deferred_path) &&
+          !string_is_empty(content_path) &&
+          string_is_equal(menu->deferred_path, content_path))
+         menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+
+      command_event(CMD_EVENT_UNLOAD_CORE, 0);
+      menu_entries_flush_stack(menu_flush_to, 0);
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+      menu_navigation_set_selection(0);
+
+      p_rarch->menu_driver_state.pending_close_content = false;
+   }
 
    return ret;
 }
@@ -12660,6 +12681,7 @@ static const struct cmd_map map[] = {
    { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
    { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
    { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
+   { "CLOSE_CONTENT",          RARCH_CLOSE_CONTENT_KEY },
    { "QUIT",                   RARCH_QUIT_KEY },
    { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
    { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
@@ -16038,6 +16060,20 @@ bool command_event(enum event_command cmd, void *data)
                content_clear_subsystem();
             }
          }
+         break;
+      case CMD_EVENT_CLOSE_CONTENT:
+#ifdef HAVE_MENU
+         /* Closing content via hotkey requires toggling menu
+          * and resetting the position later on to prevent
+          * going to empty Quick Menu */
+         if (!p_rarch->menu_driver_alive)
+         {
+            p_rarch->menu_driver_state.pending_close_content = true;
+            command_event(CMD_EVENT_MENU_TOGGLE, 0);
+         }
+#else
+         command_event(CMD_EVENT_QUIT, 0);
+#endif
          break;
       case CMD_EVENT_QUIT:
          if (!retroarch_main_quit())
@@ -39309,6 +39345,8 @@ static enum runloop_state runloop_check_state(
    HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE, true, NULL);
    /* Check if we have pressed the UI companion toggle button */
    HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE, true, NULL);
+   /* Check close content key */
+   HOTKEY_CHECK(RARCH_CLOSE_CONTENT_KEY, CMD_EVENT_CLOSE_CONTENT, true, NULL);
 
 #ifdef HAVE_MENU
    /* Check if we have pressed the menu toggle button */
