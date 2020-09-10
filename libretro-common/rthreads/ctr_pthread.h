@@ -32,12 +32,16 @@
 
 #define STACKSIZE (4 * 1024)
 
+#ifndef PTHREAD_SCOPE_PROCESS
+/* An earlier version of devkitARM does not define the pthread types. Can remove in r54+. */
+
 typedef Thread     pthread_t;
 typedef LightLock  pthread_mutex_t;
 typedef void*      pthread_mutexattr_t;
 typedef int        pthread_attr_t;
 typedef LightEvent pthread_cond_t;
 typedef int        pthread_condattr_t;
+#endif
 
 /* libctru threads return void but pthreads return void pointer */
 static bool mutex_inited = false;
@@ -77,19 +81,19 @@ static INLINE int pthread_create(pthread_t *thread,
 	   return EAGAIN;
    }
 
-   *thread = new_ctr_thread;
+   *thread = (pthread_t)new_ctr_thread;
    return 0;
 }
 
 static INLINE pthread_t pthread_self(void)
 {
-   return threadGetCurrent();
+   return (pthread_t)threadGetCurrent();
 }
 
 static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
       const pthread_mutexattr_t *attr)
 {
-   LightLock_Init(mutex);
+   LightLock_Init((LightLock *)mutex);
    return 0;
 }
 
@@ -101,12 +105,12 @@ static INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
 
 static INLINE int pthread_mutex_lock(pthread_mutex_t *mutex)
 {
-   return LightLock_TryLock(mutex);
+   return LightLock_TryLock((LightLock *)mutex);
 }
 
 static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
-   LightLock_Unlock(mutex);
+   LightLock_Unlock((LightLock *)mutex);
    return 0;
 }
 
@@ -127,18 +131,18 @@ static INLINE int pthread_detach(pthread_t thread)
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
    /*retval is ignored*/
-   return threadJoin(thread, U64_MAX);
+   return threadJoin((Thread)thread, U64_MAX);
 }
 
 static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
-   return LightLock_TryLock(mutex);
+   return LightLock_TryLock((LightLock *)mutex);
 }
 
 static INLINE int pthread_cond_wait(pthread_cond_t *cond,
       pthread_mutex_t *mutex)
 {
-   LightEvent_Wait(cond);
+   LightEvent_Wait((LightEvent *)cond);
    return 0;
 }
 
@@ -154,7 +158,7 @@ static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
        gettimeofday(&tm, NULL);
        now.tv_sec = tm.tv_sec;
        now.tv_nsec = tm.tv_usec * 1000;
-       if (LightEvent_TryWait(cond) != 0 || now.tv_sec > abstime->tv_sec || (now.tv_sec == abstime->tv_sec && now.tv_nsec > abstime->tv_nsec))
+       if (LightEvent_TryWait((LightEvent *)cond) != 0 || now.tv_sec > abstime->tv_sec || (now.tv_sec == abstime->tv_sec && now.tv_nsec > abstime->tv_nsec))
 		   break;
    }
 
@@ -164,19 +168,19 @@ static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
 static INLINE int pthread_cond_init(pthread_cond_t *cond,
       const pthread_condattr_t *attr)
 {
-   LightEvent_Init(cond, RESET_ONESHOT);
+   LightEvent_Init((LightEvent *)cond, RESET_ONESHOT);
    return 0;
 }
 
 static INLINE int pthread_cond_signal(pthread_cond_t *cond)
 {
-   LightEvent_Signal(cond);
+   LightEvent_Signal((LightEvent *)cond);
    return 0;
 }
 
 static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-   LightEvent_Signal(cond);
+   LightEvent_Signal((LightEvent *)cond);
    return 0;
 }
 
@@ -188,7 +192,7 @@ static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 
 static INLINE int pthread_equal(pthread_t t1, pthread_t t2)
 {
-	if (threadGetHandle(t1) == threadGetHandle(t2))
+	if (threadGetHandle((Thread)t1) == threadGetHandle((Thread)t2))
 		return 1;
 	return 0;
 }

@@ -107,6 +107,15 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
       {
          do{
             svcSleepThread(100000);
+
+            /* Run aptMainLoop to update APT state if DSP state
+             * changed, this prevents a hang on sleep. */
+            if(!aptMainLoop())
+            {
+               command_event(CMD_EVENT_QUIT, NULL);
+               return true;
+            }
+
             sample_pos = ndspChnGetSamplePos(ctr->channel);
          }while (((sample_pos - (ctr->pos + (size >>2))) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)
                  || (((ctr->pos - (CTR_DSP_AUDIO_COUNT >> 4) - sample_pos) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)));

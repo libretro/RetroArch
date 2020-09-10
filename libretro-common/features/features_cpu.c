@@ -234,6 +234,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return ticks_to_us(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
    return (svcGetSystemTick() * 10) / 192;
+#elif defined(_3DS)
+   return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__) || defined(DJGPP)
    struct timespec tv = {0};
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
@@ -245,8 +247,6 @@ retro_time_t cpu_features_get_time_usec(void)
    return ps2_clock() / PS2_CLOCKS_PER_MSEC * 1000;
 #elif defined(VITA) || defined(PSP)
    return sceKernelGetSystemTimeWide();
-#elif defined(_3DS)
-   return osGetTime() * 1000;
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
