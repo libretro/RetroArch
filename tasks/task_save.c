@@ -58,7 +58,7 @@
 #include "../managers/cheat_manager.h"
 #endif
 
-#ifdef HAVE_LIBNX
+#if defined(HAVE_LIBNX) || defined(_3DS)
 #define SAVE_STATE_CHUNK 4096 * 10
 #else
 #define SAVE_STATE_CHUNK 4096
