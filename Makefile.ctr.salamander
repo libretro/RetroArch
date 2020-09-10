@@ -5,6 +5,7 @@ DEBUG                   = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
+USE_CTRULIB_2           = 0
 
 APP_TITLE            = RetroArch 3DS
 APP_DESCRIPTION      = RetroArch 3DS
@@ -45,11 +46,22 @@ OBJ += ctr/exec-3dsx/exec_cia.o \
 	ctr/exec-3dsx/exec_3dsx.o \
 	ctr/exec-3dsx/mini-hb-menu/launch.o \
 	ctr/exec-3dsx/mini-hb-menu/loaders/rosalina.o \
-	ctr/exec-3dsx/mini-hb-menu/loaders/hax2.o \
-	ctr/exec-3dsx/mini-hb-menu/loaders/ninjhax1.o
+	ctr/exec-3dsx/mini-hb-menu/loaders/hax2.o
 
 ifeq ($(strip $(DEVKITPRO)),)
 	$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
+endif
+
+ifeq ($(strip $(USE_CTRULIB_2)),1)
+	CFLAGS += -DUSE_CTRULIB_2
+endif
+
+ifeq ($(strip $(DEVKITTOOLS)),)
+	ifeq ($(strip $(USE_CTRULIB_2)),1)
+		DEVKITTOOLS = $(DEVKITPRO)/tools
+	else
+		DEVKITTOOLS = $(DEVKITARM)
+	endif
 endif
 
 ifeq ($(strip $(CTRULIB)),)
@@ -153,13 +165,13 @@ else
 endif
 
 %.o: %.vsh %.gsh
-	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
-	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
+	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.vsh
-	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
-	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
+	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.cpp
@@ -180,7 +192,7 @@ endif
 %.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
-	$(DEVKITARM)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
+	$(DEVKITTOOLS)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
@@ -188,7 +200,7 @@ ifeq ($(APP_BIG_TEXT_SECTION), 1)
 else
 	rm -f $(TARGET).xml
 endif
-	$(DEVKITARM)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
+	$(DEVKITTOOLS)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@

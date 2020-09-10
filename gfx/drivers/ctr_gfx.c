@@ -51,7 +51,7 @@
  * Have to keep track of bottom screen enable state
  * externally, otherwise cannot detect current state
  * when reinitialising... */
-static bool ctr_bottom_screen_enabled = true;
+bool ctr_bottom_screen_enabled = true;
 
 static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum video_mode)
 {
@@ -325,13 +325,12 @@ static void ctr_set_bottom_screen_enable(void* data, bool enabled)
 {
    Handle lcd_handle;
    u8 not_2DS;
-   extern PrintConsole* currentConsole;
    ctr_video_t *ctr = (ctr_video_t*)data;
 
-    if (!ctr)
-      return;
+   if (!ctr)
+     return;
 
-   gfxBottomFramebuffers[0] = enabled ? (u8*)currentConsole->frameBuffer:
+   gfxBottomFramebuffers[0] = enabled ? (u8*)ctrConsole->frameBuffer:
                                         (u8*)ctr->empty_framebuffer;
 
    CFGU_GetModelNintendo2DS(&not_2DS);
@@ -565,12 +564,6 @@ static bool ctr_frame(void* data, const void* frame,
    if (!width || !height || !settings)
    {
       gspWaitForEvent(GSPGPU_EVENT_VBlank0, true);
-      return true;
-   }
-
-   if(!aptMainLoop())
-   {
-      command_event(CMD_EVENT_QUIT, NULL);
       return true;
    }
 
@@ -916,6 +909,32 @@ static bool ctr_frame(void* data, const void* frame,
 
    /* Swap buffers : */
 
+#ifdef USE_CTRULIB_2
+   u32 *buf0, *buf1;
+   u32 stride;
+
+   buf0 = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
+
+   if(ctr->video_mode == CTR_VIDEO_MODE_2D_800X240)
+   {
+      buf1 = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
+      stride = 240 * 3 * 2;
+   }
+   else
+   {
+      if (ctr->enable_3d)
+         buf1 = (u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
+      else
+         buf1 = buf0;
+
+      stride = 240 * 3;
+   }
+
+   u8 bit5 = (ctr->enable_3d != 0);
+
+   gspPresentBuffer(GFX_TOP, ctr->current_buffer_top, buf0, buf1,
+                    stride, (1<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES);
+#else
    topFramebufferInfo.
       active_framebuf           = ctr->current_buffer_top;
    topFramebufferInfo.
@@ -953,6 +972,7 @@ static bool ctr_frame(void* data, const void* frame,
 	framebufferInfoHeader[0x0]  ^= 1;
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
 	framebufferInfoHeader[0x1]   = 1;
+#endif
 
    ctr->current_buffer_top     ^= 1;
    ctr->p3d_event_pending       = true;

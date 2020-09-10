@@ -24,6 +24,14 @@
 #define CTR_TOP_FRAMEBUFFER_WIDTH   400
 #define CTR_TOP_FRAMEBUFFER_HEIGHT  240
 
+#ifdef USE_CTRULIB_2
+extern u8* gfxTopLeftFramebuffers[2];
+extern u8* gfxTopRightFramebuffers[2];
+extern u8* gfxBottomFramebuffers[2];
+#endif
+
+extern PrintConsole* ctrConsole;
+
 extern const u8 ctr_sprite_shbin[];
 extern const u32 ctr_sprite_shbin_size;
 

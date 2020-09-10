@@ -60,6 +60,8 @@
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
 static const char* elf_path_cst         = "sdmc:/retroarch/retroarch.3dsx";
 
+extern bool ctr_bottom_screen_enabled;
+
 #ifdef IS_SALAMANDER
 static void get_first_valid_core(char* path_return, size_t len)
 {
@@ -135,8 +137,6 @@ static void frontend_ctr_deinit(void* data)
    u8 not_2DS;
    u8 device_model = 0xFF;
 
-   extern PrintConsole* currentConsole;
-
    (void)data;
 
 #ifndef IS_SALAMANDER
@@ -153,8 +153,7 @@ static void frontend_ctr_deinit(void* data)
    verbosity_enable();
    retro_main_log_file_init(NULL, false);
 
-   if ((gfxBottomFramebuffers[0] == (u8*)currentConsole->frameBuffer)
-         && (ctr_fork_mode == FRONTEND_FORK_NONE))
+   if (ctr_bottom_screen_enabled && (ctr_fork_mode == FRONTEND_FORK_NONE))
       wait_for_input();
 
    CFGU_GetModelNintendo2DS(&not_2DS);
@@ -394,6 +393,36 @@ __attribute__((weak)) u32 __ctr_patch_services;
 
 void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id);
 
+#ifdef USE_CTRULIB_2
+u8* gfxTopLeftFramebuffers[2];
+u8* gfxTopRightFramebuffers[2];
+u8* gfxBottomFramebuffers[2];
+
+void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
+{
+   if(screen==GFX_TOP)
+   {
+      u8 enable3d = 0;
+      u8 bit5=(enable3d != 0);
+      gspPresentBuffer(GFX_TOP,
+                       id,
+                       (u32*)gfxTopLeftFramebuffers[id],
+                       enable3d ? (u32*)gfxTopRightFramebuffers[id] : (u32*)gfxTopLeftFramebuffers[id],
+                       240 * 3,
+                       ((1)<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES);
+   } else {
+      gspPresentBuffer(GFX_BOTTOM,
+                       id,
+                       (u32*)gfxBottomFramebuffers[id],
+                       (u32*)gfxBottomFramebuffers[id],
+                       240 * 2,
+                       GSP_RGB565_OES);
+   }
+}
+#endif
+
+PrintConsole* ctrConsole;
+
 static void frontend_ctr_init(void* data)
 {
 #ifndef IS_SALAMANDER
@@ -407,12 +436,25 @@ static void frontend_ctr_init(void* data)
 
    u32 topSize               = 400 * 240 * 3;
    u32 bottomSize            = 320 * 240 * 2;
+
+#ifdef USE_CTRULIB_2
+   linearFree(gfxGetFramebuffer(GFX_TOP,    GFX_LEFT, NULL, NULL));
+   linearFree(gfxGetFramebuffer(GFX_TOP,    GFX_RIGHT, NULL, NULL));
+   linearFree(gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL));
+   gfxSwapBuffers();
+
+   linearFree(gfxGetFramebuffer(GFX_TOP,    GFX_LEFT, NULL, NULL));
+   linearFree(gfxGetFramebuffer(GFX_TOP,    GFX_RIGHT, NULL, NULL));
+   linearFree(gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL));
+   gfxSwapBuffers();
+#else
    linearFree(gfxTopLeftFramebuffers [0]);
    linearFree(gfxTopLeftFramebuffers [1]);
    linearFree(gfxBottomFramebuffers  [0]);
    linearFree(gfxBottomFramebuffers  [1]);
    linearFree(gfxTopRightFramebuffers[0]);
    linearFree(gfxTopRightFramebuffers[1]);
+#endif
 
    gfxTopLeftFramebuffers [0] = linearAlloc(topSize * 2);
    gfxTopRightFramebuffers[0] = gfxTopLeftFramebuffers[0] + topSize;
@@ -427,7 +469,7 @@ static void frontend_ctr_init(void* data)
    gfxSetFramebufferInfo(GFX_BOTTOM, 0);
 
    gfxSet3D(true);
-   consoleInit(GFX_BOTTOM, NULL);
+   ctrConsole = consoleInit(GFX_BOTTOM, NULL);
 
    /* enable access to all service calls when possible. */
    if (svchax_init)
@@ -440,8 +482,10 @@ static void frontend_ctr_init(void* data)
    if (csndInit() != 0)
       audio_ctr_csnd = audio_null;
    ctr_check_dspfirm();
-   if (ndspInit() != 0)
+   if (ndspInit() != 0) {
       audio_ctr_dsp = audio_null;
+      audio_ctr_dsp_thread = audio_null;
+   }
    cfguInit();
    ptmuInit();
    mcuHwcInit();
@@ -518,7 +562,11 @@ static enum frontend_powerstate frontend_ctr_get_powerstate(
    u8                 battery_percent = 0;
    u8                        charging = 0;
 
+#ifdef USE_CTRULIB_2
+   MCUHWC_GetBatteryLevel(&battery_percent);
+#else
    mcuHwcGetBatteryLevel(&battery_percent);
+#endif
 
    *percent                           = battery_percent;
    /* 3DS does not support seconds of charge remaining */

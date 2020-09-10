@@ -8,6 +8,7 @@ BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
 LIBCTRU_NO_DEPRECATION  = 1
+USE_CTRULIB_2           = 0
 
 APP_TITLE            = RetroArch 3DS
 APP_DESCRIPTION      = RetroArch 3DS
@@ -35,8 +36,7 @@ OBJ += ctr/exec-3dsx/exec_cia.o \
 	ctr/exec-3dsx/exec_3dsx.o \
 	ctr/exec-3dsx/mini-hb-menu/launch.o \
 	ctr/exec-3dsx/mini-hb-menu/loaders/rosalina.o \
-	ctr/exec-3dsx/mini-hb-menu/loaders/hax2.o \
-	ctr/exec-3dsx/mini-hb-menu/loaders/ninjhax1.o
+	ctr/exec-3dsx/mini-hb-menu/loaders/hax2.o
 
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	APP_USE_SVCHAX = 1
@@ -56,7 +56,8 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	DEFINES += -DHAVE_PATCH -DHAVE_RWAV
 	DEFINES += -DHAVE_SCREENSHOTS
 	DEFINES += -DHAVE_REWIND
-	#DEFINES += -DHAVE_SOCKET_LEGACY -DHAVE_THREADS
+	DEFINES += -DHAVE_THREADS
+	#DEFINES += -DHAVE_SOCKET_LEGACY
 	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
 else
@@ -84,7 +85,7 @@ else
 	#HAVE_NETWORKING = 1
 	#HAVE_CHEEVOS = 1
 	#HAVE_SOCKET_LEGACY = 1
-	#HAVE_THREADS = 1
+	HAVE_THREADS = 1
 	#HAVE_SSL = 1
 	#HAVE_BUILTINMBEDTLS = 1
 
@@ -102,6 +103,18 @@ endif
 
 ifeq ($(strip $(CTRULIB)),)
 	CTRULIB = $(DEVKITPRO)/libctru
+endif
+
+ifeq ($(strip $(USE_CTRULIB_2)),1)
+	CFLAGS += -DUSE_CTRULIB_2
+endif
+
+ifeq ($(strip $(DEVKITTOOLS)),)
+	ifeq ($(strip $(USE_CTRULIB_2)),1)
+		DEVKITTOOLS = $(DEVKITPRO)/tools
+	else
+		DEVKITTOOLS = $(DEVKITARM)
+	endif
 endif
 
 APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
@@ -225,13 +238,13 @@ else
 endif
 
 %.o: %.vsh %.gsh
-	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
-	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
+	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.vsh
-	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
-	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
+	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.cpp
@@ -252,7 +265,7 @@ endif
 %.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
-	$(DEVKITARM)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
+	$(DEVKITTOOLS)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
@@ -260,7 +273,7 @@ ifeq ($(APP_BIG_TEXT_SECTION), 1)
 else
 	rm -f $(TARGET).xml
 endif
-	$(DEVKITARM)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
+	$(DEVKITTOOLS)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@

@@ -829,7 +829,11 @@ static bool video_thread_init(thread_video_t *thr,
    max_size                  = info.input_scale * RARCH_SCALE_BASE;
    max_size                 *= max_size;
    max_size                 *= info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+#ifdef _3DS
+   thr->frame.buffer         = linearMemAlign(max_size, 0x80);
+#else
    thr->frame.buffer         = (uint8_t*)malloc(max_size);
+#endif
 
    if (!thr->frame.buffer)
       return false;
@@ -949,7 +953,11 @@ static void video_thread_free(void *data)
 #if defined(HAVE_MENU)
    free(thr->texture.frame);
 #endif
+#ifdef _3DS
+   linearFree(thr->frame.buffer);
+#else
    free(thr->frame.buffer);
+#endif
    slock_free(thr->frame.lock);
    slock_free(thr->lock);
    scond_free(thr->cond_cmd);

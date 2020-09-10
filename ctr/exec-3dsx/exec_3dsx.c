@@ -5,7 +5,6 @@
 
 #include "mini-hb-menu/common.h"
 
-extern const loaderFuncs_s loader_Ninjhax1;
 extern const loaderFuncs_s loader_Ninjhax2;
 extern const loaderFuncs_s loader_Rosalina;
 
@@ -67,12 +66,6 @@ static int exec_3dsx_actual(const char* path,
    {
       inited      = loader_Ninjhax2.init();
       launch_3dsx = loader_Ninjhax2.launchFile;
-   }
-
-   if (!inited)
-   {
-      inited      = loader_Ninjhax1.init();
-      launch_3dsx = loader_Ninjhax1.launchFile;
    }
 
    if (inited)

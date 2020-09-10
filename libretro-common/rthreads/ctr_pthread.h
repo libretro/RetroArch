@@ -30,14 +30,24 @@
 #include <errno.h>
 #include <retro_inline.h>
 
-#define STACKSIZE (4 * 1024)
+#define STACKSIZE (32 * 1024)
+
+#ifndef PTHREAD_SCOPE_PROCESS
+/* An earlier version of devkitARM does not define the pthread types. Can remove in r54+. */
 
 typedef Thread     pthread_t;
 typedef LightLock  pthread_mutex_t;
 typedef void*      pthread_mutexattr_t;
 typedef int        pthread_attr_t;
-typedef LightEvent pthread_cond_t;
+typedef uint32_t   pthread_cond_t;
 typedef int        pthread_condattr_t;
+#endif
+
+typedef struct {
+   uint32_t semaphore;
+   LightLock lock;
+   uint32_t waiting;
+} cond_t;
 
 /* libctru threads return void but pthreads return void pointer */
 static bool mutex_inited = false;
@@ -56,11 +66,18 @@ static INLINE int pthread_create(pthread_t *thread,
 {
    s32 prio = 0;
    Thread new_ctr_thread;
+   int procnum = -2; // use default cpu
+   bool isNew3DS;
+
+   APT_CheckNew3DS(&isNew3DS);
+
+   if (isNew3DS)
+      procnum = 2;
 
    if (!mutex_inited)
    {
-	   LightLock_Init(&safe_double_thread_launch);
-	   mutex_inited = true;
+      LightLock_Init(&safe_double_thread_launch);
+      mutex_inited = true;
    }
 
    /*Must wait if attempting to launch 2 threads at once to prevent corruption of function pointer*/
@@ -69,27 +86,27 @@ static INLINE int pthread_create(pthread_t *thread,
    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
 
    start_routine_jump = start_routine;
-   new_ctr_thread     = threadCreate(ctr_thread_launcher, arg, STACKSIZE, prio - 1, -1/*No affinity, use any CPU*/, false);
+   new_ctr_thread     = threadCreate(ctr_thread_launcher, arg, STACKSIZE, prio - 1, procnum, false);
 
    if (!new_ctr_thread)
    {
-	   LightLock_Unlock(&safe_double_thread_launch);
-	   return EAGAIN;
+      LightLock_Unlock(&safe_double_thread_launch);
+      return EAGAIN;
    }
 
-   *thread = new_ctr_thread;
+   *thread = (pthread_t)new_ctr_thread;
    return 0;
 }
 
 static INLINE pthread_t pthread_self(void)
 {
-   return threadGetCurrent();
+   return (pthread_t)threadGetCurrent();
 }
 
 static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
       const pthread_mutexattr_t *attr)
 {
-   LightLock_Init(mutex);
+   LightLock_Init((LightLock *)mutex);
    return 0;
 }
 
@@ -101,12 +118,13 @@ static INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
 
 static INLINE int pthread_mutex_lock(pthread_mutex_t *mutex)
 {
-   return LightLock_TryLock(mutex);
+   LightLock_Lock((LightLock *)mutex);
+   return 0;
 }
 
 static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
-   LightLock_Unlock(mutex);
+   LightLock_Unlock((LightLock *)mutex);
    return 0;
 }
 
@@ -115,6 +133,8 @@ static INLINE void pthread_exit(void *retval)
    /*Yes the pointer to int cast is not ideal*/
    /*threadExit((int)retval);*/
    (void)retval;
+
+   threadExit(0);
 }
 
 static INLINE int pthread_detach(pthread_t thread)
@@ -127,68 +147,131 @@ static INLINE int pthread_detach(pthread_t thread)
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
    /*retval is ignored*/
-   return threadJoin(thread, U64_MAX);
+   if(threadJoin((Thread)thread, INT64_MAX))
+      return -1;
+
+   threadFree((Thread)thread);
+
+   return 0;
 }
 
 static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
-   return LightLock_TryLock(mutex);
+   return LightLock_TryLock((LightLock *)mutex);
 }
 
 static INLINE int pthread_cond_wait(pthread_cond_t *cond,
       pthread_mutex_t *mutex)
 {
-   LightEvent_Wait(cond);
+   cond_t *cond_data = (cond_t *)*cond;
+   LightLock_Lock(&cond_data->lock);
+   cond_data->waiting++;
+   LightLock_Unlock(mutex);
+   LightLock_Unlock(&cond_data->lock);
+   svcWaitSynchronization(cond_data->semaphore, INT64_MAX);
+   LightLock_Lock(mutex);
    return 0;
 }
 
 static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
       pthread_mutex_t *mutex, const struct timespec *abstime)
 {
-   for (;;)
-   {
-       struct timespec now = {0};
-	    /* Missing clock_gettime*/
-       struct timeval tm;
+   struct timespec now = {0};
+   /* Missing clock_gettime*/
+   struct timeval tm;
+   int retval = 0;
 
-       gettimeofday(&tm, NULL);
-       now.tv_sec = tm.tv_sec;
-       now.tv_nsec = tm.tv_usec * 1000;
-       if (LightEvent_TryWait(cond) != 0 || now.tv_sec > abstime->tv_sec || (now.tv_sec == abstime->tv_sec && now.tv_nsec > abstime->tv_nsec))
-		   break;
+   cond_t *cond_data = (cond_t *)*cond;
+   LightLock_Lock(&cond_data->lock);
+   cond_data->waiting++;
+
+   gettimeofday(&tm, NULL);
+   now.tv_sec = tm.tv_sec;
+   now.tv_nsec = tm.tv_usec * 1000;
+   s64 timeout = (abstime->tv_sec - now.tv_sec) * 1000000000 + (abstime->tv_nsec - now.tv_nsec);
+
+   if (timeout >= 0) {
+      LightLock_Unlock(mutex);
+      LightLock_Unlock(&cond_data->lock);
+      if (svcWaitSynchronization(cond_data->semaphore, timeout))
+         retval = ETIMEDOUT;
+
+      LightLock_Lock(mutex);
+   } else {
+      retval = ETIMEDOUT;
    }
 
-   return 0;
+   return retval;
 }
 
 static INLINE int pthread_cond_init(pthread_cond_t *cond,
       const pthread_condattr_t *attr)
 {
-   LightEvent_Init(cond, RESET_ONESHOT);
+   cond_t *cond_data = calloc(1, sizeof(cond_t));
+   if (!cond_data)
+      goto error;
+
+   if (svcCreateSemaphore(&cond_data->semaphore, 0, 1))
+      goto error;
+
+   LightLock_Init(&cond_data->lock);
+   cond_data->waiting = 0;
+   *cond = (pthread_cond_t)cond_data;
    return 0;
+
+ error:
+   svcCloseHandle(cond_data->semaphore);
+   if (cond_data)
+      free(cond_data);
+   return -1;
 }
 
 static INLINE int pthread_cond_signal(pthread_cond_t *cond)
 {
-   LightEvent_Signal(cond);
+   int32_t count;
+   cond_t *cond_data = (cond_t *)*cond;
+   LightLock_Lock(&cond_data->lock);
+   if (cond_data->waiting) {
+      cond_data->waiting--;
+      LightLock_Unlock(&cond_data->lock);
+      svcReleaseSemaphore(&count, cond_data->semaphore, 1);
+   } else {
+      LightLock_Unlock(&cond_data->lock);
+   }
    return 0;
 }
 
 static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-   LightEvent_Signal(cond);
+   int32_t count;
+   cond_t *cond_data = (cond_t *)*cond;
+   LightLock_Lock(&cond_data->lock);
+   while (cond_data->waiting) {
+      cond_data->waiting--;
+      LightLock_Unlock(&cond_data->lock);
+      svcReleaseSemaphore(&count, cond_data->semaphore, 1);
+      LightLock_Lock(&cond_data->lock);
+   }
+   LightLock_Unlock(&cond_data->lock);
+
    return 0;
 }
 
 static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 {
-   /*nothing to destroy*/
+   if (*cond) {
+      cond_t *cond_data = (cond_t *)*cond;
+
+      svcCloseHandle(cond_data->semaphore);
+      free(cond_data);
+   }
+   *cond = 0;
    return 0;
 }
 
 static INLINE int pthread_equal(pthread_t t1, pthread_t t2)
 {
-	if (threadGetHandle(t1) == threadGetHandle(t2))
+	if (threadGetHandle((Thread)t1) == threadGetHandle((Thread)t2))
 		return 1;
 	return 0;
 }

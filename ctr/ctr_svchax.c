@@ -44,7 +44,9 @@ typedef struct
    bool isNew3DS;
    u32 kernel_fcram_mapping_offset;
 
+#ifndef USE_CTRULIB_2
    Handle arbiter;
+#endif
    volatile u32 alloc_address;
    volatile u32 alloc_size;
    u8* flush_buffer;
@@ -263,7 +265,9 @@ static void do_memchunkhax2(void)
 
    svcCloseHandle(mch2.dummy_threads_lock);
 
+#ifndef USE_CTRULIB_2
    mch2.arbiter        = __sync_get_arbiter();
+#endif
 
    svcControlMemory(&linear_buffer, 0, 0, 0x1000,
          MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
@@ -327,9 +331,14 @@ static void do_memchunkhax2(void)
          (ThreadFunc)alloc_thread_entry, (u32)&mch2,
          mch2.threads[MCH2_THREAD_COUNT_MAX - 1].stack_top, 0x3F, 1);
 
+#ifdef USE_CTRULIB_2
+   while ((u32) syncArbitrateAddress((s32 *)mch2.alloc_address,
+            ARBITRATION_WAIT_IF_LESS_THAN_TIMEOUT, 0) == 0xD9001814);
+#else
    while ((u32) svcArbitrateAddress(mch2.arbiter, mch2.alloc_address,
             ARBITRATION_WAIT_IF_LESS_THAN_TIMEOUT, 0,
             0) == 0xD9001814);
+#endif
 
    GX_TextureCopy((void*)linear_buffer, 0, (void*)dst_memchunk, 0, 16, 8);
    memcpy(flush_buffer, flush_buffer + 0x4000, 0x4000);
