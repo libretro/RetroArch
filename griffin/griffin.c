@@ -897,6 +897,7 @@ AUDIO
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
+#include "../audio/drivers/ctr_dsp_thread_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO

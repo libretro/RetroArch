@@ -56,7 +56,8 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	DEFINES += -DHAVE_PATCH -DHAVE_RWAV
 	DEFINES += -DHAVE_SCREENSHOTS
 	DEFINES += -DHAVE_REWIND
-	#DEFINES += -DHAVE_SOCKET_LEGACY -DHAVE_THREADS
+	DEFINES += -DHAVE_THREADS
+	#DEFINES += -DHAVE_SOCKET_LEGACY
 	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
 else
@@ -84,7 +85,7 @@ else
 	#HAVE_NETWORKING = 1
 	#HAVE_CHEEVOS = 1
 	#HAVE_SOCKET_LEGACY = 1
-	#HAVE_THREADS = 1
+	HAVE_THREADS = 1
 	#HAVE_SSL = 1
 	#HAVE_BUILTINMBEDTLS = 1
 
