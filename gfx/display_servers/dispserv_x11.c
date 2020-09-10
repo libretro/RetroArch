@@ -306,20 +306,6 @@ static bool x11_display_server_set_resolution(void *data,
          XRRFreeCrtcInfo(crtc);
       }
 
-   
-      for (int m = 0; m < resources->nmode; m++)
-      {
-         if (strcmp(resources->modes[m].name, old_mode) == 0)
-         {
-       //     XRRDeleteOutputMode(dpy, res->outputs[monitor_index], resources->modes[m].id);
-      //    XRRDestroyMode(dpy, resources->modes[m].id);
-            XSync(dpy, False);
-         
-            break;
-         }   
-      }
-         
-    
       XRRFreeOutputInfo(outputs);
       XRRFreeScreenResources(resources);
    
@@ -565,80 +551,59 @@ static void x11_display_server_destroy(void *data)
    if (crt_en)
    {
        if (g_monitor_index == 20)
-   {
-      for (int i = 0; i < res->noutput; i++)
       {
-         XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[i]);
+         for (int i = 0; i < res->noutput; i++)
+         {
+            XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[i]);
      
          
+            if (outputs->connection == RR_Connected)
+            {
+
+               XRRAddOutputMode(dpy, res->outputs[i], swdeskmode->id);
+               XSync(dpy, False);
+               snprintf(orig_output, sizeof(orig_output), "%s", outputs->name);
+               XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
+               crtc->mode = swdeskmode->id;
+               crtc->width = swdeskmode->width;
+               crtc->height = swdeskmode->height;
+               XRRSetCrtcConfig(dpy, res,res->crtcs[i], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
+               XSync(dpy, False);
+               XRRSetScreenSize(dpy, window, crt_rrmode.width, crt_rrmode.height,  (int) ((25.4 * crt_rrmode.width) / 96.0), (int) ((25.4 * crt_rrmode.height) / 96.0));
+               XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
+               XSync(dpy, False);
+
+               XRRFreeCrtcInfo(crtc);
+               XRRFreeOutputInfo(outputs);
+         
+            }  
+         }
+         XRRFreeScreenResources(resources);
+      }
+      else  if (g_monitor_index != 20)
+      {
+
+         XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[g_monitor_index]);
+        
          if (outputs->connection == RR_Connected)
          {
-
-            XRRAddOutputMode(dpy, res->outputs[i], swdeskmode->id);
+            XRRAddOutputMode(dpy, res->outputs[g_monitor_index], swdeskmode->id);
             XSync(dpy, False);
             snprintf(orig_output, sizeof(orig_output), "%s", outputs->name);
             XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
             crtc->mode = swdeskmode->id;
             crtc->width = swdeskmode->width;
             crtc->height = swdeskmode->height;
-            XRRSetCrtcConfig(dpy, res,res->crtcs[i], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
+            XRRSetCrtcConfig(dpy, res,res->crtcs[g_monitor_index], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
             XSync(dpy, False);
             XRRSetScreenSize(dpy, window, crt_rrmode.width, crt_rrmode.height,  (int) ((25.4 * crt_rrmode.width) / 96.0), (int) ((25.4 * crt_rrmode.height) / 96.0));
-            XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
+            XRRSetCrtcConfig(dpy, res, res->crtcs[g_monitor_index], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
             XSync(dpy, False);
 
             XRRFreeCrtcInfo(crtc);
-            XRRFreeOutputInfo(outputs);
-         
          }
       }
-      XRRFreeScreenResources(resources);
-   }
-   
-   else  if (g_monitor_index != 20)
-   {
 
-      XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[g_monitor_index]);
-        
-      if (outputs->connection == RR_Connected)
-      {
-         XRRAddOutputMode(dpy, res->outputs[g_monitor_index], swdeskmode->id);
-         XSync(dpy, False);
-         snprintf(orig_output, sizeof(orig_output), "%s", outputs->name);
-         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
-         crtc->mode = swdeskmode->id;
-         crtc->width = swdeskmode->width;
-         crtc->height = swdeskmode->height;
-         XRRSetCrtcConfig(dpy, res,res->crtcs[g_monitor_index], CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
-         XSync(dpy, False);
-         XRRSetScreenSize(dpy, window, crt_rrmode.width, crt_rrmode.height,  (int) ((25.4 * crt_rrmode.width) / 96.0), (int) ((25.4 * crt_rrmode.height) / 96.0));
-         XRRSetCrtcConfig(dpy, res, res->crtcs[g_monitor_index], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
-         XSync(dpy, False);
-
-         XRRFreeCrtcInfo(crtc);
-      }
-   }
-      /*
-
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --newmode 700x480_59.94 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync");
-      system(xrandr);
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --addmode \"%s\" 700x480_59.94",
-            orig_output);
-      system(xrandr);
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --output \"%s\" --mode 700x480_59.94",
-            orig_output);
-      system(xrandr);
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --delmode \"%s\" \"%s\"",
-            orig_output, old_mode);
-      system(xrandr);
-      snprintf(xrandr, sizeof(xrandr),
-            "xrandr --rmmode \"%s\"",
-            old_mode);
-      system(xrandr);  */
    }
 
    for (int m = 0; m < resources->nmode; m++)
