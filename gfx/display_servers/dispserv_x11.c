@@ -271,11 +271,15 @@ static bool x11_display_server_set_resolution(void *data,
             XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
             XSync(dpy, False);
 
-            XRRFreeCrtcInfo(crtc);
-            XRRFreeOutputInfo(outputs);
+            
          }
+         XRRFreeCrtcInfo(crtc);
+         XRRFreeOutputInfo(outputs);
       }
+      XRRFreeCrtcInfo(crtc);
+      XRRFreeOutputInfo(outputs);
       XRRFreeScreenResources(resources);
+      XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
    }
    else  if (monitor_index != 20)
@@ -296,11 +300,12 @@ static bool x11_display_server_set_resolution(void *data,
          XRRSetScreenSize(dpy, window, width, height,  (int) ((25.4 * width) / 96.0), (int) ((25.4 * height) / 96.0));
          XRRSetCrtcConfig(dpy, res, res->crtcs[monitor_index], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
          XSync(dpy, False);
-
+         XRRFreeOutputInfo(outputs);
          XRRFreeCrtcInfo(crtc);
       }
-      XRRFreeOutputInfo(outputs);
+
       XRRFreeScreenResources(resources);
+      XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
    }
    return true;
@@ -474,19 +479,20 @@ static void x11_display_server_destroy(void *data)
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 
 #ifdef HAVE_XRANDR
-   int screen;
-   Window window;
-   XRRScreenResources  *res = NULL;
-   Display *dpy             = NULL;
-   XRRScreenResources *resources;
-   dpy = XOpenDisplay(0);
-   screen = DefaultScreen(dpy);
-   window = RootWindow(dpy, screen);
-   bool crt_exists          = false;
-   char dmode[25]            ={};
    if (crt_en)
    {
-   snprintf(dmode, sizeof(dmode), "%s", "d_mo");
+      int screen;
+      Window window;
+      XRRScreenResources  *res = NULL;
+      Display *dpy             = NULL;
+      XRRScreenResources *resources;
+      dpy = XOpenDisplay(0);
+      screen = DefaultScreen(dpy);
+      window = RootWindow(dpy, screen);
+      bool crt_exists          = false;
+      char dmode[25]            ={};
+
+     snprintf(dmode, sizeof(dmode), "%s", "d_mo");
 
       crt_rrmode.name = dmode;
       crt_rrmode.nameLength = strlen(crt_name);
@@ -566,12 +572,16 @@ static void x11_display_server_destroy(void *data)
                XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
                XSync(dpy, False);
 
+
                XRRFreeCrtcInfo(crtc);
-               XRRFreeOutputInfo(outputs);
-         
             }  
+             XRRFreeOutputInfo(outputs);
          }
-         XRRFreeScreenResources(resources);
+      
+      XRRFreeScreenResources(resources);
+      XRRFreeScreenResources(res);
+      XCloseDisplay(dpy);
+
       }
       else  if (g_monitor_index != 20)
       {
@@ -593,8 +603,13 @@ static void x11_display_server_destroy(void *data)
             XRRSetCrtcConfig(dpy, res, res->crtcs[g_monitor_index], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
             XSync(dpy, False);
 
-            XRRFreeCrtcInfo(crtc);
+           XRRFreeCrtcInfo(crtc);
          }
+
+      XRRFreeOutputInfo(outputs);
+      XRRFreeScreenResources(resources);
+      XRRFreeScreenResources(res);
+      XCloseDisplay(dpy);
       }
 
    
@@ -621,6 +636,7 @@ static void x11_display_server_destroy(void *data)
          }
       }
       XRRFreeScreenResources(resources);
+      XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
    }
 
