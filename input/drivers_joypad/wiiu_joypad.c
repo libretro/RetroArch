@@ -21,8 +21,8 @@
 extern pad_connection_listener_t wiiu_pad_connection_listener;
 
 /* TODO/FIXME - static globals */
-static input_device_driver_t *pad_drivers[MAX_USERS];
-static bool ready = false;
+static input_device_driver_t *wiiu_pad_drivers[MAX_USERS];
+static bool wiiu_joypad_ready = false;
 
 static bool wiiu_joypad_init(void* data)
 {
@@ -36,7 +36,7 @@ static bool wiiu_joypad_init(void* data)
    hidpad_driver.init(data);
 #endif
 
-   ready = true;
+   wiiu_joypad_ready = true;
    (void)data;
 
    return true;
@@ -44,15 +44,15 @@ static bool wiiu_joypad_init(void* data)
 
 static bool wiiu_joypad_query_pad(unsigned pad)
 {
-   return ready                &&
+   return wiiu_joypad_ready    &&
       pad < MAX_USERS          &&
-      pad_drivers[pad]         &&
-      pad_drivers[pad]->query_pad(pad);
+      wiiu_pad_drivers[pad]    &&
+      wiiu_pad_drivers[pad]->query_pad(pad);
 }
 
 static void wiiu_joypad_destroy(void)
 {
-   ready = false;
+   wiiu_joypad_ready = false;
 
    wpad_driver.destroy();
    kpad_driver.destroy();
@@ -67,21 +67,21 @@ static int16_t wiiu_joypad_button(unsigned port, uint16_t joykey)
       return 0;
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return (pad_drivers[port]->button(port, joykey));
+   return (wiiu_pad_drivers[port]->button(port, joykey));
 }
 
 static void wiiu_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
    if (!wiiu_joypad_query_pad(port))
       return;
-   pad_drivers[port]->get_buttons(port, state);
+   wiiu_pad_drivers[port]->get_buttons(port, state);
 }
 
 static int16_t wiiu_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (!wiiu_joypad_query_pad(port))
       return 0;
-   return pad_drivers[port]->axis(port, joyaxis);
+   return wiiu_pad_drivers[port]->axis(port, joyaxis);
 }
 
 static int16_t wiiu_joypad_state(
@@ -107,11 +107,11 @@ static int16_t wiiu_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && (pad_drivers[port]->button(port_idx, (uint16_t)joykey))
+            && (wiiu_pad_drivers[port]->button(port_idx, (uint16_t)joykey))
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(pad_drivers[port]->axis(port_idx, joyaxis)) 
+            ((float)abs(wiiu_pad_drivers[port]->axis(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -133,14 +133,14 @@ static const char* wiiu_joypad_name(unsigned pad)
    if (!wiiu_joypad_query_pad(pad))
       return "N/A";
 
-   return pad_drivers[pad]->name(pad);
+   return wiiu_pad_drivers[pad]->name(pad);
 }
 
 static void wiiu_joypad_connection_listener(unsigned pad,
                input_device_driver_t *driver)
 {
    if (pad < MAX_USERS)
-      pad_drivers[pad] = driver;
+      wiiu_pad_drivers[pad] = driver;
 }
 
 input_device_driver_t wiiu_joypad =
