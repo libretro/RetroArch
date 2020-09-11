@@ -29,9 +29,6 @@
 
 /* TODO/FIXME - add joypad driver */
 
-/* TODO/FIXME -
- * fix game focus toggle */
-
 /* TODO/FIXME - static global variable */
 static uint64_t state[DEFAULT_MAX_PADS];
 

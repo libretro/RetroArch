@@ -29,27 +29,12 @@
 
 #include "../input_driver.h"
 
-/* TODO/FIXME -
- * fix game focus toggle */
-
-typedef struct ps4_input
-{
-   void *empty;
-} ps4_input_t;
-
 static void ps4_input_free_input(void *data)
 {
    free(data);
 }
 
-static void* ps4_input_initialize(const char *joypad_driver)
-{
-   ps4_input_t *ps4 = (ps4_input_t*)calloc(1, sizeof(*ps4));
-   if (!ps4)
-      return NULL;
-
-   return ps4;
-}
+static void* ps4_input_initialize(const char *a) { return (void*)-1; }
 
 static uint64_t ps4_input_get_capabilities(void *data)
 {

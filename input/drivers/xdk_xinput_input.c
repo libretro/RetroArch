@@ -32,27 +32,8 @@
 
 #include "../input_driver.h"
 
-/* TODO/FIXME -
- * fix game focus toggle */
-
-typedef struct xdk_input
-{
-   void *empty;
-} xdk_input_t;
-
-static void xdk_input_free_input(void *data)
-{
-   free(data);
-}
-
-static void *xdk_input_init(const char *joypad_driver)
-{
-   xdk_input_t *xdk     = (xdk_input_t*)calloc(1, sizeof(*xdk));
-   if (!xdk)
-      return NULL;
-
-   return xdk;
-}
+static void xdk_input_free_input(void *data) { free(data); }
+static void *xdk_input_init(const char *a) { return (void*)-1; }
 
 static uint64_t xdk_input_get_capabilities(void *data)
 {

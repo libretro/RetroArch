@@ -27,12 +27,7 @@
 
 #include "../input_driver.h"
 
-// TODO: Add support for multiple mice and multiple touch
-
-typedef struct uwp_input
-{
-   void *empty;
-} uwp_input_t;
+/* TODO: Add support for multiple mice and multiple touch */
 
 static void uwp_input_free_input(void *data)
 {
@@ -41,13 +36,9 @@ static void uwp_input_free_input(void *data)
 
 static void *uwp_input_init(const char *joypad_driver)
 {
-   uwp_input_t *uwp     = (uwp_input_t*)calloc(1, sizeof(*uwp));
-   if (!uwp)
-      return NULL;
-
    input_keymaps_init_keyboard_lut(rarch_key_map_uwp);
 
-   return uwp;
+   return (void*)-1;
 }
 
 static uint64_t uwp_input_get_capabilities(void *data)

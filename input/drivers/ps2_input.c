@@ -26,24 +26,12 @@
 
 #include "../input_driver.h"
 
-typedef struct ps2_input
-{
-   void *empty;
-} ps2_input_t;
-
 static void ps2_input_free_input(void *data)
 {
    free(data);
 }
 
-static void* ps2_input_initialize(const char *joypad_driver)
-{
-   ps2_input_t *ps2 = (ps2_input_t*)calloc(1, sizeof(*ps2));
-   if (!ps2)
-      return NULL;
-
-   return ps2;
-}
+static void* ps2_input_initialize(const char *a) { return (void*)-1; }
 
 static uint64_t ps2_input_get_capabilities(void *data)
 {

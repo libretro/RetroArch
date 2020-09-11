@@ -27,14 +27,6 @@
 
 #include "../input_driver.h"
 
-/* TODO/FIXME -
- * fix game focus toggle */
-
-typedef struct ctr_input
-{
-   void *empty;
-} ctr_input_t;
-
 static void ctr_input_free_input(void *data)
 {
    free(data);
@@ -42,11 +34,7 @@ static void ctr_input_free_input(void *data)
 
 static void* ctr_input_init(const char *joypad_driver)
 {
-   ctr_input_t *ctr = (ctr_input_t*)calloc(1, sizeof(*ctr));
-   if (!ctr)
-      return NULL;
-
-   return ctr;
+   return (void*)-1;
 }
 
 static uint64_t ctr_input_get_capabilities(void *data)
