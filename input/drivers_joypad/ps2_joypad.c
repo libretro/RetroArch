@@ -39,16 +39,6 @@ static INLINE int16_t convert_u8_to_s16(uint8_t val)
    return val * 0x0101 - 0x8000;
 }
 
-static bool is_analog_enabled(struct padButtonStatus buttons)
-{
-   bool enabled = false;
-
-   if (buttons.ljoy_h || buttons.ljoy_v || buttons.rjoy_h || buttons.rjoy_v)
-      enabled = true;
-
-   return enabled;
-}
-
 static const char *ps2_joypad_name(unsigned pad)
 {
    return "PS2 Controller";
@@ -59,9 +49,6 @@ static bool ps2_joypad_init(void *data)
    unsigned ret  = 0;
    unsigned port = 0;
    bool init     = true;
-
-   printf("PortMax: %d\n", padGetPortMax());
-   printf("SlotMax: %d\n", padGetSlotMax(port));
 
    for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
@@ -75,7 +62,6 @@ static bool ps2_joypad_init(void *data)
       /* Port 0 -> Connector 1, Port 1 -> Connector 2 */
       if((ret = padPortOpen(port, PS2_PAD_SLOT, padBuf[port])) == 0)
       {
-         printf("padOpenPort failed: %d\n", ret);
          init = false;
          break;
       }
@@ -209,7 +195,7 @@ static void ps2_joypad_poll(void)
             pad_state[player] |= (state_tmp & PAD_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
 
             /* Analog */
-            if (is_analog_enabled(buttons))
+            if (buttons.ljoy_h || buttons.ljoy_v || buttons.rjoy_h || buttons.rjoy_v)
             {
                analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.ljoy_h);
                analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ljoy_v);;
