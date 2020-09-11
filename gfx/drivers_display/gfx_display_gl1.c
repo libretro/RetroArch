@@ -107,11 +107,11 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       return;
 
    if (!draw->coords->vertex)
-      draw->coords->vertex = gfx_display_gl1_get_default_vertices();
+      draw->coords->vertex         = &gl1_menu_vertexes[0];
    if (!draw->coords->tex_coord)
-      draw->coords->tex_coord = gfx_display_gl1_get_default_tex_coords();
+      draw->coords->tex_coord      = &gl1_menu_tex_coords[0];
    if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = gfx_display_gl1_get_default_tex_coords();
+      draw->coords->lut_tex_coord  = &gl1_menu_tex_coords[0];
    if (!draw->texture)
       return;
 
@@ -123,7 +123,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
 
    mvp.data   = gl1;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)gfx_display_gl1_get_default_mvp(gl1);
+      : (math_matrix_4x4*)&gl1->mvp_no_rot;
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();

@@ -143,9 +143,9 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    color        = draw->coords->color;
 
    if (!vertex)
-      vertex    = gfx_display_d3d8_get_default_vertices();
+      vertex    = &d3d8_vertexes[0];
    if (!tex_coord)
-      tex_coord = gfx_display_d3d8_get_default_tex_coords();
+      tex_coord = &d3d8_tex_coords[0];
 
    for (i = 0; i < draw->coords->vertices; i++)
    {
