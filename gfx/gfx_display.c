@@ -37,13 +37,6 @@
  * with Ozone driver metrics */
 #define OZONE_SIDEBAR_WIDTH 408
 
-static float osk_dark[16] =  {
-   0.00, 0.00, 0.00, 0.85,
-   0.00, 0.00, 0.00, 0.85,
-   0.00, 0.00, 0.00, 0.85,
-   0.00, 0.00, 0.00, 0.85,
-};
-
 /* TODO/FIXME - global that gets referenced outside,
  * needs to be refactored */
 uintptr_t gfx_display_white_texture;
@@ -1691,6 +1684,12 @@ void gfx_display_draw_keyboard(
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
+   };
+   static float osk_dark[16] =  {
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
    };
 
    gfx_display_draw_quad(
