@@ -75,8 +75,9 @@ static const char *psp_joypad_name(unsigned pad)
       case SCE_CTRL_TYPE_DS4:
          return "DS4 Controller";
       default:
-         return "Unpaired";
+         break;
    }
+   return "Unpaired";
 #else
    return "PSP Controller";
 #endif
@@ -98,8 +99,10 @@ static bool psp_joypad_init(void *data)
       players_count = 1;
    if (sceKernelGetModelForCDialog() != SCE_KERNEL_MODEL_VITATV)
    {
-      sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, SCE_TOUCH_SAMPLING_STATE_START);
-      sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
+      sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK,
+            SCE_TOUCH_SAMPLING_STATE_START);
+      sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT,
+            SCE_TOUCH_SAMPLING_STATE_START);
    }
    sceCtrlGetControllerPortInfo(&curr_ctrl_info);
    memcpy(&old_ctrl_info, &curr_ctrl_info, sizeof(SceCtrlPortInfo));
@@ -271,7 +274,8 @@ static void psp_joypad_poll(void)
       SceCtrlData state_tmp;
       unsigned i  = player;
 #if defined(VITA)
-      unsigned p = (psp2_model == SCE_KERNEL_MODEL_VITATV) ? player + 1 : player;
+      unsigned p = (psp2_model == SCE_KERNEL_MODEL_VITATV) 
+         ? player + 1 : player;
       if (curr_ctrl_info.port[p] == SCE_CTRL_TYPE_UNPAIRED)
          continue;
 #elif defined(SN_TARGET_PSP2)
@@ -307,8 +311,10 @@ static void psp_joypad_poll(void)
 
          for (i = 0; i < touch_surface.reportNum; i++)
          {
-            int x = LERP(touch_surface.report[i].x, TOUCH_MAX_WIDTH, SCREEN_WIDTH);
-            int y = LERP(touch_surface.report[i].y, TOUCH_MAX_HEIGHT, SCREEN_HEIGHT);
+            int x = LERP(touch_surface.report[i].x,
+                  TOUCH_MAX_WIDTH, SCREEN_WIDTH);
+            int y = LERP(touch_surface.report[i].y,
+                  TOUCH_MAX_HEIGHT, SCREEN_HEIGHT);
             if (NW_AREA(x, y))
                state_tmp.buttons |= PSP_CTRL_L2;
             if (NE_AREA(x, y))
