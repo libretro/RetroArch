@@ -2788,6 +2788,9 @@ static void vulkan_overlay_free(vk_t *vk)
                vk->context->device,
                &vk->overlay.images[i]);
 
+   if (vk->overlay.images)
+      free(vk->overlay.images);
+
    memset(&vk->overlay, 0, sizeof(vk->overlay));
 }
 

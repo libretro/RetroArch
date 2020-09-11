@@ -439,8 +439,6 @@ static bool video_thread_handle_packet(
 
       case CMD_OVERLAY_LOAD:
          {
-            float *tmp_alpha_mod = NULL;
-
             if (thr->overlay && thr->overlay->load)
                ret = thr->overlay->load(thr->driver_data,
                      pkt.data.image.data,
@@ -448,11 +446,21 @@ static bool video_thread_handle_packet(
 
             pkt.data.b         = ret;
             thr->alpha_mods    = pkt.data.image.num;
-            tmp_alpha_mod      = (float*)realloc(thr->alpha_mod,
-                  thr->alpha_mods * sizeof(float));
 
-            if (tmp_alpha_mod)
-               thr->alpha_mod  = tmp_alpha_mod;
+            if (thr->alpha_mods > 0)
+            {
+               float *tmp_alpha_mod = (float*)realloc(thr->alpha_mod,
+                     thr->alpha_mods * sizeof(float));
+
+               if (tmp_alpha_mod)
+                  thr->alpha_mod = tmp_alpha_mod;
+            }
+            else
+            {
+               if (thr->alpha_mod)
+                  free(thr->alpha_mod);
+               thr->alpha_mod = NULL;
+            }
 
             /* Avoid temporary garbage data. */
             for (i = 0; i < thr->alpha_mods; i++)
