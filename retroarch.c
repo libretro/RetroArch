@@ -24368,7 +24368,9 @@ static int16_t input_state_device(
                res = 1;
 
          /* Don't allow turbo for D-pad. */
-         if ((id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
+         if ((id < RETRO_DEVICE_ID_JOYPAD_UP) ||
+             ((id > RETRO_DEVICE_ID_JOYPAD_RIGHT) &&
+                  (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
          {
             /*
              * Apply turbo button if activated.
