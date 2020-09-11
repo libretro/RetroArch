@@ -62,29 +62,28 @@
 
 struct udev_joypad
 {
-   int fd;
-   dev_t device;
+   dev_t device;  /* TODO/FIXME - unsure of alignment */
+   struct input_absinfo absinfo[NUM_AXES]; /* TODO/FIXME - unsure of alignment */
 
-   /* Input state polled. */
    uint64_t buttons;
+
+   char *path;
+
+   int fd;
+   int num_effects;
+   int effects[2]; /* [0] - strong, [1] - weak  */
+   int32_t vid;
+   int32_t pid;
    int16_t axes[NUM_AXES];
    int8_t hats[NUM_HATS][2];
-
    /* Maps keycodes -> button/axes */
    uint8_t button_bind[KEY_MAX];
    uint8_t axes_bind[ABS_MAX];
-   struct input_absinfo absinfo[NUM_AXES];
-
-   int num_effects;
-   int effects[2]; /* [0] - strong, [1] - weak  */
-   bool has_set_ff[2];
    uint16_t strength[2];
    uint16_t configured_strength[2];
 
    char ident[255];
-   char *path;
-   int32_t vid;
-   int32_t pid;
+   bool has_set_ff[2];
    /* Deal with analog triggers that report -32767 to 32767 */
    bool neg_trigger[NUM_AXES];
 };
