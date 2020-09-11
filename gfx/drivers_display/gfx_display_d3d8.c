@@ -43,14 +43,6 @@ static const float d3d8_tex_coords[] = {
    1, 0
 };
 
-static float d3d8_mvp_ident[16] =
-{
-   1.0f, 0.0f, 0.0f, 0.0f,
-   0.0f, 1.0f, 0.0f, 0.0f,
-   0.0f, 0.0f, 1.0f, 0.0f,
-   0.0f, 0.0f, 0.0f, 1.0f
-};
-
 static const float *gfx_display_d3d8_get_default_vertices(void)
 {
    return &d3d8_vertexes[0];
@@ -63,7 +55,10 @@ static const float *gfx_display_d3d8_get_default_tex_coords(void)
 
 static void *gfx_display_d3d8_get_default_mvp(void *data)
 {
-   return &d3d8_mvp_ident[0];
+   static math_matrix_4x4 id;
+   matrix_4x4_identity(id);
+
+   return &id;
 }
 
 static INT32 gfx_display_prim_to_d3d8_enum(
@@ -190,7 +185,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    d3d8_vertex_buffer_unlock(d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
-      draw->matrix_data = &d3d8_mvp_ident[0];
+      draw->matrix_data = gfx_display_d3d8_get_default_mvp(d3d);
 
    /* ugh */
    matrix_4x4_scale(m1,       2.0,  2.0, 0);
