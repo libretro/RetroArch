@@ -105,8 +105,10 @@ enum overlay_orientation
 
 struct overlay
 {
-   bool full_screen;
-   bool block_scale;
+   struct overlay_desc *descs;
+   struct texture_image *load_images;
+
+   struct texture_image image;
 
    unsigned load_images_size;
    unsigned id;
@@ -119,18 +121,11 @@ struct overlay
    float x, y, w, h;
    float center_x, center_y;
 
-   struct overlay_desc *descs;
-   struct texture_image *load_images;
-
-   struct texture_image image;
-
-   char name[64];
-
    struct
    {
-      bool normalized;
       float alpha_mod;
       float range_mod;
+      bool normalized;
 
       struct
       {
@@ -151,12 +146,16 @@ struct overlay
 
       struct
       {
-         char key[64];
          unsigned size;
+         char key[64];
       } descs;
 
    } config;
 
+   bool full_screen;
+   bool block_scale;
+
+   char name[64];
 };
 
 struct overlay_desc
