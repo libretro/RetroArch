@@ -40,12 +40,12 @@
 
 struct parport_joypad
 {
+   char *ident;
    int fd;
    uint32_t buttons;
-   bool button_enable[PARPORT_NUM_BUTTONS];
    char saved_data;
    char saved_control;
-   char *ident;
+   bool button_enable[PARPORT_NUM_BUTTONS];
 };
 
 /* TODO/FIXME - static global */
