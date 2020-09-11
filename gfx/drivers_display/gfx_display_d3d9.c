@@ -43,6 +43,14 @@ static const float d3d9_tex_coords[] = {
    1, 0
 };
 
+static float d3d9_mvp_ident[16] =
+{
+   1.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 1.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 1.0f, 0.0f,
+   0.0f, 0.0f, 0.0f, 1.0f
+};
+
 static const float *gfx_display_d3d9_get_default_vertices(void)
 {
    return &d3d9_vertexes[0];
@@ -55,10 +63,7 @@ static const float *gfx_display_d3d9_get_default_tex_coords(void)
 
 static void *gfx_display_d3d9_get_default_mvp(void *data)
 {
-   static math_matrix_4x4 id;
-   matrix_4x4_identity(id);
-
-   return &id;
+   return &d3d9_mvp_ident[0];
 }
 
 static INT32 gfx_display_prim_to_d3d9_enum(
@@ -147,9 +152,9 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
    color        = draw->coords->color;
 
    if (!vertex)
-      vertex    = gfx_display_d3d9_get_default_vertices();
+      vertex    = &d3d9_vertexes[0];
    if (!tex_coord)
-      tex_coord = gfx_display_d3d9_get_default_tex_coords();
+      tex_coord = &d3d9_tex_coords[0];
 
    for (i = 0; i < draw->coords->vertices; i++)
    {
@@ -178,7 +183,7 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
          d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
-      draw->matrix_data = gfx_display_d3d9_get_default_mvp(d3d);
+      draw->matrix_data = &d3d9_mvp_ident[0];
 
    /* ugh */
    matrix_4x4_scale(m1,       2.0,  2.0, 0);
