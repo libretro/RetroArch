@@ -2482,10 +2482,20 @@ void config_set_defaults(void *data)
             sizeof(settings->paths.directory_overlay));
 #ifdef RARCH_MOBILE
       if (string_is_empty(settings->paths.path_overlay))
+      {
+         fill_pathname_join(settings->paths.path_overlay,
+               settings->paths.directory_overlay,
+               FILE_PATH_DEFAULT_OVERLAY,
+               sizeof(settings->paths.path_overlay));
+
+         /* Handle the case where old asset files
+          * are installed */
+         if (!path_is_valid(settings->paths.path_overlay))
             fill_pathname_join(settings->paths.path_overlay,
                   settings->paths.directory_overlay,
-                  "gamepads/flat/retropad.cfg",
+                  FILE_PATH_DEFAULT_OVERLAY_FALLBACK,
                   sizeof(settings->paths.path_overlay));
+      }
 #endif
    }
 #endif
