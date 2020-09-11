@@ -270,14 +270,14 @@ static bool x11_display_server_set_resolution(void *data,
             XRRSetScreenSize(dpy, window, width, height,  (int) ((25.4 * width) / 96.0), (int) ((25.4 * height) / 96.0));
             XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
             XSync(dpy, False);
-
+            
+            XRRFreeCrtcInfo(crtc);
             
          }
-         XRRFreeCrtcInfo(crtc);
+         
          XRRFreeOutputInfo(outputs);
       }
-      XRRFreeCrtcInfo(crtc);
-      XRRFreeOutputInfo(outputs);
+
       XRRFreeScreenResources(resources);
       XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
@@ -300,10 +300,11 @@ static bool x11_display_server_set_resolution(void *data,
          XRRSetScreenSize(dpy, window, width, height,  (int) ((25.4 * width) / 96.0), (int) ((25.4 * height) / 96.0));
          XRRSetCrtcConfig(dpy, res, res->crtcs[monitor_index], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
          XSync(dpy, False);
-         XRRFreeOutputInfo(outputs);
+         
+         
          XRRFreeCrtcInfo(crtc);
       }
-
+      XRRFreeOutputInfo(outputs);
       XRRFreeScreenResources(resources);
       XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
