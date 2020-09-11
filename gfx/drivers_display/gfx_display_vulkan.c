@@ -61,11 +61,6 @@ static const float *gfx_display_vk_get_default_vertices(void)
    return &vk_vertexes[0];
 }
 
-static const float *gfx_display_vk_get_default_color(void)
-{
-   return &vk_colors[0];
-}
-
 static const float *gfx_display_vk_get_default_tex_coords(void)
 {
    return &vk_tex_coords[0];
@@ -205,21 +200,21 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    if (!vk || !draw)
       return;
 
-   texture            = (struct vk_texture*)draw->texture;
-   vertex             = draw->coords->vertex;
-   tex_coord          = draw->coords->tex_coord;
-   color              = draw->coords->color;
+   texture                        = (struct vk_texture*)draw->texture;
+   vertex                         = draw->coords->vertex;
+   tex_coord                      = draw->coords->tex_coord;
+   color                          = draw->coords->color;
 
    if (!vertex)
-      vertex          = gfx_display_vk_get_default_vertices();
+      vertex                      = &vk_vertexes[0];
    if (!tex_coord)
-      tex_coord       = gfx_display_vk_get_default_tex_coords();
+      tex_coord                   = &vk_tex_coords[0];
    if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = gfx_display_vk_get_default_tex_coords();
+      draw->coords->lut_tex_coord = &vk_tex_coords[0];
    if (!texture)
-      texture         = &vk->display.blank_texture;
+      texture                     = &vk->display.blank_texture;
    if (!color)
-      color           = gfx_display_vk_get_default_color();
+      color                       = &vk_colors[0];
 
    gfx_display_vk_viewport(draw, vk);
 

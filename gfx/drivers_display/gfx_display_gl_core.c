@@ -61,11 +61,6 @@ static const float *gfx_display_gl_core_get_default_vertices(void)
    return &gl_core_vertexes[0];
 }
 
-static const float *gfx_display_gl_core_get_default_color(void)
-{
-   return &gl_core_colors[0];
-}
-
 static const float *gfx_display_gl_core_get_default_tex_coords(void)
 {
    return &gl_core_tex_coords[0];
@@ -128,7 +123,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
-               gfx_display_gl_core_get_default_mvp(gl),
+               &gl->mvp_no_rot,
                sizeof(math_matrix_4x4));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
                output_size,
@@ -173,9 +168,9 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    if (!vertex)
       vertex          = gfx_display_gl_core_get_default_vertices();
    if (!tex_coord)
-      tex_coord       = gfx_display_gl_core_get_default_tex_coords();
+      tex_coord       = &gl_core_tex_coords[0];
    if (!color)
-      color           = gfx_display_gl_core_get_default_color();
+      color           = &gl_core_colors[0];
 
    gfx_display_gl_core_viewport(draw, gl);
 
@@ -241,7 +236,7 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    if (!loc)
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_gl_core_get_default_mvp(gl);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)&gl->mvp_no_rot;
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                       4, mat->data);

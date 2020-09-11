@@ -103,15 +103,15 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
    color              = draw->coords->color;
 
    if (!vertex)
-      vertex          = gfx_display_vita2d_get_default_vertices();
+      vertex          = &vita2d_vertexes[0];
    if (!tex_coord)
-      tex_coord       = gfx_display_vita2d_get_default_tex_coords();
+      tex_coord       = &vita2d_tex_coords[0];
    if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = gfx_display_vita2d_get_default_tex_coords();
+      draw->coords->lut_tex_coord = &vita2d_tex_coords[0];
    if (!texture)
       return;
    if (!color)
-      color           = gfx_display_vita2d_get_default_color();
+      color           = &vita2d_colors[0];
 
    gfx_display_vita2d_viewport(draw, vita2d);
 
@@ -136,7 +136,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
    {
       default:
          {
-            vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, gfx_display_vita2d_get_default_mvp(vita2d));
+            vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, &vita2d->mvp_no_rot);
             break;
          }
    }
