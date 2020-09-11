@@ -194,7 +194,7 @@ static bool x11_display_server_set_resolution(void *data,
    }
    snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
    /* variable for new mode */
-   snprintf(new_mode, sizeof(new_mode), "%s_%dx%d_%0.2f", crt_name, width, height, hz);
+   snprintf(new_mode, sizeof(new_mode), "%s", crt_name);
 
    /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
     * add and delete modes */
