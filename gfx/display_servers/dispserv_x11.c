@@ -276,6 +276,7 @@ static bool x11_display_server_set_resolution(void *data,
          }
       }
       XRRFreeScreenResources(resources);
+      XCloseDisplay(dpy);
    }
    else  if (monitor_index != 20)
    {
@@ -619,9 +620,10 @@ static void x11_display_server_destroy(void *data)
             }
          }
       }
+      XRRFreeScreenResources(resources);
+      XCloseDisplay(dpy);
    }
-   XRRFreeScreenResources(resources);
-   XCloseDisplay(dpy);
+
 #endif
 
    if (dispserv)
