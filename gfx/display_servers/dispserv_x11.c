@@ -107,6 +107,7 @@ static bool x11_display_server_set_resolution(void *data,
    int pwidth               = 0;
    float roundw             = 0.0f;
    float pixel_clock        = 0;
+   int crt_mode_flag        = 0;
    bool crt_exists          = false;
 
    g_monitor_index = monitor_index;
