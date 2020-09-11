@@ -26,13 +26,8 @@
 
 #include "../input_driver.h"
 
-static void ps2_input_free_input(void *data)
-{
-   free(data);
-}
-
+static void ps2_input_free_input(void *data) { }
 static void* ps2_input_initialize(const char *a) { return (void*)-1; }
-
 static uint64_t ps2_input_get_capabilities(void *data)
 {
    return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);

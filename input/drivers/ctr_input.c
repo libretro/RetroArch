@@ -27,15 +27,9 @@
 
 #include "../input_driver.h"
 
-static void ctr_input_free_input(void *data)
-{
-   free(data);
-}
+static void ctr_input_free_input(void *data) { }
 
-static void* ctr_input_init(const char *joypad_driver)
-{
-   return (void*)-1;
-}
+static void* ctr_input_init(const char *a) { return (void*)-1; }
 
 static uint64_t ctr_input_get_capabilities(void *data)
 {

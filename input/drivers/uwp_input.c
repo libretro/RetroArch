@@ -29,12 +29,8 @@
 
 /* TODO: Add support for multiple mice and multiple touch */
 
-static void uwp_input_free_input(void *data)
-{
-   free(data);
-}
-
-static void *uwp_input_init(const char *joypad_driver)
+static void uwp_input_free_input(void *data) { }
+static void *uwp_input_init(const char *a)
 {
    input_keymaps_init_keyboard_lut(rarch_key_map_uwp);
 
