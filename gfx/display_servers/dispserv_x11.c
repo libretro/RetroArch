@@ -132,14 +132,14 @@ static bool x11_display_server_set_resolution(void *data,
    /* following code is the mode line generator */
    if (width < 700)
    {
-      hfp     = (width * 1.033)+(padjust*2);
-      hbp     = (width * 1.225)+(padjust*2);
+      hfp         = (width * 1.033)+(padjust*2);
+      hbp         = (width * 1.225)+(padjust*2);
    }
    else
    {
-      hfp     = ((width * 1.033) + (width / 112))+(padjust*4);
-      hbp     = ((width * 1.225) + (width /58))+(padjust*4);
-      xoffset = xoffset*2;
+      hfp         = ((width * 1.033) + (width / 112))+(padjust*4);
+      hbp         = ((width * 1.225) + (width /58))+(padjust*4);
+      xoffset     = xoffset*2;
    }
    
    hsp            = (width * 1.117) - (xoffset*4);
@@ -277,14 +277,11 @@ static bool x11_display_server_set_resolution(void *data,
             XRRFreeOutputInfo(outputs);
          }
       }
-      XRRFreeScreenResources(resources);
    }
-   
-   else  if (monitor_index != 20)
+   else
    {
-
       XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[monitor_index]);
-        
+
       if (outputs->connection == RR_Connected)
       {
          XRRCrtcInfo *crtc;
@@ -310,9 +307,9 @@ static bool x11_display_server_set_resolution(void *data,
       }
 
       XRRFreeOutputInfo(outputs);
-      XRRFreeScreenResources(resources);
-   
    }
+
+   XRRFreeScreenResources(resources);
    return true;
 }
 
@@ -490,7 +487,6 @@ static void x11_display_server_destroy(void *data)
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 #ifdef HAVE_XRANDR
    int m;
-   XRRModeInfo *swoldmode        = NULL;
    XRRModeInfo *swdeskmode       = NULL;
    XRRScreenResources *resources = NULL;
    Display *dpy                  = XOpenDisplay(0);
@@ -587,7 +583,7 @@ static void x11_display_server_destroy(void *data)
          }
          XRRFreeScreenResources(resources);
       }
-      else  if (x11_monitor_index != 20)
+      else
       {
          XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[x11_monitor_index]);
 
@@ -626,7 +622,7 @@ static void x11_display_server_destroy(void *data)
                snprintf(old_mode, sizeof(old_mode), "CRT%d", i);
                if (string_is_equal(resources->modes[m].name, old_mode))
                {
-                  swoldmode = &resources->modes[m];
+                  XRRModeInfo *swoldmode = &resources->modes[m];
                   XRRDeleteOutputMode(dpy, res->outputs[j], swoldmode->id);
                   XRRDestroyMode(dpy, swoldmode->id);
                   XSync(dpy, False);
@@ -678,11 +674,11 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 const char *x11_display_server_get_output_options(void *data)
 {
 #ifdef HAVE_XRANDR
+   int i;
+   Window root;
    Display *dpy;
    XRRScreenResources *res;
    XRROutputInfo *info;
-   Window root;
-   int i;
    static char s[PATH_MAX_LENGTH];
 
    if (!(dpy = XOpenDisplay(0)))
