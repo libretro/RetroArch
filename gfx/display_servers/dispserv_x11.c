@@ -279,7 +279,6 @@ static bool x11_display_server_set_resolution(void *data,
       }
 
       XRRFreeScreenResources(resources);
-      XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
    }
    else  if (monitor_index != 20)
@@ -306,7 +305,6 @@ static bool x11_display_server_set_resolution(void *data,
       }
       XRRFreeOutputInfo(outputs);
       XRRFreeScreenResources(resources);
-      XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
    }
    return true;
@@ -579,9 +577,7 @@ static void x11_display_server_destroy(void *data)
              XRRFreeOutputInfo(outputs);
          }
       
-      XRRFreeScreenResources(resources);
-      XRRFreeScreenResources(res);
-      XCloseDisplay(dpy);
+
 
       }
       else  if (g_monitor_index != 20)
@@ -608,9 +604,7 @@ static void x11_display_server_destroy(void *data)
          }
 
       XRRFreeOutputInfo(outputs);
-      XRRFreeScreenResources(resources);
-      XRRFreeScreenResources(res);
-      XCloseDisplay(dpy);
+
       }
 
    
