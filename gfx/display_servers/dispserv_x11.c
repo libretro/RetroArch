@@ -300,6 +300,7 @@ static bool x11_display_server_set_resolution(void *data,
       }
       XRRFreeOutputInfo(outputs);
       XRRFreeScreenResources(resources);
+      XCloseDisplay(dpy);
    }
    return true;
 }
@@ -619,6 +620,8 @@ static void x11_display_server_destroy(void *data)
          }
       }
    }
+   XRRFreeScreenResources(resources);
+   XCloseDisplay(dpy);
 #endif
 
    if (dispserv)
