@@ -66,12 +66,6 @@ static const float *gfx_display_vk_get_default_tex_coords(void)
    return &vk_tex_coords[0];
 }
 
-static unsigned to_display_pipeline(
-      enum gfx_display_prim_type type, bool blend)
-{
-   return ((type == GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
-}
-
 #ifdef HAVE_SHADERPIPELINE
 static unsigned to_menu_pipeline(
       enum gfx_display_prim_type type, unsigned pipeline)
@@ -159,7 +153,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
-               gfx_display_vk_get_default_mvp(vk),
+               &vk->mvp_no_rot,
                sizeof(math_matrix_4x4));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
                output_size,
@@ -270,16 +264,18 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       default:
       {
          struct vk_draw_triangles call;
-
-         call.pipeline     = vk->display.pipelines[
-               to_display_pipeline(draw->prim_type, vk->display.blend)];
+         unsigned 
+            disp_pipeline  = ((draw->prim_type == 
+                  GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | 
+            (vk->display.blend << 0);
+         call.pipeline     = vk->display.pipelines[disp_pipeline];
          call.texture      = texture;
          call.sampler      = texture->mipmap ?
             vk->samplers.mipmap_linear :
             (texture->default_smooth ? vk->samplers.linear
              : vk->samplers.nearest);
          call.uniform      = draw->matrix_data
-            ? draw->matrix_data : gfx_display_vk_get_default_mvp(vk);
+            ? draw->matrix_data : &vk->mvp_no_rot;
          call.uniform_size = sizeof(math_matrix_4x4);
          call.vbo          = &range;
          call.vertices     = draw->coords->vertices;
