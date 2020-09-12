@@ -107,6 +107,10 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT "lcbk"
 #define FILE_PATH_LOCK_EXTENSION ".lck"
 #define FILE_PATH_BACKUP_EXTENSION ".bak"
+#if defined(RARCH_MOBILE)
+#define FILE_PATH_DEFAULT_OVERLAY "gamepads/neo-retropad/neo-retropad.cfg"
+#define FILE_PATH_DEFAULT_OVERLAY_FALLBACK "gamepads/flat/retropad.cfg"
+#endif
 
 enum application_special_type
 {
