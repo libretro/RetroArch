@@ -5149,8 +5149,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          {
             if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
             {
-               size_t size, i;
-               size = strlcpy(entry->password_value, entry->value,
+               size_t i;
+               size_t size = strlcpy(entry->password_value, entry->value,
                      sizeof(entry->password_value));
                for (i = 0; i < size; i++)
                   entry->password_value[i] = '*';
@@ -5168,18 +5168,16 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
             char tmp[MENU_SUBLABEL_MAX_LENGTH];
             tmp[0] = '\0';
 
+            /* If this function callback returns true,
+             * we know that the value won't change - so we
+             * can cache it instead. */
             if (cbs->action_sublabel(list,
                      entry->type, (unsigned)i,
                      label, path,
                      tmp,
                      sizeof(tmp)) > 0)
-            {
-               /* If this function callback returns true,
-                * we know that the value won't change - so we
-                * can cache it instead. */
                strlcpy(cbs->action_sublabel_cache,
                      tmp, sizeof(cbs->action_sublabel_cache));
-            }
 
             strlcpy(entry->sublabel, tmp, sizeof(entry->sublabel));
          }
