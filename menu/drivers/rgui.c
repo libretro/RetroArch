@@ -3816,8 +3816,6 @@ static void rgui_render(void *data,
          char entry_title_buf[255];
          char type_str_buf[255];
          menu_entry_t entry;
-         const char *entry_label                     = NULL;
-         const char *entry_value                     = NULL;
          size_t entry_title_max_len                  = 0;
          unsigned entry_value_len                    = 0;
          enum rgui_entry_value_type entry_value_type = RGUI_ENTRY_VALUE_NONE;
@@ -3837,10 +3835,6 @@ static void rgui_render(void *data,
          entry.label_enabled    = false;
          entry.sublabel_enabled = false;
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
-
-         /* Read entry parameters */
-         menu_entry_get_rich_label(&entry, &entry_label);
-         menu_entry_get_value(&entry, &entry_value);
 
          /* Get base length of entry title field */
          entry_title_max_len = rgui_term_layout.width - (1 + 2);
@@ -3884,7 +3878,7 @@ static void rgui_render(void *data,
 
          /* Get 'type' of entry value component */
          entry_value_type = rgui_get_entry_value_type(
-               entry_value, entry.checked, rgui_switch_icons);
+               entry.value, entry.checked, rgui_switch_icons);
 
          switch (entry_value_type)
          {
@@ -3893,7 +3887,7 @@ static void rgui_render(void *data,
                 * of value string */
                if (rgui_full_width_layout)
                {
-                  entry_value_len = (unsigned)strlen(entry_value);
+                  entry_value_len = (unsigned)strlen(entry.value);
                   entry_value_len = (entry_value_len
                         > rgui_term_layout.value_maxlen) ?
                            rgui_term_layout.value_maxlen :
@@ -3928,7 +3922,10 @@ static void rgui_render(void *data,
          {
             ticker_smooth.selected    = entry_selected;
             ticker_smooth.field_width = entry_title_max_len * FONT_WIDTH_STRIDE;
-            ticker_smooth.src_str     = entry_label;
+            if (!string_is_empty(entry.rich_label))
+               ticker_smooth.src_str  = entry.rich_label;
+            else
+               ticker_smooth.src_str  = entry.path;
             ticker_smooth.dst_str     = entry_title_buf;
             ticker_smooth.dst_str_len = sizeof(entry_title_buf);
             ticker_smooth.x_offset    = &ticker_x_offset;
@@ -3939,7 +3936,10 @@ static void rgui_render(void *data,
          {
             ticker.s        = entry_title_buf;
             ticker.len      = entry_title_max_len;
-            ticker.str      = entry_label;
+            if (!string_is_empty(entry.rich_label))
+               ticker.str   = entry.rich_label;
+            else
+               ticker.str   = entry.path;
             ticker.selected = entry_selected;
 
             gfx_animation_ticker(&ticker);
@@ -3959,7 +3959,7 @@ static void rgui_render(void *data,
                if (use_smooth_ticker)
                {
                   ticker_smooth.field_width = entry_value_len * FONT_WIDTH_STRIDE;
-                  ticker_smooth.src_str     = entry_value;
+                  ticker_smooth.src_str     = entry.value;
                   ticker_smooth.dst_str     = type_str_buf;
                   ticker_smooth.dst_str_len = sizeof(type_str_buf);
                   ticker_smooth.x_offset    = &ticker_x_offset;
@@ -3970,7 +3970,7 @@ static void rgui_render(void *data,
                {
                   ticker.s        = type_str_buf;
                   ticker.len      = entry_value_len;
-                  ticker.str      = entry_value;
+                  ticker.str      = entry.value;
 
                   gfx_animation_ticker(&ticker);
                }
