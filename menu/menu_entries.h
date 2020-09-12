@@ -198,10 +198,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
       bool checked);
 
-void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label);
-
-void menu_entry_get_value(menu_entry_t *entry, const char **value);
-
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation);
 

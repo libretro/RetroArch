@@ -2462,7 +2462,12 @@ static int stripes_draw_item(
    }
 
    if (!string_is_empty(entry->path))
-      menu_entry_get_rich_label(entry, &ticker_str);
+   {
+      if (!string_is_empty(entry.rich_label))
+         ticker_str          = entry.rich_label;
+      else
+         ticker_str          = entry.path;
+   }
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;

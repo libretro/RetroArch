@@ -686,10 +686,17 @@ border_iterate:
       entry.path_enabled             = false;
       entry.label_enabled            = false;
       menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
-      menu_entry_get_value(&entry, &entry_value);
+
+      if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+         entry_value         = entry.password_value;
+      else
+         entry_value         = entry.value;
 
       /* Prepare text */
-      menu_entry_get_rich_label(&entry, &entry_rich_label);
+      if (!string_is_empty(entry.rich_label))
+         entry_rich_label  = entry.rich_label;
+      else
+         entry_rich_label  = entry.path;
 
       if (use_smooth_ticker)
       {

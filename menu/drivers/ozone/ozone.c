@@ -3875,7 +3875,10 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    menu_entry_get(&selected_entry, 0, (size_t)ozone->selection, NULL, true);
 
    /* > Get entry label */
-   menu_entry_get_rich_label(&selected_entry, &thumbnail_label);
+   if (!string_is_empty(selected_entry.rich_label))
+      thumbnail_label  = selected_entry.rich_label;
+   else
+      thumbnail_label  = selected_entry.path;
 
    /* > Sanity check */
    if (!string_is_empty(thumbnail_label))

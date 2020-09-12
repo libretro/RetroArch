@@ -3836,8 +3836,15 @@ static void materialui_render_menu_entry_default(
       mui->ticker.selected = entry_selected;
 
    /* Read entry parameters */
-   menu_entry_get_rich_label(entry, &entry_label);
-   menu_entry_get_value(entry, &entry_value);
+   if (!string_is_empty(entry->rich_label))
+      entry_label          = entry->rich_label;
+   else
+      entry_label          = entry->path;
+
+   if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+      entry_value          = entry->password_value;
+   else
+      entry_value          = entry->value;
    entry_type              = entry->type;
 
    entry_file_type         = msg_hash_to_file_type(
@@ -4159,7 +4166,10 @@ static void materialui_render_menu_entry_playlist_list(
       mui->ticker.selected = entry_selected;
 
    /* Read entry parameters */
-   menu_entry_get_rich_label(entry, &entry_label);
+   if (!string_is_empty(entry->rich_label))
+      entry_label          = entry->rich_label;
+   else
+      entry_label          = entry->path;
 
    /* If thumbnails are *not* enabled, increase entry
     * margin and decrease usable width by landscape
@@ -4388,7 +4398,10 @@ static void materialui_render_menu_entry_playlist_dual_icon(
       mui->ticker.selected = entry_selected;
 
    /* Read entry parameters */
-   menu_entry_get_rich_label(entry, &entry_label);
+   if (!string_is_empty(entry->rich_label))
+      entry_label          = entry->rich_label;
+   else
+      entry_label          = entry->path;
 
    /* Draw thumbnails
     * > These go at the top of the entry, with a
@@ -4528,7 +4541,10 @@ static void materialui_render_menu_entry_playlist_desktop(
                      (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
 
    /* Read entry parameters */
-   menu_entry_get_rich_label(entry, &entry_label);
+   if (!string_is_empty(entry->rich_label))
+      entry_label          = entry->rich_label;
+   else
+      entry_label          = entry->path;
 
    /* Draw entry label */
    if (!string_is_empty(entry_label))
@@ -6051,7 +6067,10 @@ static void materialui_show_fullscreen_thumbnails(
    menu_entry_get(&selected_entry, 0, selection, NULL, true);
 
    /* > Get entry label */
-   menu_entry_get_rich_label(&selected_entry, &thumbnail_label);
+   if (!string_is_empty(selected_entry.rich_label))
+      thumbnail_label          = selected_entry.rich_label;
+   else
+      thumbnail_label          = selected_entry.path;
 
    /* > Sanity check */
    if (!string_is_empty(thumbnail_label))
@@ -9176,7 +9195,10 @@ static int materialui_pointer_up_swipe_horz_default(
          menu_entry_get(&last_entry, 0, selection, NULL, true);
 
          /* Parse entry */
-         menu_entry_get_value(&last_entry, &entry_value);
+         if (last_entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+            entry_value          = last_entry.password_value;
+         else
+            entry_value          = last_entry.value;
          entry_type                     = last_entry.type;
          entry_file_type                = msg_hash_to_file_type(
                msg_hash_calculate(entry_value));

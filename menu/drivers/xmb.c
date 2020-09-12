@@ -3194,7 +3194,10 @@ static int xmb_draw_item(
       }
    }
 
-   menu_entry_get_rich_label(&entry, &ticker_str);
+   if (!string_is_empty(entry.rich_label))
+      ticker_str               = entry.rich_label;
+   else
+      ticker_str               = entry.path;
 
    if (use_smooth_ticker)
    {
@@ -4020,7 +4023,10 @@ static void xmb_show_fullscreen_thumbnails(
    menu_entry_get(&selected_entry, 0, selection, NULL, true);
 
    /* > Get entry label */
-   menu_entry_get_rich_label(&selected_entry, &thumbnail_label);
+   if (!string_is_empty(selected_entry.rich_label))
+      thumbnail_label          = selected_entry.rich_label;
+   else
+      thumbnail_label          = selected_entry.path;
 
    /* > Sanity check */
    if (!string_is_empty(thumbnail_label))

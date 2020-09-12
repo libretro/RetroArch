@@ -4381,7 +4381,11 @@ static void get_current_menu_label(struct rarch_state *p_rarch,
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   menu_entry_get_rich_label(&entry, &entry_label);
+
+   if (!string_is_empty(entry.rich_label))
+      entry_label              = entry.rich_label;
+   else
+      entry_label              = entry.path;
 
    strlcpy(retstr, entry_label, max);
 }
@@ -5058,28 +5062,6 @@ void menu_entry_init(menu_entry_t *entry)
    entry->rich_label_enabled = true;
    entry->value_enabled      = true;
    entry->sublabel_enabled   = true;
-}
-
-void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label)
-{
-   if (!entry || !rich_label)
-      return;
-
-   if (!string_is_empty(entry->rich_label))
-      *rich_label = entry->rich_label;
-   else
-      *rich_label = entry->path;
-}
-
-void menu_entry_get_value(menu_entry_t *entry, const char **value)
-{
-   if (!entry || !value)
-      return;
-
-   if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
-      *value = entry->password_value;
-   else
-      *value = entry->value;
 }
 
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
