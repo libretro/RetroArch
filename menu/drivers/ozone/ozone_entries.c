@@ -340,7 +340,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
       menu_entry_t entry;
       ozone_node_t *node       = NULL;
 
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       entry.path_enabled       = false;
       entry.label_enabled      = false;
       entry.rich_label_enabled = false;
@@ -682,7 +682,7 @@ border_iterate:
 
       entry_selected                 = selection == i;
 
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       entry.path_enabled             = false;
       entry.label_enabled            = false;
       menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);

@@ -900,7 +900,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
 
    new_path[0]                    = '\0';
 
-   menu_entry_init(&entry);
+   MENU_ENTRY_INIT(entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    entry_type = entry.type;
@@ -1031,7 +1031,7 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
    if (!stripes)
       return;
 
-   menu_entry_init(&entry);
+   MENU_ENTRY_INIT(entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    if (!string_is_empty(stripes->savestate_thumbnail_file_path))
@@ -1192,11 +1192,10 @@ static void stripes_selection_pointer_changed(
    const char *thumb_ident    = stripes_thumbnails_ident('R');
    const char *lft_thumb_ident= stripes_thumbnails_ident('L');
 
-   menu_entry_init(&entry);
-
    if (!stripes)
       return;
 
+   MENU_ENTRY_INIT(entry);
    menu_entry_get(&entry, 0, selection, NULL, true);
 
    end       = (unsigned)menu_entries_get_size();
@@ -1751,7 +1750,7 @@ static void stripes_list_switch(stripes_handle_t *stripes)
    {
       menu_entry_t entry;
 
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (!string_is_empty(entry.path))
@@ -1765,7 +1764,7 @@ static void stripes_list_switch(stripes_handle_t *stripes)
    {
       menu_entry_t entry;
 
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (!string_is_empty(entry.path))
@@ -2660,7 +2659,7 @@ static void stripes_draw_items(
    {
       int ret;
       menu_entry_t entry;
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       menu_entry_get(&entry, 0, i, list, true);
       ret = stripes_draw_item(
             userdata,

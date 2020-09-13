@@ -94,7 +94,7 @@ static int action_select_default(
    if (action != MENU_ACTION_NOOP)
    {
       menu_entry_t entry;
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
 
       /* Note: If menu_entry_action() is modified,
        * will have to verify that these parameters

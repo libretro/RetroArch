@@ -2668,7 +2668,7 @@ static unsigned materialui_count_sublabel_lines(
    wrapped_sublabel_str[0] = '\0';
 
    /* Get entry sublabel */
-   menu_entry_init(&entry);
+   MENU_ENTRY_INIT(entry);
    entry.path_enabled       = false;
    entry.label_enabled      = false;
    entry.rich_label_enabled = false;
@@ -4931,7 +4931,7 @@ static void materialui_render_menu_list(
          break;
 
       /* Get current entry */
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       entry.path_enabled     = false;
       entry.value_enabled    = entry_value_enabled;
       entry.sublabel_enabled = entry_sublabel_enabled;
@@ -6060,7 +6060,7 @@ static void materialui_show_fullscreen_thumbnails(
    mui->fullscreen_thumbnail_label[0] = '\0';
 
    /* > Get menu entry */
-   menu_entry_init(&selected_entry);
+   MENU_ENTRY_INIT(selected_entry);
    selected_entry.path_enabled     = false;
    selected_entry.value_enabled    = false;
    selected_entry.sublabel_enabled = false;
@@ -8791,7 +8791,7 @@ static int materialui_menu_entry_action(
       /* Selection has changed - must update entry
        * pointer (we could probably get away without
        * doing this, but it would break the API...) */
-      menu_entry_init(&new_entry);
+      MENU_ENTRY_INIT(new_entry);
       new_entry.path_enabled       = false;
       new_entry.label_enabled      = false;
       new_entry.rich_label_enabled = false;
@@ -9186,7 +9186,7 @@ static int materialui_pointer_up_swipe_horz_default(
          menu_entry_t last_entry;
 
          /* Get entry */
-         menu_entry_init(&last_entry);
+         MENU_ENTRY_INIT(last_entry);
          last_entry.path_enabled       = false;
          last_entry.label_enabled      = false;
          last_entry.rich_label_enabled = false;

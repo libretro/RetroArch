@@ -198,13 +198,43 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
       bool checked);
 
+/* Menu entry interface -
+ *
+ * This provides an abstraction of the currently displayed
+ * menu.
+ *
+ * It is organized into an event-based system where the UI companion
+ * calls this functions and RetroArch responds by changing the global
+ * state (including arranging for these functions to return different
+ * values).
+ *
+ * Its only interaction back to the UI is to arrange for
+ * notify_list_loaded on the UI companion.
+ */
+
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation);
 
 int menu_entry_action(
       menu_entry_t *entry, size_t i, enum menu_action action);
 
-void menu_entry_init(menu_entry_t *entry);
+#define MENU_ENTRY_INIT(entry) \
+   entry.path[0]            = '\0'; \
+   entry.label[0]           = '\0'; \
+   entry.sublabel[0]        = '\0'; \
+   entry.rich_label[0]      = '\0'; \
+   entry.value[0]           = '\0'; \
+   entry.password_value[0]  = '\0'; \
+   entry.enum_idx           = MSG_UNKNOWN; \
+   entry.entry_idx          = 0; \
+   entry.idx                = 0; \
+   entry.type               = 0; \
+   entry.spacing            = 0; \
+   entry.path_enabled       = true; \
+   entry.label_enabled      = true; \
+   entry.rich_label_enabled = true; \
+   entry.value_enabled      = true; \
+   entry.sublabel_enabled   = true
 
 RETRO_END_DECLS
 

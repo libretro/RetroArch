@@ -4357,7 +4357,7 @@ static void get_current_menu_value(struct rarch_state *p_rarch,
    const char*      entry_label;
    struct menu_state  *menu_st = &p_rarch->menu_driver_state;
 
-   menu_entry_init(&entry);
+   MENU_ENTRY_INIT(entry);
    entry.path_enabled          = false;
    entry.label_enabled         = false;
    entry.rich_label_enabled    = false;
@@ -4379,7 +4379,7 @@ static void get_current_menu_label(struct rarch_state *p_rarch,
    const char*      entry_label;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
-   menu_entry_init(&entry);
+   MENU_ENTRY_INIT(entry);
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
    if (!string_is_empty(entry.rich_label))
@@ -4396,7 +4396,7 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
    menu_entry_t     entry;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
-   menu_entry_init(&entry);
+   MENU_ENTRY_INIT(entry);
    entry.path_enabled          = false;
    entry.label_enabled         = false;
    entry.rich_label_enabled    = false;
@@ -4694,7 +4694,7 @@ static int generic_menu_iterate(
              * should not rely on a hack like this in order to work. */
             selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
 
-            menu_entry_init(&entry);
+            MENU_ENTRY_INIT(entry);
             /* NOTE: If menu_entry_action() is modified,
              * will have to verify that these parameters
              * remain unused... */
@@ -5030,39 +5030,6 @@ void menu_navigation_set_selection(size_t val)
    menu_st->selection_ptr      = val;
 }
 
-/* Menu entry interface -
- *
- * This provides an abstraction of the currently displayed
- * menu.
- *
- * It is organized into an event-based system where the UI companion
- * calls this functions and RetroArch responds by changing the global
- * state (including arranging for these functions to return different
- * values).
- *
- * Its only interaction back to the UI is to arrange for
- * notify_list_loaded on the UI companion.
- */
-
-void menu_entry_init(menu_entry_t *entry)
-{
-   entry->path[0]            = '\0';
-   entry->label[0]           = '\0';
-   entry->sublabel[0]        = '\0';
-   entry->rich_label[0]      = '\0';
-   entry->value[0]           = '\0';
-   entry->password_value[0]  = '\0';
-   entry->enum_idx           = MSG_UNKNOWN;
-   entry->entry_idx          = 0;
-   entry->idx                = 0;
-   entry->type               = 0;
-   entry->spacing            = 0;
-   entry->path_enabled       = true;
-   entry->label_enabled      = true;
-   entry->rich_label_enabled = true;
-   entry->value_enabled      = true;
-   entry->sublabel_enabled   = true;
-}
 
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
@@ -26367,7 +26334,7 @@ static void menu_input_post_iterate(
          (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
          : NULL;
 
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       /* Note: If menu_input_pointer_post_iterate() is
        * modified, will have to verify that these
        * parameters remain unused... */

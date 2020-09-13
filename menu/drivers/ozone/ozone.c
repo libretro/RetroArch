@@ -103,7 +103,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
          menu_entry_t entry;
          size_t selection         = menu_navigation_get_selection();
 
-         menu_entry_init(&entry);
+         MENU_ENTRY_INIT(entry);
          entry.label_enabled      = false;
          entry.rich_label_enabled = false;
          entry.value_enabled      = false;
@@ -124,7 +124,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
 
       if (node)
       {
-         menu_entry_init(&entry);
+         MENU_ENTRY_INIT(entry);
          entry.label_enabled      = false;
          entry.rich_label_enabled = false;
          entry.value_enabled      = false;
@@ -511,7 +511,7 @@ static int ozone_menu_entry_action(
    {
       /* Selection has changed - must update
        * entry pointer */
-      menu_entry_init(&new_entry);
+      MENU_ENTRY_INIT(new_entry);
       new_entry.path_enabled       = false;
       new_entry.label_enabled      = false;
       new_entry.rich_label_enabled = false;
@@ -2508,7 +2508,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       uintptr_t tag                = (uintptr_t)selection_buf;
       size_t selection             = menu_navigation_get_selection();
 
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       entry.path_enabled           = false;
       entry.label_enabled          = false;
       entry.rich_label_enabled     = false;
@@ -3869,7 +3869,7 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    ozone->fullscreen_thumbnail_label[0] = '\0';
 
    /* > Get menu entry */
-   menu_entry_init(&selected_entry);
+   MENU_ENTRY_INIT(selected_entry);
    selected_entry.path_enabled     = false;
    selected_entry.value_enabled    = false;
    selected_entry.sublabel_enabled = false;

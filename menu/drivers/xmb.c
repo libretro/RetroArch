@@ -1068,7 +1068,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    {
       menu_entry_t entry;
 
-      menu_entry_init(&entry);
+      MENU_ENTRY_INIT(entry);
       entry.path_enabled       = false;
       entry.rich_label_enabled = false;
       entry.value_enabled      = false;
@@ -1290,7 +1290,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          menu_entry_t entry;
          size_t selection         = menu_navigation_get_selection();
 
-         menu_entry_init(&entry);
+         MENU_ENTRY_INIT(entry);
          entry.label_enabled      = false;
          entry.rich_label_enabled = false;
          entry.value_enabled      = false;
@@ -1314,7 +1314,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
 
       if (node)
       {
-         menu_entry_init(&entry);
+         MENU_ENTRY_INIT(entry);
          entry.label_enabled      = false;
          entry.rich_label_enabled = false;
          entry.value_enabled      = false;
@@ -1444,7 +1444,7 @@ static void xmb_selection_pointer_changed(
             {
                menu_entry_t entry;
                unsigned entry_type;
-               menu_entry_init(&entry);
+               MENU_ENTRY_INIT(entry);
                entry.path_enabled       = false;
                entry.label_enabled      = false;
                entry.rich_label_enabled = false;
@@ -3082,7 +3082,7 @@ static int xmb_draw_item(
    if (icon_x < -half_size || icon_x > width)
       return 0;
 
-   menu_entry_init(&entry);
+   MENU_ENTRY_INIT(entry);
    entry.label_enabled      = false;
    entry.sublabel_enabled   = (i == current);
    menu_entry_get(&entry, 0, i, list, true);
@@ -3667,7 +3667,7 @@ static void xmb_show_fullscreen_thumbnails(
    xmb->fullscreen_thumbnail_label[0] = '\0';
 
    /* > Get menu entry */
-   menu_entry_init(&selected_entry);
+   MENU_ENTRY_INIT(selected_entry);
    selected_entry.path_enabled     = false;
    selected_entry.value_enabled    = false;
    selected_entry.sublabel_enabled = false;
@@ -3928,7 +3928,7 @@ static void xmb_render(void *data,
 
          if (get_entry)
          {
-            menu_entry_init(&entry);
+            MENU_ENTRY_INIT(entry);
             entry.path_enabled       = false;
             entry.label_enabled      = false;
             entry.rich_label_enabled = false;
