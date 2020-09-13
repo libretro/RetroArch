@@ -4383,7 +4383,8 @@ static int stripes_pointer_up(void *userdata,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection = menu_navigation_get_selection();
+   stripes_handle_t *stripes = (stripes_handle_t*)userdata;
+   size_t selection          = menu_navigation_get_selection();
 
    switch (gesture)
    {
@@ -4394,11 +4395,13 @@ static int stripes_pointer_up(void *userdata,
             unsigned header_height = gfx_display_get_header_height();
 
             if (y < header_height)
-               return (unsigned)menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+               return (unsigned)generic_menu_entry_action(stripes,
+                     entry, selection, MENU_ACTION_CANCEL);
             else if (ptr <= (menu_entries_get_size() - 1))
             {
                if (ptr == selection && cbs && cbs->action_select)
-                  return (unsigned)menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+                  return (unsigned)generic_menu_entry_action(stripes,
+                        entry, selection, MENU_ACTION_SELECT);
 
                menu_navigation_set_selection(ptr);
                menu_driver_navigation_set(false);
@@ -4409,7 +4412,8 @@ static int stripes_pointer_up(void *userdata,
          /* 'Reset to default' action */
          if ((ptr <= (menu_entries_get_size() - 1)) &&
              (ptr == selection))
-            return menu_entry_action(entry, selection, MENU_ACTION_START);
+            return generic_menu_entry_action(stripes,
+                  entry, selection, MENU_ACTION_START);
          break;
       default:
          /* Ignore input */

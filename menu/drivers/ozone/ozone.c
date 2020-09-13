@@ -3552,7 +3552,8 @@ static int ozone_pointer_up(void *userdata,
              (ptr == selection) &&
              (x > ozone->dimensions_sidebar_width + ozone->sidebar_offset) &&
              (x < width - ozone->animations.thumbnail_bar_position))
-            return menu_entry_action(entry, selection, MENU_ACTION_START);
+            return ozone_menu_entry_action(ozone,
+                  entry, selection, MENU_ACTION_START);
          break;
       case MENU_INPUT_GESTURE_SWIPE_LEFT:
          /* If this is a playlist, descend alphabet

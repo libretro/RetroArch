@@ -3564,6 +3564,248 @@ static INLINE float xmb_get_scale_factor(
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
       bool is_threaded, bool reinit_textures);
 
+/* Disables the fullscreen thumbnail view, with
+ * an optional fade out animation */
+static void xmb_hide_fullscreen_thumbnails(
+      xmb_handle_t *xmb, bool animate)
+{
+   uintptr_t alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
+
+   /* Kill any existing fade in/out animations */
+   gfx_animation_kill_by_tag(&alpha_tag);
+
+   /* Check whether animations are enabled */
+   if (animate && (xmb->fullscreen_thumbnail_alpha > 0.0f))
+   {
+      gfx_animation_ctx_entry_t animation_entry;
+
+      /* Configure fade out animation */
+      animation_entry.easing_enum  = EASING_OUT_QUAD;
+      animation_entry.tag          = alpha_tag;
+      animation_entry.duration     = gfx_thumbnail_get_fade_duration();
+      animation_entry.target_value = 0.0f;
+      animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
+      animation_entry.cb           = NULL;
+      animation_entry.userdata     = NULL;
+
+      /* Push animation */
+      gfx_animation_push(&animation_entry);
+   }
+   /* No animation - just set thumbnail alpha to zero */
+   else
+      xmb->fullscreen_thumbnail_alpha = 0.0f;
+
+   /* Disable fullscreen thumbnails */
+   xmb->show_fullscreen_thumbnails = false;
+}
+
+/* Enables (and triggers a fade in of) the fullscreen
+ * thumbnail view */
+static void xmb_show_fullscreen_thumbnails(
+      xmb_handle_t *xmb, size_t selection)
+{
+   menu_entry_t selected_entry;
+   gfx_animation_ctx_entry_t animation_entry;
+   const char *core_name            = NULL;
+   const char *thumbnail_label      = NULL;
+   uintptr_t              alpha_tag = (uintptr_t)
+      &xmb->fullscreen_thumbnail_alpha;
+
+   /* Before showing fullscreen thumbnails, must
+    * ensure that any existing fullscreen thumbnail
+    * view is disabled... */
+   xmb_hide_fullscreen_thumbnails(xmb, false);
+
+   /* Sanity check: Return immediately if this is
+    * a menu without thumbnail support */
+   if (!xmb->fullscreen_thumbnails_available)
+      return;
+
+   /* We can only enable fullscreen thumbnails if
+    * current selection has at least one valid thumbnail
+    * and all thumbnails for current selection are already
+    * loaded/available */
+   gfx_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
+   if (string_is_equal(core_name, "imageviewer"))
+   {
+      /* imageviewer content requires special treatment,
+       * since only one thumbnail can ever be loaded
+       * at a time */
+      if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
+      {
+         if (xmb->thumbnails.right.status != GFX_THUMBNAIL_STATUS_AVAILABLE)
+            return;
+      }
+      else if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+      {
+         if (xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_AVAILABLE)
+            return;
+      }
+      else
+         return;
+   }
+   else
+   {
+      bool left_thumbnail_enabled = gfx_thumbnail_is_enabled(
+            xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT);
+
+      if ((xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE) &&
+          (left_thumbnail_enabled &&
+               ((xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_MISSING) &&
+                (xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_AVAILABLE))))
+         return;
+
+      if ((xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_MISSING) &&
+          (!left_thumbnail_enabled ||
+               (xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_AVAILABLE)))
+         return;
+   }
+
+   /* Cache selected entry label
+    * (used as title when fullscreen thumbnails
+    * are shown) */
+   xmb->fullscreen_thumbnail_label[0] = '\0';
+
+   /* > Get menu entry */
+   menu_entry_init(&selected_entry);
+   selected_entry.path_enabled     = false;
+   selected_entry.value_enabled    = false;
+   selected_entry.sublabel_enabled = false;
+   menu_entry_get(&selected_entry, 0, selection, NULL, true);
+
+   /* > Get entry label */
+   if (!string_is_empty(selected_entry.rich_label))
+      thumbnail_label          = selected_entry.rich_label;
+   else
+      thumbnail_label          = selected_entry.path;
+
+   /* > Sanity check */
+   if (!string_is_empty(thumbnail_label))
+      strlcpy(
+            xmb->fullscreen_thumbnail_label,
+            thumbnail_label,
+            sizeof(xmb->fullscreen_thumbnail_label));
+
+   /* Configure fade in animation */
+   animation_entry.easing_enum  = EASING_OUT_QUAD;
+   animation_entry.tag          = alpha_tag;
+   animation_entry.duration     = gfx_thumbnail_get_fade_duration();
+   animation_entry.target_value = 1.0f;
+   animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
+   animation_entry.cb           = NULL;
+   animation_entry.userdata     = NULL;
+
+   /* Push animation */
+   gfx_animation_push(&animation_entry);
+
+   /* Enable fullscreen thumbnails */
+   xmb->fullscreen_thumbnail_selection = selection;
+   xmb->show_fullscreen_thumbnails     = true;
+}
+
+
+static enum menu_action xmb_parse_menu_entry_action(
+      xmb_handle_t *xmb, enum menu_action action)
+{
+   enum menu_action new_action = action;
+
+   /* If fullscreen thumbnail view is active, any
+    * valid menu action will disable it... */
+   if (xmb->show_fullscreen_thumbnails)
+   {
+      if (action != MENU_ACTION_NOOP)
+      {
+         xmb_hide_fullscreen_thumbnails(xmb, true);
+
+         /* ...and any action other than Select/OK
+          * is ignored
+          * > We allow pass-through of Select/OK since
+          *   users may want to run content directly
+          *   after viewing fullscreen thumbnails,
+          *   and having to press RetroPad A or the Return
+          *   key twice is navigationally confusing
+          * > Note that we can only do this for non-pointer
+          *   input
+          * > Note that we don't do this when viewing a
+          *   file list, since there is no quick menu
+          *   in this case - i.e. content loads directly,
+          *   and a sudden transition from fullscreen
+          *   thumbnail to content is jarring... */
+         if (xmb->is_file_list ||
+               ((action != MENU_ACTION_SELECT) &&
+                (action != MENU_ACTION_OK)))
+            return MENU_ACTION_NOOP;
+      }
+   }
+
+   /* Scan user inputs */
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         /* Check whether left/right action will
+          * trigger a tab switch event */
+         if (xmb->depth == 1)
+         {
+            retro_time_t current_time = menu_driver_get_current_time();
+            size_t scroll_accel       = 0;
+
+            /* Determine whether input repeat is
+             * currently active
+             * > This is always true when scroll
+             *   acceleration is greater than zero */
+            menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
+                  &scroll_accel);
+
+            if (scroll_accel > 0)
+            {
+               /* Ignore input action if tab switch period
+                * is less than defined limit */
+               if ((current_time - xmb->last_tab_switch_time) <
+                     XMB_TAB_SWITCH_REPEAT_DELAY)
+               {
+                  new_action = MENU_ACTION_NOOP;
+                  break;
+               }
+            }
+            xmb->last_tab_switch_time = current_time;
+         }
+         break;
+      case MENU_ACTION_START:
+         /* If this is a menu with thumbnails, attempt
+          * to show fullscreen thumbnail view */
+         if (xmb->fullscreen_thumbnails_available)
+         {
+            size_t selection = menu_navigation_get_selection();
+
+            xmb_show_fullscreen_thumbnails(xmb, selection);
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      default:
+         /* In all other cases, pass through input
+          * menu action without intervention */
+         break;
+   }
+
+   return new_action;
+}
+
+
+/* Menu entry action callback */
+static int xmb_menu_entry_action(
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action)
+{
+   xmb_handle_t *xmb           = (xmb_handle_t*)userdata;
+   /* Process input action */
+   enum menu_action new_action = xmb_parse_menu_entry_action(xmb, action);
+
+   /* Call standard generic_menu_entry_action() function */
+   return generic_menu_entry_action(userdata, entry, i, new_action);
+}
+
+
 static void xmb_render(void *data, 
       unsigned width, unsigned height, bool is_idle)
 {
@@ -3701,13 +3943,13 @@ static void xmb_render(void *data,
                /* Note: Direction is inverted, since 'up' should
                 * move list upwards */
                if (pointer_x > margin_right)
-                  menu_entry_action(&entry, selection, MENU_ACTION_DOWN);
+                  xmb_menu_entry_action(xmb, &entry, selection, MENU_ACTION_DOWN);
                break;
             case MENU_INPUT_PRESS_DIRECTION_DOWN:
                /* Note: Direction is inverted, since 'down' should
                 * move list downwards */
                if (pointer_x > margin_right)
-                  menu_entry_action(&entry, selection, MENU_ACTION_UP);
+                  xmb_menu_entry_action(xmb, &entry, selection, MENU_ACTION_UP);
                break;
             case MENU_INPUT_PRESS_DIRECTION_LEFT:
                /* Navigate left
@@ -3715,7 +3957,7 @@ static void xmb_render(void *data,
                 * means switching to the 'next' horizontal list,
                 * which is actually a movement to the *right* */
                if (pointer_y < margin_top)
-                  menu_entry_action(
+                  xmb_menu_entry_action(xmb,
                         &entry, selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
                break;
             case MENU_INPUT_PRESS_DIRECTION_RIGHT:
@@ -3724,7 +3966,7 @@ static void xmb_render(void *data,
                 * means switching to the 'previous' horizontal list,
                 * which is actually a movement to the *left* */
                if (pointer_y < margin_top)
-                  menu_entry_action(
+                  xmb_menu_entry_action(xmb,
                         &entry, selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
                break;
             default:
@@ -3911,145 +4153,6 @@ static void xmb_draw_dark_layer(
    gfx_display_draw(&draw, userdata,
          width, height);
    gfx_display_blend_end(userdata);
-}
-
-/* Disables the fullscreen thumbnail view, with
- * an optional fade out animation */
-static void xmb_hide_fullscreen_thumbnails(
-      xmb_handle_t *xmb, bool animate)
-{
-   uintptr_t alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
-
-   /* Kill any existing fade in/out animations */
-   gfx_animation_kill_by_tag(&alpha_tag);
-
-   /* Check whether animations are enabled */
-   if (animate && (xmb->fullscreen_thumbnail_alpha > 0.0f))
-   {
-      gfx_animation_ctx_entry_t animation_entry;
-
-      /* Configure fade out animation */
-      animation_entry.easing_enum  = EASING_OUT_QUAD;
-      animation_entry.tag          = alpha_tag;
-      animation_entry.duration     = gfx_thumbnail_get_fade_duration();
-      animation_entry.target_value = 0.0f;
-      animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
-      animation_entry.cb           = NULL;
-      animation_entry.userdata     = NULL;
-
-      /* Push animation */
-      gfx_animation_push(&animation_entry);
-   }
-   /* No animation - just set thumbnail alpha to zero */
-   else
-      xmb->fullscreen_thumbnail_alpha = 0.0f;
-
-   /* Disable fullscreen thumbnails */
-   xmb->show_fullscreen_thumbnails = false;
-}
-
-/* Enables (and triggers a fade in of) the fullscreen
- * thumbnail view */
-static void xmb_show_fullscreen_thumbnails(
-      xmb_handle_t *xmb, size_t selection)
-{
-   menu_entry_t selected_entry;
-   gfx_animation_ctx_entry_t animation_entry;
-   const char *core_name            = NULL;
-   const char *thumbnail_label      = NULL;
-   uintptr_t              alpha_tag = (uintptr_t)
-      &xmb->fullscreen_thumbnail_alpha;
-
-   /* Before showing fullscreen thumbnails, must
-    * ensure that any existing fullscreen thumbnail
-    * view is disabled... */
-   xmb_hide_fullscreen_thumbnails(xmb, false);
-
-   /* Sanity check: Return immediately if this is
-    * a menu without thumbnail support */
-   if (!xmb->fullscreen_thumbnails_available)
-      return;
-
-   /* We can only enable fullscreen thumbnails if
-    * current selection has at least one valid thumbnail
-    * and all thumbnails for current selection are already
-    * loaded/available */
-   gfx_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
-   if (string_is_equal(core_name, "imageviewer"))
-   {
-      /* imageviewer content requires special treatment,
-       * since only one thumbnail can ever be loaded
-       * at a time */
-      if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
-      {
-         if (xmb->thumbnails.right.status != GFX_THUMBNAIL_STATUS_AVAILABLE)
-            return;
-      }
-      else if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
-      {
-         if (xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_AVAILABLE)
-            return;
-      }
-      else
-         return;
-   }
-   else
-   {
-      bool left_thumbnail_enabled = gfx_thumbnail_is_enabled(
-            xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT);
-
-      if ((xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE) &&
-          (left_thumbnail_enabled &&
-               ((xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_MISSING) &&
-                (xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_AVAILABLE))))
-         return;
-
-      if ((xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_MISSING) &&
-          (!left_thumbnail_enabled ||
-               (xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_AVAILABLE)))
-         return;
-   }
-
-   /* Cache selected entry label
-    * (used as title when fullscreen thumbnails
-    * are shown) */
-   xmb->fullscreen_thumbnail_label[0] = '\0';
-
-   /* > Get menu entry */
-   menu_entry_init(&selected_entry);
-   selected_entry.path_enabled     = false;
-   selected_entry.value_enabled    = false;
-   selected_entry.sublabel_enabled = false;
-   menu_entry_get(&selected_entry, 0, selection, NULL, true);
-
-   /* > Get entry label */
-   if (!string_is_empty(selected_entry.rich_label))
-      thumbnail_label          = selected_entry.rich_label;
-   else
-      thumbnail_label          = selected_entry.path;
-
-   /* > Sanity check */
-   if (!string_is_empty(thumbnail_label))
-      strlcpy(
-            xmb->fullscreen_thumbnail_label,
-            thumbnail_label,
-            sizeof(xmb->fullscreen_thumbnail_label));
-
-   /* Configure fade in animation */
-   animation_entry.easing_enum  = EASING_OUT_QUAD;
-   animation_entry.tag          = alpha_tag;
-   animation_entry.duration     = gfx_thumbnail_get_fade_duration();
-   animation_entry.target_value = 1.0f;
-   animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
-   animation_entry.cb           = NULL;
-   animation_entry.userdata     = NULL;
-
-   /* Push animation */
-   gfx_animation_push(&animation_entry);
-
-   /* Enable fullscreen thumbnails */
-   xmb->fullscreen_thumbnail_selection = selection;
-   xmb->show_fullscreen_thumbnails     = true;
 }
 
 static void xmb_draw_fullscreen_thumbnails(
@@ -6800,16 +6903,19 @@ static int xmb_pointer_up(void *userdata,
          if (x < margin_left)
          {
             if (y >= margin_top)
-               return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+               return xmb_menu_entry_action(xmb,
+                     entry, selection, MENU_ACTION_CANCEL);
             return menu_input_dialog_start_search() ? 0 : -1;
          }
          else if (x > margin_right)
-            return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+            return xmb_menu_entry_action(xmb,
+                  entry, selection, MENU_ACTION_SELECT);
          else if (ptr <= (end - 1))
          {
             /* If pointer item is already 'active', perform 'select' action */
             if (ptr == selection)
-               return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+               return xmb_menu_entry_action(xmb,
+                     entry, selection, MENU_ACTION_SELECT);
 
             /* ...otherwise navigate to the current pointer item */
             menu_navigation_set_selection(ptr);
@@ -6819,7 +6925,8 @@ static int xmb_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
          if ((ptr <= end - 1) && (ptr == selection))
-            return menu_entry_action(entry, selection, MENU_ACTION_START);
+            return xmb_menu_entry_action(xmb,
+                  entry, selection, MENU_ACTION_START);
          break;
       case MENU_INPUT_GESTURE_SWIPE_LEFT:
          /* Navigate left
@@ -6827,8 +6934,9 @@ static int xmb_pointer_up(void *userdata,
           * means switching to the 'next' horizontal list,
           * which is actually a movement to the *right* */
          if (y > margin_top)
-            menu_entry_action(
-                  entry, selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+            xmb_menu_entry_action(xmb,
+                  entry, selection,
+                  (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
          break;
       case MENU_INPUT_GESTURE_SWIPE_RIGHT:
          /* Navigate right
@@ -6836,13 +6944,15 @@ static int xmb_pointer_up(void *userdata,
           * means switching to the 'previous' horizontal list,
           * which is actually a movement to the *left* */
          if (y > margin_top)
-            menu_entry_action(
-                  entry, selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+            xmb_menu_entry_action(xmb,
+                  entry, selection,
+                  (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
          break;
       case MENU_INPUT_GESTURE_SWIPE_UP:
          /* Swipe up in left margin: ascend alphabet */
          if (x < margin_left)
-            menu_entry_action(entry, selection, MENU_ACTION_SCROLL_DOWN);
+            xmb_menu_entry_action(xmb,
+                  entry, selection, MENU_ACTION_SCROLL_DOWN);
          else if (x < margin_right)
          {
             /* Swipe up between left and right margins:
@@ -6866,7 +6976,8 @@ static int xmb_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_SWIPE_DOWN:
          /* Swipe down in left margin: descend alphabet */
          if (x < margin_left)
-            menu_entry_action(entry, selection, MENU_ACTION_SCROLL_UP);
+            xmb_menu_entry_action(xmb,
+                  entry, selection, MENU_ACTION_SCROLL_UP);
          else if (x < margin_right)
          {
             /* Swipe down between left and right margins:
@@ -6918,106 +7029,6 @@ static int xmb_pointer_up(void *userdata,
    }
 
    return 0;
-}
-
-static enum menu_action xmb_parse_menu_entry_action(
-      xmb_handle_t *xmb, enum menu_action action)
-{
-   enum menu_action new_action = action;
-
-   /* If fullscreen thumbnail view is active, any
-    * valid menu action will disable it... */
-   if (xmb->show_fullscreen_thumbnails)
-   {
-      if (action != MENU_ACTION_NOOP)
-      {
-         xmb_hide_fullscreen_thumbnails(xmb, true);
-
-         /* ...and any action other than Select/OK
-          * is ignored
-          * > We allow pass-through of Select/OK since
-          *   users may want to run content directly
-          *   after viewing fullscreen thumbnails,
-          *   and having to press RetroPad A or the Return
-          *   key twice is navigationally confusing
-          * > Note that we can only do this for non-pointer
-          *   input
-          * > Note that we don't do this when viewing a
-          *   file list, since there is no quick menu
-          *   in this case - i.e. content loads directly,
-          *   and a sudden transition from fullscreen
-          *   thumbnail to content is jarring... */
-         if (xmb->is_file_list ||
-               ((action != MENU_ACTION_SELECT) &&
-                (action != MENU_ACTION_OK)))
-            return MENU_ACTION_NOOP;
-      }
-   }
-
-   /* Scan user inputs */
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         /* Check whether left/right action will
-          * trigger a tab switch event */
-         if (xmb->depth == 1)
-         {
-            retro_time_t current_time = menu_driver_get_current_time();
-            size_t scroll_accel       = 0;
-
-            /* Determine whether input repeat is
-             * currently active
-             * > This is always true when scroll
-             *   acceleration is greater than zero */
-            menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
-                  &scroll_accel);
-
-            if (scroll_accel > 0)
-            {
-               /* Ignore input action if tab switch period
-                * is less than defined limit */
-               if ((current_time - xmb->last_tab_switch_time) <
-                     XMB_TAB_SWITCH_REPEAT_DELAY)
-               {
-                  new_action = MENU_ACTION_NOOP;
-                  break;
-               }
-            }
-            xmb->last_tab_switch_time = current_time;
-         }
-         break;
-      case MENU_ACTION_START:
-         /* If this is a menu with thumbnails, attempt
-          * to show fullscreen thumbnail view */
-         if (xmb->fullscreen_thumbnails_available)
-         {
-            size_t selection = menu_navigation_get_selection();
-
-            xmb_show_fullscreen_thumbnails(xmb, selection);
-            new_action = MENU_ACTION_NOOP;
-         }
-         break;
-      default:
-         /* In all other cases, pass through input
-          * menu action without intervention */
-         break;
-   }
-
-   return new_action;
-}
-
-/* Menu entry action callback */
-static int xmb_menu_entry_action(
-      void *userdata, menu_entry_t *entry,
-      size_t i, enum menu_action action)
-{
-   xmb_handle_t *xmb           = (xmb_handle_t*)userdata;
-   /* Process input action */
-   enum menu_action new_action = xmb_parse_menu_entry_action(xmb, action);
-
-   /* Call standard generic_menu_entry_action() function */
-   return generic_menu_entry_action(userdata, entry, i, new_action);
 }
 
 menu_ctx_driver_t menu_ctx_xmb = {
