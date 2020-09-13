@@ -5147,21 +5147,17 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                      cbs->action_sublabel_cache, sizeof(entry->sublabel));
          else if (cbs->action_sublabel)
          {
-            char tmp[MENU_SUBLABEL_MAX_LENGTH];
-            tmp[0] = '\0';
-
             /* If this function callback returns true,
              * we know that the value won't change - so we
              * can cache it instead. */
             if (cbs->action_sublabel(list,
                      entry->type, (unsigned)i,
                      label, path,
-                     tmp,
-                     sizeof(tmp)) > 0)
+                     entry->sublabel,
+                     sizeof(entry->sublabel)) > 0)
                strlcpy(cbs->action_sublabel_cache,
-                     tmp, sizeof(cbs->action_sublabel_cache));
-
-            strlcpy(entry->sublabel, tmp, sizeof(entry->sublabel));
+                     entry->sublabel,
+                     sizeof(cbs->action_sublabel_cache));
          }
       }
    }
@@ -5169,15 +5165,18 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (path_enabled)
    {
       if (!string_is_empty(path) && !use_representation)
-         strlcpy(newpath, path, sizeof(newpath));
-      else if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
+         strlcpy(entry->path, path, sizeof(entry->path));
+      else if (
+                cbs 
+            &&  cbs->setting 
+            &&  cbs->setting->enum_value_idx != MSG_UNKNOWN
             && !cbs->setting->dont_use_enum_idx_representation)
-         strlcpy(newpath,
+         strlcpy(entry->path,
                msg_hash_to_str(cbs->setting->enum_value_idx),
-               sizeof(newpath));
-
-      if (!string_is_empty(newpath))
-         strlcpy(entry->path, newpath, sizeof(entry->path));
+               sizeof(entry->path));
+      else
+         if (!string_is_empty(newpath))
+            strlcpy(entry->path, newpath, sizeof(entry->path));
    }
 }
 
