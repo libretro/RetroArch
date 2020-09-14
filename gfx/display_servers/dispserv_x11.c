@@ -595,13 +595,14 @@ static void x11_display_server_destroy(void *data)
 
          if (outputs->connection == RR_Connected)
          {
+            XRRCrtcInfo *crtc = NULL;
             XRRAddOutputMode(dpy,
                   res->outputs[x11_monitor_index], swdeskmode->id);
             XSync(dpy, False);
             strlcpy(orig_output, outputs->name, sizeof(orig_output));
-            XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
-            crtc->mode = swdeskmode->id;
-            crtc->width = swdeskmode->width;
+            crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
+            crtc->mode   = swdeskmode->id;
+            crtc->width  = swdeskmode->width;
             crtc->height = swdeskmode->height;
             XRRSetCrtcConfig(dpy, res,
                   res->crtcs[x11_monitor_index],
