@@ -1303,6 +1303,10 @@ MSG_HASH(
    "input_autodetect_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
+   "input_sensors_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    "input_axis_threshold"
    )
