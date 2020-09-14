@@ -70,32 +70,29 @@ static void app_terminate(void)
       case NSEventTypeKeyDown:
       case NSEventTypeKeyUp:
          {
-            NSString* ch       = event.characters;
-            uint32_t character = 0;
-            uint32_t mod       = 0;
+            uint32_t i;
+            NSString* ch              = event.characters;
+            uint32_t mod              = 0;
+            const char *inputTextUTF8 = ch.UTF8String;
+            uint32_t character        = inputTextUTF8[0];
+            NSEventModifierFlags mods = event.modifierFlags;
 
-            if (ch && ch.length != 0)
-            {
-               uint32_t i;
-               character = [ch characterAtIndex:0];
-
-               if (event.modifierFlags & NSEventModifierFlagCapsLock)
+               if (mods & NSEventModifierFlagCapsLock)
                   mod |= RETROKMOD_CAPSLOCK;
-               if (event.modifierFlags & NSEventModifierFlagShift)
+               if (mods & NSEventModifierFlagShift)
                   mod |=  RETROKMOD_SHIFT;
-               if (event.modifierFlags & NSEventModifierFlagControl)
+               if (mods & NSEventModifierFlagControl)
                   mod |=  RETROKMOD_CTRL;
-               if (event.modifierFlags & NSEventModifierFlagOption)
+               if (mods & NSEventModifierFlagOption)
                   mod |= RETROKMOD_ALT;
-               if (event.modifierFlags & NSEventModifierFlagCommand)
+               if (mods & NSEventModifierFlagCommand)
                   mod |= RETROKMOD_META;
-               if (event.modifierFlags & NSEventModifierFlagNumericPad)
+               if (mods & NSEventModifierFlagNumericPad)
                   mod |=  RETROKMOD_NUMLOCK;
 
                for (i = 1; i < ch.length; i++)
                   apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
-                        0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
-            }
+                        0, inputTextUTF8[i], mod, RETRO_DEVICE_KEYBOARD);
 
             apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                   event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
