@@ -114,7 +114,6 @@ static bool x11_display_server_set_resolution(void *data,
    int crt_mode_flag        = 0;
    bool crt_exists          = false;
    XRRModeInfo *swmode      = NULL;
-   XRRModeInfo *crt_xrrmode = NULL;
 
    x11_monitor_index        = monitor_index;
 
@@ -202,26 +201,10 @@ static bool x11_display_server_set_resolution(void *data,
 
    /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
     * add and delete modes */
-
-   crt_rrmode.name          = new_mode;
-   crt_rrmode.nameLength    = strlen(crt_name);
-   crt_rrmode.dotClock      = pixel_clock;
-   crt_rrmode.width         = width;
-   crt_rrmode.hSyncStart    = hfp;
-   crt_rrmode.hSyncEnd      = hsp;
-   crt_rrmode.hTotal        = hmax;
-   crt_rrmode.height        = height;
-   crt_rrmode.vSyncStart    = vfp;
-   crt_rrmode.vSyncEnd      = vsp;
-   crt_rrmode.vTotal        = vbp;
-   crt_rrmode.modeFlags     = crt_mode_flag; /* 10 for -hsync -vsync. 26 for -hsync -vsync interlaced */
-   crt_rrmode.hSkew         = 0;
-
-   crt_xrrmode              = &crt_rrmode;
    res                      = XRRGetScreenResources(dpy, window);
    XSync(dpy, False);
 
-   resources = XRRGetScreenResourcesCurrent(dpy, window);
+   resources                = XRRGetScreenResourcesCurrent(dpy, window);
 
    for (m = 0; m < resources->nmode; m++)
    {
@@ -235,7 +218,23 @@ static bool x11_display_server_set_resolution(void *data,
    XRRFreeScreenResources(resources);
 
    if (!crt_exists)
+   {
+      crt_rrmode.name          = new_mode;
+      crt_rrmode.nameLength    = strlen(crt_name);
+      crt_rrmode.dotClock      = pixel_clock;
+      crt_rrmode.width         = width;
+      crt_rrmode.hSyncStart    = hfp;
+      crt_rrmode.hSyncEnd      = hsp;
+      crt_rrmode.hTotal        = hmax;
+      crt_rrmode.height        = height;
+      crt_rrmode.vSyncStart    = vfp;
+      crt_rrmode.vSyncEnd      = vsp;
+      crt_rrmode.vTotal        = vbp;
+      crt_rrmode.modeFlags     = crt_mode_flag; /* 10 for -hsync -vsync. 26 for -hsync -vsync interlaced */
+      crt_rrmode.hSkew         = 0;
+
       XRRCreateMode(dpy, window, &crt_rrmode); 
+   }
 
    resources = XRRGetScreenResourcesCurrent(dpy, window);
 
@@ -507,26 +506,9 @@ static void x11_display_server_destroy(void *data)
 
       strlcpy(dmode, "d_mo", sizeof(dmode));
 
-      crt_rrmode.name          = dmode;
-      crt_rrmode.nameLength    = strlen(crt_name);
-      crt_rrmode.dotClock      = 13849698;
-      crt_rrmode.width         = 700;
-      crt_rrmode.hSyncStart    = 742;
-      crt_rrmode.hSyncEnd      = 801;
-      crt_rrmode.hTotal        = 867;
-      crt_rrmode.height        = 480;
-      crt_rrmode.vSyncStart    = 490;
-      crt_rrmode.vSyncEnd      = 496;
-      crt_rrmode.vTotal        = 533;
-      crt_rrmode.modeFlags     = 26;
-      /* 10 for -hsync -vsync. ?? for -hsync -vsync interlaced */
-      crt_rrmode.hSkew         = 0;
-
       res                      = XRRGetScreenResources(dpy, window);
       resources                = XRRGetScreenResourcesCurrent(dpy, window);
       XSync(dpy, False);
-
-      resources = XRRGetScreenResourcesCurrent(dpy, window);
 
       for (m = 0; m < resources->nmode; m++)
       {
@@ -541,7 +523,23 @@ static void x11_display_server_destroy(void *data)
 
 
       if (!crt_exists)
+      {
+         crt_rrmode.name          = dmode;
+         crt_rrmode.nameLength    = strlen(crt_name);
+         crt_rrmode.dotClock      = 13849698;
+         crt_rrmode.width         = 700;
+         crt_rrmode.hSyncStart    = 742;
+         crt_rrmode.hSyncEnd      = 801;
+         crt_rrmode.hTotal        = 867;
+         crt_rrmode.height        = 480;
+         crt_rrmode.vSyncStart    = 490;
+         crt_rrmode.vSyncEnd      = 496;
+         crt_rrmode.vTotal        = 533;
+         crt_rrmode.modeFlags     = 26;
+         /* 10 for -hsync -vsync. ?? for -hsync -vsync interlaced */
+         crt_rrmode.hSkew         = 0;
          XRRCreateMode(dpy, window, &crt_rrmode); 
+      }
 
       resources = XRRGetScreenResourcesCurrent(dpy, window);
 
@@ -652,7 +650,6 @@ static void x11_display_server_destroy(void *data)
       XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
    }
-
 #endif
 
    if (dispserv)
