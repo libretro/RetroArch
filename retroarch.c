@@ -8903,10 +8903,12 @@ static void discord_init(
    else
    {
       path_basedir(full_path);
-      snprintf(command, sizeof(command), "%s%s", full_path, args);
+      strlcpy(command, full_path, sizeof(command));
+      strlcat(command, args,      sizeof(command));
    }
 #else
-   snprintf(command, sizeof(command), "sh -c %s", args);
+   strlcpy(command, "sh -c ", sizeof(command));
+   strlcat(command, args,     sizeof(command));
 #endif
    RARCH_LOG("[DISCORD]: Registering startup command: %s\n", command);
    Discord_Register(discord_app_id, command);
@@ -9699,8 +9701,12 @@ static void netplay_announce(struct rarch_state *p_rarch)
    frontend_drv =  
       (const frontend_ctx_driver_t*)frontend_driver_get_cpu_architecture_str(
             frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
-   snprintf(frontend_architecture, sizeof(frontend_architecture), "%s %s",
-         frontend_drv->ident, frontend_architecture_tmp);
+   strlcpy(frontend_architecture, frontend_drv->ident,
+         sizeof(frontend_architecture));
+   strlcat(frontend_architecture, " ",
+         sizeof(frontend_architecture));
+   strlcat(frontend_architecture, frontend_architecture_tmp,
+         sizeof(frontend_architecture));
 
 #ifdef HAVE_DISCORD
    if (discord_is_ready())
@@ -11225,7 +11231,8 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
 
             path[0] = ext[0] = '\0';
 
-            snprintf(ext, sizeof(ext), ".%s", mem->extension);
+            strlcpy(ext, ".", sizeof(ext));
+            strlcat(ext, mem->extension, sizeof(ext));
             strlcpy(savename,
                   p_rarch->subsystem_fullpaths->elems[i].data,
                   sizeof(savename));
@@ -12516,7 +12523,7 @@ static bool command_get_status(const char* arg)
    content_get_status(&contentless, &is_inited);
 
    if (!is_inited)
-       snprintf(reply, sizeof(reply), "GET_STATUS CONTENTLESS");
+       strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
    else
    {
        /* add some content info */
@@ -12550,7 +12557,6 @@ static bool command_show_osd_msg(const char* arg)
           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
     return true;
 }
-
 
 static bool command_get_config_param(const char* arg)
 {
@@ -12705,10 +12711,11 @@ bool retroarch_apply_shader(
                   msg_hash_to_str(MSG_SHADER),
                   preset_file);
          else
-            snprintf(msg, sizeof(msg),
-                  "%s: %s",
-                  msg_hash_to_str(MSG_SHADER),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
+         {
+            strlcpy(msg, msg_hash_to_str(MSG_SHADER), sizeof(msg));
+            strlcat(msg, ": ", sizeof(msg));
+            strlcat(msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), sizeof(msg));
+         }
 #ifdef HAVE_GFX_WIDGETS
          if (p_rarch->widgets_active)
             gfx_widget_set_generic_message(&p_rarch->dispwidget_st,
@@ -14370,10 +14377,10 @@ static bool run_translation_service(
                   mode_chr = "image,png";
                break;
             case 1:
-               mode_chr = "sound,wav";
+               mode_chr    = "sound,wav";
                break;
             case 2:
-               mode_chr = "text";
+               mode_chr    = "text";
                break;
             case 3:
                if (use_overlay)
@@ -22083,15 +22090,25 @@ void recording_driver_update_streaming_url(void)
    {
       case STREAMING_MODE_TWITCH:
          if (!string_is_empty(settings->arrays.twitch_stream_key))
-            snprintf(settings->paths.path_stream_url,
-                  sizeof(settings->paths.path_stream_url),
-                  "%s%s", twitch_url, settings->arrays.twitch_stream_key);
+         {
+            strlcpy(settings->paths.path_stream_url,
+                  twitch_url,
+                  sizeof(settings->paths.path_stream_url));
+            strlcat(settings->paths.path_stream_url,
+                  settings->arrays.twitch_stream_key,
+                  sizeof(settings->paths.path_stream_url));
+         }
          break;
       case STREAMING_MODE_YOUTUBE:
          if (!string_is_empty(settings->arrays.youtube_stream_key))
-            snprintf(settings->paths.path_stream_url,
-                  sizeof(settings->paths.path_stream_url),
-                  "%s%s", youtube_url, settings->arrays.youtube_stream_key);
+         {
+            strlcpy(settings->paths.path_stream_url,
+                  youtube_url,
+                  sizeof(settings->paths.path_stream_url));
+            strlcat(settings->paths.path_stream_url,
+                  settings->arrays.youtube_stream_key,
+                  sizeof(settings->paths.path_stream_url));
+         }
          break;
       case STREAMING_MODE_LOCAL:
          /* TODO: figure out default interface and bind to that instead */
