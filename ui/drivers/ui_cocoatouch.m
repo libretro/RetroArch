@@ -328,8 +328,6 @@ enum
    if (vt == _vt)
       return;
 
-   RARCH_LOG("[Cocoa]: change view type: %d ? %d\n", _vt, vt);
-
    _vt = vt;
    if (_renderView != nil)
    {
@@ -337,29 +335,28 @@ enum
       _renderView = nil;
    }
 
-   switch (vt) {
+   switch (vt)
+   {
 #ifdef HAVE_COCOA_METAL
       case APPLE_VIEW_TYPE_VULKAN:
-      case APPLE_VIEW_TYPE_METAL:
-      {
-         MetalView *v = [MetalView new];
-         v.paused = YES;
-         v.enableSetNeedsDisplay = NO;
+       case APPLE_VIEW_TYPE_METAL:
+         {
+            MetalView *v = [MetalView new];
+            v.paused = YES;
+            v.enableSetNeedsDisplay = NO;
 #if TARGET_OS_IOS
-         v.multipleTouchEnabled = YES;
+            v.multipleTouchEnabled = YES;
 #endif
-         _renderView = v;
-      }
-      break;
+            _renderView = v;
+         }
+         break;
 #endif
-      case APPLE_VIEW_TYPE_OPENGL_ES:
-      {
+       case APPLE_VIEW_TYPE_OPENGL_ES:
          _renderView = (BRIDGE GLKView*)glkitview_init();
          break;
-      }
 
-      case APPLE_VIEW_TYPE_NONE:
-      default:
+       case APPLE_VIEW_TYPE_NONE:
+       default:
          return;
    }
 
@@ -418,6 +415,7 @@ enum
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
+   NSError *error;
    char arguments[]   = "retroarch";
    char       *argv[] = {arguments,   NULL};
    int argc           = 1;
@@ -429,7 +427,6 @@ enum
    self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
-   NSError *error;
    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
    if (error) {
        NSLog(@"Could not set audio session category: %@",error.localizedDescription);
