@@ -76,6 +76,7 @@ static void app_terminate(void)
             const char *inputTextUTF8 = ch.UTF8String;
             uint32_t character        = inputTextUTF8[0];
             NSEventModifierFlags mods = event.modifierFlags;
+            uint16_t keycode          = event.keyCode;
 
                if (mods & NSEventModifierFlagCapsLock)
                   mod |= RETROKMOD_CAPSLOCK;
@@ -95,7 +96,7 @@ static void app_terminate(void)
                         0, inputTextUTF8[i], mod, RETRO_DEVICE_KEYBOARD);
 
             apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
-                  event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
+                  keycode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
 #if defined(HAVE_COCOA_METAL)
@@ -104,13 +105,14 @@ static void app_terminate(void)
         case NSFlagsChanged:
 #endif
          {
-            static uint32_t old_flags = 0;
-            uint32_t new_flags        = event.modifierFlags;
-            bool down                 = (new_flags & old_flags) == old_flags;
+            static NSEventModifierFlags old_flags = 0;
+            NSEventModifierFlags new_flags        = event.modifierFlags;
+            bool down                             = (new_flags & old_flags) == old_flags;
+            uint16_t keycode                      = event.keyCode;
 
-            old_flags                 = new_flags;
+            old_flags                             = new_flags;
 
-            apple_input_keyboard_event(down, event.keyCode,
+            apple_input_keyboard_event(down, keycode,
                   0, new_flags, RETRO_DEVICE_KEYBOARD);
          }
          break;
@@ -166,9 +168,9 @@ static void app_terminate(void)
        {
            NSInteger number = event.buttonNumber;
 #ifdef HAVE_COCOA_METAL
-           NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+           NSPoint pos      = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #else
-           NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+           NSPoint pos      = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
            apple = (cocoa_input_data_t*)input_driver_get_data();
            if (!apple || pos.y < 0)
@@ -183,9 +185,9 @@ static void app_terminate(void)
          {
             NSInteger number = event.buttonNumber;
 #ifdef HAVE_COCOA_METAL
-            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+            NSPoint pos      = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #else
-            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            NSPoint pos      = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
             apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple || pos.y < 0)
