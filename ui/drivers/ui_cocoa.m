@@ -121,7 +121,7 @@ static void app_terminate(void)
         case NSEventTypeRightMouseDragged:
         case NSEventTypeOtherMouseDragged:
          {
-            NSPoint pos;
+            CGPoint pos;
             apple              = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
@@ -166,13 +166,13 @@ static void app_terminate(void)
        case NSEventTypeRightMouseDown:
        case NSEventTypeOtherMouseDown:
        {
-           NSInteger number = event.buttonNumber;
+           NSInteger number      = event.buttonNumber;
 #ifdef HAVE_COCOA_METAL
-           NSPoint pos      = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+           CGPoint pos           = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #else
-           NSPoint pos      = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+           CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
-           apple = (cocoa_input_data_t*)input_driver_get_data();
+           apple                 = (cocoa_input_data_t*)input_driver_get_data();
            if (!apple || pos.y < 0)
                return;
            apple->mouse_buttons |= (1 << number);
@@ -183,13 +183,13 @@ static void app_terminate(void)
       case NSEventTypeRightMouseUp:
       case NSEventTypeOtherMouseUp:
          {
-            NSInteger number = event.buttonNumber;
+            NSInteger number      = event.buttonNumber;
 #ifdef HAVE_COCOA_METAL
-            NSPoint pos      = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+            CGPoint pos           = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #else
-            NSPoint pos      = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
-            apple = (cocoa_input_data_t*)input_driver_get_data();
+            apple                 = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple || pos.y < 0)
                return;
             apple->mouse_buttons &= ~(1 << number);
