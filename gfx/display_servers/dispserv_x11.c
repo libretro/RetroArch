@@ -137,7 +137,9 @@ static bool x11_display_server_set_resolution(void *data,
    {
       hfp    = (width * 1.033)+(padjust*2);
       hbp  = (width * 1.225)+(padjust*2);
-   }else {
+   }
+   else
+   {
       hfp  = ((width * 1.033) + (width / 112))+(padjust*4);
       hbp  = ((width * 1.225) + (width /58))+(padjust*4);
       xoffset = xoffset*2;
@@ -189,9 +191,7 @@ static bool x11_display_server_set_resolution(void *data,
 
    /* create interlaced newmode from modline variables */
    if (height < 300)
-   {
       crt_mode_flag = 10; 
-   }
 
    /* create interlaced newmode from modline variables */
    if (height > 300)
