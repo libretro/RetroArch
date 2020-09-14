@@ -235,7 +235,7 @@ static bool x11_display_server_set_resolution(void *data,
    XRRFreeScreenResources(resources);
 
    if (!crt_exists)
-      wMode = XRRCreateMode(dpy, window, &crt_rrmode); 
+      XRRCreateMode(dpy, window, &crt_rrmode); 
 
    resources = XRRGetScreenResourcesCurrent(dpy, window);
 
@@ -637,7 +637,7 @@ static void x11_display_server_destroy(void *data)
                if (outputs->connection == RR_Connected)
                {
                   snprintf(old_mode, sizeof(old_mode), "CRT%d", i);
-                  if (strcmp(resources->modes[m].name, old_mode) == 0)
+                  if (string_is_equal(resources->modes[m].name, old_mode))
                   {
                      swoldmode = &resources->modes[m];
                      XRRDeleteOutputMode(dpy, res->outputs[j], swoldmode->id);
