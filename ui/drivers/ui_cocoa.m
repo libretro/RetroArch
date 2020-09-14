@@ -128,9 +128,9 @@ static void app_terminate(void)
             pos.y              = 0;
 
 #if defined(HAVE_COCOA_METAL)
-            pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+            pos                = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #elif defined(HAVE_COCOA)
-            pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            pos                = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
 
             /* FIXME: Disable clipping until graphical offset issues 
@@ -140,10 +140,11 @@ static void app_terminate(void)
             if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number)
                return;
 #endif
-
+            CGFloat delta_x             = event.deltaX;
+            CGFloat delta_y             = event.deltaY;
             /* Relative */
-            apple->mouse_rel_x         += (int16_t)event.deltaX;
-            apple->mouse_rel_y         += (int16_t)event.deltaY;
+            apple->mouse_rel_x         += (int16_t)delta_x;
+            apple->mouse_rel_y         += (int16_t)delta_y;
 
             /* Absolute */
             apple->touches[0].screen_x  = (int16_t)pos.x;
