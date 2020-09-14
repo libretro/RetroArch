@@ -232,20 +232,15 @@ float get_backing_scale_factor(void)
 {
    static float
    backing_scale_def    = 0.0f;
-#if TARGET_OS_OSX
-   RAScreen *screen     = NULL;
-#endif
    if (backing_scale_def != 0.0f)
       return backing_scale_def;
 
    backing_scale_def    = 1.0f;
 #if TARGET_OS_OSX
-   screen               = (BRIDGE RAScreen*)get_chosen_screen();
-
-   if (screen)
    {
-      SEL selector = NSSelectorFromString(BOXSTRING("backingScaleFactor"));
-      if ([screen respondsToSelector:selector])
+      id nsscreen       = objc_getClass("NSScreen");
+      SEL selector      = sel_registerName("backingScaleFactor");
+      if (class_respondsToSelector(nsscreen, selector))
       {
          CGFloat ret;
 #if defined(HAVE_COCOA_METAL)
