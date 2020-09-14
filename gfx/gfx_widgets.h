@@ -392,10 +392,6 @@ void gfx_widgets_frame(void *data);
 
 void *dispwidget_get_ptr(void);
 
-bool gfx_widgets_set_status_text(
-      void *data,
-      const char *new_status_text);
-
 extern const gfx_widget_t gfx_widget_screenshot;
 extern const gfx_widget_t gfx_widget_volume;
 extern const gfx_widget_t gfx_widget_generic_message;

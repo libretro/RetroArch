@@ -2017,18 +2017,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    font_driver_bind_block(NULL, NULL);
 }
 
-bool gfx_widgets_set_status_text(
-      void *data,
-      const char *new_status_text)
-{
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)data;
-
-   strlcpy(p_dispwidget->gfx_widgets_status_text,
-         new_status_text, sizeof(p_dispwidget->gfx_widgets_status_text));
-
-   return true;
-}
-
 #ifdef HAVE_TRANSLATE
 bool gfx_widgets_ai_service_overlay_load(
       dispgfx_widget_t *p_dispwidget,

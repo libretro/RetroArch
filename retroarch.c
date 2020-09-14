@@ -33356,9 +33356,11 @@ static void video_driver_frame(const void *data, unsigned width,
    {
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
-         gfx_widgets_set_status_text(
-               &p_rarch->dispwidget_st,
-               status_text);
+         strlcpy(
+               p_rarch->dispwidget_st.gfx_widgets_status_text,
+               status_text,
+               sizeof(p_rarch->dispwidget_st.gfx_widgets_status_text)
+               );
       else
 #endif
       {
