@@ -60,10 +60,9 @@ static void app_terminate(void)
 
 
 - (void)sendEvent:(NSEvent *)event {
-   [super sendEvent:event];
-
-   cocoa_input_data_t *apple = NULL;
    NSEventType event_type = event.type;
+
+   [super sendEvent:event];
 
    switch ((int32_t)event_type)
    {
@@ -121,29 +120,20 @@ static void app_terminate(void)
         case NSEventTypeRightMouseDragged:
         case NSEventTypeOtherMouseDragged:
          {
-            CGPoint pos;
-            apple              = (cocoa_input_data_t*)input_driver_get_data();
-            if (!apple)
-               return;
-
-            pos.x              = 0;
-            pos.y              = 0;
-
-#if defined(HAVE_COCOA_METAL)
-            pos                = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-#elif defined(HAVE_COCOA)
-            pos                = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-#endif
-
-            /* FIXME: Disable clipping until graphical offset issues 
-             * are fixed */
-#if 0
-            NSInteger window_number = [[[NSApplication sharedApplication] keyWindow] windowNumber];
-            if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number)
-               return;
-#endif
             CGFloat delta_x             = event.deltaX;
             CGFloat delta_y             = event.deltaY;
+#if defined(HAVE_COCOA_METAL)
+            CGPoint pos                 = [apple_platform.renderView 
+               convertPoint:[event locationInWindow] fromView:nil];
+#elif defined(HAVE_COCOA)
+            CGPoint pos                 = [[CocoaView get] 
+               convertPoint:[event locationInWindow] fromView:nil];
+#endif
+            cocoa_input_data_t 
+               *apple                   = (cocoa_input_data_t*)
+               input_driver_get_data();
+            if (!apple)
+               return;
             /* Relative */
             apple->mouse_rel_x         += (int16_t)delta_x;
             apple->mouse_rel_y         += (int16_t)delta_y;
@@ -172,7 +162,9 @@ static void app_terminate(void)
 #else
            CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
-           apple                 = (cocoa_input_data_t*)input_driver_get_data();
+           cocoa_input_data_t 
+              *apple             = (cocoa_input_data_t*)
+              input_driver_get_data();
            if (!apple || pos.y < 0)
                return;
            apple->mouse_buttons |= (1 << number);
@@ -189,7 +181,9 @@ static void app_terminate(void)
 #else
             CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
-            apple                 = (cocoa_input_data_t*)input_driver_get_data();
+           cocoa_input_data_t 
+              *apple              = (cocoa_input_data_t*)
+              input_driver_get_data();
             if (!apple || pos.y < 0)
                return;
             apple->mouse_buttons &= ~(1 << number);
