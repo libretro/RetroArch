@@ -4845,18 +4845,15 @@ int generic_menu_entry_action(
 
       switch (action)
       {
-         case MENU_ACTION_INFO:
-            break;
          case MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE:
             menu_entries_get_title(title_name, sizeof(title_name));
             break;
-         case MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL:
-            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
-            break;
+         case MENU_ACTION_START:
+            /* if equal to '..' we break, else we fall-through */
+            if (string_is_equal(current_value, "..."))
+               break;
+            /* fall-through */
          case MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL:
-            menu_entries_get_title(title_name, sizeof(title_name));
-            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
-            break;
          case MENU_ACTION_OK:
          case MENU_ACTION_LEFT:
          case MENU_ACTION_RIGHT:
@@ -4868,20 +4865,13 @@ int generic_menu_entry_action(
          case MENU_ACTION_DOWN:
          case MENU_ACTION_SCROLL_UP:
          case MENU_ACTION_SCROLL_DOWN:
-            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
-            break;
-         case MENU_ACTION_START:
-            if (!string_is_equal(current_value, "..."))
-            {
-               menu_entries_get_title(title_name, sizeof(title_name));
-               get_current_menu_label(p_rarch, current_label, sizeof(current_label));
-            }
-            break;
          case MENU_ACTION_SELECT:
          case MENU_ACTION_SEARCH:
+         case MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL:
             get_current_menu_label(p_rarch, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_SCAN:
+         case MENU_ACTION_INFO:
          default:
             break;
       }
