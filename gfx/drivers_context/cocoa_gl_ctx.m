@@ -870,8 +870,10 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
          break;
    }
     
+#if TARGET_OS_OSX
    if (!sel_flushBuffer)
       sel_flushBuffer = sel_registerName("flushBuffer");
+#endif
 
    return cocoa_ctx;
 }
