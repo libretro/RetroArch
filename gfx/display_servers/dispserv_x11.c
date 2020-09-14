@@ -114,7 +114,6 @@ static bool x11_display_server_set_resolution(void *data,
    int crt_mode_flag        = 0;
    bool crt_exists          = false;
    XRRModeInfo *swmode      = NULL;
-   XRRModeInfo *crt_xrrmode = NULL;
 
    x11_monitor_index        = monitor_index;
 
@@ -217,7 +216,6 @@ static bool x11_display_server_set_resolution(void *data,
    crt_rrmode.modeFlags     = crt_mode_flag; /* 10 for -hsync -vsync. 26 for -hsync -vsync interlaced */
    crt_rrmode.hSkew         = 0;
 
-   crt_xrrmode              = &crt_rrmode;
    res                      = XRRGetScreenResources(dpy, window);
    XSync(dpy, False);
 
