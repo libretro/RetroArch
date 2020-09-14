@@ -226,6 +226,8 @@ struct rarch_joypad_driver
 #define DEFAULT_MAX_PADS 2
 #elif defined(GEKKO) || defined(HW_RVL)
 #define DEFAULT_MAX_PADS 4
+#elif defined(HAVE_ODROIDGO2)
+#define DEFAULT_MAX_PADS 1
 #elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
 #define DEFAULT_MAX_PADS 8
 #elif defined(__QNX__)
