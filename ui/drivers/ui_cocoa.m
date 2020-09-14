@@ -285,37 +285,34 @@ static char **waiting_argv;
    if (vt == _vt)
       return;
 
-   RARCH_LOG("[Cocoa]: change view type: %d ? %d\n", _vt, vt);
-
    _vt = vt;
    if (_renderView != nil)
    {
-      _renderView.wantsLayer = NO;
-      _renderView.layer = nil;
+      _renderView.wantsLayer  = NO;
+      _renderView.layer       = nil;
       [_renderView removeFromSuperview];
       self.window.contentView = nil;
-      _renderView = nil;
+      _renderView             = nil;
    }
 
-   switch (vt) {
+   switch (vt)
+   {
       case APPLE_VIEW_TYPE_VULKAN:
-      case APPLE_VIEW_TYPE_METAL:
-      {
-         MetalView *v = [MetalView new];
-         v.paused = YES;
-         v.enableSetNeedsDisplay = NO;
-         _renderView = v;
-      }
-      break;
+       case APPLE_VIEW_TYPE_METAL:
+         {
+            MetalView *v = [MetalView new];
+            v.paused = YES;
+            v.enableSetNeedsDisplay = NO;
+            _renderView = v;
+         }
+         break;
 
-      case APPLE_VIEW_TYPE_OPENGL:
-      {
+       case APPLE_VIEW_TYPE_OPENGL:
          _renderView = [CocoaView get];
          break;
-      }
 
-      case APPLE_VIEW_TYPE_NONE:
-      default:
+       case APPLE_VIEW_TYPE_NONE:
+       default:
          return;
    }
 
