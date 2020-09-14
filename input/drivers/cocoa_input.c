@@ -398,7 +398,7 @@ static int16_t cocoa_input_state(
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (apple_key_state[rarch_keysym_lut[binds[port][i].key]])
+                  if ((binds[port][i].key < RETROK_LAST) && apple_key_state[rarch_keysym_lut[binds[port][i].key]])
                      ret |= (1 << i);
                }
             }
