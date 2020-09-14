@@ -115,6 +115,7 @@ void nsview_set_ptr(CocoaView *p)
 
 #if TARGET_OS_OSX
 static SEL sel_flushBuffer;
+static SEL updateSel;
 static NSOpenGLPixelFormat* g_format;
 
 void *glcontext_get_ptr(void)
@@ -268,8 +269,8 @@ void cocoagl_gfx_ctx_update(void)
          CGLUpdateContext(g_hw_ctx.CGLContextObj);
          CGLUpdateContext(g_context.CGLContextObj);
 #else
-         [g_hw_ctx update];
-         [g_context update];
+         ((void (*)(id, SEL))objc_msgSend)(g_hw_ctx, updateSel);
+         ((void (*)(id, SEL))objc_msgSend)(g_context, updateSel);
 #endif
 #endif
 #endif
@@ -866,8 +867,8 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
    }
     
 #if TARGET_OS_OSX
-   if (!sel_flushBuffer)
-      sel_flushBuffer = sel_registerName("flushBuffer");
+   sel_flushBuffer = sel_registerName("flushBuffer");
+   updateSel       = sel_registerName("update");
 #endif
 
    return cocoa_ctx;
