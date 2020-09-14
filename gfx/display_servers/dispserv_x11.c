@@ -19,6 +19,7 @@
 #include <math.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include <sys/types.h>
 #include <unistd.h>
