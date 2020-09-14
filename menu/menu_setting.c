@@ -7296,6 +7296,26 @@ static void general_write_handler(rarch_setting_t *setting)
             audio_driver_load_system_sounds();
 #endif
          break;
+      case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
+         /* When toggling sensor input off, ensure
+          * that all sensors are actually disabled */
+         if (!*setting->value.target.boolean)
+         {
+            size_t i;
+
+            for (i = 0; i < DEFAULT_MAX_PADS; i++)
+            {
+               /* Event rate does not matter when disabling
+                * sensors - set to zero */
+               input_sensor_set_state(i,
+                     RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
+               input_sensor_set_state(i,
+                     RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
+               input_sensor_set_state(i,
+                     RETRO_SENSOR_ILLUMINANCE_DISABLE, 0);
+            }
+         }
+         break;
       default:
          break;
    }
@@ -11712,6 +11732,22 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_sensors_enable,
+                  MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+                  DEFAULT_INPUT_SENSORS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
                   );
 
 #if 0

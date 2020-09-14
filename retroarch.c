@@ -19587,10 +19587,15 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE:
       {
-         struct retro_sensor_interface *iface =
-            (struct retro_sensor_interface*)data;
+         settings_t *settings                 = p_rarch->configuration_settings;
+         bool input_sensors_enable            = settings->bools.input_sensors_enable;
+         struct retro_sensor_interface *iface = (struct retro_sensor_interface*)data;
 
          RARCH_LOG("[Environ]: GET_SENSOR_INTERFACE.\n");
+
+         if (!input_sensors_enable)
+            return false;
+
          iface->set_sensor_state = input_sensor_set_state;
          iface->get_sensor_input = input_sensor_get_input;
          break;
@@ -23840,6 +23845,17 @@ bool input_sensor_set_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
+   bool input_sensors_enable   = settings->bools.input_sensors_enable;
+
+   /* If sensors are disabled, inhibit any enable
+    * actions (but always allow disable actions) */
+   if (!input_sensors_enable &&
+       ((action == RETRO_SENSOR_ACCELEROMETER_ENABLE) ||
+        (action == RETRO_SENSOR_GYROSCOPE_ENABLE) ||
+        (action == RETRO_SENSOR_ILLUMINANCE_ENABLE)))
+      return false;
+
    if (p_rarch->current_input_data &&
          p_rarch->current_input->set_sensor_state)
       return p_rarch->current_input->set_sensor_state(p_rarch->current_input_data,
@@ -23850,8 +23866,12 @@ bool input_sensor_set_state(unsigned port,
 float input_sensor_get_input(unsigned port, unsigned id)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (p_rarch->current_input_data &&
-         p_rarch->current_input->get_sensor_input)
+   settings_t *settings        = p_rarch->configuration_settings;
+   bool input_sensors_enable   = settings->bools.input_sensors_enable;
+
+   if (input_sensors_enable &&
+       p_rarch->current_input_data &&
+       p_rarch->current_input->get_sensor_input)
       return p_rarch->current_input->get_sensor_input(p_rarch->current_input_data,
             port, id);
    return 0.0f;

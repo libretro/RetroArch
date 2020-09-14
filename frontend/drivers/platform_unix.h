@@ -138,9 +138,11 @@ struct android_app
    /*  Below are "private" implementation of RA code. */
    bool unfocused;
    unsigned accelerometer_event_rate;
+   unsigned gyroscope_event_rate;
    ASensorManager *sensorManager;
    ASensorEventQueue *sensorEventQueue;
    const ASensor* accelerometerSensor;
+   const ASensor* gyroscopeSensor;
    uint64_t sensor_state_mask;
    char current_ime[PATH_MAX_LENGTH];
    bool input_alive;

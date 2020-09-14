@@ -496,6 +496,7 @@ typedef struct settings
       /* Input */
       bool input_remap_binds_enable;
       bool input_autodetect_enable;
+      bool input_sensors_enable;
       bool input_overlay_enable;
       bool input_overlay_enable_autopreferred;
       bool input_overlay_hide_in_menu;
