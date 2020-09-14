@@ -142,14 +142,14 @@ static void app_terminate(void)
 #endif
 
             /* Relative */
-            apple->mouse_rel_x += (int16_t)event.deltaX;
-            apple->mouse_rel_y += (int16_t)event.deltaY;
+            apple->mouse_rel_x         += (int16_t)event.deltaX;
+            apple->mouse_rel_y         += (int16_t)event.deltaY;
 
             /* Absolute */
-            apple->touches[0].screen_x = (int16_t)pos.x;
-            apple->touches[0].screen_y = (int16_t)pos.y;
-            apple->window_pos_x = (int16_t)pos.x;
-            apple->window_pos_y = (int16_t)pos.y;
+            apple->touches[0].screen_x  = (int16_t)pos.x;
+            apple->touches[0].screen_y  = (int16_t)pos.y;
+            apple->window_pos_x         = (int16_t)pos.x;
+            apple->window_pos_y         = (int16_t)pos.y;
          }
          break;
 #if defined(HAVE_COCOA_METAL)
@@ -163,6 +163,7 @@ static void app_terminate(void)
        case NSEventTypeRightMouseDown:
        case NSEventTypeOtherMouseDown:
        {
+           NSInteger number = event.buttonNumber;
 #ifdef HAVE_COCOA_METAL
            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #else
@@ -171,14 +172,15 @@ static void app_terminate(void)
            apple = (cocoa_input_data_t*)input_driver_get_data();
            if (!apple || pos.y < 0)
                return;
-           apple->mouse_buttons |= (1 << event.buttonNumber);
-           apple->touch_count = 1;
+           apple->mouse_buttons |= (1 << number);
+           apple->touch_count    = 1;
        }
            break;
       case NSEventTypeLeftMouseUp:
       case NSEventTypeRightMouseUp:
       case NSEventTypeOtherMouseUp:
          {
+            NSInteger number = event.buttonNumber;
 #ifdef HAVE_COCOA_METAL
             NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #else
@@ -187,8 +189,8 @@ static void app_terminate(void)
             apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple || pos.y < 0)
                return;
-            apple->mouse_buttons &= ~(1 << event.buttonNumber);
-            apple->touch_count = 0;
+            apple->mouse_buttons &= ~(1 << number);
+            apple->touch_count    = 0;
          }
          break;
       default:
