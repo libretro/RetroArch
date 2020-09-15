@@ -401,8 +401,10 @@ static void gl_raster_font_render_message(
    }
 }
 
-static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
-      gl_raster_t *font, bool full_screen)
+static void gl_raster_font_setup_viewport(
+      gl_raster_t *font,
+      unsigned width, unsigned height,
+      bool full_screen)
 {
    video_driver_set_viewport(width, height, full_screen, false);
 
@@ -484,7 +486,7 @@ static void gl_raster_font_render_msg(
    if (font->block)
       font->block->fullscreen = full_screen;
    else
-      gl_raster_font_setup_viewport(width, height, font, full_screen);
+      gl_raster_font_setup_viewport(font, width, height, full_screen);
 
    if (font->gl)
    {
@@ -542,7 +544,7 @@ static void gl_raster_font_flush_block(unsigned width, unsigned height,
    if (!font || !block || !block->carr.coords.vertices)
       return;
 
-   gl_raster_font_setup_viewport(width, height, font, block->fullscreen);
+   gl_raster_font_setup_viewport(font, width, height, block->fullscreen);
    gl_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
 
    if (font->gl)
