@@ -214,14 +214,13 @@ static char **waiting_argv;
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    unsigned i;
-#ifdef HAVE_COCOA_METAL
    apple_platform   = self;
-
+   [self.window setAcceptsMouseMovedEvents: YES];
+#ifdef HAVE_COCOA_METAL
    self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
    _listener = [WindowListener new];
 
-   [self.window setAcceptsMouseMovedEvents: YES];
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
 
@@ -229,15 +228,12 @@ static char **waiting_argv;
 #else
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
    SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
-   apple_platform   = self;
 
    if ([self.window respondsToSelector:selector])
    {
-       if ([self.window respondsToSelector:fsselector])
-          [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
+      if ([self.window respondsToSelector:fsselector])
+       [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
-
-   [self.window setAcceptsMouseMovedEvents: YES];
 
    [[CocoaView get] setFrame: [[self.window contentView] bounds]];
    [[self.window contentView] setAutoresizesSubviews:YES];
@@ -245,15 +241,15 @@ static char **waiting_argv;
    [self.window makeFirstResponder:[CocoaView get]];
 #endif
 
-    for (i = 0; i < waiting_argc; i++)
-    {
-        if (string_is_equal(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
-        {
-            waiting_argv[i]   = NULL;
-            waiting_argv[i+1] = NULL;
-            waiting_argc -= 2;
-        }
-    }
+   for (i = 0; i < waiting_argc; i++)
+   {
+      if (string_is_equal(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
+      {
+         waiting_argv[i]   = NULL;
+         waiting_argv[i+1] = NULL;
+         waiting_argc -= 2;
+      }
+   }
    if (rarch_main(waiting_argc, waiting_argv, NULL))
       [[NSApplication sharedApplication] terminate:nil];
 
@@ -270,7 +266,8 @@ static char **waiting_argv;
 #pragma mark - ApplePlatform
 
 #ifdef HAVE_COCOA_METAL
-- (void)setViewType:(apple_view_type_t)vt {
+- (void)setViewType:(apple_view_type_t)vt
+{
    if (vt == _vt)
       return;
 
@@ -301,7 +298,7 @@ static char **waiting_argv;
          break;
 
        case APPLE_VIEW_TYPE_NONE:
-       default:
+                         default:
          return;
    }
 
@@ -312,17 +309,9 @@ static char **waiting_argv;
    self.window.contentView.nextResponder = _listener;
 }
 
-- (apple_view_type_t)viewType {
-   return _vt;
-}
-
-- (id)renderView {
-   return _renderView;
-}
-
-- (bool)hasFocus {
-   return [NSApp isActive];
-}
+- (apple_view_type_t)viewType { return _vt; }
+- (id)renderView { return _renderView; }
+- (bool)hasFocus { return [NSApp isActive]; }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
    BOOL isFullScreen = (self.window.styleMask & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
@@ -345,7 +334,8 @@ static char **waiting_argv;
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
 }
 
-- (void)setCursorVisible:(bool)v {
+- (void)setCursorVisible:(bool)v
+{
    if (v)
       [NSCursor unhide];
    else
@@ -398,19 +388,9 @@ static char **waiting_argv;
     main_exit(NULL);
 }
 
-- (void)applicationDidBecomeActive:(NSNotification *)notification
-{
-}
-
-- (void)applicationWillResignActive:(NSNotification *)notification
-{
-}
-
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
-{
-   return YES;
-}
-
+- (void)applicationDidBecomeActive:(NSNotification *)notification  { }
+- (void)applicationWillResignActive:(NSNotification *)notification { }
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication { return YES; }
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
    NSApplicationTerminateReply reply = NSTerminateNow;
@@ -467,9 +447,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
    rarch_system_info_t *info        = runloop_get_system_info();
    settings_t           *settings   = config_get_ptr();
    bool set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
-   if (!state)
-      return;
-   if (string_is_empty(state->result))
+   if (!state || string_is_empty(state->result))
       return;
    if (!result)
       return;
@@ -497,9 +475,7 @@ static void open_document_handler(
    struct retro_system_info *system = runloop_get_libretro_system_info();
    const char            *core_name = system ? system->library_name : NULL;
 
-   if (!state)
-      return;
-   if (string_is_empty(state->result))
+   if (!state || string_is_empty(state->result))
       return;
    if (!result)
       return;
@@ -570,9 +546,8 @@ static void open_document_handler(
     }
 }
 
-- (void)unloadingCore
-{
-}
+- (void)unloadingCore { }
+- (IBAction)showPreferences:(id)sender { }
 
 - (IBAction)showCoresDirectory:(id)sender
 {
@@ -581,14 +556,10 @@ static void open_document_handler(
    [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(path_dir_libretro)];
 }
 
-- (IBAction)showPreferences:(id)sender
-{
-}
-
 - (IBAction)basicEvent:(id)sender
 {
-   enum event_command cmd;
-   unsigned sender_tag = (unsigned)[sender tag];
+   enum event_command cmd = CMD_EVENT_NONE;
+   unsigned    sender_tag = (unsigned)[sender tag];
 
    switch (sender_tag)
    {
@@ -623,7 +594,6 @@ static void open_document_handler(
          cmd = CMD_EVENT_FULLSCREEN_TOGGLE;
          break;
       default:
-         cmd = CMD_EVENT_NONE;
          break;
    }
 
