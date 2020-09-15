@@ -32,8 +32,6 @@
 #include "apple_platform.h"
 #endif
 
-
-
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
 void *glkitview_init(void);
@@ -88,7 +86,7 @@ void *glkitview_init(void);
    [self registerForDraggedTypes:@[NSColorPboardType, NSFilenamesPboardType]];
 #elif defined(HAVE_COCOATOUCH)
 #if defined(HAVE_COCOA_METAL)
-    self.view = [UIView new];
+   self.view = [UIView new];
 #else
    self.view = (BRIDGE GLKView*)glkitview_init();
 #endif
@@ -100,11 +98,7 @@ void *glkitview_init(void);
 #endif
 #endif
     
-#if defined(HAVE_COCOA)
-    video_driver_display_type_set(RARCH_DISPLAY_OSX);
-    video_driver_display_set(0);
-    video_driver_display_userdata_set((uintptr_t)self);
-#elif defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)self);
