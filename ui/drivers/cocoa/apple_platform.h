@@ -27,18 +27,14 @@
 
 /*! @brief renderView returns the current render view based on the viewType */
 @property(readonly) id renderView;
-
 /*! @brief isActive returns true if the application has focus */
 @property(readonly) bool hasFocus;
-
 @property(readwrite) apple_view_type_t viewType;
 
 /*! @brief setVideoMode adjusts the video display to the specified mode */
 - (void)setVideoMode:(gfx_ctx_mode_t)mode;
-
 /*! @brief setCursorVisible specifies whether the cursor is visible */
 - (void)setCursorVisible:(bool)v;
-
 /*! @brief controls whether the screen saver should be disabled and
  * the displays should not sleep.
  */
@@ -58,7 +54,6 @@ UINavigationControllerDelegate> {
 
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
-@property (nonatomic) RAMenuBase* mainmenu;
 @property (nonatomic) int menu_count;
 
 + (RetroArch_iOS*)get;
