@@ -84,7 +84,8 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == -1)
    {
-      ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
+      ui_companion_cocoatouch_event_command(
+            NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
       main_exit(NULL);
       return;
    }
@@ -122,13 +123,8 @@ static void handle_touch_event(NSArray* touches)
 
    for (i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i++)
    {
-      CGPoint       coord;
       UITouch      *touch = [touches objectAtIndex:i];
-
-//      if (touch.view != [CocoaView get].view)
-//         continue;
-
-      coord = [touch locationInView:[touch view]];
+      CGPoint       coord = [touch locationInView:[touch view]];
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
          apple->touches[apple->touch_count   ].screen_x = coord.x * scale;
@@ -138,7 +134,7 @@ static void handle_touch_event(NSArray* touches)
 }
 
 #ifndef HAVE_APPLE_STORE
-// iOS7 Keyboard support
+/* iOS7 Keyboard support */
 @interface UIEvent(iOS7Keyboard)
 @property(readonly, nonatomic) long long _keyCode;
 @property(readonly, nonatomic) _Bool _isKeyDown;
@@ -176,8 +172,9 @@ enum
    NSDeviceIndependentModifierFlagsMask = 0xffff0000U
 };
 
-// This is specifically for iOS 9, according to the private headers
--(void)handleKeyUIEvent:(UIEvent *)event {
+/* This is specifically for iOS 9, according to the private headers */
+-(void)handleKeyUIEvent:(UIEvent *)event
+{
     /* This gets called twice with the same timestamp
      * for each keypress, that's fine for polling
      * but is bad for business with events. */
@@ -226,7 +223,7 @@ enum
     [super handleKeyUIEvent:event];
 }
 
-// This is for iOS versions < 9.0
+/* This is for iOS versions < 9.0 */
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
    /* This gets called twice with the same timestamp
@@ -296,7 +293,8 @@ enum
       /* Keyboard event hack for iOS versions prior to iOS 7.
        *
        * Derived from:
-       * http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
+       * http://nacho4d-nacho4d.blogspot.com/2012/01/
+       * catching-keyboard-events-in-ios.html
        */
       const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
       int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
@@ -318,13 +316,11 @@ enum
 @implementation RetroArch_iOS
 
 #pragma mark - ApplePlatform
--(id)renderView {
-    return _renderView;
-}
--(bool)hasFocus {
-    return YES;
-}
-- (void)setViewType:(apple_view_type_t)vt {
+-(id)renderView { return _renderView; }
+-(bool)hasFocus { return YES; }
+
+- (void)setViewType:(apple_view_type_t)vt
+{
    if (vt == _vt)
       return;
 
@@ -356,61 +352,50 @@ enum
          break;
 
        case APPLE_VIEW_TYPE_NONE:
-       default:
+                         default:
          return;
    }
 
-    _renderView.translatesAutoresizingMaskIntoConstraints = NO;
-    UIView *rootView = [CocoaView get].view;
-    [rootView addSubview:_renderView];
-    [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
-    [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
-    [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
-    [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+   _renderView.translatesAutoresizingMaskIntoConstraints = NO;
+   UIView *rootView = [CocoaView get].view;
+   [rootView addSubview:_renderView];
+   [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
+   [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
+   [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
+   [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
 }
 
-- (apple_view_type_t)viewType {
-   return _vt;
-}
+- (apple_view_type_t)viewType { return _vt; }
 
-- (void)setVideoMode:(gfx_ctx_mode_t)mode {
-#ifdef HAVE_COCOA_METAL
-    MetalView *metalView = (MetalView*) _renderView;
-    CGFloat scale = [[UIScreen mainScreen] scale];
-    [metalView setDrawableSize:CGSizeMake(
-                                          _renderView.bounds.size.width * scale,
-                                          _renderView.bounds.size.height * scale
-                                          )
-    ];
-#endif
-}
-
-- (void)setCursorVisible:(bool)v {
-    // no-op for iOS
-}
-
-- (bool)setDisableDisplaySleep:(bool)disable {
-    // no-op for iOS
-    return NO;
-}
-
-+ (RetroArch_iOS*)get
+- (void)setVideoMode:(gfx_ctx_mode_t)mode
 {
-   return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
+#ifdef HAVE_COCOA_METAL
+   MetalView *metalView = (MetalView*) _renderView;
+   CGFloat scale = [[UIScreen mainScreen] scale];
+   [metalView setDrawableSize:CGSizeMake(
+         _renderView.bounds.size.width * scale,
+         _renderView.bounds.size.height * scale
+         )];
+#endif
 }
 
--(NSString*)documentsDirectory {
-    if (_documentsDirectory == nil)
-    {
+- (void)setCursorVisible:(bool)v { /* no-op for iOS */ }
+- (bool)setDisableDisplaySleep:(bool)disable { /* no-op for iOS */ return NO; }
++ (RetroArch_iOS*)get { return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate]; }
+
+-(NSString*)documentsDirectory
+{
+   if (_documentsDirectory == nil)
+   {
 #if TARGET_OS_IOS
-       NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 #elif TARGET_OS_TV
-       NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
 #endif
 
-       _documentsDirectory = paths.firstObject;
-    }
-    return _documentsDirectory;
+      _documentsDirectory = paths.firstObject;
+   }
+   return _documentsDirectory;
 }
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
@@ -424,13 +409,10 @@ enum
    [self setDelegate:self];
 
    /* Setup window */
-   self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   self.window        = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
-   if (error) {
-       NSLog(@"Could not set audio session category: %@",error.localizedDescription);
-   }
 
    [self refreshSystemConfig];
    [self showGameView];
@@ -438,20 +420,17 @@ enum
    if (rarch_main(argc, argv, NULL))
       apple_rarch_exited();
 
-  iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-                                             true, 0, rarch_draw_observer, 0);
-  CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+         true, 0, rarch_draw_observer, 0);
+   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 
 #ifdef HAVE_MFI
-    extern bool apple_gamecontroller_joypad_init(void *data);
-    apple_gamecontroller_joypad_init(NULL);
+   extern bool apple_gamecontroller_joypad_init(void *data);
+   apple_gamecontroller_joypad_init(NULL);
 #endif
-
 }
 
-- (void)applicationDidEnterBackground:(UIApplication *)application
-{
-}
+- (void)applicationDidEnterBackground:(UIApplication *)application { }
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {
@@ -465,10 +444,8 @@ enum
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
 
-   if (ui_companion_start_on_boot)
-      return;
-
-  [self showGameView];
+   if (!ui_companion_start_on_boot)
+      [self showGameView];
 }
 
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
@@ -494,19 +471,19 @@ enum
 
 - (void)showGameView
 {
-    [self popToRootViewControllerAnimated:NO];
+   [self popToRootViewControllerAnimated:NO];
 
 #if TARGET_OS_IOS
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
 #endif
 
-    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-        command_event(CMD_EVENT_AUDIO_START, NULL);
-    });
+   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+         command_event(CMD_EVENT_AUDIO_START, NULL);
+         });
    rarch_disable_ui();
 }
 
@@ -529,17 +506,16 @@ enum
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
 
    if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
-      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
+      apple_frontend_settings.orientation_flags = 
+           UIInterfaceOrientationMaskLandscape;
    else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait
+      apple_frontend_settings.orientation_flags = 
+           UIInterfaceOrientationMaskPortrait
          | UIInterfaceOrientationMaskPortraitUpsideDown;
 #endif
 }
 
-- (void)supportOtherAudioSessions
-{
-}
-
+- (void)supportOtherAudioSessions { }
 @end
 
 int main(int argc, char *argv[])
@@ -551,9 +527,9 @@ int main(int argc, char *argv[])
 
 static void apple_rarch_exited(void)
 {
-    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
+   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
 
-    if (!ap)
-        return;
-    [ap showPauseMenu:ap];
+   if (!ap)
+      return;
+   [ap showPauseMenu:ap];
 }
