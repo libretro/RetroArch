@@ -32028,16 +32028,14 @@ error:
    return false;
 }
 
-bool video_driver_set_viewport(unsigned width, unsigned height,
+void video_driver_set_viewport(unsigned width, unsigned height,
       bool force_fullscreen, bool allow_rotate)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (!p_rarch->current_video || !p_rarch->current_video->set_viewport)
-      return false;
-   p_rarch->current_video->set_viewport(
-         p_rarch->video_driver_data, width, height,
-         force_fullscreen, allow_rotate);
-   return true;
+   if (p_rarch->current_video && p_rarch->current_video->set_viewport)
+      p_rarch->current_video->set_viewport(
+            p_rarch->video_driver_data, width, height,
+            force_fullscreen, allow_rotate);
 }
 
 bool video_driver_set_rotation(unsigned rotation)

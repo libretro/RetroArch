@@ -6585,7 +6585,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (!mui)
       return;
 
-   gfx_display_set_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, true, false);
 
    /* Clear text */
    materialui_font_bind(&mui->font_data.title);
@@ -6796,7 +6796,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    materialui_font_unbind(&mui->font_data.list);
    materialui_font_unbind(&mui->font_data.hint);
 
-   gfx_display_unset_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, false, true);
 }
 
 /* Determines current list view type, based on

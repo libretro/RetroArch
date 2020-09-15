@@ -1634,16 +1634,6 @@ bool gfx_display_get_update_pending(void)
    return false;
 }
 
-void gfx_display_set_viewport(unsigned width, unsigned height)
-{
-   video_driver_set_viewport(width, height, true, false);
-}
-
-void gfx_display_unset_viewport(unsigned width, unsigned height)
-{
-   video_driver_set_viewport(width, height, false, true);
-}
-
 /* Checks if the display framebuffer has its 'dirty flag' set. This
  * means that the current contents of the framebuffer has changed
  * and that it has to be rendered to the screen. */
