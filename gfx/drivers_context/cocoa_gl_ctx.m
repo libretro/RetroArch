@@ -96,11 +96,7 @@ static CocoaView* g_instance;
 
 void *nsview_get_ptr(void)
 {
-#if defined(HAVE_COCOA)
-   video_driver_display_type_set(RARCH_DISPLAY_OSX);
-   video_driver_display_set(0);
-   video_driver_display_userdata_set((uintptr_t)g_instance);
-#elif defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
    video_driver_display_type_set(RARCH_DISPLAY_OSX);
    video_driver_display_set(0);
    video_driver_display_userdata_set((uintptr_t)g_instance);
@@ -114,11 +110,7 @@ void nsview_set_ptr(CocoaView *p) { g_instance = p; }
 static SEL sel_flushBuffer;
 static SEL updateSel;
 static NSOpenGLPixelFormat* g_format;
-
-void *glcontext_get_ptr(void)
-{
-   return (BRIDGE void *)g_context;
-}
+void *glcontext_get_ptr(void) { return (BRIDGE void *)g_context; }
 #endif
 
 static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
@@ -323,10 +315,7 @@ static void cocoagl_gfx_ctx_destroy(void *data)
    free(cocoa_ctx);
 }
 
-static enum gfx_ctx_api cocoagl_gfx_ctx_get_api(void *data)
-{
-   return cocoagl_api;
-}
+static enum gfx_ctx_api cocoagl_gfx_ctx_get_api(void *data) { return cocoagl_api; }
 
 static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 {
@@ -441,7 +430,7 @@ static bool cocoagl_gfx_ctx_get_metrics(
          *value = dpi;
          break;
       case DISPLAY_METRIC_NONE:
-                       default:
+      default:
          *value = 0;
          return false;
    }
