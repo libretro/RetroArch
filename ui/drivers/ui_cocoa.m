@@ -41,11 +41,6 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
-static void app_terminate(void)
-{
-   [[NSApplication sharedApplication] terminate:nil];
-}
-
 #if defined(HAVE_COCOA_METAL)
 @interface RAWindow : NSWindow
 @end
@@ -260,7 +255,7 @@ static char **waiting_argv;
         }
     }
    if (rarch_main(waiting_argc, waiting_argv, NULL))
-      app_terminate();
+      [[NSApplication sharedApplication] terminate:nil];
 
    waiting_argc = 0;
 
@@ -664,36 +659,15 @@ int main(int argc, char *argv[])
    return NSApplicationMain(argc, (const char **) argv);
 }
 
-typedef struct ui_companion_cocoa
-{
-   void *empty;
-} ui_companion_cocoa_t;
-
 static void ui_companion_cocoa_deinit(void *data)
 {
-   ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
-
-   app_terminate();
-
-   if (handle)
-      free(handle);
+   [[NSApplication sharedApplication] terminate:nil];
 }
 
-static void *ui_companion_cocoa_init(void)
-{
-   ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)
-      calloc(1, sizeof(*handle));
-
-   if (!handle)
-      return NULL;
-
-   return handle;
-}
-
+static void *ui_companion_cocoa_init(void) { return (void*)-1; }
 static void ui_companion_cocoa_notify_content_loaded(void *data) { }
 static void ui_companion_cocoa_toggle(void *data, bool force) { }
-static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
-{ }
+static void ui_companion_cocoa_event_command(void *data, enum event_command cmd) { }
 static void ui_companion_cocoa_notify_list_pushed(void *data,
     file_list_t *list, file_list_t *menu_list) { }
 
