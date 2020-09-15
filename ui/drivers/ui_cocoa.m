@@ -313,24 +313,22 @@ static char **waiting_argv;
 - (id)renderView { return _renderView; }
 - (bool)hasFocus { return [NSApp isActive]; }
 
-- (void)setVideoMode:(gfx_ctx_mode_t)mode {
-   BOOL isFullScreen = (self.window.styleMask & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
-   if (mode.fullscreen && !isFullScreen)
+- (void)setVideoMode:(gfx_ctx_mode_t)mode
+{
+   BOOL is_fullscreen = (self.window.styleMask 
+         & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
+   if (mode.fullscreen && !is_fullscreen)
    {
       [self.window toggleFullScreen:self];
       return;
    }
 
-   if (!mode.fullscreen && isFullScreen)
-   {
+   if (!mode.fullscreen && is_fullscreen)
       [self.window toggleFullScreen:self];
-   }
 
+   /* HACK(sgc): ensure MTKView posts a drawable resize event */
    if (mode.width > 0)
-   {
-      /* HACK(sgc): ensure MTKView posts a drawable resize event */
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
-   }
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
 }
 
@@ -345,9 +343,7 @@ static char **waiting_argv;
 - (bool)setDisableDisplaySleep:(bool)disable
 {
    if (disable && _sleepActivity == nil)
-   {
       _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
-   }
    else if (!disable && _sleepActivity != nil)
    {
       [NSProcessInfo.processInfo endActivity:_sleepActivity];
@@ -405,10 +401,10 @@ static char **waiting_argv;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-  if ((filenames.count == 1) && [filenames objectAtIndex:0])
+   if ((filenames.count == 1) && [filenames objectAtIndex:0])
    {
       struct retro_system_info *system = runloop_get_libretro_system_info();
-    NSString *__core                 = [filenames objectAtIndex:0];
+      NSString *__core                 = [filenames objectAtIndex:0];
       const char *core_name            = system->library_name;
 
       if (core_name)
@@ -427,7 +423,8 @@ static char **waiting_argv;
    }
    else
    {
-      const ui_msg_window_t *msg_window = ui_companion_driver_get_msg_window_ptr();
+      const ui_msg_window_t *msg_window = 
+         ui_companion_driver_get_msg_window_ptr();
       if (msg_window)
       {
          ui_msg_window_state msg_window_state;
@@ -446,7 +443,8 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 {
    rarch_system_info_t *info        = runloop_get_system_info();
    settings_t           *settings   = config_get_ptr();
-   bool set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
+   bool set_supports_no_game_enable = 
+      settings->bools.set_supports_no_game_enable;
    if (!state || string_is_empty(state->result))
       return;
    if (!result)
@@ -493,57 +491,60 @@ static void open_document_handler(
    }
 }
 
-- (IBAction)openCore:(id)sender {
-    const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
+- (IBAction)openCore:(id)sender
+{
+   const ui_browser_window_t *browser = 
+      ui_companion_driver_get_browser_window_ptr();
 
-    if (browser)
-    {
-        ui_browser_window_state_t browser_state;
-        bool result                   = false;
-        settings_t *settings          = config_get_ptr();
-        const char *path_dir_libretro = settings->paths.directory_libretro;
+   if (browser)
+   {
+      ui_browser_window_state_t browser_state;
+      bool result                   = false;
+      settings_t *settings          = config_get_ptr();
+      const char *path_dir_libretro = settings->paths.directory_libretro;
 
-        browser_state.filters         = strdup("dylib");
-        browser_state.filters_title   = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS));
-        browser_state.title           = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST));
-        browser_state.startdir        = strdup(path_dir_libretro);
+      browser_state.filters         = strdup("dylib");
+      browser_state.filters_title   = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS));
+      browser_state.title           = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST));
+      browser_state.startdir        = strdup(path_dir_libretro);
 
-        result                        = browser->open(&browser_state);
-        open_core_handler(&browser_state, result);
+      result                        = browser->open(&browser_state);
+      open_core_handler(&browser_state, result);
 
-        free(browser_state.filters);
-        free(browser_state.filters_title);
-        free(browser_state.title);
-        free(browser_state.startdir);
-    }
+      free(browser_state.filters);
+      free(browser_state.filters_title);
+      free(browser_state.title);
+      free(browser_state.startdir);
+   }
 }
 
 - (void)openDocument:(id)sender
 {
-   const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
+   const ui_browser_window_t *browser = 
+      ui_companion_driver_get_browser_window_ptr();
 
-    if (browser)
-    {
-       ui_browser_window_state_t
-          browser_state                  = {{0}};
-       bool result                       = false;
-       settings_t *settings              = config_get_ptr();
-       const char *path_dir_menu_content = settings->paths.directory_menu_content;
-       NSString *startdir                = BOXSTRING(path_dir_menu_content);
+   if (browser)
+   {
+      ui_browser_window_state_t
+         browser_state                  = {{0}};
+      bool result                       = false;
+      settings_t *settings              = config_get_ptr();
+      const char *path_dir_menu_content = settings->paths.directory_menu_content;
+      NSString *startdir                = BOXSTRING(path_dir_menu_content);
 
-       if (!startdir.length)
-          startdir                      = BOXSTRING("/");
+      if (!startdir.length)
+         startdir                      = BOXSTRING("/");
 
-       browser_state.title               = strdup(msg_hash_to_str(
-                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST));
-       browser_state.startdir            = strdup([startdir UTF8String]);
+      browser_state.title               = strdup(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST));
+      browser_state.startdir            = strdup([startdir UTF8String]);
 
-       result                            = browser->open(&browser_state);
-       open_document_handler(&browser_state, result);
+      result                            = browser->open(&browser_state);
+      open_document_handler(&browser_state, result);
 
-       free(browser_state.startdir);
-       free(browser_state.title);
-    }
+      free(browser_state.startdir);
+      free(browser_state.title);
+   }
 }
 
 - (void)unloadingCore { }
