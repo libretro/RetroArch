@@ -1202,11 +1202,10 @@ void rcheevos_pause_hardcore(void)
 bool rcheevos_unload(void)
 {
    bool running          = false;
-   unsigned i = 0, count = 0;
    settings_t* settings  = config_get_ptr();
 
    CHEEVOS_LOCK(rcheevos_locals.task_lock);
-   running = rcheevos_locals.task != NULL;
+   running               = rcheevos_locals.task != NULL;
    CHEEVOS_UNLOCK(rcheevos_locals.task_lock);
 
    if (running)
