@@ -50,10 +50,7 @@ void *glkitview_init(void);
 #endif
 
 #if TARGET_OS_OSX
-- (void)scrollWheel:(NSEvent *)theEvent {
-    cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
-    (void)apple;
-}
+- (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
 + (CocoaView*)get
