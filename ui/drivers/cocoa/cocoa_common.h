@@ -57,22 +57,6 @@ typedef enum apple_view_type {
 #import <GameController/GameController.h>
 #endif
 
-/*********************************************/
-/* RAMenuBase                                */
-/* A menu class that displays RAMenuItemBase */
-/* objects.                                  */
-/*********************************************/
-@interface RAMenuBase : UITableViewController
-@property (nonatomic) NSMutableArray* sections;
-@property (nonatomic) BOOL hidesHeaders;
-@property (nonatomic) RAMenuBase* last_menu;
-@property (nonatomic) UILabel *osdmessage;
-
-- (id)initWithStyle:(UITableViewStyle)style;
-- (id)itemForIndexPath:(NSIndexPath*)indexPath;
-
-@end
-
 #if TARGET_OS_IOS
 @interface CocoaView : UIViewController
 #elif TARGET_OS_TV
