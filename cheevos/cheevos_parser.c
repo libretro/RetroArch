@@ -7,6 +7,8 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 
+#include "../deps/rcheevos/include/rcheevos.h"
+
 /* C89 wants only int values in enums. */
 #define CHEEVOS_JSON_KEY_GAMEID       0xb4960eecU
 #define CHEEVOS_JSON_KEY_ACHIEVEMENTS 0x69749ae1U
