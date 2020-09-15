@@ -46,9 +46,7 @@ void *glkitview_init(void);
 @implementation CocoaView
 
 #if !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
-- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window {
-   return YES;
-}
+- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window { return YES; }
 #endif
 
 #if TARGET_OS_OSX
@@ -116,24 +114,14 @@ void *glkitview_init(void);
 }
 
 /* Stop the annoying sound when pressing a key. */
-- (BOOL)acceptsFirstResponder
-{
-   return YES;
-}
-
-- (BOOL)isFlipped
-{
-   return YES;
-}
-
-- (void)keyDown:(NSEvent*)theEvent
-{
-}
+- (BOOL)acceptsFirstResponder { return YES; }
+- (BOOL)isFlipped { return YES; }
+- (void)keyDown:(NSEvent*)theEvent { }
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
 {
     NSDragOperation sourceDragMask = [sender draggingSourceOperationMask];
-    NSPasteboard *pboard = [sender draggingPasteboard];
+    NSPasteboard           *pboard = [sender draggingPasteboard];
 
     if ( [[pboard types] containsObject:NSFilenamesPboardType] )
     {
@@ -151,7 +139,7 @@ void *glkitview_init(void);
     if ( [[pboard types] containsObject:NSURLPboardType])
     {
         NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
-        NSString *s = [fileURL path];
+        NSString    *s = [fileURL path];
         if (s != nil)
         {
            RARCH_LOG("Drop name is: %s\n", [s UTF8String]);
@@ -166,18 +154,16 @@ void *glkitview_init(void);
 }
 
 #elif TARGET_OS_IOS
--(void) showNativeMenu {
+-(void) showNativeMenu
+{
     dispatch_async(dispatch_get_main_queue(), ^{
         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
     });
 }
 
--(BOOL)prefersHomeIndicatorAutoHidden
+-(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
+-(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
 {
-    return YES;
-}
-
--(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
     if (@available(iOS 11, *)) {
         [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
@@ -187,47 +173,69 @@ void *glkitview_init(void);
     }
 }
 
--(void)adjustViewFrameForSafeArea {
-    // This is for adjusting the view frame to account for the notch in iPhone X phones
-    if (@available(iOS 11, *)) {
-        RAScreen *screen  = (BRIDGE RAScreen*)get_chosen_screen();
-        CGRect screenSize = [screen bounds];
-        UIEdgeInsets inset = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
-        UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-        CGRect newFrame = screenSize;
-        if ( orientation == UIInterfaceOrientationPortrait ) {
-            newFrame = CGRectMake(screenSize.origin.x, screenSize.origin.y + inset.top, screenSize.size.width, screenSize.size.height - inset.top);
-		} else if ( orientation == UIInterfaceOrientationLandscapeLeft ) {
-		    newFrame = CGRectMake(screenSize.origin.x + inset.right, screenSize.origin.y, screenSize.size.width - inset.right * 2, screenSize.size.height);
-		} else if ( orientation == UIInterfaceOrientationLandscapeRight ) {
-		    newFrame = CGRectMake(screenSize.origin.x + inset.left, screenSize.origin.y, screenSize.size.width - inset.left * 2, screenSize.size.height);
-        }
-        self.view.frame = newFrame;
-    }
+-(void)adjustViewFrameForSafeArea
+{
+   /* This is for adjusting the view frame to account for 
+    * the notch in iPhone X phones */
+   if (@available(iOS 11, *))
+   {
+      RAScreen *screen                   = (BRIDGE RAScreen*)get_chosen_screen();
+      CGRect screenSize                  = [screen bounds];
+      UIEdgeInsets inset                 = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
+      UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+      switch (orientation)
+      {
+         case UIInterfaceOrientationPortrait:
+            self.view.frame = CGRectMake(screenSize.origin.x,
+                  screenSize.origin.y + inset.top,
+                  screenSize.size.width,
+                  screenSize.size.height - inset.top);
+            break;
+         case UIInterfaceOrientationLandscapeLeft:
+            self.view.frame = CGRectMake(screenSize.origin.x + inset.right,
+                  screenSize.origin.y,
+                  screenSize.size.width - inset.right * 2,
+                  screenSize.size.height);
+            break;
+         case UIInterfaceOrientationLandscapeRight:
+            self.view.frame = CGRectMake(screenSize.origin.x + inset.left,
+                  screenSize.origin.y,
+                  screenSize.size.width - inset.left * 2,
+                  screenSize.size.height);
+            break;
+         default:
+            self.view.frame = screenSize;
+            break;
+      }
+   }
 }
 
 - (void)viewWillLayoutSubviews
 {
-   float width = 0.0f, height = 0.0f, tenpctw, tenpcth;
+   float width       = 0.0f, height = 0.0f, tenpctw, tenpcth;
    RAScreen *screen  = (BRIDGE RAScreen*)get_chosen_screen();
    UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [screen bounds];
-   SEL selector = NSSelectorFromString(BOXSTRING("coordinateSpace"));
+   SEL selector      = NSSelectorFromString(BOXSTRING("coordinateSpace"));
 
-    if ([screen respondsToSelector:selector])
-    {
-        screenSize  = [[screen coordinateSpace] bounds];
-        width       = CGRectGetWidth(screenSize);
-        height      = CGRectGetHeight(screenSize);
-    }
-    else
-    {
-        width       = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
-        height      = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
-    }
+   if ([screen respondsToSelector:selector])
+   {
+      screenSize  = [[screen coordinateSpace] bounds];
+      width       = CGRectGetWidth(screenSize);
+      height      = CGRectGetHeight(screenSize);
+   }
+   else
+   {
+      width       = ((int)orientation < 3) 
+         ? CGRectGetWidth(screenSize) 
+         : CGRectGetHeight(screenSize);
+      height      = ((int)orientation < 3) 
+         ? CGRectGetHeight(screenSize) 
+         : CGRectGetWidth(screenSize);
+   }
 
-   tenpctw          = width  / 10.0f;
-   tenpcth          = height / 10.0f;
+   tenpctw        = width  / 10.0f;
+   tenpcth        = height / 10.0f;
 
    [self adjustViewFrameForSafeArea];
 }
@@ -244,16 +252,21 @@ void *glkitview_init(void);
    switch (interfaceOrientation)
    {
       case UIInterfaceOrientationPortrait:
-         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskPortrait);
+         return (apple_frontend_settings.orientation_flags 
+               & UIInterfaceOrientationMaskPortrait);
       case UIInterfaceOrientationPortraitUpsideDown:
-         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskPortraitUpsideDown);
+         return (apple_frontend_settings.orientation_flags 
+               & UIInterfaceOrientationMaskPortraitUpsideDown);
       case UIInterfaceOrientationLandscapeLeft:
-         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskLandscapeLeft);
+         return (apple_frontend_settings.orientation_flags 
+               & UIInterfaceOrientationMaskLandscapeLeft);
       case UIInterfaceOrientationLandscapeRight:
-         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskLandscapeRight);
+         return (apple_frontend_settings.orientation_flags 
+               & UIInterfaceOrientationMaskLandscapeRight);
 
       default:
-         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskAll);
+         return (apple_frontend_settings.orientation_flags 
+               & UIInterfaceOrientationMaskAll);
    }
 
    return YES;
@@ -283,15 +296,12 @@ void *glkitview_init(void);
 #pragma mark GCDWebServerDelegate
 - (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server {
     NSMutableString *servers = [[NSMutableString alloc] init];
-    if ( server.serverURL != nil ) {
+    if (server.serverURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.serverURL]];
-    }
-    if ( servers.length > 0 ) {
+    if (servers.length > 0)
         [servers appendString:@"\n\n"];
-    }
-    if ( server.bonjourServerURL != nil ) {
+    if (server.bonjourServerURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
-    }
 #if TARGET_OS_TV
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
