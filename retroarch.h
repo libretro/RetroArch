@@ -1610,7 +1610,7 @@ void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
 
 const char *video_driver_get_ident(void);
 
-bool video_driver_set_viewport(unsigned width, unsigned height,
+void video_driver_set_viewport(unsigned width, unsigned height,
       bool force_fullscreen, bool allow_rotate);
 
 void video_driver_get_size(unsigned *width, unsigned *height);

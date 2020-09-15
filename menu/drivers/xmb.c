@@ -4025,7 +4025,7 @@ static void xmb_draw_bg(
    draw.pipeline_active      = xmb_shader_pipeline_active(menu_shader_pipeline);
 
    gfx_display_blend_begin(userdata);
-   gfx_display_set_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, true, false);
 
 #ifdef HAVE_SHADERPIPELINE
    if (menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
@@ -5231,7 +5231,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_height);
    }
 
-   gfx_display_unset_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, false, true);
 }
 
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)

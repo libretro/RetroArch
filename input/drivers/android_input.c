@@ -47,6 +47,7 @@
 
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
+#define DEFAULT_ASENSOR_EVENT_RATE 60
 
 /* If using an SDK lower than 14 then add missing mouse button codes */
 #if __ANDROID_API__ < 14
@@ -153,6 +154,7 @@ typedef struct android_input
    unsigned pads_connected;
    unsigned pointer_count;
    sensor_t accelerometer_state;                /* float alignment */
+   sensor_t gyroscope_state;                    /* float alignment */
    float mouse_x_prev, mouse_y_prev;
    struct input_pointer pointer[MAX_TOUCH];     /* int16_t alignment */
    char device_model[256];
@@ -370,18 +372,27 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_GAINED_FOCUS:
          {
-            bool boolean = false;
+            bool boolean              = false;
+            bool enable_accelerometer = (android_app->sensor_state_mask &
+                  (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
+                        !android_app->accelerometerSensor;
+            bool enable_gyroscope     = (android_app->sensor_state_mask &
+                  (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
+                        !android_app->gyroscopeSensor;
 
             rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
             rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
             video_driver_unset_stub_frame();
 
-            if ((android_app->sensor_state_mask
-                     & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-                  && !android_app->accelerometerSensor)
+            if (enable_accelerometer)
                input_sensor_set_state(0,
                      RETRO_SENSOR_ACCELEROMETER_ENABLE,
                      android_app->accelerometer_event_rate);
+
+            if (enable_gyroscope)
+               input_sensor_set_state(0,
+                     RETRO_SENSOR_GYROSCOPE_ENABLE,
+                     android_app->gyroscope_event_rate);
          }
          slock_lock(android_app->mutex);
          android_app->unfocused = false;
@@ -390,20 +401,28 @@ static void android_input_poll_main_cmd(void)
          break;
       case APP_CMD_LOST_FOCUS:
          {
-            bool boolean = true;
+            bool boolean               = true;
+            bool disable_accelerometer = (android_app->sensor_state_mask &
+                  (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
+                        android_app->accelerometerSensor;
+            bool disable_gyroscope     = (android_app->sensor_state_mask &
+                  (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
+                        android_app->gyroscopeSensor;
 
             rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
             rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
             video_driver_set_stub_frame();
 
             /* Avoid draining battery while app is not being used. */
-            if ((android_app->sensor_state_mask
-                     & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-                  && android_app->accelerometerSensor != NULL
-                  )
+            if (disable_accelerometer)
                input_sensor_set_state(0,
                      RETRO_SENSOR_ACCELEROMETER_DISABLE,
                      android_app->accelerometer_event_rate);
+
+            if (disable_gyroscope)
+               input_sensor_set_state(0,
+                     RETRO_SENSOR_GYROSCOPE_DISABLE,
+                     android_app->gyroscope_event_rate);
          }
          slock_lock(android_app->mutex);
          android_app->unfocused = true;
@@ -1225,18 +1244,44 @@ static void android_input_poll_input(android_input_t *android,
 static void android_input_poll_user(android_input_t *android)
 {
    struct android_app *android_app = (struct android_app*)g_android;
+   bool poll_accelerometer         = false;
+   bool poll_gyroscope             = false;
 
-   if ((android_app->sensor_state_mask & (UINT64_C(1) <<
-               RETRO_SENSOR_ACCELEROMETER_ENABLE))
-         && android_app->accelerometerSensor)
+   if (!android_app->sensorEventQueue)
+      return;
+
+   poll_accelerometer = (android_app->sensor_state_mask &
+         (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
+               android_app->accelerometerSensor;
+
+   poll_gyroscope     = (android_app->sensor_state_mask &
+         (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
+               android_app->gyroscopeSensor;
+
+   if (poll_accelerometer || poll_gyroscope)
    {
       ASensorEvent event;
       while (ASensorEventQueue_getEvents(
-               android_app->sensorEventQueue, &event, 1) > 0)
+            android_app->sensorEventQueue, &event, 1) > 0)
       {
-         android->accelerometer_state.x = event.acceleration.x;
-         android->accelerometer_state.y = event.acceleration.y;
-         android->accelerometer_state.z = event.acceleration.z;
+         switch (event.type)
+         {
+            case ASENSOR_TYPE_ACCELEROMETER:
+               android->accelerometer_state.x = event.acceleration.x;
+               android->accelerometer_state.y = event.acceleration.y;
+               android->accelerometer_state.z = event.acceleration.z;
+               break;
+            case ASENSOR_TYPE_GYROSCOPE:
+               /* ASensorEvent struct is mysterious - have to
+                * read the raw 'data' field to get rate of
+                * rotation... */
+               android->gyroscope_state.x = event.data[0];
+               android->gyroscope_state.y = event.data[1];
+               android->gyroscope_state.z = event.data[2];
+               break;
+            default:
+               break;
+         }
       }
    }
 }
@@ -1462,9 +1507,15 @@ static void android_input_free_input(void *data)
    if (!android)
       return;
 
-   if (android_app->sensorManager)
+   if (android_app->sensorManager &&
+       android_app->sensorEventQueue)
       ASensorManager_destroyEventQueue(android_app->sensorManager,
             android_app->sensorEventQueue);
+
+   android_app->sensorEventQueue    = NULL;
+   android_app->accelerometerSensor = NULL;
+   android_app->gyroscopeSensor     = NULL;
+   android_app->sensorManager       = NULL;
 
    android_app->input_alive = false;
 
@@ -1489,22 +1540,39 @@ static uint64_t android_input_get_capabilities(void *data)
 
 static void android_input_enable_sensor_manager(struct android_app *android_app)
 {
-   android_app->sensorManager = ASensorManager_getInstance();
-   android_app->accelerometerSensor =
-      ASensorManager_getDefaultSensor(android_app->sensorManager,
-         ASENSOR_TYPE_ACCELEROMETER);
-   android_app->sensorEventQueue =
-      ASensorManager_createEventQueue(android_app->sensorManager,
-         android_app->looper, LOOPER_ID_USER, NULL, NULL);
+   if (!android_app->sensorManager)
+      android_app->sensorManager = ASensorManager_getInstance();
+
+   if (android_app->sensorManager)
+   {
+      if (!android_app->accelerometerSensor)
+         android_app->accelerometerSensor =
+            ASensorManager_getDefaultSensor(android_app->sensorManager,
+               ASENSOR_TYPE_ACCELEROMETER);
+
+      if (!android_app->gyroscopeSensor)
+         android_app->gyroscopeSensor =
+            ASensorManager_getDefaultSensor(android_app->sensorManager,
+               ASENSOR_TYPE_GYROSCOPE);
+
+      if (!android_app->sensorEventQueue)
+         android_app->sensorEventQueue =
+            ASensorManager_createEventQueue(android_app->sensorManager,
+               android_app->looper, LOOPER_ID_USER, NULL, NULL);
+   }
 }
 
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
    struct android_app *android_app = (struct android_app*)g_android;
+   android_input_t *android        = (android_input_t*)data;
+
+   if (port > 0)
+      return false;
 
    if (event_rate == 0)
-      event_rate = 60;
+      event_rate = DEFAULT_ASENSOR_EVENT_RATE;
 
    switch (action)
    {
@@ -1512,28 +1580,74 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
          if (!android_app->accelerometerSensor)
             android_input_enable_sensor_manager(android_app);
 
-         if (android_app->accelerometerSensor)
+         if (android_app->sensorEventQueue &&
+             android_app->accelerometerSensor)
+         {
             ASensorEventQueue_enableSensor(android_app->sensorEventQueue,
                   android_app->accelerometerSensor);
 
-         /* Events per second (in microseconds). */
-         if (android_app->accelerometerSensor)
+            /* Events per second (in microseconds). */
             ASensorEventQueue_setEventRate(android_app->sensorEventQueue,
                   android_app->accelerometerSensor, (1000L / event_rate)
                   * 1000);
+         }
+
+         android_app->accelerometer_event_rate = event_rate;
 
          BIT64_CLEAR(android_app->sensor_state_mask, RETRO_SENSOR_ACCELEROMETER_DISABLE);
          BIT64_SET(android_app->sensor_state_mask, RETRO_SENSOR_ACCELEROMETER_ENABLE);
          return true;
 
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         if (android_app->accelerometerSensor)
+         if (android_app->sensorEventQueue &&
+             android_app->accelerometerSensor)
             ASensorEventQueue_disableSensor(android_app->sensorEventQueue,
                   android_app->accelerometerSensor);
+
+         android->accelerometer_state.x = 0.0f;
+         android->accelerometer_state.y = 0.0f;
+         android->accelerometer_state.z = 0.0f;
 
          BIT64_CLEAR(android_app->sensor_state_mask, RETRO_SENSOR_ACCELEROMETER_ENABLE);
          BIT64_SET(android_app->sensor_state_mask, RETRO_SENSOR_ACCELEROMETER_DISABLE);
          return true;
+
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         if (!android_app->gyroscopeSensor)
+            android_input_enable_sensor_manager(android_app);
+
+         if (android_app->sensorEventQueue &&
+             android_app->gyroscopeSensor)
+         {
+            ASensorEventQueue_enableSensor(android_app->sensorEventQueue,
+                  android_app->gyroscopeSensor);
+
+            /* Events per second (in microseconds). */
+            ASensorEventQueue_setEventRate(android_app->sensorEventQueue,
+                  android_app->gyroscopeSensor, (1000L / event_rate)
+                  * 1000);
+         }
+
+         android_app->gyroscope_event_rate = event_rate;
+
+         BIT64_CLEAR(android_app->sensor_state_mask, RETRO_SENSOR_GYROSCOPE_DISABLE);
+         BIT64_SET(android_app->sensor_state_mask, RETRO_SENSOR_GYROSCOPE_ENABLE);
+         return true;
+
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         if (android_app->sensorEventQueue &&
+             android_app->gyroscopeSensor)
+            ASensorEventQueue_disableSensor(android_app->sensorEventQueue,
+                  android_app->gyroscopeSensor);
+
+         android->gyroscope_state.x = 0.0f;
+         android->gyroscope_state.y = 0.0f;
+         android->gyroscope_state.z = 0.0f;
+
+         BIT64_CLEAR(android_app->sensor_state_mask, RETRO_SENSOR_GYROSCOPE_ENABLE);
+         BIT64_SET(android_app->sensor_state_mask, RETRO_SENSOR_GYROSCOPE_DISABLE);
+         return true;
+
       default:
          break;
    }
@@ -1542,9 +1656,12 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
 }
 
 static float android_input_get_sensor_input(void *data,
-      unsigned port,unsigned id)
+      unsigned port, unsigned id)
 {
    android_input_t      *android      = (android_input_t*)data;
+
+   if (port > 0)
+      return 0.0f;
 
    switch (id)
    {
@@ -1554,9 +1671,15 @@ static float android_input_get_sensor_input(void *data,
          return android->accelerometer_state.y;
       case RETRO_SENSOR_ACCELEROMETER_Z:
          return android->accelerometer_state.z;
+      case RETRO_SENSOR_GYROSCOPE_X:
+         return android->gyroscope_state.x;
+      case RETRO_SENSOR_GYROSCOPE_Y:
+         return android->gyroscope_state.y;
+      case RETRO_SENSOR_GYROSCOPE_Z:
+         return android->gyroscope_state.z;
    }
 
-   return 0;
+   return 0.0f;
 }
 
 input_driver_t input_android = {

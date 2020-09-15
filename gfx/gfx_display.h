@@ -279,8 +279,6 @@ void gfx_display_set_framebuffer_pitch(size_t pitch);
 bool gfx_display_get_msg_force(void);
 void gfx_display_set_msg_force(bool state);
 bool gfx_display_get_update_pending(void);
-void gfx_display_set_viewport(unsigned width, unsigned height);
-void gfx_display_unset_viewport(unsigned width, unsigned height);
 bool gfx_display_get_framebuffer_dirty_flag(void);
 void gfx_display_set_framebuffer_dirty_flag(void);
 void gfx_display_unset_framebuffer_dirty_flag(void);

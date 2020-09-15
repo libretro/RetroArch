@@ -1321,7 +1321,7 @@ void gfx_widgets_frame(void *data)
 
    p_dispwidget->gfx_widgets_frame_count++;
 
-   gfx_display_set_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, true, false);
 
    /* Font setup */
    gfx_widgets_font_bind(&p_dispwidget->gfx_widget_fonts.regular);
@@ -1550,7 +1550,7 @@ void gfx_widgets_frame(void *data)
    gfx_widgets_font_unbind(&p_dispwidget->gfx_widget_fonts.bold);
    gfx_widgets_font_unbind(&p_dispwidget->gfx_widget_fonts.msg_queue);
 
-   gfx_display_unset_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, false, true);
 }
 
 bool gfx_widgets_init(uintptr_t widgets_active_ptr,

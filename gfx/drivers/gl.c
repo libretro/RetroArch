@@ -2335,7 +2335,8 @@ static void gl2_render_osd_background(gl_t *gl, const char *msg)
    coords.lut_tex_coord    = dummy;
    coords.vertices         = vertices_total;
 
-   video_driver_set_viewport(gl->video_width,
+   gl2_set_viewport(gl,
+         gl->video_width,
          gl->video_height, true, false);
 
    gl->shader->use(gl, gl->shader_data,
@@ -2382,7 +2383,8 @@ static void gl2_render_osd_background(gl_t *gl, const char *msg)
    free(dummy);
    free(verts);
 
-   video_driver_set_viewport(gl->video_width,
+   gl2_set_viewport(gl,
+         gl->video_width,
          gl->video_height, false, true);
 }
 

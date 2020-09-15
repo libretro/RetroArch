@@ -60,45 +60,42 @@ static void app_terminate(void)
 
 
 - (void)sendEvent:(NSEvent *)event {
-   [super sendEvent:event];
-
-   cocoa_input_data_t *apple = NULL;
    NSEventType event_type = event.type;
+
+   [super sendEvent:event];
 
    switch ((int32_t)event_type)
    {
       case NSEventTypeKeyDown:
       case NSEventTypeKeyUp:
          {
-            NSString* ch       = event.characters;
-            uint32_t character = 0;
-            uint32_t mod       = 0;
+            uint32_t i;
+            NSString* ch              = event.characters;
+            uint32_t mod              = 0;
+            const char *inputTextUTF8 = ch.UTF8String;
+            uint32_t character        = inputTextUTF8[0];
+            NSEventModifierFlags mods = event.modifierFlags;
+            uint16_t keycode          = event.keyCode;
 
-            if (ch && ch.length != 0)
-            {
-               uint32_t i;
-               character = [ch characterAtIndex:0];
-
-               if (event.modifierFlags & NSEventModifierFlagCapsLock)
+               if (mods & NSEventModifierFlagCapsLock)
                   mod |= RETROKMOD_CAPSLOCK;
-               if (event.modifierFlags & NSEventModifierFlagShift)
+               if (mods & NSEventModifierFlagShift)
                   mod |=  RETROKMOD_SHIFT;
-               if (event.modifierFlags & NSEventModifierFlagControl)
+               if (mods & NSEventModifierFlagControl)
                   mod |=  RETROKMOD_CTRL;
-               if (event.modifierFlags & NSEventModifierFlagOption)
+               if (mods & NSEventModifierFlagOption)
                   mod |= RETROKMOD_ALT;
-               if (event.modifierFlags & NSEventModifierFlagCommand)
+               if (mods & NSEventModifierFlagCommand)
                   mod |= RETROKMOD_META;
-               if (event.modifierFlags & NSEventModifierFlagNumericPad)
+               if (mods & NSEventModifierFlagNumericPad)
                   mod |=  RETROKMOD_NUMLOCK;
 
                for (i = 1; i < ch.length; i++)
                   apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
-                        0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
-            }
+                        0, inputTextUTF8[i], mod, RETRO_DEVICE_KEYBOARD);
 
             apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
-                  event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
+                  keycode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
 #if defined(HAVE_COCOA_METAL)
@@ -107,14 +104,15 @@ static void app_terminate(void)
         case NSFlagsChanged:
 #endif
          {
-            static uint32_t old_flags = 0;
-            uint32_t new_flags        = event.modifierFlags;
-            bool down                 = (new_flags & old_flags) == old_flags;
+            static NSEventModifierFlags old_flags = 0;
+            NSEventModifierFlags new_flags        = event.modifierFlags;
+            bool down                             = (new_flags & old_flags) == old_flags;
+            uint16_t keycode                      = event.keyCode;
 
-            old_flags                 = new_flags;
+            old_flags                             = new_flags;
 
-            apple_input_keyboard_event(down, event.keyCode,
-                  0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
+            apple_input_keyboard_event(down, keycode,
+                  0, new_flags, RETRO_DEVICE_KEYBOARD);
          }
          break;
         case NSEventTypeMouseMoved:
@@ -122,37 +120,29 @@ static void app_terminate(void)
         case NSEventTypeRightMouseDragged:
         case NSEventTypeOtherMouseDragged:
          {
-            NSPoint pos;
-            apple              = (cocoa_input_data_t*)input_driver_get_data();
+            CGFloat delta_x             = event.deltaX;
+            CGFloat delta_y             = event.deltaY;
+#if defined(HAVE_COCOA_METAL)
+            CGPoint pos                 = [apple_platform.renderView 
+               convertPoint:[event locationInWindow] fromView:nil];
+#elif defined(HAVE_COCOA)
+            CGPoint pos                 = [[CocoaView get] 
+               convertPoint:[event locationInWindow] fromView:nil];
+#endif
+            cocoa_input_data_t 
+               *apple                   = (cocoa_input_data_t*)
+               input_driver_get_data();
             if (!apple)
                return;
-
-            pos.x              = 0;
-            pos.y              = 0;
-
-#if defined(HAVE_COCOA_METAL)
-            pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-#elif defined(HAVE_COCOA)
-            pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-#endif
-
-            /* FIXME: Disable clipping until graphical offset issues 
-             * are fixed */
-#if 0
-            NSInteger window_number = [[[NSApplication sharedApplication] keyWindow] windowNumber];
-            if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number)
-               return;
-#endif
-
             /* Relative */
-            apple->mouse_rel_x += (int16_t)event.deltaX;
-            apple->mouse_rel_y += (int16_t)event.deltaY;
+            apple->mouse_rel_x         += (int16_t)delta_x;
+            apple->mouse_rel_y         += (int16_t)delta_y;
 
             /* Absolute */
-            apple->touches[0].screen_x = (int16_t)pos.x;
-            apple->touches[0].screen_y = (int16_t)pos.y;
-            apple->window_pos_x = (int16_t)pos.x;
-            apple->window_pos_y = (int16_t)pos.y;
+            apple->touches[0].screen_x  = (int16_t)pos.x;
+            apple->touches[0].screen_y  = (int16_t)pos.y;
+            apple->window_pos_x         = (int16_t)pos.x;
+            apple->window_pos_y         = (int16_t)pos.y;
          }
          break;
 #if defined(HAVE_COCOA_METAL)
@@ -166,32 +156,38 @@ static void app_terminate(void)
        case NSEventTypeRightMouseDown:
        case NSEventTypeOtherMouseDown:
        {
+           NSInteger number      = event.buttonNumber;
 #ifdef HAVE_COCOA_METAL
-           NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+           CGPoint pos           = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #else
-           NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+           CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
-           apple = (cocoa_input_data_t*)input_driver_get_data();
+           cocoa_input_data_t 
+              *apple             = (cocoa_input_data_t*)
+              input_driver_get_data();
            if (!apple || pos.y < 0)
                return;
-           apple->mouse_buttons |= (1 << event.buttonNumber);
-           apple->touch_count = 1;
+           apple->mouse_buttons |= (1 << number);
+           apple->touch_count    = 1;
        }
            break;
       case NSEventTypeLeftMouseUp:
       case NSEventTypeRightMouseUp:
       case NSEventTypeOtherMouseUp:
          {
+            NSInteger number      = event.buttonNumber;
 #ifdef HAVE_COCOA_METAL
-            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+            CGPoint pos           = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #else
-            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
-            apple = (cocoa_input_data_t*)input_driver_get_data();
+           cocoa_input_data_t 
+              *apple              = (cocoa_input_data_t*)
+              input_driver_get_data();
             if (!apple || pos.y < 0)
                return;
-            apple->mouse_buttons &= ~(1 << event.buttonNumber);
-            apple->touch_count = 0;
+            apple->mouse_buttons &= ~(1 << number);
+            apple->touch_count    = 0;
          }
          break;
       default:
@@ -283,37 +279,34 @@ static char **waiting_argv;
    if (vt == _vt)
       return;
 
-   RARCH_LOG("[Cocoa]: change view type: %d ? %d\n", _vt, vt);
-
    _vt = vt;
    if (_renderView != nil)
    {
-      _renderView.wantsLayer = NO;
-      _renderView.layer = nil;
+      _renderView.wantsLayer  = NO;
+      _renderView.layer       = nil;
       [_renderView removeFromSuperview];
       self.window.contentView = nil;
-      _renderView = nil;
+      _renderView             = nil;
    }
 
-   switch (vt) {
+   switch (vt)
+   {
       case APPLE_VIEW_TYPE_VULKAN:
-      case APPLE_VIEW_TYPE_METAL:
-      {
-         MetalView *v = [MetalView new];
-         v.paused = YES;
-         v.enableSetNeedsDisplay = NO;
-         _renderView = v;
-      }
-      break;
+       case APPLE_VIEW_TYPE_METAL:
+         {
+            MetalView *v = [MetalView new];
+            v.paused = YES;
+            v.enableSetNeedsDisplay = NO;
+            _renderView = v;
+         }
+         break;
 
-      case APPLE_VIEW_TYPE_OPENGL:
-      {
+       case APPLE_VIEW_TYPE_OPENGL:
          _renderView = [CocoaView get];
          break;
-      }
 
-      case APPLE_VIEW_TYPE_NONE:
-      default:
+       case APPLE_VIEW_TYPE_NONE:
+       default:
          return;
    }
 

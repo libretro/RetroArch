@@ -2697,7 +2697,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       last_use_preferred_system_color_theme = use_preferred_system_color_theme;
    }
 
-   gfx_display_set_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, true, false);
 
    /* Clear text */
    ozone_font_bind(&ozone->fonts.footer);
@@ -2915,7 +2915,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_font_unbind(&ozone->fonts.entries_sublabel);
    ozone_font_unbind(&ozone->fonts.sidebar);
 
-   gfx_display_unset_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, false, true);
 }
 
 static void ozone_set_header(ozone_handle_t *ozone)

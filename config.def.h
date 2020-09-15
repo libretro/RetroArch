@@ -1151,6 +1151,16 @@ static const unsigned turbo_default_btn   = RETRO_DEVICE_ID_JOYPAD_B;
  * gamepads, plug-and-play style. */
 static const bool input_autodetect_enable = true;
 
+/* Enables accelerometer/gyroscope/illuminance
+ * sensor input, if supported */
+#if defined(ANDROID)
+/* Hardware sensors cause substantial battery
+ * drain on Android... */
+#define DEFAULT_INPUT_SENSORS_ENABLE false
+#else
+#define DEFAULT_INPUT_SENSORS_ENABLE true
+#endif
+
 /* Show the input descriptors set by the core instead
  * of the default ones. */
 static const bool input_descriptor_label_show = true;

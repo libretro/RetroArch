@@ -3082,7 +3082,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
             video_height);
    }
 
-   gfx_display_unset_viewport(video_width, video_height);
+   video_driver_set_viewport(video_width, video_height, false, true);
 }
 
 static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
