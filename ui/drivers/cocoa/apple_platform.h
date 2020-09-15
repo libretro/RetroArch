@@ -16,14 +16,9 @@
 
 /* Similarly to SDL, we'll respond to key events by doing nothing so we don't beep.
  */
-- (void)flagsChanged:(NSEvent *)event {
-}
-
-- (void)keyDown:(NSEvent *)event {
-}
-
-- (void)keyUp:(NSEvent *)event {
-}
+- (void)flagsChanged:(NSEvent *)event { }
+- (void)keyDown:(NSEvent *)event { }
+- (void)keyUp:(NSEvent *)event { }
 
 @end
 #endif

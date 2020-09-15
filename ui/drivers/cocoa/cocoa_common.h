@@ -57,7 +57,6 @@ typedef enum apple_view_type {
 #import <GameController/GameController.h>
 #endif
 
-
 /*********************************************/
 /* RAMenuBase                                */
 /* A menu class that displays RAMenuItemBase */
