@@ -271,8 +271,6 @@ void *glkitview_init(void);
 #if TARGET_OS_IOS
     if (@available(iOS 11.0, *))
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
-#elif TARGET_OS_TV
-
 #endif
 }
 
@@ -295,18 +293,19 @@ void *glkitview_init(void);
         [servers appendString:@"\n\n"];
     if (server.bonjourServerURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
+    
+#if TARGET_OS_TV || TARGET_OS_IOS
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
 #if TARGET_OS_TV
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
-    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alert addAction:[UIAlertAction actionWithTitle:@"OK"
+        style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
     }]];
-    [self presentViewController:alert animated:YES completion:^{
-    }];
 #elif TARGET_OS_IOS
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [[WebServer sharedInstance] webUploader].delegate = nil;
         [[WebServer sharedInstance] stopUploader];
     }]];
+#endif
     [self presentViewController:alert animated:YES completion:^{
     }];
 #endif
