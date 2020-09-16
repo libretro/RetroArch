@@ -268,7 +268,7 @@ static bool x11_display_server_set_resolution(void *data,
             XSync(dpy, False);
             XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime,
                   crtc->x, crtc->y, crtc->mode, crtc->rotation,
-                  crtc->outputs, crtc->noutput);
+                  crtc->outputs, crtc->noutput);   
             XSync(dpy, False);
 
             XRRFreeCrtcInfo(crtc);
@@ -571,10 +571,6 @@ static void x11_display_server_destroy(void *data)
                XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime,
                      crtc->x, crtc->y, crtc->mode, crtc->rotation,
                      crtc->outputs, crtc->noutput);
-               XRRSetScreenSize(dpy, window,
-                     crt_rrmode.width, crt_rrmode.height,
-                     (int) ((25.4 * crt_rrmode.width) / 96.0),
-                     (int) ((25.4 * crt_rrmode.height) / 96.0));
                XSync(dpy, False);
 
 
@@ -608,10 +604,6 @@ static void x11_display_server_destroy(void *data)
                   CurrentTime, crtc->x, crtc->y,
                   crtc->mode, crtc->rotation,
                   crtc->outputs, crtc->noutput);
-            XRRSetScreenSize(dpy, window,
-                  crt_rrmode.width, crt_rrmode.height,
-                  (int) ((25.4 * crt_rrmode.width) / 96.0),
-                  (int) ((25.4 * crt_rrmode.height) / 96.0));
             XSync(dpy, False);
 
             XRRFreeCrtcInfo(crtc);
