@@ -287,20 +287,19 @@ static size_t state_manager_raw_compress(const void *src,
 
       if (skip > UINT16_MAX)
       {
+         /* This will make it scan the entire thing again,
+          * but it only hits on 8GB unchanged data anyways,
+          * and if you're doing that, you've got bigger problems. */
          if (skip > UINT32_MAX)
-         {
-            /* This will make it scan the entire thing again,
-             * but it only hits on 8GB unchanged data anyways,
-             * and if you're doing that, you've got bigger problems. */
-            skip = UINT32_MAX;
-         }
+            skip         = UINT32_MAX;
+
          *compressed16++ = 0;
          *compressed16++ = skip;
          *compressed16++ = skip >> 16;
          continue;
       }
 
-      changed = find_same(old16, new16);
+      changed         = find_same(old16, new16);
       if (changed > UINT16_MAX)
          changed = UINT16_MAX;
 
@@ -310,17 +309,17 @@ static size_t state_manager_raw_compress(const void *src,
       for (i = 0; i < changed; i++)
          compressed16[i] = old16[i];
 
-      old16 += changed;
-      new16 += changed;
-      num16s -= changed;
+      old16        += changed;
+      new16        += changed;
+      num16s       -= changed;
       compressed16 += changed;
    }
 
-   compressed16[0] = 0;
-   compressed16[1] = 0;
-   compressed16[2] = 0;
+   compressed16[0]  = 0;
+   compressed16[1]  = 0;
+   compressed16[2]  = 0;
 
-   return (uint8_t*)(compressed16+3) - (uint8_t*)patch;
+   return (uint8_t*)(compressed16 + 3) - (uint8_t*)patch;
 }
 
 /*
@@ -337,18 +336,15 @@ static void state_manager_raw_decompress(const void *patch,
    uint16_t         *out16 = (uint16_t*)data;
    const uint16_t *patch16 = (const uint16_t*)patch;
 
-   (void)patchlen;
-   (void)datalen;
-
    for (;;)
    {
-      uint16_t numchanged = *(patch16++);
+      uint16_t numchanged  = *(patch16++);
 
       if (numchanged)
       {
          uint16_t i;
 
-         out16 += *patch16++;
+         out16       += *patch16++;
 
          /* We could do memcpy, but it seems that memcpy has a
           * constant-per-call overhead that actually shows up.
@@ -356,10 +352,10 @@ static void state_manager_raw_decompress(const void *patch,
           * Our average size in here seems to be 8 or something.
           * Therefore, we do something with lower overhead. */
          for (i = 0; i < numchanged; i++)
-            out16[i] = patch16[i];
+            out16[i]  = patch16[i];
 
-         patch16 += numchanged;
-         out16 += numchanged;
+         patch16     += numchanged;
+         out16       += numchanged;
       }
       else
       {
@@ -368,7 +364,7 @@ static void state_manager_raw_decompress(const void *patch,
          if (!numunchanged)
             break;
          patch16 += 2;
-         out16 += numunchanged;
+         out16   += numunchanged;
       }
    }
 }
@@ -429,7 +425,8 @@ static void state_manager_free(state_manager_t *state)
    state->nextblock  = NULL;
 }
 
-static state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
+static state_manager_t *state_manager_new(
+      size_t state_size, size_t buffer_size)
 {
    size_t max_comp_size, block_size;
    uint8_t *next_block    = NULL;
@@ -441,7 +438,6 @@ static state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
       return NULL;
 
    block_size         = (state_size + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
-
    /* the compressed data is surrounded by pointers to the other side */
    max_comp_size      = state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2;
    state_data         = (uint8_t*)malloc(buffer_size);
@@ -487,25 +483,24 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
    uint8_t *out                 = NULL;
    const uint8_t *compressed    = NULL;
 
-   *data = NULL;
+   *data                        = NULL;
 
    if (state->thisblock_valid)
    {
-      state->thisblock_valid = false;
+      state->thisblock_valid    = false;
       state->entries--;
-      *data = state->thisblock;
+      *data                     = state->thisblock;
       return true;
    }
 
-   *data = state->thisblock;
+   *data                        = state->thisblock;
    if (state->head == state->tail)
       return false;
 
-   start = read_size_t(state->head - sizeof(size_t));
-   state->head = state->data + start;
-
-   compressed = state->data + start + sizeof(size_t);
-   out = state->thisblock;
+   start                        = read_size_t(state->head - sizeof(size_t));
+   state->head                  = state->data + start;
+   compressed                   = state->data + start + sizeof(size_t);
+   out                          = state->thisblock;
 
    state_manager_raw_decompress(compressed,
          state->maxcompsize, out, state->blocksize);
@@ -553,9 +548,8 @@ static void state_manager_push_do(state_manager_t *state)
          return;
 
 recheckcapacity:;
-
-      headpos = state->head - state->data;
-      tailpos = state->tail - state->data;
+      headpos   = state->head - state->data;
+      tailpos   = state->tail - state->data;
       remaining = (tailpos + state->capacity -
             sizeof(size_t) - headpos - 1) % state->capacity + 1;
 
@@ -566,30 +560,30 @@ recheckcapacity:;
          goto recheckcapacity;
       }
 
-      oldb        = state->thisblock;
-      newb        = state->nextblock;
-      compressed  = state->head + sizeof(size_t);
+      oldb              = state->thisblock;
+      newb              = state->nextblock;
+      compressed        = state->head + sizeof(size_t);
 
-      compressed += state_manager_raw_compress(oldb, newb,
+      compressed       += state_manager_raw_compress(oldb, newb,
             state->blocksize, compressed);
 
       if (compressed - state->data + state->maxcompsize > state->capacity)
       {
-         compressed = state->data;
+         compressed     = state->data;
          if (state->tail == state->data + sizeof(size_t))
             state->tail = state->data + read_size_t(state->tail);
       }
       write_size_t(compressed, state->head-state->data);
-      compressed += sizeof(size_t);
+      compressed       += sizeof(size_t);
       write_size_t(state->head, compressed-state->data);
-      state->head = compressed;
+      state->head       = compressed;
    }
    else
       state->thisblock_valid = true;
 
-   swap             = state->thisblock;
-   state->thisblock = state->nextblock;
-   state->nextblock = swap;
+   swap                      = state->thisblock;
+   state->thisblock          = state->nextblock;
+   state->nextblock          = swap;
 
    state->entries++;
 }
@@ -604,11 +598,11 @@ static void state_manager_capacity(state_manager_t *state,
          sizeof(size_t) - headpos - 1) % state->capacity + 1;
 
    if (entries)
-      *entries = state->entries;
+      *entries      = state->entries;
    if (bytes)
-      *bytes = state->capacity-remaining;
+      *bytes        = state->capacity-remaining;
    if (full)
-      *full = remaining <= state->maxcompsize * 2;
+      *full         = remaining <= state->maxcompsize * 2;
 }
 #endif
 
