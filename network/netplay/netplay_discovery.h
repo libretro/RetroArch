@@ -73,7 +73,7 @@ struct netplay_room
    int  host_method;
    char retroarch_version [2048];
    char subsystem_name    [2048];
-   char country           [2048];
+   char country           [3];
    char nickname          [2048];
    char address           [2048];
    char mitm_address      [2048];
