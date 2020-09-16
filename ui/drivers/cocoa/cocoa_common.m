@@ -70,33 +70,30 @@ void *glkitview_init(void);
 
 #if TARGET_OS_OSX
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+   NSArray *array = [NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil];
+   [self registerForDraggedTypes:array];
 #endif
 
 #if defined(HAVE_COCOA)
    ui_window_cocoa_t cocoa_view;
    cocoa_view.data = (CocoaView*)self;
-
-   [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
-#elif !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
-   [self registerForDraggedTypes:@[NSColorPboardType, NSFilenamesPboardType]];
 #elif defined(HAVE_COCOATOUCH)
 #if defined(HAVE_COCOA_METAL)
-   self.view = [UIView new];
+   self.view       = [UIView new];
 #else
-   self.view = (BRIDGE GLKView*)glkitview_init();
+   self.view       = (BRIDGE GLKView*)glkitview_init();
 #endif
-#if TARGET_OS_IOS
+#endif
+    
+#if TARGET_OS_OSX
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)self);
+#elif TARGET_OS_IOS
     UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
     swipe.numberOfTouchesRequired = 4;
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
-#endif
-#endif
-    
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-    video_driver_display_type_set(RARCH_DISPLAY_OSX);
-    video_driver_display_set(0);
-    video_driver_display_userdata_set((uintptr_t)self);
 #endif
 
    return self;
@@ -145,10 +142,7 @@ void *glkitview_init(void);
     return YES;
 }
 
-- (void)draggingExited:(id <NSDraggingInfo>)sender
-{
-    [self setNeedsDisplay: YES];
-}
+- (void)draggingExited:(id <NSDraggingInfo>)sender { [self setNeedsDisplay: YES]; }
 
 #elif TARGET_OS_IOS
 -(void) showNativeMenu
@@ -162,7 +156,8 @@ void *glkitview_init(void);
 -(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
 {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    if (@available(iOS 11, *)) {
+    if (@available(iOS 11, *))
+    {
         [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
             [self adjustViewFrameForSafeArea];
         } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
@@ -274,15 +269,15 @@ void *glkitview_init(void);
 - (void)viewDidAppear:(BOOL)animated
 {
 #if TARGET_OS_IOS
-    if (@available(iOS 11.0, *)) {
+    if (@available(iOS 11.0, *))
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
-    }
 #elif TARGET_OS_TV
 
 #endif
 }
 
--(void)viewWillAppear:(BOOL)animated {
+-(void)viewWillAppear:(BOOL)animated
+{
     [super viewWillAppear:animated];
 #if TARGET_OS_TV
     [[WebServer sharedInstance] startUploader];
@@ -291,7 +286,8 @@ void *glkitview_init(void);
 }
 
 #pragma mark GCDWebServerDelegate
-- (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server {
+- (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server
+{
     NSMutableString *servers = [[NSMutableString alloc] init];
     if (server.serverURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.serverURL]];
@@ -306,7 +302,7 @@ void *glkitview_init(void);
     [self presentViewController:alert animated:YES completion:^{
     }];
 #elif TARGET_OS_IOS
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Web Server Started" message:[NSString stringWithFormat:@"To transfer ROMs from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [[WebServer sharedInstance] webUploader].delegate = nil;
         [[WebServer sharedInstance] stopUploader];
