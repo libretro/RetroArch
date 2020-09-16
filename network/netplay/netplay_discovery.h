@@ -79,8 +79,8 @@ struct netplay_room
    char frontend          [256];
    char coreversion       [256];
    char gamename          [256];
-   char address           [2048];
-   char mitm_address      [2048];
+   char address           [256];
+   char mitm_address      [256];
    bool has_password;
    bool has_spectate_password;
    bool lan;
