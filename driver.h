@@ -71,11 +71,7 @@ enum driver_ctl_state
 
    RARCH_DRIVER_CTL_FIND_PREV,
 
-   RARCH_DRIVER_CTL_FIND_NEXT,
-
-   /* Find index of the driver, based on @label. */
-   RARCH_DRIVER_CTL_FIND_INDEX
-
+   RARCH_DRIVER_CTL_FIND_NEXT
 };
 
 typedef struct driver_ctx_info

@@ -7323,6 +7323,264 @@ const char *menu_driver_get_last_shader_pass_dir(void)
 
 #endif
 
+/* DRIVERS */
+
+/**
+ * find_driver_nonempty:
+ * @label              : string of driver type to be found.
+ * @i                  : index of driver.
+ * @str                : identifier name of the found driver
+ *                       gets written to this string.
+ * @len                : size of @str.
+ *
+ * Find driver based on @label.
+ *
+ * Returns: NULL if no driver based on @label found, otherwise
+ * pointer to driver.
+ **/
+static const void *find_driver_nonempty(
+      const char *label, int i,
+      char *s, size_t len)
+{
+   if (string_is_equal(label, "camera_driver"))
+   {
+      if (camera_drivers[i])
+      {
+         const char *ident = camera_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return camera_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "location_driver"))
+   {
+      if (location_drivers[i])
+      {
+         const char *ident = location_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return location_drivers[i];
+      }
+   }
+#ifdef HAVE_MENU
+   else if (string_is_equal(label, "menu_driver"))
+   {
+      if (menu_ctx_drivers[i])
+      {
+         const char *ident = menu_ctx_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return menu_ctx_drivers[i];
+      }
+   }
+#endif
+   else if (string_is_equal(label, "input_driver"))
+   {
+      if (input_drivers[i])
+      {
+         const char *ident = input_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return input_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "input_joypad_driver"))
+   {
+      if (joypad_drivers[i])
+      {
+         const char *ident = joypad_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return joypad_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "video_driver"))
+   {
+      if (video_drivers[i])
+      {
+         const char *ident = video_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return video_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "audio_driver"))
+   {
+      if (audio_drivers[i])
+      {
+         const char *ident = audio_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return audio_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "record_driver"))
+   {
+      if (record_drivers[i])
+      {
+         const char *ident = record_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return record_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "midi_driver"))
+   {
+      if (midi_driver_find_handle(i))
+      {
+         const char *ident = midi_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return midi_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "audio_resampler_driver"))
+   {
+      if (audio_resampler_driver_find_handle(i))
+      {
+         const char *ident = audio_resampler_driver_find_ident(i);
+
+         strlcpy(s, ident, len);
+         return audio_resampler_driver_find_handle(i);
+      }
+   }
+   else if (string_is_equal(label, "bluetooth_driver"))
+   {
+      if (bluetooth_drivers[i])
+      {
+         const char *ident = bluetooth_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return bluetooth_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "wifi_driver"))
+   {
+      if (wifi_drivers[i])
+      {
+         const char *ident = wifi_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return wifi_drivers[i];
+      }
+   }
+
+   return NULL;
+}
+
+/**
+ * driver_find_last:
+ * @label              : string of driver type to be found.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
+ *
+ * Find last driver in driver array.
+ **/
+static bool driver_find_last(const char *label, char *s, size_t len)
+{
+   unsigned i;
+
+   for (i = 0;
+         find_driver_nonempty(label, i, s, len) != NULL; i++)
+   {}
+
+   if (i)
+      i = i - 1;
+   else
+      i = 0;
+
+   find_driver_nonempty(label, i, s, len);
+   return true;
+}
+
+/**
+ * driver_find_index:
+ * @label              : string of driver type to be found.
+ * @drv                : identifier of driver to be found.
+ *
+ * Find index of the driver, based on @label.
+ *
+ * Returns: -1 if no driver based on @label and @drv found, otherwise
+ * index number of the driver found in the array.
+ **/
+static int driver_find_index(const char *label, const char *drv)
+{
+   unsigned i;
+   char str[256];
+
+   str[0] = '\0';
+
+   for (i = 0;
+         find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
+   {
+      if (string_is_empty(str))
+         break;
+      if (string_is_equal_noncase(drv, str))
+         return i;
+   }
+
+   return -1;
+}
+
+
+
+/**
+ * driver_find_prev:
+ * @label              : string of driver type to be found.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
+ *
+ * Find previous driver in driver array.
+ **/
+static bool driver_find_prev(const char *label, char *s, size_t len)
+{
+   int i = driver_find_index(label, s);
+
+   if (i > 0)
+   {
+      find_driver_nonempty(label, i - 1, s, len);
+      return true;
+   }
+
+   RARCH_WARN(
+         "Couldn't find any previous driver (current one: \"%s\").\n", s);
+   return false;
+}
+
+/**
+ * driver_find_next:
+ * @label              : string of driver type to be found.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
+ *
+ * Find next driver in driver array.
+ **/
+static bool driver_find_next(const char *label, char *s, size_t len)
+{
+   int i = driver_find_index(label, s);
+
+   if (i >= 0 && string_is_not_equal(s, "null"))
+   {
+      find_driver_nonempty(label, i + 1, s, len);
+      return true;
+   }
+
+   RARCH_WARN("%s (current one: \"%s\").\n",
+         msg_hash_to_str(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER),
+         s);
+   return false;
+}
+
+
+/* Find index of the driver, based on @drv->label */
+static bool driver_ctl_find_index(driver_ctx_info_t *drv)
+{
+   if (!drv)
+      return false;
+   drv->len = driver_find_index(drv->label, drv->s);
+   return true;
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -7343,7 +7601,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             drv.label = "menu_driver";
             drv.s     = settings->arrays.menu_driver;
 
-            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+            driver_ctl_find_index(&drv);
 
             i = (int)drv.len;
 
@@ -21136,7 +21394,7 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
             drv.label = "bluetooth_driver";
             drv.s     = settings->arrays.bluetooth_driver;
 
-            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+            driver_ctl_find_index(&drv);
 
             i = (int)drv.len;
 
@@ -21271,7 +21529,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
             drv.label = "wifi_driver";
             drv.s     = settings->arrays.wifi_driver;
 
-            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+            driver_ctl_find_index(&drv);
 
             i = (int)drv.len;
 
@@ -21636,7 +21894,7 @@ static void find_record_driver(void)
    drv.label = "record_driver";
    drv.s     = settings->arrays.record_driver;
 
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+   driver_ctl_find_index(&drv);
 
    i = (int)drv.len;
 
@@ -26610,7 +26868,7 @@ static bool input_driver_find_driver(struct rarch_state *p_rarch)
    drv.label                      = "input_driver";
    drv.s                          = settings->arrays.input_driver;
 
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+   driver_ctl_find_index(&drv);
 
    i                              = (int)drv.len;
 
@@ -29559,7 +29817,7 @@ static bool audio_driver_find_driver(struct rarch_state *p_rarch)
    drv.label                   = "audio_driver";
    drv.s                       = settings->arrays.audio_driver;
 
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+   driver_ctl_find_index(&drv);
 
    i                           = (int)drv.len;
 
@@ -32773,7 +33031,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
    drv.label = "video_driver";
    drv.s     = settings->arrays.video_driver;
 
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+   driver_ctl_find_index(&drv);
 
    i = (int)drv.len;
 
@@ -34210,7 +34468,7 @@ static void find_location_driver(struct rarch_state *p_rarch)
    drv.label                    = "location_driver";
    drv.s                        = settings->arrays.location_driver;
 
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+   driver_ctl_find_index(&drv);
 
    i                            = (int)drv.len;
 
@@ -34424,7 +34682,7 @@ static void camera_driver_find_driver(struct rarch_state *p_rarch)
    drv.label = "camera_driver";
    drv.s     = settings->arrays.camera_driver;
 
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+   driver_ctl_find_index(&drv);
 
    i         = (int)drv.len;
 
@@ -34454,252 +34712,6 @@ static void camera_driver_find_driver(struct rarch_state *p_rarch)
       if (!p_rarch->camera_driver)
          retroarch_fail(1, "find_camera_driver()");
    }
-}
-
-/* DRIVERS */
-
-/**
- * find_driver_nonempty:
- * @label              : string of driver type to be found.
- * @i                  : index of driver.
- * @str                : identifier name of the found driver
- *                       gets written to this string.
- * @len                : size of @str.
- *
- * Find driver based on @label.
- *
- * Returns: NULL if no driver based on @label found, otherwise
- * pointer to driver.
- **/
-static const void *find_driver_nonempty(
-      const char *label, int i,
-      char *s, size_t len)
-{
-   if (string_is_equal(label, "camera_driver"))
-   {
-      if (camera_drivers[i])
-      {
-         const char *ident = camera_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return camera_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "location_driver"))
-   {
-      if (location_drivers[i])
-      {
-         const char *ident = location_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return location_drivers[i];
-      }
-   }
-#ifdef HAVE_MENU
-   else if (string_is_equal(label, "menu_driver"))
-   {
-      if (menu_ctx_drivers[i])
-      {
-         const char *ident = menu_ctx_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return menu_ctx_drivers[i];
-      }
-   }
-#endif
-   else if (string_is_equal(label, "input_driver"))
-   {
-      if (input_drivers[i])
-      {
-         const char *ident = input_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return input_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "input_joypad_driver"))
-   {
-      if (joypad_drivers[i])
-      {
-         const char *ident = joypad_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return joypad_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "video_driver"))
-   {
-      if (video_drivers[i])
-      {
-         const char *ident = video_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return video_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "audio_driver"))
-   {
-      if (audio_drivers[i])
-      {
-         const char *ident = audio_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return audio_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "record_driver"))
-   {
-      if (record_drivers[i])
-      {
-         const char *ident = record_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return record_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "midi_driver"))
-   {
-      if (midi_driver_find_handle(i))
-      {
-         const char *ident = midi_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return midi_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "audio_resampler_driver"))
-   {
-      if (audio_resampler_driver_find_handle(i))
-      {
-         const char *ident = audio_resampler_driver_find_ident(i);
-
-         strlcpy(s, ident, len);
-         return audio_resampler_driver_find_handle(i);
-      }
-   }
-   else if (string_is_equal(label, "bluetooth_driver"))
-   {
-      if (bluetooth_drivers[i])
-      {
-         const char *ident = bluetooth_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return bluetooth_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "wifi_driver"))
-   {
-      if (wifi_drivers[i])
-      {
-         const char *ident = wifi_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return wifi_drivers[i];
-      }
-   }
-
-   return NULL;
-}
-
-/**
- * driver_find_index:
- * @label              : string of driver type to be found.
- * @drv                : identifier of driver to be found.
- *
- * Find index of the driver, based on @label.
- *
- * Returns: -1 if no driver based on @label and @drv found, otherwise
- * index number of the driver found in the array.
- **/
-static int driver_find_index(const char *label, const char *drv)
-{
-   unsigned i;
-   char str[256];
-
-   str[0] = '\0';
-
-   for (i = 0;
-         find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
-   {
-      if (string_is_empty(str))
-         break;
-      if (string_is_equal_noncase(drv, str))
-         return i;
-   }
-
-   return -1;
-}
-
-/**
- * driver_find_last:
- * @label              : string of driver type to be found.
- * @s                  : identifier of driver to be found.
- * @len                : size of @s.
- *
- * Find last driver in driver array.
- **/
-static bool driver_find_last(const char *label, char *s, size_t len)
-{
-   unsigned i;
-
-   for (i = 0;
-         find_driver_nonempty(label, i, s, len) != NULL; i++)
-   {}
-
-   if (i)
-      i = i - 1;
-   else
-      i = 0;
-
-   find_driver_nonempty(label, i, s, len);
-   return true;
-}
-
-/**
- * driver_find_prev:
- * @label              : string of driver type to be found.
- * @s                  : identifier of driver to be found.
- * @len                : size of @s.
- *
- * Find previous driver in driver array.
- **/
-static bool driver_find_prev(const char *label, char *s, size_t len)
-{
-   int i = driver_find_index(label, s);
-
-   if (i > 0)
-   {
-      find_driver_nonempty(label, i - 1, s, len);
-      return true;
-   }
-
-   RARCH_WARN(
-         "Couldn't find any previous driver (current one: \"%s\").\n", s);
-   return false;
-}
-
-/**
- * driver_find_next:
- * @label              : string of driver type to be found.
- * @s                  : identifier of driver to be found.
- * @len                : size of @s.
- *
- * Find next driver in driver array.
- **/
-static bool driver_find_next(const char *label, char *s, size_t len)
-{
-   int i = driver_find_index(label, s);
-
-   if (i >= 0 && string_is_not_equal(s, "null"))
-   {
-      find_driver_nonempty(label, i + 1, s, len);
-      return true;
-   }
-
-   RARCH_WARN("%s (current one: \"%s\").\n",
-         msg_hash_to_str(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER),
-         s);
-   return false;
 }
 
 static void driver_adjust_system_rates(struct rarch_state *p_rarch)
@@ -35155,14 +35167,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                return false;
             return driver_find_next(drv->label, drv->s, drv->len);
          }
-      case RARCH_DRIVER_CTL_FIND_INDEX:
-         {
-            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
-            if (!drv)
-               return false;
-            drv->len = driver_find_index(drv->label, drv->s);
-         }
-         break;
       case RARCH_DRIVER_CTL_NONE:
       default:
          break;
