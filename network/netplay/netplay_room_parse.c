@@ -52,11 +52,6 @@ typedef struct tag_Context
 /* TODO/FIXME - static global variable */
 static struct netplay_rooms *netplay_rooms_data;
 
-static void parse_context_init(Context* pCtx)
-{
-   pCtx->parser = NULL;
-}
-
 static void parse_context_free(Context* pCtx)
 {
    if (pCtx->cur_field)
@@ -409,9 +404,7 @@ int netplay_rooms_parse(const char *buf)
    netplay_rooms_data = (struct netplay_rooms*)
       calloc(1, sizeof(*netplay_rooms_data));
 
-   parse_context_init(&ctx);
-
-   ctx.parser = JSON_Parser_Create(NULL);
+   ctx.parser         = JSON_Parser_Create(NULL);
 
    if (!ctx.parser)
    {
