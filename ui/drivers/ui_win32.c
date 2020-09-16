@@ -53,59 +53,8 @@
 
 #include "ui_win32.h"
 
-typedef struct ui_companion_win32
-{
-   void *empty;
-} ui_companion_win32_t;
-
-#ifndef __WINRT__
-bool win32_window_init(WNDCLASSEX *wndclass,
-      bool fullscreen, const char *class_name)
-{
-#if _WIN32_WINNT >= 0x0501
-   /* Use the language set in the config for the menubar... also changes the console language. */
-   SetThreadUILanguage(win32_get_langid_from_retro_lang((enum retro_language)*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)));
-#endif
-   wndclass->cbSize        = sizeof(WNDCLASSEX);
-   wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-   wndclass->hInstance     = GetModuleHandle(NULL);
-   wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
-   wndclass->lpszClassName = (class_name != NULL) ? class_name : "RetroArch";
-   wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-   wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
-         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
-   if (!fullscreen)
-      wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
-
-   if (class_name != NULL)
-      wndclass->style         |= CS_CLASSDC;
-
-   if (!RegisterClassEx(wndclass))
-      return false;
-
-   return true;
-}
-#endif
-
-static void ui_companion_win32_deinit(void *data)
-{
-   ui_companion_win32_t *handle = (ui_companion_win32_t*)data;
-
-   if (handle)
-      free(handle);
-}
-
-static void *ui_companion_win32_init(void)
-{
-   ui_companion_win32_t *handle = (ui_companion_win32_t*)
-      calloc(1, sizeof(*handle));
-
-   if (!handle)
-      return NULL;
-
-   return handle;
-}
-
+static void ui_companion_win32_deinit(void *data) { } 
+static void *ui_companion_win32_init(void) { return (void*)-1; }
 static void ui_companion_win32_notify_content_loaded(void *data) { }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(
