@@ -325,27 +325,24 @@ static JSON_Parser_HandlerResult JSON_CALL ArrayItemHandler(JSON_Parser parser)
    return JSON_Parser_Continue;
 }
 
-static int parse_context_setup(Context* pCtx)
+static void parse_context_setup(Context* pCtx)
 {
    if (JSON_Parser_GetInputEncoding(pCtx->parser) == JSON_UnknownEncoding)
-   {
-      JSON_Parser_SetEncodingDetectedHandler(pCtx->parser, &EncodingDetectedHandler);
-   }
+      JSON_Parser_SetEncodingDetectedHandler(pCtx->parser,
+            &EncodingDetectedHandler);
 
-   JSON_Parser_SetNullHandler(pCtx->parser, &NullHandler);
-   JSON_Parser_SetBooleanHandler(pCtx->parser, &BooleanHandler);
-   JSON_Parser_SetStringHandler(pCtx->parser, &StringHandler);
-   JSON_Parser_SetNumberHandler(pCtx->parser, &NumberHandler);
+   JSON_Parser_SetNullHandler(pCtx->parser,          &NullHandler);
+   JSON_Parser_SetBooleanHandler(pCtx->parser,       &BooleanHandler);
+   JSON_Parser_SetStringHandler(pCtx->parser,        &StringHandler);
+   JSON_Parser_SetNumberHandler(pCtx->parser,        &NumberHandler);
    JSON_Parser_SetSpecialNumberHandler(pCtx->parser, &SpecialNumberHandler);
-   JSON_Parser_SetStartObjectHandler(pCtx->parser, &StartObjectHandler);
-   JSON_Parser_SetEndObjectHandler(pCtx->parser, &EndObjectHandler);
-   JSON_Parser_SetObjectMemberHandler(pCtx->parser, &ObjectMemberHandler);
-   JSON_Parser_SetStartArrayHandler(pCtx->parser, &StartArrayHandler);
-   JSON_Parser_SetEndArrayHandler(pCtx->parser, &EndArrayHandler);
-   JSON_Parser_SetArrayItemHandler(pCtx->parser, &ArrayItemHandler);
+   JSON_Parser_SetStartObjectHandler(pCtx->parser,   &StartObjectHandler);
+   JSON_Parser_SetEndObjectHandler(pCtx->parser,     &EndObjectHandler);
+   JSON_Parser_SetObjectMemberHandler(pCtx->parser,  &ObjectMemberHandler);
+   JSON_Parser_SetStartArrayHandler(pCtx->parser,    &StartArrayHandler);
+   JSON_Parser_SetEndArrayHandler(pCtx->parser,      &EndArrayHandler);
+   JSON_Parser_SetArrayItemHandler(pCtx->parser,     &ArrayItemHandler);
    JSON_Parser_SetUserData(pCtx->parser, pCtx);
-
-   return 1;
 }
 
 static void parse_context_error(Context* pCtx)
