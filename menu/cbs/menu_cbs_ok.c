@@ -50,7 +50,6 @@
 #include "../menu_dialog.h"
 #include "../menu_input_bind_dialog.h"
 #include "../menu_input.h"
-#include "../menu_networking.h"
 
 #include "../../core.h"
 #include "../../configuration.h"
@@ -4090,6 +4089,126 @@ static int action_ok_core_updater_list(const char *path,
          ACTION_OK_DL_CORE_UPDATER_LIST);
 }
 
+static void cb_net_generic_subdir(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   char subdir_path[PATH_MAX_LENGTH];
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
+   file_transfer_t *state       = (file_transfer_t*)user_data;
+
+   subdir_path[0]               = '\0';
+
+   if (!data || err)
+      goto finish;
+
+   if (!string_is_empty(data->data))
+      memcpy(subdir_path, data->data, data->len * sizeof(char));
+   subdir_path[data->len] = '\0';
+
+finish:
+   if (!err && !string_ends_with_size(subdir_path,
+            FILE_PATH_INDEX_DIRS_URL,
+            strlen(subdir_path),
+            STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
+            ))
+   {
+      char parent_dir[PATH_MAX_LENGTH];
+
+      parent_dir[0] = '\0';
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+
+      /*generic_action_ok_displaylist_push(parent_dir, NULL,
+            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
+   }
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (user_data)
+      free(user_data);
+}
+
+static void cb_net_generic(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   bool refresh                   = false;
+   http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
+   file_transfer_t *state         = (file_transfer_t*)user_data;
+   menu_handle_t            *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      goto finish;
+
+   if (menu->core_buf)
+      free(menu->core_buf);
+
+   menu->core_buf = NULL;
+   menu->core_len = 0;
+
+   if (!data || err)
+      goto finish;
+
+   menu->core_buf = (char*)malloc((data->len+1) * sizeof(char));
+
+   if (!menu->core_buf)
+      goto finish;
+
+   if (!string_is_empty(data->data))
+      memcpy(menu->core_buf, data->data, data->len * sizeof(char));
+   menu->core_buf[data->len] = '\0';
+   menu->core_len            = data->len;
+
+finish:
+   refresh = true;
+   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (!err && 
+         !string_ends_with_size(state->path,
+            FILE_PATH_INDEX_DIRS_URL,
+            strlen(state->path),
+            STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
+            ))
+   {
+      char parent_dir[PATH_MAX_LENGTH];
+      char parent_dir_encoded[PATH_MAX_LENGTH];
+      file_transfer_t *transf     = NULL;
+
+      parent_dir[0]               = '\0';
+      parent_dir_encoded[0]       = '\0';
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+      strlcat(parent_dir, FILE_PATH_INDEX_DIRS_URL,
+            sizeof(parent_dir));
+
+      transf           = (file_transfer_t*)malloc(sizeof(*transf));
+
+      transf->enum_idx = MSG_UNKNOWN;
+      strlcpy(transf->path, parent_dir, sizeof(transf->path));
+
+      net_http_urlencode_full(parent_dir_encoded, parent_dir,
+            sizeof(parent_dir_encoded));
+      task_push_http_transfer_file(parent_dir_encoded, true,
+            "index_dirs", cb_net_generic_subdir, transf);
+   }
+
+   if (state)
+      free(state);
+}
+
 static int generic_action_ok_network(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums enum_idx)
@@ -4120,26 +4239,26 @@ static int generic_action_ok_network(const char *path,
                network_buildbot_assets_url,
                "cores/" FILE_PATH_INDEX_DIRS_URL,
                sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
-         callback  = cb_net_generic;
+         url_label    = msg_hash_to_str(enum_idx);
+         type_id2     = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
+         callback     = cb_net_generic;
          suppress_msg = true;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
          fill_pathname_join(url_path, path,
                FILE_PATH_INDEX_URL, sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
-         callback  = cb_net_generic;
+         url_label    = msg_hash_to_str(enum_idx);
+         type_id2     = ACTION_OK_DL_CORE_CONTENT_LIST;
+         callback     = cb_net_generic;
          suppress_msg = true;
          break;
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
                FILE_PATH_CORE_THUMBNAILPACKS_URL,
                FILE_PATH_INDEX_URL, sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
-         callback  = cb_net_generic;
+         url_label    = msg_hash_to_str(enum_idx);
+         type_id2     = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
+         callback     = cb_net_generic;
          break;
 #ifdef HAVE_LAKKA
       case MENU_ENUM_LABEL_CB_LAKKA_LIST:
@@ -4150,9 +4269,9 @@ static int generic_action_ok_network(const char *path,
          fill_pathname_join(url_path, url_path,
                FILE_PATH_INDEX_URL,
                sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_LAKKA_LIST;
-         callback  = cb_net_generic;
+         url_label    = msg_hash_to_str(enum_idx);
+         type_id2     = ACTION_OK_DL_LAKKA_LIST;
+         callback     = cb_net_generic;
          break;
 #endif
       default:

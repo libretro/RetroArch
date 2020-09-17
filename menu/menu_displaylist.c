@@ -77,7 +77,6 @@
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
 #endif
-#include "menu_networking.h"
 #include "menu_dialog.h"
 
 #include "../configuration.h"
@@ -8912,6 +8911,104 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
       netplay_rooms_free();
    }
+
+   return count;
+}
+
+static unsigned print_buf_lines(file_list_t *list, char *buf,
+      const char *label, int buf_size,
+      enum msg_file_type type, bool append, bool extended)
+{
+   char c;
+   unsigned count   = 0;
+   int i            = 0;
+   char *line_start = buf;
+
+   if (!buf || !buf_size)
+      return 0;
+
+   for (i = 0; i < buf_size; i++)
+   {
+      size_t ln;
+      const char *core_date        = NULL;
+      const char *core_crc         = NULL;
+      const char *core_pathname    = NULL;
+      struct string_list str_list  = {0};
+
+      /* The end of the buffer, print the last bit */
+      if (*(buf + i) == '\0')
+         break;
+
+      if (*(buf + i) != '\n')
+         continue;
+
+      /* Found a line ending, print the line and compute new line_start */
+
+      /* Save the next char  */
+      c = *(buf + i + 1);
+      /* replace with \0 */
+      *(buf + i + 1) = '\0';
+
+      /* We need to strip the newline. */
+      ln = strlen(line_start) - 1;
+      if (line_start[ln] == '\n')
+         line_start[ln] = '\0';
+
+      string_list_initialize(&str_list);
+      string_split_noalloc(&str_list, line_start, " ");
+
+      if (str_list.elems[0].data)
+         core_date     = str_list.elems[0].data;
+      if (str_list.elems[1].data)
+         core_crc      = str_list.elems[1].data;
+      if (str_list.elems[2].data)
+         core_pathname = str_list.elems[2].data;
+
+      (void)core_date;
+      (void)core_crc;
+
+      if (extended)
+      {
+         if (append)
+         {
+            if (menu_entries_append_enum(list, core_pathname, "",
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0))
+               count++;
+         }
+         else
+         {
+            menu_entries_prepend(list, core_pathname, "",
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+            count++;
+         }
+      }
+      else
+      {
+         if (append)
+         {
+            if (menu_entries_append_enum(list, line_start, label,
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0))
+               count++;
+         }
+         else
+         {
+            menu_entries_prepend(list, line_start, label,
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+            count++;
+         }
+      }
+
+      string_list_deinitialize(&str_list);
+
+      /* Restore the saved char */
+      *(buf + i + 1) = c;
+      line_start     = buf + i + 1;
+   }
+
+   if (append)
+      file_list_sort_on_alt(list);
+   /* If the buffer was completely full, and didn't end
+    * with a newline, just ignore the partial last line. */
 
    return count;
 }

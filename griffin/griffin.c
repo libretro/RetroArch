@@ -1350,10 +1350,6 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_setting.c"
 
-#if defined(HAVE_NETWORKING)
-#include "../menu/menu_networking.c"
-#endif
-
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
 #include "../menu/cbs/menu_cbs_select.c"
