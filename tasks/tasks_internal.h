@@ -174,7 +174,7 @@ bool task_push_overlay_load_default(
       bool overlay_hide_when_gamepad_connected,
       bool input_overlay_enable,
       float input_overlay_opacity,
-      overlay_layout_t *layout,
+      overlay_layout_desc_t *layout_desc,
       void *user_data);
 #endif
 

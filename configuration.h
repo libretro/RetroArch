@@ -312,6 +312,7 @@ typedef struct settings
       float input_overlay_scale_portrait;
       float input_overlay_aspect_adjust_portrait;
       float input_overlay_x_separation_portrait;
+      float input_overlay_y_separation_portrait;
       float input_overlay_x_offset_portrait;
       float input_overlay_y_offset_portrait;
 
@@ -504,6 +505,7 @@ typedef struct settings
       bool input_overlay_show_physical_inputs;
       bool input_overlay_show_mouse_cursor;
       bool input_overlay_auto_rotate;
+      bool input_overlay_auto_scale;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_menu_swap_ok_cancel_buttons;

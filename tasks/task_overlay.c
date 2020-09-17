@@ -46,7 +46,7 @@ struct overlay_loader
    unsigned pos_increment;
 
    float overlay_opacity;
-   overlay_layout_t layout;
+   overlay_layout_desc_t layout_desc;
 
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
@@ -600,6 +600,26 @@ static void task_overlay_deferred_load(retro_task_t *task)
       config_get_array(conf, overlay->config.names.key,
             overlay->name, sizeof(overlay->name));
 
+      /* Attempt to determine native aspect ratio */
+      snprintf(conf_key, sizeof(conf_key),
+            "overlay%u_aspect_ratio", loader->pos);
+      overlay->aspect_ratio = 0.0f;
+      if (config_get_float(conf, conf_key, &tmp_float))
+         overlay->aspect_ratio = tmp_float;
+
+      if (overlay->aspect_ratio <= 0.0f)
+      {
+         /* No ratio has been set - assume 16:9
+          * (or 16:9 rotated) */
+
+         /* Check whether overlay name indicates a
+          * portrait layout */
+         if (strstr(overlay->name, "portrait"))
+            overlay->aspect_ratio = 0.5625f;    /* 1 / (16/9) */
+         else
+            overlay->aspect_ratio = 1.7777778f; /* 16/9 */
+      }
+
       /* By default, we stretch the overlay out in full. */
       overlay->x = overlay->y = 0.0f;
       overlay->w = overlay->h = 1.0f;
@@ -636,6 +656,20 @@ static void task_overlay_deferred_load(retro_task_t *task)
       overlay->block_scale = false;
       overlay->center_x    = overlay->x + 0.5f * overlay->w;
       overlay->center_y    = overlay->y + 0.5f * overlay->h;
+
+      /* Check whether x/y separation are force disabled
+       * for this overlay */
+      snprintf(conf_key, sizeof(conf_key),
+            "overlay%u_block_x_separation", loader->pos);
+      overlay->block_x_separation = false;
+      if (config_get_bool(conf, conf_key, &tmp_bool))
+         overlay->block_x_separation = tmp_bool;
+
+      snprintf(conf_key, sizeof(conf_key),
+            "overlay%u_block_y_separation", loader->pos);
+      overlay->block_y_separation = false;
+      if (config_get_bool(conf, conf_key, &tmp_bool))
+         overlay->block_y_separation = tmp_bool;
    }
 
    return;
@@ -713,7 +747,8 @@ static void task_overlay_handler(retro_task_t *task)
       data->hide_in_menu                = loader->overlay_hide_in_menu;
       data->hide_when_gamepad_connected = loader->overlay_hide_when_gamepad_connected;
 
-      memcpy(&data->layout, &loader->layout, sizeof(overlay_layout_t));
+      memcpy(&data->layout_desc, &loader->layout_desc,
+            sizeof(overlay_layout_desc_t));
 
       task_set_data(task, data);
    }
@@ -743,7 +778,7 @@ bool task_push_overlay_load_default(
       bool overlay_hide_when_gamepad_connected,
       bool input_overlay_enable,
       float input_overlay_opacity,
-      overlay_layout_t *layout,
+      overlay_layout_desc_t *layout_desc,
       void *user_data)
 {
    task_finder_data_t find_data;
@@ -751,7 +786,7 @@ bool task_push_overlay_load_default(
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = NULL;
 
-   if (string_is_empty(overlay_path) || !layout)
+   if (string_is_empty(overlay_path) || !layout_desc)
       return false;
 
    /* Prevent overlay from being loaded if it already is being loaded */
@@ -801,7 +836,8 @@ bool task_push_overlay_load_default(
    loader->driver_rgba_support                 = video_driver_supports_rgba();
 #endif
 
-   memcpy(&loader->layout, layout, sizeof(overlay_layout_t));
+   memcpy(&loader->layout_desc, layout_desc,
+         sizeof(overlay_layout_desc_t));
 
    t                                           = task_init();
 

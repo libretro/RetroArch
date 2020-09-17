@@ -1421,6 +1421,10 @@ MSG_HASH(
    "input_overlay_auto_rotate"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "input_overlay_auto_scale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE,
    "input_player%u_analog_dpad_mode"
    )
@@ -2031,6 +2035,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT,
    "input_overlay_x_separation_portrait"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "input_overlay_y_separation_portrait"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT,

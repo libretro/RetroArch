@@ -2835,7 +2835,7 @@ static void retroarch_overlay_deinit(struct rarch_state *p_rarch);
 static void input_overlay_set_alpha_mod(struct rarch_state *p_rarch,
       input_overlay_t *ol, float mod);
 static void input_overlay_set_scale_factor(struct rarch_state *p_rarch,
-      input_overlay_t *ol, overlay_layout_t *layout);
+      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc);
 static void input_overlay_load_active(
       struct rarch_state *p_rarch,
       input_overlay_t *ol, float opacity);
@@ -16645,21 +16645,23 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
          {
-            overlay_layout_t layout;
+            overlay_layout_desc_t layout_desc;
 
-            layout.scale_landscape         = settings->floats.input_overlay_scale_landscape;
-            layout.aspect_adjust_landscape = settings->floats.input_overlay_aspect_adjust_landscape;
-            layout.x_separation_landscape  = settings->floats.input_overlay_x_separation_landscape;
-            layout.y_separation_landscape  = settings->floats.input_overlay_y_separation_landscape;
-            layout.x_offset_landscape      = settings->floats.input_overlay_x_offset_landscape;
-            layout.y_offset_landscape      = settings->floats.input_overlay_y_offset_landscape;
-            layout.scale_portrait          = settings->floats.input_overlay_scale_portrait;
-            layout.aspect_adjust_portrait  = settings->floats.input_overlay_aspect_adjust_portrait;
-            layout.x_separation_portrait   = settings->floats.input_overlay_x_separation_portrait;
-            layout.x_offset_portrait       = settings->floats.input_overlay_x_offset_portrait;
-            layout.y_offset_portrait       = settings->floats.input_overlay_y_offset_portrait;
+            layout_desc.scale_landscape         = settings->floats.input_overlay_scale_landscape;
+            layout_desc.aspect_adjust_landscape = settings->floats.input_overlay_aspect_adjust_landscape;
+            layout_desc.x_separation_landscape  = settings->floats.input_overlay_x_separation_landscape;
+            layout_desc.y_separation_landscape  = settings->floats.input_overlay_y_separation_landscape;
+            layout_desc.x_offset_landscape      = settings->floats.input_overlay_x_offset_landscape;
+            layout_desc.y_offset_landscape      = settings->floats.input_overlay_y_offset_landscape;
+            layout_desc.scale_portrait          = settings->floats.input_overlay_scale_portrait;
+            layout_desc.aspect_adjust_portrait  = settings->floats.input_overlay_aspect_adjust_portrait;
+            layout_desc.x_separation_portrait   = settings->floats.input_overlay_x_separation_portrait;
+            layout_desc.y_separation_portrait   = settings->floats.input_overlay_y_separation_portrait;
+            layout_desc.x_offset_portrait       = settings->floats.input_overlay_x_offset_portrait;
+            layout_desc.y_offset_portrait       = settings->floats.input_overlay_y_offset_portrait;
+            layout_desc.auto_scale              = settings->bools.input_overlay_auto_scale;
 
-            input_overlay_set_scale_factor(p_rarch, p_rarch->overlay_ptr, &layout);
+            input_overlay_set_scale_factor(p_rarch, p_rarch->overlay_ptr, &layout_desc);
          }
 #endif
          break;
@@ -22918,84 +22920,151 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
 
    return button_pressed;
 }
-/**
- * input_overlay_scale:
- * @ol                    : Overlay handle.
- * @layout                : Scale + offset factors.
- * @is_landscape          : True if current display has a
- *                          landscape orientation
- *
- * Scales the overlay and all its associated descriptors
- * and applies any aspect ratio/offset factors.
- **/
-static void input_overlay_scale(struct overlay *ol,
-      overlay_layout_t *layout, bool is_landscape)
-{
-   float scale_x = 1.0f;
-   float scale_y = 1.0f;
-   float x_separation;
-   float y_separation;
-   float x_offset;
-   float y_offset;
-   size_t i;
 
-   if (is_landscape)
+static void input_overlay_parse_layout(
+      const struct overlay *ol,
+      const overlay_layout_desc_t *layout_desc,
+      float display_aspect_ratio,
+      overlay_layout_t *overlay_layout)
+{
+   /* Set default values */
+   overlay_layout->x_scale      = 1.0f;
+   overlay_layout->y_scale      = 1.0f;
+   overlay_layout->x_separation = 0.0f;
+   overlay_layout->y_separation = 0.0f;
+   overlay_layout->x_offset     = 0.0f;
+   overlay_layout->y_offset     = 0.0f;
+
+   /* Perform auto-scaling, if required */
+   if (layout_desc->auto_scale)
    {
-      float scale         = layout->scale_landscape;
-      float aspect_adjust = layout->aspect_adjust_landscape;
+      /* Sanity check - if scaling is blocked,
+       * or aspect ratios are invalid, then we
+       * can do nothing */
+      if (ol->block_scale ||
+          (ol->aspect_ratio <= 0.0f) ||
+          (display_aspect_ratio <= 0.0f))
+         return;
+
+      /* If display is wider than overlay,
+       * reduce width */
+      if (display_aspect_ratio >
+            ol->aspect_ratio)
+      {
+         overlay_layout->x_scale = ol->aspect_ratio /
+               display_aspect_ratio;
+
+         if (overlay_layout->x_scale <= 0.0f)
+         {
+            overlay_layout->x_scale = 1.0f;
+            return;
+         }
+
+         /* If X separation is permitted, move elements
+          * horizontally towards the edges of the screen */
+         if (!ol->block_x_separation)
+            overlay_layout->x_separation = ((1.0f / overlay_layout->x_scale) - 1.0f) * 0.5f;
+      }
+      /* If display is taller than overlay,
+       * reduce height */
+      else
+      {
+         overlay_layout->y_scale = display_aspect_ratio /
+               ol->aspect_ratio;
+
+         if (overlay_layout->y_scale <= 0.0f)
+         {
+            overlay_layout->y_scale = 1.0f;
+            return;
+         }
+
+         /* If Y separation is permitted and display has
+          * a *landscape* orientation, move elements
+          * vertically towards the edges of the screen
+          * > Portrait overlays typically have all elements
+          *   below the centre line, so Y separation
+          *   provides no real benefit */
+         if ((display_aspect_ratio > 1.0f) &&
+             !ol->block_y_separation)
+            overlay_layout->y_separation = ((1.0f / overlay_layout->y_scale) - 1.0f) * 0.5f;
+      }
+
+      return;
+   }
+
+   /* Regular 'manual' scaling/position adjustment
+    * > Landscape display orientations */
+   if (display_aspect_ratio > 1.0f)
+   {
+      float scale         = layout_desc->scale_landscape;
+      float aspect_adjust = layout_desc->aspect_adjust_landscape;
 
       /* Note: Y offsets have their sign inverted,
        * since from a usability perspective positive
        * values should move the overlay upwards */
-      x_offset     = layout->x_offset_landscape;
-      y_offset     = layout->y_offset_landscape * -1.0f;
+      overlay_layout->x_offset = layout_desc->x_offset_landscape;
+      overlay_layout->y_offset = layout_desc->y_offset_landscape * -1.0f;
 
-      x_separation = layout->x_separation_landscape;
-      y_separation = layout->y_separation_landscape;
+      if (!ol->block_x_separation)
+         overlay_layout->x_separation = layout_desc->x_separation_landscape;
+      if (!ol->block_y_separation)
+         overlay_layout->y_separation = layout_desc->y_separation_landscape;
 
       if (!ol->block_scale)
       {
          /* In landscape orientations, aspect correction
           * adjusts the overlay width */
-         scale_x = (aspect_adjust >= 0.0f) ?
+         overlay_layout->x_scale = (aspect_adjust >= 0.0f) ?
                (scale * (aspect_adjust + 1.0f)) :
                (scale / ((aspect_adjust * -1.0f) + 1.0f));
-         scale_y = scale;
+         overlay_layout->y_scale = scale;
       }
    }
+   /* > Portrait display orientations */
    else
    {
-      float scale         = layout->scale_portrait;
-      float aspect_adjust = layout->aspect_adjust_portrait;
+      float scale         = layout_desc->scale_portrait;
+      float aspect_adjust = layout_desc->aspect_adjust_portrait;
 
-      x_offset     = layout->x_offset_portrait;
-      y_offset     = layout->y_offset_portrait * -1.0f;
+      overlay_layout->x_offset = layout_desc->x_offset_portrait;
+      overlay_layout->y_offset = layout_desc->y_offset_portrait * -1.0f;
 
-      /* Note: 'y separation' makes little sense when
-       * dealing with portrait layouts, since UI
-       * elements are typically always placed below
-       * the centre line. Just set y_separation to
-       * zero in this case... */
-      x_separation = layout->x_separation_portrait;
-      y_separation = 0.0f;
+      if (!ol->block_x_separation)
+         overlay_layout->x_separation = layout_desc->x_separation_portrait;
+      if (!ol->block_y_separation)
+         overlay_layout->y_separation = layout_desc->y_separation_portrait;
 
       if (!ol->block_scale)
       {
          /* In portrait orientations, aspect correction
           * adjusts the overlay height */
-         scale_x = scale;
-         scale_y = (aspect_adjust >= 0.0f) ?
+         overlay_layout->x_scale = scale;
+         overlay_layout->y_scale = (aspect_adjust >= 0.0f) ?
                (scale * (aspect_adjust + 1.0f)) :
                (scale / ((aspect_adjust * -1.0f) + 1.0f));
       }
    }
+}
 
-   ol->mod_w = ol->w * scale_x;
-   ol->mod_h = ol->h * scale_y;
-   ol->mod_x = (ol->center_x +
-         (ol->x - ol->center_x) * scale_x) + x_offset;
-   ol->mod_y = (ol->center_y +
-         (ol->y - ol->center_y) * scale_y) + y_offset;
+/**
+ * input_overlay_scale:
+ * @ol                    : Overlay handle.
+ * @layout                : Scale + offset factors.
+ *
+ * Scales the overlay and all its associated descriptors
+ * and applies any aspect ratio/offset factors.
+ **/
+static void input_overlay_scale(struct overlay *ol,
+      const overlay_layout_t *layout)
+{
+   size_t i;
+
+   ol->mod_w = ol->w * layout->x_scale;
+   ol->mod_h = ol->h * layout->y_scale;
+   ol->mod_x = (ol->center_x + (ol->x - ol->center_x) *
+         layout->x_scale) + layout->x_offset;
+   ol->mod_y = (ol->center_y + (ol->y - ol->center_y) *
+         layout->y_scale) + layout->y_offset;
 
    for (i = 0; i < ol->size; i++)
    {
@@ -23009,17 +23078,17 @@ static void input_overlay_scale(struct overlay *ol,
 
       /* Apply 'x separation' factor */
       if (desc->x < (0.5f - 0.0001f))
-         x_shift_offset = x_separation * -1.0f;
+         x_shift_offset = layout->x_separation * -1.0f;
       else if (desc->x > (0.5f + 0.0001f))
-         x_shift_offset = x_separation;
+         x_shift_offset = layout->x_separation;
 
       desc->x_shift = desc->x + x_shift_offset;
 
       /* Apply 'y separation' factor */
       if (desc->y < (0.5f - 0.0001f))
-         y_shift_offset = y_separation * -1.0f;
+         y_shift_offset = layout->y_separation * -1.0f;
       else if (desc->y > (0.5f + 0.0001f))
-         y_shift_offset = y_separation;
+         y_shift_offset = layout->y_separation;
 
       desc->y_shift = desc->y + y_shift_offset;
 
@@ -23060,24 +23129,33 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 /**
  * input_overlay_set_scale_factor:
  * @ol                    : Overlay handle.
- * @layout                : Scale + offset factors.
+ * @layout_desc           : Scale + offset factors.
  *
  * Scales the overlay and applies any aspect ratio/
  * offset factors.
  **/
 static void input_overlay_set_scale_factor(struct rarch_state *p_rarch,
-      input_overlay_t *ol, overlay_layout_t *layout)
+      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc)
 {
-   bool is_landscape = p_rarch->video_driver_width >
-         p_rarch->video_driver_height;
+   float display_aspect_ratio = 0.0f;
    size_t i;
 
-   if (!ol || !layout)
+   if (!ol || !layout_desc)
       return;
 
+   if (p_rarch->video_driver_height > 0)
+      display_aspect_ratio = (float)p_rarch->video_driver_width /
+            (float)p_rarch->video_driver_height;
+
    for (i = 0; i < ol->size; i++)
-      input_overlay_scale(&ol->overlays[i],
-            layout, is_landscape);
+   {
+      struct overlay *current_overlay = &ol->overlays[i];
+      overlay_layout_t overlay_layout;
+
+      input_overlay_parse_layout(current_overlay,
+            layout_desc, display_aspect_ratio, &overlay_layout);
+      input_overlay_scale(current_overlay, &overlay_layout);
+   }
 
    input_overlay_set_vertex_geom(ol);
 }
@@ -23557,7 +23635,7 @@ static void input_overlay_loaded(retro_task_t *task,
    if (ol->iface->enable)
       ol->iface->enable(ol->iface_data, data->overlay_enable);
 
-   input_overlay_set_scale_factor(p_rarch, ol, &data->layout);
+   input_overlay_set_scale_factor(p_rarch, ol, &data->layout_desc);
 
    ol->next_index = (unsigned)((ol->index + 1) % ol->size);
    ol->state      = OVERLAY_STATUS_NONE;
@@ -23826,6 +23904,7 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
 {
    settings_t *settings                     = p_rarch->configuration_settings;
    bool input_overlay_enable                = settings->bools.input_overlay_enable;
+   bool input_overlay_auto_scale            = settings->bools.input_overlay_auto_scale;
    const char *path_overlay                 = settings->paths.path_overlay;
    float overlay_opacity                    = settings->floats.input_overlay_opacity;
    float overlay_scale_landscape            = settings->floats.input_overlay_scale_landscape;
@@ -23837,6 +23916,7 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
    float overlay_scale_portrait             = settings->floats.input_overlay_scale_portrait;
    float overlay_aspect_adjust_portrait     = settings->floats.input_overlay_aspect_adjust_portrait;
    float overlay_x_separation_portrait      = settings->floats.input_overlay_x_separation_portrait;
+   float overlay_y_separation_portrait      = settings->floats.input_overlay_y_separation_portrait;
    float overlay_x_offset_portrait          = settings->floats.input_overlay_x_offset_portrait;
    float overlay_y_offset_portrait          = settings->floats.input_overlay_y_offset_portrait;
    bool load_enabled                        = input_overlay_enable;
@@ -23869,19 +23949,21 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
 
    if (load_enabled)
    {
-      overlay_layout_t layout;
+      overlay_layout_desc_t layout_desc;
 
-      layout.scale_landscape         = overlay_scale_landscape;
-      layout.aspect_adjust_landscape = overlay_aspect_adjust_landscape;
-      layout.x_separation_landscape  = overlay_x_separation_landscape;
-      layout.y_separation_landscape  = overlay_y_separation_landscape;
-      layout.x_offset_landscape      = overlay_x_offset_landscape;
-      layout.y_offset_landscape      = overlay_y_offset_landscape;
-      layout.scale_portrait          = overlay_scale_portrait;
-      layout.aspect_adjust_portrait  = overlay_aspect_adjust_portrait;
-      layout.x_separation_portrait   = overlay_x_separation_portrait;
-      layout.x_offset_portrait       = overlay_x_offset_portrait;
-      layout.y_offset_portrait       = overlay_y_offset_portrait;
+      layout_desc.scale_landscape         = overlay_scale_landscape;
+      layout_desc.aspect_adjust_landscape = overlay_aspect_adjust_landscape;
+      layout_desc.x_separation_landscape  = overlay_x_separation_landscape;
+      layout_desc.y_separation_landscape  = overlay_y_separation_landscape;
+      layout_desc.x_offset_landscape      = overlay_x_offset_landscape;
+      layout_desc.y_offset_landscape      = overlay_y_offset_landscape;
+      layout_desc.scale_portrait          = overlay_scale_portrait;
+      layout_desc.aspect_adjust_portrait  = overlay_aspect_adjust_portrait;
+      layout_desc.x_separation_portrait   = overlay_x_separation_portrait;
+      layout_desc.y_separation_portrait   = overlay_y_separation_portrait;
+      layout_desc.x_offset_portrait       = overlay_x_offset_portrait;
+      layout_desc.y_offset_portrait       = overlay_y_offset_portrait;
+      layout_desc.auto_scale              = input_overlay_auto_scale;
 
       task_push_overlay_load_default(input_overlay_loaded,
             path_overlay,
@@ -23889,7 +23971,7 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
             overlay_hide_when_gamepad_connected,
             input_overlay_enable,
             overlay_opacity,
-            &layout,
+            &layout_desc,
             NULL);
    }
 }

@@ -13103,6 +13103,27 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_auto_rotate_toggle_change_handler;
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_auto_scale,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+               DEFAULT_INPUT_OVERLAY_AUTO_SCALE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
          CONFIG_PATH(
                list, list_info,
                settings->paths.path_overlay,
@@ -13277,6 +13298,23 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT,
                MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
                DEFAULT_INPUT_OVERLAY_X_SEPARATION_PORTRAIT,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_range(list, list_info, -2.0f, 2.0f, 0.005f, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_y_separation_portrait,
+               MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+               DEFAULT_INPUT_OVERLAY_Y_SEPARATION_PORTRAIT,
                "%.3f",
                &group_info,
                &subgroup_info,
