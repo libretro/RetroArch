@@ -241,27 +241,29 @@ void *glkitview_init(void);
 /* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
+   unsigned orientation_flags = apple_frontend_settings.orientation_flags;
+   
    switch (interfaceOrientation)
    {
       case UIInterfaceOrientationPortrait:
-         return (apple_frontend_settings.orientation_flags 
+         return (orientation_flags
                & UIInterfaceOrientationMaskPortrait);
       case UIInterfaceOrientationPortraitUpsideDown:
-         return (apple_frontend_settings.orientation_flags 
+         return (orientation_flags
                & UIInterfaceOrientationMaskPortraitUpsideDown);
       case UIInterfaceOrientationLandscapeLeft:
-         return (apple_frontend_settings.orientation_flags 
+         return (orientation_flags
                & UIInterfaceOrientationMaskLandscapeLeft);
       case UIInterfaceOrientationLandscapeRight:
-         return (apple_frontend_settings.orientation_flags 
+         return (orientation_flags
                & UIInterfaceOrientationMaskLandscapeRight);
 
       default:
-         return (apple_frontend_settings.orientation_flags 
-               & UIInterfaceOrientationMaskAll);
+         break;
    }
 
-   return YES;
+   return (orientation_flags
+            & UIInterfaceOrientationMaskAll);
 }
 #endif
 
