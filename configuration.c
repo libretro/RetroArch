@@ -1670,6 +1670,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_hide_when_gamepad_connected", &settings->bools.input_overlay_hide_when_gamepad_connected, true, DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, false);
    SETTING_BOOL("input_overlay_show_mouse_cursor",   &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
    SETTING_BOOL("input_overlay_auto_rotate",         &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
+   SETTING_BOOL("input_overlay_auto_scale",          &settings->bools.input_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
    SETTING_BOOL("video_layout_enable",          &settings->bools.video_layout_enable, true, true, false);
@@ -1789,6 +1790,7 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("input_overlay_scale_portrait",          &settings->floats.input_overlay_scale_portrait, true, DEFAULT_INPUT_OVERLAY_SCALE_PORTRAIT, false);
    SETTING_FLOAT("input_overlay_aspect_adjust_portrait",  &settings->floats.input_overlay_aspect_adjust_portrait, true, DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_PORTRAIT, false);
    SETTING_FLOAT("input_overlay_x_separation_portrait",   &settings->floats.input_overlay_x_separation_portrait, true, DEFAULT_INPUT_OVERLAY_X_SEPARATION_PORTRAIT, false);
+   SETTING_FLOAT("input_overlay_y_separation_portrait",   &settings->floats.input_overlay_y_separation_portrait, true, DEFAULT_INPUT_OVERLAY_Y_SEPARATION_PORTRAIT, false);
    SETTING_FLOAT("input_overlay_x_offset_portrait",       &settings->floats.input_overlay_x_offset_portrait, true, DEFAULT_INPUT_OVERLAY_X_OFFSET_PORTRAIT, false);
    SETTING_FLOAT("input_overlay_y_offset_portrait",       &settings->floats.input_overlay_y_offset_portrait, true, DEFAULT_INPUT_OVERLAY_Y_OFFSET_PORTRAIT, false);
 #endif

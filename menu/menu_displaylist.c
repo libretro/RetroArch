@@ -7553,6 +7553,8 @@ unsigned menu_displaylist_build_list(
          {
             settings_t      *settings     = config_get_ptr();
             bool input_overlay_enable     = settings->bools.input_overlay_enable;
+            bool input_overlay_auto_scale = settings->bools.input_overlay_auto_scale;
+
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                      PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,                PARSE_ONLY_BOOL,  false },
@@ -7561,6 +7563,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,   PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,           PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,                 PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,                  PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_OVERLAY_PRESET,                            PARSE_ONLY_PATH,  false },
                {MENU_ENUM_LABEL_OVERLAY_OPACITY,                           PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,                   PARSE_ONLY_FLOAT, false },
@@ -7572,6 +7575,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_OVERLAY_SCALE_PORTRAIT,                    PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,            PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT,             PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_PORTRAIT,             PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT,                 PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT,                 PARSE_ONLY_FLOAT, false },
             };
@@ -7586,8 +7590,12 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE:
                   case MENU_ENUM_LABEL_OVERLAY_PRESET:
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
+                     if (input_overlay_enable)
+                        build_list[i].checked = true;
+                     break;
                   case MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE:
                   case MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE:
                   case MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_LANDSCAPE:
@@ -7597,9 +7605,11 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_OVERLAY_SCALE_PORTRAIT:
                   case MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT:
                   case MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT:
+                  case MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_PORTRAIT:
                   case MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT:
                   case MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT:
-                     if (input_overlay_enable)
+                     if (input_overlay_enable &&
+                         !input_overlay_auto_scale)
                         build_list[i].checked = true;
                      break;
                   default:

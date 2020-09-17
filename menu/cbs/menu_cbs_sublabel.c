@@ -415,6 +415,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_hide_when_gamepad_conn
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_show_mouse_cursor,       MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_auto_rotate,     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_auto_scale,      MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_collection_list,       MENU_ENUM_SUBLABEL_PLAYLISTS_TAB)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_screenshot,          MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT)
@@ -523,6 +524,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_offset_landscape,      MEN
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_scale_portrait,          MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_aspect_adjust_portrait,  MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_x_separation_portrait,   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_separation_portrait,   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_x_offset_portrait,       MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_offset_portrait,       MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_enable,                MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
@@ -2727,6 +2729,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OVERLAY_X_SEPARATION_PORTRAIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_x_separation_portrait);
             break;
+         case MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_PORTRAIT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_y_separation_portrait);
+            break;
          case MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_x_offset_portrait);
             break;
@@ -3067,6 +3072,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_auto_rotate);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_auto_scale);
             break;
          case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_font_size);
