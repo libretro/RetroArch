@@ -17842,7 +17842,7 @@ void emscripten_mainloop(void)
    static unsigned emscripten_frame_count = 0;
    struct rarch_state *p_rarch            = &rarch_st;
    settings_t        *settings            = p_rarch->configuration_settings;
-   bool black_frame_insertion             = settings->bools.video_black_frame_insertion;
+   bool black_frame_insertion             = settings->uints.video_black_frame_insertion;
    bool input_driver_nonblock_state       = p_rarch->input_driver_nonblock_state;
    bool runloop_is_slowmotion             = p_rarch->runloop_slowmotion;
    bool runloop_is_paused                 = p_rarch->runloop_paused;
@@ -17859,7 +17859,7 @@ void emscripten_mainloop(void)
          && !runloop_is_slowmotion
          && !runloop_is_paused)
    {
-      if ((emscripten_frame_count & 1) == 0)
+      if ((emscripten_frame_count % (black_frame_insertion+1)) != 0)
       {
          glClear(GL_COLOR_BUFFER_BIT);
          if (p_rarch->current_video_context.swap_buffers)
@@ -33869,7 +33869,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
    video_info->crt_switch_porch_adjust    = settings->ints.crt_switch_porch_adjust;
-   video_info->black_frame_insertion       = settings->bools.video_black_frame_insertion;
+   video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
    video_info->fps_show                    = settings->bools.video_fps_show;
@@ -39740,7 +39740,7 @@ static enum runloop_state runloop_check_state(
 
       if (p_rarch->runloop_slowmotion)
       {
-         if (settings->bools.video_black_frame_insertion)
+         if (settings->uints.video_black_frame_insertion)
             if (!p_rarch->runloop_idle)
                video_driver_cached_frame();
 

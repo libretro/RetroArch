@@ -10823,23 +10823,21 @@ static bool setting_append_list(
 #if !defined(RARCH_MOBILE)
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
             {
-               CONFIG_BOOL(
+
+               CONFIG_UINT(
                      list, list_info,
-                     &settings->bools.video_black_frame_insertion,
+                     &settings->uints.video_black_frame_insertion,
                      MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                      MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
                      DEFAULT_BLACK_FRAME_INSERTION,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
                      &group_info,
                      &subgroup_info,
                      parent_group,
                      general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_NONE
-                     );
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-            }
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+            }  
 #endif
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(

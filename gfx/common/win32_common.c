@@ -1600,7 +1600,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    bool video_window_save_positions = settings->bools.video_window_save_positions;
    float video_refresh              = settings->floats.video_refresh_rate;
    unsigned swap_interval           = settings->uints.video_swap_interval;
-   bool bfi                         = settings->bools.video_black_frame_insertion;
+   unsigned bfi                     = settings->uints.video_black_frame_insertion;
    unsigned window_position_x       = settings->uints.window_position_x;
    unsigned window_position_y       = settings->uints.window_position_y;
    unsigned window_position_width   = settings->uints.window_position_width;
@@ -1610,9 +1610,9 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    {
       /* Windows only reports the refresh rates for modelines as
        * an integer, so video_refresh_rate needs to be rounded. Also, account
-       * for black frame insertion using video_refresh_rate set to half
+       * for black frame insertion using video_refresh_rate set to a portion
        * of the display refresh rate, as well as higher vsync swap intervals. */
-      float refresh_mod      = bfi ? 2.0f : 1.0f;
+      float refresh_mod      = bfi + 1.0f;
       unsigned refresh       = roundf(video_refresh * refresh_mod 
             * swap_interval);
 

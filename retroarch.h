@@ -1137,6 +1137,7 @@ typedef struct video_frame_info
    unsigned custom_vp_height;
    unsigned custom_vp_full_width;
    unsigned custom_vp_full_height;
+   unsigned black_frame_insertion;
 
    float menu_wallpaper_opacity;
    float menu_framebuffer_opacity;
@@ -1178,7 +1179,6 @@ typedef struct video_frame_info
    bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
-   bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
    bool memory_show;

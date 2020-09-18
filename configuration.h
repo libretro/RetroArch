@@ -269,6 +269,7 @@ typedef struct settings
       unsigned ai_service_source_lang;
 
       unsigned core_updater_auto_backup_history_size;
+      unsigned video_black_frame_insertion;
    } uints;
 
    struct
@@ -447,7 +448,6 @@ typedef struct settings
       bool video_vsync;
       bool video_adaptive_vsync;
       bool video_hard_sync;
-      bool video_black_frame_insertion;
       bool video_vfilter;
       bool video_smooth;
       bool video_ctx_scaling;
