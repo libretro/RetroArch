@@ -64,6 +64,9 @@ int socket_next(void **address);
 
 int socket_close(int fd);
 
+bool socket_set_block(int fd, bool block);
+
+/* TODO: all callers should be converted to socket_set_block() */
 bool socket_nonblock(int fd);
 
 int socket_select(int nfds, fd_set *readfs, fd_set *writefds,

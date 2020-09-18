@@ -536,7 +536,114 @@ ifeq ($(HAVE_LIBRETRODB), 1)
    endif
 endif
 
-ifeq ($(HAVE_BUILTINMBEDTLS), 1)
+HAVE_BEARSSL := 0
+ifeq ($(HAVE_BEARSSL), 1)
+   HAVE_SSL = 1
+   DEFINES += -DHAVE_SSL -DHAVE_BEARSSL
+
+   # these -Is are only needed for BearSSL itself
+   INCLUDE_DIRS += -Ideps/bearssl-0.6/src -Ideps/bearssl-0.6/inc
+   OBJS_BEAR = deps/bearssl-0.6/src/aead/ccm.o \
+               deps/bearssl-0.6/src/codec/ccopy.o \
+               deps/bearssl-0.6/src/codec/dec32be.o \
+               deps/bearssl-0.6/src/codec/dec32le.o \
+               deps/bearssl-0.6/src/codec/dec64be.o \
+               deps/bearssl-0.6/src/codec/enc32be.o \
+               deps/bearssl-0.6/src/codec/enc32le.o \
+               deps/bearssl-0.6/src/codec/enc64be.o \
+               deps/bearssl-0.6/src/ec/ec_all_m31.o \
+               deps/bearssl-0.6/src/ec/ec_c25519_m31.o \
+               deps/bearssl-0.6/src/ec/ecdsa_atr.o \
+               deps/bearssl-0.6/src/ec/ecdsa_i31_bits.o \
+               deps/bearssl-0.6/src/ec/ecdsa_i31_vrfy_asn1.o \
+               deps/bearssl-0.6/src/ec/ecdsa_i31_vrfy_raw.o \
+               deps/bearssl-0.6/src/ec/ec_p256_m31.o \
+               deps/bearssl-0.6/src/ec/ec_prime_i31.o \
+               deps/bearssl-0.6/src/ec/ec_secp256r1.o \
+               deps/bearssl-0.6/src/ec/ec_secp384r1.o \
+               deps/bearssl-0.6/src/ec/ec_secp521r1.o \
+               deps/bearssl-0.6/src/hash/ghash_ctmul64.o \
+               deps/bearssl-0.6/src/hash/ghash_pclmul.o \
+               deps/bearssl-0.6/src/hash/md5.o \
+               deps/bearssl-0.6/src/hash/multihash.o \
+               deps/bearssl-0.6/src/hash/sha1.o \
+               deps/bearssl-0.6/src/hash/sha2big.o \
+               deps/bearssl-0.6/src/hash/sha2small.o \
+               deps/bearssl-0.6/src/int/i31_add.o \
+               deps/bearssl-0.6/src/int/i31_bitlen.o \
+               deps/bearssl-0.6/src/int/i31_decmod.o \
+               deps/bearssl-0.6/src/int/i31_decode.o \
+               deps/bearssl-0.6/src/int/i31_decred.o \
+               deps/bearssl-0.6/src/int/i31_encode.o \
+               deps/bearssl-0.6/src/int/i31_fmont.o \
+               deps/bearssl-0.6/src/int/i31_iszero.o \
+               deps/bearssl-0.6/src/int/i31_modpow2.o \
+               deps/bearssl-0.6/src/int/i31_modpow.o \
+               deps/bearssl-0.6/src/int/i31_montmul.o \
+               deps/bearssl-0.6/src/int/i31_muladd.o \
+               deps/bearssl-0.6/src/int/i31_ninv31.o \
+               deps/bearssl-0.6/src/int/i31_rshift.o \
+               deps/bearssl-0.6/src/int/i31_sub.o \
+               deps/bearssl-0.6/src/int/i31_tmont.o \
+               deps/bearssl-0.6/src/int/i32_div32.o \
+               deps/bearssl-0.6/src/int/i62_modpow2.o \
+               deps/bearssl-0.6/src/mac/hmac_ct.o \
+               deps/bearssl-0.6/src/mac/hmac.o \
+               deps/bearssl-0.6/src/rand/hmac_drbg.o \
+               deps/bearssl-0.6/src/rand/sysrng.o \
+               deps/bearssl-0.6/src/rsa/rsa_default_pkcs1_vrfy.o \
+               deps/bearssl-0.6/src/rsa/rsa_default_pub.o \
+               deps/bearssl-0.6/src/rsa/rsa_i31_pkcs1_vrfy.o \
+               deps/bearssl-0.6/src/rsa/rsa_i31_pub.o \
+               deps/bearssl-0.6/src/rsa/rsa_i62_pkcs1_vrfy.o \
+               deps/bearssl-0.6/src/rsa/rsa_i62_pub.o \
+               deps/bearssl-0.6/src/rsa/rsa_pkcs1_sig_unpad.o \
+               deps/bearssl-0.6/src/ssl/prf_md5sha1.o \
+               deps/bearssl-0.6/src/ssl/prf.o \
+               deps/bearssl-0.6/src/ssl/prf_sha256.o \
+               deps/bearssl-0.6/src/ssl/prf_sha384.o \
+               deps/bearssl-0.6/src/ssl/ssl_client_default_rsapub.o \
+               deps/bearssl-0.6/src/ssl/ssl_client_full.o \
+               deps/bearssl-0.6/src/ssl/ssl_client.o \
+               deps/bearssl-0.6/src/ssl/ssl_engine_default_aescbc.o \
+               deps/bearssl-0.6/src/ssl/ssl_engine_default_aesccm.o \
+               deps/bearssl-0.6/src/ssl/ssl_engine_default_aesgcm.o \
+               deps/bearssl-0.6/src/ssl/ssl_engine_default_chapol.o \
+               deps/bearssl-0.6/src/ssl/ssl_engine_default_descbc.o \
+               deps/bearssl-0.6/src/ssl/ssl_engine_default_ecdsa.o \
+               deps/bearssl-0.6/src/ssl/ssl_engine_default_rsavrfy.o \
+               deps/bearssl-0.6/src/ssl/ssl_engine.o \
+               deps/bearssl-0.6/src/ssl/ssl_hs_client.o \
+               deps/bearssl-0.6/src/ssl/ssl_rec_cbc.o \
+               deps/bearssl-0.6/src/ssl/ssl_rec_ccm.o \
+               deps/bearssl-0.6/src/ssl/ssl_rec_chapol.o \
+               deps/bearssl-0.6/src/ssl/ssl_rec_gcm.o \
+               deps/bearssl-0.6/src/symcipher/aes_ct64_cbcdec.o \
+               deps/bearssl-0.6/src/symcipher/aes_ct64_cbcenc.o \
+               deps/bearssl-0.6/src/symcipher/aes_ct64_ctrcbc.o \
+               deps/bearssl-0.6/src/symcipher/aes_ct64_ctr.o \
+               deps/bearssl-0.6/src/symcipher/aes_ct64_dec.o \
+               deps/bearssl-0.6/src/symcipher/aes_ct64_enc.o \
+               deps/bearssl-0.6/src/symcipher/aes_ct64.o \
+               deps/bearssl-0.6/src/symcipher/aes_x86ni_cbcdec.o \
+               deps/bearssl-0.6/src/symcipher/aes_x86ni_cbcenc.o \
+               deps/bearssl-0.6/src/symcipher/aes_x86ni_ctrcbc.o \
+               deps/bearssl-0.6/src/symcipher/aes_x86ni_ctr.o \
+               deps/bearssl-0.6/src/symcipher/aes_x86ni.o \
+               deps/bearssl-0.6/src/symcipher/chacha20_ct.o \
+               deps/bearssl-0.6/src/symcipher/chacha20_sse2.o \
+               deps/bearssl-0.6/src/symcipher/des_ct_cbcdec.o \
+               deps/bearssl-0.6/src/symcipher/des_ct_cbcenc.o \
+               deps/bearssl-0.6/src/symcipher/des_ct.o \
+               deps/bearssl-0.6/src/symcipher/des_support.o \
+               deps/bearssl-0.6/src/symcipher/poly1305_ctmul.o \
+               deps/bearssl-0.6/src/symcipher/poly1305_ctmulq.o \
+               deps/bearssl-0.6/src/x509/x509_decoder.o \
+               deps/bearssl-0.6/src/x509/x509_minimal_full.o \
+               deps/bearssl-0.6/src/x509/x509_minimal.o \
+
+   OBJ += $(OBJS_BEAR)
+else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL
 
@@ -1910,8 +2017,10 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += tasks/task_core_updater.o
    endif
 
-   ifeq ($(HAVE_SSL), 1)
-      OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl.o
+   ifeq ($(HAVE_BEARSSL), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_bear.o
+   else ifeq ($(HAVE_SSL), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_mbed.o
    endif
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)

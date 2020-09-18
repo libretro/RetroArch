@@ -123,18 +123,23 @@ int socket_receive_all_blocking(int fd, void *data_, size_t size)
    return true;
 }
 
-bool socket_nonblock(int fd)
+bool socket_set_block(int fd, bool block)
 {
 #if defined(__CELLOS_LV2__) || defined(VITA) || defined(WIIU)
-   int i = 1;
+   int i = block;
    setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
    return true;
 #elif defined(_WIN32)
-   u_long mode = 1;
+   u_long mode = block;
    return ioctlsocket(fd, FIONBIO, &mode) == 0;
 #else
-   return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == 0;
+   return fcntl(fd, F_SETFL, (fcntl(fd, F_GETFL) & ~O_NONBLOCK) | (block ? 0 : O_NONBLOCK)) == 0;
 #endif
+}
+
+bool socket_nonblock(int fd)
+{
+   return socket_set_block(fd, false);
 }
 
 int socket_close(int fd)
