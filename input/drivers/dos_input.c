@@ -31,11 +31,6 @@
 /* TODO/FIXME -
  * fix game focus toggle */
 
-typedef struct dos_input
-{
-   void *empty;
-} dos_input_t;
-
 /* First ports are used to keeping track of gamepad states. Last port is used for keyboard state */
 /* TODO/FIXME - static globals */
 static uint16_t dos_key_state[DEFAULT_MAX_PADS+1][MAX_KEYS];
@@ -113,23 +108,14 @@ static int16_t dos_input_state(
 
 static void dos_input_free_input(void *data)
 {
-   dos_input_t *dos = (dos_input_t*)data;
-
    dos_keyboard_free();
-
-   free(data);
 }
 
 static void* dos_input_init(const char *joypad_driver)
 {
-   dos_input_t *dos = (dos_input_t*)calloc(1, sizeof(*dos));
-
-   if (!dos)
-      return NULL;
-
    input_keymaps_init_keyboard_lut(rarch_key_map_dos);
 
-   return dos;
+   return (void*)-1;
 }
 
 static uint64_t dos_input_get_capabilities(void *data)

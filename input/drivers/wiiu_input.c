@@ -39,11 +39,6 @@
 static uint8_t keyboard_channel         = 0x00;
 static bool keyboard_state[RETROK_LAST] = { 0 };
 
-typedef struct wiiu_input
-{
-   void *empty;
-} wiiu_input_t;
-
 static void kb_connection_callback(KBDKeyEvent *key)
 {
    keyboard_channel += (key->channel + 0x01);
@@ -141,16 +136,10 @@ static int16_t wiiu_input_state(
 static void wiiu_input_free_input(void *data)
 {
    KBDTeardown();
-
-   free(data);
 }
 
 static void* wiiu_input_init(const char *joypad_driver)
 {
-   wiiu_input_t *wiiu = (wiiu_input_t*)calloc(1, sizeof(*wiiu));
-   if (!wiiu)
-      return NULL;
-
    KBDSetup(
          &kb_connection_callback,
          &kb_disconnection_callback,
@@ -158,7 +147,7 @@ static void* wiiu_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_wiiu);
 
-   return wiiu;
+   return (void*)-1;
 }
 
 static uint64_t wiiu_input_get_capabilities(void *data)
