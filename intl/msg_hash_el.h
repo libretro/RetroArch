@@ -4090,6 +4090,10 @@ MSG_HASH(
    "16:10 (Στο Κέντρο)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (Στο Κέντρο)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    "Ακέραια Κλίμακα"
    )
