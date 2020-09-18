@@ -167,7 +167,7 @@ int rc_url_get_badge_image(char* buffer, size_t size, const char* badge_name) {
 
 int rc_url_login_with_password(char* buffer, size_t size, const char* user_name, const char* password) {
   char urle_user_name[64];
-  char urle_password[64];
+  char urle_password[256];
   int written;
 
   if (rc_url_encode(urle_user_name, sizeof(urle_user_name), user_name) != 0) {
