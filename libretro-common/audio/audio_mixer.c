@@ -20,6 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <audio/audio_mixer.h>
 #include <audio/audio_resampler.h>
 
@@ -32,10 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
 
 #ifdef HAVE_STB_VORBIS
 #define STB_VORBIS_NO_PUSHDATA_API
