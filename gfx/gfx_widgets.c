@@ -216,7 +216,7 @@ void gfx_widgets_msg_queue_push(
    disp_widget_msg_t    *msg_widget = NULL;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
 
-   if (FIFO_WRITE_AVAIL(p_dispwidget->msg_queue) > 0)
+   if (FIFO_WRITE_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
    {
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
@@ -344,7 +344,8 @@ void gfx_widgets_msg_queue_push(
                p_dispwidget->simple_widget_padding / 2;
          }
 
-         fifo_write(p_dispwidget->msg_queue, &msg_widget, sizeof(msg_widget));
+         fifo_write(&p_dispwidget->msg_queue,
+               &msg_widget, sizeof(msg_widget));
       }
       /* Update task info */
       else
@@ -843,7 +844,7 @@ void gfx_widgets_iterate(
    /* Messages queue */
 
    /* Consume one message if available */
-   if ((FIFO_READ_AVAIL(p_dispwidget->msg_queue) > 0)
+   if ((FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
          && !p_dispwidget->widgets_moving 
          && (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs)))
    {
@@ -853,8 +854,9 @@ void gfx_widgets_iterate(
 
       if (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs))
       {
-         if (FIFO_READ_AVAIL(p_dispwidget->msg_queue) > 0)
-            fifo_read(p_dispwidget->msg_queue, &msg_widget, sizeof(msg_widget));
+         if (FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
+            fifo_read(&p_dispwidget->msg_queue,
+                  &msg_widget, sizeof(msg_widget));
 
          if (msg_widget)
          {
@@ -1580,10 +1582,8 @@ bool gfx_widgets_init(uintptr_t widgets_active_ptr,
             widget->init(video_is_threaded, fullscreen);
       }
 
-      p_dispwidget->msg_queue = 
-         fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(disp_widget_msg_t*));
-
-      if (!p_dispwidget->msg_queue)
+      if (!fifo_initialize(&p_dispwidget->msg_queue,
+            MSG_QUEUE_PENDING_MAX * sizeof(disp_widget_msg_t*)))
          goto error;
 
       memset(&p_dispwidget->current_msgs[0], 0, sizeof(p_dispwidget->current_msgs));
@@ -1948,32 +1948,28 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
          &p_dispwidget->gfx_widgets_generic_tag);
 
    /* Purge everything from the fifo */
-   if (p_dispwidget->msg_queue)
+   while (FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
    {
-      while (FIFO_READ_AVAIL(p_dispwidget->msg_queue) > 0)
-      {
-         disp_widget_msg_t *msg_widget;
+      disp_widget_msg_t *msg_widget;
 
-         fifo_read(p_dispwidget->msg_queue,
-               &msg_widget, sizeof(msg_widget));
+      fifo_read(&p_dispwidget->msg_queue,
+            &msg_widget, sizeof(msg_widget));
 
-         /* Note: gfx_widgets_free() is only called when
-          * main_exit() is invoked. At this stage, we cannot
-          * guarantee that any task pointers are valid (the
-          * task may have been free()'d, but we can't know
-          * that here) - so all we can do is unset the task
-          * pointer associated with each message
-          * > If we don't do this, gfx_widgets_msg_queue_free()
-          *   will generate heap-use-after-free errors */
-         msg_widget->task_ptr = NULL;
+      /* Note: gfx_widgets_free() is only called when
+       * main_exit() is invoked. At this stage, we cannot
+       * guarantee that any task pointers are valid (the
+       * task may have been free()'d, but we can't know
+       * that here) - so all we can do is unset the task
+       * pointer associated with each message
+       * > If we don't do this, gfx_widgets_msg_queue_free()
+       *   will generate heap-use-after-free errors */
+      msg_widget->task_ptr = NULL;
 
-         gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
-         free(msg_widget);
-      }
-
-      fifo_free(p_dispwidget->msg_queue);
+      gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
+      free(msg_widget);
    }
-   p_dispwidget->msg_queue = NULL;
+
+   fifo_deinitialize(&p_dispwidget->msg_queue);
 
    /* Purge everything from the list */
    SLOCK_LOCK(p_dispwidget->current_msgs_lock);

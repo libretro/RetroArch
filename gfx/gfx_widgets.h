@@ -158,7 +158,7 @@ typedef struct dispgfx_widget
 #ifdef HAVE_THREADS
    slock_t* current_msgs_lock;
 #endif
-   fifo_buffer_t *msg_queue;
+   fifo_buffer_t msg_queue;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 
