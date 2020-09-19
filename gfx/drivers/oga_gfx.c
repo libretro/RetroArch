@@ -51,7 +51,8 @@
 
 #define NUM_PAGES 3
 
-typedef struct oga_rect {
+typedef struct oga_rect
+{
    int x;
    int y;
    int w;
@@ -82,8 +83,10 @@ typedef struct oga_video
     int fd;
     uint32_t connector_id;
     drmModeModeInfo mode;
-//    uint32_t width;
-//    uint32_t height;
+#if 0
+    uint32_t width;
+    uint32_t height;
+#endif
     uint32_t crtc_id;
 
     oga_surface_t* frame_surface;
@@ -108,7 +111,10 @@ typedef struct oga_video
 bool oga_create_display(oga_video_t* vid)
 {
     int i, ret;
-    drmModeConnector* connector;
+    drmModeConnector *connector;
+    drmModeModeInfo *mode;
+    drmModeEncoder *encoder;
+    drmModeRes *resources;
 
     vid->fd = open("/dev/dri/card0", O_RDWR);
     if (vid->fd < 0)
@@ -117,7 +123,7 @@ bool oga_create_display(oga_video_t* vid)
         return false;
     }
 
-    drmModeRes* resources = drmModeGetResources(vid->fd);
+    resources = drmModeGetResources(vid->fd);
     if (!resources)
     {
         RARCH_ERR("drmModeGetResources failed: %s\n", strerror(errno));
@@ -127,9 +133,8 @@ bool oga_create_display(oga_video_t* vid)
     for (i = 0; i < resources->count_connectors; i++)
     {
         connector = drmModeGetConnector(vid->fd, resources->connectors[i]);
-        if (connector->connection == DRM_MODE_CONNECTED) {
+        if (connector->connection == DRM_MODE_CONNECTED)
             break;
-        }
 
         drmModeFreeConnector(connector);
         connector = NULL;
@@ -143,8 +148,7 @@ bool oga_create_display(oga_video_t* vid)
 
     vid->connector_id = connector->connector_id;
 
-    // Find prefered mode
-    drmModeModeInfo* mode;
+    /* Find prefered mode */
     for (i = 0; i < connector->count_modes; i++)
     {
         drmModeModeInfo *current_mode = &connector->modes[i];
@@ -163,12 +167,13 @@ bool oga_create_display(oga_video_t* vid)
         goto err_03;
     }
 
-    vid->mode = *mode;
-//    vid->width = mode->hdisplay;
-//    vid->height = mode->vdisplay;
+    vid->mode   = *mode;
+#if 0
+    vid->width  = mode->hdisplay;
+    vid->height = mode->vdisplay;
+#endif
 
-    // Find encoder
-    drmModeEncoder* encoder;
+    /* Find encoder */
     for (i = 0; i < resources->count_encoders; i++)
     {
         encoder = drmModeGetEncoder(vid->fd, resources->encoders[i]);
@@ -205,20 +210,22 @@ err_01:
     return false;
 }
 
-oga_surface_t* oga_create_surface(int display_fd, int width, int height, int rk_format)
+oga_surface_t* oga_create_surface(int display_fd,
+      int width, int height, int rk_format)
 {
-    oga_surface_t* surface = calloc(1, sizeof(oga_surface_t));
+    struct drm_mode_create_dumb args = {0};
+    oga_surface_t* surface           = (oga_surface_t*)
+       calloc(1, sizeof(oga_surface_t));
     if (!surface)
     {
         RARCH_ERR("Error allocating surface\n");
         return NULL;
     }
 
-    struct drm_mode_create_dumb args = {0};
-    args.width = width;
+    args.width  = width;
     args.height = height;
-    args.bpp = rk_format == RK_FORMAT_BGRA_8888 ? 32 : 16;
-    args.flags = 0;
+    args.bpp    = rk_format == RK_FORMAT_BGRA_8888 ? 32 : 16;
+    args.flags  = 0;
 
     if (drmIoctl(display_fd, DRM_IOCTL_MODE_CREATE_DUMB, &args) < 0)
     {
@@ -227,11 +234,11 @@ oga_surface_t* oga_create_surface(int display_fd, int width, int height, int rk_
     }
 
     surface->display_fd = display_fd;
-    surface->handle = args.handle;
-    surface->width = width;
-    surface->height = height;
-    surface->pitch = args.pitch;
-    surface->rk_format = rk_format;
+    surface->handle     = args.handle;
+    surface->width      = width;
+    surface->height     = height;
+    surface->pitch      = args.pitch;
+    surface->rk_format  = rk_format;
 
     if (drmPrimeHandleToFD(display_fd, surface->handle, DRM_RDWR | DRM_CLOEXEC, &surface->prime_fd) < 0)
     {
@@ -255,12 +262,13 @@ out:
 
 void oga_destroy_surface(oga_surface_t* surface)
 {
-    struct drm_mode_destroy_dumb args = { 0 };
     int io;
+    struct drm_mode_destroy_dumb args = { 0 };
 
     args.handle = surface->handle;
 
-    io = drmIoctl(surface->display_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &args);
+    io          = drmIoctl(surface->display_fd,
+          DRM_IOCTL_MODE_DESTROY_DUMB, &args);
     if (io < 0)
         RARCH_ERR("DRM_IOCTL_MODE_DESTROY_DUMB failed.\n");
 
@@ -269,8 +277,11 @@ void oga_destroy_surface(oga_surface_t* surface)
 
 oga_framebuf_t* oga_create_framebuf(oga_surface_t* surface)
 {
-   oga_framebuf_t* framebuf = calloc(1, sizeof(oga_framebuf_t));
    int ret;
+   const uint32_t handles[4] = {surface->handle, 0, 0, 0};
+   const uint32_t pitches[4] = {surface->pitch, 0, 0, 0};
+   const uint32_t offsets[4] = {0, 0, 0, 0};
+   oga_framebuf_t* framebuf  = calloc(1, sizeof(oga_framebuf_t));
    
    if (!framebuf)
    {
@@ -279,15 +290,12 @@ oga_framebuf_t* oga_create_framebuf(oga_surface_t* surface)
    }
 
    framebuf->surface = surface;
-
-   const uint32_t handles[4] = {surface->handle, 0, 0, 0};
-   const uint32_t pitches[4] = {surface->pitch, 0, 0, 0};
-   const uint32_t offsets[4] = {0, 0, 0, 0};
-
-   ret = drmModeAddFB2(surface->display_fd,
+   ret               = drmModeAddFB2(surface->display_fd,
          surface->width,
          surface->height,
-         surface->rk_format == RK_FORMAT_BGRA_8888 ? DRM_FORMAT_ARGB8888 : DRM_FORMAT_RGB565,
+         surface->rk_format == RK_FORMAT_BGRA_8888 
+         ? DRM_FORMAT_ARGB8888 
+         : DRM_FORMAT_RGB565,
          handles,
          pitches,
          offsets,
@@ -315,8 +323,8 @@ void oga_destroy_framebuf(oga_framebuf_t* framebuf)
 
 static void oga_gfx_free(void *data)
 {
-   oga_video_t *vid = (oga_video_t*)data;
    unsigned i;
+   oga_video_t *vid = (oga_video_t*)data;
 
    if (!vid)
       return;
@@ -343,15 +351,16 @@ static void oga_gfx_free(void *data)
 static void *oga_gfx_init(const video_info_t *video,
         input_driver_t **input, void **input_data)
 {
+   int i;
    oga_video_t     *vid = NULL;
    settings_t *settings = config_get_ptr();
-   int i;
 
    frontend_driver_install_signal_handler();
 
    if (input && input_data)
    {
-      void* udev = input_driver_init_wrap(&input_udev, settings->arrays.input_joypad_driver);
+      void* udev = input_driver_init_wrap(
+            &input_udev, settings->arrays.input_joypad_driver);
       if (udev)
       {
          *input       = &input_udev;
@@ -395,8 +404,8 @@ static void *oga_gfx_init(const video_info_t *video,
    vid->rotation = 0;
 
    vid->frame_surface = oga_create_surface(vid->fd, NATIVE_WIDTH, NATIVE_HEIGHT, vid->bpp == 4 ? RK_FORMAT_BGRA_8888 : RK_FORMAT_RGB_565);
-   vid->msg_surface = oga_create_surface(vid->fd, NATIVE_WIDTH, NATIVE_HEIGHT, RK_FORMAT_BGRA_8888);
-   vid->last_msg[0] = 0;
+   vid->msg_surface   = oga_create_surface(vid->fd, NATIVE_WIDTH, NATIVE_HEIGHT, RK_FORMAT_BGRA_8888);
+   vid->last_msg[0]   = 0;
 
    /* bitmap only for now */
    if (settings->bools.video_font_enable)
@@ -418,17 +427,17 @@ static void *oga_gfx_init(const video_info_t *video,
 
 static void rga_clear_surface(oga_surface_t* surface, int color)
 {
-   rga_info_t dst = { 0 };
-   dst.fd = surface->prime_fd;
-   dst.mmuFlag = 1;
+   rga_info_t dst   = { 0 };
+   dst.fd           = surface->prime_fd;
+   dst.mmuFlag      = 1;
    dst.rect.xoffset = 0;
    dst.rect.yoffset = 0;
-   dst.rect.width = surface->width;
-   dst.rect.height = surface->height;
+   dst.rect.width   = surface->width;
+   dst.rect.height  = surface->height;
    dst.rect.wstride = dst.rect.width;
    dst.rect.hstride = dst.rect.height;
-   dst.rect.format = surface->rk_format;
-   dst.color = color;
+   dst.rect.format  = surface->rk_format;
+   dst.color        = color;
 
    c_RkRgaColorFill(&dst);
 }
@@ -451,9 +460,9 @@ static bool render_msg(oga_video_t* vid, const char* msg)
 {
    const struct font_atlas* atlas;
    uint32_t* fb;
-   const char *c = msg;
-   int dest_x = 0;
-   int dest_y = 0;
+   const char *c    = msg;
+   int dest_x       = 0;
+   int dest_y       = 0;
    int dest_stride;
 
    if (strcmp(msg, vid->last_msg) == 0)
@@ -462,13 +471,16 @@ static bool render_msg(oga_video_t* vid, const char* msg)
    strncpy(vid->last_msg, c, sizeof(vid->last_msg)-1);
    rga_clear_surface(vid->msg_surface, 0);
 
-   atlas = vid->font_driver->get_atlas(vid->font);
-   fb = (uint32_t*)vid->msg_surface->map;
-   dest_stride = vid->msg_surface->pitch / 4;
+   atlas          = vid->font_driver->get_atlas(vid->font);
+   fb             = (uint32_t*)vid->msg_surface->map;
+   dest_stride    = vid->msg_surface->pitch / 4;
    vid->msg_width = vid->msg_height = 0;
 
    while (*c)
    {
+      int x, y;
+      uint32_t* dest             = NULL;
+      const uint8_t *source      = NULL;
       const struct font_glyph* g = vid->font_driver->get_glyph(vid->font, *c);
 
       if (!g)
@@ -477,23 +489,25 @@ static bool render_msg(oga_video_t* vid, const char* msg)
       if (vid->msg_height == 0)
          vid->msg_height = g->height;
 
-      if (dest_x >= NATIVE_WIDTH) {
+      if (dest_x >= NATIVE_WIDTH)
+      {
          dest_x = 0;
          dest_y += g->height;
          vid->msg_height += g->height;
       }
 
-      const uint8_t* source = atlas->buffer + g->atlas_offset_y * atlas->width + g->atlas_offset_x;
-      uint32_t* dest = fb + dest_y * dest_stride + dest_x;
+      source = atlas->buffer + g->atlas_offset_y * 
+               atlas->width  + g->atlas_offset_x;
+      dest   = fb + dest_y * dest_stride + dest_x;
 
-      for (int y = 0; y < g->height; y++)
+      for (y = 0; y < g->height; y++)
       {
-         for (int x = 0; x < g->advance_x; x++)
+         for (x = 0; x < g->advance_x; x++)
          {
             uint32_t px = (x < g->width) ? *(source++) : 0x00;
-            *(dest++) = (0xCD << 24) | (px << 16) | (px << 8) | px;
+            *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px;
          }
-         dest += dest_stride - g->advance_x;
+         dest   += dest_stride - g->advance_x;
          source += atlas->width - g->width;
       }
 
@@ -641,11 +655,15 @@ static void oga_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    if (vid->menu_surface->width != width || vid->menu_surface->height != height)
    {
-//      RARCH_LOG("oga_set_texture_frame rgb32 %d width %hu height %hu alpha %f\n",
-//            rgb32, width, height, alpha);
+#if 0
+      RARCH_LOG("oga_set_texture_frame rgb32 %d width %hu height"
+            " %hu alpha %f\n",
+            rgb32, width, height, alpha);
+#endif
 
       oga_destroy_surface(vid->menu_surface);
-      vid->menu_surface = oga_create_surface(vid->fd, width, height, RK_FORMAT_BGRA_8888);
+      vid->menu_surface = oga_create_surface(vid->fd, width, height,
+            RK_FORMAT_BGRA_8888);
    }
 
    /* The output pixel array with the converted pixels. */
