@@ -3144,6 +3144,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    "إخفاء التراكب أثناء داخل القائمة، وإظهاره مرة أخرى عند الخروج من القائمة."
    )
+#if defined(ANDROID)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "إظهار المدخلات في التراكب"
@@ -3187,24 +3189,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
    "حدد تراكب من متصفح الملفات."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-   "مقياس التراكب"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-   "عتامة جميع عناصر واجهة المستخدم للتراكب."
-   )
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X,
-   "عتامة جميع عناصر واجهة المستخدم للتراكب."
-   )
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y,
-   "عتامة جميع عناصر واجهة المستخدم للتراكب."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -6908,10 +6892,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
    "16:10 (مركز)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
-   "3:2 (مركز)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,

@@ -200,6 +200,10 @@ MSG_HASH(
    "Anueva tolos nucleos instalaos a la última versión disponible."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Troca tolos nucleos heredaos ya instalaos a mano poles últimes versiones de la Play Store onde seya posible."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Anovador de miniatures"
    )
@@ -932,8 +936,8 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
-
-
+#if defined(ANDROID)
+#endif
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -2373,6 +2377,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FETCHING_CORE_LIST,
    "Diendo en cata de la llista de nucleos…"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "Tolos nucleos sofitaos cambiaron a les versiones de la Play Store"
    )
 MSG_HASH(
    MSG_ADDED_TO_FAVORITES,

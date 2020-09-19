@@ -292,6 +292,14 @@ MSG_HASH(
    "Actualiza todos los núcleos instalados a sus últimas versiones."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Cambiar núcleos a las versiones de Play Store"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Sustituye todos los núcleos antiguos e instalados manualmente con las versiones más recientes disponibles en Play Store, si están disponibles."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Actualizador de miniaturas"
    )
@@ -1324,6 +1332,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "Aplica un filtro de vídeo procesado por la CPU.\nNOTA: Puede afectar en gran medida al rendimiento. Algunos filtros de vídeo solo funcionan con núcleos que utilicen 16 o 32 bits de color."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Permitir que la pantalla completa sobrepase la muesca («notch») de los dispositivos Android"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1955,6 +1967,14 @@ MSG_HASH(
    "Configura de forma automática aquellos mandos para los que exista un perfil, a lo Plug-and Play."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Entrada auxiliar de sensores"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "Activa la entrada de acelerómetros, giroscopios y sensores de iluminación si el hardware actual los soporta. Podría afectar al rendimiento o aumentar el consumo de energía en algunas plataformas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Umbral de entrada de ejes en botones"
    )
@@ -2170,6 +2190,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Alterna entre los modos a pantalla completa o en ventana."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "Cerrar contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "Cierra el contenido actual. Se perderá cualquier progreso no guardado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -2766,35 +2794,35 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Organizar archivos guardados mediante carpetas nombradas según el núcleo"
+   "Organizar archivos guardados por carpetas con el nombre del núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-   "Ordena los archivos de guardado usando carpetas nombradas por núcleo."
+   "Ordena los archivos de guardado mediante carpetas que llevarán el nombre del núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Organizar guardados rápidos mediante carpetas nombradas según el núcleo"
+   "Organizar guardados rápidos por carpetas con el nombre del núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "Ordena los guardados rápidos usando carpetas nombradas por núcleo."
+   "Ordena los guardados rápidos mediante carpetas que llevarán el nombre del núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Organizar archivos guardados mediante carpetas nombradas según el directorio del contenido"
+   "Organizar archivos guardados por carpetas con el nombre del directorio del contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Organiza los archivos de guardado por carpetas que llevarán el nombre del directorio donde se encuentre el contenido."
+   "Organiza los archivos de guardado mediante carpetas que llevarán el nombre del directorio donde se encuentre el contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Organizar guardados rápidos mediante carpetas nombradas según el directorio del contenido"
+   "Organizar guardados rápidos por carpetas con el nombre del directorio del contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Organiza los guardados rápidos por carpetas que llevarán el nombre del directorio donde se encuentre el contenido."
+   "Organiza los guardados rápidos mediante carpetas que llevarán el nombre del directorio donde se encuentre el contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
@@ -2862,11 +2890,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Organizar capturas de pantalla mediante carpetas nombradas según el directorio del contenido"
+   "Organizar capturas de pantalla por carpetas con el nombre del directorio del contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Organiza las capturas de pantalla por carpetas que llevarán el nombre del directorio donde se encuentre el contenido."
+   "Organiza las capturas de pantalla mediante carpetas que llevarán el nombre del directorio donde se encuentre el contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -3193,6 +3221,20 @@ MSG_HASH(
    "Oculta la superposición dentro del menú y la vuelve a mostrar al salir de él."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Ocultar superposición al conectar un mando"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Oculta la superposición cuando se conecte un mando físico al puerto 1 y la vuelve a mostrar al desconectar el mando."
+   )
+#if defined(ANDROID)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   "Oculta la superposición cuando se conecte un mando físico al puerto 1. AVISO: La superposición no reaparecerá automáticamente cuando se desconecte el mando."
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "Mostrar entradas en la superposición"
    )
@@ -3225,6 +3267,14 @@ MSG_HASH(
    "Si la superposición lo permite, se rotará automáticamente para que coincida con la orientación y relación de aspecto de la pantalla."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "Escalar automáticamente la superposición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "Ajusta automáticamente la escala de la superposición y el espaciamiento de los elementos de la interfaz para que coincidan con la relación de aspecto de la pantalla. Da los mejores resultados con las superposiciones de mandos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Superposiciones"
    )
@@ -3249,30 +3299,100 @@ MSG_HASH(
    "Selecciona una superposición en el explorador de archivos."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-   "Escala de superposición"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "Escala de superposición (modo horizontal)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-   "Controla la escala de todos los elementos de la superposición."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_X,
-   "Compensación X de superposición"
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Escala todos los elementos de interfaz de la superposición al utilizar una orientación de pantalla horizontal."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X,
-   "Compensa la posición horizontal de todos los elementos de la superposición."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_Y,
-   "Compensación Y de superposición"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Relación de aspecto de superposición (modo horizontal)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y,
-   "Compensa la posición vertical de todos los elementos de la superposición."
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Aplica un factor de corrección de relación de aspecto a la superposición al utilizar una orientación de pantalla horizontal. Los valores positivos aumentan (mientras que los valores negativos disminuyen) el ancho de la superposición."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Separación horizontal de superposición (modo horizontal)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Si el preajuste actual lo permite, ajusta el espaciado entre los elementos de interfaz de las mitades izquierda y derecha de una superposición al utilizar una orientación de pantalla horizontal. Los valores positivos aumentan (mientras que los valores negativos disminuyen) la separación de ambas mitades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Separación vertical de superposición (modo horizontal)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Si el preajuste actual lo permite, ajusta el espaciado entre los elementos de interfaz de las mitades superior e inferior de una superposición al utilizar una orientación de pantalla horizontal. Los valores positivos aumentan (mientras que los valores negativos disminuyen) la separación de ambas mitades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Compensación X de superposición (modo horizontal)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Compensa la superposición en el eje horizontal al utilizar una orientación de pantalla horizontal. Los valores positivos desplazarán la superposición hacia la derecha, y los negativos, hacia la izquierda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Compensación Y de superposición (modo horizontal)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Compensa la superposición en el eje vertical al utilizar una orientación de pantalla horizontal. Los valores positivos desplazarán la superposición hacia arriba, y los negativos, hacia abajo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "Escala de superposición (modo vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "Escala todos los elementos de interfaz de la superposición al utilizar una orientación de pantalla vertical."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Relación de aspecto de superposición (modo vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Aplica un factor de corrección de relación de aspecto a la superposición al utilizar una orientación de pantalla vertical. Los valores positivos aumentan (mientras que los valores negativos disminuyen) la altura de la superposición."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Separación horizontal de superposición (modo vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Si el preajuste actual lo permite, ajusta el espaciado entre los elementos de interfaz de las mitades izquierda y derecha de una superposición al utilizar una orientación de pantalla vertical. Los valores positivos aumentan (mientras que los valores negativos disminuyen) la separación de ambas mitades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Separación vertical de superposición (modo vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Si el preajuste actual lo permite, ajusta el espaciado entre los elementos de interfaz de las mitades superior e inferior de una superposición al utilizar una orientación de pantalla vertical. Los valores positivos aumentan (mientras que los valores negativos disminuyen) la separación de ambas mitades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "Compensación X de superposición (modo vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "Compensa la superposición en el eje horizontal al utilizar una orientación de pantalla vertical. Los valores positivos desplazarán la superposición hacia la derecha, y los negativos, hacia la izquierda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Compensación Y de superposición (modo vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Compensa la superposición en el eje vertical al utilizar una orientación de pantalla vertical. Los valores positivos desplazarán la superposición hacia arriba, y los negativos, hacia abajo."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -9403,6 +9523,10 @@ MSG_HASH(
    "Núcleo instalado: "
    )
 MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Error al instalar el núcleo: "
+   )
+MSG_HASH(
    MSG_SCANNING_CORES,
    "Buscando núcleos..."
    )
@@ -9413,6 +9537,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
    "Todos los núcleos instalados están al día"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "Todos los núcleos compatibles han sido cambiados a las versiones de Play Store"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,

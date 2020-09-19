@@ -292,6 +292,14 @@ MSG_HASH(
    "Aggiorna tutti i core installati all'ultima versione disponibile."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Passa core alle versioni del Play Store"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Sostituire tutti i core già installati e manualmente con le ultime versioni dal Play Store, dove disponibili."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Aggiorna Miniature"
    )
@@ -1320,6 +1328,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "Applica un filtro video alimentato dalla CPU.\nNOTA: Potrebbe esserci un costo elevato per le prestazioni. Alcuni filtri video potrebbero funzionare solo per i core che usano il colore a 32 bit o a 16 bit."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Abilita schermo intero sopra la tacca nei dispositivi Android"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1951,6 +1963,14 @@ MSG_HASH(
    "Configura automaticamente i controller che hanno uno stile di profilo, Plug-and-Play."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Ingresso sensore ausiliario"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "Consente l'ingresso all'accelerometro, giroscopio e sensori di illuminazione, se supportato dall'hardware corrente. Può avere un impatto sulle prestazioni e/o aumentare l'aumento di potenza su alcune piattaforme."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Soglia Pulsante Di Input"
    )
@@ -2166,6 +2186,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Alterna tra la modalità a schermo intero e la visualizzazione in finestra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "Chiudi Contenuto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "Chiude il contenuto corrente. Eventuali modifiche non salvate potrebbero andare perse."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -3193,6 +3221,20 @@ MSG_HASH(
    "Nasconde l'overlay all'interno del menu e verrà mostrata nuovamente all'uscita."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Nascondi sovrapposizione quando il Gamepad è connesso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Nascondi la sovrapposizione quando un gamepad fisico è collegato alla porta 1, e mostralo di nuovo quando il gamepad è disconnesso."
+   )
+#if defined(ANDROID)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   "Nascondi la sovrapposizione quando un gamepad fisico è collegato alla porta 1. ATTENZIONE: la sovrapposizione non verrà ripristinata automaticamente quando il gamepad viene disconnesso."
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "Visualizza Inputs su Overlay"
    )
@@ -3225,6 +3267,14 @@ MSG_HASH(
    "Se supportato dall'overlay attivo, ruota automaticamente il layout per corrispondere al rapporto orientazione/aspetto dello schermo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "Ridimensionamento automatico dell'overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "Regola automaticamente la scala di sovrapposizione e la spaziatura degli elementi dell'interfaccia utente per abbinare le proporzioni dello schermo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Autocarica overlay preferito"
    )
@@ -3245,30 +3295,100 @@ MSG_HASH(
    "Seleziona un overlay dal file browser."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-   "Scala Overlay"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "(Landscape) Dimensione dell'overlay"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-   "Scala di tutti gli elementi dell'interfaccia utente dell'overlay"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_X,
-   "Posizionamento X dell'overlay"
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Scala di tutti gli elementi dell'interfaccia utente della sovrapposizione quando si usano gli orientamenti della visualizzazione orizzontale."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X,
-   "Spostamento X di tutti gli elementi UI dell'overlay."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_Y,
-   "Posizionamento Y dell'overlay"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "(Landscape) Regolazione Aspetto dell'overlay"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y,
-   "Spostamento dell'asse Y di tutti gli elementi UI dell'overlay."
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Applicare un fattore di correzione del rapporto di aspetto alla sovrapposizione quando si usano gli orientamenti del display orizzontale. I valori positivi aumentano (mentre i valori negativi diminuiscono) la larghezza di sovrapposizione effettiva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "(Orizzontale) Separazione Orizzontale dell'overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Se supportato dalla preimpostazione corrente, regola la spaziatura tra gli elementi dell'interfaccia utente nella metà sinistra e destra di una sovrapposizione quando si usano gli orientamenti della visualizzazione orizzontale. I valori positivi aumentano (mentre i valori negativi diminuiscono) la separazione delle due metà."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "(Orizzontale) Separazione Verticale dell'overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Se supportato dalla preimpostazione corrente, regola la spaziatura tra gli elementi dell'interfaccia utente nella metà superiore e inferiore di una sovrapposizione quando si usano gli orientamenti della visualizzazione orizzontale. I valori positivi aumentano (mentre i valori negativi diminuiscono) la separazione delle due metà."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "(Landscape) Overlay X Scostamento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Scostamento di sovrapposizione orizzontale quando si usano gli orientamenti della visualizzazione orizzontale. I valori positivi spostano la sovrapposizione a destra; valori negativi a sinistra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "(Landscape) Overlay Y Scostamento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Spostamento di sovrapposizione verticale quando si usano gli orientamenti del display orizzontale. I valori positivi si sovrappongono verso l'alto; i valori negativi verso il basso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "(Portrait) Scala Di Sovrapposizione"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "Scala di tutti gli elementi dell'interfaccia utente della sovrapposizione quando si usano gli orientamenti di visualizzazione verticale."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "(Portrait) Aggiustamento dell'aspetto dell'overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Applicare un fattore di correzione del rapporto proporzioni alla sovrapposizione quando si usano gli orientamenti del display verticale. I valori positivi aumentano (mentre i valori negativi diminuiscono) l'altezza di sovrapposizione effettiva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "(Portrait) Sovrapposizione Separazione Orizzontale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Se supportato dalla preimpostazione corrente, regola la spaziatura tra gli elementi dell'interfaccia utente nella metà sinistra e destra di una sovrapposizione quando si usano gli orientamenti di visualizzazione verticale. I valori positivi aumentano (mentre i valori negativi diminuiscono) la separazione delle due metà."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "(Portrait) Sovrapposizione Separazione Verticale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Se supportato dalla preimpostazione attuale, regola la spaziatura tra gli elementi dell'interfaccia utente nella metà superiore e inferiore di una sovrapposizione quando si usano gli orientamenti di visualizzazione verticale. I valori positivi aumentano (mentre i valori negativi diminuiscono) la separazione delle due metà."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "(Portrait) Overlay X Spaziatura"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "Scostamento sovrapposizione orizzontale quando si usano gli orientamenti di visualizzazione verticale. I valori positivi spostano la sovrapposizione a destra; valori negativi a sinistra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "(Portrait) Overlay Y Spaziamento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Spostamento di sovrapposizione verticale quando si usano gli orientamenti di visualizzazione verticale. I valori positivi si sovrappongono verso l'alto; i valori negativi verso il basso."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -9283,6 +9403,10 @@ MSG_HASH(
    "Core installato: "
    )
 MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Installazione del nucleo non riuscita: "
+   )
+MSG_HASH(
    MSG_SCANNING_CORES,
    "Scansione nuclei..."
    )
@@ -9293,6 +9417,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
    "Tutti i core installati all'ultima versione"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "Tutti i core supportati sono passati alle versioni di Play Store"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
