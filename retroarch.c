@@ -5525,27 +5525,27 @@ int menu_entries_get_core_title(char *s, size_t len)
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
    const char *core_version            = (system && system->library_version) ? system->library_version : "";
 #if _MSC_VER == 1200
-   strlcpy(s, PACKAGE_VERSION " msvc6" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc6" " - ");
 #elif _MSC_VER == 1300
-   strlcpy(s, PACKAGE_VERSION " msvc2002" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2002" " - ");
 #elif _MSC_VER == 1310
-   strlcpy(s, PACKAGE_VERSION " msvc2003" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2003" " - ");
 #elif _MSC_VER == 1400
-   strlcpy(s, PACKAGE_VERSION " msvc2005" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2005" " - ");
 #elif _MSC_VER == 1500
-   strlcpy(s, PACKAGE_VERSION " msvc2008" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2008" " - ");
 #elif _MSC_VER == 1600
-   strlcpy(s, PACKAGE_VERSION " msvc2010" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2010" " - ");
 #elif _MSC_VER == 1700
-   strlcpy(s, PACKAGE_VERSION " msvc2012" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2012" " - ");
 #elif _MSC_VER == 1800
-   strlcpy(s, PACKAGE_VERSION " msvc2013" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2013" " - ");
 #elif _MSC_VER == 1900
-   strlcpy(s, PACKAGE_VERSION " msvc2015" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2015" " - ");
 #elif _MSC_VER >= 1910 && _MSC_VER < 2000
-   strlcpy(s, PACKAGE_VERSION " msvc2017" " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " msvc2017" " - ");
 #else
-   strlcpy(s, PACKAGE_VERSION " - ", len);
+   strcpy_literal(s, PACKAGE_VERSION " - ");
 #endif
    strlcat(s, core_name, len);
    if (!string_is_empty(core_version))
@@ -9165,7 +9165,7 @@ static void discord_init(
       strlcat(command, args,      sizeof(command));
    }
 #else
-   strlcpy(command, "sh -c ", sizeof(command));
+   strcpy_literal(command, "sh -c ");
    strlcat(command, args,     sizeof(command));
 #endif
    RARCH_LOG("[DISCORD]: Registering startup command: %s\n", command);
@@ -11489,7 +11489,7 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
 
             path[0] = ext[0] = '\0';
 
-            strlcpy(ext, ".", sizeof(ext));
+            strcpy_literal(ext, ".");
             strlcat(ext, mem->extension, sizeof(ext));
             strlcpy(savename,
                   p_rarch->subsystem_fullpaths->elems[i].data,
@@ -12781,7 +12781,7 @@ static bool command_get_status(const char* arg)
    content_get_status(&contentless, &is_inited);
 
    if (!is_inited)
-       strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+       strcpy_literal(reply, "GET_STATUS CONTENTLESS");
    else
    {
        /* add some content info */
@@ -15403,7 +15403,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
 
-      strlcpy(log, "[config] ", sizeof(log));
+      strcpy_literal(log, "[config] ");
       strlcat(log, s, sizeof(log));
       RARCH_LOG("%s\n", log);
       return true;
@@ -15415,7 +15415,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
 
-      strlcpy(log, "[config] ", sizeof(log));
+      strcpy_literal(log, "[config] ");
       strlcat(log, s, sizeof(log));
       RARCH_ERR("%s\n", log);
    }
@@ -15545,8 +15545,7 @@ static void command_event_save_current_config(
    {
       case OVERRIDE_NONE:
          if (path_is_empty(RARCH_PATH_CONFIG))
-            strlcpy(msg, "[config] Config directory not set, cannot save configuration.",
-                  sizeof(msg));
+            strcpy_literal(msg, "[config] Config directory not set, cannot save configuration.");
          else
             command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
          break;
@@ -41046,32 +41045,32 @@ const void *frontend_driver_get_cpu_architecture_str(
    switch (arch)
    {
       case FRONTEND_ARCH_X86:
-         strlcpy(architecture, "x86", size);
+         strcpy_literal(architecture, "x86");
          break;
       case FRONTEND_ARCH_X86_64:
-         strlcpy(architecture, "x64", size);
+         strcpy_literal(architecture, "x64");
          break;
       case FRONTEND_ARCH_PPC:
-         strlcpy(architecture, "PPC", size);
+         strcpy_literal(architecture, "PPC");
          break;
       case FRONTEND_ARCH_ARM:
-         strlcpy(architecture, "ARM", size);
+         strcpy_literal(architecture, "ARM");
          break;
       case FRONTEND_ARCH_ARMV7:
-         strlcpy(architecture, "ARMv7", size);
+         strcpy_literal(architecture, "ARMv7");
          break;
       case FRONTEND_ARCH_ARMV8:
-         strlcpy(architecture, "ARMv8", size);
+         strcpy_literal(architecture, "ARMv8");
          break;
       case FRONTEND_ARCH_MIPS:
-         strlcpy(architecture, "MIPS", size);
+         strcpy_literal(architecture, "MIPS");
          break;
       case FRONTEND_ARCH_TILE:
-         strlcpy(architecture, "Tilera", size);
+         strcpy_literal(architecture, "Tilera");
          break;
       case FRONTEND_ARCH_NONE:
       default:
-         strlcpy(architecture, "N/A", size);
+         strcpy_literal(architecture, "N/A");
          break;
    }
 

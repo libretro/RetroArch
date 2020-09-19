@@ -172,56 +172,56 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #ifdef HAVE_DYNAMIC
 
 #ifdef _WIN32
-   strlcpy(s, "dll", len);
+   strcpy_literal(s, "dll");
    return true;
 #elif defined(__APPLE__) || defined(__MACH__)
-   strlcpy(s, "dylib", len);
+   strcpy_literal(s, "dylib");
    return true;
 #else
-   strlcpy(s, "so", len);
+   strcpy_literal(s, "so");
    return true;
 #endif
 
 #else
 
 #if defined(__CELLOS_LV2__)
-   strlcpy(s, "self|bin", len);
+   strcpy_literal(s, "self|bin");
    return true;
 #elif defined(PSP)
-   strlcpy(s, "pbp", len);
+   strcpy_literal(s, "pbp");
    return true;
 #elif defined(VITA)
-   strlcpy(s, "self|bin", len);
+   strcpy_literal(s, "self|bin");
    return true;
 #elif defined(PS2)
-   strlcpy(s, "elf", len);
+   strcpy_literal(s, "elf");
    return true;
 #elif defined(_XBOX1)
-   strlcpy(s, "xbe", len);
+   strcpy_literal(s, "xbe");
    return true;
 #elif defined(_XBOX360)
-   strlcpy(s, "xex", len);
+   strcpy_literal(s, "xex");
    return true;
 #elif defined(GEKKO)
-   strlcpy(s, "dol", len);
+   strcpy_literal(s, "dol");
    return true;
 #elif defined(HW_WUP)
-   strlcpy(s, "rpx|elf", len);
+   strcpy_literal(s, "rpx|elf");
    return true;
 #elif defined(__linux__)
-   strlcpy(s, "elf", len);
+   strcpy_literal(s, "elf");
    return true;
 #elif defined(HAVE_LIBNX)
-   strlcpy(s, "nro", len);
+   strcpy_literal(s, "nro");
    return true;
 #elif defined(DJGPP)
-   strlcpy(s, "exe", len);
+   strcpy_literal(s, "exe");
    return true;
 #elif defined(_3DS)
    if (envIsHomebrew())
-      strlcpy(s, "3dsx", len);
+      strcpy_literal(s, "3dsx");
    else
-      strlcpy(s, "cia", len);
+      strcpy_literal(s, "cia");
    return true;
 #else
    return false;
@@ -237,37 +237,37 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 #else
 
 #if defined(__CELLOS_LV2__)
-   strlcpy(s, "EBOOT.BIN", len);
+   strcpy_literal(s, "EBOOT.BIN");
    return true;
 #elif defined(PSP)
-   strlcpy(s, "EBOOT.PBP", len);
+   strcpy_literal(s, "EBOOT.PBP");
    return true;
 #elif defined(VITA)
-   strlcpy(s, "eboot.bin", len);
+   strcpy_literal(s, "eboot.bin");
    return true;
 #elif defined(PS2)
-   strlcpy(s, "eboot.elf", len);
+   strcpy_literal(s, "eboot.elf");
    return true;
 #elif defined(_XBOX1)
-   strlcpy(s, "default.xbe", len);
+   strcpy_literal(s, "default.xbe");
    return true;
 #elif defined(_XBOX360)
-   strlcpy(s, "default.xex", len);
+   strcpy_literal(s, "default.xex");
    return true;
 #elif defined(HW_RVL)
-   strlcpy(s, "boot.dol", len);
+   strcpy_literal(s, "boot.dol");
    return true;
 #elif defined(HW_WUP)
-   strlcpy(s, "retroarch.rpx", len);
+   strcpy_literal(s, "retroarch.rpx");
    return true;
 #elif defined(_3DS)
-   strlcpy(s, "retroarch.core", len);
+   strcpy_literal(s, "retroarch.core");
    return true;
 #elif defined(DJGPP)
-   strlcpy(s, "retrodos.exe", len);
+   strcpy_literal(s, "retrodos.exe");
    return true;
 #elif defined(SWITCH)
-   strlcpy(s, "retroarch_switch.nro", len);
+   strcpy_literal(s, "retroarch_switch.nro");
    return true;
 #else
    return false;

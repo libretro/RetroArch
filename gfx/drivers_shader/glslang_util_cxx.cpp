@@ -67,7 +67,7 @@ static std::string build_stage_source(
 
                expected[0] = '\0';
 
-               strlcpy(expected, "#pragma stage ", sizeof(expected));
+               strcpy_literal(expected, "#pragma stage ");
                strlcat(expected, stage,            sizeof(expected));
 
                active = string_is_equal(expected, line);

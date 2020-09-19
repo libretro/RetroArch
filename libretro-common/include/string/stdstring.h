@@ -35,6 +35,8 @@
 
 RETRO_BEGIN_DECLS
 
+#define strcpy_literal(a, b) strcpy(a, b)
+
 static INLINE bool string_is_empty(const char *data)
 {
    return !data || (*data == '\0');
