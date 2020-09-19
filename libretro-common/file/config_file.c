@@ -774,6 +774,7 @@ void config_file_initialize(struct config_file *conf)
    conf->entries                  = NULL;
    conf->tail                     = NULL;
    conf->last                     = NULL;
+   conf->reference                = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
    conf->guaranteed_no_duplicates = false;
@@ -1245,6 +1246,10 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
+
+   if (conf->reference)
+      fprintf(file, "#reference \"%s\"\n", conf->reference);
+
    while (includes)
    {
       char cad[256];
@@ -1277,6 +1282,9 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
+
+   if (conf->reference)
+      fprintf(file, "#reference \"%s\"\n", conf->reference);
 
    while (includes)
    {

@@ -331,6 +331,10 @@
 #define DEFAULT_SHADER_ENABLE false
 #endif
 
+/* When presets are saved they will be saved using the #reference 
+ * directive by default */
+#define DEFAULT_VIDEO_SHADER_PRESET_SAVE_REFERENCE_ENABLE true
+
 #define DEFAULT_SHADER_DELAY 0
 
 /* Only scale in integer steps.

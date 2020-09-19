@@ -3209,6 +3209,10 @@ MSG_HASH(
    "video_shader_preset_save"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "video_shader_preset_save_reference"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
    "video_shader_preset_save_as"
    )
