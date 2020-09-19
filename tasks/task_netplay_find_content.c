@@ -247,7 +247,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       if (string_is_equal(current, state->content_crc))
       {
          RARCH_LOG("[Lobby]: CRC match %s with currently loaded content\n", current);
-         strlcpy(state->content_path, "N/A", sizeof(state->content_path));
+         strcpy_literal(state->content_path, "N/A");
          state->found   = true;
          state->current = true;
          task_set_data(task, state);
