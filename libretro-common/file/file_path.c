@@ -1010,7 +1010,7 @@ void fill_pathname_expand_special(char *out_path,
             retro_assert(src_size < size);
 
             out_path += src_size;
-            size -= src_size;
+            size     -= src_size;
          }
 
          in_path += 2;
@@ -1100,8 +1100,7 @@ void fill_pathname_abbreviate_special(char *out_path,
 
          if (!PATH_CHAR_IS_SLASH(*in_path))
          {
-            retro_assert(strlcpy(out_path,
-                     PATH_DEFAULT_SLASH(), size) < size);
+            strcpy_literal(out_path, PATH_DEFAULT_SLASH());
             out_path++;
             size--;
          }

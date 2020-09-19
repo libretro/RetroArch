@@ -4204,10 +4204,13 @@ static int menu_displaylist_parse_input_description_kbd_list(menu_displaylist_in
 
       /* TODO/FIXME: Localise 'Keyboard' */
       if (key_id == RETROK_FIRST)
-         strlcpy(input_description, "---", sizeof(input_description));
+         strcpy_literal(input_description, "---");
       else
-         snprintf(input_description, sizeof(input_description),
-               "Keyboard %s", key_label);
+      {
+         strcpy_literal(input_description, "Keyboard ");
+         strlcat(input_description, key_label,
+               sizeof(input_description));
+      }
 
       /* Add menu entry */
       if (menu_entries_append_enum(info->list,
@@ -8866,7 +8869,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
          if (*netplay_room_list[i].country)
          {
-            strlcpy(country, "(", sizeof(country));
+            strcpy_literal(country, "(");
             strlcat(country, netplay_room_list[i].country,
                   sizeof(country));
             strlcat(country, ")", sizeof(country));
@@ -9299,7 +9302,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      title[0] = '\0';
 
-                     strlcpy(title, "Title: ", sizeof(title));
+                     strcpy_literal(title, "Title: ");
                      strlcat(title, cd_info.title, sizeof(title));
 
                      if (menu_entries_append_enum(info->list,
@@ -9316,7 +9319,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      system[0] = '\0';
 
-                     strlcpy(system, "System: ", sizeof(system));
+                     strcpy_literal(system, "System: ");
                      strlcat(system, cd_info.system, sizeof(system));
 
                      if (menu_entries_append_enum(info->list,
@@ -9368,7 +9371,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      release_date[0] = '\0';
 
-                     strlcpy(release_date, "Release Date: ", sizeof(release_date));
+                     strcpy_literal(release_date, "Release Date: ");
                      strlcat(release_date, cd_info.release_date, sizeof(release_date));
 
                      if (menu_entries_append_enum(info->list,
@@ -9537,7 +9540,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          fgets(current_profile, PATH_MAX_LENGTH, profile);
          pclose(profile);
 
-         strlcpy(text, "Current profile : ", sizeof(text));
+         strcpy_literal(text, "Current profile : ");
          strlcat(text, current_profile, sizeof(text));
 #else
          u32 currentClock = 0;
@@ -9599,7 +9602,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         strlcpy(text, "Current profile : ", sizeof(text));
+         strcpy_literal(text, "Current profile : ");
          strlcat(text, current_profile, sizeof(text));
 
          if (menu_entries_append_enum(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0))
@@ -11921,7 +11924,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      strlcat(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
                   }
                   else
-                     strlcpy(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
+                     strcpy_literal(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT);
 
                   info->exts      = strdup(ext_names);
                }

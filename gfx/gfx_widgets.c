@@ -1025,9 +1025,9 @@ static void gfx_widgets_draw_task_msg(
    if (msg->task_finished)
    {
       if (msg->task_error)
-         strlcpy(task_percentage, "Task failed", sizeof(task_percentage));
+         strcpy_literal(task_percentage, "Task failed");
       else
-         strlcpy(task_percentage, " ", sizeof(task_percentage));
+         strcpy_literal(task_percentage, " ");
    }
    else if (msg->task_progress >= 0 && msg->task_progress <= 100)
       snprintf(task_percentage, sizeof(task_percentage),

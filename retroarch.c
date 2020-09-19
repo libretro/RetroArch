@@ -8220,7 +8220,7 @@ static bool menu_shader_manager_save_preset_internal(
    }
    else
    {
-      strlcpy(fullname, "retroarch", sizeof(fullname));
+      strcpy_literal(fullname, "retroarch");
       strlcat(fullname, 
             video_shader_get_preset_extension(type), sizeof(fullname));
    }
@@ -8331,7 +8331,7 @@ static bool menu_shader_manager_operate_auto_preset(
    switch (type)
    {
       case SHADER_PRESET_GLOBAL:
-         strlcpy(file, "global", sizeof(file));
+         strcpy_literal(file, "global");
          break;
       case SHADER_PRESET_CORE:
          fill_pathname_join(file, core_name, core_name, sizeof(file));

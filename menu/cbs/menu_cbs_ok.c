@@ -4574,7 +4574,7 @@ static int action_ok_download_generic(const char *path,
          path = "shaders_cg.zip";
          break;
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strlcpy(s, "http://thumbnailpacks.libretro.com", sizeof(s));
+         strcpy_literal(s, "http://thumbnailpacks.libretro.com");
          break;
       default:
          strlcpy(s, network_buildbot_url, sizeof(s));
@@ -4898,8 +4898,8 @@ static int action_ok_add_to_favorites(const char *path,
 
       if (string_is_empty(core_path) || string_is_empty(core_name))
       {
-         strlcpy(core_path, "DETECT", sizeof(core_path));
-         strlcpy(core_name, "DETECT", sizeof(core_name));
+         strcpy_literal(core_path, "DETECT");
+         strcpy_literal(core_name, "DETECT");
       }
 
       /* > crc32 + db_name */
@@ -6341,7 +6341,7 @@ static int action_ok_video_resolution(const char *path,
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         strlcpy(msg, "Applying: DEFAULT", sizeof(msg));
+         strcpy_literal(msg, "Applying: DEFAULT");
       else
 #endif
          snprintf(msg, sizeof(msg),

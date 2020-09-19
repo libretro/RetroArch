@@ -1142,7 +1142,7 @@ int setting_generic_action_start_default(rarch_setting_t *setting)
 static void setting_get_string_representation_default(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   strlcpy(s, "...", len);
+   strcpy_literal(s, "...");
 }
 
 /**
@@ -2767,10 +2767,10 @@ static void setting_get_string_representation_streaming_mode(
    switch (*setting->value.target.unsigned_integer)
    {
       case STREAMING_MODE_TWITCH:
-         strlcpy(s, "Twitch", len);
+         strcpy_literal(s, "Twitch");
          break;
       case STREAMING_MODE_YOUTUBE:
-         strlcpy(s, "YouTube", len);
+         strcpy_literal(s, "YouTube");
          break;
       case STREAMING_MODE_LOCAL:
          strlcpy(s, "Local", len);
@@ -2892,12 +2892,12 @@ static void setting_get_string_representation_cheevos_password(
       return;
 
    if (!string_is_empty(setting->value.target.string))
-      strlcpy(s, "********", len);
+      strcpy_literal(s, "********");
    else
    {
       settings_t *settings = config_get_ptr();
       if (settings->arrays.cheevos_token[0])
-         strlcpy(s, "********", len);
+         strcpy_literal(s, "********");
       else
          *setting->value.target.string = '\0';
    }
@@ -2918,13 +2918,13 @@ static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          break;
       case 1:
-         strlcpy(s, "iPega PG-9017", len);
+         strcpy_literal(s, "iPega PG-9017");
          break;
       case 2:
-         strlcpy(s, "8-bitty", len);
+         strcpy_literal(s, "8-bitty");
          break;
       case 3:
-         strlcpy(s, "SNES30 8bitdo", len);
+         strcpy_literal(s, "SNES30 8bitdo");
          break;
    }
 }
@@ -3414,13 +3414,13 @@ static void setting_get_string_representation_uint_menu_timedate_date_separator(
    switch (*setting->value.target.unsigned_integer)
    {
       case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
-         strlcpy(s, "'-'", len);
+         strcpy_literal(s, "'-'");
          break;
       case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-         strlcpy(s, "'/'", len);
+         strcpy_literal(s, "'/'");
          break;
       case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-         strlcpy(s, "'.'", len);
+         strcpy_literal(s, "'.'");
          break;
    }
 }
@@ -3963,13 +3963,13 @@ static void setting_get_string_representation_uint_menu_xmb_animation_horizontal
    switch (*setting->value.target.unsigned_integer)
    {
       case 0:
-         strlcpy(s, "Easing Out Quad", len);
+         strcpy_literal(s, "Easing Out Quad");
          break;
       case 1:
-         strlcpy(s, "Easing In Sine", len);
+         strcpy_literal(s, "Easing In Sine");
          break;
       case 2:
-         strlcpy(s, "Easing Out Bounce", len);
+         strcpy_literal(s, "Easing Out Bounce");
          break;
    }
 }
@@ -4071,13 +4071,13 @@ static void setting_get_string_representation_uint_xmb_layout(
    switch (*setting->value.target.unsigned_integer)
    {
       case 0:
-         strlcpy(s, "Auto", len);
+         strcpy_literal(s, "Auto");
          break;
       case 1:
-         strlcpy(s, "Console", len);
+         strcpy_literal(s, "Console");
          break;
       case 2:
-         strlcpy(s, "Handheld", len);
+         strcpy_literal(s, "Handheld");
          break;
    }
 }

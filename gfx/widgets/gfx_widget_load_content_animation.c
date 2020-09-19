@@ -437,8 +437,7 @@ bool gfx_widget_start_load_content_animation(void)
                sizeof(state->system_name));
       /* Otherwise, just use 'RetroArch' as a fallback */
       else
-         strlcpy(state->system_name, "RetroArch",
-               sizeof(state->system_name));
+         strcpy_literal(state->system_name, "RetroArch");
    }
 
    /* > Content name has been determined
@@ -503,8 +502,7 @@ bool gfx_widget_start_load_content_animation(void)
       state->icon_file[0] = '\0';
       icon_path[0]        = '\0';
 
-      strlcpy(state->icon_file, "retroarch.png",
-            sizeof(state->icon_file));
+      strcpy_literal(state->icon_file, "retroarch.png");
 
       fill_pathname_join(icon_path,
             state->icon_directory, state->icon_file,
