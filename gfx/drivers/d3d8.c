@@ -1550,7 +1550,8 @@ static bool d3d8_frame(void *data, const void *frame,
 
    if (black_frame_insertion && !d3d->menu->enabled)
    {
-      for ( int i = 0; i < video_info->black_frame_insertion; ++i) 
+      unsigned n;
+      for (n = 0; n < video_info->black_frame_insertion; ++n) 
       {   
         if (!d3d8_swap(d3d, d3d->dev) || d3d->needs_restore)
           return true;

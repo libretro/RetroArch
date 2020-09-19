@@ -3102,8 +3102,8 @@ static bool gl2_frame(void *data, const void *frame,
          && !runloop_is_paused 
          && !gl->menu_texture_enable)
     {
-
-        for (int i = 0; i < black_frame_insertion; ++i)
+        unsigned n;
+        for (n = 0; n < black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
           glClear(GL_COLOR_BUFFER_BIT);

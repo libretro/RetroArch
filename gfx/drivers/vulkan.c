@@ -2270,10 +2270,13 @@ static bool vulkan_frame(void *data, const void *frame,
          && !runloop_is_slowmotion
          && !runloop_is_paused
          && !vk->menu.enable)
-      for ( int i = 0; i < black_frame_insertion; ++i) 
+   {   
+      unsigned n;
+      for (n = 0; n < black_frame_insertion; ++n) 
       { 
          vulkan_inject_black_frame(vk, video_info, vk->ctx_data);
       }
+   }
 
    /* Vulkan doesn't directly support swap_interval > 1, 
     * so we fake it by duping out more frames. */

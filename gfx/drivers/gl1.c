@@ -915,7 +915,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          && !gl1->menu_texture_enable)
    {
 
-        for (int i = 0; i < video_info->black_frame_insertion; ++i)
+        unsigned n;
+        for (n = 0; n < video_info->black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
           glClear(GL_COLOR_BUFFER_BIT);			
