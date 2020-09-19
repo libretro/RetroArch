@@ -1497,7 +1497,7 @@ static bool d3d8_frame(void *data, const void *frame,
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
    bool statistics_show                = video_info->statistics_show;
-   bool black_frame_insertion          = video_info->black_frame_insertion;
+   unsigned black_frame_insertion      = video_info->black_frame_insertion;
 #ifdef HAVE_MENU
    bool menu_is_alive                  = video_info->menu_is_alive;
 #endif
@@ -1538,14 +1538,6 @@ static bool d3d8_frame(void *data, const void *frame,
    d3d8_set_viewports(d3d->dev, &screen_vp);
    d3d8_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
-   /* Insert black frame first, so we
-    * can screenshot, etc. */
-   if (black_frame_insertion)
-   {
-      if (!d3d8_swap(d3d, d3d->dev) || d3d->needs_restore)
-         return true;
-      d3d8_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
-   }
 
    if (!d3d8_renderchain_render(
             d3d,
@@ -1554,6 +1546,17 @@ static bool d3d8_frame(void *data, const void *frame,
    {
       RARCH_ERR("[D3D8]: Failed to render scene.\n");
       return false;
+   }
+
+   if (black_frame_insertion && !d3d->menu->enabled)
+   {
+      unsigned n;
+      for (n = 0; n < video_info->black_frame_insertion; ++n) 
+      {   
+        if (!d3d8_swap(d3d, d3d->dev) || d3d->needs_restore)
+          return true;
+        d3d8_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      }
    }
 
 #ifdef HAVE_MENU

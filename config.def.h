@@ -259,12 +259,13 @@
  */
 #define DEFAULT_FRAME_DELAY 0
 
-/* Inserts a black frame inbetween frames.
- * Useful for 120 Hz monitors who want to play 60 Hz material with eliminated
- * ghosting. video_refresh_rate should still be configured as if it
- * is a 60 Hz monitor (divide refresh rate by 2).
+/* Inserts black frame(s) inbetween frames.
+ * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
+ * material with eliminated  ghosting. video_refresh_rate should still be configured
+ * as if it is a 60 Hz monitor (divide refresh rate by multiple of 60 Hz).
  */
-#define DEFAULT_BLACK_FRAME_INSERTION false
+#define DEFAULT_BLACK_FRAME_INSERTION 0
+
 
 /* Uses a custom swap interval for VSync.
  * Set this to effectively halve monitor refresh rate.

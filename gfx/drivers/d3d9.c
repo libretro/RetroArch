@@ -1532,7 +1532,7 @@ static bool d3d9_frame(void *data, const void *frame,
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
    bool statistics_show                = video_info->statistics_show;
-   bool black_frame_insertion          = video_info->black_frame_insertion;
+   unsigned black_frame_insertion      = video_info->black_frame_insertion;
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
@@ -1581,15 +1581,6 @@ static bool d3d9_frame(void *data, const void *frame,
    d3d9_set_viewports(d3d->dev, &screen_vp);
    d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
-   /* Insert black frame first, so we
-    * can screenshot, etc. */
-   if (black_frame_insertion)
-   {
-      if (!d3d9_swap(d3d, d3d->dev) || d3d->needs_restore)
-         return true;
-      d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
-   }
-
    if (!d3d->renderchain_driver->render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
@@ -1597,6 +1588,17 @@ static bool d3d9_frame(void *data, const void *frame,
       RARCH_ERR("[D3D9]: Failed to render scene.\n");
       return false;
    }
+   
+   if (black_frame_insertion && !d3d->menu->enabled)
+   {
+      unsigned n;
+      for (n = 0; n < video_info->black_frame_insertion; ++n) 
+      {   
+        if (!d3d9_swap(d3d, d3d->dev) || d3d->needs_restore)
+          return true;
+        d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      }
+   }   
 
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)

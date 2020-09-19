@@ -1724,7 +1724,7 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned height                               = video_info->height;
    bool statistics_show                          = video_info->statistics_show;
    const char *stat_text                         = video_info->stat_text;
-   bool black_frame_insertion                    = video_info->black_frame_insertion;
+   unsigned black_frame_insertion                = video_info->black_frame_insertion;
    bool input_driver_nonblock_state              = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion                    = video_info->runloop_is_slowmotion;
    bool runloop_is_paused                        = video_info->runloop_is_paused;
@@ -2258,18 +2258,25 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->should_resize = false;
    }
 
-   vulkan_check_swapchain(vk);
+   vulkan_check_swapchain(vk); 
 
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         backbuffer->image != VK_NULL_HANDLE
+         backbuffer->image != VK_NULL_HANDLE 
          && vk->context->has_acquired_swapchain
          && black_frame_insertion
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
-         && !runloop_is_paused)
-      vulkan_inject_black_frame(vk, video_info, vk->ctx_data);
+         && !runloop_is_paused
+         && !vk->menu.enable)
+   {   
+      unsigned n;
+      for (n = 0; n < black_frame_insertion; ++n) 
+      { 
+         vulkan_inject_black_frame(vk, video_info, vk->ctx_data);
+      }
+   }
 
    /* Vulkan doesn't directly support swap_interval > 1, 
     * so we fake it by duping out more frames. */

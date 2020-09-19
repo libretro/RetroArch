@@ -899,7 +899,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
             4, GL_RGBA, GL_UNSIGNED_BYTE,
             gl1->readback_buffer_screenshot);
 
-   /* Emscripten has to do black frame insertion in its main loop */
+
+   if (gl1->ctx_driver->swap_buffers)
+      gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+
+ /* Emscripten has to do black frame insertion in its main loop */
 #ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
@@ -907,16 +911,21 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          video_info->black_frame_insertion
          && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
-         && !video_info->runloop_is_paused)
+         && !video_info->runloop_is_paused 
+         && !gl1->menu_texture_enable)
    {
-      if (gl1->ctx_driver->swap_buffers)
-         gl1->ctx_driver->swap_buffers(gl1->ctx_data);
-      glClear(GL_COLOR_BUFFER_BIT);
-   }
-#endif
 
-   if (gl1->ctx_driver->swap_buffers)
-      gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+        unsigned n;
+        for (n = 0; n < video_info->black_frame_insertion; ++n)
+        {
+          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+          glClear(GL_COLOR_BUFFER_BIT);			
+
+          if (gl1->ctx_driver->swap_buffers)
+            gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+        }  
+   }   
+#endif 
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (hard_sync

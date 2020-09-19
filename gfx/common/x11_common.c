@@ -268,7 +268,7 @@ static bool get_video_mode(
    float minimum_fps_diff      = 0.0f;
    XF86VidModeModeInfo **modes = NULL;
    settings_t *settings        = config_get_ptr();
-   bool black_frame_insertion  = settings->bools.video_black_frame_insertion;
+   unsigned black_frame_insertion  = settings->uints.video_black_frame_insertion;
    float video_refresh_rate    = settings->floats.video_refresh_rate;
 
    XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
@@ -283,7 +283,7 @@ static bool get_video_mode(
 
    /* If we use black frame insertion, we fake a 60 Hz monitor
     * for 120 Hz one, etc, so try to match that. */
-   refresh_mod = black_frame_insertion ? 0.5f : 1.0f;
+   refresh_mod = 1.0f / (black_frame_insertion + 1.0f);
 
    for (i = 0; i < num_modes; i++)
    {

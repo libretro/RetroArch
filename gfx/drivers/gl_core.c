@@ -1853,7 +1853,8 @@ static bool gl_core_frame(void *data, const void *frame,
    const char *stat_text                       = video_info->stat_text;
    bool statistics_show                        = video_info->statistics_show;
    bool msg_bgcolor_enable                     = video_info->msg_bgcolor_enable;
-   bool black_frame_insertion                  = video_info->black_frame_insertion;
+   unsigned black_frame_insertion              = video_info->black_frame_insertion;
+
    unsigned hard_sync_frames                   = video_info->hard_sync_frames;
    bool runloop_is_paused                      = video_info->runloop_is_paused;
    bool runloop_is_slowmotion                  = video_info->runloop_is_slowmotion;
@@ -1989,21 +1990,32 @@ static bool gl_core_frame(void *data, const void *frame,
          gl_core_pbo_async_readback(gl);
    }
 
-   /* Disable BFI during fast forward, slow-motion,
-    * and pause to prevent flicker. */
-   if (
-         black_frame_insertion
-         && !input_driver_nonblock_state
-         && !runloop_is_slowmotion
-         && !runloop_is_paused)
-   {
-      if (gl->ctx_driver->swap_buffers)
-         gl->ctx_driver->swap_buffers(gl->ctx_data);
-      glClear(GL_COLOR_BUFFER_BIT);
-   }
 
    if (gl->ctx_driver->swap_buffers)
       gl->ctx_driver->swap_buffers(gl->ctx_data);
+
+ /* Emscripten has to do black frame insertion in its main loop */
+#ifndef EMSCRIPTEN
+   /* Disable BFI during fast forward, slow-motion,
+    * and pause to prevent flicker. */
+    if (
+         black_frame_insertion
+         && !input_driver_nonblock_state
+         && !runloop_is_slowmotion
+         && !runloop_is_paused 
+         && !gl->menu_texture_enable)
+    {
+        unsigned n;
+        for (n = 0; n < black_frame_insertion; ++n)
+        {
+          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+          glClear(GL_COLOR_BUFFER_BIT);			
+
+          if (gl->ctx_driver->swap_buffers)
+            gl->ctx_driver->swap_buffers(gl->ctx_data);
+        }  
+    }   
+#endif 
 
    if (hard_sync &&
        !input_driver_nonblock_state &&

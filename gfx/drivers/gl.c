@@ -2808,6 +2808,7 @@ static bool gl2_frame(void *data, const void *frame,
    bool use_rgba                       = video_info->use_rgba;
    bool statistics_show                = video_info->statistics_show;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
+   unsigned black_frame_insertion      = video_info->black_frame_insertion;
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state; 
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
@@ -2823,7 +2824,6 @@ static bool gl2_frame(void *data, const void *frame,
 #ifndef EMSCRIPTEN
    bool runloop_is_slowmotion          = video_info->runloop_is_slowmotion;
    bool runloop_is_paused              = video_info->runloop_is_paused;
-   bool black_frame_insertion          = video_info->black_frame_insertion;
 #endif
 
    if (!gl)
@@ -3088,24 +3088,31 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
             gl2_pbo_async_readback(gl);
 
-   /* Emscripten has to do black frame insertion in its main loop */
+    if (gl->ctx_driver->swap_buffers) 
+        gl->ctx_driver->swap_buffers(gl->ctx_data);
+	
+ /* Emscripten has to do black frame insertion in its main loop */
 #ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
-   if (
+    if (
          black_frame_insertion
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
-         && !runloop_is_paused)
-   {
-      if (gl->ctx_driver->swap_buffers)
-         gl->ctx_driver->swap_buffers(gl->ctx_data);
-      glClear(GL_COLOR_BUFFER_BIT);
-   }
-#endif
+         && !runloop_is_paused 
+         && !gl->menu_texture_enable)
+    {
+        unsigned n;
+        for (n = 0; n < black_frame_insertion; ++n)
+        {
+          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+          glClear(GL_COLOR_BUFFER_BIT);
 
-   if (gl->ctx_driver->swap_buffers)
-      gl->ctx_driver->swap_buffers(gl->ctx_data);
+          if (gl->ctx_driver->swap_buffers)
+            gl->ctx_driver->swap_buffers(gl->ctx_data); 
+        }  
+    }   
+#endif   	
 
    /* check if we are fast forwarding or in menu, 
     * if we are ignore hard sync */

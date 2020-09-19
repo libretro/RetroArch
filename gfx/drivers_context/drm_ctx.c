@@ -620,7 +620,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    struct drm_fb *fb           = NULL;
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
    settings_t *settings        = config_get_ptr();
-   bool black_frame_insertion  = settings->bools.video_black_frame_insertion;
+   unsigned black_frame_insertion  = settings->uints.video_black_frame_insertion;
    float video_refresh_rate    = settings->floats.video_refresh_rate;
 
    if (!drm)
@@ -631,8 +631,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    /* If we use black frame insertion,
     * we fake a 60 Hz monitor for 120 Hz one,
     * etc, so try to match that. */
-   refresh_mod = black_frame_insertion
-      ? 0.5f : 1.0f;
+   refresh_mod = 1.0f / (black_frame_insertion + 1.0f);
 
    /* Find desired video mode, and use that.
     * If not fullscreen, we get desired windowed size,
