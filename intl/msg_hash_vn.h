@@ -632,12 +632,12 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+#if defined(ANDROID)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Tự động tải Preferred Overlay"
    )
-
-
 
 /* Settings > On-Screen Display > Video Layout */
 

@@ -284,6 +284,14 @@ MSG_HASH(
    "Kurulu tüm çekirdekleri mevcut en son sürüme güncelleyin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Çekirdekleri Play Store Sürümüne Göre Değiştir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Tüm eski ve el ile kurulmuş çekirdekleri, mevcut olduğu yerlerde Play Store'daki en son sürümlerle değiştirin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Küçük Resim Güncelleyici"
    )
@@ -1316,6 +1324,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "CPU ile çalışan bir video filtresi uygula.\nNOT: Yüksek performans tüketebilir. Bazı video filtreleri yalnızca 32bit veya 16bit renk kullanan çekirdekler için kullanılabilir."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Android cihazlarda çentik üzerinde tam ekranı etkinleştir"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1951,6 +1963,14 @@ MSG_HASH(
    "Profili Tak ve Çalıştır şeklinde olan kontrolcüleri otomatik olarak yapılandırır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Yardımcı Sensör Girişi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "Mevcut donanım tarafından destekleniyorsa ivmeölçer, jiroskop ve aydınlatma sensörlerinden girişi etkinleştirir. Bazı platformlarda performansı etkileyebilir ve/veya güç tüketimini artırabilir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Giriş Düğmesi Eksen Eşiği"
    )
@@ -2166,6 +2186,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Tam ekran ve pencereli ekran kipleri arasında geçiş yapar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "İçeriği Kapat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "Mevcut içeriği kapatır. Kaydedilmemiş değişiklikler kaybolabilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -3189,6 +3217,20 @@ MSG_HASH(
    "Menü içindeyken kaplamayı gizleyin ve menüden çıkarken tekrar gösterin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Oyun Kumandası Bağlandığında Kaplamayı Gizle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Bağlantı noktası 1'e fiziksel bir oyun kumandası bağlandığında kaplamayı gizle ve oyun kumandası bağlantısı kesildiğinde tekrar göster."
+   )
+#if defined(ANDROID)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   "Bağlantı noktası 1'e fiziksel bir oyun kumandası bağlandığında kaplamayı gizle. UYARI: Oyun kumandası bağlantısı kesildiğinde yer paylaşımı otomatik olarak geri yüklenmeyecektir."
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "Girdilerde Kaplamayı Göster"
    )
@@ -3221,6 +3263,14 @@ MSG_HASH(
    "Mevcut kaplama tarafından destekleniyorsa, ekran yönü/en boy oranıyla eşleşmesi için düzeni otomatik olarak döndürür."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "Otomatik-Öçekli Kaplama"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "Kaplama ölçeğini ve arayüz ögesi aralığını ekran en boy oranına uyacak şekilde otomatik olarak ayarlayın. Denetleyici katmanları ile en iyi sonuçları verir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Kaplama"
    )
@@ -3245,30 +3295,100 @@ MSG_HASH(
    "Dosya tarayıcısından bir kaplama seç."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-   "Kaplama Ölçeği"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "(Manzara) Kaplama Ölçeği"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-   "Kaplamanın tüm arayüz elementlerin boyutu."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_X,
-   "Kaplama Dengesi X"
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Yatay görüntüleme yönlerini kullanırken kaplamanın tüm arayüz ögelerinin ölçeği."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X,
-   "Kaplama tüm Arayüz ögelerinin X dengesi."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_Y,
-   "Kaplama Dengesi Y"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "(Manzara) Kaplama En Boy Ayarı"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y,
-   "Kaplama tüm Arayüz ögelerinin Y dengesi."
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Yatay ekran yönlerini kullanırken kaplamaya bir en boy oranı düzeltme etkeni uygulayın. Pozitif değerler, etkin kaplama genişliğini artırır (negatif değerler azalır)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "(Manzara) Kaplama Yatay Ayırıcı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Mevcut ön ayar tarafından destekleniyorsa, yatay ekran yönlerini kullanırken bir kaplamanın sol ve sağ yarısındaki arayüz ögeleri arasındaki aralığı ayarlar. Pozitif değerler iki yarının ayrılmasını artırır (negatif değerler azalır)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "(Manzara) Kaplama Dikey Ayırıcı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Mevcut ön ayar tarafından destekleniyorsa, yatay ekran yönlerini kullanırken bir kaplamanın üst ve alt yarısındaki arayüz ögeleri arasındaki aralığı ayarlar. Pozitif değerler iki yarının ayrılmasını artırır (negatif değerler azalır)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "(Manzara) Kaplama X Dengesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Yatay ekran yönlerini kullanırken yatay kaplama dengesi. Pozitif değerler kaplamayı sağa kaydırır; sola negatif değerler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "(Manzara) Kaplama Y Dengesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Dikey ekran yönlerini kullanırken yatay kaplama dengesi. Pozitif değerler kaplamayı sağa kaydırır; sola negatif değerler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "(Portre) Kaplama Ölçeği"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "Dikey görüntüleme yönlerini kullanırken kaplamanın tüm arayüz ögelerinin ölçeği."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "(Portre) Kaplama En Boy Ayarı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Dikey ekran yönlerini kullanırken kaplamaya bir en boy oranı düzeltme etkeni uygulayın. Pozitif değerler, etkin kaplama genişliğini artırır (negatif değerler azalır)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "(Portre) Kaplama Yatay Ayırıcı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Mevcut ön ayar tarafından destekleniyorsa, dikey görüntü yönlerini kullanırken bir kaplamanın sol ve sağ yarısındaki arayüz ögeleri arasındaki aralığı ayarlar. Pozitif değerler iki yarının ayrılmasını artırır (negatif değerler azalır)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "(Portre) Yer Paylaşımlı Dikey Ayırıcı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Mevcut ön ayar tarafından destekleniyorsa, dikey görüntü yönlerini kullanırken bir kaplamanın üst ve alt yarısındaki arayüz ögeleri arasındaki aralığı ayarlar. Pozitif değerler iki yarının ayrılmasını artırır (negatif değerler azalır)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "(Portre) Kaplama X Dengesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "Dikey ekran yönlerini kullanırken yatay kaplama dengesi. Pozitif değerler kaplamayı sağa kaydırır; sola negatif değerler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "(Portre) Kaplama Y Dengesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Dikey görüntüleme yönlerini kullanırken dikey kaplama dengesi. Pozitif değerler üst üste gelir; negatif değerler aşağıya."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -9499,6 +9619,10 @@ MSG_HASH(
    "Çekirdek kuruldu: "
    )
 MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Çekirdek kurulamadı: "
+   )
+MSG_HASH(
    MSG_SCANNING_CORES,
    "Çekirdekler taranıyor..."
    )
@@ -9509,6 +9633,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
    "Tüm kurulu çekirdekler en son sürümde"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "Desteklenen tüm çekirdekler Play Store sürümlerine geçti"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,

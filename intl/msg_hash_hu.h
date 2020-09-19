@@ -21,6 +21,10 @@ MSG_HASH(
    "Kedvencek"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   "Elözmény"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
    "Képek"
    )
@@ -31,6 +35,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    "Videók"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   "Tartalom importálása"
    )
 
 /* Main Menu */
@@ -44,12 +52,28 @@ MSG_HASH(
    "Core betöltése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST,
+   "Válassza ki a használni kívánt javaslattevő szolgáltatást."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   "Tartalom betöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   "Válassza ki a használni kívánt javaslattevő szolgáltatást."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    "Lemez betöltése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Lejátszási listák"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   "Tartalom importálása"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -70,6 +94,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
    "Rendszer információ mutatása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   "Konfigurációs fájl"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
@@ -101,18 +129,70 @@ MSG_HASH(
 
 /* Main Menu > Load Content */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   "Letöltések"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   "Tallózás az archívumban"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   "Archívum betöltése"
+   )
 
 /* Main Menu > Load Content > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   "Kedvencek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   "Zene"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   "Képek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   "Videók"
+   )
 
 /* Main Menu > Online Updater */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   "Core letöltés"
+   )
 
 /* Main Menu > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   "Lemez informáctio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   "Rendszer információ"
+   )
 
 /* Main Menu > Information > Core Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   "Szerző"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   "Engedélyek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING,
+   "Hiányzó"
+   )
 
 /* Main Menu > Information > System Information */
 
@@ -134,6 +214,42 @@ MSG_HASH(
 
 /* Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   "Fájlkezelő"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   "Felvétel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   "Felhasználói felület"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   "Hálózat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "Szerver specifikus beállítások konfigurálása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   "Lejátszási listák"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   "Statikai beállítások megváltoztatása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   "Felhasználó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   "Könyvtár"
+   )
 
 /* Settings > Drivers */
 
@@ -232,8 +348,8 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
-
-
+#if defined(ANDROID)
+#endif
 
 /* Settings > On-Screen Display > Video Layout */
 

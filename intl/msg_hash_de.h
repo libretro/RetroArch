@@ -2976,6 +2976,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    "Verberge das Overlay im Menü und zeige es wieder an, wenn das Menü verlassen wird."
    )
+#if defined(ANDROID)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "Eingaben im Overlay anzeigen"
@@ -3016,16 +3018,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
    "Wähle ein Overlay mit dem Dateibrowser aus."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-   "Overlay-Skalierung"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-   "Skalierung aller Bedienelemente des Overlays."
-   )
-
-
 
 /* Settings > On-Screen Display > Video Layout */
 

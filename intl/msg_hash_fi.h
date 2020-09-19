@@ -2660,8 +2660,8 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
-
-
+#if defined(ANDROID)
+#endif
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -3917,6 +3917,10 @@ MSG_HASH(
    "Ytimen tietoja ei ole saatavilla"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
+   "Ydinten varmuuskopioita ei saatavilla"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    "Ei suosikkeja saatavilla"
    )
@@ -4132,6 +4136,14 @@ MSG_HASH(
    "<Ei määritetty>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Vasen analoginen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Oikea analoginen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    "(Näppäin: %s)"
    )
@@ -4228,10 +4240,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
    "16:10 (keskitetty)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
-   "3:2 (keskitetty)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
@@ -4357,6 +4365,10 @@ MSG_HASH(
    "Valikon fontti"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_FONT,
+   "Valitse eri fontti valikossa käytettäväksi."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
    "Valikon fontin väri (punainen)"
    )
@@ -4373,8 +4385,16 @@ MSG_HASH(
    "Valikon asettelu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+   "Valitse eri asettelu XMB-käyttöliittymälle."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_THEME,
    "Valikon kuvaketeema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_THEME,
+   "Valitse eri kuvaketeema RetroArchille."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
@@ -4383,6 +4403,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    "Valikon väriteema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+   "Valitse taustan eri liukuväriteema."
    )
 
 /* XMB: Settings Options */
@@ -4414,6 +4438,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
    "Automaattinen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
+   "Automaattinen käänteinen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
@@ -4876,6 +4904,10 @@ MSG_HASH(
    "Tiedostoa ei voitu nimetä uudelleen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
+   "Kerätään listaa tiedostoista..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
    "Lisätään tiedostoja soittolistaan..."
    )
@@ -5102,6 +5134,10 @@ MSG_HASH(
    "Pakota kuvsuhde"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+   "Valitse soittolistalta"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Verkkopeli"
    )
@@ -5157,6 +5193,22 @@ MSG_HASH(
 /* Unused (Needs Confirmation) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
+   "Vasen analogi X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
+   "Vasen analogi Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
+   "Oikea analogi X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
+   "Oikea analogi Y"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Tietokannan tiedot"
    )
@@ -5201,6 +5253,14 @@ MSG_HASH( /* FIXME Should be MSG_ */
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
    "Ytimen asennus epäonnistui"
+   )
+MSG_HASH(
+   MSG_SENDING_DEBUG_INFO,
+   "Lähetetään vianjäljitystietoa..."
+   )
+MSG_HASH(
+   MSG_SENT_DEBUG_INFO,
+   "Vianjäljitystiedot lähettiin palvelimelle onnistuneesti. ID-numerosi on %u."
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
@@ -5301,6 +5361,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_INSTALLED,
    "Ydin asennettu:"
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Ytimen asennus epäonnistui: "
    )
 MSG_HASH(
    MSG_SCANNING_CORES,
@@ -5775,6 +5839,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Näytön resoluutio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+   "Sammuta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,

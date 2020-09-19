@@ -284,6 +284,14 @@ MSG_HASH(
    "Met à jour les cœurs installés vers la dernière version disponible."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Remplacer les cœurs par les versions du Play Store"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Remplace tous les cœurs existants et installés manuellement par les dernières versions depuis le Play Store, si disponibles."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Mise à jour des miniatures"
    )
@@ -1316,6 +1324,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "Applique un filtre vidéo produit par le processeur.\nREMARQUE : Peut avoir un coût élevé pour les performances. Certains filtres vidéo ne peuvent fonctionner qu'avec les cœurs utilisant les modes de couleurs 32 bits ou 16 bits."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Activer le dépassement de l'encoche (notch) en plein écran sur les appareils Android"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1943,6 +1955,14 @@ MSG_HASH(
    "Tente de configurer automatiquement les manettes, style Plug-and-Play."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Entrées depuis les capteurs auxiliaires"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "Permet les entrées depuis l'accéléromètre, le gyroscope et les capteurs photométriques, si pris en charge par le matériel actuel. Peut avoir un impact sur les performances et/ou augmenter la consommation d'énergie sur certaines plates-formes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Seuil de l'axe des touches "
    )
@@ -2158,6 +2178,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Bascule entre le mode d'affichage plein écran et fenêtré."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "Fermer le contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "Ferme le contenu actuel. Toute modification non enregistrée pourrait être perdue."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -3181,6 +3209,20 @@ MSG_HASH(
    "Masquer la surimpression à l'intérieur du menu, et l'afficher à nouveau en le quittant."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Masquer la surimpression lorsqu'une manette est connectée"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Masque la surimpression lorsqu'une manette physique est connectée dans le port 1, et l'affiche à nouveau lorsqu'elle est déconnectée."
+   )
+#if defined(ANDROID)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   "Masque la surimpression lorsqu'une manette physique est connectée dans le port 1. ATTENTION : La surimpression ne sera pas restaurée automatiquement si la manette est déconnectée."
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "Afficher les touches pressées sur la surimpression"
    )
@@ -3213,6 +3255,14 @@ MSG_HASH(
    "Si supporté par la surimpression active, effectue une rotation automatique de la surimpression pour correspondre à l'orientation/rapport d'aspect de l'écran."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "Mise à l'échelle automatique de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "Mettre à l'échelle automatiquement la surimpression et l'espacement des éléments d'interface utilisateur pour s'adapter aux proportions de l'écran. Produit les meilleurs résultats avec les superpositions de manettes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Surimpression à l'écran"
    )
@@ -3237,30 +3287,100 @@ MSG_HASH(
    "Sélectionner une surimpression à partir du navigateur de fichiers."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-   "Échelle de la surimpression "
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "(Paysage) Échelle de la surimpression"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-   "Échelle de tous les éléments d'interface utilisateur de la surimpression."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_X,
-   "Position horizontale de la surimpression"
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Échelle de tous les éléments d'interface de la surimpression lors de l'utilisation d'une orientation d'écran en mode paysage."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_X,
-   "Décalage sur l'axe X de tous les éléments d'interface utilisateur de la surimpression."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_CENTER_Y,
-   "Position verticale de la surimpression"
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "(Paysage) Ajustement d'aspect de la surimpression"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_CENTER_Y,
-   "Décalage sur l'axe Y de tous les éléments d'interface utilisateur de la surimpression."
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Appliquer un facteur de correction du rapport d'aspect à la surimpression lors de l'utilisation d'une orientation d'écran en mode paysage. Les valeurs positives augmentent (et les valeurs négatives diminuent) la largeur effective de la surimpression."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "(Paysage) Séparation horizontale de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Si pris en charge par le préréglage actuel, ajuster l'espacement entre les éléments d'interface dans la partie gauche et droite d'une surimpression lors de l'utilisation d'une orientation d'écran en mode paysage. Les valeurs positives augmentent (et les valeurs négatives diminuent) la séparation entre les deux moitiés."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "(Paysage) Séparation verticale de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Si pris en charge par le préréglage actuel, ajuster l'espacement entre les éléments d'interface dans la partie haute et basse d'une surimpression lors de l'utilisation d'une orientation d'écran en mode paysage. Les valeurs positives augmentent (et les valeurs négatives diminuent) la séparation entre les deux moitiés."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "(Paysage) Décalage X de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Décalage horizontal de la surimpression lors de l'utilisation d'une orientation d'écran en mode paysage. Les valeurs positives déplacent la surimpression vers la droite; les valeurs négatives vers la gauche."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "(Paysage) Décalage Y de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Décalage vertical de la surimpression lors de l'utilisation d'une orientation d'écran en mode paysage. Les valeurs positives déplacent la surimpression vers le haut; les valeurs négatives vers le bas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "(Portrait) Échelle de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "Échelle de tous les éléments d'interface de la surimpression lors de l'utilisation d'une orientation d'écran en mode portrait."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "(Portrait) Ajustement d'aspect de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Appliquer un facteur de correction du rapport d'aspect à la surimpression lors de l'utilisation d'une orientation d'écran en mode portrait. Les valeurs positives augmentent (et les valeurs négatives diminuent) la hauteur effective de la surimpression."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "(Portrait) Séparation horizontale de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Si pris en charge par le préréglage actuel, ajuster l'espacement entre les éléments d'interface dans la partie gauche et droite d'une surimpression lors de l'utilisation d'une orientation d'écran en mode portrait. Les valeurs positives augmentent (et les valeurs négatives diminuent) la séparation entre les deux moitiés."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "(Portrait) Séparation verticale de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Si pris en charge par le préréglage actuel, ajuster l'espacement entre les éléments d'interface dans la partie haute et basse d'une surimpression lors de l'utilisation d'une orientation d'écran en mode portrait. Les valeurs positives augmentent (et les valeurs négatives diminuent) la séparation entre les deux moitiés."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "(Portrait) Décalage X de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "Décalage horizontal de la surimpression lors de l'utilisation d'une orientation d'écran en mode portrait. Les valeurs positives déplacent la surimpression vers la droite; les valeurs négatives vers la gauche."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "(Portrait) Décalage Y de la surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Décalage vertical de la surimpression lors de l'utilisation d'une orientation d'écran en mode portrait. Les valeurs positives déplacent la surimpression vers le haut; les valeurs négatives vers le bas."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -9399,6 +9519,10 @@ MSG_HASH(
    "Cœur installé : "
    )
 MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Échec d'installation du cœur : "
+   )
+MSG_HASH(
    MSG_SCANNING_CORES,
    "Analyse des cœurs..."
    )
@@ -9409,6 +9533,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
    "Tous les cœurs installés sont à jour"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "Tous les cœurs supportés ont été remplacés par les versions du Play Store"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
@@ -9444,7 +9572,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
-   "Erreur de l'ajout aux favoris : liste de lecture pleine"
+   "Échec de l'ajout aux favoris : liste de lecture pleine"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

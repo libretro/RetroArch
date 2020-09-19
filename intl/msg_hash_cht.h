@@ -2504,6 +2504,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "在選單中隱藏覆層"
    )
+#if defined(ANDROID)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "覆層"
@@ -2520,12 +2522,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
    "覆層預設"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-   "覆層縮放比例"
-   )
-
-
 
 /* Settings > On-Screen Display > Video Layout */
 
