@@ -5252,7 +5252,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "Input the password of your RetroAchievements account."
+   "Input the password of your RetroAchievements account. Max length: 255 characters."
    )
 
 /* Settings > User > Accounts > YouTube */
