@@ -43,14 +43,9 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
-   void *data           = RWebAudioInit(latency);
-
-   (void)device;
-   (void)rate;
-
-   if (data)
+   if (RWebAudioInit(latency) == 1)
       *new_rate         = RWebAudioSampleRate();
-   return data;
+   return (void*)-1;
 }
 
 static ssize_t rwebaudio_write(void *data, const void *buf, size_t size)
