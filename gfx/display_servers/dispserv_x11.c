@@ -277,11 +277,8 @@ static bool x11_display_server_set_resolution(void *data,
 
          XRRFreeOutputInfo(outputs);
       }
-
-      XRRFreeScreenResources(resources);
-      XCloseDisplay(dpy);
    }
-   else  if (monitor_index != 20)
+   else
    {
       XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[monitor_index]);
 
@@ -309,9 +306,9 @@ static bool x11_display_server_set_resolution(void *data,
          XRRFreeCrtcInfo(crtc);
       }
       XRRFreeOutputInfo(outputs);
-      XRRFreeScreenResources(resources);
-      XCloseDisplay(dpy);
    }
+   XRRFreeScreenResources(resources);
+   XCloseDisplay(dpy);
    return true;
 }
 
@@ -579,7 +576,7 @@ static void x11_display_server_destroy(void *data)
             XRRFreeOutputInfo(outputs);
          }
       }
-      else  if (x11_monitor_index != 20)
+      else
       {
          XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res,
                res->outputs[x11_monitor_index]);
@@ -608,9 +605,7 @@ static void x11_display_server_destroy(void *data)
 
             XRRFreeCrtcInfo(crtc);
          }
-
          XRRFreeOutputInfo(outputs);
-
       }
 
       for (m = 0; m < resources->nmode; m++)
