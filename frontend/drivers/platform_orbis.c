@@ -129,9 +129,9 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
    orbisPadInitWithConf(myConf->confPad);
    scePadClose(myConf->confPad->padHandle);
 
-   strlcpy(eboot_path, "host0:app", sizeof(eboot_path));
+   strcpy_literal(eboot_path, "host0:app");
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   strlcpy(user_path, "host0:app/data/retroarch/", sizeof(user_path));
+   strcpy_literal(user_path, "host0:app/data/retroarch/");
 
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
