@@ -253,16 +253,12 @@ enum frontend_architecture frontend_uwp_get_architecture(void)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
          return FRONTEND_ARCH_X86_64;
-         break;
       case PROCESSOR_ARCHITECTURE_INTEL:
          return FRONTEND_ARCH_X86;
-         break;
       case PROCESSOR_ARCHITECTURE_ARM:
          return FRONTEND_ARCH_ARM;
-         break;
       case PROCESSOR_ARCHITECTURE_ARM64:
          return FRONTEND_ARCH_ARMV8;
-         break;
       default:
          break;
    }
@@ -391,11 +387,9 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    if (string_is_equal(uwp_device_family, "Windows.Mobile"))
-      snprintf(g_defaults.settings_menu,
-            sizeof(g_defaults.settings_menu), "glui");
+      strcpy_literal(g_defaults.settings_menu, "glui");
    else
-      snprintf(g_defaults.settings_menu,
-            sizeof(g_defaults.settings_menu), "xmb");
+      strcpy_literal(g_defaults.settings_menu, "xmb");
 #endif
 #endif
 }
