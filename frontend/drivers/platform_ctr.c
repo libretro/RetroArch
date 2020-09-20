@@ -31,6 +31,7 @@
 #include <3ds/services/mcuhwc.h>
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -80,7 +81,7 @@ static void get_first_valid_core(char* path_return, size_t len)
          if (strlen(ent->d_name) > strlen(extension) 
                && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strlcpy(path_return, "sdmc:/retroarch/cores/", len);
+            strcpy_literal(path_return, "sdmc:/retroarch/cores/");
             strlcat(path_return, ent->d_name, len);
             break;
          }
@@ -589,7 +590,7 @@ static void frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
    OS_VersionBin cver;
    OS_VersionBin nver;
 
-   strlcpy(s, "3DS OS", len);
+   strcpy_literal(s, "3DS OS");
    Result data_invalid = osGetSystemVersionData(&nver, &cver);
    if (data_invalid == 0)
    {
@@ -614,26 +615,26 @@ static void frontend_ctr_get_name(char* s, size_t len)
    switch (device_model)
    {
       case 0:
-         strlcpy(s, "Old 3DS", len);
+         strcpy_literal(s, "Old 3DS");
          break;
       case 1:
-         strlcpy(s, "Old 3DS XL", len);
+         strcpy_literal(s, "Old 3DS XL");
          break;
       case 2:
-         strlcpy(s, "New 3DS", len);
+         strcpy_literal(s, "New 3DS");
          break;
       case 3:
-         strlcpy(s, "Old 2DS", len);
+         strcpy_literal(s, "Old 2DS");
          break;
       case 4:
-         strlcpy(s, "New 3DS XL", len);
+         strcpy_literal(s, "New 3DS XL");
          break;
       case 5:
-         strlcpy(s, "New 2DS XL", len);
+         strcpy_literal(s, "New 2DS XL");
          break;
 
       default:
-         strlcpy(s, "Unknown Device", len);
+         strcpy_literal(s, "Unknown Device");
          break;
    }
 }

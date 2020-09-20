@@ -1256,7 +1256,7 @@ static void frontend_unix_get_os(char *s,
    int rel;
    frontend_android_get_version(major, minor, &rel);
 
-   strlcpy(s, "Android", len);
+   strcpy_literal(s, "Android");
 #else
    unsigned krel;
    struct utsname buffer;
@@ -1266,19 +1266,19 @@ static void frontend_unix_get_os(char *s,
 
    sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
 #if defined(__FreeBSD__)
-   strlcpy(s, "FreeBSD", len);
+   strcpy_literal(s, "FreeBSD");
 #elif defined(__NetBSD__)
-   strlcpy(s, "NetBSD", len);
+   strcpy_literal(s, "NetBSD");
 #elif defined(__OpenBSD__)
-   strlcpy(s, "OpenBSD", len);
+   strcpy_literal(s, "OpenBSD");
 #elif defined(__DragonFly__)
-   strlcpy(s, "DragonFly BSD", len);
+   strcpy_literal(s, "DragonFly BSD");
 #elif defined(BSD)
-   strlcpy(s, "BSD", len);
+   strcpy_literal(s, "BSD");
 #elif defined(__HAIKU__)
-   strlcpy(s, "Haiku", len);
+   strcpy_literal(s, "Haiku");
 #else
-   strlcpy(s, "Linux", len);
+   strcpy_literal(s, "Linux");
 #endif
 #endif
 }
@@ -1722,8 +1722,7 @@ static void frontend_unix_get_env(int *argc,
    {
       g_defaults.overlay_set    = true;
       g_defaults.overlay_enable = false;
-      strlcpy(g_defaults.settings_menu, "ozone",
-            sizeof(g_defaults.settings_menu));
+      strcpy_literal(g_defaults.settings_menu, "ozone");
    }
 #else
    char base_path[PATH_MAX] = {0};
@@ -1741,7 +1740,7 @@ static void frontend_unix_get_env(int *argc,
       strlcat(base_path, "/.config/retroarch", sizeof(base_path));
    }
    else
-      strlcpy(base_path, "retroarch", sizeof(base_path));
+      strcpy_literal(base_path, "retroarch");
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
          "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -2542,10 +2541,10 @@ static bool accessibility_speak_unix(int speed,
    else if (speed > 10)
       speed = 10;
 
-   strlcpy(voice_out, "-v", 3);
+   strcpy_literal(voice_out, "-v");
    strlcat(voice_out, language, 5);
 
-   strlcpy(speed_out, "-s", 3);
+   strcpy_literal(speed_out, "-s");
    strlcat(speed_out, speeds[speed-1], 6);
 
    if (priority < 10 && speak_pid > 0)
