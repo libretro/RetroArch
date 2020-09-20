@@ -43,8 +43,10 @@
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
 
-/* MSVC really doesn't want CINTERFACE to be used with shobjidl for some reason, but since we use C++ mode,
- * we need a workaround... so use the names of the COBJMACROS functions instead. */
+/* MSVC really doesn't want CINTERFACE to be used 
+ * with shobjidl for some reason, but since we use C++ mode,
+ * we need a workaround... so use the names of the 
+ * COBJMACROS functions instead. */
 #if defined(__cplusplus) && !defined(CINTERFACE)
 #define ITaskbarList3_HrInit(x) (x)->HrInit()
 #define ITaskbarList3_Release(x) (x)->Release()
@@ -80,8 +82,6 @@ static void *win32_display_server_init(void)
 {
    HRESULT hr;
    dispserv_win32_t *dispserv = (dispserv_win32_t*)calloc(1, sizeof(*dispserv));
-
-   (void)hr;
 
    if (!dispserv)
       return NULL;
@@ -140,9 +140,10 @@ static void win32_display_server_destroy(void *data)
       free(dispserv);
 }
 
-static bool win32_display_server_set_window_opacity(void *data, unsigned opacity)
+static bool win32_display_server_set_window_opacity(
+      void *data, unsigned opacity)
 {
-   HWND hwnd = win32_get_window();
+   HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
    if (serv)
@@ -155,7 +156,8 @@ static bool win32_display_server_set_window_opacity(void *data, unsigned opacity
       SetWindowLongPtr(hwnd,
             GWL_EXSTYLE,
             GetWindowLongPtr(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-      return SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100, LWA_ALPHA);
+      return SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100,
+            LWA_ALPHA);
    }
 
    SetWindowLongPtr(hwnd,
@@ -167,9 +169,10 @@ static bool win32_display_server_set_window_opacity(void *data, unsigned opacity
 #endif
 }
 
-static bool win32_display_server_set_window_progress(void *data, int progress, bool finished)
+static bool win32_display_server_set_window_progress(
+      void *data, int progress, bool finished)
 {
-   HWND hwnd = win32_get_window();
+   HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
    if (serv)
@@ -260,7 +263,7 @@ static bool win32_display_server_set_resolution(void *data,
 
    for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
-      if (dm.dmPelsWidth != width)
+      if (dm.dmPelsWidth  != width)
          continue;
       if (dm.dmPelsHeight != height)
          continue;
@@ -275,7 +278,8 @@ static bool win32_display_server_set_resolution(void *data,
          continue;
 #endif
 
-      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
+      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT 
+                  | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 #if _WIN32_WINNT >= 0x0500
       dm.dmFields |= DM_DISPLAYORIENTATION;
 #endif
@@ -284,22 +288,22 @@ static bool win32_display_server_set_resolution(void *data,
 
       switch (res)
       {
-      case DISP_CHANGE_SUCCESSFUL:
-         res = win32_change_display_settings(NULL, &dm, 0);
-         switch (res)
-         {
-            case DISP_CHANGE_SUCCESSFUL:
-               return true;
-            case DISP_CHANGE_NOTUPDATED:
-               return true;
-            default:
-               break;
-         }
-         break;
-      case DISP_CHANGE_RESTART:
-         break;
-      default:
-         break;
+         case DISP_CHANGE_SUCCESSFUL:
+            res = win32_change_display_settings(NULL, &dm, 0);
+            switch (res)
+            {
+               case DISP_CHANGE_SUCCESSFUL:
+                  return true;
+               case DISP_CHANGE_NOTUPDATED:
+                  return true;
+               default:
+                  break;
+            }
+            break;
+         case DISP_CHANGE_RESTART:
+            break;
+         default:
+            break;
       }
    }
 
@@ -346,7 +350,8 @@ static void *win32_display_server_get_resolution_list(
    }
 
    *len = count;
-   conf = (struct video_display_config*)calloc(*len, sizeof(struct video_display_config));
+   conf = (struct video_display_config*)
+      calloc(*len, sizeof(struct video_display_config));
 
    if (!conf)
       return NULL;
@@ -421,61 +426,69 @@ void win32_display_server_set_screen_orientation(void *data,
    {
       case ORIENTATION_NORMAL:
       default:
-      {
-         int width = dm.dmPelsWidth;
-
-         if ((dm.dmDisplayOrientation == DMDO_90 || dm.dmDisplayOrientation == DMDO_270) && width != dm.dmPelsHeight)
          {
-            /* device is changing orientations, swap the aspect */
-            dm.dmPelsWidth = dm.dmPelsHeight;
-            dm.dmPelsHeight = width;
-         }
+            int width = dm.dmPelsWidth;
 
-         dm.dmDisplayOrientation = DMDO_DEFAULT;
-         break;
-      }
+            if ((       dm.dmDisplayOrientation == DMDO_90 
+                     || dm.dmDisplayOrientation == DMDO_270)
+                  && width != dm.dmPelsHeight)
+            {
+               /* device is changing orientations, swap the aspect */
+               dm.dmPelsWidth = dm.dmPelsHeight;
+               dm.dmPelsHeight = width;
+            }
+
+            dm.dmDisplayOrientation = DMDO_DEFAULT;
+            break;
+         }
       case ORIENTATION_VERTICAL:
-      {
-         int width = dm.dmPelsWidth;
-
-         if ((dm.dmDisplayOrientation == DMDO_DEFAULT || dm.dmDisplayOrientation == DMDO_180) && width != dm.dmPelsHeight)
          {
-            /* device is changing orientations, swap the aspect */
-            dm.dmPelsWidth = dm.dmPelsHeight;
-            dm.dmPelsHeight = width;
-         }
+            int width = dm.dmPelsWidth;
 
-         dm.dmDisplayOrientation = DMDO_270;
-         break;
-      }
+            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
+                     || dm.dmDisplayOrientation == DMDO_180) 
+                  && width != dm.dmPelsHeight)
+            {
+               /* device is changing orientations, swap the aspect */
+               dm.dmPelsWidth = dm.dmPelsHeight;
+               dm.dmPelsHeight = width;
+            }
+
+            dm.dmDisplayOrientation = DMDO_270;
+            break;
+         }
       case ORIENTATION_FLIPPED:
-      {
-         int width = dm.dmPelsWidth;
-
-         if ((dm.dmDisplayOrientation == DMDO_90 || dm.dmDisplayOrientation == DMDO_270) && width != dm.dmPelsHeight)
          {
-            /* device is changing orientations, swap the aspect */
-            dm.dmPelsWidth = dm.dmPelsHeight;
-            dm.dmPelsHeight = width;
-         }
+            int width = dm.dmPelsWidth;
 
-         dm.dmDisplayOrientation = DMDO_180;
-         break;
-      }
+            if ((       dm.dmDisplayOrientation == DMDO_90 
+                     || dm.dmDisplayOrientation == DMDO_270)
+                  && width != dm.dmPelsHeight)
+            {
+               /* device is changing orientations, swap the aspect */
+               dm.dmPelsWidth = dm.dmPelsHeight;
+               dm.dmPelsHeight = width;
+            }
+
+            dm.dmDisplayOrientation = DMDO_180;
+            break;
+         }
       case ORIENTATION_FLIPPED_ROTATED:
-      {
-         int width = dm.dmPelsWidth;
-
-         if ((dm.dmDisplayOrientation == DMDO_DEFAULT || dm.dmDisplayOrientation == DMDO_180) && width != dm.dmPelsHeight)
          {
-            /* device is changing orientations, swap the aspect */
-            dm.dmPelsWidth = dm.dmPelsHeight;
-            dm.dmPelsHeight = width;
-         }
+            int width = dm.dmPelsWidth;
 
-         dm.dmDisplayOrientation = DMDO_90;
-         break;
-      }
+            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
+                     || dm.dmDisplayOrientation == DMDO_180)
+                  && width != dm.dmPelsHeight)
+            {
+               /* device is changing orientations, swap the aspect */
+               dm.dmPelsWidth = dm.dmPelsHeight;
+               dm.dmPelsHeight = width;
+            }
+
+            dm.dmDisplayOrientation = DMDO_90;
+            break;
+         }
    }
 
    win32_change_display_settings(NULL, &dm, 0);
