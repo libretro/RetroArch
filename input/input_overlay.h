@@ -126,7 +126,12 @@ struct overlay
    {
       float alpha_mod;
       float range_mod;
-      bool normalized;
+
+      struct
+      {
+         unsigned size;
+         char key[64];
+      } descs;
 
       struct
       {
@@ -145,12 +150,7 @@ struct overlay
          char key[64];
       } rect;
 
-      struct
-      {
-         unsigned size;
-         char key[64];
-      } descs;
-
+      bool normalized;
    } config;
 
    bool full_screen;
@@ -163,6 +163,8 @@ struct overlay
 
 struct overlay_desc
 {
+   struct texture_image image;
+
    enum overlay_hitbox hitbox;
    enum overlay_type type;
 
@@ -196,8 +198,6 @@ struct overlay_desc
    input_bits_t button_mask;
 
    char next_index_name[64];
-
-   struct texture_image image;
 };
 
 /* Holds general layout information for an
