@@ -65,16 +65,12 @@ typedef struct
 #ifdef HAVE_XRANDR
 static Display* x11_display_server_open_display(void)
 {
-   Display *dpy = g_x11_dpy;
+   Display *dpy                           = g_x11_dpy;
+   x11_display_server_using_global_dpy    = (dpy != NULL);
 
-   if (dpy)
-      x11_display_server_using_global_dpy = true;
-   else
-   {
-      /* SDL might use X11 but doesn't use g_x11_dpy, so open it manually */
-      dpy = XOpenDisplay(0);
-      x11_display_server_using_global_dpy = false;
-   }
+   /* SDL might use X11 but doesn't use g_x11_dpy, so open it manually */
+   if (!dpy)
+      dpy                                 = XOpenDisplay(0);
 
    return dpy;
 }
@@ -88,7 +84,8 @@ static void x11_display_server_close_display(Display *dpy)
 }
 
 static bool x11_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
+      unsigned width, unsigned height, int int_hz, float hz,
+      int center, int monitor_index, int xoffset, int padjust)
 {
    int m;
    int screen;
@@ -312,7 +309,8 @@ static bool x11_display_server_set_resolution(void *data,
    return true;
 }
 
-static void x11_display_server_set_screen_orientation(enum rotation rotation)
+static void x11_display_server_set_screen_orientation(void *data,
+      enum rotation rotation)
 {
    int i, j;
    XRRScreenResources *screen     = NULL;
@@ -403,7 +401,7 @@ static void x11_display_server_set_screen_orientation(enum rotation rotation)
    XCloseDisplay(dpy);
 }
 
-static enum rotation x11_display_server_get_screen_orientation(void)
+static enum rotation x11_display_server_get_screen_orientation(void *data)
 {
    int i, j;
    XRRScreenConfiguration *config = NULL;

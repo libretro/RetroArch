@@ -383,7 +383,7 @@ static void *win32_display_server_get_resolution_list(
 }
 
 #if _WIN32_WINNT >= 0x0500
-enum rotation win32_display_server_get_screen_orientation(void)
+enum rotation win32_display_server_get_screen_orientation(void *data)
 {
    DEVMODE dm = {0};
    enum rotation rotation;
@@ -410,7 +410,8 @@ enum rotation win32_display_server_get_screen_orientation(void)
    return rotation;
 }
 
-void win32_display_server_set_screen_orientation(enum rotation rotation)
+void win32_display_server_set_screen_orientation(void *data,
+      enum rotation rotation)
 {
    DEVMODE dm = {0};
 

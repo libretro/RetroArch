@@ -53,8 +53,8 @@ typedef struct video_display_server
    void *(*get_resolution_list)(void *data,
          unsigned *size);
    const char *(*get_output_options)(void *data);
-   void (*set_screen_orientation)(enum rotation rotation);
-   enum rotation (*get_screen_orientation)(void);
+   void (*set_screen_orientation)(void *data, enum rotation rotation);
+   enum rotation (*get_screen_orientation)(void *data);
    uint32_t (*get_flags)(void *data);
    const char *ident;
 } video_display_server_t;

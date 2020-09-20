@@ -25,7 +25,8 @@ static bool android_display_server_set_window_opacity(void *data, unsigned opaci
 static bool android_display_server_set_window_progress(void *data, int progress, bool finished) { return true; }
 static uint32_t android_display_server_get_flags(void *data) { return 0; }
 
-static void android_display_server_set_screen_orientation(enum rotation rotation)
+static void android_display_server_set_screen_orientation(void *data,
+      enum rotation rotation)
 {
    JNIEnv *env = jni_thread_getenv();
 

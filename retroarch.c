@@ -31518,32 +31518,28 @@ void video_display_server_set_screen_orientation(enum rotation rotation)
 
       RARCH_LOG("[Video]: Setting screen orientation to %d.\n", rotation);
       p_rarch->current_screen_orientation    = rotation;
-      current_display_server->set_screen_orientation(rotation);
+      current_display_server->set_screen_orientation(p_rarch->current_display_server_data, rotation);
    }
 }
 
 bool video_display_server_can_set_screen_orientation(void)
 {
-   if (current_display_server && current_display_server->set_screen_orientation)
-      return true;
-   return false;
+   return (current_display_server && current_display_server->set_screen_orientation);
 }
 
 enum rotation video_display_server_get_screen_orientation(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (current_display_server && current_display_server->get_screen_orientation)
-      return current_display_server->get_screen_orientation();
+      return current_display_server->get_screen_orientation(p_rarch->current_display_server_data);
    return ORIENTATION_NORMAL;
 }
 
 bool video_display_server_get_flags(gfx_ctx_flags_t *flags)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (!current_display_server || !current_display_server->get_flags)
+   if (!flags || !current_display_server || !current_display_server->get_flags)
       return false;
-   if (!flags)
-      return false;
-
    flags->flags = current_display_server->get_flags(
          p_rarch->current_display_server_data);
    return true;
