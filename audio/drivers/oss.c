@@ -129,21 +129,23 @@ static bool oss_stop(void *data)
    if (ioctl(ossaudio->fd, SNDCTL_DSP_RESET, 0) < 0)
       return false;
 
-   oss_is_paused = true;
+   ossaudio->is_paused = true;
    return true;
 }
 
 static bool oss_start(void *data, bool is_shutdown)
 {
-   (void)data;
-   oss_is_paused = false;
+   oss_audio_t *ossaudio  = (oss_audio_t*)data;
+   if (!ossaudio)
+      return false;
+   ossaudio->is_paused = false;
    return true;
 }
 
 static bool oss_alive(void *data)
 {
-   (void)data;
-   return !oss_is_paused;
+   oss_audio_t *ossaudio  = (oss_audio_t*)data;
+   return !ossaudio->is_paused;
 }
 
 static void oss_set_nonblock_state(void *data, bool state)
