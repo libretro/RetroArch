@@ -133,8 +133,7 @@ static void salamander_init(char *s, size_t len)
             FILE_PATH_SALAMANDER_CONFIG,
             sizeof(config_path));
    else
-      strlcpy(config_path, FILE_PATH_SALAMANDER_CONFIG,
-            sizeof(config_path));
+      strcpy_literal(config_path, FILE_PATH_SALAMANDER_CONFIG);
 
    /* Attempt to open config file */
    config = config_file_new_from_path_to_string(config_path);

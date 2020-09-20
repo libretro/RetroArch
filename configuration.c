@@ -4692,7 +4692,7 @@ static bool config_file_salamander_get_path(char *s, size_t len)
             FILE_PATH_SALAMANDER_CONFIG,
             len);
    else
-      strlcpy(s, FILE_PATH_SALAMANDER_CONFIG, len);
+      strcpy_literal(s, FILE_PATH_SALAMANDER_CONFIG);
 
    return !string_is_empty(s);
 }
