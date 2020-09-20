@@ -54,6 +54,9 @@ check_compiler()
 # $3 = lib
 # $4 = feature
 # $5 = enable lib when true, disable errors with 'user' [checked only if non-empty]
+# if any HAVE_$1 is true, HAVE_$2 is enabled
+# if USER_$2 is false, HAVE_$2 is disabled
+# if neither of the above, it's an error
 check_enabled()
 {	add_opt "$2"
 	setval="$(eval "printf %s \"\$HAVE_$2\"")"
