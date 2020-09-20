@@ -116,7 +116,8 @@ static bool x11_display_server_set_resolution(void *data,
    snprintf(dispserv->crt_name, sizeof(dispserv->crt_name),
          "CRT%d", dispserv->crt_name_id);
 
-   strlcpy(dispserv->old_mode, new_mode, sizeof(dispserv->old_mode));
+   strlcpy(dispserv->old_mode, dispserv->new_mode,
+         sizeof(dispserv->old_mode));
 
    dpy                      = XOpenDisplay(0);
    screen                   = DefaultScreen(dpy);
