@@ -31,72 +31,68 @@ void RWebAudioFree(void);
 size_t RWebAudioWriteAvail(void);
 size_t RWebAudioBufferSize(void);
 
-/* TODO/FIXME - static global variable */
-static bool rwebaudio_is_paused;
+typedef struct rweb_audio
+{
+   bool is_paused;
+} rweb_audio_t;
 
 static void rwebaudio_free(void *data)
 {
    RWebAudioFree();
+   free(data);
 }
 
 static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
+   rweb_audio_t *rwebaudio = (rweb_audio_t*)calloc(1, sizeof(rweb_audio_t));
+   if (!rwebaudio)
+      return NULL;
    if (RWebAudioInit(latency) == 1)
       *new_rate         = RWebAudioSampleRate();
-   return (void*)-1;
+   return rwebaudio;
 }
 
 static ssize_t rwebaudio_write(void *data, const void *buf, size_t size)
 {
-   (void)data;
    return RWebAudioWrite(buf, size);
 }
 
 static bool rwebaudio_stop(void *data)
 {
-   (void)data;
-   rwebaudio_is_paused = true;
+   rweb_audio_t *rwebaudio = (rweb_audio_t*)data;
+   if (!rwebaudio)
+      return false;
+   rwebaudio->is_paused = true;
    return RWebAudioStop();
 }
 
 static void rwebaudio_set_nonblock_state(void *data, bool state)
 {
-   (void)data;
    RWebAudioSetNonblockState(state);
 }
 
 static bool rwebaudio_alive(void *data)
 {
-   (void)data;
-   return !rwebaudio_is_paused;
+   rweb_audio_t *rwebaudio = (rweb_audio_t*)data;
+   if (!rwebaudio)
+      return false;
+   return !rwebaudio->is_paused;
 }
 
 static bool rwebaudio_start(void *data, bool is_shutdown)
 {
-   (void)data;
-   rwebaudio_is_paused = false;
+   rweb_audio_t *rwebaudio = (rweb_audio_t*)data;
+   if (!rwebaudio)
+      return false;
+   rwebaudio->is_paused = false;
    return RWebAudioStart();
 }
 
-static size_t rwebaudio_write_avail(void *data)
-{
-   (void)data;
-   return RWebAudioWriteAvail();
-}
-
-static size_t rwebaudio_buffer_size(void *data)
-{
-   (void)data;
-   return RWebAudioBufferSize();
-}
-
-   static bool rwebaudio_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
+static size_t rwebaudio_write_avail(void *data) {return RWebAudioWriteAvail();}
+static size_t rwebaudio_buffer_size(void *data) {return RWebAudioBufferSize();}
+static bool rwebaudio_use_float(void *data) { return true; }
 
 audio_driver_t audio_rwebaudio = {
    rwebaudio_init,
