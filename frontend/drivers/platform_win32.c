@@ -67,16 +67,16 @@
 #endif
 
 #ifdef HAVE_SAPI
-static ISpVoice* pVoice = NULL;
+static ISpVoice* pVoice        = NULL;
 #endif
 #ifdef HAVE_NVDA
-bool USE_POWERSHELL     = false;
-bool USE_NVDA           = true;
+static bool USE_POWERSHELL     = false;
+static bool USE_NVDA           = true;
 #else
-bool USE_POWERSHELL     = true;
-bool USE_NVDA           = false;
+static bool USE_POWERSHELL     = true;
+static bool USE_NVDA           = false;
 #endif
-bool USE_NVDA_BRAILLE   = false;
+static bool USE_NVDA_BRAILLE   = false;
 
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
