@@ -302,7 +302,7 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
 #if defined(IOS)
    get_ios_version(major, minor);
-   strlcpy(s, "iOS", len);
+   strcpy_literal(s, "iOS");
 #elif defined(OSX)
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 // MAC_OS_X_VERSION_10_13
@@ -328,7 +328,7 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
       Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
    }
 #endif
-   strlcpy(s, "OSX", len);
+   strcpy_literal(s, "OSX");
 #endif
 }
 
@@ -459,7 +459,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
     char assets_zip_path[PATH_MAX_LENGTH];
 #if TARGET_OS_IOS
     if (major > 8)
-       strlcpy(g_defaults.path_buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path_buildbot_server_url));
+       strcpy_literal(g_defaults.path_buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/");
 #endif
 
     fill_pathname_join(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
