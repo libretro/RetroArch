@@ -2295,7 +2295,7 @@ ifeq ($(HAVE_RPILED), 1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += led/drivers/led_keyboard.o
+   OBJ += led/drivers/led_win32_keyboard.o
 endif
 
 ifeq ($(HAVE_MATH_NEON), 1)

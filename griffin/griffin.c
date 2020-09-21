@@ -866,6 +866,10 @@ LEDS
 #include "../led/drivers/led_rpi.c"
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include "../led/drivers/led_win32_keyboard.c"
+#endif
+
 /*============================================================
 LOCATION
 ============================================================ */
