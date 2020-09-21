@@ -660,6 +660,37 @@ static void rcheevos_async_task_callback(
    }
 }
 
+static void rcheevos_activate_achievements(rcheevos_locals_t *locals,
+      rcheevos_racheevo_t* cheevo, unsigned count, unsigned flags)
+{
+   settings_t *settings = config_get_ptr();
+   char buffer[256];
+   unsigned i;
+   int res;
+
+   for (i = 0; i < count; i++, cheevo++)
+   {
+      res = rc_runtime_activate_achievement(&locals->runtime, cheevo->id, cheevo->memaddr, NULL, 0);
+
+      if (res < 0)
+      {
+         snprintf(buffer, sizeof(buffer),
+               "Could not activate achievement %d \"%s\": %s",
+               cheevo->id, cheevo->title, rc_error_str(res));
+
+         if (settings->bools.cheevos_verbose_enable)
+            runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+         CHEEVOS_ERR(RCHEEVOS_TAG "%s: mem %s\n", buffer, cheevo->memaddr);
+         CHEEVOS_FREE(cheevo->memaddr);
+         cheevo->memaddr = NULL;
+         continue;
+      }
+
+      cheevo->active = RCHEEVOS_ACTIVE_SOFTCORE | RCHEEVOS_ACTIVE_HARDCORE | flags;
+   }
+}
+
 static int rcheevos_parse(
       rcheevos_locals_t *locals,
       const char* json)
@@ -669,7 +700,6 @@ static int rcheevos_parse(
    int i                     = 0;
    unsigned j                = 0;
    unsigned count            = 0;
-   rcheevos_racheevo_t* cheevo = NULL;
    rcheevos_ralboard_t* lboard = NULL;
    int res                   = rcheevos_get_patchdata(
          json, &locals->patchdata);
@@ -721,64 +751,36 @@ static int rcheevos_parse(
    }
 
    /* Initialize. */
-   for (i = 0; i < 2; i++)
+   rcheevos_activate_achievements(locals, locals->patchdata.core, locals->patchdata.core_count, 0);
+   if (settings->bools.cheevos_test_unofficial)
    {
-      if (i == 0)
-      {
-         cheevo = locals->patchdata.core;
-         count  = locals->patchdata.core_count;
-      }
-      else
-      {
-         cheevo = locals->patchdata.unofficial;
-         count  = locals->patchdata.unofficial_count;
-      }
+      rcheevos_activate_achievements(locals, locals->patchdata.unofficial,
+            locals->patchdata.unofficial_count, RCHEEVOS_ACTIVE_UNOFFICIAL);
+   }
 
-      for (j = 0; j < count; j++, cheevo++)
+   if (locals->hardcore_active && settings->bools.cheevos_leaderboards_enable)
+   {
+      lboard = locals->patchdata.lboards;
+      count  = locals->patchdata.lboard_count;
+
+      for (j = 0; j < count; j++, lboard++)
       {
-         res = rc_runtime_activate_achievement(&locals->runtime, cheevo->id, cheevo->memaddr, NULL, 0);
+         res = rc_runtime_activate_lboard(&locals->runtime, lboard->id, lboard->mem, NULL, 0);
 
          if (res < 0)
          {
             snprintf(buffer, sizeof(buffer),
-                  "Could not activate achievement %d \"%s\": %s",
-                  cheevo->id, cheevo->title, rc_error_str(res));
+                  "Could not activate leaderboard %d \"%s\": %s",
+                  lboard->id, lboard->title, rc_error_str(res));
 
             if (settings->bools.cheevos_verbose_enable)
                runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-            CHEEVOS_ERR(RCHEEVOS_TAG "%s: mem %s\n", buffer, cheevo->memaddr);
-            CHEEVOS_FREE(cheevo->memaddr);
-            cheevo->memaddr = NULL;
+            CHEEVOS_ERR(RCHEEVOS_TAG "%s mem: %s\n", buffer, lboard->mem);
+            CHEEVOS_FREE(lboard->mem);
+            lboard->mem = NULL;
             continue;
          }
-
-         cheevo->active = RCHEEVOS_ACTIVE_SOFTCORE | RCHEEVOS_ACTIVE_HARDCORE;
-         if (i == 1)
-            cheevo->active |= RCHEEVOS_ACTIVE_UNOFFICIAL;
-      }
-   }
-
-   lboard = locals->patchdata.lboards;
-   count  = locals->patchdata.lboard_count;
-
-   for (j = 0; j < count; j++, lboard++)
-   {
-      res = rc_runtime_activate_lboard(&locals->runtime, lboard->id, lboard->mem, NULL, 0);
-
-      if (res < 0)
-      {
-         snprintf(buffer, sizeof(buffer),
-               "Could not activate leaderboard %d \"%s\": %s",
-               lboard->id, lboard->title, rc_error_str(res));
-
-         if (settings->bools.cheevos_verbose_enable)
-            runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-         CHEEVOS_ERR(RCHEEVOS_TAG "%s mem: %s\n", buffer, lboard->mem);
-         CHEEVOS_FREE(lboard->mem);
-         lboard->mem = NULL;
-         continue;
       }
    }
 
@@ -1244,14 +1246,38 @@ bool rcheevos_unload(void)
    return true;
 }
 
+static void rcheevos_toggle_hardcore_achievements(rcheevos_locals_t *locals, 
+      rcheevos_racheevo_t* cheevo, unsigned count)
+{
+   const unsigned active_mask = RCHEEVOS_ACTIVE_SOFTCORE | RCHEEVOS_ACTIVE_HARDCORE;
+
+   while (count--)
+   {
+      if (cheevo->memaddr && (cheevo->active & active_mask) == RCHEEVOS_ACTIVE_HARDCORE)
+      {
+         /* player has unlocked achievement in non-hardcore but has not unlocked in hardcore; toggle state */
+         if (locals->hardcore_active)
+         {
+            rc_runtime_activate_achievement(&locals->runtime, cheevo->id, cheevo->memaddr, NULL, 0);
+            CHEEVOS_LOG(RCHEEVOS_TAG "Achievement %u activated: %s\n", cheevo->id, cheevo->title);
+         }
+         else
+         {
+            rc_runtime_deactivate_achievement(&locals->runtime, cheevo->id);
+            CHEEVOS_LOG(RCHEEVOS_TAG "Achievement %u deactivated: %s\n", cheevo->id, cheevo->title);
+         }
+      }
+
+      ++cheevo;
+   }
+}
+
 static void rcheevos_toggle_hardcore_active(rcheevos_locals_t *locals)
 {
    settings_t* settings = config_get_ptr();
    bool rewind_enable = settings->bools.rewind_enable;
-   rcheevos_racheevo_t* cheevo;
    rcheevos_ralboard_t* lboard;
-   unsigned i, count;
-   const unsigned active_mask = RCHEEVOS_ACTIVE_SOFTCORE | RCHEEVOS_ACTIVE_HARDCORE;
+   unsigned i;
 
    if (!locals->hardcore_active)
    {
@@ -1266,11 +1292,14 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t *locals)
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          /* reactivate leaderboards */
-         lboard = locals->patchdata.lboards;
-         for (i = 0; i < locals->patchdata.lboard_count; ++i, ++lboard)
+         if (settings->bools.cheevos_leaderboards_enable)
          {
-            if (lboard->mem)
-               rc_runtime_activate_lboard(&locals->runtime, lboard->id, lboard->mem, NULL, 0);
+            lboard = locals->patchdata.lboards;
+            for (i = 0; i < locals->patchdata.lboard_count; ++i, ++lboard)
+            {
+               if (lboard->mem)
+                  rc_runtime_activate_lboard(&locals->runtime, lboard->id, lboard->mem, NULL, 0);
+            }
          }
 
          /* reset the game */
@@ -1306,38 +1335,11 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t *locals)
 
    if (locals->loaded)
    {
-      for (i = 0; i < 2; ++i)
+      rcheevos_toggle_hardcore_achievements(locals, locals->patchdata.core, locals->patchdata.core_count);
+      if (settings->bools.cheevos_test_unofficial)
       {
-         if (i == 0)
-         {
-            cheevo = locals->patchdata.core;
-            count = locals->patchdata.core_count;
-         }
-         else
-         {
-            cheevo = locals->patchdata.unofficial;
-            count = locals->patchdata.unofficial_count;
-         }
-
-         while (count--)
-         {
-            if (cheevo->memaddr && (cheevo->active & active_mask) == RCHEEVOS_ACTIVE_HARDCORE)
-            {
-               /* player has unlocked achievement in non-hardcore but has not unlocked in hardcore; toggle state */
-               if (locals->hardcore_active)
-               {
-                  rc_runtime_activate_achievement(&locals->runtime, cheevo->id, cheevo->memaddr, NULL, 0);
-                  CHEEVOS_LOG(RCHEEVOS_TAG "Achievement %u activated: %s\n", cheevo->id, cheevo->title);
-               }
-               else
-               {
-                  rc_runtime_deactivate_achievement(&locals->runtime, cheevo->id);
-                  CHEEVOS_LOG(RCHEEVOS_TAG "Achievement %u deactivated: %s\n", cheevo->id, cheevo->title);
-               }
-            }
-
-            ++cheevo;
-         }
+         rcheevos_toggle_hardcore_achievements(locals,
+               locals->patchdata.unofficial, locals->patchdata.unofficial_count);
       }
    }
 }
