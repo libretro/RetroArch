@@ -44,9 +44,14 @@ void led_driver_init(const char *led_driver)
       current_led_driver  = &overlay_led_driver;
 #endif
 
-#if HAVE_RPILED
+#ifdef HAVE_RPILED
    if (string_is_equal("rpi", drivername))
       current_led_driver  = &rpi_led_driver;
+#endif
+
+#ifdef _WIN32
+   if (string_is_equal("keyboard", drivername))
+      current_led_driver  = &keyboard_led_driver;
 #endif
 
    if (current_led_driver)
