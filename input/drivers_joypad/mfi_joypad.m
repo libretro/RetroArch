@@ -319,32 +319,32 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
     }
 }
 
-bool apple_gamecontroller_joypad_init(void *data)
+void *apple_gamecontroller_joypad_init(void *data)
 {
-    static bool inited = false;
-    if (inited)
-        return true;
-    if (!apple_gamecontroller_available())
-        return false;
-    mfiControllers = [[NSMutableArray alloc] initWithCapacity:MAX_MFI_CONTROLLERS];
+   static bool inited = false;
+   if (inited)
+      return (void*)-1;
+   if (!apple_gamecontroller_available())
+      return NULL;
+   mfiControllers = [[NSMutableArray alloc] initWithCapacity:MAX_MFI_CONTROLLERS];
 #ifdef __IPHONE_7_0
-    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification
-                                                      object:nil
-                                                       queue:[NSOperationQueue mainQueue]
-                                                  usingBlock:^(NSNotification *note)
-     {
-         apple_gamecontroller_joypad_connect([note object]);
-     }];
-    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification
-                                                      object:nil
-                                                       queue:[NSOperationQueue mainQueue]
-                                                  usingBlock:^(NSNotification *note)
-     {
-         apple_gamecontroller_joypad_disconnect([note object]);
-     } ];
+   [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification
+                                                     object:nil
+                                                      queue:[NSOperationQueue mainQueue]
+                                                 usingBlock:^(NSNotification *note)
+                                                 {
+                                                    apple_gamecontroller_joypad_connect([note object]);
+                                                 }];
+   [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification
+                                                     object:nil
+                                                      queue:[NSOperationQueue mainQueue]
+                                                 usingBlock:^(NSNotification *note)
+                                                 {
+                                                    apple_gamecontroller_joypad_disconnect([note object]);
+                                                 } ];
 #endif
 
-    return true;
+   return (void*)-1;
 }
 
 static void apple_gamecontroller_joypad_destroy(void) { }

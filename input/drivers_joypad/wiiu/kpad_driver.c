@@ -74,12 +74,12 @@ static int get_slot_for_channel(unsigned channel)
    return slot;
 }
 
-static bool kpad_init(void *data)
+static void *kpad_init(void *data)
 {
    kpad_poll();
    kpad_ready = true;
 
-   return true;
+   return (void*)-1;
 }
 
 static bool kpad_query_pad(unsigned pad)

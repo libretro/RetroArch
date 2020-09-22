@@ -83,12 +83,10 @@ static const char *psp_joypad_name(unsigned pad)
 #endif
 }
 
-static bool psp_joypad_init(void *data)
+static void *psp_joypad_init(void *data)
 {
    unsigned i;
    unsigned players_count = DEFAULT_MAX_PADS;
-
-   (void)data;
 
 #if defined(VITA)
    if (!sceCtrlIsMultiControllerSupported())
@@ -118,7 +116,7 @@ static bool psp_joypad_init(void *data)
             0
             );
 
-   return true;
+   return (void*)-1;
 }
 
 static int16_t psp_joypad_button(unsigned port, uint16_t joykey)

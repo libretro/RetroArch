@@ -116,7 +116,7 @@ static const char *xinput_joypad_name(unsigned pad)
    return XBOX_CONTROLLER_NAME;
 }
 
-static bool xinput_joypad_init(void *data)
+static void *xinput_joypad_init(void *data)
 {
    unsigned i, j;
    XINPUT_STATE dummy_state;
@@ -228,12 +228,14 @@ succeeded:
 #endif
    /* non-hat button. */
    g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
-   return true;
+
+   return (void*)-1;
 
 error:
    /* non-hat button. */
    g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
-   return false;
+
+   return NULL;
 }
 
 static bool xinput_joypad_query_pad(unsigned pad)

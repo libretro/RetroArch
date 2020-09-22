@@ -44,11 +44,10 @@ static const char *ps2_joypad_name(unsigned pad)
    return "PS2 Controller";
 }
 
-static bool ps2_joypad_init(void *data)
+static void *ps2_joypad_init(void *data)
 {
    unsigned ret  = 0;
    unsigned port = 0;
-   bool init     = true;
 
    for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
@@ -61,13 +60,10 @@ static bool ps2_joypad_init(void *data)
 
       /* Port 0 -> Connector 1, Port 1 -> Connector 2 */
       if((ret = padPortOpen(port, PS2_PAD_SLOT, padBuf[port])) == 0)
-      {
-         init = false;
-         break;
-      }
+         return NULL;
    }
 
-   return init;
+   return (void*)-1;
 }
 
 static int16_t ps2_joypad_button(unsigned port, uint16_t joykey)

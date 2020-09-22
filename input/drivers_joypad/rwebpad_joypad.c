@@ -63,11 +63,11 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
    return EM_TRUE;
 }
 
-static bool rwebpad_joypad_init(void *data)
+static void *rwebpad_joypad_init(void *data)
 {
    EMSCRIPTEN_RESULT r = emscripten_sample_gamepad_data();
    if (r == EMSCRIPTEN_RESULT_NOT_SUPPORTED)
-      return false;
+      return NULL;
 
    /* callbacks needs to be registered for gamepads to connect */
    r = emscripten_set_gamepadconnected_callback(NULL, false,
@@ -76,7 +76,7 @@ static bool rwebpad_joypad_init(void *data)
    r = emscripten_set_gamepaddisconnected_callback(NULL, false,
       rwebpad_gamepad_cb);
 
-   return true;
+   return (void*)-1;
 }
 
 static const char *rwebpad_joypad_name(unsigned pad)

@@ -263,11 +263,10 @@ static void wpad_poll(void)
    }
 }
 
-static bool wpad_init(void *data)
+static void *wpad_init(void *data)
 {
    wpad_poll();
-
-   return true;
+   return (void*)-1;
 }
 
 static bool wpad_query_pad(unsigned port)

@@ -538,7 +538,7 @@ static void udev_joypad_poll(void)
    }
 }
 
-static bool udev_joypad_init(void *data)
+static void *udev_joypad_init(void *data)
 {
    unsigned i;
    unsigned sorted_count = 0;
@@ -546,8 +546,6 @@ static bool udev_joypad_init(void *data)
    struct udev_list_entry *item     = NULL;
    struct udev_enumerate *enumerate = NULL;
    struct joypad_udev_entry sorted[MAX_USERS];
-
-   (void)data;
 
    for (i = 0; i < MAX_USERS; i++)
       udev_pads[i].fd = -1;
@@ -584,11 +582,12 @@ static bool udev_joypad_init(void *data)
    }
 
    udev_enumerate_unref(enumerate);
-   return true;
+
+   return (void*)-1;
 
 error:
    udev_joypad_destroy();
-   return false;
+   return NULL;
 }
 
 static int16_t udev_joypad_button_state(

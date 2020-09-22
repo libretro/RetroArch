@@ -229,15 +229,13 @@ static void parport_free_pad(struct parport_joypad *pad)
    pad->fd = -1;
 }
 
-static bool parport_joypad_init(void *data)
+static void *parport_joypad_init(void *data)
 {
    unsigned i, j;
    bool found_enabled_button             = false;
    bool found_disabled_button            = false;
    char buf[PARPORT_NUM_BUTTONS * 3 + 1] = {0};
    char pin[3 + 1]                       = {0};
-
-   (void)data;
 
    memset(buf, 0, PARPORT_NUM_BUTTONS * 3 + 1);
 
@@ -290,13 +288,15 @@ static bool parport_joypad_init(void *data)
                      strlcat(buf, pin, sizeof(buf));
                   }
                }
-               RARCH_WARN("[Joypad]: Pin(s) %son %s were low on init, assuming not connected\n", \
+               RARCH_WARN("[Joypad]: Pin(s) %son %s were low"
+                     " on init, assuming not connected\n", \
                      buf, path);
             }
          }
          else
          {
-            RARCH_WARN("[Joypad]: All pins low on %s, assuming nothing connected\n", path);
+            RARCH_WARN("[Joypad]: All pins low on %s, assuming"
+                  " nothing connected\n", path);
             parport_free_pad(pad);
          }
       }
@@ -311,7 +311,7 @@ static bool parport_joypad_init(void *data)
             );
    }
 
-   return true;
+   return (void*)-1;
 }
 
 static void parport_joypad_destroy(void)

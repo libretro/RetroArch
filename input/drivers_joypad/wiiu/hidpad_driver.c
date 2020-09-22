@@ -30,20 +30,18 @@ static void hidpad_poll(void)
       HID_POLL();
 }
 
-static bool hidpad_init(void *data)
+static void *hidpad_init(void *data)
 {
-   (void)data;
-
    if(!init_hid_driver())
    {
       RARCH_ERR("Failed to initialize HID driver.\n");
-      return false;
+      return NULL;
    }
 
    hidpad_poll();
    hidpad_ready = true;
 
-   return true;
+   return (void*)-1;
 }
 
 static bool hidpad_query_pad(unsigned port)

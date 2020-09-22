@@ -24,7 +24,7 @@ extern pad_connection_listener_t wiiu_pad_connection_listener;
 static input_device_driver_t *wiiu_pad_drivers[MAX_USERS];
 static bool wiiu_joypad_ready = false;
 
-static bool wiiu_joypad_init(void* data)
+static void *wiiu_joypad_init(void *data)
 {
    set_connection_listener(&wiiu_pad_connection_listener);
    hid_instance.pad_list = pad_connection_init(MAX_USERS);
@@ -37,9 +37,8 @@ static bool wiiu_joypad_init(void* data)
 #endif
 
    wiiu_joypad_ready = true;
-   (void)data;
 
-   return true;
+   return (void*)-1;
 }
 
 static bool wiiu_joypad_query_pad(unsigned pad)

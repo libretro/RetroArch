@@ -617,15 +617,13 @@ static void gx_joypad_poll(void)
       BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 }
 
-static bool gx_joypad_init(void *data)
+static void *gx_joypad_init(void *data)
 {
    int i;
    SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
    SYS_SetPowerCallback(power_callback);
 #endif
-
-   (void)data;
 
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
       pad_type[i] = WPAD_EXP_NOCONTROLLER;
@@ -640,7 +638,7 @@ static bool gx_joypad_init(void *data)
 
    gx_joypad_poll();
 
-   return true;
+   return (void*)-1;
 }
 
 static void gx_joypad_destroy(void)

@@ -153,13 +153,11 @@ static void dos_joypad_autodetect_add(unsigned autoconf_pad)
          );
 }
 
-static bool dos_joypad_init(void *data)
+static void *dos_joypad_init(void *data)
 {
    hook_keyb_int();
-
    dos_joypad_autodetect_add(0);
-
-   return true;
+   return (void*)-1;
 }
 
 static int16_t dos_joypad_button_state(

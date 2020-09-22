@@ -25,7 +25,7 @@ static const char *qnx_joypad_name(unsigned pad)
    return input_config_get_device_name(pad);
 }
 
-static bool qnx_joypad_init(void *data)
+static void *qnx_joypad_init(void *data)
 {
    unsigned autoconf_pad;
 
@@ -39,7 +39,7 @@ static bool qnx_joypad_init(void *data)
             0
             );
 
-   return true;
+   return (void*)-1;
 }
 
 static int16_t qnx_joypad_button(unsigned port, uint16_t joykey)

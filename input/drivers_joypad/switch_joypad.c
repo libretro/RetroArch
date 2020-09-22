@@ -51,7 +51,7 @@ static void switch_joypad_autodetect_add(unsigned autoconf_pad)
             0);                               /* pid */
 }
 
-static bool switch_joypad_init(void *data)
+static void *switch_joypad_init(void *data)
 {
 #ifdef HAVE_LIBNX
    unsigned i;
@@ -83,7 +83,7 @@ static bool switch_joypad_init(void *data)
    switch_joypad_autodetect_add(1);
 #endif
 
-   return true;
+   return (void*)-1;
 }
 
 static int16_t switch_joypad_button(unsigned port_num, uint16_t joykey)

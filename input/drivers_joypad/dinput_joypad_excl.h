@@ -156,12 +156,12 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
-static bool dinput_joypad_init(void *data)
+static void *dinput_joypad_init(void *data)
 {
    unsigned i;
 
    if (!dinput_init_context())
-      return false;
+      return NULL;
 
    for (i = 0; i < MAX_USERS; ++i)
    {
@@ -171,7 +171,8 @@ static bool dinput_joypad_init(void *data)
 
    IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
-   return true;
+
+   return (void*)-1;
 }
 
 #endif

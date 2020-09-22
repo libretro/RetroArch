@@ -25,7 +25,7 @@ static const char *android_joypad_name(unsigned pad)
    return input_config_get_device_name(pad);
 }
 
-static bool android_joypad_init(void *data) { return true; }
+static void *android_joypad_init(void *data) { return (void*)-1; }
 
 static int16_t android_joypad_button_state(
       struct android_app *android_app,

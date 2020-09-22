@@ -185,7 +185,7 @@ struct input_driver
 
 struct rarch_joypad_driver
 {
-   bool (*init)(void *data);
+   void *(*init)(void *data);
    bool (*query_pad)(unsigned);
    void (*destroy)(void);
    int16_t (*button)(unsigned, uint16_t);

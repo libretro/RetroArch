@@ -20,12 +20,12 @@
 /* TODO/FIXME - static global */
 static const hid_driver_t *generic_hid = NULL;
 
-static bool hid_joypad_init(void *data)
+static void *hid_joypad_init(void *data)
 {
    generic_hid = input_hid_init_first();
    if (!generic_hid)
-       return false;
-   return true;
+      return NULL;
+   return (void*)-1;
 }
 
 static bool hid_joypad_query_pad(unsigned pad)

@@ -53,13 +53,11 @@ static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
          );
 }
 
-static bool ps3_joypad_init(void *data)
+static void *ps3_joypad_init(void *data)
 {
-   (void)data;
-
    cellPadInit(DEFAULT_MAX_PADS);
 
-   return true;
+   return (void*)-1;
 }
 
 static int16_t ps3_joypad_button(unsigned port, uint16_t joykey)

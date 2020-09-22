@@ -248,7 +248,7 @@ static void sdl_joypad_destroy(void)
    memset(sdl_pads, 0, sizeof(sdl_pads));
 }
 
-static bool sdl_joypad_init(void *data)
+static void *sdl_joypad_init(void *data)
 {
    unsigned i, num_sticks;
 #ifdef HAVE_SDL2
@@ -260,10 +260,10 @@ static bool sdl_joypad_init(void *data)
    if (SDL_WasInit(0) == 0)
    {
       if (SDL_Init(subsystem) < 0)
-         return false;
+         return NULL;
    }
    else if (SDL_InitSubSystem(subsystem) < 0)
-      return false;
+      return NULL;
 
 #if HAVE_SDL2
    g_has_haptic = false;
@@ -294,12 +294,13 @@ static bool sdl_joypad_init(void *data)
       goto error;
 #endif
 
-   return true;
+   return (void*)-1;
 
 #ifndef HAVE_SDL2
 error:
    sdl_joypad_destroy();
-   return false;
+
+   return NULL;
 #endif
 }
 

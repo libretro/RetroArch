@@ -78,7 +78,7 @@ static const char *ps4_joypad_name(unsigned pad)
    return "PS4 Controller";
 }
 
-static bool ps4_joypad_init(void *data)
+static void *ps4_joypad_init(void *data)
 {
    int result;
    SceUserServiceLoginUserIdList userIdList;
@@ -130,7 +130,7 @@ static bool ps4_joypad_init(void *data)
 
    }
 
-   return true;
+   return (void*)-1;
 }
 
 static int16_t ps4_joypad_button(unsigned port, uint16_t joykey)

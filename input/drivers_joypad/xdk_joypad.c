@@ -54,10 +54,10 @@ static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
          0);
 }
 
-static bool xdk_joypad_init(void *data)
+static void *xdk_joypad_init(void *data)
 {
    XInitDevices(0, NULL);
-   return true;
+   return (void*)-1;
 }
 
 static int16_t xdk_joypad_button_state(

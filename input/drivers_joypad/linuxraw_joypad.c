@@ -217,13 +217,13 @@ retry:
    }
 }
 
-static bool linuxraw_joypad_init(void *data)
+static void *linuxraw_joypad_init(void *data)
 {
    unsigned i;
    int fd = epoll_create(32);
 
    if (fd < 0)
-      return false;
+      return NULL;
 
    linuxraw_epoll = fd;
 
@@ -273,7 +273,7 @@ static bool linuxraw_joypad_init(void *data)
 
    linuxraw_hotplug = true;
 
-   return true;
+   return (void*)-1;
 }
 
 static void linuxraw_joypad_destroy(void)
