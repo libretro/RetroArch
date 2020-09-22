@@ -4039,12 +4039,15 @@ static void xmb_draw_bg(
       else
          gfx_display_set_alpha(draw.color, coord_white[3]);
 
-      gfx_display_draw_gradient(&draw,
-            userdata,
-            video_width,
-            video_height,
-            menu_wallpaper_opacity
-            );
+      /* Draw gradient */
+      draw.texture       = 0;
+      draw.x             = 0;
+      draw.y             = 0;
+
+      gfx_display_draw_bg(&draw, userdata, false,
+            menu_wallpaper_opacity);
+      gfx_display_draw(&draw, userdata,
+            video_width, video_height);
 
       draw.pipeline_id = VIDEO_SHADER_MENU_2;
 
@@ -4088,11 +4091,17 @@ static void xmb_draw_bg(
          gfx_display_set_alpha(draw.color, coord_white[3]);
 
       if (xmb_color_theme != XMB_THEME_WALLPAPER)
-         gfx_display_draw_gradient(&draw,
-            userdata,
-            video_width,
-            video_height,
-            menu_wallpaper_opacity);
+      {
+         /* Draw gradient */
+         draw.texture       = 0;
+         draw.x             = 0;
+         draw.y             = 0;
+
+         gfx_display_draw_bg(&draw, userdata, false,
+               menu_wallpaper_opacity);
+         gfx_display_draw(&draw, userdata,
+               video_width, video_height);
+      }
 
       {
          bool add_opacity       = false;

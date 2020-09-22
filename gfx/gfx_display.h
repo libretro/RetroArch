@@ -321,14 +321,6 @@ void gfx_display_draw_bg(
       void *userdata,
       bool add_opacity, float opacity_override);
 
-void gfx_display_draw_gradient(
-      gfx_display_ctx_draw_t *draw,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      float menu_wallpaper_opacity
-      );
-
 void gfx_display_draw_quad(
       void *data,
       unsigned video_width,
