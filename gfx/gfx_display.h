@@ -278,12 +278,6 @@ void gfx_display_draw(gfx_display_ctx_draw_t *draw,
       unsigned video_width, 
       unsigned video_height);
 
-void gfx_display_draw_blend(
-      gfx_display_ctx_draw_t *draw,
-      void *data,
-      unsigned video_width,
-      unsigned video_height);
-
 void gfx_display_draw_keyboard(
       void *userdata,
       unsigned video_width,

@@ -692,8 +692,10 @@ static void gfx_widgets_draw_icon_blend(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
-   gfx_display_draw_blend(&draw, userdata,
+   gfx_display_blend_begin(userdata);
+   gfx_display_draw(&draw, userdata,
          video_width, video_height);
+   gfx_display_blend_end(userdata);
 }
 #endif
 

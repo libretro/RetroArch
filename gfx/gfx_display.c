@@ -734,26 +734,6 @@ void gfx_display_draw(gfx_display_ctx_draw_t *draw,
    dispctx->draw(draw, data, video_width, video_height);
 }
 
-void gfx_display_draw_blend(
-      gfx_display_ctx_draw_t *draw,
-      void *data,
-      unsigned video_width,
-      unsigned video_height)
-{
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (!dispctx || !draw || !dispctx->draw)
-      return;
-
-   if (draw->height <= 0)
-      return;
-   if (draw->width <= 0)
-      return;
-   gfx_display_blend_begin(data);
-   dispctx->draw(draw, data, video_width, video_height);
-   gfx_display_blend_end(data);
-}
-
 void gfx_display_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       void *userdata,
