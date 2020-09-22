@@ -109,16 +109,6 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
 static void gfx_display_gdi_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height) { }
 static void gfx_display_gdi_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
-static void gfx_display_gdi_restore_clear_color(void) { }
-
-static void gfx_display_gdi_clear_color(
-      gfx_display_ctx_clearcolor_t *clearcolor,
-      void *data)
-{
-   (void)clearcolor;
-
-   gfx_display_gdi_restore_clear_color();
-}
 
 static bool gfx_display_gdi_font_init_first(
       void **font_handle, void *video_data,
@@ -152,8 +142,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
    gfx_display_gdi_viewport,
    gfx_display_gdi_blend_begin,
    gfx_display_gdi_blend_end,
-   gfx_display_gdi_restore_clear_color,
-   gfx_display_gdi_clear_color,
    gfx_display_gdi_get_default_mvp,
    gfx_display_gdi_get_default_vertices,
    gfx_display_gdi_get_default_tex_coords,

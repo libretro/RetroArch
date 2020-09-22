@@ -115,20 +115,6 @@ static void gfx_display_metal_scissor_end(void *data,
    [md.display clearScissorRect];
 }
 
-/* Nothing to do */
-static void gfx_display_metal_restore_clear_color(void) { }
-
-static void gfx_display_metal_clear_color(
-      gfx_display_ctx_clearcolor_t *clearcolor,
-      void *data)
-{
-   MetalDriver *md = (__bridge MetalDriver *)data;
-   if (!md)
-      return;
-
-   md.display.clearColor = MTLClearColorMake(clearcolor->r, clearcolor->g, clearcolor->b, clearcolor->a);
-}
-
 static bool gfx_display_metal_font_init_first(
    void **font_handle, void *video_data,
    const char *font_path, float font_size,
@@ -152,8 +138,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    .viewport               = gfx_display_metal_viewport,
    .blend_begin            = gfx_display_metal_blend_begin,
    .blend_end              = gfx_display_metal_blend_end,
-   .restore_clear_color    = gfx_display_metal_restore_clear_color,
-   .clear_color            = gfx_display_metal_clear_color,
    .get_default_mvp        = gfx_display_metal_get_default_mvp,
    .get_default_vertices   = gfx_display_metal_get_default_vertices,
    .get_default_tex_coords = gfx_display_metal_get_default_tex_coords,

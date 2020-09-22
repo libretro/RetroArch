@@ -49,8 +49,6 @@ static void gfx_display_null_draw(gfx_display_ctx_draw_t *draw,
 static void gfx_display_null_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data, unsigned width, unsigned height) { }
 static void gfx_display_null_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
-static void gfx_display_null_restore_clear_color(void) { }
-static void gfx_display_null_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, void *data) { }
 
 static bool gfx_display_null_font_init_first(
       void **font_handle, void *video_data,
@@ -84,8 +82,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_null = {
    gfx_display_null_viewport,
    gfx_display_null_blend_begin,
    gfx_display_null_blend_end,
-   gfx_display_null_restore_clear_color,
-   gfx_display_null_clear_color,
    gfx_display_null_get_default_mvp,
    gfx_display_null_get_default_vertices,
    gfx_display_null_get_default_tex_coords,

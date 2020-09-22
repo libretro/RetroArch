@@ -337,23 +337,6 @@ static void gfx_display_gl_draw_pipeline(
 #endif
 }
 
-static void gfx_display_gl_restore_clear_color(void)
-{
-   glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
-}
-
-static void gfx_display_gl_clear_color(
-      gfx_display_ctx_clearcolor_t *clearcolor,
-      void *data)
-{
-   if (!clearcolor)
-      return;
-
-   glClearColor(clearcolor->r,
-         clearcolor->g, clearcolor->b, clearcolor->a);
-   glClear(GL_COLOR_BUFFER_BIT);
-}
-
 static bool gfx_display_gl_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float menu_font_size,
@@ -408,8 +391,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl_viewport,
    gfx_display_gl_blend_begin,
    gfx_display_gl_blend_end,
-   gfx_display_gl_restore_clear_color,
-   gfx_display_gl_clear_color,
    gfx_display_gl_get_default_mvp,
    gfx_display_gl_get_default_vertices,
    gfx_display_gl_get_default_tex_coords,

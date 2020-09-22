@@ -286,37 +286,6 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    }
 }
 
-static void gfx_display_vk_restore_clear_color(void)
-{
-}
-
-static void gfx_display_vk_clear_color(
-      gfx_display_ctx_clearcolor_t *clearcolor,
-      void *data)
-{
-   VkClearRect rect;
-   VkClearAttachment attachment;
-   vk_t *vk                               = (vk_t*)data;
-   if (!vk || !clearcolor)
-      return;
-
-   attachment.aspectMask                  = VK_IMAGE_ASPECT_COLOR_BIT;
-   attachment.colorAttachment             = 0;
-   attachment.clearValue.color.float32[0] = clearcolor->r;
-   attachment.clearValue.color.float32[1] = clearcolor->g;
-   attachment.clearValue.color.float32[2] = clearcolor->b;
-   attachment.clearValue.color.float32[3] = clearcolor->a;
-
-   rect.rect.offset.x                     = 0;
-   rect.rect.offset.y                     = 0;
-   rect.rect.extent.width                 = vk->context->swapchain_width;
-   rect.rect.extent.height                = vk->context->swapchain_height;
-   rect.baseArrayLayer                    = 0;
-   rect.layerCount                        = 1;
-
-   vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
-}
-
 static void gfx_display_vk_blend_begin(void *data)
 {
    vk_t *vk = (vk_t*)data;
@@ -381,8 +350,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
    gfx_display_vk_viewport,
    gfx_display_vk_blend_begin,
    gfx_display_vk_blend_end,
-   gfx_display_vk_restore_clear_color,
-   gfx_display_vk_clear_color,
    gfx_display_vk_get_default_mvp,
    gfx_display_vk_get_default_vertices,
    gfx_display_vk_get_default_tex_coords,

@@ -266,28 +266,6 @@ static void gfx_display_wiiu_draw_pipeline(gfx_display_ctx_draw_t *draw,
    GX2SetPixelUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);
 }
 
-static void gfx_display_wiiu_restore_clear_color(void)
-{
-#if 0
-   wiiu_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
-#endif
-}
-
-static void gfx_display_wiiu_clear_color(
-      gfx_display_ctx_clearcolor_t *clearcolor,
-      void *data)
-{
-   if (!clearcolor)
-      return;
-#if 0
-   wiiu_set_clear_color(RGBA8((int)(clearcolor->r*255.f),
-            (int)(clearcolor->g*255.f),
-            (int)(clearcolor->b*255.f),
-            (int)(clearcolor->a*255.f)));
-   wiiu_clear_screen();
-#endif
-}
-
 static bool gfx_display_wiiu_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
@@ -326,8 +304,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    gfx_display_wiiu_viewport,
    gfx_display_wiiu_blend_begin,
    gfx_display_wiiu_blend_end,
-   gfx_display_wiiu_restore_clear_color,
-   gfx_display_wiiu_clear_color,
    gfx_display_wiiu_get_default_mvp,
    gfx_display_wiiu_get_default_vertices,
    gfx_display_wiiu_get_default_tex_coords,

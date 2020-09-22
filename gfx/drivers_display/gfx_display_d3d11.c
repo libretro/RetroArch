@@ -236,21 +236,6 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
    }
 }
 
-static void gfx_display_d3d11_restore_clear_color(void) {}
-
-static void gfx_display_d3d11_clear_color(
-      gfx_display_ctx_clearcolor_t* clearcolor,
-      void *data)
-{
-   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
-
-   if (!d3d11 || !clearcolor)
-      return;
-
-   D3D11ClearRenderTargetView(d3d11->context,
-         d3d11->renderTargetView, (float*)clearcolor);
-}
-
 static bool gfx_display_d3d11_font_init_first(
       void**      font_handle,
       void*       video_data,
@@ -311,8 +296,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
    gfx_display_d3d11_viewport,
    gfx_display_d3d11_blend_begin,
    gfx_display_d3d11_blend_end,
-   gfx_display_d3d11_restore_clear_color,
-   gfx_display_d3d11_clear_color,
    gfx_display_d3d11_get_default_mvp,
    gfx_display_d3d11_get_default_vertices,
    gfx_display_d3d11_get_default_tex_coords,

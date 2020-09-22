@@ -89,14 +89,6 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_SWITCH
 };
 
-typedef struct gfx_display_ctx_clearcolor
-{
-   float r;
-   float g;
-   float b;
-   float a;
-} gfx_display_ctx_clearcolor_t;
-
 typedef struct gfx_display_frame_info
 {
    bool shadows_enable;
@@ -118,11 +110,6 @@ typedef struct gfx_display_ctx_driver
    void (*blend_begin)(void *data);
    /* Finish blending operation. */
    void (*blend_end)(void *data);
-   /* Set the clear color back to its default values. */
-   void (*restore_clear_color)(void);
-   /* Set the color to be used when clearing the screen */
-   void (*clear_color)(gfx_display_ctx_clearcolor_t *clearcolor,
-         void *data);
    /* Get the default Model-View-Projection matrix */
    void *(*get_default_mvp)(void *data);
    /* Get the default vertices matrix */

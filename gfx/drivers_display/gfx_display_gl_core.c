@@ -280,22 +280,6 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static void gfx_display_gl_core_restore_clear_color(void)
-{
-   glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
-}
-
-static void gfx_display_gl_core_clear_color(
-      gfx_display_ctx_clearcolor_t *clearcolor,
-      void *data)
-{
-   if (!clearcolor)
-      return;
-
-   glClearColor(clearcolor->r, clearcolor->g, clearcolor->b, clearcolor->a);
-   glClear(GL_COLOR_BUFFER_BIT);
-}
-
 static void gfx_display_gl_core_blend_begin(void *data)
 {
    gl_core_t *gl = (gl_core_t*)data;
@@ -349,8 +333,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl_core = {
    gfx_display_gl_core_viewport,
    gfx_display_gl_core_blend_begin,
    gfx_display_gl_core_blend_end,
-   gfx_display_gl_core_restore_clear_color,
-   gfx_display_gl_core_clear_color,
    gfx_display_gl_core_get_default_mvp,
    gfx_display_gl_core_get_default_vertices,
    gfx_display_gl_core_get_default_tex_coords,

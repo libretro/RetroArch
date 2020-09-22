@@ -258,21 +258,6 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
          d3d12->queue.cmd, ROOT_ID_UBO, d3d12->ubo_view.BufferLocation);
 }
 
-static void gfx_display_d3d12_restore_clear_color(void) {}
-
-static void gfx_display_d3d12_clear_color(
-      gfx_display_ctx_clearcolor_t* clearcolor, void *data)
-{
-   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
-
-   if (!d3d12 || !clearcolor)
-      return;
-
-   D3D12ClearRenderTargetView(
-         d3d12->queue.cmd, d3d12->chain.desc_handles[d3d12->chain.frame_index], (float*)clearcolor,
-         0, NULL);
-}
-
 static bool gfx_display_d3d12_font_init_first(
       void**      font_handle,
       void*       video_data,
@@ -331,8 +316,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    gfx_display_d3d12_viewport,
    gfx_display_d3d12_blend_begin,
    gfx_display_d3d12_blend_end,
-   gfx_display_d3d12_restore_clear_color,
-   gfx_display_d3d12_clear_color,
    gfx_display_d3d12_get_default_mvp,
    gfx_display_d3d12_get_default_vertices,
    gfx_display_d3d12_get_default_tex_coords,

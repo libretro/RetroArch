@@ -237,20 +237,6 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
    }
 }
 
-static void gfx_display_d3d10_restore_clear_color(void) {}
-
-static void gfx_display_d3d10_clear_color(
-      gfx_display_ctx_clearcolor_t* clearcolor, void *data)
-{
-   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
-
-   if (!d3d10 || !clearcolor)
-      return;
-
-   D3D10ClearRenderTargetView(d3d10->device,
-         d3d10->renderTargetView, (float*)clearcolor);
-}
-
 static bool gfx_display_d3d10_font_init_first(
       void**      font_handle,
       void*       video_data,
@@ -309,8 +295,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
    gfx_display_d3d10_viewport,
    gfx_display_d3d10_blend_begin,
    gfx_display_d3d10_blend_end,
-   gfx_display_d3d10_restore_clear_color,
-   gfx_display_d3d10_clear_color,
    gfx_display_d3d10_get_default_mvp,
    gfx_display_d3d10_get_default_vertices,
    gfx_display_d3d10_get_default_tex_coords,

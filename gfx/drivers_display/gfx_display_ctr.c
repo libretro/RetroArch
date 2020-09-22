@@ -137,26 +137,6 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
 static void gfx_display_ctr_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height) { }
 
-static void gfx_display_ctr_restore_clear_color(void)
-{
-#if 0
-   ctr_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
-#endif
-}
-
-static void gfx_display_ctr_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, void *data)
-{
-   if (!clearcolor)
-      return;
-#if 0
-   ctr_set_clear_color(RGBA8((int)(clearcolor->r*255.f),
-            (int)(clearcolor->g*255.f),
-            (int)(clearcolor->b*255.f),
-            (int)(clearcolor->a*255.f)));
-   ctr_clear_screen();
-#endif
-}
-
 static bool gfx_display_ctr_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
@@ -176,8 +156,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
    gfx_display_ctr_viewport,
    gfx_display_ctr_blend_begin,
    gfx_display_ctr_blend_end,
-   gfx_display_ctr_restore_clear_color,
-   gfx_display_ctr_clear_color,
    gfx_display_ctr_get_default_mvp,
    gfx_display_ctr_get_default_vertices,
    gfx_display_ctr_get_default_tex_coords,
