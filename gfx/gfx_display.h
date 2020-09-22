@@ -283,7 +283,6 @@ bool gfx_display_get_framebuffer_dirty_flag(void);
 void gfx_display_set_framebuffer_dirty_flag(void);
 void gfx_display_unset_framebuffer_dirty_flag(void);
 bool gfx_display_init_first_driver(bool video_is_threaded);
-bool gfx_display_restore_clear_color(void);
 
 gfx_display_t *disp_get_ptr(void);
 

@@ -721,16 +721,6 @@ font_data_t *gfx_display_font_file(
    return font_data;
 }
 
-bool gfx_display_restore_clear_color(void)
-{
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (!dispctx || !dispctx->restore_clear_color)
-      return false;
-   dispctx->restore_clear_color();
-   return true;
-}
-
 void gfx_display_draw(gfx_display_ctx_draw_t *draw,
       void *data,
       unsigned video_width, 
