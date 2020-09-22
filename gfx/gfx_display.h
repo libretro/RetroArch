@@ -287,9 +287,6 @@ bool gfx_display_restore_clear_color(void);
 
 gfx_display_t *disp_get_ptr(void);
 
-/* TODO/FIXME - this is no longer used - consider getting rid of it */
-void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color, void *data);
-
 void gfx_display_draw(gfx_display_ctx_draw_t *draw,
       void *data,
       unsigned video_width, 

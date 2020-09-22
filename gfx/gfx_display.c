@@ -731,15 +731,6 @@ bool gfx_display_restore_clear_color(void)
    return true;
 }
 
-/* TODO/FIXME - this is no longer used - consider getting rid of it */
-void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color, void *data)
-{
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (dispctx && dispctx->clear_color)
-      dispctx->clear_color(color, data);
-}
-
 void gfx_display_draw(gfx_display_ctx_draw_t *draw,
       void *data,
       unsigned video_width, 
