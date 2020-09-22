@@ -14,8 +14,8 @@ typedef struct
 } overlayled_t;
 
 /* TODO/FIXME - static globals */
-static overlayled_t curins;
-static overlayled_t *cur = &curins;
+static overlayled_t ledoverlay_curins;
+static overlayled_t *ledoverlay_cur = &ledoverlay_curins;
 
 static void overlay_init(void)
 {
@@ -24,11 +24,11 @@ static void overlay_init(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      cur->setup[i] = 0;
-      cur->map[i]   = settings->uints.led_map[i];
+      ledoverlay_cur->setup[i] = 0;
+      ledoverlay_cur->map[i]   = settings->uints.led_map[i];
 
-      if (cur->map[i] >= 0)
-         input_overlay_set_visibility(cur->map[i],
+      if (ledoverlay_cur->map[i] >= 0)
+         input_overlay_set_visibility(ledoverlay_cur->map[i],
                OVERLAY_VISIBILITY_HIDDEN);
    }
 }
@@ -43,7 +43,7 @@ static void overlay_set(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return;
 
-   gpio = cur->map[led];
+   gpio = ledoverlay_cur->map[led];
 
    if (gpio < 0)
       return;

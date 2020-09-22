@@ -67,8 +67,8 @@ typedef struct
 } keyboard_led_t;
 
 /* TODO/FIXME - static globals */
-static keyboard_led_t curins;
-static keyboard_led_t *cur = &curins;
+static keyboard_led_t win32kb_curins;
+static keyboard_led_t *win32kb_cur = &win32kb_curins;
 
 static void keyboard_init(void)
 {
@@ -80,21 +80,21 @@ static void keyboard_init(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      cur->setup[i]     = -1;
-      cur->map[i]       = settings->uints.led_map[i];
-      if (cur->map[i] < 0)
-         cur->map[i]    = i;
+      win32kb_cur->setup[i]     = -1;
+      win32kb_cur->map[i]       = settings->uints.led_map[i];
+      if (win32kb_cur->map[i] < 0)
+         win32kb_cur->map[i]    = i;
       
       switch (i)
       {
          case 0:
-            cur->setup[i] = led_get(RETROK_NUMLOCK);
+            win32kb_cur->setup[i] = led_get(RETROK_NUMLOCK);
             break;
          case 1:
-            cur->setup[i] = led_get(RETROK_CAPSLOCK);
+            win32kb_cur->setup[i] = led_get(RETROK_CAPSLOCK);
             break;
          case 2:
-            cur->setup[i] = led_get(RETROK_SCROLLOCK);
+            win32kb_cur->setup[i] = led_get(RETROK_SCROLLOCK);
             break;
       }
    }
@@ -106,23 +106,23 @@ static void keyboard_free(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      if (cur->setup[i] < 0)
+      if (win32kb_cur->setup[i] < 0)
          continue;
          
       switch (i)
       {
          case 0:
-            led_set(RETROK_NUMLOCK, cur->setup[i]);
+            led_set(RETROK_NUMLOCK, win32kb_cur->setup[i]);
             break;
          case 1:
-            led_set(RETROK_CAPSLOCK, cur->setup[i]);
+            led_set(RETROK_CAPSLOCK, win32kb_cur->setup[i]);
             break;
          case 2:
-            led_set(RETROK_SCROLLOCK, cur->setup[i]);
+            led_set(RETROK_SCROLLOCK, win32kb_cur->setup[i]);
             break;
       }
 
-      cur->setup[i] = -1;
+      win32kb_cur->setup[i] = -1;
    }
 }
 
@@ -131,7 +131,7 @@ static void keyboard_set(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return;
 
-   switch (cur->map[led])
+   switch (win32kb_cur->map[led])
    {
       case 0:
          led_set(RETROK_NUMLOCK, state);

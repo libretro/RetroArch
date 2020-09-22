@@ -26,8 +26,8 @@ typedef struct
 } rpiled_t;
 
 /* TODO/FIXME - static globals */
-static rpiled_t curins;
-static rpiled_t *cur = &curins;
+static rpiled_t rpi_curins;
+static rpiled_t *rpi_cur = &rpi_curins;
 
 static void rpi_init(void)
 {
@@ -39,8 +39,8 @@ static void rpi_init(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      cur->setup[i] = 0;
-      cur->map[i]   = settings->uints.led_map[i];
+      rpi_cur->setup[i] = 0;
+      rpi_cur->map[i]   = settings->uints.led_map[i];
    }
 }
 
@@ -104,13 +104,13 @@ static void rpi_set(int led, int state)
    if((led < 0) || (led >= MAX_LEDS))
       return;
 
-   gpio = cur->map[led];
+   gpio = rpi_cur->map[led];
    if(gpio <= 0)
       return;
 
-   if(cur->setup[led] == 0)
-      cur->setup[led] = setup_gpio(gpio);
-   if(cur->setup[led] > 0)
+   if(rpi_cur->setup[led] == 0)
+      rpi_cur->setup[led] = setup_gpio(gpio);
+   if(rpi_cur->setup[led] > 0)
       set_gpio(gpio, state);
 }
 
