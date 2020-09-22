@@ -1063,7 +1063,9 @@ bool vulkan_filter_chain::init_history()
 
    if (required_images < 2)
    {
+#ifdef VULKAN_DEBUG
       RARCH_LOG("[Vulkan filter chain]: Not using frame history.\n");
+#endif
       return true;
    }
 
@@ -1077,7 +1079,9 @@ bool vulkan_filter_chain::init_history()
       original_history.emplace_back(new Framebuffer(device, memory_properties,
                max_input_size, original_format, 1));
 
+#ifdef VULKAN_DEBUG
    RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", unsigned(required_images));
+#endif
 
    /* On first frame, we need to clear the textures to
     * a known state, but we need
@@ -1121,7 +1125,9 @@ bool vulkan_filter_chain::init_feedback()
 
    if (!use_feedbacks)
    {
+#ifdef VULKAN_DEBUG
       RARCH_LOG("[Vulkan filter chain]: Not using framebuffer feedback.\n");
+#endif
       return true;
    }
 
@@ -1264,10 +1270,12 @@ bool vulkan_filter_chain::init()
    for (i = 0; i < passes.size(); i++)
    {
       const string name = passes[i]->get_name();
+#ifdef VULKAN_DEBUG
       RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
             name.empty() ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
             name.c_str());
+#endif
 
       source = passes[i]->set_pass_info(max_input_size,
             source, swapchain_info, pass_info[i]);
@@ -1621,7 +1629,9 @@ bool Pass::init_pipeline_layout()
       if (reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
          push_range.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
+#ifdef VULKAN_DEBUG
       RARCH_LOG("[Vulkan]: Push Constant Block: %u bytes.\n", (unsigned int)reflection.push_constant_size);
+#endif
 
       layout_info.pushConstantRangeCount = 1;
       layout_info.pPushConstantRanges    = &push_range;

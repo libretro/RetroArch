@@ -584,7 +584,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
    {
       /* Recreate texture but for STAGING this time ... */
+#ifdef VULKAN_DEBUG
       RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
+#endif
       type = VULKAN_TEXTURE_STAGING;
       vkDestroyImage(device, tex.image, NULL);
       tex.image          = (VkImage)NULL;
@@ -2956,7 +2958,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          vk->context.swap_interval == swap_interval)
    {
       /* Do not bother creating a swapchain redundantly. */
+#ifdef VULKAN_DEBUG
       RARCH_LOG("[Vulkan]: Do not need to re-create swapchain.\n");
+#endif
       vulkan_create_wait_fences(vk);
 
       if (     vk->emulating_mailbox 
