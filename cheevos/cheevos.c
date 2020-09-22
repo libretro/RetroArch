@@ -696,12 +696,11 @@ static int rcheevos_parse(
       const char* json)
 {
    char buffer[256];
-   settings_t *settings      = config_get_ptr();
-   int i                     = 0;
-   unsigned j                = 0;
-   unsigned count            = 0;
+   settings_t *settings        = config_get_ptr();
+   unsigned j                  = 0;
+   unsigned count              = 0;
    rcheevos_ralboard_t* lboard = NULL;
-   int res                   = rcheevos_get_patchdata(
+   int res                     = rcheevos_get_patchdata(
          json, &locals->patchdata);
 
    if (res != 0)
