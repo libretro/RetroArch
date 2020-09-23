@@ -25434,6 +25434,10 @@ static void menu_input_get_touchscreen_hw_state(
       return;
    }
 
+   /* TODO/FIXME - this should only be used for framebuffer-based
+    * menu drivers like RGUI. Touchscreen input as a whole should
+    * NOT be dependent on this
+    */
    gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
    joypad_info.joy_idx        = 0;
