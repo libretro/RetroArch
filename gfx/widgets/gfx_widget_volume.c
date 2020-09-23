@@ -124,6 +124,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       float *bar_background                = NULL;
       float *bar_foreground                = NULL;
       float bar_percentage                 = 0.0f;
+      gfx_display_t            *p_disp     = disp_get_ptr();
+      gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
 
       /* Note: Volume + percentage text has no component
        * that extends below the baseline, so we shift
@@ -188,7 +190,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       {
          gfx_display_set_alpha(pure_white, state->text_alpha);
 
-         gfx_display_blend_begin(userdata);
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
          gfx_widgets_draw_icon(
                userdata,
                video_width,
@@ -198,7 +201,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                0, 0,
                0, 1, pure_white
                );
-         gfx_display_blend_end(userdata);
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
 
       if (state->mute)

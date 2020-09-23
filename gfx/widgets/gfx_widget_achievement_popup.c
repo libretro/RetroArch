@@ -113,6 +113,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       1.00, 1.00, 1.00, 1.00,
    };
    gfx_widget_achievement_popup_state_t* state = gfx_widget_achievement_popup_get_ptr();
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* if there's nothing in the queue, just bail */
    if (state->queue_read_index < 0 || !state->queue[state->queue_read_index].title)
@@ -149,7 +151,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          /* Icon */
          if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
          {
-            gfx_display_blend_begin(video_info->userdata);
+            if (dispctx && dispctx->blend_begin)
+               dispctx->blend_begin(video_info->userdata);
             gfx_widgets_draw_icon(
                video_info->userdata,
                video_width,
@@ -161,7 +164,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                0,
                state->y,
                0, 1, pure_white);
-            gfx_display_blend_end(video_info->userdata);
+            if (dispctx && dispctx->blend_end)
+               dispctx->blend_end(video_info->userdata);
          }
       }
       /* Badge */

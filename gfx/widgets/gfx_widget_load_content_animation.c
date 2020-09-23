@@ -650,6 +650,12 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
    if (state->status != GFX_WIDGET_LOAD_CONTENT_IDLE)
    {
+      float bg_alpha;
+      float icon_alpha;
+      float text_alpha;
+
+      float icon_x;
+      float text_x;
       video_frame_info_t *video_info       = (video_frame_info_t*)data;
       dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
 
@@ -660,13 +666,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
       gfx_widget_font_data_t *font_regular = gfx_widgets_get_font_regular(p_dispwidget);
       gfx_widget_font_data_t *font_bold    = gfx_widgets_get_font_bold(p_dispwidget);
       size_t msg_queue_size                = gfx_widgets_get_msg_queue_size(p_dispwidget);
-
-      float bg_alpha;
-      float icon_alpha;
-      float text_alpha;
-
-      float icon_x;
-      float text_x;
+      gfx_display_t            *p_disp     = disp_get_ptr();
+      gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
 
 #ifdef HAVE_MENU
       /* Draw nothing if menu is currently active */
@@ -792,7 +793,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
          if (state->icon_texture)
          {
-            gfx_display_blend_begin(userdata);
+            if (dispctx && dispctx->blend_begin)
+               dispctx->blend_begin(userdata);
 
             gfx_widgets_draw_icon(
                   userdata,
@@ -807,7 +809,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   1.0f,
                   state->icon_color);
 
-            gfx_display_blend_end(userdata);
+            if (dispctx && dispctx->blend_end)
+               dispctx->blend_end(userdata);
          }
          /* If there is no icon, draw a placeholder
           * (otherwise layout will look terrible...) */

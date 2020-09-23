@@ -614,24 +614,6 @@ void gfx_display_coords_array_reset(void)
    p_dispca->coords.vertices         = 0;
 }
 
-/* Begin blending operation */
-void gfx_display_blend_begin(void *data)
-{
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(data);
-}
-
-/* End blending operation */
-void gfx_display_blend_end(void *data)
-{
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(data);
-}
-
 /* Begin scissoring operation */
 void gfx_display_scissor_begin(void *userdata,
       unsigned video_width,

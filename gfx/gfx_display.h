@@ -212,10 +212,6 @@ void gfx_display_free(void);
 
 void gfx_display_init(void);
 
-void gfx_display_blend_begin(void *data);
-
-void gfx_display_blend_end(void *data);
-
 void gfx_display_push_quad(
       unsigned width, unsigned height,
       const float *colors, int x1, int y1,

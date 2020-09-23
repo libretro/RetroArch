@@ -2314,8 +2314,11 @@ static void materialui_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;
@@ -2346,7 +2349,8 @@ static void materialui_draw_icon(
 
    gfx_display_draw(&draw, userdata,
          video_width, video_height);
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
 static void materialui_draw_thumbnail(
@@ -5002,6 +5006,8 @@ static void materialui_render_background(materialui_handle_t *mui,
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f
    };
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* Configure draw object */
    draw.x                     = 0;
@@ -5046,12 +5052,14 @@ static void materialui_render_background(materialui_handle_t *mui,
    }
 
    /* Draw background */
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
    gfx_display_draw_bg(&draw, userdata,
          add_opacity, opacity_override);
    gfx_display_draw(&draw, userdata,
          video_width, video_height);
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
 static void materialui_render_landscape_border(

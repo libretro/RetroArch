@@ -944,6 +944,8 @@ static void xmb_render_messagebox_internal(
    float line_height        = 0;
    int usable_width         = 0;
    struct string_list list  = {0};
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    wrapped_message[0]       = '\0';
 
@@ -999,7 +1001,8 @@ static void xmb_render_messagebox_internal(
       }
    }
 
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
 
    gfx_display_draw_texture_slice(
          userdata,
@@ -3461,6 +3464,8 @@ static void xmb_draw_items(
    gfx_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!list || !list->size || !xmb)
       return;
@@ -3499,7 +3504,8 @@ static void xmb_draw_items(
    xmb_calculate_visible_range(xmb, height,
          end, (unsigned)current, &first, &last);
 
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
 
    for (i = first; i <= last; i++)
    {
@@ -3516,7 +3522,8 @@ static void xmb_draw_items(
          break;
    }
 
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
 static INLINE bool xmb_use_ps3_layout(
@@ -4011,6 +4018,8 @@ static void xmb_draw_bg(
       float *coord_white)
 {
    gfx_display_ctx_draw_t draw;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    draw.x                    = 0;
    draw.y                    = 0;
@@ -4025,7 +4034,8 @@ static void xmb_draw_bg(
    draw.pipeline_id          = 0;
    draw.pipeline_active      = xmb_shader_pipeline_active(menu_shader_pipeline);
 
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
    video_driver_set_viewport(video_width, video_height, true, false);
 
 #ifdef HAVE_SHADERPIPELINE
@@ -4123,7 +4133,8 @@ static void xmb_draw_bg(
 
    gfx_display_draw(&draw, userdata,
          video_width, video_height);
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
 static void xmb_draw_dark_layer(
@@ -4140,6 +4151,8 @@ static void xmb_draw_dark_layer(
       0, 0, 0, 1,
       0, 0, 0, 1,
    };
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    gfx_display_set_alpha(black, MIN(xmb->alpha, 0.75));
 
@@ -4159,10 +4172,12 @@ static void xmb_draw_dark_layer(
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id = 0;
 
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
    gfx_display_draw(&draw, userdata,
          width, height);
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
 static void xmb_draw_fullscreen_thumbnails(
@@ -4613,6 +4628,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool libretro_running                   = video_info->libretro_running;
    unsigned menu_shader_pipeline           = video_info->menu_shader_pipeline;
    float menu_wallpaper_opacity            = video_info->menu_wallpaper_opacity;
+   gfx_display_t            *p_disp        = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx       = p_disp->dispctx;
 
    if (!xmb)
       return;
@@ -4945,7 +4962,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          if (coord_white[3] != 0 &&  !xmb->assets_missing)
          {
-            gfx_display_blend_begin(userdata);
+            if (dispctx && dispctx->blend_begin)
+               dispctx->blend_begin(userdata);
             xmb_draw_icon(
                   userdata,
                   video_width,
@@ -4970,7 +4988,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   &item_color[0],
                   xmb->shadow_offset);
-            gfx_display_blend_end(userdata);
+                  if (dispctx && dispctx->blend_end)
+                     dispctx->blend_end(userdata);
          }
 
          percent_width = (unsigned)
@@ -4997,7 +5016,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (percent_width)
             x_pos = percent_width + (xmb->icon_size / 2.5);
 
-         gfx_display_blend_begin(userdata);
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
          xmb_draw_icon(
                userdata,
                video_width,
@@ -5015,7 +5035,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                1,
                &item_color[0],
                xmb->shadow_offset);
-         gfx_display_blend_end(userdata);
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
 
       timedate[0]             = '\0';
@@ -5042,7 +5063,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (coord_white[3] != 0 && !xmb->assets_missing)
    {
-      gfx_display_blend_begin(userdata);
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
       xmb_draw_icon(
             userdata,
             video_width,
@@ -5064,13 +5086,15 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             1,
             &item_color[0],
             xmb->shadow_offset);
-      gfx_display_blend_end(userdata);
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 
    /* Horizontal tab icons */
    if (!xmb->assets_missing)
    {
-      gfx_display_blend_begin(userdata);
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
       for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
             + xmb->system_tab_end; i++)
@@ -5146,7 +5170,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
       }
 
-      gfx_display_blend_end(userdata);
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 
    /* Vertical icons */
