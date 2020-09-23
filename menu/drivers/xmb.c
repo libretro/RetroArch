@@ -3814,6 +3814,7 @@ static void xmb_render(void *data,
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
    unsigned      end        = (unsigned)menu_entries_get_size();
+   gfx_display_t *p_disp    = disp_get_ptr();
 
    if (!xmb)
       return;
@@ -3834,8 +3835,8 @@ static void xmb_render(void *data,
    /* This must be set every frame when using a pointer,
     * otherwise touchscreen input breaks when changing
     * orientation */
-   gfx_display_set_width(width);
-   gfx_display_set_height(height);
+   p_disp->framebuf_width  = width;
+   p_disp->framebuf_height = height;
 
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);

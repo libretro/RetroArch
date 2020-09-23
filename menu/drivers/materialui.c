@@ -3435,6 +3435,7 @@ static void materialui_render(void *data,
       settings->uints.gfx_thumbnail_upscale_threshold;
    bool network_on_demand_thumbnails    = 
       settings->bools.network_on_demand_thumbnails;
+   gfx_display_t *p_disp  = disp_get_ptr();
 
    if (!mui || !list)
       return;
@@ -3500,8 +3501,8 @@ static void materialui_render(void *data,
 
    /* Need to update this each frame, otherwise touchscreen
     * input breaks when changing orientation */
-   gfx_display_set_width(width);
-   gfx_display_set_height(height);
+   p_disp->framebuf_width  = width;
+   p_disp->framebuf_height = height;
 
    /* Read pointer state */
    menu_input_get_pointer_state(&mui->pointer);
