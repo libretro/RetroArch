@@ -1582,9 +1582,7 @@ bool gfx_display_get_update_pending(void)
 {
    gfx_display_t *p_disp   = disp_get_ptr();
    gfx_animation_t *p_anim = anim_get_ptr();
-   if (ANIM_IS_ACTIVE(p_anim) || p_disp->framebuf_dirty)
-      return true;
-   return false;
+   return (ANIM_IS_ACTIVE(p_anim) || p_disp->framebuf_dirty);
 }
 
 /* Checks if the display framebuffer has its 'dirty flag' set. This
