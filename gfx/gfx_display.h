@@ -269,11 +269,6 @@ bool gfx_display_init_first_driver(bool video_is_threaded);
 
 gfx_display_t *disp_get_ptr(void);
 
-void gfx_display_draw(gfx_display_ctx_draw_t *draw,
-      void *data,
-      unsigned video_width, 
-      unsigned video_height);
-
 void gfx_display_draw_keyboard(
       void *userdata,
       unsigned video_width,

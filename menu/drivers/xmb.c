@@ -809,6 +809,8 @@ static void *xmb_list_get_entry(void *data,
 
 static void xmb_draw_icon(
       void *userdata,
+      gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       unsigned video_width,
       unsigned video_height,
       bool xmb_shadows_enable,
@@ -870,8 +872,9 @@ static void xmb_draw_icon(
          draw.y         = draw.y + (icon_size-draw.width)/2;
       }
 #endif
-      gfx_display_draw(&draw, userdata,
-            video_width, video_height);
+      if (draw.height > 0 && draw.width > 0)
+         if (dispctx && dispctx->draw)
+            dispctx->draw(&draw, userdata, video_width, video_height);
    }
 
    coords.color         = (const float*)color;
@@ -885,8 +888,9 @@ static void xmb_draw_icon(
       draw.y            = draw.y + (icon_size-draw.width)/2;
    }
 #endif
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
+   if (draw.height > 0 && draw.width > 0)
+      if (dispctx && dispctx->draw)
+         dispctx->draw(&draw, userdata, video_width, video_height);
 }
 
 static void xmb_draw_text(
@@ -3010,6 +3014,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
 static int xmb_draw_item(
       void *userdata,
+      gfx_display_t            *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       unsigned video_width,
       unsigned video_height,
       bool xmb_shadows_enable,
@@ -3406,6 +3412,8 @@ static int xmb_draw_item(
 
       xmb_draw_icon(
             userdata,
+            p_disp,
+            dispctx,
             video_width,
             video_height,
             xmb_shadows_enable,
@@ -3428,6 +3436,8 @@ static int xmb_draw_item(
    if (texture_switch != 0 && color[3] != 0 && !xmb->assets_missing)
       xmb_draw_icon(
             userdata,
+            p_disp,
+            dispctx,
             video_width,
             video_height,
             xmb_shadows_enable,
@@ -3511,6 +3521,8 @@ static void xmb_draw_items(
    {
       if (xmb_draw_item(
             userdata,
+            p_disp,
+            dispctx,
             video_width,
             video_height,
             xmb_shadows_enable,
@@ -4057,8 +4069,9 @@ static void xmb_draw_bg(
 
       gfx_display_draw_bg(&draw, userdata, false,
             menu_wallpaper_opacity);
-      gfx_display_draw(&draw, userdata,
-            video_width, video_height);
+      if (draw.height > 0 && draw.width > 0)
+         if (dispctx && dispctx->draw)
+            dispctx->draw(&draw, userdata, video_width, video_height);
 
       draw.pipeline_id = VIDEO_SHADER_MENU_2;
 
@@ -4108,8 +4121,9 @@ static void xmb_draw_bg(
 
          gfx_display_draw_bg(&draw, userdata, false,
                menu_wallpaper_opacity);
-         gfx_display_draw(&draw, userdata,
-               video_width, video_height);
+         if (draw.height > 0 && draw.width > 0)
+            if (dispctx && dispctx->draw)
+               dispctx->draw(&draw, userdata, video_width, video_height);
       }
 
       {
@@ -4129,10 +4143,14 @@ static void xmb_draw_bg(
       }
    }
 
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   if (dispctx)
+   {
+      if (dispctx->draw)
+         if (draw.height > 0 && draw.width > 0)
+            dispctx->draw(&draw, userdata, video_width, video_height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 }
 
 static void xmb_draw_dark_layer(
@@ -4170,12 +4188,16 @@ static void xmb_draw_dark_layer(
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id = 0;
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   gfx_display_draw(&draw, userdata,
-         width, height);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (draw.height > 0 && draw.width > 0)
+         if (dispctx && dispctx->draw)
+            dispctx->draw(&draw, userdata, width, height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 }
 
 static void xmb_draw_fullscreen_thumbnails(
@@ -4964,6 +4986,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                dispctx->blend_begin(userdata);
             xmb_draw_icon(
                   userdata,
+                  p_disp,
+                  dispctx,
                   video_width,
                   video_height,
                   xmb_shadows_enable,
@@ -5018,6 +5042,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             dispctx->blend_begin(userdata);
          xmb_draw_icon(
                userdata,
+               p_disp,
+               dispctx,
                video_width,
                video_height,
                xmb_shadows_enable,
@@ -5065,6 +5091,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          dispctx->blend_begin(userdata);
       xmb_draw_icon(
             userdata,
+            p_disp,
+            dispctx,
             video_width,
             video_height,
             xmb_shadows_enable,
@@ -5150,6 +5178,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
             xmb_draw_icon(
                   userdata,
+                  p_disp,
+                  dispctx,
                   video_width,
                   video_height,
                   xmb_shadows_enable,

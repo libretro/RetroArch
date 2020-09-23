@@ -620,8 +620,9 @@ static void stripes_draw_icon(
          draw.y         = draw.y + (icon_size-draw.width)/2;
       }
 #endif
-      gfx_display_draw(&draw, userdata,
-            video_width, video_height);
+      if (draw.height > 0 && draw.width > 0)
+         if (dispctx && dispctx->draw)
+            dispctx->draw(&draw, userdata, video_width, video_height);
    }
 
    coords.color         = (const float*)color;
@@ -635,8 +636,9 @@ static void stripes_draw_icon(
       draw.y            = draw.y + (icon_size-draw.width)/2;
    }
 #endif
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
+   if (draw.height > 0 && draw.width > 0)
+      if (dispctx && dispctx->draw)
+         dispctx->draw(&draw, userdata, video_width, video_height);
 }
 
 static void stripes_draw_text(
@@ -2786,12 +2788,16 @@ static void stripes_draw_bg(
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id = 0;
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (dispctx->draw)
+         if (draw.height > 0 && draw.width > 0)
+            dispctx->draw(&draw, userdata, video_width, video_height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 }
 
 static void stripes_draw_dark_layer(
@@ -2831,12 +2837,16 @@ static void stripes_draw_dark_layer(
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id = 0;
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (dispctx->draw)
+         if (draw.height > 0 && draw.width > 0)
+            dispctx->draw(&draw, userdata, video_width, video_height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 }
 
 static void stripes_frame(void *data, video_frame_info_t *video_info)

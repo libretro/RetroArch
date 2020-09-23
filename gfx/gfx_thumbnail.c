@@ -867,8 +867,9 @@ void gfx_thumbnail_draw(
             draw.y       = shadow_y;
 
             /* Draw shadow */
-            gfx_display_draw(&draw, userdata,
-                  video_width, video_height);
+            if (draw.height > 0 && draw.width > 0)
+               if (dispctx && dispctx->draw)
+                  dispctx->draw(&draw, userdata, video_width, video_height);
          }
       }
 
@@ -880,9 +881,13 @@ void gfx_thumbnail_draw(
       draw.y       = draw_y;
 
       /* Draw thumbnail */
-      gfx_display_draw(&draw, userdata,
-            video_width, video_height);
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      if (dispctx)
+      {
+         if (dispctx->draw)
+            if (draw.height > 0 && draw.width > 0)
+               dispctx->draw(&draw, userdata, video_width, video_height);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
    }
 }

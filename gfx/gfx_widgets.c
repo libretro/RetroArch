@@ -610,6 +610,8 @@ void gfx_widgets_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!texture)
       return;
@@ -641,8 +643,9 @@ void gfx_widgets_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
+   if (draw.height > 0 && draw.width > 0)
+      if (dispctx->draw)
+         dispctx->draw(&draw, userdata, video_width, video_height);
 }
 
 #ifdef HAVE_TRANSLATE
@@ -694,12 +697,16 @@ static void gfx_widgets_draw_icon_blend(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (draw.height > 0 && draw.width > 0)
+         if (dispctx->draw)
+            dispctx->draw(&draw, userdata, video_width, video_height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 }
 #endif
 

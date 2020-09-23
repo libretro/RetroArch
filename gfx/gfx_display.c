@@ -699,18 +699,6 @@ font_data_t *gfx_display_font_file(
    return font_data;
 }
 
-void gfx_display_draw(gfx_display_ctx_draw_t *draw,
-      void *data,
-      unsigned video_width, 
-      unsigned video_height)
-{
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (draw && draw->height > 0 && draw->width > 0)
-      if (dispctx && dispctx->draw)
-         dispctx->draw(draw, data, video_width, video_height);
-}
-
 void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
       void *userdata, bool add_opacity_to_wallpaper,
       float override_opacity)

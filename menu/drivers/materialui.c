@@ -2347,10 +2347,14 @@ static void materialui_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   if (dispctx)
+   {
+      if (dispctx->draw)
+         if (draw.height > 0 && draw.width > 0)
+            dispctx->draw(&draw, userdata, video_width, video_height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 }
 
 static void materialui_draw_thumbnail(
@@ -5052,14 +5056,18 @@ static void materialui_render_background(materialui_handle_t *mui,
    }
 
    /* Draw background */
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   gfx_display_draw_bg(&draw, userdata,
-         add_opacity, opacity_override);
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      gfx_display_draw_bg(&draw, userdata,
+            add_opacity, opacity_override);
+      if (dispctx->draw)
+         if (draw.height > 0 && draw.width > 0)
+            dispctx->draw(&draw, userdata, video_width, video_height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 }
 
 static void materialui_render_landscape_border(

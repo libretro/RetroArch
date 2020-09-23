@@ -277,6 +277,10 @@ void ozone_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
+   gfx_display_t            
+      *p_disp               = disp_get_ptr();
+   gfx_display_ctx_driver_t 
+      *dispctx              = p_disp->dispctx;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;
@@ -305,8 +309,9 @@ void ozone_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
-   gfx_display_draw(&draw, userdata,
-         video_width, video_height);
+   if (draw.height > 0 && draw.width > 0)
+      if (dispctx && dispctx->draw)
+         dispctx->draw(&draw, userdata, video_width, video_height);
 }
 
 void ozone_draw_backdrop(
