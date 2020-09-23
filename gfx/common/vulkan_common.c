@@ -2787,7 +2787,10 @@ retry:
       if (!vulkan_create_swapchain(vk, vk->context.swapchain_width,
                vk->context.swapchain_height, vk->context.swap_interval))
       {
+#ifdef VULKAN_DEBUG
          RARCH_ERR("[Vulkan]: Failed to create new swapchain.\n");
+#endif
+         retro_sleep(20);
          return;
       }
 
@@ -2941,6 +2944,14 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vkDeviceWaitIdle(vk->context.device);
    vulkan_acquire_clear_fences(vk);
 
+   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu,
+         vk->vk_surface, &surface_properties);
+
+   /* Skip creation when window is minimized */
+   if (!surface_properties.currentExtent.width &&
+       !surface_properties.currentExtent.height)
+      return false;
+
    if (swap_interval == 0 && vk->emulate_mailbox)
    {
       swap_interval          = 1;
@@ -3055,8 +3066,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
          (unsigned)swapchain_present_mode);
 
-   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu,
-         vk->vk_surface, &surface_properties);
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
