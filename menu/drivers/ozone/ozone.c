@@ -1945,6 +1945,8 @@ static void ozone_draw_header(ozone_handle_t *ozone,
    unsigned seperator_margin = 30 * scale_factor;
    enum gfx_animation_ticker_type
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -2014,7 +2016,8 @@ static void ozone_draw_header(ozone_handle_t *ozone,
          false);
 
    /* Icon */
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
 #if 0
    if (discord_avatar_is_ready())
       ozone_draw_icon(
@@ -2043,7 +2046,8 @@ static void ozone_draw_header(ozone_handle_t *ozone,
             video_width,
             video_height,
             0, 1, ozone->theme->entries_icon);
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    /* Battery */
    if (battery_level_enable)
@@ -2077,7 +2081,8 @@ static void ozone_draw_header(ozone_handle_t *ozone,
                1.0f,
                false);
 
-         gfx_display_blend_begin(userdata);
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
          ozone_draw_icon(
                userdata,
                video_width,
@@ -2090,7 +2095,8 @@ static void ozone_draw_header(ozone_handle_t *ozone,
                video_width,
                video_height,
                0, 1, ozone->theme->entries_icon);
-         gfx_display_blend_end(userdata);
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
    }
 
@@ -2124,7 +2130,8 @@ static void ozone_draw_header(ozone_handle_t *ozone,
             1.0f,
             false);
 
-      gfx_display_blend_begin(userdata);
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
       ozone_draw_icon(
             userdata,
             video_width,
@@ -2137,7 +2144,8 @@ static void ozone_draw_header(ozone_handle_t *ozone,
             video_width,
             video_height,
             0, 1, ozone->theme->entries_icon);
-      gfx_display_blend_end(userdata);
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
 
@@ -2195,6 +2203,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          ozone->footer_labels.fullscreen_thumbs.width - icon_size - (2.0f * icon_padding);
    float metadata_toggle_x   = fullscreen_thumbs_x -
          ozone->footer_labels.metadata_toggle.width - icon_size - (2.0f * icon_padding);
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* Separator */
    gfx_display_draw_quad(
@@ -2212,7 +2222,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
    /* Buttons */
 
    /* Draw icons */
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
    gfx_display_set_alpha(ozone->theme_dynamic.entries_icon, 1.0f);
 
    /* > ok */
@@ -2287,7 +2298,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
             video_width,video_height,
             0, 1, ozone->theme_dynamic.entries_icon);
 
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    /* Draw labels */
 
@@ -2451,7 +2463,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
    }
    else
    {
-      gfx_display_blend_begin(userdata);
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
       ozone_draw_icon(
             userdata,
             video_width,
@@ -2466,7 +2479,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
             0,
             1,
             NULL);
-      gfx_display_blend_end(userdata);
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
 

@@ -185,6 +185,8 @@ void ozone_draw_sidebar(
    unsigned selection_y          = 0;
    unsigned selection_old_y      = 0;
    unsigned horizontal_list_size = 0;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!ozone->draw_sidebar)
       return;
@@ -310,7 +312,8 @@ void ozone_draw_sidebar(
 
    /* Menu tabs */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_padding_vertical;
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
 
    for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
    {
@@ -364,7 +367,8 @@ void ozone_draw_sidebar(
       y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
    }
 
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    /* Console tabs */
    if (horizontal_list_size > 0)
@@ -383,7 +387,8 @@ void ozone_draw_sidebar(
 
       y += ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px;
 
-      gfx_display_blend_begin(userdata);
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
       for (i = 0; i < horizontal_list_size; i++)
       {
@@ -463,7 +468,8 @@ console_iterate:
          y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
       }
 
-      gfx_display_blend_end(userdata);
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 
    ozone_font_flush(video_width, video_height, &ozone->fonts.sidebar);

@@ -1639,6 +1639,8 @@ void gfx_display_draw_keyboard(
 {
    unsigned i;
    int ptr_width, ptr_height;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    static float white[16] =  {
       1.00, 1.00, 1.00, 1.00,
@@ -1678,7 +1680,8 @@ void gfx_display_draw_keyboard(
 
       if (i == id)
       {
-         gfx_display_blend_begin(userdata);
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
 
          gfx_display_draw_texture(
                userdata,
@@ -1693,7 +1696,8 @@ void gfx_display_draw_keyboard(
                &white[0],
                hover_texture);
 
-         gfx_display_blend_end(userdata);
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(userdata);
 
          color = text_color;
       }

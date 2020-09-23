@@ -720,6 +720,8 @@ void gfx_thumbnail_draw(
       float draw_height;
       float draw_x;
       float draw_y;
+      gfx_display_t            *p_disp  = disp_get_ptr();
+      gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
       float thumbnail_alpha     = thumbnail->alpha * alpha;
       float thumbnail_color[16] = {
          1.0f, 1.0f, 1.0f, 1.0f,
@@ -739,7 +741,8 @@ void gfx_thumbnail_draw(
             thumbnail, width, height, scale_factor,
             &draw_width, &draw_height);
 
-      gfx_display_blend_begin(userdata);
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
       /* Perform 'rotation' step
        * > Note that rotation does not actually work...
@@ -879,6 +882,7 @@ void gfx_thumbnail_draw(
       /* Draw thumbnail */
       gfx_display_draw(&draw, userdata,
             video_width, video_height);
-      gfx_display_blend_end(userdata);
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }

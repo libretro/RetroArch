@@ -95,11 +95,14 @@ static void ozone_draw_cursor_slice(
    int slice_y           = (int)y + 8 * scale_factor;
    unsigned slice_new_w  = width + (24 + 1) * scale_factor;
    unsigned slice_new_h  = height + 20 * scale_factor;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
 
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
 
    /* Cursor without border */
    gfx_display_draw_texture_slice(
@@ -133,7 +136,8 @@ static void ozone_draw_cursor_slice(
       ozone->textures[OZONE_TEXTURE_CURSOR_BORDER]
    );
 
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
 static void ozone_draw_cursor_fallback(
@@ -530,6 +534,8 @@ void ozone_draw_messagebox(
    float scale_factor       = 0.0f;
    unsigned width           = video_width;
    unsigned height          = video_height;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    wrapped_message[0]       = '\0';
 
@@ -585,7 +591,8 @@ void ozone_draw_messagebox(
 
    gfx_display_set_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
 
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
 
    /* Avoid drawing a black box if there's no assets */
    if (ozone->has_all_assets)

@@ -58,6 +58,8 @@ static void ozone_draw_entry_value(
    bool switch_is_on     = true;
    bool do_draw_text     = false;
    float scale_factor    = ozone->last_scale_factor;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!entry->checked && string_is_empty(value))
       return;
@@ -65,7 +67,8 @@ static void ozone_draw_entry_value(
    /* check icon */
    if (entry->checked)
    {
-      gfx_display_blend_begin(userdata);
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
       ozone_draw_icon(
             userdata,
             video_width,
@@ -80,7 +83,8 @@ static void ozone_draw_entry_value(
             0,
             1,
             ozone->theme_dynamic.entries_checkmark);
-      gfx_display_blend_end(userdata);
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
       return;
    }
 
@@ -176,8 +180,11 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 {
    unsigned icon           = OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
    unsigned icon_size      = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   gfx_display_blend_begin(userdata);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
    ozone_draw_icon(
          userdata,
          video_width,
@@ -190,7 +197,8 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
          video_width,
          video_height,
          0, 1, ozone->theme->entries_icon);
-   gfx_display_blend_end(userdata);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    gfx_display_draw_text(
          ozone->fonts.footer.font,
@@ -491,6 +499,8 @@ void ozone_draw_entries(
    size_t old_selection_y  = 0;
    int entry_padding       = ozone_get_entries_padding(ozone, old_list);
    float scale_factor      = ozone->last_scale_factor;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -781,7 +791,8 @@ border_iterate:
 
          gfx_display_set_alpha(icon_color, alpha);
 
-         gfx_display_blend_begin(userdata);
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
          ozone_draw_icon(
                userdata,
                video_width,
@@ -799,7 +810,8 @@ border_iterate:
                0,
                1,
                icon_color);
-         gfx_display_blend_end(userdata);
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(userdata);
 
          if (icon_color == ozone_pure_white)
             gfx_display_set_alpha(icon_color, 1.0f);
@@ -916,6 +928,8 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
    float scale_factor                = ozone->last_scale_factor;
    enum gfx_thumbnail_alignment right_thumbnail_alignment;
    enum gfx_thumbnail_alignment left_thumbnail_alignment;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* Background */
    if (!libretro_running || (menu_framebuffer_opacity >= 1.0f))
@@ -1309,7 +1323,8 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
 
          /* Draw icon in the bottom right corner of
           * the thumbnail bar */
-         gfx_display_blend_begin(userdata);
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
          ozone_draw_icon(
                userdata,
                video_width,
@@ -1322,7 +1337,8 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                video_width,
                video_height,
                0, 1, ozone->theme_dynamic.entries_icon);
-         gfx_display_blend_end(userdata);
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
    }
 }
