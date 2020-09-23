@@ -34089,7 +34089,7 @@ static const gfx_ctx_driver_t *video_context_driver_init(
 {
    struct rarch_state *p_rarch = &rarch_st;
    settings_t       *settings  = p_rarch->configuration_settings;
-   bool  video_shared_context  = settings->bools.video_shared_context;
+   bool  video_shared_context  = settings->bools.video_shared_context || libretro_get_shared_context();
 
    if (!ctx->bind_api(data, api, major, minor))
    {
