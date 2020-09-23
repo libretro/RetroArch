@@ -283,12 +283,6 @@ void gfx_display_draw_keyboard(
       char *grid[], unsigned id,
       unsigned text_color);
 
-void gfx_display_draw_pipeline(
-      gfx_display_ctx_draw_t *draw,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height);
-
 void gfx_display_draw_bg(
       gfx_display_ctx_draw_t *draw,
       void *userdata,

@@ -4083,10 +4083,8 @@ static void xmb_draw_bg(
             break;
       }
 
-      gfx_display_draw_pipeline(&draw,
-            userdata,
-            video_width,
-            video_height);
+      if (dispctx && dispctx->draw_pipeline)
+         dispctx->draw_pipeline(&draw, userdata, video_width, video_height);
    }
    else
 #endif
