@@ -1347,6 +1347,7 @@ MENU
 #include "../gfx/widgets/gfx_widget_progress_message.c"
 #ifdef HAVE_CHEEVOS
 #include "../gfx/widgets/gfx_widget_achievement_popup.c"
+#include "../gfx/widgets/gfx_widget_leaderboard_display.c"
 #endif
 #include "../gfx/widgets/gfx_widget_load_content_animation.c"
 #endif

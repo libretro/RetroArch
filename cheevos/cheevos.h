@@ -57,6 +57,8 @@ bool rcheevos_unload(void);
 void rcheevos_hardcore_enabled_changed(void);
 void rcheevos_toggle_hardcore_paused(void);
 
+void rcheevos_leaderboards_enabled_changed(void);
+
 void rcheevos_test(void);
 
 void rcheevos_set_support_cheevos(bool state);
