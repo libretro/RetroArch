@@ -1540,21 +1540,6 @@ void gfx_display_set_msg_force(bool state)
    p_disp->msg_force       = state;
 }
 
-/* Returns true if an animation is still active or
- * when the display framebuffer still is dirty and
- * therefore it still needs to be rendered onscreen.
- *
- * This function can be used for optimization purposes
- * so that we don't have to render the display graphics per-frame
- * unless a change has happened.
- * */
-bool gfx_display_get_update_pending(void)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   gfx_animation_t *p_anim = anim_get_ptr();
-   return (ANIM_IS_ACTIVE(p_anim) || p_disp->framebuf_dirty);
-}
-
 /* Checks if the display framebuffer has its 'dirty flag' set. This
  * means that the current contents of the framebuffer has changed
  * and that it has to be rendered to the screen. */

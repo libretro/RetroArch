@@ -3437,6 +3437,8 @@ static void rgui_render(void *data,
          rgui->show_fs_thumbnail &&
          rgui->entry_has_thumbnail &&
          (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
+   gfx_animation_t *p_anim        = anim_get_ptr();
+   gfx_display_t *p_disp          = disp_get_ptr();
 
    /* Sanity check */
    if (!rgui || !rgui_frame_buf.data)
@@ -3461,7 +3463,7 @@ static void rgui_render(void *data,
 
       if (  !display_kb && 
             !current_display_cb && 
-            (is_idle || !gfx_display_get_update_pending()))
+            (is_idle || !GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp)))
          return;
    }
 

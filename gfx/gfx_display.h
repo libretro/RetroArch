@@ -50,6 +50,16 @@ RETRO_BEGIN_DECLS
 
 #define gfx_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
 
+/* Returns true if an animation is still active or
+ * when the display framebuffer still is dirty and
+ * therefore it still needs to be rendered onscreen.
+ *
+ * This macro can be used for optimization purposes
+ * so that we don't have to render the display graphics per-frame
+ * unless a change has happened.
+ * */
+#define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || p_disp->framebuf_dirty)
+
 enum menu_driver_id_type
 {
    MENU_DRIVER_ID_UNKNOWN = 0,
@@ -261,7 +271,6 @@ void gfx_display_set_framebuffer_pitch(size_t pitch);
 
 bool gfx_display_get_msg_force(void);
 void gfx_display_set_msg_force(bool state);
-bool gfx_display_get_update_pending(void);
 bool gfx_display_get_framebuffer_dirty_flag(void);
 void gfx_display_set_framebuffer_dirty_flag(void);
 void gfx_display_unset_framebuffer_dirty_flag(void);

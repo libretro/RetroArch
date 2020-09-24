@@ -4433,6 +4433,8 @@ static int generic_menu_iterate(
    const char *label               = NULL;
    menu_handle_t *menu             = (menu_handle_t*)data;
    struct menu_state *menu_st      = &p_rarch->menu_driver_state;
+   gfx_display_t *p_disp           = &p_rarch->dispgfx;
+   gfx_animation_t *p_anim         = &p_rarch->anim;
 
    if (!menu)
       return 0;
@@ -4447,7 +4449,7 @@ static int generic_menu_iterate(
 
    if (     action != MENU_ACTION_NOOP
          || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-         || gfx_display_get_update_pending())
+         || GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp))
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    }
