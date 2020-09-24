@@ -1778,7 +1778,7 @@ void gfx_display_init_white_texture(uintptr_t white_texture)
    ti.pixels = (uint32_t*)&white_data;
 
    video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, &white_texture);
+         TEXTURE_FILTER_NEAREST, &gfx_display_white_texture);
 }
 
 void gfx_display_free(void)
