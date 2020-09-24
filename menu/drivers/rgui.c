@@ -4789,11 +4789,13 @@ static void rgui_free(void *data)
 
    if (rgui)
    {
+#ifdef HAVE_GFX_WIDGETS
       if (rgui->widgets_supported)
       {
          if (gfx_display_white_texture)
             video_driver_texture_unload(&gfx_display_white_texture);
       }
+#endif
       if (rgui->thumbnail_path_data)
          free(rgui->thumbnail_path_data);
    }
