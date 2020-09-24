@@ -1453,6 +1453,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
     * risk of clashing with specific particle effect
     * implementation variables... */
    float global_speed_factor   = 1.0f;
+   gfx_animation_t *p_anim     = anim_get_ptr();
    settings_t        *settings = config_get_ptr();
    float particle_effect_speed = settings ? settings->floats.menu_rgui_particle_effect_speed : 0.0f;
    
@@ -1469,7 +1470,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
 
    /* > Account for non-standard frame times
     *   (high/low refresh rates, or frame drops) */
-   global_speed_factor *= gfx_animation_get_delta_time() 
+   global_speed_factor   *= p_anim->delta_time
       / particle_effect_period;
    
    /* Note: It would be more elegant to have 'update' and 'draw'

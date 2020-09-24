@@ -248,8 +248,6 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker);
 
 bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker);
 
-float gfx_animation_get_delta_time(void);
-
 bool gfx_animation_kill_by_tag(uintptr_t *tag);
 
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry);

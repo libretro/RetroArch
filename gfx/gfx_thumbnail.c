@@ -473,10 +473,11 @@ void gfx_thumbnail_process_stream(
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
       if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
-         gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+         gfx_animation_t *p_anim             = anim_get_ptr();
+         gfx_thumbnail_state_t *p_gfx_thumb  = gfx_thumb_get_ptr();
 
          /* Check if stream delay timer has elapsed */
-         thumbnail->delay_timer += gfx_animation_get_delta_time();
+         thumbnail->delay_timer             += p_anim->delta_time;
 
          if (thumbnail->delay_timer > p_gfx_thumb->stream_delay)
          {
@@ -552,7 +553,8 @@ void gfx_thumbnail_process_streams(
       {
          /* Check if stream delay timer has elapsed */
          gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
-         float delta_time                   = gfx_animation_get_delta_time();
+         gfx_animation_t *p_anim            = anim_get_ptr();
+         float delta_time                   = p_anim->delta_time;
          bool request_right                 = false;
          bool request_left                  = false;
 

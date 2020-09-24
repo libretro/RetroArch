@@ -25726,7 +25726,7 @@ static unsigned menu_event(
    if (set_scroll)
       menu_st->scroll.acceleration = (unsigned)(new_scroll_accel);
 
-   delay_count += gfx_animation_get_delta_time();
+   delay_count += p_rarch->anim.delta_time;
 
    if (display_kb)
    {
@@ -33510,7 +33510,7 @@ static void video_driver_frame(const void *data, unsigned width,
       RUNLOOP_MSG_QUEUE_LOCK();
 
       /* Check whether duration timer has elapsed */
-      runloop_core_status_msg.duration -= gfx_animation_get_delta_time();
+      runloop_core_status_msg.duration -= p_rarch->anim.delta_time;
 
       if (runloop_core_status_msg.duration < 0.0f)
       {

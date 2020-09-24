@@ -2208,12 +2208,6 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
    return true;
 }
 
-float gfx_animation_get_delta_time(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->delta_time;
-}
-
 bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
 {
    gfx_animation_t *p_anim        = anim_get_ptr();

@@ -3281,8 +3281,9 @@ static bool materialui_render_process_entry_playlist_desktop(
       /* Check whether metadata needs to be cached */
       if (!mui->status_bar.cached)
       {
+         gfx_animation_t *p_anim        = anim_get_ptr();
          /* Check if delay timer has elapsed */
-         mui->status_bar.delay_timer += gfx_animation_get_delta_time();
+         mui->status_bar.delay_timer   += p_anim->delta_time;
 
          if (mui->status_bar.delay_timer > mui->thumbnail_stream_delay)
          {
@@ -5242,7 +5243,9 @@ static void materialui_render_entry_touch_feedback(
     * fade out */
    else if (mui->touch_feedback_alpha > 0.0f)
    {
-      mui->touch_feedback_alpha -= (gfx_animation_get_delta_time() * 1000.0f) / (float)MENU_INPUT_PRESS_TIME_SHORT;
+      gfx_animation_t *p_anim    = anim_get_ptr();
+      mui->touch_feedback_alpha -= (p_anim->delta_time * 1000.0f) 
+         / (float)MENU_INPUT_PRESS_TIME_SHORT;
       mui->touch_feedback_alpha = (mui->touch_feedback_alpha < 0.0f) ? 0.0f : mui->touch_feedback_alpha;
    }
 
