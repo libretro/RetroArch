@@ -83,8 +83,9 @@ static unsigned to_menu_pipeline(
       case VIDEO_SHADER_MENU_5:
          return 12 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       default:
-         return 0;
+         break;
    }
+   return 0;
 }
 #endif
 
@@ -217,7 +218,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
     * an interleaved model to begin with ... */
    if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-         draw->coords->vertices * sizeof(struct vk_vertex), &range))
+            draw->coords->vertices * sizeof(struct vk_vertex), &range))
       return;
 
    pv = (struct vk_vertex*)range.data;
@@ -242,47 +243,45 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
-      {
-         struct vk_draw_triangles call;
+         {
+            struct vk_draw_triangles call;
 
-         call.pipeline     = vk->display.pipelines[
+            call.pipeline     = vk->display.pipelines[
                to_menu_pipeline(draw->prim_type, draw->pipeline_id)];
-         call.texture      = NULL;
-         call.sampler      = VK_NULL_HANDLE;
-         call.uniform      = draw->backend_data;
-         call.uniform_size = draw->backend_data_size;
-         call.vbo          = &range;
-         call.vertices     = draw->coords->vertices;
+            call.texture      = NULL;
+            call.sampler      = VK_NULL_HANDLE;
+            call.uniform      = draw->backend_data;
+            call.uniform_size = draw->backend_data_size;
+            call.vbo          = &range;
+            call.vertices     = draw->coords->vertices;
 
-         vulkan_draw_triangles(vk, &call);
-         break;
-      }
-
+            vulkan_draw_triangles(vk, &call);
+         }
          break;
 #endif
 
       default:
-      {
-         struct vk_draw_triangles call;
-         unsigned 
-            disp_pipeline  = ((draw->prim_type == 
-                  GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | 
-            (vk->display.blend << 0);
-         call.pipeline     = vk->display.pipelines[disp_pipeline];
-         call.texture      = texture;
-         call.sampler      = texture->mipmap ?
-            vk->samplers.mipmap_linear :
-            (texture->default_smooth ? vk->samplers.linear
-             : vk->samplers.nearest);
-         call.uniform      = draw->matrix_data
-            ? draw->matrix_data : &vk->mvp_no_rot;
-         call.uniform_size = sizeof(math_matrix_4x4);
-         call.vbo          = &range;
-         call.vertices     = draw->coords->vertices;
+         {
+            struct vk_draw_triangles call;
+            unsigned 
+               disp_pipeline  = ((draw->prim_type == 
+                        GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | 
+               (vk->display.blend << 0);
+            call.pipeline     = vk->display.pipelines[disp_pipeline];
+            call.texture      = texture;
+            call.sampler      = texture->mipmap ?
+               vk->samplers.mipmap_linear :
+               (texture->default_smooth ? vk->samplers.linear
+                : vk->samplers.nearest);
+            call.uniform      = draw->matrix_data
+               ? draw->matrix_data : &vk->mvp_no_rot;
+            call.uniform_size = sizeof(math_matrix_4x4);
+            call.vbo          = &range;
+            call.vertices     = draw->coords->vertices;
 
-         vulkan_draw_triangles(vk, &call);
+            vulkan_draw_triangles(vk, &call);
+         }
          break;
-      }
    }
 }
 
