@@ -1,0 +1,11 @@
+filter = gameboy3x
+
+# Colour format: 0xRRGGBB
+# 0 is darkest, 3 is lightest
+# Only works with 4 shade greyscale content
+
+gameboy3x_palette_0    = 0x2A3325
+gameboy3x_palette_1    = 0x535f49
+gameboy3x_palette_2    = 0x86927C
+gameboy3x_palette_3    = 0xA7B19A
+gameboy3x_palette_grid = 0xADB8A0

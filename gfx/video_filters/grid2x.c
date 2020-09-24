@@ -14,16 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Compile: gcc -o normal2x.so -shared normal2x.c -std=c99 -O3 -Wall -pedantic -fPIC */
+/* Compile: gcc -o grid2x.so -shared grid2x.c -std=c99 -O3 -Wall -pedantic -fPIC */
 
 #include "softfilter.h"
 #include <stdlib.h>
 #include <string.h>
 
 #ifdef RARCH_INTERNAL
-#define softfilter_get_implementation normal2x_get_implementation
-#define softfilter_thread_data normal2x_softfilter_thread_data
-#define filter_data normal2x_filter_data
+#define softfilter_get_implementation grid2x_get_implementation
+#define softfilter_thread_data grid2x_softfilter_thread_data
+#define filter_data grid2x_filter_data
 #endif
 
 struct softfilter_thread_data
@@ -46,23 +46,23 @@ struct filter_data
    unsigned in_fmt;
 };
 
-static unsigned normal2x_generic_input_fmts(void)
+static unsigned grid2x_generic_input_fmts(void)
 {
    return SOFTFILTER_FMT_XRGB8888 | SOFTFILTER_FMT_RGB565;
 }
 
-static unsigned normal2x_generic_output_fmts(unsigned input_fmts)
+static unsigned grid2x_generic_output_fmts(unsigned input_fmts)
 {
    return input_fmts;
 }
 
-static unsigned normal2x_generic_threads(void *data)
+static unsigned grid2x_generic_threads(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
    return filt->threads;
 }
 
-static void *normal2x_generic_create(const struct softfilter_config *config,
+static void *grid2x_generic_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
@@ -87,7 +87,7 @@ static void *normal2x_generic_create(const struct softfilter_config *config,
    return filt;
 }
 
-static void normal2x_generic_output(void *data,
+static void grid2x_generic_output(void *data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
@@ -95,7 +95,7 @@ static void normal2x_generic_output(void *data,
    *out_height = height << 1;
 }
 
-static void normal2x_generic_destroy(void *data)
+static void grid2x_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
    if (!filt) {
@@ -105,7 +105,7 @@ static void normal2x_generic_destroy(void *data)
    free(filt);
 }
 
-static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
+static void grid2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    const uint32_t *input = (const uint32_t*)thr->in_data;
@@ -119,17 +119,29 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
       uint32_t *out_ptr = output;
       for (x = 0; x < thr->width; ++x)
       {
-         uint32_t *out_line_ptr = out_ptr;
-         uint32_t color         = *(input + x);
+         /* Note: We process the 'padding' bits as though they
+          * matter (they don't), since this deals with any potential
+          * byte swapping issues */
+         uint32_t *out_line_ptr  = out_ptr;
+         uint32_t color          = *(input + x);
+         uint8_t  p              = (color >> 24 & 0xFF); /* Padding bits */
+         uint8_t  r              = (color >> 16 & 0xFF);
+         uint8_t  g              = (color >>  8 & 0xFF);
+         uint8_t  b              = (color       & 0xFF);
+         uint32_t scanline_color =
+               ((p - (p >> 2)) << 24) |
+               ((r - (r >> 2)) << 16) |
+               ((g - (g >> 2)) <<  8) |
+               ((b - (b >> 2))      );
 
-         /* Row 1 */
+         /* Row 1: <colour><scanline> */
          *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
+         *(out_line_ptr + 1) = scanline_color;
          out_line_ptr       += out_stride;
 
-         /* Row 2 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
+         /* Row 2: <scanline><scanline> */
+         *out_line_ptr       = scanline_color;
+         *(out_line_ptr + 1) = scanline_color;
 
          out_ptr += 2;
       }
@@ -139,7 +151,7 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
    }
 }
 
-static void normal2x_work_cb_rgb565(void *data, void *thread_data)
+static void grid2x_work_cb_rgb565(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    const uint16_t *input = (const uint16_t*)thr->in_data;
@@ -153,17 +165,24 @@ static void normal2x_work_cb_rgb565(void *data, void *thread_data)
       uint16_t *out_ptr = output;
       for (x = 0; x < thr->width; ++x)
       {
-         uint16_t *out_line_ptr = out_ptr;
-         uint16_t color         = *(input + x);
+         uint16_t *out_line_ptr  = out_ptr;
+         uint16_t color          = *(input + x);
+         uint8_t  r              = (color >> 11 & 0x1F);
+         uint8_t  g              = (color >>  6 & 0x1F);
+         uint8_t  b              = (color       & 0x1F);
+         uint16_t scanline_color =
+               ((r - (r >> 2)) << 11) |
+               ((g - (g >> 2)) <<  6) |
+               ((b - (b >> 2))      );
 
-         /* Row 1 */
+         /* Row 1: <colour><scanline> */
          *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
+         *(out_line_ptr + 1) = scanline_color;
          out_line_ptr       += out_stride;
 
-         /* Row 2 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
+         /* Row 2: <scanline><scanline> */
+         *out_line_ptr       = scanline_color;
+         *(out_line_ptr + 1) = scanline_color;
 
          out_ptr += 2;
       }
@@ -173,7 +192,7 @@ static void normal2x_work_cb_rgb565(void *data, void *thread_data)
    }
 }
 
-static void normal2x_generic_packets(void *data,
+static void grid2x_generic_packets(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride)
@@ -194,34 +213,34 @@ static void normal2x_generic_packets(void *data,
    thr->height = height;
 
    if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888) {
-      packets[0].work = normal2x_work_cb_xrgb8888;
+      packets[0].work = grid2x_work_cb_xrgb8888;
    } else if (filt->in_fmt == SOFTFILTER_FMT_RGB565) {
-      packets[0].work = normal2x_work_cb_rgb565;
+      packets[0].work = grid2x_work_cb_rgb565;
    }
    packets[0].thread_data = thr;
 }
 
-static const struct softfilter_implementation normal2x_generic = {
-   normal2x_generic_input_fmts,
-   normal2x_generic_output_fmts,
+static const struct softfilter_implementation grid2x_generic = {
+   grid2x_generic_input_fmts,
+   grid2x_generic_output_fmts,
 
-   normal2x_generic_create,
-   normal2x_generic_destroy,
+   grid2x_generic_create,
+   grid2x_generic_destroy,
 
-   normal2x_generic_threads,
-   normal2x_generic_output,
-   normal2x_generic_packets,
+   grid2x_generic_threads,
+   grid2x_generic_output,
+   grid2x_generic_packets,
 
    SOFTFILTER_API_VERSION,
-   "Normal2x",
-   "normal2x",
+   "Grid2x",
+   "grid2x",
 };
 
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
    (void)simd;
-   return &normal2x_generic;
+   return &grid2x_generic;
 }
 
 #ifdef RARCH_INTERNAL

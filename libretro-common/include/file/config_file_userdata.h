@@ -43,6 +43,9 @@ int config_userdata_get_float(void *userdata, const char *key_str,
 int config_userdata_get_int(void *userdata, const char *key_str,
       int *value, int default_value);
 
+int config_userdata_get_hex(void *userdata, const char *key_str,
+      unsigned *value, unsigned default_value);
+
 int config_userdata_get_float_array(void *userdata, const char *key_str,
       float **values, unsigned *out_num_values,
       const float *default_values, unsigned num_default_values);

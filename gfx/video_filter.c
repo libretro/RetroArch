@@ -122,6 +122,7 @@ softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
 static const struct softfilter_config softfilter_config = {
    config_userdata_get_float,
    config_userdata_get_int,
+   config_userdata_get_hex,
    config_userdata_get_float_array,
    config_userdata_get_int_array,
    config_userdata_get_string,
@@ -339,6 +340,11 @@ extern const struct softfilter_implementation *darken_get_implementation(softfil
 extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *normal2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scanline2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *grid2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *gameboy3x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *gameboy4x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *dot_matrix_3x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *dot_matrix_4x_get_implementation(softfilter_simd_mask_t simd);
 
 static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    blargg_ntsc_snes_get_implementation,
@@ -353,6 +359,11 @@ static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    scale2x_get_implementation,
    normal2x_get_implementation,
    scanline2x_get_implementation,
+   grid2x_get_implementation,
+   gameboy3x_get_implementation,
+   gameboy4x_get_implementation,
+   dot_matrix_3x_get_implementation,
+   dot_matrix_4x_get_implementation,
 };
 
 static bool append_softfilter_plugs(rarch_softfilter_t *filt,
