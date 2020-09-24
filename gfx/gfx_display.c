@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "gfx_display.h"
-#include "gfx_animation.h"
 
 #include "video_coord_array.h"
 #include "../configuration.h"
@@ -1786,7 +1785,6 @@ void gfx_display_free(void)
 {
    gfx_display_t           *p_disp   = disp_get_ptr();
    video_coord_array_free(&p_disp->dispca);
-   gfx_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
 
    p_disp->msg_force           = false;
    p_disp->header_height       = 0;
