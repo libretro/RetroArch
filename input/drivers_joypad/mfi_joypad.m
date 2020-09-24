@@ -230,7 +230,7 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                  mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
                  });
-        }
+        };
     }
 }
 
@@ -319,7 +319,7 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
     }
 }
 
-void *apple_gamecontroller_joypad_init(void *data)
+bool apple_gamecontroller_joypad_init(void *data)
 {
    static bool inited = false;
    if (inited)
