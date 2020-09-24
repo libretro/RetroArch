@@ -848,50 +848,29 @@ void gfx_display_draw_polygon(
    }
 }
 
-void gfx_display_draw_texture(
+static void gfx_display_draw_texture(
+      gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
-      float *color, uintptr_t texture)
+      float *color, uintptr_t texture,
+      gfx_display_ctx_draw_t *draw
+      )
 {
-   gfx_display_ctx_draw_t draw;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
-   struct video_coords coords;
-   math_matrix_4x4 mymat;
-   gfx_display_t            
-      *p_disp               = disp_get_ptr();
-   gfx_display_ctx_driver_t 
-      *dispctx              = p_disp->dispctx;
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0;
-   rotate_draw.scale_x      = 1.0;
-   rotate_draw.scale_y      = 1.0;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-   coords.vertices          = 4;
-   coords.vertex            = NULL;
-   coords.tex_coord         = NULL;
-   coords.lut_tex_coord     = NULL;
-   draw.width               = w;
-   draw.height              = h;
-   draw.coords              = &coords;
-   draw.matrix_data         = &mymat;
-   draw.prim_type           = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline_id         = 0;
-   coords.color             = (const float*)color;
-
-   gfx_display_rotate_z(&rotate_draw, userdata);
-
-   draw.texture             = texture;
-   draw.x                   = x;
-   draw.y                   = height - y;
+   draw->width              = w;
+   draw->height             = h;
+   draw->prim_type          = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw->pipeline_id        = 0;
+   draw->texture            = texture;
+   draw->x                  = x;
+   draw->y                  = height - y;
 
    if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+      if (draw->width > 0 && draw->height > 0)
+         dispctx->draw(draw, userdata, video_width, video_height);
 }
 
 /* Draw the texture split into 9 sections, without scaling the corners.
@@ -1588,6 +1567,22 @@ void gfx_display_draw_keyboard(
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
    };
+   struct video_coords coords;
+   gfx_display_ctx_draw_t draw;
+   math_matrix_4x4 mymat;
+   gfx_display_ctx_rotate_draw_t rotate_draw;
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0.0;
+   rotate_draw.scale_x      = 1.0;
+   rotate_draw.scale_y      = 1.0;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   coords.vertices          = 4;
+   coords.vertex            = NULL;
+   coords.tex_coord         = NULL;
+   coords.lut_tex_coord     = NULL;
+   coords.color             = (const float*)&white[0];
 
    gfx_display_draw_quad(
          userdata,
@@ -1607,6 +1602,11 @@ void gfx_display_draw_keyboard(
    if (ptr_width >= ptr_height)
       ptr_width = ptr_height;
 
+   gfx_display_rotate_z(&rotate_draw, userdata);
+
+   draw.coords             = &coords;
+   draw.matrix_data        = &mymat;
+
    for (i = 0; i < 44; i++)
    {
       int line_y     = (i / 11) * video_height / 10.0;
@@ -1618,6 +1618,8 @@ void gfx_display_draw_keyboard(
             dispctx->blend_begin(userdata);
 
          gfx_display_draw_texture(
+               p_disp,
+               dispctx,
                userdata,
                video_width,
                video_height,
@@ -1628,7 +1630,9 @@ void gfx_display_draw_keyboard(
                video_width,
                video_height,
                &white[0],
-               hover_texture);
+               hover_texture,
+               &draw
+               );
 
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);
@@ -1649,8 +1653,7 @@ void gfx_display_draw_keyboard(
    }
 }
 
-/* Draw text on top of the screen.
- */
+/* Draw text on top of the screen */
 void gfx_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,

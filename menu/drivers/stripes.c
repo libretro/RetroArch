@@ -684,88 +684,6 @@ static void stripes_messagebox(void *data, const char *message)
    stripes->box_message = strdup(message);
 }
 
-static void stripes_render_keyboard(
-      stripes_handle_t *stripes,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      char **grid, unsigned id)
-{
-   unsigned i;
-   int ptr_width, ptr_height;
-   float dark[16]    =  {
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-   };
-
-   float white[16]=  {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-   };
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-
-   gfx_display_draw_quad(
-         userdata,
-         video_width,
-         video_height,
-         0,
-         video_height / 2.0,
-         video_width,
-         video_height/2.0,
-         video_width,
-         video_height,
-         &dark[0]);
-
-   ptr_width  = video_width / 11;
-   ptr_height = video_height / 10;
-
-   if (ptr_width >= ptr_height)
-      ptr_width = ptr_height;
-
-   for (i = 0; i < 44; i++)
-   {
-      int line_y = (i / 11) * video_height / 10.0;
-
-      if (i == id)
-      {
-         uintptr_t texture = stripes->textures.list[STRIPES_TEXTURE_KEY_HOVER];
-
-         if (dispctx && dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-
-         gfx_display_draw_texture(
-               userdata,
-               video_width,
-               video_height,
-               video_width  / 2.0f - (11 * ptr_width) / 2.0f + (i % 11) * ptr_width,
-               video_height / 2.0f + ptr_height * 1.5f + line_y,
-               ptr_width, ptr_height,
-               video_width,
-               video_height,
-               &white[0],
-               texture);
-
-         if (dispctx && dispctx->blend_end)
-            dispctx->blend_end(userdata);
-      }
-
-      gfx_display_draw_text(stripes->font, grid[i],
-            video_width / 2.0f - (11 * ptr_width) / 2.0f + (i % 11) * ptr_width + ptr_width / 2.0f,
-            video_height / 2.0f + ptr_height + line_y + stripes->font->size / 3,
-            video_width,
-            video_height,
-            0xffffffff,
-            TEXT_ALIGN_CENTER,
-            1.0f,
-            false, 0.0f, false);
-   }
-}
-
 /* Returns the OSK key at a given position */
 static int stripes_osk_ptr_at_pos(
       void *data,
@@ -883,12 +801,15 @@ static void stripes_render_messagebox_internal(
    }
 
    if (menu_input_dialog_get_display_kb())
-      stripes_render_keyboard(stripes,
+      gfx_display_draw_keyboard(
             userdata,
             video_width,
             video_height,
+            stripes->textures.list[STRIPES_TEXTURE_KEY_HOVER],
+            stripes->font,
             input_event_get_osk_grid(),
-            input_event_get_osk_ptr());
+            input_event_get_osk_ptr(),
+            0xffffffff);
 
 end:
    string_list_free(list);

@@ -311,14 +311,6 @@ void gfx_display_draw_polygon(
       unsigned width, unsigned height,
       float *color);
 
-void gfx_display_draw_texture(
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned width, unsigned height,
-      float *color, uintptr_t texture);
-
 void gfx_display_draw_texture_slice(
       void *userdata,
       unsigned video_width,
