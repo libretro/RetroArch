@@ -771,8 +771,6 @@ static void ozone_free(void *data)
       video_coord_array_free(&ozone->fonts.entries_sublabel.raster_block.carr);
       video_coord_array_free(&ozone->fonts.sidebar.raster_block.carr);
 
-      font_driver_bind_block(NULL, NULL);
-
       ozone_free_list_nodes(&ozone->selection_buf_old, false);
       ozone_free_list_nodes(&ozone->horizontal_list, false);
       file_list_deinitialize(&ozone->selection_buf_old);
@@ -784,6 +782,12 @@ static void ozone_free(void *data)
       if (ozone->thumbnail_path_data)
          free(ozone->thumbnail_path_data);
    }
+
+   if (gfx_display_white_texture)
+      video_driver_texture_unload(&gfx_display_white_texture);
+
+   font_driver_bind_block(NULL, NULL);
+
    gfx_animation_unset_update_time_cb();
 }
 
@@ -1167,6 +1171,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          }
       }
 
+      if (gfx_display_white_texture)
+         video_driver_texture_unload(&gfx_display_white_texture);
       gfx_display_init_white_texture(gfx_display_white_texture);
 
       /* Horizontal list */

@@ -5715,6 +5715,9 @@ static void xmb_free(void *data)
          free(xmb->thumbnail_path_data);
    }
 
+   if (gfx_display_white_texture)
+      video_driver_texture_unload(&gfx_display_white_texture);
+
    font_driver_bind_block(NULL, NULL);
 
    gfx_animation_unset_update_time_cb();
@@ -5741,6 +5744,8 @@ static bool xmb_load_image(void *userdata, void *data,
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
          video_driver_texture_unload(&xmb->textures.bg);
+         if (gfx_display_white_texture)
+            video_driver_texture_unload(&gfx_display_white_texture);
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &xmb->textures.bg);
@@ -6018,6 +6023,8 @@ static void xmb_context_reset_textures(
 
    xmb->assets_missing = false;
 
+   if (gfx_display_white_texture)
+      video_driver_texture_unload(&gfx_display_white_texture);
    gfx_display_init_white_texture(gfx_display_white_texture);
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)

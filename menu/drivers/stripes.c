@@ -3348,7 +3348,7 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;
    int i;
-   stripes_handle_t *stripes          = NULL;
+   stripes_handle_t *stripes  = NULL;
    settings_t *settings       = config_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
    float scale_value          = settings->floats.menu_scale_factor * 100.0f;
@@ -3493,6 +3493,9 @@ static void stripes_free(void *data)
          free(stripes->bg_file_path);
    }
 
+   if (gfx_display_white_texture)
+      video_driver_texture_unload(&gfx_display_white_texture);
+
    font_driver_bind_block(NULL, NULL);
 }
 
@@ -3521,6 +3524,8 @@ static bool stripes_load_image(void *userdata, void *data, enum menu_image_type 
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &stripes->textures.bg);
+         if (gfx_display_white_texture)
+            video_driver_texture_unload(&gfx_display_white_texture);
          gfx_display_init_white_texture(gfx_display_white_texture);
          break;
       case MENU_IMAGE_THUMBNAIL:
@@ -3694,6 +3699,8 @@ static void stripes_context_reset_textures(
    for (i = 0; i < STRIPES_TEXTURE_LAST; i++)
       gfx_display_reset_textures_list(stripes_texture_path(i), iconpath, &stripes->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
 
+   if (gfx_display_white_texture)
+      video_driver_texture_unload(&gfx_display_white_texture);
    gfx_display_init_white_texture(gfx_display_white_texture);
 
    stripes->main_menu_node.icon     = stripes->textures.list[STRIPES_TEXTURE_MAIN_MENU];

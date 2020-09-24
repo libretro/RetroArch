@@ -4789,6 +4789,11 @@ static void rgui_free(void *data)
 
    if (rgui)
    {
+      if (rgui->widgets_supported)
+      {
+         if (gfx_display_white_texture)
+            video_driver_texture_unload(&gfx_display_white_texture);
+      }
       if (rgui->thumbnail_path_data)
          free(rgui->thumbnail_path_data);
    }
@@ -5664,7 +5669,11 @@ static void rgui_context_reset(void *data, bool is_threaded)
 
 #ifdef HAVE_GFX_WIDGETS
    if (rgui->widgets_supported)
+   {
+      if (gfx_display_white_texture)
+         video_driver_texture_unload(&gfx_display_white_texture);
       gfx_display_init_white_texture(gfx_display_white_texture);
+   }
 #endif
    video_driver_monitor_reset();
 }
