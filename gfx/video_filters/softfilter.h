@@ -53,6 +53,9 @@ typedef int (*softfilter_config_get_float_t)(void *userdata,
 typedef int (*softfilter_config_get_int_t)(void *userdata,
       const char *key, int *value, int default_value);
 
+typedef int (*softfilter_config_get_hex_t)(void *userdata,
+      const char *key, unsigned *value, unsigned default_value);
+
 /* Allocates an array with values. free() with softfilter_config_free_t. */
 typedef int (*softfilter_config_get_float_array_t)(void *userdata,
       const char *key,
@@ -74,6 +77,7 @@ struct softfilter_config
 {
    softfilter_config_get_float_t get_float;
    softfilter_config_get_int_t get_int;
+   softfilter_config_get_hex_t get_hex;
 
    softfilter_config_get_float_array_t get_float_array;
    softfilter_config_get_int_array_t get_int_array;

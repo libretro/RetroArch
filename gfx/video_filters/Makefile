@@ -67,7 +67,11 @@ ASMFLAGS := -INEON/asm
 asflags += -mfpu=neon
 endif
 
-objects += blargg_ntsc_snes.$(DYLIB) phosphor2x.$(DYLIB) epx.$(DYLIB) lq2x.$(DYLIB) 2xsai.$(DYLIB) super2xsai.$(DYLIB) supereagle.$(DYLIB) 2xbr.$(DYLIB) darken.$(DYLIB) scale2x.$(DYLIB) normal2x.$(DYLIB) scanline2x.$(DYLIB)
+objects += blargg_ntsc_snes.$(DYLIB) phosphor2x.$(DYLIB) epx.$(DYLIB) lq2x.$(DYLIB) \
+	   2xsai.$(DYLIB) super2xsai.$(DYLIB) supereagle.$(DYLIB) 2xbr.$(DYLIB) \
+	   darken.$(DYLIB) scale2x.$(DYLIB) normal2x.$(DYLIB) scanline2x.$(DYLIB)\
+	   grid2x.$(DYLIB) gameboy3x.$(DYLIB) gameboy4x.$(DYLIB) dot_matrix_3x.$(DYLIB) \
+	   dot_matrix_4x.$(DYLIB)
 
 all: build;
 
