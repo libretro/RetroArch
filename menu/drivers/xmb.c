@@ -5648,7 +5648,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    gfx_display_set_width(width);
    gfx_display_set_height(height);
 
-   gfx_display_allocate_white_texture();
+   gfx_display_init_white_texture(gfx_display_white_texture);
 
    file_list_initialize(&xmb->horizontal_list);
 
@@ -5744,7 +5744,7 @@ static bool xmb_load_image(void *userdata, void *data,
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &xmb->textures.bg);
-         gfx_display_allocate_white_texture();
+         gfx_display_init_white_texture(gfx_display_white_texture);
          break;
       case MENU_IMAGE_NONE:
       default:
@@ -6018,7 +6018,7 @@ static void xmb_context_reset_textures(
 
    xmb->assets_missing = false;
 
-   gfx_display_allocate_white_texture();
+   gfx_display_init_white_texture(gfx_display_white_texture);
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {

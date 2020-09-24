@@ -359,7 +359,7 @@ float gfx_display_get_widget_dpi_scale(
 float gfx_display_get_widget_pixel_scale(
       unsigned width, unsigned height, bool fullscreen);
 
-void gfx_display_allocate_white_texture(void);
+void gfx_display_init_white_texture(uintptr_t white_texture);
 
 bool gfx_display_driver_exists(const char *s);
 

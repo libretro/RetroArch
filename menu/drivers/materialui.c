@@ -7834,7 +7834,7 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
       materialui_context_bg_destroy(mui);
       video_driver_texture_load(data,
             TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
-      gfx_display_allocate_white_texture();
+      gfx_display_init_white_texture(gfx_display_white_texture);
    }
 
    return true;
@@ -8274,7 +8274,7 @@ static void materialui_context_reset(void *data, bool is_threaded)
 
    materialui_layout(mui, is_threaded);
    materialui_context_bg_destroy(mui);
-   gfx_display_allocate_white_texture();
+   gfx_display_init_white_texture(gfx_display_white_texture);
    materialui_context_reset_textures(mui);
    materialui_context_reset_playlist_icons(mui);
 

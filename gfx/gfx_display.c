@@ -1765,7 +1765,7 @@ void gfx_display_font_free(font_data_t *font)
    font_driver_free(font);
 }
 
-void gfx_display_allocate_white_texture(void)
+void gfx_display_init_white_texture(uintptr_t white_texture)
 {
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
@@ -1775,10 +1775,10 @@ void gfx_display_allocate_white_texture(void)
    ti.pixels = (uint32_t*)&white_data;
 
    if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
+      video_driver_texture_unload(&white_texture);
 
    video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, &gfx_display_white_texture);
+         TEXTURE_FILTER_NEAREST, &white_texture);
 }
 
 void gfx_display_free(void)

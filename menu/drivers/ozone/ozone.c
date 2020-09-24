@@ -664,7 +664,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    gfx_display_set_width(width);
    gfx_display_set_height(height);
 
-   gfx_display_allocate_white_texture();
+   gfx_display_init_white_texture(gfx_display_white_texture);
 
    file_list_initialize(&ozone->horizontal_list);
 
@@ -1167,7 +1167,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
          }
       }
 
-      gfx_display_allocate_white_texture();
+      gfx_display_init_white_texture(gfx_display_white_texture);
 
       /* Horizontal list */
       ozone_context_reset_horizontal_list(ozone);

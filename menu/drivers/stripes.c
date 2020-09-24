@@ -3442,7 +3442,7 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
    gfx_display_set_width(width);
    gfx_display_set_height(height);
 
-   gfx_display_allocate_white_texture();
+   gfx_display_init_white_texture(gfx_display_white_texture);
 
    file_list_initialize(&stripes->horizontal_list);
    stripes_init_horizontal_list(stripes);
@@ -3521,7 +3521,7 @@ static bool stripes_load_image(void *userdata, void *data, enum menu_image_type 
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &stripes->textures.bg);
-         gfx_display_allocate_white_texture();
+         gfx_display_init_white_texture(gfx_display_white_texture);
          break;
       case MENU_IMAGE_THUMBNAIL:
          {
@@ -3694,7 +3694,7 @@ static void stripes_context_reset_textures(
    for (i = 0; i < STRIPES_TEXTURE_LAST; i++)
       gfx_display_reset_textures_list(stripes_texture_path(i), iconpath, &stripes->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
 
-   gfx_display_allocate_white_texture();
+   gfx_display_init_white_texture(gfx_display_white_texture);
 
    stripes->main_menu_node.icon     = stripes->textures.list[STRIPES_TEXTURE_MAIN_MENU];
    stripes->main_menu_node.alpha    = stripes->categories_active_alpha;

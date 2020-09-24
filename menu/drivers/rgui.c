@@ -4692,7 +4692,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       if (!gfx_display_init_first_driver(video_is_threaded))
          goto error;
 
-      gfx_display_allocate_white_texture();
+      gfx_display_init_white_texture(gfx_display_white_texture);
    }
 #endif
 
@@ -5664,7 +5664,7 @@ static void rgui_context_reset(void *data, bool is_threaded)
 
 #ifdef HAVE_GFX_WIDGETS
    if (rgui->widgets_supported)
-      gfx_display_allocate_white_texture();
+      gfx_display_init_white_texture(gfx_display_white_texture);
 #endif
    video_driver_monitor_reset();
 }
