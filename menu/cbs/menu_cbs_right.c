@@ -154,13 +154,13 @@ static int action_right_input_desc_kbd(unsigned type, const char *label,
    remap_id =
       settings->uints.input_keymapper_ids[user_idx][btn_idx];
 
-   for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
+   for (key_id = 0; key_id < RARCH_MAX_KEYS; key_id++)
    {
       if (remap_id == key_descriptors[key_id].key)
          break;
    }
 
-   if (key_id < (RARCH_MAX_KEYS - 1) + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+   if (key_id < (RARCH_MAX_KEYS - 1))
       key_id++;
    else
       key_id = 0;
