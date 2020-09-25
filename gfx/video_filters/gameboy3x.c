@@ -38,8 +38,18 @@
 
 typedef struct
 {
-   uint16_t pixel_lut[4];
-   uint16_t grid_lut[4];
+   struct
+   {
+      uint32_t pixel_lut[4];
+      uint32_t grid_lut[4];
+   } xrgb8888;
+
+   struct
+   {
+      uint16_t pixel_lut[4];
+      uint16_t grid_lut[4];
+   } rgb565;
+
 } gameboy3x_colors_t;
 
 struct softfilter_thread_data
@@ -65,7 +75,7 @@ struct filter_data
 
 static unsigned gameboy3x_generic_input_fmts(void)
 {
-   return SOFTFILTER_FMT_RGB565;
+   return SOFTFILTER_FMT_RGB565 | SOFTFILTER_FMT_XRGB8888;
 }
 
 static unsigned gameboy3x_generic_output_fmts(unsigned input_fmts)
@@ -124,12 +134,15 @@ static void gameboy3x_initialize(struct filter_data *filt,
    {
       uint32_t grid_color;
 
-      /* Populate pixel lookup table */
-      filt->colors.pixel_lut[i] = GAMEBOY_3X_RGB24_TO_RGB565(palette[i]);
+      /* Populate pixel lookup tables */
+      filt->colors.rgb565.pixel_lut[i]   = GAMEBOY_3X_RGB24_TO_RGB565(palette[i]);
+      filt->colors.xrgb8888.pixel_lut[i] = palette[i];
 
-      /* Populate grid lookup table */
+      /* Populate grid lookup tables */
       grid_color = gameboy3x_get_grid_colour(palette[i], palette_grid);
-      filt->colors.grid_lut[i] = GAMEBOY_3X_RGB24_TO_RGB565(grid_color);
+
+      filt->colors.rgb565.grid_lut[i]   = GAMEBOY_3X_RGB24_TO_RGB565(grid_color);
+      filt->colors.xrgb8888.grid_lut[i] = grid_color;
    }
 }
 
@@ -185,11 +198,11 @@ static void gameboy3x_work_cb_rgb565(void *data, void *thread_data)
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    const uint16_t *input              = (const uint16_t*)thr->in_data;
    uint16_t *output                   = (uint16_t*)thr->out_data;
-   unsigned in_stride                 = (unsigned)(thr->in_pitch >> 1);
-   unsigned out_stride                = (unsigned)(thr->out_pitch >> 1);
-   uint16_t *pixel_lut                = filt->colors.pixel_lut;
-   uint16_t *grid_lut                 = filt->colors.grid_lut;
-   unsigned x, y;
+   uint16_t in_stride                 = (uint16_t)(thr->in_pitch >> 1);
+   uint16_t out_stride                = (uint16_t)(thr->out_pitch >> 1);
+   uint16_t *pixel_lut                = filt->colors.rgb565.pixel_lut;
+   uint16_t *grid_lut                 = filt->colors.rgb565.grid_lut;
+   uint16_t x, y;
 
    for (y = 0; y < thr->height; ++y)
    {
@@ -205,7 +218,7 @@ static void gameboy3x_work_cb_rgb565(void *data, void *thread_data)
                (in_color       & 0x1F);
          uint16_t out_pixel_color;
          uint16_t out_grid_color;
-         uint8_t  lut_index;
+         uint16_t lut_index;
 
          /* Calculate mean value of the 3 RGB
           * colour components */
@@ -218,6 +231,83 @@ static void gameboy3x_work_cb_rgb565(void *data, void *thread_data)
           * > This can never be greater than 3,
           *   but check anyway... */
          lut_index = in_rgb_mean >> 3;
+         lut_index = (lut_index > 3) ? 3 : lut_index;
+
+         /* Get output pixel and grid colours */
+         out_pixel_color = *(pixel_lut + lut_index);
+         out_grid_color  = *(grid_lut + lut_index);
+
+         /* - Pixel layout (p = pixel, g = grid) -
+          * Before:  After:
+          * (p)      (g)(p)(p)
+          *          (g)(p)(p)
+          *          (g)(g)(g)
+          */
+
+         /* Row 1: (g)(p)(p) */
+         *out_line_ptr       = out_grid_color;
+         *(out_line_ptr + 1) = out_pixel_color;
+         *(out_line_ptr + 2) = out_pixel_color;
+         out_line_ptr       += out_stride;
+
+         /* Row 2: (g)(p)(p) */
+         *out_line_ptr       = out_grid_color;
+         *(out_line_ptr + 1) = out_pixel_color;
+         *(out_line_ptr + 2) = out_pixel_color;
+         out_line_ptr       += out_stride;
+
+         /* Row 3: (g)(g)(g) */
+         *out_line_ptr       = out_grid_color;
+         *(out_line_ptr + 1) = out_grid_color;
+         *(out_line_ptr + 2) = out_grid_color;
+
+         out_ptr += 3;
+      }
+
+      input  += in_stride;
+      output += out_stride * 3;
+   }
+}
+
+static void gameboy3x_work_cb_xrgb8888(void *data, void *thread_data)
+{
+   struct filter_data *filt           = (struct filter_data*)data;
+   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   const uint32_t *input              = (const uint32_t*)thr->in_data;
+   uint32_t *output                   = (uint32_t*)thr->out_data;
+   uint32_t in_stride                 = (uint32_t)(thr->in_pitch >> 2);
+   uint32_t out_stride                = (uint32_t)(thr->out_pitch >> 2);
+   uint32_t *pixel_lut                = filt->colors.xrgb8888.pixel_lut;
+   uint32_t *grid_lut                 = filt->colors.xrgb8888.grid_lut;
+   uint32_t x, y;
+
+   for (y = 0; y < thr->height; ++y)
+   {
+      uint32_t *out_ptr = output;
+
+      for (x = 0; x < thr->width; ++x)
+      {
+         uint32_t *out_line_ptr = out_ptr;
+         uint32_t in_color      = *(input + x);
+         uint32_t in_rgb_mean   =
+               (in_color >> 16 & 0xFF) +
+               (in_color >>  8 & 0xFF) +
+               (in_color       & 0xFF);
+         uint32_t out_pixel_color;
+         uint32_t out_grid_color;
+         uint32_t lut_index;
+
+         /* Calculate mean value of the 3 RGB
+          * colour components */
+         in_rgb_mean += (in_rgb_mean +   2) >> 2;
+         in_rgb_mean += (in_rgb_mean +   8) >> 4;
+         in_rgb_mean += (in_rgb_mean + 128) >> 8;
+         in_rgb_mean >>= 2;
+
+         /* Convert to lookup table index
+          * > This can never be greater than 3,
+          *   but check anyway... */
+         lut_index = in_rgb_mean >> 6;
          lut_index = (lut_index > 3) ? 3 : lut_index;
 
          /* Get output pixel and grid colours */
@@ -276,6 +366,8 @@ static void gameboy3x_generic_packets(void *data,
 
    if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
       packets[0].work = gameboy3x_work_cb_rgb565;
+   else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+      packets[0].work = gameboy3x_work_cb_xrgb8888;
 
    packets[0].thread_data = thr;
 }
