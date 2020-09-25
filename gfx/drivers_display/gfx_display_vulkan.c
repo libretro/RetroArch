@@ -111,6 +111,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
 #ifdef HAVE_SHADERPIPELINE
    static uint8_t ubo_scratch_data[768];
    static float t                   = 0.0f;
+   gfx_display_t *p_disp            = disp_get_ptr();
    float yflip                      = 0.0f;
    static struct video_coords blank_coords;
    float output_size[2];
@@ -133,7 +134,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
       default:
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = gfx_display_get_coords_array();
+         ca                               = &p_disp->dispca;
          draw->coords                     = (struct video_coords*)&ca->coords;
          draw->backend_data               = ubo_scratch_data;
          draw->backend_data_size          = 2 * sizeof(float);

@@ -216,6 +216,7 @@ static void gfx_display_wiiu_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
    video_coord_array_t *ca        = NULL;
+   gfx_display_t *p_disp          = disp_get_ptr();
    wiiu_video_t             *wiiu = (wiiu_video_t*)data;
 
    if (!wiiu || !draw)
@@ -225,7 +226,7 @@ static void gfx_display_wiiu_draw_pipeline(gfx_display_ctx_draw_t *draw,
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = gfx_display_get_coords_array();
+         ca = &p_disp->dispca;
          if (!wiiu->menu_shader_vbo)
          {
             wiiu->menu_shader_vbo = MEM2_alloc(ca->coords.vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);

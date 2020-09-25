@@ -268,7 +268,8 @@ static void gfx_display_gl_draw_pipeline(
    struct uniform_info uniform_param;
    gl_t             *gl             = (gl_t*)data;
    static float t                   = 0;
-   video_coord_array_t *ca          = gfx_display_get_coords_array();
+   gfx_display_t *p_disp            = disp_get_ptr();
+   video_coord_array_t *ca          = &p_disp->dispca;
 
    draw->x                          = 0;
    draw->y                          = 0;

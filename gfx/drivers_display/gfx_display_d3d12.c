@@ -210,7 +210,8 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         video_coord_array_t* ca = gfx_display_get_coords_array();
+         gfx_display_t *p_disp     = disp_get_ptr();
+         video_coord_array_t* ca   = &p_disp->dispca;
 
          if (!d3d12->menu_pipeline_vbo)
          {

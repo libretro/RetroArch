@@ -84,6 +84,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
    static float t                = 0.0f;
    float yflip                   = 0.0f;
    video_coord_array_t *ca       = NULL;
+   gfx_display_t *p_disp         = disp_get_ptr();
    gl_core_t *gl                 = (gl_core_t*)data;
 
    if (!gl || !draw)
@@ -102,7 +103,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
       default:
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = gfx_display_get_coords_array();
+         ca                               = &p_disp->dispca;
          draw->coords                     = (struct video_coords*)&ca->coords;
          draw->backend_data               = ubo_scratch_data;
          draw->backend_data_size          = 2 * sizeof(float);

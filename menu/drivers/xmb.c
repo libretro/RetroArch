@@ -5490,7 +5490,8 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    video_coords_t coords;
    unsigned r, c, col;
    unsigned i                = 0;
-   video_coord_array_t *ca   = gfx_display_get_coords_array();
+   gfx_display_t *p_disp     = disp_get_ptr();
+   video_coord_array_t *ca   = &p_disp->dispca;
    unsigned   vertices_total = XMB_RIBBON_VERTICES;
    float *dummy              = (float*)calloc(4 * vertices_total, sizeof(float));
    float *ribbon_verts       = (float*)calloc(2 * vertices_total, sizeof(float));

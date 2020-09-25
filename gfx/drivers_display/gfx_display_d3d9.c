@@ -219,11 +219,12 @@ static void gfx_display_d3d9_draw_pipeline(gfx_display_ctx_draw_t *draw,
 #if defined(HAVE_HLSL) || defined(HAVE_CG)
    static float t                    = 0;
    video_coord_array_t *ca           = NULL;
+   gfx_display_t *p_disp             = disp_get_ptr();
 
    if (!draw)
       return;
 
-   ca                                = gfx_display_get_coords_array();
+   ca                                = &p_disp->dispca;
 
    draw->x                           = 0;
    draw->y                           = 0;

@@ -122,8 +122,9 @@
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         video_coord_array_t *ca = gfx_display_get_coords_array();
-         draw->coords = (struct video_coords *)&ca->coords;
+         gfx_display_t *p_disp   = disp_get_ptr();
+         video_coord_array_t *ca = &p_disp->dispca;
+         draw->coords            = (struct video_coords *)&ca->coords;
          break;
       }
 
