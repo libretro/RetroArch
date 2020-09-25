@@ -267,66 +267,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    return true;
 }
 
-#ifdef HAVE_DYLIB
-static bool append_softfilter_plugs(rarch_softfilter_t *filt,
-      struct string_list *list)
-{
-   unsigned i;
-   softfilter_simd_mask_t mask = (softfilter_simd_mask_t)cpu_features_get();
-
-   for (i = 0; i < list->size; i++)
-   {
-      softfilter_get_implementation_t cb;
-      const struct softfilter_implementation *impl = NULL;
-      struct rarch_soft_plug *new_plugs            = NULL;
-      dylib_t lib                                  = 
-         dylib_load(list->elems[i].data);
-
-      if (!lib)
-         continue;
-
-      cb = (softfilter_get_implementation_t)
-         dylib_proc(lib, "softfilter_get_implementation");
-
-      if (!cb)
-      {
-         dylib_close(lib);
-         continue;
-      }
-
-      impl = cb(mask);
-      if (!impl)
-      {
-         dylib_close(lib);
-         continue;
-      }
-
-      if (impl->api_version != SOFTFILTER_API_VERSION)
-      {
-         dylib_close(lib);
-         continue;
-      }
-
-      new_plugs = (struct rarch_soft_plug*)
-         realloc(filt->plugs, sizeof(*filt->plugs) * (filt->num_plugs + 1));
-      if (!new_plugs)
-      {
-         dylib_close(lib);
-         return false;
-      }
-
-      RARCH_LOG("[SoftFilter]: Found plug: %s (%s).\n",
-            impl->ident, impl->short_ident);
-
-      filt->plugs                       = new_plugs;
-      filt->plugs[filt->num_plugs].lib  = lib;
-      filt->plugs[filt->num_plugs].impl = impl;
-      filt->num_plugs++;
-   }
-
-   return true;
-}
-#elif defined(HAVE_FILTERS_BUILTIN)
+#if defined(HAVE_FILTERS_BUILTIN)
 extern const struct softfilter_implementation *blargg_ntsc_snes_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *lq2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *phosphor2x_get_implementation(softfilter_simd_mask_t simd);
@@ -387,6 +328,65 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
       filt->plugs[i].impl = soft_plugs_builtin[i](mask);
       if (!filt->plugs[i].impl)
          return false;
+   }
+
+   return true;
+}
+#elif defined(HAVE_DYLIB)
+static bool append_softfilter_plugs(rarch_softfilter_t *filt,
+      struct string_list *list)
+{
+   unsigned i;
+   softfilter_simd_mask_t mask = (softfilter_simd_mask_t)cpu_features_get();
+
+   for (i = 0; i < list->size; i++)
+   {
+      softfilter_get_implementation_t cb;
+      const struct softfilter_implementation *impl = NULL;
+      struct rarch_soft_plug *new_plugs            = NULL;
+      dylib_t lib                                  = 
+         dylib_load(list->elems[i].data);
+
+      if (!lib)
+         continue;
+
+      cb = (softfilter_get_implementation_t)
+         dylib_proc(lib, "softfilter_get_implementation");
+
+      if (!cb)
+      {
+         dylib_close(lib);
+         continue;
+      }
+
+      impl = cb(mask);
+      if (!impl)
+      {
+         dylib_close(lib);
+         continue;
+      }
+
+      if (impl->api_version != SOFTFILTER_API_VERSION)
+      {
+         dylib_close(lib);
+         continue;
+      }
+
+      new_plugs = (struct rarch_soft_plug*)
+         realloc(filt->plugs, sizeof(*filt->plugs) * (filt->num_plugs + 1));
+      if (!new_plugs)
+      {
+         dylib_close(lib);
+         return false;
+      }
+
+      RARCH_LOG("[SoftFilter]: Found plug: %s (%s).\n",
+            impl->ident, impl->short_ident);
+
+      filt->plugs                       = new_plugs;
+      filt->plugs[filt->num_plugs].lib  = lib;
+      filt->plugs[filt->num_plugs].impl = impl;
+      filt->num_plugs++;
    }
 
    return true;
