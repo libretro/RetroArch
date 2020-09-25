@@ -974,6 +974,12 @@ static void rcheevos_lboard_submit(rcheevos_locals_t *locals,
       formatted_value, lboard->title);
    runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
+#if defined(HAVE_GFX_WIDGETS)
+   /* Hide the tracker */
+   if (gfx_widgets_ready())
+      gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+#endif
+
    /* Start the submit task. */
    {
       rcheevos_async_io_request* request = (rcheevos_async_io_request*)calloc(1, sizeof(rcheevos_async_io_request));
@@ -996,18 +1002,31 @@ static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard)
 
    CHEEVOS_LOG(RCHEEVOS_TAG "Leaderboard %u canceled: %s\n", lboard->id, lboard->title);
 
+#if defined(HAVE_GFX_WIDGETS)
+   if (gfx_widgets_ready())
+      gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+#endif
+
    snprintf(buffer, sizeof(buffer), "Leaderboard attempt failed: %s", lboard->title);
    runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
-static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard)
+static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard, int value)
 {
    char buffer[256];
    if (!lboard)
       return;
 
    CHEEVOS_LOG(RCHEEVOS_TAG "Leaderboard %u started: %s\n", lboard->id, lboard->title);
+
+#if defined(HAVE_GFX_WIDGETS)
+   if (gfx_widgets_ready())
+   {
+      rc_format_value(buffer, sizeof(buffer), value, lboard->format);
+      gfx_widgets_set_leaderboard_display(lboard->id, buffer);
+   }
+#endif
 
    if (lboard->description && *lboard->description)
       snprintf(buffer, sizeof(buffer), "Leaderboard attempt started: %s - %s", lboard->title, lboard->description);
@@ -1018,6 +1037,21 @@ static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard)
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
+#if defined(HAVE_GFX_WIDGETS)
+static void rcheevos_lboard_updated(rcheevos_ralboard_t* lboard, int value)
+{
+   if (!lboard)
+      return;
+
+   if (gfx_widgets_ready())
+   {
+      char buffer[32];
+      rc_format_value(buffer, sizeof(buffer), value, lboard->format);
+      gfx_widgets_set_leaderboard_display(lboard->id, buffer);
+   }
+}
+#endif
+
 const char* rcheevos_get_richpresence(void)
 {
    return rc_runtime_get_richpresence(&rcheevos_locals.runtime);
@@ -1025,6 +1059,18 @@ const char* rcheevos_get_richpresence(void)
 
 void rcheevos_reset_game(void)
 {
+#if defined(HAVE_GFX_WIDGETS)
+   /* Hide any visible trackers */
+   if (gfx_widgets_ready())
+   {
+      rcheevos_ralboard_t* lboard = rcheevos_locals.patchdata.lboards;
+      unsigned i;
+
+      for (i = 0; i < rcheevos_locals.patchdata.lboard_count; ++i, ++lboard)
+         gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+   }
+#endif
+
    rc_runtime_reset(&rcheevos_locals.runtime);
 
    /* some cores reallocate memory on reset, make sure we update our pointers */
@@ -1271,12 +1317,57 @@ static void rcheevos_toggle_hardcore_achievements(rcheevos_locals_t *locals,
    }
 }
 
-static void rcheevos_toggle_hardcore_active(rcheevos_locals_t *locals)
+static void rcheevos_activate_leaderboards(rcheevos_locals_t* locals)
+{
+   rcheevos_ralboard_t* lboard = locals->patchdata.lboards;
+   unsigned i;
+
+   for (i = 0; i < locals->patchdata.lboard_count; ++i, ++lboard)
+   {
+      if (lboard->mem)
+         rc_runtime_activate_lboard(&locals->runtime, lboard->id, lboard->mem, NULL, 0);
+   }
+}
+
+static void rcheevos_deactivate_leaderboards(rcheevos_locals_t* locals)
+{
+   rcheevos_ralboard_t* lboard = locals->patchdata.lboards;
+   unsigned i;
+
+   for (i = 0; i < locals->patchdata.lboard_count; ++i, ++lboard)
+   {
+      if (lboard->mem)
+      {
+         rc_runtime_deactivate_lboard(&locals->runtime, lboard->id);
+
+#if defined(HAVE_GFX_WIDGETS)
+         /* Hide any visible trackers */
+         gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+#endif
+      }
+   }
+}
+
+void rcheevos_leaderboards_enabled_changed(void)
+{
+   if (rcheevos_locals.loaded)
+   {
+      const settings_t* settings = config_get_ptr();
+      const bool enabled = settings && settings->bools.cheevos_enable &&
+         settings->bools.cheevos_leaderboards_enable &&
+         settings->bools.cheevos_hardcore_mode_enable;
+
+      if (enabled)
+         rcheevos_activate_leaderboards(&rcheevos_locals);
+      else
+         rcheevos_deactivate_leaderboards(&rcheevos_locals);
+   }
+}
+
+static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 {
    settings_t* settings = config_get_ptr();
    bool rewind_enable = settings->bools.rewind_enable;
-   rcheevos_ralboard_t* lboard;
-   unsigned i;
 
    if (!locals->hardcore_active)
    {
@@ -1292,14 +1383,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t *locals)
 
          /* reactivate leaderboards */
          if (settings->bools.cheevos_leaderboards_enable)
-         {
-            lboard = locals->patchdata.lboards;
-            for (i = 0; i < locals->patchdata.lboard_count; ++i, ++lboard)
-            {
-               if (lboard->mem)
-                  rc_runtime_activate_lboard(&locals->runtime, lboard->id, lboard->mem, NULL, 0);
-            }
-         }
+            rcheevos_activate_leaderboards(locals);
 
          /* reset the game */
          command_event(CMD_EVENT_RESET, NULL);
@@ -1319,12 +1403,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t *locals)
          CHEEVOS_LOG(RCHEEVOS_TAG "Hardcore paused\n");
 
          /* deactivate leaderboards */
-         lboard = locals->patchdata.lboards;
-         for (i = 0; i < locals->patchdata.lboard_count; ++i, ++lboard)
-         {
-            if (lboard->mem)
-               rc_runtime_deactivate_lboard(&locals->runtime, lboard->id);
-         }
+         rcheevos_deactivate_leaderboards(locals);
       }
 
       /* re-init rewind */
@@ -1370,8 +1449,14 @@ static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_eve
          break;
 
       case RC_RUNTIME_EVENT_LBOARD_STARTED:
-         rcheevos_lboard_started(rcheevos_find_lboard(runtime_event->id));
+         rcheevos_lboard_started(rcheevos_find_lboard(runtime_event->id), runtime_event->value);
          break;
+
+#if defined(HAVE_GFX_WIDGETS)
+      case RC_RUNTIME_EVENT_LBOARD_UPDATED:
+         rcheevos_lboard_updated(rcheevos_find_lboard(runtime_event->id), runtime_event->value);
+         break;
+#endif
 
       case RC_RUNTIME_EVENT_LBOARD_CANCELED:
          rcheevos_lboard_canceled(rcheevos_find_lboard(runtime_event->id));

@@ -181,6 +181,7 @@ const static gfx_widget_t* const widgets[] = {
    &gfx_widget_volume,
 #ifdef HAVE_CHEEVOS
    &gfx_widget_achievement_popup,
+   &gfx_widget_leaderboard_display,
 #endif
    &gfx_widget_generic_message,
    &gfx_widget_libretro_message,

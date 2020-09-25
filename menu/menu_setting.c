@@ -7431,6 +7431,11 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
 {
    rcheevos_hardcore_enabled_changed();
 }
+
+static void achievement_leaderboards_enabled_write_handler(rarch_setting_t* setting)
+{
+   rcheevos_leaderboards_enabled_changed();
+}
 #endif
 
 static void update_streaming_url_write_handler(rarch_setting_t *setting)
@@ -16781,7 +16786,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_write_handler,
+               achievement_leaderboards_enabled_write_handler,
                general_read_handler,
                SD_FLAG_NONE
                );
