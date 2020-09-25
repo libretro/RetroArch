@@ -140,6 +140,9 @@ typedef struct
    bool hardcore_active;
    bool loaded;
    bool core_supports;
+   bool leaderboards_enabled;
+   bool leaderboard_notifications;
+   bool leaderboard_trackers;
 } rcheevos_locals_t;
 
 static rcheevos_locals_t rcheevos_locals =
@@ -157,6 +160,9 @@ static rcheevos_locals_t rcheevos_locals =
    false,/* hardcore_active */
    false,/* loaded */
    true, /* core_supports */
+   false,/* leaderboards_enabled */
+   false,/* leaderboard_notifications */
+   false /* leaderboard_trackers */
 };
 
 #ifdef HAVE_THREADS
@@ -757,7 +763,7 @@ static int rcheevos_parse(
             locals->patchdata.unofficial_count, RCHEEVOS_ACTIVE_UNOFFICIAL);
    }
 
-   if (locals->hardcore_active && settings->bools.cheevos_leaderboards_enable)
+   if (locals->hardcore_active && locals->leaderboards_enabled)
    {
       lboard = locals->patchdata.lboards;
       count  = locals->patchdata.lboard_count;
@@ -966,7 +972,7 @@ static void rcheevos_lboard_submit(rcheevos_locals_t *locals,
    char buffer[256];
    char formatted_value[16];
 
-   /* Show the OSD message. */
+   /* Show the OSD message (regardless of notifications setting). */
    rc_format_value(formatted_value, sizeof(formatted_value), value, lboard->format);
 
    CHEEVOS_LOG(RCHEEVOS_TAG "Submitting %s for leaderboard %u\n", formatted_value, lboard->id);
@@ -1007,9 +1013,12 @@ static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard)
       gfx_widgets_set_leaderboard_display(lboard->id, NULL);
 #endif
 
-   snprintf(buffer, sizeof(buffer), "Leaderboard attempt failed: %s", lboard->title);
-   runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
-      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   if (rcheevos_locals.leaderboard_notifications)
+   {
+      snprintf(buffer, sizeof(buffer), "Leaderboard attempt failed: %s", lboard->title);
+      runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 }
 
 static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard, int value)
@@ -1021,20 +1030,23 @@ static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard, int value)
    CHEEVOS_LOG(RCHEEVOS_TAG "Leaderboard %u started: %s\n", lboard->id, lboard->title);
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_ready())
+   if (gfx_widgets_ready() && rcheevos_locals.leaderboard_trackers)
    {
       rc_format_value(buffer, sizeof(buffer), value, lboard->format);
       gfx_widgets_set_leaderboard_display(lboard->id, buffer);
    }
 #endif
 
-   if (lboard->description && *lboard->description)
-      snprintf(buffer, sizeof(buffer), "Leaderboard attempt started: %s - %s", lboard->title, lboard->description);
-   else
-      snprintf(buffer, sizeof(buffer), "Leaderboard attempt started: %s", lboard->title);
+   if (rcheevos_locals.leaderboard_notifications)
+   {
+      if (lboard->description && *lboard->description)
+         snprintf(buffer, sizeof(buffer), "Leaderboard attempt started: %s - %s", lboard->title, lboard->description);
+      else
+         snprintf(buffer, sizeof(buffer), "Leaderboard attempt started: %s", lboard->title);
 
-   runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
-      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 }
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -1043,7 +1055,7 @@ static void rcheevos_lboard_updated(rcheevos_ralboard_t* lboard, int value)
    if (!lboard)
       return;
 
-   if (gfx_widgets_ready())
+   if (gfx_widgets_ready() && rcheevos_locals.leaderboard_trackers)
    {
       char buffer[32];
       rc_format_value(buffer, sizeof(buffer), value, lboard->format);
@@ -1350,17 +1362,60 @@ static void rcheevos_deactivate_leaderboards(rcheevos_locals_t* locals)
 
 void rcheevos_leaderboards_enabled_changed(void)
 {
+   const settings_t* settings = config_get_ptr();
+   const bool leaderboards_enabled = rcheevos_locals.leaderboards_enabled;
+   const bool leaderboard_trackers = rcheevos_locals.leaderboard_trackers;
+
+   rcheevos_locals.leaderboards_enabled = rcheevos_hardcore_active();
+
+   if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "true"))
+   {
+      rcheevos_locals.leaderboard_notifications = true;
+      rcheevos_locals.leaderboard_trackers = true;
+   }
+#if defined(HAVE_GFX_WIDGETS)
+   else if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "trackers"))
+   {
+      rcheevos_locals.leaderboard_notifications = false;
+      rcheevos_locals.leaderboard_trackers = true;
+   }
+   else if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "notifications"))
+   {
+      rcheevos_locals.leaderboard_notifications = true;
+      rcheevos_locals.leaderboard_trackers = false;
+   }
+#endif
+   else
+   {
+      rcheevos_locals.leaderboards_enabled = false;
+      rcheevos_locals.leaderboard_notifications = false;
+      rcheevos_locals.leaderboard_trackers = false;
+   }
+
    if (rcheevos_locals.loaded)
    {
-      const settings_t* settings = config_get_ptr();
-      const bool enabled = settings && settings->bools.cheevos_enable &&
-         settings->bools.cheevos_leaderboards_enable &&
-         settings->bools.cheevos_hardcore_mode_enable;
+      if (leaderboards_enabled != rcheevos_locals.leaderboards_enabled)
+      {
+         if (rcheevos_locals.leaderboards_enabled)
+            rcheevos_activate_leaderboards(&rcheevos_locals);
+         else
+            rcheevos_deactivate_leaderboards(&rcheevos_locals);
+      }
 
-      if (enabled)
-         rcheevos_activate_leaderboards(&rcheevos_locals);
-      else
-         rcheevos_deactivate_leaderboards(&rcheevos_locals);
+#if defined(HAVE_GFX_WIDGETS)
+      if (!rcheevos_locals.leaderboard_trackers && leaderboard_trackers)
+      {
+         /* Hide any visible trackers */
+         rcheevos_ralboard_t* lboard = rcheevos_locals.patchdata.lboards;
+         unsigned i;
+
+         for (i = 0; i < rcheevos_locals.patchdata.lboard_count; ++i, ++lboard)
+         {
+            if (lboard->mem)
+               gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+         }
+      }
+#endif
    }
 }
 
@@ -1382,7 +1437,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          /* reactivate leaderboards */
-         if (settings->bools.cheevos_leaderboards_enable)
+         if (locals->leaderboards_enabled)
             rcheevos_activate_leaderboards(locals);
 
          /* reset the game */
@@ -1437,7 +1492,12 @@ void rcheevos_hardcore_enabled_changed(void)
    const bool enabled = settings && settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable;
 
    if (enabled != rcheevos_locals.hardcore_active)
+   {
       rcheevos_toggle_hardcore_active(&rcheevos_locals);
+
+      /* update leaderboard state flags */
+      rcheevos_leaderboards_enabled_changed();
+   }
 }
 
 static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_event)
@@ -2355,8 +2415,9 @@ bool rcheevos_load(const void *data)
       return false;
    }
 
-   /* reset hardcore mode based on configs */
+   /* reset hardcore mode and leaderboard settings based on configs */
    rcheevos_hardcore_enabled_changed();
+   rcheevos_leaderboards_enabled_changed();
 
    coro = (rcheevos_coro_t*)calloc(1, sizeof(*coro));
 

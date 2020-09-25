@@ -1207,6 +1207,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("cheevos_username",         settings->arrays.cheevos_username, false, NULL, true);
    SETTING_ARRAY("cheevos_password",         settings->arrays.cheevos_password, false, NULL, true);
    SETTING_ARRAY("cheevos_token",            settings->arrays.cheevos_token, false, NULL, true);
+   SETTING_ARRAY("cheevos_leaderboards_enable", settings->arrays.cheevos_leaderboards_enable, true, "false", true);
 #endif
    SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);
    SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
@@ -1653,7 +1654,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("cheevos_enable",               &settings->bools.cheevos_enable, true, DEFAULT_CHEEVOS_ENABLE, false);
    SETTING_BOOL("cheevos_test_unofficial",      &settings->bools.cheevos_test_unofficial, true, false, false);
    SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, false, false);
-   SETTING_BOOL("cheevos_leaderboards_enable",  &settings->bools.cheevos_leaderboards_enable, true, false, false);
    SETTING_BOOL("cheevos_richpresence_enable",  &settings->bools.cheevos_richpresence_enable, true, true, false);
    SETTING_BOOL("cheevos_unlock_sound_enable",  &settings->bools.cheevos_unlock_sound_enable, true, false, false);
    SETTING_BOOL("cheevos_verbose_enable",       &settings->bools.cheevos_verbose_enable, true, false, false);
