@@ -108,11 +108,11 @@ static void normal2x_generic_destroy(void *data)
 static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
-   const uint32_t *input = (const uint32_t*)thr->in_data;
-   uint32_t *output = (uint32_t*)thr->out_data;
-   unsigned in_stride = (unsigned)(thr->in_pitch >> 2);
-   unsigned out_stride = (unsigned)(thr->out_pitch >> 2);
-   unsigned x, y;
+   const uint32_t *input              = (const uint32_t*)thr->in_data;
+   uint32_t *output                   = (uint32_t*)thr->out_data;
+   uint32_t in_stride                 = (uint32_t)(thr->in_pitch >> 2);
+   uint32_t out_stride                = (uint32_t)(thr->out_pitch >> 2);
+   uint32_t x, y;
 
    for (y = 0; y < thr->height; ++y)
    {
@@ -142,11 +142,11 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
 static void normal2x_work_cb_rgb565(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
-   const uint16_t *input = (const uint16_t*)thr->in_data;
-   uint16_t *output = (uint16_t*)thr->out_data;
-   unsigned in_stride = (unsigned)(thr->in_pitch >> 1);
-   unsigned out_stride = (unsigned)(thr->out_pitch >> 1);
-   unsigned x, y;
+   const uint16_t *input              = (const uint16_t*)thr->in_data;
+   uint16_t *output                   = (uint16_t*)thr->out_data;
+   uint16_t in_stride                 = (uint16_t)(thr->in_pitch >> 1);
+   uint16_t out_stride                = (uint16_t)(thr->out_pitch >> 1);
+   uint16_t x, y;
 
    for (y = 0; y < thr->height; ++y)
    {

@@ -33,9 +33,20 @@
 
 typedef struct
 {
-   uint16_t r;
-   uint16_t g;
-   uint16_t b;
+   struct
+   {
+      uint32_t r;
+      uint32_t g;
+      uint32_t b;
+   } xrgb8888;
+
+   struct
+   {
+      uint16_t r;
+      uint16_t g;
+      uint16_t b;
+   } rgb565;
+
 } dot_matrix_4x_grid_color_t;
 
 struct softfilter_thread_data
@@ -61,7 +72,7 @@ struct filter_data
 
 static unsigned dot_matrix_4x_generic_input_fmts(void)
 {
-   return SOFTFILTER_FMT_RGB565;
+   return SOFTFILTER_FMT_RGB565 | SOFTFILTER_FMT_XRGB8888;
 }
 
 static unsigned dot_matrix_4x_generic_output_fmts(unsigned input_fmts)
@@ -86,9 +97,14 @@ static void dot_matrix_4x_initialize(struct filter_data *filt,
          DOT_MATRIX_4X_DEFAULT_GRID_COLOR);
 
    /* Split into 5bit RGB components */
-   filt->grid_color.r = (grid_color >> 19) & 0x1F;
-   filt->grid_color.g = (grid_color >> 11) & 0x1F;
-   filt->grid_color.b = (grid_color >>  3) & 0x1F;
+   filt->grid_color.rgb565.r = (grid_color >> 19) & 0x1F;
+   filt->grid_color.rgb565.g = (grid_color >> 11) & 0x1F;
+   filt->grid_color.rgb565.b = (grid_color >>  3) & 0x1F;
+
+   /* Split into 8bit RGB components */
+   filt->grid_color.xrgb8888.r = (grid_color >> 16) & 0xFF;
+   filt->grid_color.xrgb8888.g = (grid_color >>  8) & 0xFF;
+   filt->grid_color.xrgb8888.b =  grid_color        & 0xFF;
 }
 
 static void *dot_matrix_4x_generic_create(const struct softfilter_config *config,
@@ -143,12 +159,12 @@ static void dot_matrix_4x_work_cb_rgb565(void *data, void *thread_data)
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    const uint16_t *input              = (const uint16_t*)thr->in_data;
    uint16_t *output                   = (uint16_t*)thr->out_data;
-   unsigned in_stride                 = (unsigned)(thr->in_pitch >> 1);
-   unsigned out_stride                = (unsigned)(thr->out_pitch >> 1);
-   uint16_t base_grid_r                = filt->grid_color.r;
-   uint16_t base_grid_g                = filt->grid_color.g;
-   uint16_t base_grid_b                = filt->grid_color.b;
-   unsigned x, y;
+   uint16_t in_stride                 = (uint16_t)(thr->in_pitch >> 1);
+   uint16_t out_stride                = (uint16_t)(thr->out_pitch >> 1);
+   uint16_t base_grid_r               = filt->grid_color.rgb565.r;
+   uint16_t base_grid_g               = filt->grid_color.rgb565.g;
+   uint16_t base_grid_b               = filt->grid_color.rgb565.b;
+   uint16_t x, y;
 
    for (y = 0; y < thr->height; ++y)
    {
@@ -217,6 +233,86 @@ static void dot_matrix_4x_work_cb_rgb565(void *data, void *thread_data)
    }
 }
 
+static void dot_matrix_4x_work_cb_xrgb8888(void *data, void *thread_data)
+{
+   struct filter_data *filt           = (struct filter_data*)data;
+   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   const uint32_t *input              = (const uint32_t*)thr->in_data;
+   uint32_t *output                   = (uint32_t*)thr->out_data;
+   uint32_t in_stride                 = (uint32_t)(thr->in_pitch >> 2);
+   uint32_t out_stride                = (uint32_t)(thr->out_pitch >> 2);
+   uint32_t base_grid_r               = filt->grid_color.xrgb8888.r;
+   uint32_t base_grid_g               = filt->grid_color.xrgb8888.g;
+   uint32_t base_grid_b               = filt->grid_color.xrgb8888.b;
+   uint32_t x, y;
+
+   for (y = 0; y < thr->height; ++y)
+   {
+      uint32_t *out_ptr = output;
+
+      for (x = 0; x < thr->width; ++x)
+      {
+         uint32_t *out_line_ptr = out_ptr;
+         uint32_t pixel_color   = *(input + x);
+         uint32_t pixel_r       = (pixel_color >> 16 & 0xFF);
+         uint32_t pixel_g       = (pixel_color >>  8 & 0xFF);
+         uint32_t pixel_b       = (pixel_color       & 0xFF);
+         /* Get shadow colour
+          * > 10:6 mix of pixel_color:base_grid_color */
+         uint32_t shadow_r      = DOT_MATRIX_3X_WEIGHT_10_6(pixel_r, base_grid_r);
+         uint32_t shadow_g      = DOT_MATRIX_3X_WEIGHT_10_6(pixel_g, base_grid_g);
+         uint32_t shadow_b      = DOT_MATRIX_3X_WEIGHT_10_6(pixel_b, base_grid_b);
+         uint32_t shadow_color  = (shadow_r << 16) | (shadow_g << 8) | shadow_b;
+         /* Get grid colour
+          * > 50:50 mix of pixel_color:base_grid_color */
+         uint32_t grid_r        = (pixel_r + base_grid_r) >> 1;
+         uint32_t grid_g        = (pixel_g + base_grid_g) >> 1;
+         uint32_t grid_b        = (pixel_b + base_grid_b) >> 1;
+         uint32_t grid_color    = (grid_r << 16) | (grid_g << 8) | grid_b;
+
+         /* - Pixel layout (p = pixel, s = shadow, g = grid) -
+          * Before:  After:
+          * (p)      (g)(p)(p)(p)
+          *          (s)(p)(p)(p)
+          *          (s)(p)(p)(p)
+          *          (s)(s)(s)(g)
+          */
+
+         /* Row 1: (g)(p)(p)(p) */
+         *out_line_ptr       = grid_color;
+         *(out_line_ptr + 1) = pixel_color;
+         *(out_line_ptr + 2) = pixel_color;
+         *(out_line_ptr + 3) = pixel_color;
+         out_line_ptr       += out_stride;
+
+         /* Row 2: (s)(p)(p)(p) */
+         *out_line_ptr       = shadow_color;
+         *(out_line_ptr + 1) = pixel_color;
+         *(out_line_ptr + 2) = pixel_color;
+         *(out_line_ptr + 3) = pixel_color;
+         out_line_ptr       += out_stride;
+
+         /* Row 3: (s)(p)(p)(p) */
+         *out_line_ptr       = shadow_color;
+         *(out_line_ptr + 1) = pixel_color;
+         *(out_line_ptr + 2) = pixel_color;
+         *(out_line_ptr + 3) = pixel_color;
+         out_line_ptr       += out_stride;
+
+         /* Row 4: (s)(s)(s)(g) */
+         *out_line_ptr       = shadow_color;
+         *(out_line_ptr + 1) = shadow_color;
+         *(out_line_ptr + 2) = shadow_color;
+         *(out_line_ptr + 3) = grid_color;
+
+         out_ptr += 4;
+      }
+
+      input  += in_stride;
+      output += out_stride << 2;
+   }
+}
+
 static void dot_matrix_4x_generic_packets(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,
@@ -237,6 +333,8 @@ static void dot_matrix_4x_generic_packets(void *data,
 
    if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
       packets[0].work = dot_matrix_4x_work_cb_rgb565;
+   else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+      packets[0].work = dot_matrix_4x_work_cb_xrgb8888;
 
    packets[0].thread_data = thr;
 }
