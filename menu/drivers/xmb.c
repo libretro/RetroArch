@@ -6134,25 +6134,24 @@ static void xmb_context_reset_textures(
          )
       {
          for (i=0;i<16;i++)
+         {
+            if ((i==3) || (i==7) || (i==11) || (i==15))
             {
-               if ((i==3) || (i==7) || (i==11) || (i==15))
-                  {
-                     item_color[i] = 1;
-                     continue;
-                  }
-               item_color[i] = 0.95;
+               item_color[i] = 1;
+               continue;
             }
+            item_color[i] = 0.95;
+         }
       }
       else
          memcpy(item_color, coord_white, sizeof(item_color));
    }
 
-return;
+   return;
 
 error:
    xmb->assets_missing = true;
    RARCH_WARN("[XMB] Critical asset missing, no icons will be drawn\n");
-   return;
 }
 
 static void xmb_context_reset_background(const char *iconpath)
