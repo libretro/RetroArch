@@ -74,9 +74,6 @@ static void *gfx_display_vita2d_get_default_mvp(void *data)
    return &vita2d->mvp_no_rot;
 }
 
-static void gfx_display_vita2d_blend_begin(void *data) { }
-static void gfx_display_vita2d_blend_end(void *data) { }
-
 static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
@@ -134,9 +131,6 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
    }
 }
 
-static void gfx_display_vita2d_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height) { }
-
 static bool gfx_display_vita2d_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
@@ -170,12 +164,11 @@ static void gfx_display_vita2d_scissor_end(
    vita2d_disable_clipping();
 }
 
-
 gfx_display_ctx_driver_t gfx_display_ctx_vita2d = {
    gfx_display_vita2d_draw,
-   gfx_display_vita2d_draw_pipeline,
-   gfx_display_vita2d_blend_begin,
-   gfx_display_vita2d_blend_end,
+   NULL,                                        /* draw_pipeline */
+   NULL,                                        /* blend_begin   */
+   NULL,                                        /* blend_end     */
    gfx_display_vita2d_get_default_mvp,
    gfx_display_vita2d_get_default_vertices,
    gfx_display_vita2d_get_default_tex_coords,
