@@ -7056,7 +7056,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEEVOS_USERNAME,                                      PARSE_ONLY_STRING, false },
                {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                                      PARSE_ONLY_STRING, false },
                {MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,                          PARSE_ONLY_BOOL,   false  },
-               {MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,                           PARSE_ONLY_BOOL,   false  },
+               {MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,                           PARSE_ONLY_STRING_OPTIONS,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,                           PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,                                 PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,                               PARSE_ONLY_BOOL,   false  },
@@ -10481,7 +10481,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_push    = true;
          info->need_refresh = true;
          break;
-
       case DISPLAYLIST_CORES_SUPPORTED:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          info->need_sort    = true;
@@ -12159,12 +12158,24 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               bool checked_found   = false;
                               unsigned checked     = 0;
 
+                              char* orig_val = setting->get_string_representation ?
+                                 strdup(setting->value.target.string) : setting->value.target.string;
+                              char val_s[256], val_d[32];
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                               for (i = 0; i < size; i++)
                               {
-                                 char val_d[256];
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                                 const char* val = tmp_str_list.elems[i].data;
+                                 if (setting->get_string_representation)
+                                 {
+                                    strlcpy(setting->value.target.string, val, setting->size);
+                                    setting->get_string_representation(setting,
+                                       val_s, sizeof(val_s));
+                                    val = val_s;
+                                 }
+
                                  if (menu_entries_append_enum(info->list,
-                                       tmp_str_list.elems[i].data,
+                                       val,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM, i, 0))
@@ -12172,11 +12183,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                                  if (!checked_found && string_is_equal(
                                           tmp_str_list.elems[i].data,
-                                          setting->value.target.string))
+                                          orig_val))
                                  {
                                     checked = i;
                                     checked_found = true;
                                  }
+                              }
+
+                              if (setting->get_string_representation)
+                              {
+                                 strlcpy(setting->value.target.string, orig_val, setting->size);
+                                 free(orig_val);
                               }
 
                               if (checked_found)

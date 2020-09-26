@@ -338,6 +338,7 @@ typedef struct settings
       char cheevos_username[32];
       char cheevos_password[256];
       char cheevos_token[32];
+      char cheevos_leaderboards_enable[32];
       char video_context_driver[32];
       char audio_driver[32];
       char audio_resampler[32];
@@ -675,7 +676,6 @@ typedef struct settings
       bool cheevos_enable;
       bool cheevos_test_unofficial;
       bool cheevos_hardcore_mode_enable;
-      bool cheevos_leaderboards_enable;
       bool cheevos_richpresence_enable;
       bool cheevos_badges_enable;
       bool cheevos_verbose_enable;

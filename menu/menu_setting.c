@@ -1955,6 +1955,8 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
         subgroup, parent_group, change_handler, read_handler,
         dont_use_enum_idx);
 
+  result.action_start    = setting_generic_action_start_default;
+
   result.parent_group    = parent_group;
   result.values          = values;
   return result;
@@ -2754,6 +2756,80 @@ static int setting_action_ok_uint(
          NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST);
    return 0;
+}
+
+static int setting_string_action_left_string_options(
+   rarch_setting_t* setting, size_t idx, bool wraparound)
+{
+   struct string_list tmp_str_list = { 0 };
+   size_t i;
+
+   if (!setting)
+      return -1;
+
+   string_list_initialize(&tmp_str_list);
+   string_split_noalloc(&tmp_str_list,
+      setting->values, "|");
+
+   for (i = 0; i < tmp_str_list.size; ++i)
+   {
+      if (string_is_equal(tmp_str_list.elems[i].data, setting->value.target.string))
+      {
+         i = (i + tmp_str_list.size - 1) % tmp_str_list.size;
+         strlcpy(setting->value.target.string,
+            tmp_str_list.elems[i].data, setting->size);
+
+         if (setting->change_handler)
+            setting->change_handler(setting);
+
+         string_list_deinitialize(&tmp_str_list);
+         return 0;
+      }
+   }
+
+   string_list_deinitialize(&tmp_str_list);
+   return -1;
+}
+
+static int setting_string_action_right_string_options(
+   rarch_setting_t* setting, size_t idx, bool wraparound)
+{
+   struct string_list tmp_str_list = { 0 };
+   size_t i;
+
+   if (!setting)
+      return -1;
+
+   string_list_initialize(&tmp_str_list);
+   string_split_noalloc(&tmp_str_list,
+      setting->values, "|");
+
+   for (i = 0; i < tmp_str_list.size; ++i)
+   {
+      if (string_is_equal(tmp_str_list.elems[i].data, setting->value.target.string))
+      {
+         i = (i + 1) % tmp_str_list.size;
+         strlcpy(setting->value.target.string,
+            tmp_str_list.elems[i].data, setting->size);
+
+         if (setting->change_handler)
+            setting->change_handler(setting);
+
+         string_list_deinitialize(&tmp_str_list);
+         return 0;
+      }
+   }
+
+   string_list_deinitialize(&tmp_str_list);
+   return -1;
+}
+
+static int setting_action_ok_mapped_string(
+   rarch_setting_t* setting, size_t idx, bool wraparound)
+{
+   /* this is functionally the same as setting_action_ok_uint.
+    * the mapping happens in menu_displaylist_ctl */
+   return setting_action_ok_uint(setting, idx, wraparound);
 }
 
 static void setting_get_string_representation_streaming_mode(
@@ -7436,6 +7512,28 @@ static void achievement_leaderboards_enabled_write_handler(rarch_setting_t* sett
 {
    rcheevos_leaderboards_enabled_changed();
 }
+
+static void achievement_leaderboards_get_string_representation(rarch_setting_t* setting, char* s, size_t len)
+{
+   const char* value = setting->value.target.string;
+#if defined(HAVE_GFX_WIDGETS)
+   if (string_is_equal(value, "true"))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ENABLED), len);
+   else if (string_is_equal(value, "trackers"))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY), len);
+   else if (string_is_equal(value, "notifications"))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+#else
+   /* using these enum strings makes the widget behave like a boolean toggle */
+   if (string_is_equal(value, "true"))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+#endif
+}
+
 #endif
 
 static void update_streaming_url_write_handler(rarch_setting_t *setting)
@@ -8815,7 +8913,6 @@ static bool setting_append_list(
                      general_read_handler,
                      general_write_handler);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
-               (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
                (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
                (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
                (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
@@ -16775,21 +16872,29 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 
-         CONFIG_BOOL(
+         CONFIG_STRING_OPTIONS(
                list, list_info,
-               &settings->bools.cheevos_leaderboards_enable,
+               settings->arrays.cheevos_leaderboards_enable,
+               sizeof(settings->arrays.cheevos_leaderboards_enable),
                MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
-               false,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
+               "false",
+               "false|true",
                &group_info,
                &subgroup_info,
                parent_group,
                achievement_leaderboards_enabled_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
+               general_read_handler);
+#if defined(HAVE_GFX_WIDGETS)
+         (*list)[list_info->index - 1].values = "false|true|trackers|notifications";
+         (*list)[list_info->index - 1].action_ok = setting_action_ok_mapped_string;
+#else
+         (*list)[list_info->index - 1].action_ok = setting_string_action_left_string_options;
+#endif
+         (*list)[list_info->index - 1].action_left = setting_string_action_left_string_options;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_string_options;
+         (*list)[list_info->index - 1].get_string_representation = achievement_leaderboards_get_string_representation;
+         (*list)[list_info->index - 1].free_flags &= ~SD_FREE_FLAG_VALUES;
 
          CONFIG_BOOL(
                list, list_info,
@@ -18640,7 +18745,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    root                                 = 
       msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
 
-   for (i = 0; i < list_info->size; i++)
+   for (i = 0; i < (unsigned)list_info->size; i++)
    {
       MENU_SETTING_INITIALIZE(list, i);
    }

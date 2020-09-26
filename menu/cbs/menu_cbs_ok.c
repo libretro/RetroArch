@@ -5793,8 +5793,25 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
             *setting->value.target.fraction = (float)val;
          }
          break;
-      case ST_STRING:
       case ST_STRING_OPTIONS:
+         if (setting->get_string_representation)
+         {
+            struct string_list tmp_str_list = { 0 };
+            string_list_initialize(&tmp_str_list);
+            string_split_noalloc(&tmp_str_list,
+               setting->values, "|");
+
+            if (idx < tmp_str_list.size)
+            {
+               strlcpy(setting->value.target.string,
+                  tmp_str_list.elems[idx].data, setting->size);
+            }
+
+            string_list_deinitialize(&tmp_str_list);
+            break;
+         }
+         /* fallthrough */
+      case ST_STRING:
       case ST_PATH:
       case ST_DIR:
          strlcpy(setting->value.target.string, path,
