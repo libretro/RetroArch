@@ -338,10 +338,6 @@ bool gfx_display_reset_textures_list_buffer(
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
 
-enum menu_driver_id_type gfx_display_get_driver_id(void);
-
-void gfx_display_set_driver_id(enum menu_driver_id_type type);
-
 float gfx_display_get_dpi_scale(unsigned width, unsigned height);
 
 float gfx_display_get_widget_dpi_scale(

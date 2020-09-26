@@ -253,19 +253,6 @@ static bool gfx_display_check_compatibility(
    return false;
 }
 
-
-void gfx_display_set_driver_id(enum menu_driver_id_type type)
-{
-   gfx_display_t *p_disp  = disp_get_ptr();
-   p_disp->menu_driver_id = type;
-}
-
-enum menu_driver_id_type gfx_display_get_driver_id(void)
-{
-   gfx_display_t *p_disp  = disp_get_ptr();
-   return p_disp->menu_driver_id;
-}
-
 static float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
 {
    float dpi;

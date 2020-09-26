@@ -823,7 +823,9 @@ void gfx_widgets_iterate(
     * factor have changed */
    float scale_factor               = 0.0f;
 #ifdef HAVE_XMB
-   if (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB)
+   gfx_display_t *p_disp            = disp_get_ptr();
+   enum menu_driver_id_type type    = p_disp->menu_driver_id;
+   if (type == MENU_DRIVER_ID_XMB)
       scale_factor                  = gfx_display_get_widget_pixel_scale(width, height, fullscreen);
    else
 #endif
@@ -1900,7 +1902,9 @@ static void gfx_widgets_context_reset(
    p_dispwidget->last_video_width     = width;
    p_dispwidget->last_video_height    = height;
 #ifdef HAVE_XMB
-   if (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB)
+   gfx_display_t *p_disp            = disp_get_ptr();
+   enum menu_driver_id_type type    = p_disp->menu_driver_id;
+   if (type == MENU_DRIVER_ID_XMB)
       p_dispwidget->last_scale_factor = gfx_display_get_widget_pixel_scale(
             p_dispwidget->last_video_width,
             p_dispwidget->last_video_height, fullscreen);

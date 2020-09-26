@@ -6772,8 +6772,9 @@ bool menu_driver_list_cache(menu_ctx_list_t *list)
 static void menu_driver_set_id(struct rarch_state *p_rarch)
 {
    const char        *driver_name = NULL;
+   gfx_display_t         *p_disp  = &p_rarch->dispgfx;
 
-   gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
+   p_disp->menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
 
    if (!p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->ident)
       return;
@@ -6784,17 +6785,15 @@ static void menu_driver_set_id(struct rarch_state *p_rarch)
       return;
 
    if (string_is_equal(driver_name, "rgui"))
-      gfx_display_set_driver_id(MENU_DRIVER_ID_RGUI);
+      p_disp->menu_driver_id = MENU_DRIVER_ID_RGUI;
    else if (string_is_equal(driver_name, "ozone"))
-      gfx_display_set_driver_id(MENU_DRIVER_ID_OZONE);
+      p_disp->menu_driver_id = MENU_DRIVER_ID_OZONE;
    else if (string_is_equal(driver_name, "glui"))
-      gfx_display_set_driver_id(MENU_DRIVER_ID_GLUI);
+      p_disp->menu_driver_id = MENU_DRIVER_ID_GLUI;
    else if (string_is_equal(driver_name, "xmb"))
-      gfx_display_set_driver_id(MENU_DRIVER_ID_XMB);
-   else if (string_is_equal(driver_name, "xui"))
-      gfx_display_set_driver_id(MENU_DRIVER_ID_XUI);
+      p_disp->menu_driver_id = MENU_DRIVER_ID_XMB;
    else if (string_is_equal(driver_name, "stripes"))
-      gfx_display_set_driver_id(MENU_DRIVER_ID_STRIPES);
+      p_disp->menu_driver_id = MENU_DRIVER_ID_STRIPES;
 }
 
 static bool generic_menu_init_list(void *data)
@@ -6866,6 +6865,7 @@ static bool menu_driver_init_internal(
 bool menu_driver_init(bool video_is_threaded)
 {
    struct rarch_state       *p_rarch = &rarch_st;
+   gfx_display_t            *p_disp  = &p_rarch->dispgfx;
 
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
@@ -6885,7 +6885,7 @@ bool menu_driver_init(bool video_is_threaded)
 
    /* If driver initialisation failed, must reset
     * driver id to 'unknown' */
-   gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
+   p_disp->menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
 
    return false;
 }
@@ -7586,6 +7586,7 @@ static bool driver_ctl_find_index(driver_ctx_info_t *drv)
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
+   gfx_display_t         *p_disp  = &p_rarch->dispgfx;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
 
    switch (state)
@@ -7683,8 +7684,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (p_rarch->menu_userdata)
                free(p_rarch->menu_userdata);
             p_rarch->menu_userdata = NULL;
-
-            gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
+            p_disp->menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
 
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
