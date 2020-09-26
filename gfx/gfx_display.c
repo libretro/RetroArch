@@ -1465,12 +1465,6 @@ unsigned gfx_display_get_header_height(void)
    return p_disp->header_height;
 }
 
-size_t gfx_display_get_framebuffer_pitch(void)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   return p_disp->framebuf_pitch;
-}
-
 void gfx_display_set_framebuffer_pitch(size_t pitch)
 {
    gfx_display_t *p_disp   = disp_get_ptr();

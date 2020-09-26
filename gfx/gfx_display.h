@@ -263,7 +263,6 @@ void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
 void gfx_display_set_height(unsigned height);
 void gfx_display_set_header_height(unsigned height);
 unsigned gfx_display_get_header_height(void);
-size_t gfx_display_get_framebuffer_pitch(void);
 void gfx_display_set_framebuffer_pitch(size_t pitch);
 
 bool gfx_display_get_msg_force(void);
