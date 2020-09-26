@@ -1955,6 +1955,8 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
         subgroup, parent_group, change_handler, read_handler,
         dont_use_enum_idx);
 
+  result.action_start    = setting_generic_action_start_default;
+
   result.parent_group    = parent_group;
   result.values          = values;
   return result;
@@ -8911,7 +8913,6 @@ static bool setting_append_list(
                      general_read_handler,
                      general_write_handler);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
-               (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
                (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
                (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
                (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
