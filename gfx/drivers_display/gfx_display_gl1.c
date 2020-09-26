@@ -88,13 +88,6 @@ static void gfx_display_gl1_blend_end(void *data)
    glDisable(GL_BLEND);
 }
 
-static void gfx_display_gl1_viewport(gfx_display_ctx_draw_t *draw,
-      void *data)
-{
-   if (draw)
-      glViewport(draw->x, draw->y, draw->width, draw->height);
-}
-
 static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       void *data,
       unsigned video_width,
@@ -115,7 +108,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
    if (!draw->texture)
       return;
 
-   gfx_display_gl1_viewport(draw, gl1);
+   glViewport(draw->x, draw->y, draw->width, draw->height);
 
    glEnable(GL_TEXTURE_2D);
 
@@ -210,7 +203,6 @@ static void gfx_display_gl1_scissor_end(
 gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
    gfx_display_gl1_draw,
    NULL,
-   gfx_display_gl1_viewport,
    gfx_display_gl1_blend_begin,
    gfx_display_gl1_blend_end,
    gfx_display_gl1_get_default_mvp,

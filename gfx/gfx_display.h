@@ -115,7 +115,6 @@ typedef struct gfx_display_ctx_driver
    /* Draw one of the menu pipeline shaders. */
    void (*draw_pipeline)(gfx_display_ctx_draw_t *draw,
          void *data, unsigned video_width, unsigned video_height);
-   void (*viewport)(gfx_display_ctx_draw_t *draw, void *data);
    /* Start blending operation. */
    void (*blend_begin)(void *data);
    /* Finish blending operation. */

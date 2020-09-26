@@ -29,8 +29,6 @@ static void gfx_display_switch_draw(gfx_display_ctx_draw_t *draw,
 static void gfx_display_switch_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height) { }
-static void gfx_display_switch_viewport(gfx_display_ctx_draw_t *draw,
-      void *data) { }
 
 static bool gfx_display_switch_font_init_first(
       void **font_handle, void *video_data,
@@ -60,7 +58,6 @@ static const float *gfx_display_switch_get_default_tex_coords(void)
 gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    gfx_display_switch_draw,
    gfx_display_switch_draw_pipeline,
-   gfx_display_switch_viewport,
    gfx_display_switch_blend_begin,
    gfx_display_switch_blend_end,
    NULL,                                        /* get_default_mvp */

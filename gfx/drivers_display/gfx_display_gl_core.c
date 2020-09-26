@@ -66,12 +66,6 @@ static const float *gfx_display_gl_core_get_default_tex_coords(void)
    return &gl_core_tex_coords[0];
 }
 
-static void gfx_display_gl_core_viewport(gfx_display_ctx_draw_t *draw, void *data) 
-{
-   if (draw)
-      glViewport(draw->x, draw->y, draw->width, draw->height);
-}
-
 static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data,
       unsigned video_width,
@@ -173,7 +167,7 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color           = &gl_core_colors[0];
 
-   gfx_display_gl_core_viewport(draw, gl);
+   glViewport(draw->x, draw->y, draw->width, draw->height);
 
    glActiveTexture(GL_TEXTURE1);
    glBindTexture(GL_TEXTURE_2D, texture);
@@ -331,7 +325,6 @@ static void gfx_display_gl_core_scissor_end(
 gfx_display_ctx_driver_t gfx_display_ctx_gl_core = {
    gfx_display_gl_core_draw,
    gfx_display_gl_core_draw_pipeline,
-   gfx_display_gl_core_viewport,
    gfx_display_gl_core_blend_begin,
    gfx_display_gl_core_blend_end,
    gfx_display_gl_core_get_default_mvp,

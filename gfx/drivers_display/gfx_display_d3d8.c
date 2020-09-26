@@ -98,8 +98,6 @@ static void gfx_display_d3d8_blend_end(void *data)
    d3d8_disable_blend_func(d3d->dev);
 }
 
-static void gfx_display_d3d8_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
-
 static void gfx_display_d3d8_bind_texture(gfx_display_ctx_draw_t *draw,
       d3d8_video_t *d3d)
 {
@@ -240,7 +238,6 @@ static bool gfx_display_d3d8_font_init_first(
 gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
    gfx_display_d3d8_draw,
    gfx_display_d3d8_draw_pipeline,
-   gfx_display_d3d8_viewport,
    gfx_display_d3d8_blend_begin,
    gfx_display_d3d8_blend_end,
    gfx_display_d3d8_get_default_mvp,

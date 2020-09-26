@@ -135,13 +135,6 @@ static void gfx_display_gl_blend_end(void *data)
    glDisable(GL_BLEND);
 }
 
-static void gfx_display_gl_viewport(gfx_display_ctx_draw_t *draw,
-      void *data)
-{
-   if (draw)
-      glViewport(draw->x, draw->y, draw->width, draw->height);
-}
-
 #ifdef MALI_BUG
 static bool 
 gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
@@ -243,7 +236,7 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
    if (!draw->coords->lut_tex_coord)
       draw->coords->lut_tex_coord = &gl_tex_coords[0];
 
-   gfx_display_gl_viewport(draw, gl);
+   glViewport(draw->x, draw->y, draw->width, draw->height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
    gl->shader->set_coords(gl->shader_data, draw->coords);
@@ -389,7 +382,6 @@ static void gfx_display_gl_scissor_end(
 gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl_draw,
    gfx_display_gl_draw_pipeline,
-   gfx_display_gl_viewport,
    gfx_display_gl_blend_begin,
    gfx_display_gl_blend_end,
    gfx_display_gl_get_default_mvp,

@@ -87,9 +87,6 @@ static void gfx_display_metal_draw_pipeline(
    [md.display drawPipeline:draw];
 }
 
-static void gfx_display_metal_viewport(gfx_display_ctx_draw_t *draw,
-      void *data) { }
-
 static void gfx_display_metal_scissor_begin(
       void *data,
       unsigned video_width,
@@ -135,7 +132,6 @@ static bool gfx_display_metal_font_init_first(
 gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    .draw                   = gfx_display_metal_draw,
    .draw_pipeline          = gfx_display_metal_draw_pipeline,
-   .viewport               = gfx_display_metal_viewport,
    .blend_begin            = gfx_display_metal_blend_begin,
    .blend_end              = gfx_display_metal_blend_end,
    .get_default_mvp        = gfx_display_metal_get_default_mvp,

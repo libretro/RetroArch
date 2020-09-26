@@ -77,13 +77,6 @@ static void *gfx_display_vita2d_get_default_mvp(void *data)
 static void gfx_display_vita2d_blend_begin(void *data) { }
 static void gfx_display_vita2d_blend_end(void *data) { }
 
-static void gfx_display_vita2d_viewport(gfx_display_ctx_draw_t *draw,
-      void *data)
-{
-   if (draw)
-      vita2d_set_viewport(draw->x, draw->y, draw->width, draw->height);
-}
-
 static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
@@ -113,8 +106,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color           = &vita2d_colors[0];
 
-   gfx_display_vita2d_viewport(draw, vita2d);
-
+   vita2d_set_viewport(draw->x, draw->y, draw->width, draw->height);
    vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)vita2d_pool_memalign(
          draw->coords->vertices * sizeof(vita2d_texture_tint_vertex),
          sizeof(vita2d_texture_tint_vertex));
@@ -182,7 +174,6 @@ static void gfx_display_vita2d_scissor_end(
 gfx_display_ctx_driver_t gfx_display_ctx_vita2d = {
    gfx_display_vita2d_draw,
    gfx_display_vita2d_draw_pipeline,
-   gfx_display_vita2d_viewport,
    gfx_display_vita2d_blend_begin,
    gfx_display_vita2d_blend_end,
    gfx_display_vita2d_get_default_mvp,

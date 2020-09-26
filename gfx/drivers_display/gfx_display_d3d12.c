@@ -43,12 +43,10 @@ static void gfx_display_d3d12_blend_end(void *data)
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
 }
 
-static void gfx_display_d3d12_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
-
 static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-   int vertex_count;
+   int vertex_count     = 1;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
 
    if (!d3d12 || !draw || !draw->texture)
@@ -72,8 +70,6 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 
    if (draw->coords->vertex && draw->coords->tex_coord && draw->coords->color)
       vertex_count = draw->coords->vertices;
-   else
-      vertex_count = 1;
 
    if (!d3d12->sprites.enabled || vertex_count > d3d12->sprites.capacity)
       return;
@@ -299,7 +295,6 @@ void gfx_display_d3d12_scissor_end(void *data,
 gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    gfx_display_d3d12_draw,
    gfx_display_d3d12_draw_pipeline,
-   gfx_display_d3d12_viewport,
    gfx_display_d3d12_blend_begin,
    gfx_display_d3d12_blend_end,
    NULL,                                     /* get_default_mvp        */

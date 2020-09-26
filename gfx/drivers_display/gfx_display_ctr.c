@@ -29,8 +29,6 @@
 
 static void gfx_display_ctr_blend_begin(void *data) { }
 static void gfx_display_ctr_blend_end(void *data) { }
-static void gfx_display_ctr_viewport(gfx_display_ctx_draw_t *draw,
-      void *data) { }
 
 static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
@@ -149,7 +147,6 @@ static bool gfx_display_ctr_font_init_first(
 gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
    gfx_display_ctr_draw,
    gfx_display_ctr_draw_pipeline,
-   gfx_display_ctr_viewport,
    gfx_display_ctr_blend_begin,
    gfx_display_ctr_blend_end,
    NULL,                                     /* get_default_mvp        */

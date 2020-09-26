@@ -98,8 +98,6 @@ static void gfx_display_d3d9_blend_end(void *data)
    d3d9_disable_blend_func(d3d->dev);
 }
 
-static void gfx_display_d3d9_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
-
 static void gfx_display_d3d9_bind_texture(gfx_display_ctx_draw_t *draw,
       d3d9_video_t *d3d)
 {
@@ -312,7 +310,6 @@ void gfx_display_d3d9_scissor_end(void *data,
 gfx_display_ctx_driver_t gfx_display_ctx_d3d9 = {
    gfx_display_d3d9_draw,
    gfx_display_d3d9_draw_pipeline,
-   gfx_display_d3d9_viewport,
    gfx_display_d3d9_blend_begin,
    gfx_display_d3d9_blend_end,
    gfx_display_d3d9_get_default_mvp,

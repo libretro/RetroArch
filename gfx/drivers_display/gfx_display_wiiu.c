@@ -30,7 +30,6 @@
 
 static void gfx_display_wiiu_blend_begin(void *data) { }
 static void gfx_display_wiiu_blend_end(void *data) { }
-static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
@@ -299,7 +298,6 @@ static void gfx_display_wiiu_scissor_end(
 gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    gfx_display_wiiu_draw,
    gfx_display_wiiu_draw_pipeline,
-   gfx_display_wiiu_viewport,
    gfx_display_wiiu_blend_begin,
    gfx_display_wiiu_blend_end,
    NULL,                                     /* get_default_mvp        */
