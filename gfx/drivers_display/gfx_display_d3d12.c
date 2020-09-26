@@ -27,21 +27,6 @@
 #include "../font_driver.h"
 #include "../common/d3d12_common.h"
 
-static const float* gfx_display_d3d12_get_default_vertices(void)
-{
-   return NULL;
-}
-
-static const float* gfx_display_d3d12_get_default_tex_coords(void)
-{
-   return NULL;
-}
-
-static void* gfx_display_d3d12_get_default_mvp(void *data)
-{
-   return NULL;
-}
-
 static void gfx_display_d3d12_blend_begin(void *data)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
@@ -317,9 +302,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    gfx_display_d3d12_viewport,
    gfx_display_d3d12_blend_begin,
    gfx_display_d3d12_blend_end,
-   gfx_display_d3d12_get_default_mvp,
-   gfx_display_d3d12_get_default_vertices,
-   gfx_display_d3d12_get_default_tex_coords,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
    gfx_display_d3d12_font_init_first,
    GFX_VIDEO_DRIVER_DIRECT3D12,
    "d3d12",

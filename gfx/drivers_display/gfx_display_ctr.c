@@ -27,10 +27,6 @@
 #include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 
-static const float *gfx_display_ctr_get_default_vertices(void) { return NULL; }
-static const float *gfx_display_ctr_get_default_tex_coords(void) { return NULL; }
-static void *gfx_display_ctr_get_default_mvp(void *data) { return NULL; }
-
 static void gfx_display_ctr_blend_begin(void *data) { }
 static void gfx_display_ctr_blend_end(void *data) { }
 static void gfx_display_ctr_viewport(gfx_display_ctx_draw_t *draw,
@@ -156,9 +152,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
    gfx_display_ctr_viewport,
    gfx_display_ctr_blend_begin,
    gfx_display_ctr_blend_end,
-   gfx_display_ctr_get_default_mvp,
-   gfx_display_ctr_get_default_vertices,
-   gfx_display_ctr_get_default_tex_coords,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
    gfx_display_ctr_font_init_first,
    GFX_VIDEO_DRIVER_CTR,
    "ctr",

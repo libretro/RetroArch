@@ -22,7 +22,6 @@
 
 #include "../gfx_display.h"
 
-static void *gfx_display_switch_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_switch_blend_begin(void *data) { }
 static void gfx_display_switch_blend_end(void *data) { }
 static void gfx_display_switch_draw(gfx_display_ctx_draw_t *draw,
@@ -64,13 +63,13 @@ gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    gfx_display_switch_viewport,
    gfx_display_switch_blend_begin,
    gfx_display_switch_blend_end,
-   gfx_display_switch_get_default_mvp,
+   NULL,                                        /* get_default_mvp */
    gfx_display_switch_get_default_vertices,
    gfx_display_switch_get_default_tex_coords,
    gfx_display_switch_font_init_first,
    GFX_VIDEO_DRIVER_SWITCH,
    "switch",
    false,
-   NULL, /* scissor_begin */
-   NULL  /* scissor_end   */
+   NULL,                                         /* scissor_begin */
+   NULL                                          /* scissor_end   */
 };

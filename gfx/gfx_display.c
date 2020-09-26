@@ -40,7 +40,6 @@
  * needs to be refactored */
 uintptr_t gfx_display_white_texture;
 
-static void *gfx_display_null_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_null_blend_begin(void *data) { }
 static void gfx_display_null_blend_end(void *data) { }
 static void gfx_display_null_draw(gfx_display_ctx_draw_t *draw,
@@ -81,7 +80,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_null = {
    gfx_display_null_viewport,
    gfx_display_null_blend_begin,
    gfx_display_null_blend_end,
-   gfx_display_null_get_default_mvp,
+   NULL,                                     /* get_default_mvp */
    gfx_display_null_get_default_vertices,
    gfx_display_null_get_default_tex_coords,
    gfx_display_null_font_init_first,
@@ -684,9 +683,9 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
    new_vertex           = draw->vertex;
    new_tex_coord        = draw->tex_coord;
 
-   if (!new_vertex)
+   if (!new_vertex    && dispctx->get_default_vertices)
       new_vertex        = dispctx->get_default_vertices();
-   if (!new_tex_coord)
+   if (!new_tex_coord && dispctx->get_default_tex_coords)
       new_tex_coord     = dispctx->get_default_tex_coords();
 
    coords.vertices      = (unsigned)draw->vertex_count;

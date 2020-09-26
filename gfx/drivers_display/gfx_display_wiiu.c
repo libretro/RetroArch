@@ -28,9 +28,6 @@
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
 
-static const float *gfx_display_wiiu_get_default_vertices(void) { return NULL; }
-static const float *gfx_display_wiiu_get_default_tex_coords(void) { return NULL; }
-static void *gfx_display_wiiu_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_wiiu_blend_begin(void *data) { }
 static void gfx_display_wiiu_blend_end(void *data) { }
 static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
@@ -305,9 +302,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    gfx_display_wiiu_viewport,
    gfx_display_wiiu_blend_begin,
    gfx_display_wiiu_blend_end,
-   gfx_display_wiiu_get_default_mvp,
-   gfx_display_wiiu_get_default_vertices,
-   gfx_display_wiiu_get_default_tex_coords,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
    gfx_display_wiiu_font_init_first,
    GFX_VIDEO_DRIVER_WIIU,
    "gx2",
