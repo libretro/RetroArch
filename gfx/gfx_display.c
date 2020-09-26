@@ -584,16 +584,6 @@ float gfx_display_get_widget_pixel_scale(
    return adjusted_scale;
 }
 
-/* Reset the display's coordinate array vertices.
- * NOTE: Not every display driver uses this. */
-void gfx_display_coords_array_reset(void)
-{
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   video_coord_array_t *p_dispca     = &p_disp->dispca;
-
-   p_dispca->coords.vertices         = 0;
-}
-
 /* Begin scissoring operation */
 void gfx_display_scissor_begin(void *userdata,
       unsigned video_width,

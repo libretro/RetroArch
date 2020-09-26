@@ -257,8 +257,6 @@ void gfx_display_scissor_end(void *data, unsigned width, unsigned height);
 
 void gfx_display_font_free(font_data_t *font);
 
-void gfx_display_coords_array_reset(void);
-
 void gfx_display_set_width(unsigned width);
 void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
       size_t *fb_pitch);
