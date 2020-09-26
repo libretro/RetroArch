@@ -150,7 +150,8 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    GLuint            texture = 0;
    gl_core_t *gl             = (gl_core_t*)data;
    const struct 
-      gl_core_buffer_locations *loc = NULL;
+      gl_core_buffer_locations 
+      *loc                   = NULL;
 
    if (!gl || !draw)
       return;
@@ -214,24 +215,26 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
 
       default:
          glUseProgram(gl->pipelines.alpha_blend);
-         loc = NULL;
          break;
    }
 
-   if (loc && loc->flat_ubo_vertex >= 0)
-      glUniform4fv(loc->flat_ubo_vertex,
-                   (GLsizei)((draw->backend_data_size + 15) / 16),
-                   (const GLfloat*)draw->backend_data);
+   if (loc)
+   {
+      if (loc->flat_ubo_vertex >= 0)
+         glUniform4fv(loc->flat_ubo_vertex,
+               (GLsizei)((draw->backend_data_size + 15) / 16),
+               (const GLfloat*)draw->backend_data);
 
-   if (loc && loc->flat_ubo_fragment >= 0)
-      glUniform4fv(loc->flat_ubo_fragment,
-                   (GLsizei)((draw->backend_data_size + 15) / 16),
-                   (const GLfloat*)draw->backend_data);
-
-   if (!loc)
+      if (loc->flat_ubo_fragment >= 0)
+         glUniform4fv(loc->flat_ubo_fragment,
+               (GLsizei)((draw->backend_data_size + 15) / 16),
+               (const GLfloat*)draw->backend_data);
+   }
+   else
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)&gl->mvp_no_rot;
+                     ? (const math_matrix_4x4*)draw->matrix_data 
+                     : (const math_matrix_4x4*)&gl->mvp_no_rot;
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                       4, mat->data);

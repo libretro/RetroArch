@@ -87,12 +87,10 @@ static unsigned to_menu_pipeline(
    }
    return 0;
 }
-#endif
 
 static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-#ifdef HAVE_SHADERPIPELINE
    static uint8_t ubo_scratch_data[768];
    static float t                   = 0.0f;
    gfx_display_t *p_disp            = disp_get_ptr();
@@ -162,8 +160,8 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
    }
 
    t += 0.01;
-#endif
 }
+#endif
 
 static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
@@ -335,7 +333,11 @@ static void gfx_display_vk_scissor_end(void *data,
 
 gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
    gfx_display_vk_draw,
+#ifdef HAVE_SHADERPIPELINE
    gfx_display_vk_draw_pipeline,
+#else
+   NULL,                                  /* draw_pipeline */
+#endif
    gfx_display_vk_blend_begin,
    gfx_display_vk_blend_end,
    gfx_display_vk_get_default_mvp,

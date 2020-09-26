@@ -97,16 +97,22 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
          0x3FFFFFFF);
 #endif
 
-   ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(texture->data), texture->width, texture->height,
-         GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
-         GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+   ctrGuSetTexture(GPU_TEXUNIT0,
+         VIRT_TO_PHYS(texture->data),
+         texture->width,
+         texture->height,
+           GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  
+         | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) 
+         | GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE)
+         | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
          GPU_RGBA8);
 
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ?
-         CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 
+         ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 
+         : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
