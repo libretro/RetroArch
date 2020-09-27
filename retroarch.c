@@ -8995,7 +8995,7 @@ void discord_update(enum discord_presence presence)
          discord_st->presence.details        = msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED);
          discord_st->pause_time              = time(0);
-         discord_st->elapsed_time            = difftime(time(0),
+         discord_st->elapsed_time            = difftime(discord_st->pause_time,
                discord_st->start_time);
          discord_st->presence.startTimestamp = discord_st->pause_time;
          break;
@@ -9045,7 +9045,12 @@ void discord_update(enum discord_presence presence)
                discord_st->presence.smallImageText = msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING);
                discord_st->presence.startTimestamp = discord_st->start_time;
-               discord_st->presence.details        = msg_hash_to_str(
+
+#ifdef HAVE_CHEEVOS
+               discord_st->presence.details        = rcheevos_get_richpresence();
+               if (!discord_st->presence.details || !*discord_st->presence.details)
+#endif
+                   discord_st->presence.details    = msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME);
 
                discord_st->presence.state          = label;
@@ -9116,6 +9121,9 @@ void discord_update(enum discord_presence presence)
          break;
 #ifdef HAVE_CHEEVOS
       case DISCORD_PRESENCE_RETROACHIEVEMENTS:
+         if (discord_st->pause_time)
+            return;
+
          discord_st->presence.details = rcheevos_get_richpresence();
          presence = DISCORD_PRESENCE_GAME;
          break;
