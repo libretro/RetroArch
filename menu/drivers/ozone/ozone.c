@@ -805,12 +805,7 @@ static void ozone_update_thumbnail_image(void *data)
 
    gfx_thumbnail_cancel_pending_requests();
 
-   /* Image (and video/music) content requires special
-    * treatment... */
-   if (ozone->selection_core_is_viewer)
-   {
-      /* Only right thumbnail is loaded */
-      gfx_thumbnail_request(
+   gfx_thumbnail_request(
          ozone->thumbnail_path_data,
          GFX_THUMBNAIL_RIGHT,
          playlist,
@@ -820,21 +815,15 @@ static void ozone_update_thumbnail_image(void *data)
          network_on_demand_thumbnails
          );
 
+   /* Image (and video/music) content requires special
+    * treatment... */
+   if (ozone->selection_core_is_viewer)
+   {
       /* Left thumbnail is simply reset */
       gfx_thumbnail_reset(&ozone->thumbnails.left);
    }
    else
    {
-      /* Right thumbnail */
-      gfx_thumbnail_request(
-         ozone->thumbnail_path_data,
-         GFX_THUMBNAIL_RIGHT,
-         playlist,
-         selection,
-         &ozone->thumbnails.right,
-         gfx_thumbnail_upscale_threshold,
-         network_on_demand_thumbnails);
-
       /* Left thumbnail */
       gfx_thumbnail_request(
          ozone->thumbnail_path_data,
