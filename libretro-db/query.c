@@ -110,9 +110,7 @@ static struct rmsgpack_dom_value query_func_is_true(
    res.type      = RDT_BOOL;
    res.val.bool_ = 0;
 
-   if (argc > 0 || input.type != RDT_BOOL)
-      res.val.bool_ = 0;
-   else
+   if (!(argc > 0 || input.type != RDT_BOOL))
       res.val.bool_ = input.val.bool_;
 
    return res;
@@ -132,9 +130,7 @@ static struct rmsgpack_dom_value func_equals(
    {
       arg = argv[0];
 
-      if (arg.type != AT_VALUE)
-         res.val.bool_ = 0;
-      else
+      if (arg.type == AT_VALUE)
       {
          if (  input.type       == RDT_UINT && 
                arg.a.value.type == RDT_INT)
@@ -171,7 +167,7 @@ static struct rmsgpack_dom_value query_func_operator_or(
                   ), 0, NULL);
 
       if (res.val.bool_)
-         return res;
+         break;
    }
 
    return res;
