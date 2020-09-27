@@ -343,18 +343,24 @@ static int explore_qsort_func_menulist(const void *a_, const void *b_)
 
 static int explore_check_company_suffix(const char* p, bool search_reverse)
 {
+   int p0, p0_lc, p1, p1_lc, p2, p2_lc;
    if (search_reverse)
    {
       p -= (p[-1] == '.' ? 4 : 3);
       if (p[-1] != ' ')
          return 0;
    }
-   if (tolower(p[0]) == 'i' && tolower(p[1]) == 'n' && tolower(p[2]) == 'c')
-      return (p[3] == '.' ? 4 : 3); /*, Inc */
-   if (tolower(p[0]) == 'l' && tolower(p[1] )== 't' && tolower(p[2]) == 'd')
-      return (p[3] == '.' ? 4 : 3); /*, Ltd */
-   if (tolower(p[0]) == 't' && tolower(p[1] )== 'h' && tolower(p[2]) == 'e')
-      return (p[3] == '.' ? 4 : 3); /*, The */
+   p0     = p[0];
+   p1     = p[1];
+   p2     = p[2];
+   p0_lc  = TOLOWER(p0);
+   p1_lc  = TOLOWER(p1);
+   p2_lc  = TOLOWER(p2);
+   if (   (p0_lc == 'i' && p1_lc == 'n' && p2_lc == 'c') /*, Inc */
+       || (p0_lc == 'l' && p1_lc == 't' && p2_lc == 'd') /*, Ltd */
+       || (p0_lc == 't' && p1_lc == 'h' && p2_lc == 'e') /*, The */
+         )
+      return (p[3] == '.' ? 4 : 3);
    return 0;
 }
 
