@@ -200,7 +200,7 @@ static struct rmsgpack_dom_value query_func_operator_and(
                0, NULL);
 
       if (!res.val.bool_)
-         return res;
+         break;
    }
    return res;
 }
@@ -562,9 +562,7 @@ static struct buffer query_get_ident(
    *len   = 0;
    query_peek_char(s, _len, buff, &c, error);
 
-   if (*error)
-      goto clean;
-   if (!isalpha((int)c))
+   if (*error || !isalpha((int)c))
       return buff;
 
    buff.offset++;
@@ -573,14 +571,13 @@ static struct buffer query_get_ident(
 
    while (!*error)
    {
-      if (!(isalpha((int)c) || isdigit((int)c) || c == '_'))
+      if (!(isalnum((int)c) || c == '_'))
          break;
       buff.offset++;
       *len = *len + 1;
       query_peek_char(s, _len, buff, &c, error);
    }
 
-clean:
    return buff;
 }
 
@@ -732,11 +729,11 @@ static struct buffer query_parse_method_call(
    memcpy(invocation->argv, args,
          sizeof(struct argument) * argi);
 
-   goto success;
+   return buff;
+
 clean:
    for (i = 0; i < argi; i++)
       query_argument_free(&args[i]);
-success:
    return buff;
 }
 
@@ -770,7 +767,7 @@ static struct rmsgpack_dom_value query_func_all_map(
       if (arg.type != AT_VALUE)
       {
          res.val.bool_ = 0;
-         goto clean;
+         return res;
       }
       value = rmsgpack_dom_value_map_value(&input, &arg.a.value);
       if (!value) /* All missing fields are nil */
@@ -790,7 +787,6 @@ static struct rmsgpack_dom_value query_func_all_map(
       if (!res.val.bool_)
          break;
    }
-clean:
    return res;
 }
 
@@ -907,11 +903,11 @@ static struct buffer query_parse_table(
    memcpy(invocation->argv, args,
          sizeof(struct argument) * argi);
 
-   goto success;
+   return buff;
+
 clean:
    for (i = 0; i < argi; i++)
       query_argument_free(&args[i]);
-success:
    return buff;
 }
 
