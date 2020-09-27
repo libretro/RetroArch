@@ -363,14 +363,12 @@ static struct buffer query_expect_eof(char *s, size_t len,
    return buff;
 }
 
-static int query_peek(struct buffer buff, const char * data)
+static int query_peek(struct buffer buff, const char * data,
+      size_t size_data)
 {
    size_t remain    = buff.len - buff.offset;
-   size_t size_data = strlen(data);
-
    if (remain < size_data)
       return 0;
-
    return (strncmp(buff.data + buff.offset,
             data, size_data) == 0);
 }
@@ -495,27 +493,27 @@ static struct buffer query_parse_value(
 {
    buff                 = query_chomp(buff);
 
-   if (query_peek(buff, "nil"))
+   if (query_peek(buff, "nil", STRLEN_CONST("nil")))
    {
       buff.offset      += STRLEN_CONST("nil");
       value->type       = RDT_NULL;
    }
-   else if (query_peek(buff, "true"))
+   else if (query_peek(buff, "true", STRLEN_CONST("true")))
    {
       buff.offset      += STRLEN_CONST("true");
       value->type       = RDT_BOOL;
       value->val.bool_  = 1;
    }
-   else if (query_peek(buff, "false"))
+   else if (query_peek(buff, "false", STRLEN_CONST("false")))
    {
       buff.offset       += STRLEN_CONST("false");
       value->type        = RDT_BOOL;
       value->val.bool_   = 0;
    }
    else if (
-         query_peek(buff, "b")  || 
-         query_peek(buff, "\"") ||
-         query_peek(buff, "'"))
+         query_peek(buff, "b", STRLEN_CONST("b"))  || 
+         query_peek(buff, "\"", STRLEN_CONST("\"")) ||
+         query_peek(buff, "'", STRLEN_CONST("'")))
       buff = query_parse_string(s, len,
              buff, value, error);
    else if (isdigit((int)buff.data[buff.offset]))
@@ -616,11 +614,11 @@ static struct buffer query_parse_argument(
    if (
          isalpha((int)buff.data[buff.offset])
          && !(
-               query_peek(buff, "nil")
-            || query_peek(buff, "true")
-            || query_peek(buff, "false")
-            || query_peek(buff, "b\"")
-            || query_peek(buff,  "b'") /* bin string prefix*/
+               query_peek(buff, "nil", STRLEN_CONST("nil"))
+            || query_peek(buff, "true", STRLEN_CONST("true"))
+            || query_peek(buff, "false", STRLEN_CONST("false"))
+            || query_peek(buff, "b\"", STRLEN_CONST("b\""))
+            || query_peek(buff, "b'", STRLEN_CONST("b'")) /* bin string prefix*/
             )
       )
    {
@@ -628,7 +626,7 @@ static struct buffer query_parse_argument(
       buff      = query_parse_method_call(s, len, buff,
             &arg->a.invocation, error);
    }
-   else if (query_peek(buff, "{"))
+   else if (query_peek(buff, "{", STRLEN_CONST("{")))
    {
       arg->type = AT_FUNCTION;
       buff      = query_parse_table(s, len,
@@ -685,7 +683,7 @@ static struct buffer query_parse_method_call(
    }
 
    buff = query_chomp(buff);
-   while (!query_peek(buff, ")"))
+   while (!query_peek(buff, ")", STRLEN_CONST(")")))
    {
       if (argi >= QUERY_MAX_ARGS)
       {
@@ -809,7 +807,7 @@ static struct buffer query_parse_table(
 
    buff = query_chomp(buff);
 
-   while (!query_peek(buff, "}"))
+   while (!query_peek(buff, "}", STRLEN_CONST("}")))
    {
       if (argi >= QUERY_MAX_ARGS)
       {
@@ -953,7 +951,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
 
    buff                  = query_chomp(buff);
 
-   if (query_peek(buff, "{"))
+   if (query_peek(buff, "{", STRLEN_CONST("{")))
    {
       buff = query_parse_table(tmp_error_buff,
             error_buff_len, buff, &q->root, error_string);
