@@ -205,7 +205,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
       font_renderer_ft_get_glyph(handle, i);
 
    for (i = 0; i < 256; i++)
-      if (isalnum(i))
+      if (ISALNUM(i))
          font_renderer_ft_get_glyph(handle, i);
 
    return true;

@@ -35,7 +35,32 @@
 
 RETRO_BEGIN_DECLS
 
-#define strcpy_literal(a, b) strcpy(a, b)
+#define STRLEN_CONST(x)                   ((sizeof((x))-1))
+
+#define strcpy_literal(a, b)              strcpy(a, b)
+
+#define string_is_not_equal(a, b)         !string_is_equal((a), (b))
+
+#define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
+#define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
+
+#define TOLOWER(c)   (c |  (lr_char_props[c] & 0x20))
+#define TOUPPER(c)   (c & ~(lr_char_props[c] & 0x20))
+
+/* C standard says \f \v are space, but this one disagrees */
+#define ISSPACE(c)   (lr_char_props[c]  & 0x80) 
+
+#define ISDIGIT(c)   (lr_char_props[c]  & 0x40)
+#define ISALPHA(c)   (lr_char_props[c]  & 0x20)
+#define ISLOWER(c)   (lr_char_props[c]  & 0x04)
+#define ISUPPER(c)   (lr_char_props[c]  & 0x02)
+#define ISALNUM(c)   (lr_char_props[c]  & 0x60)
+#define ISUALPHA(c)  (lr_char_props[c]  & 0x28)
+#define ISUALNUM(c)  (lr_char_props[c]  & 0x68)
+#define IS_XDIGIT(c) (lr_char_props[c]  & 0x01)
+
+/* Deprecated alias, all callers should use string_is_equal_case_insensitive instead */
+#define string_is_equal_noncase string_is_equal_case_insensitive
 
 static INLINE bool string_is_empty(const char *data)
 {
@@ -85,12 +110,6 @@ static INLINE size_t strlen_size(const char *str, size_t size)
    return i;
 }
 
-#define STRLEN_CONST(x)                   ((sizeof((x))-1))
-
-#define string_is_not_equal(a, b)         !string_is_equal((a), (b))
-
-#define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
-#define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
 
 static INLINE bool string_is_equal_case_insensitive(const char *a,
       const char *b)
@@ -110,9 +129,6 @@ static INLINE bool string_is_equal_case_insensitive(const char *a,
 
    return (result == 0);
 }
-
-/* Deprecated alias, all callers should use string_is_equal_case_insensitive instead */
-#define string_is_equal_noncase string_is_equal_case_insensitive
 
 char *string_to_upper(char *s);
 
@@ -174,6 +190,8 @@ unsigned string_hex_to_unsigned(const char *str);
 char *string_init(const char *src);
 
 void string_set(char **string, const char *src);
+
+extern const unsigned char lr_char_props[256];
 
 RETRO_END_DECLS
 

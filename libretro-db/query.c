@@ -329,7 +329,7 @@ static struct buffer query_parse_integer(
    }
    else
    {
-      while (isdigit((int)buff.data[buff.offset]))
+      while (ISDIGIT((int)buff.data[buff.offset]))
          buff.offset++;
    }
 
@@ -339,7 +339,7 @@ static struct buffer query_parse_integer(
 static struct buffer query_chomp(struct buffer buff)
 {
    for (; (unsigned)buff.offset < buff.len
-         && isspace((int)buff.data[buff.offset]); buff.offset++);
+         && ISSPACE((int)buff.data[buff.offset]); buff.offset++);
    return buff;
 }
 
@@ -512,7 +512,7 @@ static struct buffer query_parse_value(
          query_peek(buff, "'", STRLEN_CONST("'")))
       buff = query_parse_string(s, len,
              buff, value, error);
-   else if (isdigit((int)buff.data[buff.offset]))
+   else if (ISDIGIT((int)buff.data[buff.offset]))
       buff = query_parse_integer(s, len, buff, value, error);
    return buff;
 }
@@ -556,7 +556,7 @@ static struct buffer query_get_ident(
    *len   = 0;
    query_peek_char(s, _len, buff, &c, error);
 
-   if (*error || !isalpha((int)c))
+   if (*error || !ISALPHA((int)c))
       return buff;
 
    buff.offset++;
@@ -565,7 +565,7 @@ static struct buffer query_get_ident(
 
    while (!*error)
    {
-      if (!(isalnum((int)c) || c == '_'))
+      if (!(ISALNUM((int)c) || c == '_'))
          break;
       buff.offset++;
       *len = *len + 1;
@@ -608,7 +608,7 @@ static struct buffer query_parse_argument(
    buff = query_chomp(buff);
 
    if (
-         isalpha((int)buff.data[buff.offset])
+         ISALPHA((int)buff.data[buff.offset])
          && !(
                query_peek(buff, "nil",   STRLEN_CONST("nil"))
             || query_peek(buff, "true",  STRLEN_CONST("true"))
@@ -814,7 +814,7 @@ static struct buffer query_parse_table(
          goto clean;
       }
 
-      if (isalpha((int)buff.data[buff.offset]))
+      if (ISALPHA((int)buff.data[buff.offset]))
       {
          buff = query_get_ident(s, len,
                buff, &ident_name, &ident_len, error);
@@ -955,7 +955,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
       if (*error_string)
          goto error;
    }
-   else if (isalpha((int)buff.data[buff.offset]))
+   else if (ISALPHA((int)buff.data[buff.offset]))
       buff = query_parse_method_call(tmp_error_buff,
             error_buff_len,
             buff, &q->root, error_string);

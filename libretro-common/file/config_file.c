@@ -219,7 +219,7 @@ static char *config_file_extract_value(char *line, bool is_value)
 
    if (is_value)
    {
-      while (isspace((int)*line))
+      while (ISSPACE((int)*line))
          line++;
 
       /* If we don't have an equal sign here,
@@ -230,7 +230,7 @@ static char *config_file_extract_value(char *line, bool is_value)
       line++;
    }
 
-   while (isspace((int)*line))
+   while (ISSPACE((int)*line))
       line++;
 
    /* Note: From this point on, an empty value
@@ -517,7 +517,7 @@ static bool config_file_parse_line(config_file_t *conf,
    }
 
    /* Skip to first non-space character */
-   while (isspace((int)*line))
+   while (ISSPACE((int)*line))
       line++;
 
    /* Allocate storage for key */

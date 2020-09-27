@@ -5371,7 +5371,7 @@ static int menu_entries_elem_get_first_char(
       if ((path = list->list[offset].alt
          ? list->list[offset].alt
          : list->list[offset].path))
-         ret = tolower((int)*path);
+         ret = TOLOWER((int)*path);
 
    /* "Normalize" non-alphabetical entries so they
     * are lumped together for purposes of jumping. */
@@ -15045,7 +15045,7 @@ static void command_event_set_savestate_auto_index(
          continue;
 
       end = dir_elem + strlen(dir_elem);
-      while ((end > dir_elem) && isdigit((int)end[-1]))
+      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
          end--;
 
       idx = (unsigned)strtoul(end, NULL, 0);
@@ -17907,7 +17907,7 @@ static const char *core_option_manager_parse_value_label(
    /* Any label starting with a digit (or +/-)
     * cannot be a boolean string, and requires
     * no further processing */
-   if (isdigit((unsigned char)*label) ||
+   if (ISDIGIT((unsigned char)*label) ||
        (*label == '+') ||
        (*label == '-'))
       return label;
@@ -28031,8 +28031,8 @@ static const char *input_config_get_prefix(unsigned user, bool meta)
 enum retro_key input_config_translate_str_to_rk(const char *str)
 {
    size_t i;
-   if (strlen(str) == 1 && isalpha((int)*str))
-      return (enum retro_key)(RETROK_a + (tolower((int)*str) - (int)'a'));
+   if (strlen(str) == 1 && ISALPHA((int)*str))
+      return (enum retro_key)(RETROK_a + (TOLOWER((int)*str) - (int)'a'));
    for (i = 0; input_config_key_map[i].str; i++)
    {
       if (string_is_equal_noncase(input_config_key_map[i].str, str))
@@ -28140,7 +28140,7 @@ static void input_config_parse_joy_button(
          if (*btn == 'h')
          {
             const char *str = btn + 1;
-            if (str && isdigit((int)*str))
+            if (str && ISDIGIT((int)*str))
                parse_hat(bind, str);
          }
          else

@@ -215,10 +215,10 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    *game_id++ = toupper(*tmp++);
    *game_id++ = '-';
 
-   if (!isalnum(*tmp))
+   if (!ISALNUM(*tmp))
       tmp++;
 
-   while (isalnum(*tmp))
+   while (ISALNUM(*tmp))
    {
       *game_id++ = *tmp++;
       if (*tmp == '.')

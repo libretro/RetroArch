@@ -18,6 +18,7 @@
 
 #include <file/file_path.h>
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
 #ifdef WIIU
@@ -220,7 +221,7 @@ static bool font_renderer_stb_unicode_create_atlas(
 
    for (i = 0; i < 256; i++)
    {
-      if (isalnum(i))
+      if (ISALNUM(i))
          font_renderer_stb_unicode_get_glyph(self, i);
    }
 
