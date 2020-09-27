@@ -411,7 +411,7 @@ static struct buffer query_parse_string(
    if (terminator == 'b')
    {
       is_binstr = 1;
-      buff = query_get_char(s, len,
+      buff      = query_get_char(s, len,
              buff, &terminator, error);
    }
 
@@ -610,11 +610,12 @@ static struct buffer query_parse_argument(
    if (
          isalpha((int)buff.data[buff.offset])
          && !(
-               query_peek(buff, "nil", STRLEN_CONST("nil"))
-            || query_peek(buff, "true", STRLEN_CONST("true"))
+               query_peek(buff, "nil",   STRLEN_CONST("nil"))
+            || query_peek(buff, "true",  STRLEN_CONST("true"))
             || query_peek(buff, "false", STRLEN_CONST("false"))
-            || query_peek(buff, "b\"", STRLEN_CONST("b\""))
-            || query_peek(buff, "b'", STRLEN_CONST("b'")) /* bin string prefix*/
+            || query_peek(buff, "b\"",   STRLEN_CONST("b\""))
+            || query_peek(buff, "b'",    STRLEN_CONST("b'"))
+            /* bin string prefix*/
             )
       )
    {
