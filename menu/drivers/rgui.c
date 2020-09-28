@@ -3501,9 +3501,9 @@ static void rgui_render(void *data,
    }
 
    if (rgui->bg_modified)
-      rgui->bg_modified = false;
+      rgui->bg_modified      = false;
 
-   gfx_display_set_framebuffer_dirty_flag();
+   p_disp->framebuf_dirty    = true;
    gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
    rgui->force_redraw        = false;
@@ -4820,15 +4820,17 @@ static void rgui_set_texture(void)
    size_t fb_pitch;
    unsigned fb_width, fb_height;
    settings_t            *settings = config_get_ptr();
+   gfx_display_t          *p_disp  = disp_get_ptr();
    unsigned internal_upscale_level = settings->uints.menu_rgui_internal_upscale_level;
 
-   if (!gfx_display_get_framebuffer_dirty_flag())
+   /* Framebuffer is dirty and needs to be updated? */
+   if (!p_disp->framebuf_dirty)
       return;
 
    gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
-   gfx_display_unset_framebuffer_dirty_flag();
+   p_disp->framebuf_dirty = false;
 
    if (internal_upscale_level == RGUI_UPSCALE_NONE)
    {
@@ -5315,20 +5317,21 @@ static int rgui_environ(enum menu_environ_cb type,
       void *data, void *userdata)
 {
    rgui_t           *rgui = (rgui_t*)userdata;
+   gfx_display_t *p_disp  = disp_get_ptr();
 
    switch (type)
    {
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
          if (!rgui)
             return -1;
-         rgui->mouse_show = true;
-         gfx_display_set_framebuffer_dirty_flag();
+         rgui->mouse_show          = true;
+         p_disp->framebuf_dirty    = true;
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
          if (!rgui)
             return -1;
-         rgui->mouse_show = false;
-         gfx_display_unset_framebuffer_dirty_flag();
+         rgui->mouse_show          = false;
+         p_disp->framebuf_dirty    = false;
          break;
       case 0:
       default:

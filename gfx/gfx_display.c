@@ -1473,29 +1473,6 @@ void gfx_display_set_msg_force(bool state)
    p_disp->msg_force       = state;
 }
 
-/* Checks if the display framebuffer has its 'dirty flag' set. This
- * means that the current contents of the framebuffer has changed
- * and that it has to be rendered to the screen. */
-bool gfx_display_get_framebuffer_dirty_flag(void)
-{
-   gfx_display_t *p_disp = disp_get_ptr();
-   return p_disp->framebuf_dirty;
-}
-
-/* Set the display framebuffer's 'dirty flag'. */
-void gfx_display_set_framebuffer_dirty_flag(void)
-{
-   gfx_display_t *p_disp = disp_get_ptr();
-   p_disp->framebuf_dirty = true;
-}
-
-/* Unset the display framebufer's 'dirty flag'. */
-void gfx_display_unset_framebuffer_dirty_flag(void)
-{
-   gfx_display_t *p_disp = disp_get_ptr();
-   p_disp->framebuf_dirty = false;
-}
-
 void gfx_display_draw_keyboard(
       void *userdata,
       unsigned video_width,

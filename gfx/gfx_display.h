@@ -266,9 +266,6 @@ void gfx_display_set_framebuffer_pitch(size_t pitch);
 
 bool gfx_display_get_msg_force(void);
 void gfx_display_set_msg_force(bool state);
-bool gfx_display_get_framebuffer_dirty_flag(void);
-void gfx_display_set_framebuffer_dirty_flag(void);
-void gfx_display_unset_framebuffer_dirty_flag(void);
 bool gfx_display_init_first_driver(bool video_is_threaded);
 
 gfx_display_t *disp_get_ptr(void);

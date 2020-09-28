@@ -15768,7 +15768,7 @@ static void command_event_reinit(struct rarch_state *p_rarch,
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 
 #ifdef HAVE_MENU
-   gfx_display_set_framebuffer_dirty_flag();
+   p_rarch->dispgfx.framebuf_dirty = true;
    if (video_fullscreen)
       video_driver_hide_mouse();
    if (p_rarch->menu_driver_alive && p_rarch->current_video->set_nonblock_state)
@@ -39401,7 +39401,7 @@ static enum runloop_state runloop_check_state(
                BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
-               gfx_display_set_framebuffer_dirty_flag();
+               p_rarch->dispgfx.framebuf_dirty = true;
 
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX)
                   && !string_is_empty(menu->menu_state_msg))
