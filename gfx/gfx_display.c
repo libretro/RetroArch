@@ -1608,46 +1608,6 @@ void gfx_display_draw_keyboard(
    }
 }
 
-/* Draw text on top of the screen */
-void gfx_display_draw_text(
-      const font_data_t *font, const char *text,
-      float x, float y, int width, int height,
-      uint32_t color, enum text_alignment text_align,
-      float scale, bool shadows_enable, float shadow_offset,
-      bool draw_outside)
-{
-   struct font_params params;
-
-   if ((color & 0x000000FF) == 0)
-      return;
-
-   /* Don't draw outside of the screen */
-   if (!draw_outside &&
-           ((x < -64 || x > width  + 64)
-         || (y < -64 || y > height + 64))
-      )
-      return;
-
-   params.x           = x / width;
-   params.y           = 1.0f - y / height;
-   params.scale       = scale;
-   params.drop_mod    = 0.0f;
-   params.drop_x      = 0.0f;
-   params.drop_y      = 0.0f;
-   params.color       = color;
-   params.full_screen = true;
-   params.text_align  = text_align;
-
-   if (shadows_enable)
-   {
-      params.drop_x      = shadow_offset;
-      params.drop_y      = -shadow_offset;
-      params.drop_alpha  = 0.35f;
-   }
-
-   video_driver_set_osd_msg(text, &params, (void*)font);
-}
-
 /* NOTE: Reads image from file */
 bool gfx_display_reset_textures_list(
       const char *texture_path, const char *iconpath,

@@ -1591,9 +1591,6 @@ bool video_driver_set_video_mode(unsigned width,
 bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height);
 
-void video_driver_set_osd_msg(const char *msg,
-      const void *params, void *font);
-
 void video_driver_set_texture_enable(bool enable, bool full_screen);
 
 void video_driver_set_texture_frame(const void *frame, bool rgb32,
