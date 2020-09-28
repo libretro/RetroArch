@@ -153,12 +153,10 @@ static float gfx_display_get_adjusted_scale_internal(
    /* Ozone has a capped scale factor */
    if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
    {
-      float new_width = (float)width * 0.3333333f;
-      adjusted_scale  = 
-         (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale) 
-          > new_width
-          ? (new_width / (float)OZONE_SIDEBAR_WIDTH) 
-          : adjusted_scale);
+      float new_width    = (float)width * 0.3333333f;
+      if (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale)
+            > new_width)
+         adjusted_scale  = (new_width / (float)OZONE_SIDEBAR_WIDTH);
    }
 #endif
 
@@ -243,7 +241,8 @@ static bool gfx_display_check_compatibility(
    return false;
 }
 
-static float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
+static float gfx_display_get_dpi_scale_internal(
+      unsigned width, unsigned height)
 {
    float dpi;
    float diagonal_pixels;
@@ -298,7 +297,7 @@ static float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
        * I've had access to, the DPI is generally
        * overestimated by 17%. All we can do is apply
        * a blind correction factor... */
-      dpi = dpi * 0.83f;
+      dpi *= 0.83f;
 #endif
 
       /* Note: If we are running in windowed mode, this
@@ -346,11 +345,12 @@ static float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
           *   is almost a certainty. So we simply lerp between
           *   dpi scaling and pixel scaling as the display size
           *   increases from 24 to 32 */
-         float fraction = (display_size > 32.0f) ? 32.0f : display_size;
-         fraction       = fraction - 24.0f;
-         fraction       = fraction / (32.0f - 24.0f);
+         float fraction  = (display_size > 32.0f) ? 32.0f : display_size;
+         fraction       -= 24.0f;
+         fraction       /= (32.0f - 24.0f);
 
-         scale = ((1.0f - fraction) * dpi_scale) + (fraction * pixel_scale);
+         scale           =   ((1.0f - fraction) * dpi_scale) 
+                           + (fraction * pixel_scale);
       }
       else if (display_size < 12.0f)
       {
@@ -365,19 +365,20 @@ static float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
           * to pixel scaling */
          float fraction = display_size / 12.0f;
 
-         scale = ((1.0f - fraction) * pixel_scale) + (fraction * dpi_scale);
+         scale          =   ((1.0f - fraction) * pixel_scale) 
+                          + (fraction * dpi_scale);
       }
       else
-         scale = dpi_scale;
+         scale          = dpi_scale;
    }
    /* If DPI retrieval is unsupported, all we can do
     * is use the raw pixel scale */
    else
-      scale = pixel_scale;
+      scale             = pixel_scale;
 
-   scale_cached = true;
-   last_width   = width;
-   last_height  = height;
+   scale_cached         = true;
+   last_width           = width;
+   last_height          = height;
 
    return scale;
 }
@@ -440,7 +441,6 @@ float gfx_display_get_widget_dpi_scale(
    static float adjusted_scale                         = 1.0f;
    settings_t *settings                                = config_get_ptr();
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
-   float _menu_scale_factor                            = settings->floats.menu_scale_factor;
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
 #else
@@ -464,7 +464,11 @@ float gfx_display_get_widget_dpi_scale(
          menu_scale_factor                             = 1.0f;
       else
 #endif
+      {
+         float _menu_scale_factor                      = 
+            settings->floats.menu_scale_factor;
          menu_scale_factor                             = _menu_scale_factor;
+      }
    }
 
    /* Scale is based on display metrics - these are a fixed
@@ -511,7 +515,6 @@ float gfx_display_get_widget_pixel_scale(
    static float adjusted_scale                         = 1.0f;
    settings_t *settings                                = config_get_ptr();
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
-   float _menu_scale_factor                            = settings->floats.menu_scale_factor;
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
 #else
@@ -534,7 +537,11 @@ float gfx_display_get_widget_pixel_scale(
          menu_scale_factor                             = 1.0f;
       else
 #endif
+      {
+         float _menu_scale_factor                      = 
+            settings->floats.menu_scale_factor;
          menu_scale_factor                             = _menu_scale_factor;
+      }
    }
 
    /* We need to perform a square root here, which
