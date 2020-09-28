@@ -2047,6 +2047,35 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 }
 
 #ifdef HAVE_TRANSLATE
+/* NOTE: Reads image from memory buffer */
+static bool gfx_widgets_reset_textures_list_buffer(
+        uintptr_t *item, enum texture_filter_type filter_type,
+        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
+        unsigned *width, unsigned *height)
+{
+   struct texture_image ti;
+
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
+
+   if (!image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
+      return false;
+
+   if (width)
+      *width = ti.width;
+
+   if (height)
+      *height = ti.height;
+
+   /* if the poke interface doesn't support texture load then return false */  
+   if (!video_driver_texture_load(&ti, filter_type, item))
+       return false;
+   image_texture_free(&ti);
+   return true;
+}
+
 bool gfx_widgets_ai_service_overlay_load(
       dispgfx_widget_t *p_dispwidget,
       char* buffer, unsigned buffer_len,
@@ -2054,7 +2083,7 @@ bool gfx_widgets_ai_service_overlay_load(
 {
    if (p_dispwidget->ai_service_overlay_state == 0)
    {
-      bool res = gfx_display_reset_textures_list_buffer(
+      bool res = gfx_widgets_reset_textures_list_buffer(
                &p_dispwidget->ai_service_overlay_texture, 
                TEXTURE_FILTER_MIPMAP_LINEAR, 
                (void *) buffer, buffer_len, image_type,
