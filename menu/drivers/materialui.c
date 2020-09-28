@@ -3446,7 +3446,6 @@ static void materialui_render(void *data,
       settings->uints.gfx_thumbnail_upscale_threshold;
    bool network_on_demand_thumbnails    = 
       settings->bools.network_on_demand_thumbnails;
-   gfx_display_t *p_disp  = disp_get_ptr();
 
    if (!mui || !list)
       return;
