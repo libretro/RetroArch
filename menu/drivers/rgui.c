@@ -4664,6 +4664,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    size_t               start = 0;
    rgui_t               *rgui = NULL;
    settings_t *settings       = config_get_ptr();
+   gfx_display_t    *p_disp   = disp_get_ptr();
    unsigned aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
    menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
@@ -4721,7 +4722,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    /* Fixed 'menu display' settings */
    new_font_height = FONT_HEIGHT_STRIDE * 2;
-   gfx_display_set_header_height(new_font_height);
+   p_disp->header_height = new_font_height;
 
    /* Prepare RGUI colors, to improve performance */
    rgui->theme_preset_path[0] = '\0';
@@ -5353,7 +5354,8 @@ static int rgui_pointer_up(void *data,
       menu_entry_t *entry, unsigned action)
 {
    rgui_t *rgui           = (rgui_t*)data;
-   unsigned header_height = gfx_display_get_header_height();
+   gfx_display_t *p_disp  = disp_get_ptr();
+   unsigned header_height = p_disp->header_height;
    size_t selection       = menu_navigation_get_selection();
 
    if (!rgui)

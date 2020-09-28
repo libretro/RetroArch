@@ -3054,6 +3054,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
 {
    unsigned new_font_size, new_header_height;
+   gfx_display_t *p_disp         = disp_get_ptr();
    settings_t *settings          = config_get_ptr();
 
    float scale_factor            =
@@ -3134,12 +3135,13 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    RARCH_LOG("[XMB] icon size:          %.2f\n",  stripes->icon_size);
 #endif
 
-   gfx_display_set_header_height(new_header_height);
+   p_disp->header_height = new_header_height;
 }
 
 static void stripes_layout_psp(stripes_handle_t *stripes, int width)
 {
    unsigned new_font_size, new_header_height;
+   gfx_display_t *p_disp         = disp_get_ptr();
    settings_t *settings          = config_get_ptr();
    float scale_factor            =
       ((settings->floats.menu_scale_factor * width) / 1920.0) * 1.5;
@@ -3204,7 +3206,7 @@ static void stripes_layout_psp(stripes_handle_t *stripes, int width)
    RARCH_LOG("[XMB] icon size:          %.2f\n",  stripes->icon_size);
 #endif
 
-   gfx_display_set_header_height(new_header_height);
+   p_disp->header_height = new_header_height;
 }
 
 static void stripes_layout(stripes_handle_t *stripes)
@@ -4364,7 +4366,8 @@ static int stripes_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
             /* Normal pointer input */
-            unsigned header_height = gfx_display_get_header_height();
+            gfx_display_t *p_disp  = disp_get_ptr();
+            unsigned header_height = p_disp->header_height;
 
             if (y < header_height)
                return (unsigned)generic_menu_entry_action(stripes,

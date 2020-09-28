@@ -2989,7 +2989,8 @@ static float materialui_get_scroll(materialui_handle_t *mui)
    file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
    materialui_node_t *node = NULL;
    size_t selection        = menu_navigation_get_selection();
-   unsigned header_height  = gfx_display_get_header_height();
+   gfx_display_t *p_disp   = disp_get_ptr();
+   unsigned header_height  = p_disp->header_height;
    unsigned width          = 0;
    unsigned height         = 0;
    float view_centre       = 0.0f;
@@ -3430,10 +3431,11 @@ static void materialui_render(void *data,
    float scale_factor;
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   unsigned header_height   = gfx_display_get_header_height();
+   gfx_display_t *p_disp    = disp_get_ptr();
    size_t entries_end       = menu_entries_get_size();
    size_t selection         = menu_navigation_get_selection();
    file_list_t *list        = menu_entries_get_selection_buf_ptr(0);
+   unsigned header_height   = p_disp->header_height;
    bool first_entry_found   = false;
    bool last_entry_found    = false;
    unsigned landscape_layout_optimization
@@ -4909,8 +4911,9 @@ static void materialui_render_menu_list(
    size_t last_entry;
    file_list_t *list           = NULL;
    size_t entries_end          = menu_entries_get_size();
-   unsigned header_height      = gfx_display_get_header_height();
+   gfx_display_t *p_disp       = disp_get_ptr();
    size_t selection            = menu_navigation_get_selection();
+   unsigned header_height      = p_disp->header_height; 
    bool touch_feedback_enabled =
          !mui->scrollbar.dragged &&
          !mui->show_fullscreen_thumbnails &&
@@ -6586,8 +6589,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    int list_x_offset;
    materialui_handle_t *mui       = (materialui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
-   unsigned header_height         = gfx_display_get_header_height();
+   gfx_display_t *p_disp          = disp_get_ptr();
    size_t selection               = menu_navigation_get_selection();
+   unsigned header_height         = p_disp->header_height;
    enum gfx_animation_ticker_type
       menu_ticker_type            = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    bool menu_ticker_smooth        = settings->bools.menu_ticker_smooth;
@@ -7185,7 +7189,8 @@ static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
             /* > Get total usable height
              *   (list view height minus vertical padding
              *    between thumbnails minus status bar height) */
-            unsigned header_height = gfx_display_get_header_height();
+            gfx_display_t *p_disp  = disp_get_ptr();
+            unsigned header_height = p_disp->header_height;
             int usable_height      = (int)mui->last_height - (int)header_height -
                   (int)(mui->margin * 3) - (int)mui->nav_bar_layout_height -
                   (int)mui->status_bar.height;
@@ -7401,6 +7406,7 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    int list_font_size;
    int hint_font_size;
    unsigned new_header_height;
+   gfx_display_t *p_disp     = disp_get_ptr();
 
    mui->is_portrait          = mui->last_height >= mui->last_width;
 
@@ -7472,7 +7478,7 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    mui->font_data.list.glyph_width  = (int)((list_font_size  * (3.0f / 4.0f)) + 0.5f);
    mui->font_data.hint.glyph_width  = (int)((hint_font_size  * (3.0f / 4.0f)) + 0.5f);
 
-   gfx_display_set_header_height(new_header_height);
+   p_disp->header_height = new_header_height;
 
    if (mui->font_data.title.font)
    {
@@ -9082,11 +9088,12 @@ static int materialui_pointer_down(void *userdata,
     *   fullscreen thumbnails) */
    if (mui->scrollbar.active && !mui->show_fullscreen_thumbnails)
    {
-      unsigned header_height = gfx_display_get_header_height();
       unsigned width;
       unsigned height;
       int drag_margin_horz;
       int drag_margin_vert;
+      gfx_display_t *p_disp  = disp_get_ptr();
+      unsigned header_height = p_disp->header_height;
 
       video_driver_get_size(&width, &height);
 
@@ -9377,7 +9384,8 @@ static int materialui_pointer_up(void *userdata,
 {
    unsigned width;
    unsigned height;
-   unsigned header_height   = gfx_display_get_header_height();
+   gfx_display_t *p_disp    = disp_get_ptr();
+   unsigned header_height   = p_disp->header_height;
    size_t selection         = menu_navigation_get_selection();
    size_t entries_end       = menu_entries_get_size();
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
