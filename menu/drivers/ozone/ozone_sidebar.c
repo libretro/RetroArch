@@ -474,8 +474,9 @@ console_iterate:
 
    ozone_font_flush(video_width, video_height, &ozone->fonts.sidebar);
 
-   gfx_display_scissor_end(userdata, video_width,
-         video_height);
+   if (dispctx && dispctx->scissor_end)
+      dispctx->scissor_end(userdata,
+            video_width, video_height);
 }
 
 void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)

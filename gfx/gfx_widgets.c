@@ -1165,8 +1165,9 @@ static void gfx_widgets_draw_task_msg(
    {
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
-      gfx_display_scissor_end(userdata,
-            video_width, video_height);
+      if (dispctx && dispctx->scissor_end)
+         dispctx->scissor_end(userdata,
+               video_width, video_height);
    }
 
    /* Progress text */
@@ -1276,8 +1277,9 @@ static void gfx_widgets_draw_regular_msg(
       gfx_widgets_flush_text(video_width, video_height, &p_dispwidget->gfx_widget_fonts.bold);
       gfx_widgets_flush_text(video_width, video_height, &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-      gfx_display_scissor_end(userdata,
-            video_width, video_height);
+      if (dispctx && dispctx->scissor_end)
+         dispctx->scissor_end(userdata,
+               video_width, video_height);
    }
 
    if (p_dispwidget->msg_queue_has_icons)

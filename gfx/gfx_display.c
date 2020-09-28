@@ -621,20 +621,6 @@ void gfx_display_scissor_begin(void *userdata,
    }
 }
 
-/* End scissoring operation */
-void gfx_display_scissor_end(
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height
-      )
-{
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (dispctx && dispctx->scissor_end)
-      dispctx->scissor_end(userdata,
-            video_width, video_height);
-}
-
 font_data_t *gfx_display_font_file(
       char* fontpath, float menu_font_size, bool is_threaded)
 {

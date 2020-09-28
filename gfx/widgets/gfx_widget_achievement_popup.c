@@ -238,8 +238,9 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       {
          gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.regular);
-         gfx_display_scissor_end(video_info->userdata,
-            video_width, video_height);
+         if (dispctx && dispctx->scissor_end)
+            dispctx->scissor_end(video_info->userdata,
+                  video_width, video_height);
       }
    }
 
