@@ -5299,7 +5299,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
-   unsigned new_font_size, new_header_height;
+   unsigned new_font_size;
    float scale_factor            = xmb->last_scale_factor;
 
    xmb->above_subitem_offset     =   1.5;
@@ -5321,7 +5321,6 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 
    new_font_size                 = 32.0  * scale_factor;
    xmb->font2_size               = 24.0  * scale_factor;
-   new_header_height             = 128.0 * scale_factor;
 
    xmb->cursor_size              = 64.0 * scale_factor;
 
@@ -5345,13 +5344,11 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
-
-   gfx_display_set_header_height(new_header_height);
 }
 
 static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
-   unsigned new_font_size, new_header_height;
+   unsigned new_font_size;
    float scale_factor            = xmb->last_scale_factor;
 
    xmb->above_subitem_offset     =  1.5;
@@ -5373,7 +5370,6 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 
    new_font_size                 = 32.0  * scale_factor;
    xmb->font2_size               = 24.0  * scale_factor;
-   new_header_height             = 128.0 * scale_factor;
    xmb->margins_screen_top       = (256+32) * scale_factor;
 
    xmb->cursor_size              = 64.0;
@@ -5392,8 +5388,6 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->margins_slice            = 16 * scale_factor;
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
-
-   gfx_display_set_header_height(new_header_height);
 }
 
 static void xmb_layout(xmb_handle_t *xmb)
