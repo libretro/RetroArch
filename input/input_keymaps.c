@@ -981,14 +981,18 @@ const struct rarch_key_map rarch_key_map_x11[] = {
 #endif
 
 #if defined(__linux__) || defined(HAVE_WAYLAND)
+/* Note: Only one input can be mapped to each
+ * RETROK_* key. If several physical inputs
+ * correspond to the same key, these inputs
+ * must be merged at the input driver level */
 const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_BACKSPACE, RETROK_BACKSPACE },
    { KEY_TAB, RETROK_TAB },
    { KEY_CLEAR, RETROK_CLEAR },
-   { KEY_EXIT, RETROK_CLEAR },
+   /* { KEY_EXIT, RETROK_CLEAR }, */     /* Duplicate - Skip */
    { KEY_ENTER, RETROK_RETURN },
-   { KEY_OK, RETROK_RETURN },
-   { KEY_SELECT, RETROK_RETURN },
+   /* { KEY_OK, RETROK_RETURN }, */      /* Duplicate - Skip */
+   /* { KEY_SELECT, RETROK_RETURN }, */  /* Duplicate - Skip */
    { KEY_PAUSE, RETROK_PAUSE },
    { KEY_ESC, RETROK_ESCAPE },
    { KEY_SPACE, RETROK_SPACE },

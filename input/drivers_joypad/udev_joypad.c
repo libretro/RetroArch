@@ -552,7 +552,7 @@ static void *udev_joypad_init(void *data)
 
    udev_joypad_fd = udev_new();
    if (!udev_joypad_fd)
-      return false;
+      return NULL;
 
    udev_joypad_mon = udev_monitor_new_from_netlink(udev_joypad_fd, "udev");
    if (udev_joypad_mon)
