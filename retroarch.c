@@ -33102,7 +33102,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
                sizeof(p_rarch->cached_video_driver));
             configuration_set_string(settings,
                settings->arrays.video_driver,
-               "gl");
+               "glcore");
          }
          p_rarch->current_video = &video_gl_core;
       }
