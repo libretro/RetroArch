@@ -226,11 +226,6 @@ void gfx_display_push_quad(
       const float *colors, int x1, int y1,
       int x2, int y2);
 
-void gfx_display_snow(
-      int16_t pointer_x,
-      int16_t pointer_y,
-      int width, int height);
-
 void gfx_display_draw_cursor(
       void *userdata,
       unsigned video_width,
