@@ -684,12 +684,11 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
 
    if (draw->texture)
       add_opacity_to_wallpaper = true;
+   else
+      draw->texture            = gfx_display_white_texture;
 
    if (add_opacity_to_wallpaper)
       gfx_display_set_alpha(draw->color, override_opacity);
-
-   if (!draw->texture)
-      draw->texture     = gfx_display_white_texture;
 
    if (dispctx && dispctx->get_default_mvp)
       draw->matrix_data = (math_matrix_4x4*)dispctx->get_default_mvp(
