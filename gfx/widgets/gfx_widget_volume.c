@@ -101,7 +101,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       char msg[255];
       char percentage_msg[255];
       video_frame_info_t *video_info       = (video_frame_info_t*)data;
-      gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular(user_data);
+      dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
+      gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
 
       void *userdata                       = video_info->userdata;
       unsigned video_width                 = video_info->width;
@@ -316,7 +317,8 @@ static void gfx_widget_volume_layout(
 {
    gfx_widget_volume_state_t* state     = gfx_widget_volume_get_ptr();
    unsigned last_video_width            = gfx_widgets_get_last_video_width(data);
-   gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular(data);
+   dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
+   gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
 
    state->widget_height                 = font_regular->line_height * 4;
    state->widget_width                  = state->widget_height * 4;

@@ -100,12 +100,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget);
 static void gfx_widgets_layout(dispgfx_widget_t *p_dispwidget,
       bool is_threaded, const char *dir_assets, char *font_path);
 
-gfx_widget_font_data_t* gfx_widgets_get_font_regular(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return &p_dispwidget->gfx_widget_fonts.regular;
-}
-
 gfx_widget_font_data_t* gfx_widgets_get_font_bold(void *data)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;

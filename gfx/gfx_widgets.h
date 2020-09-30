@@ -276,8 +276,6 @@ unsigned gfx_widgets_get_divider_width(void *data);
 
 unsigned gfx_widgets_get_height(void *data);
 
-gfx_widget_font_data_t* gfx_widgets_get_font_regular(void *data);
-
 gfx_widget_font_data_t* gfx_widgets_get_font_bold(void *data);
 
 gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void *data);

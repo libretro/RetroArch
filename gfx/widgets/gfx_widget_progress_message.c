@@ -134,7 +134,7 @@ void gfx_widget_set_progress_message(void *data,
    gfx_timer_ctx_entry_t timer;
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
    gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
-   gfx_widget_font_data_t *font_regular       = gfx_widgets_get_font_regular(p_dispwidget);
+   gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
 
    /* Ensure we have a valid message string */
@@ -188,7 +188,7 @@ static void gfx_widget_progress_message_layout(
    unsigned last_video_width                  = gfx_widgets_get_last_video_width(p_dispwidget);
    unsigned last_video_height                 = gfx_widgets_get_last_video_height(p_dispwidget);
    unsigned widget_padding                    = gfx_widgets_get_padding(p_dispwidget);
-   gfx_widget_font_data_t *font_regular       = gfx_widgets_get_font_regular(p_dispwidget);
+   gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
 
    /* Base widget layout */
    state->widget_width                        = last_video_width;
@@ -235,7 +235,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       float *backdrop_color                = gfx_widgets_get_backdrop_orig();
       unsigned text_color                  = COLOR_TEXT_ALPHA(0xFFFFFFFF, (unsigned)(state->alpha * 255.0f));
 
-      gfx_widget_font_data_t *font_regular = gfx_widgets_get_font_regular(p_dispwidget);
+      gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
       size_t msg_queue_size                = gfx_widgets_get_msg_queue_size(p_dispwidget);
 
       unsigned bar_width                   = state->bar_max_width;

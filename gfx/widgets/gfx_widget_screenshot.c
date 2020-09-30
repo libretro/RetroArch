@@ -209,7 +209,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    unsigned video_height                = video_info->height;
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
-   gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular(p_dispwidget);
+   gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
    int padding                          = (state->height - (font_regular->line_height * 2.0f)) / 2.0f;
 
    /* Screenshot */
@@ -293,7 +293,7 @@ static void gfx_widget_screenshot_iterate(
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    unsigned padding                     = gfx_widgets_get_padding(p_dispwidget);
-   gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular(p_dispwidget);
+   gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
 
    /* Load screenshot and start its animation */
    if (state->filename[0] != '\0')

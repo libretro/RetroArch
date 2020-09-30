@@ -531,8 +531,8 @@ static void gfx_widget_load_content_animation_layout(
    unsigned last_video_height                       = gfx_widgets_get_last_video_height(p_dispwidget);
    unsigned widget_padding                          = gfx_widgets_get_padding(p_dispwidget);
 
-   gfx_widget_font_data_t *font_regular             = gfx_widgets_get_font_regular(p_dispwidget);
-   gfx_widget_font_data_t *font_bold                = gfx_widgets_get_font_bold(p_dispwidget);
+   gfx_widget_font_data_t *font_regular             = &p_dispwidget->gfx_widget_fonts.regular;
+   gfx_widget_font_data_t *font_bold                = &p_dispwidget->gfx_widget_fonts.bold;
 
    /* Icon layout */
    state->icon_size = (unsigned)((((float)font_regular->line_height +
@@ -587,8 +587,8 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       unsigned last_video_width            = gfx_widgets_get_last_video_width(p_dispwidget);
       unsigned widget_padding              = gfx_widgets_get_padding(p_dispwidget);
 
-      gfx_widget_font_data_t *font_regular = gfx_widgets_get_font_regular(p_dispwidget);
-      gfx_widget_font_data_t *font_bold    = gfx_widgets_get_font_bold(p_dispwidget);
+      gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
+      gfx_widget_font_data_t *font_bold    = &p_dispwidget->gfx_widget_fonts.bold;
 
       uintptr_t alpha_tag                  = (uintptr_t)&state->alpha;
 
@@ -663,8 +663,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
       unsigned video_height                = video_info->height;
       void *userdata                       = video_info->userdata;
 
-      gfx_widget_font_data_t *font_regular = gfx_widgets_get_font_regular(p_dispwidget);
-      gfx_widget_font_data_t *font_bold    = gfx_widgets_get_font_bold(p_dispwidget);
+      gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
+      gfx_widget_font_data_t *font_bold    = &p_dispwidget->gfx_widget_fonts.bold;
       size_t msg_queue_size                = gfx_widgets_get_msg_queue_size(p_dispwidget);
       gfx_display_t            *p_disp     = disp_get_ptr();
       gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
