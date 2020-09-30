@@ -374,9 +374,10 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
-   config_file_t* conf     = NULL;
-   d3d11_texture_t* source = NULL;
-   d3d11_video_t*   d3d11  = (d3d11_video_t*)data;
+   config_file_t* conf                      = NULL;
+   d3d11_texture_t* source                  = NULL;
+   D3D11ShaderResourceView* source_view_ptr = NULL;
+   d3d11_video_t*   d3d11                   = (d3d11_video_t*)data;
 
    if (!d3d11)
       return false;
@@ -402,7 +403,8 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       goto error;
 
    source = &d3d11->frame.texture[0];
-   for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
+   source_view_ptr = &d3d11->frame.last_texture_view;
+   for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt, source_view_ptr = &source->view)
    {
       unsigned j;
       /* clang-format off */
@@ -413,7 +415,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d11->frame.texture[0].size_data, 0},
 
             /* Source */
-            { &source->view, 0,
+            { source_view_ptr, 0,
                &source->size_data, 0},
 
             /* OriginalHistory */
