@@ -46,27 +46,25 @@ static int c89_vscprintf_retro__(const char *format, va_list pargs)
 
 /* http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010 */
 
-int c99_vsnprintf_retro__(char *outBuf, size_t size, const char *format, va_list ap)
+int c99_vsnprintf_retro__(char *s, size_t len, const char *format, va_list ap)
 {
    int count = -1;
 
-   if (size != 0)
+   if (len != 0)
    {
 #if (_MSC_VER <= 1310)
-      count = _vsnprintf(outBuf, size - 1, format, ap);
+      count = _vsnprintf(s, len - 1, format, ap);
 #else
-      count = _vsnprintf_s(outBuf, size, size - 1, format, ap);
+      count = _vsnprintf_s(s, len, len - 1, format, ap);
 #endif
    }
 
    if (count == -1)
        count = _vscprintf(format, ap);
 
-   if (count == size)
-   {
-      /* there was no room for a NULL, so truncate the last character */
-      outBuf[size - 1] = '\0';
-   }
+   /* there was no room for a NULL, so truncate the last character */
+   if (count == len && len)
+      s[len - 1] = '\0';
 
    return count;
 }
