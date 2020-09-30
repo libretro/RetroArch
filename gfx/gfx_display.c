@@ -664,28 +664,30 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
    if (!dispctx || !draw)
       return;
 
-   new_vertex           = draw->vertex;
-   new_tex_coord        = draw->tex_coord;
+   if (draw->vertex)
+      new_vertex                     = draw->vertex;
+   else if (dispctx->get_default_vertices)
+      new_vertex                     = dispctx->get_default_vertices();
 
-   if (!new_vertex    && dispctx->get_default_vertices)
-      new_vertex        = dispctx->get_default_vertices();
-   if (!new_tex_coord && dispctx->get_default_tex_coords)
-      new_tex_coord     = dispctx->get_default_tex_coords();
+   if (draw->tex_coord)
+      new_tex_coord                  = draw->tex_coord;
+   else if (dispctx->get_default_tex_coords)
+      new_tex_coord                  = dispctx->get_default_tex_coords();
 
-   coords.vertices      = (unsigned)draw->vertex_count;
-   coords.vertex        = new_vertex;
-   coords.tex_coord     = new_tex_coord;
-   coords.lut_tex_coord = new_tex_coord;
-   coords.color         = (const float*)draw->color;
+   coords.vertices                   = (unsigned)draw->vertex_count;
+   coords.vertex                     = new_vertex;
+   coords.tex_coord                  = new_tex_coord;
+   coords.lut_tex_coord              = new_tex_coord;
+   coords.color                      = (const float*)draw->color;
 
-   draw->coords         = &coords;
-   draw->scale_factor   = 1.0f;
-   draw->rotation       = 0.0f;
+   draw->coords                      = &coords;
+   draw->scale_factor                = 1.0f;
+   draw->rotation                    = 0.0f;
 
    if (draw->texture)
-      add_opacity_to_wallpaper = true;
+      add_opacity_to_wallpaper       = true;
    else
-      draw->texture            = gfx_display_white_texture;
+      draw->texture                  = gfx_display_white_texture;
 
    if (add_opacity_to_wallpaper)
       gfx_display_set_alpha(draw->color, override_opacity);
