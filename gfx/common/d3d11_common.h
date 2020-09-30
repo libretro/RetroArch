@@ -2568,12 +2568,13 @@ typedef struct
 
    struct
    {
-      d3d11_texture_t texture[GFX_MAX_FRAME_HISTORY + 1];
-      D3D11Buffer     vbo;
-      D3D11Buffer     ubo;
-      D3D11_VIEWPORT  viewport;
-      float4_t        output_size;
-      int             rotation;
+      d3d11_texture_t            texture[GFX_MAX_FRAME_HISTORY + 1];
+      D3D11ShaderResourceView    last_texture_view;
+      D3D11Buffer                vbo;
+      D3D11Buffer                ubo;
+      D3D11_VIEWPORT             viewport;
+      float4_t                   output_size;
+      int                        rotation;
    } frame;
 
    struct
