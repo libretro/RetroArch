@@ -573,6 +573,7 @@ static void d3d11_gfx_free(void* data)
    d3d11_free_shader_preset(d3d11);
 
    d3d11_release_texture(&d3d11->frame.texture[0]);
+   Release(d3d11->frame.last_texture_view);
    Release(d3d11->frame.ubo);
    Release(d3d11->frame.vbo);
 
@@ -1301,17 +1302,17 @@ static bool d3d11_gfx_frame(
       video_frame_info_t* video_info)
 {
    unsigned           i;
-   d3d11_texture_t*   texture     = NULL;
-   d3d11_video_t*     d3d11       = (d3d11_video_t*)data;
-   D3D11DeviceContext context     = d3d11->context;
-   const char *stat_text          = video_info->stat_text;
-   unsigned video_width           = video_info->width;
-   unsigned video_height          = video_info->height;
-   bool statistics_show           = video_info->statistics_show;
-   struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
-   bool menu_is_alive             = video_info->menu_is_alive;
+   D3D11ShaderResourceView texture = NULL;
+   d3d11_video_t*     d3d11        = (d3d11_video_t*)data;
+   D3D11DeviceContext context      = d3d11->context;
+   const char *stat_text           = video_info->stat_text;
+   unsigned video_width            = video_info->width;
+   unsigned video_height           = video_info->height;
+   bool statistics_show            = video_info->statistics_show;
+   struct font_params* osd_params  = (struct font_params*)&video_info->osd_stat_params;
+   bool menu_is_alive              = video_info->menu_is_alive;
 #ifdef HAVE_GFX_WIDGETS
-   bool widgets_active            = video_info->widgets_active;
+   bool widgets_active             = video_info->widgets_active;
 #endif
 
    if (d3d11->resize_chain)
@@ -1408,14 +1409,27 @@ static bool d3d11_gfx_frame(
          d3d11_init_render_targets(d3d11, width, height);
 
       if (frame != RETRO_HW_FRAME_BUFFER_VALID)
+      {
          d3d11_update_texture(
                context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
+         Release(d3d11->frame.last_texture_view);
+         d3d11->frame.last_texture_view = d3d11->frame.texture[0].view;
+         AddRef(d3d11->frame.last_texture_view);
+      }
+      else if (d3d11->hw.enable)
+      {
+         // Retrieve the currently-bound texture from the context and cache it, in case the next frame is duped.
+         Release(d3d11->frame.last_texture_view);
+
+         // GetPSShaderResources() increments the reference count for the returned view.
+         D3D11GetPShaderResources(d3d11->context, 0, 1, &d3d11->frame.last_texture_view);
+      }
    }
 
    D3D11SetVertexBuffer(context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
    D3D11SetBlendState(context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
-   texture = d3d11->frame.texture;
+   texture = d3d11->frame.last_texture_view;
 
    if (d3d11->shader_preset)
    {
@@ -1492,11 +1506,7 @@ static bool d3d11_gfx_frame(
                texture_sem++;
             }
 
-            if (d3d11->hw.enable && (i == 0))
-               D3D11SetPShaderResources(context, 1, SLANG_NUM_BINDINGS - 1, textures + 1);
-            else
-               D3D11SetPShaderResources(context, 0, SLANG_NUM_BINDINGS, textures);
-
+            D3D11SetPShaderResources(context, 0, SLANG_NUM_BINDINGS, textures);
             D3D11SetPShaderSamplers(context, 0, SLANG_NUM_BINDINGS, samplers);
          }
 
@@ -1513,7 +1523,7 @@ static bool d3d11_gfx_frame(
          D3D11SetViewports(context, 1, &d3d11->pass[i].viewport);
 
          D3D11Draw(context, 4, 0);
-         texture = &d3d11->pass[i].rt;
+         texture = d3d11->pass[i].rt.view;
       }
       D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
    }
@@ -1521,8 +1531,7 @@ static bool d3d11_gfx_frame(
    if (texture)
    {
       d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-      if (!d3d11->hw.enable || d3d11->shader_preset)
-         D3D11SetPShaderResources(context, 0, 1, &texture->view);
+      D3D11SetPShaderResources(context, 0, 1, &texture);
       D3D11SetPShaderSamplers(
             context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
