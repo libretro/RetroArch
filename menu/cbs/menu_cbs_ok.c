@@ -2972,7 +2972,7 @@ static int action_ok_video_filter_remove(const char *path,
    settings_t *settings = config_get_ptr();
 
    if (!settings)
-      menu_cbs_exit();
+      return menu_cbs_exit();
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
