@@ -832,7 +832,6 @@ void gfx_display_draw_texture_slice(
    gfx_display_ctx_rotate_draw_t rotate_draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   unsigned i;
    gfx_display_t            
       *p_disp               = disp_get_ptr();
    gfx_display_ctx_driver_t 
@@ -882,7 +881,12 @@ void gfx_display_draw_texture_slice(
     * so 8 vertices */
    float tex_coord[8];
    float vert_coord[8];
-   float colors[16];
+   static float colors[16] = { 
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f
+   };
 
    /* normalized width/height of the amount to offset from the corners,
     * for both the vertex and texture coordinates */
@@ -921,9 +925,6 @@ void gfx_display_draw_texture_slice(
    T_TL[1] = 0.0f;
    T_TR[0] = tex_woff;
    T_TR[1] = 0.0f;
-
-   for (i = 0; i < (16 * sizeof(float)) / sizeof(colors[0]); i++)
-      colors[i] = 1.0f;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0.0;
