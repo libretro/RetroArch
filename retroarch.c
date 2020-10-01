@@ -3084,149 +3084,10 @@ static int16_t input_state_wrap(
 
 /* DRIVERS */
 
-/**
- * find_driver_nonempty:
- * @label              : string of driver type to be found.
- * @i                  : index of driver.
- * @str                : identifier name of the found driver
- *                       gets written to this string.
- * @len                : size of @str.
- *
- * Find driver based on @label.
- *
- * Returns: NULL if no driver based on @label found, otherwise
- * pointer to driver.
- **/
+/* Forward declaration */
 static const void *find_driver_nonempty(
       const char *label, int i,
-      char *s, size_t len)
-{
-   if (string_is_equal(label, "camera_driver"))
-   {
-      if (camera_drivers[i])
-      {
-         const char *ident = camera_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return camera_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "location_driver"))
-   {
-      if (location_drivers[i])
-      {
-         const char *ident = location_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return location_drivers[i];
-      }
-   }
-#ifdef HAVE_MENU
-   else if (string_is_equal(label, "menu_driver"))
-   {
-      if (menu_ctx_drivers[i])
-      {
-         const char *ident = menu_ctx_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return menu_ctx_drivers[i];
-      }
-   }
-#endif
-   else if (string_is_equal(label, "input_driver"))
-   {
-      if (input_drivers[i])
-      {
-         const char *ident = input_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return input_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "input_joypad_driver"))
-   {
-      if (joypad_drivers[i])
-      {
-         const char *ident = joypad_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return joypad_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "video_driver"))
-   {
-      if (video_drivers[i])
-      {
-         const char *ident = video_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return video_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "audio_driver"))
-   {
-      if (audio_drivers[i])
-      {
-         const char *ident = audio_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return audio_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "record_driver"))
-   {
-      if (record_drivers[i])
-      {
-         const char *ident = record_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return record_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "midi_driver"))
-   {
-      if (midi_driver_find_handle(i))
-      {
-         const char *ident = midi_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return midi_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "audio_resampler_driver"))
-   {
-      if (audio_resampler_driver_find_handle(i))
-      {
-         const char *ident = audio_resampler_driver_find_ident(i);
-
-         strlcpy(s, ident, len);
-         return audio_resampler_driver_find_handle(i);
-      }
-   }
-   else if (string_is_equal(label, "bluetooth_driver"))
-   {
-      if (bluetooth_drivers[i])
-      {
-         const char *ident = bluetooth_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return bluetooth_drivers[i];
-      }
-   }
-   else if (string_is_equal(label, "wifi_driver"))
-   {
-      if (wifi_drivers[i])
-      {
-         const char *ident = wifi_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return wifi_drivers[i];
-      }
-   }
-
-   return NULL;
-}
-
+      char *s, size_t len);
 
 /**
  * driver_find_index:
@@ -7983,6 +7844,151 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    return true;
 }
 #endif
+
+/**
+ * find_driver_nonempty:
+ * @label              : string of driver type to be found.
+ * @i                  : index of driver.
+ * @str                : identifier name of the found driver
+ *                       gets written to this string.
+ * @len                : size of @str.
+ *
+ * Find driver based on @label.
+ *
+ * Returns: NULL if no driver based on @label found, otherwise
+ * pointer to driver.
+ **/
+static const void *find_driver_nonempty(
+      const char *label, int i,
+      char *s, size_t len)
+{
+   if (string_is_equal(label, "camera_driver"))
+   {
+      if (camera_drivers[i])
+      {
+         const char *ident = camera_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return camera_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "location_driver"))
+   {
+      if (location_drivers[i])
+      {
+         const char *ident = location_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return location_drivers[i];
+      }
+   }
+#ifdef HAVE_MENU
+   else if (string_is_equal(label, "menu_driver"))
+   {
+      if (menu_ctx_drivers[i])
+      {
+         const char *ident = menu_ctx_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return menu_ctx_drivers[i];
+      }
+   }
+#endif
+   else if (string_is_equal(label, "input_driver"))
+   {
+      if (input_drivers[i])
+      {
+         const char *ident = input_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return input_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "input_joypad_driver"))
+   {
+      if (joypad_drivers[i])
+      {
+         const char *ident = joypad_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return joypad_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "video_driver"))
+   {
+      if (video_drivers[i])
+      {
+         const char *ident = video_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return video_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "audio_driver"))
+   {
+      if (audio_drivers[i])
+      {
+         const char *ident = audio_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return audio_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "record_driver"))
+   {
+      if (record_drivers[i])
+      {
+         const char *ident = record_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return record_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "midi_driver"))
+   {
+      if (midi_driver_find_handle(i))
+      {
+         const char *ident = midi_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return midi_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "audio_resampler_driver"))
+   {
+      if (audio_resampler_driver_find_handle(i))
+      {
+         const char *ident = audio_resampler_driver_find_ident(i);
+
+         strlcpy(s, ident, len);
+         return audio_resampler_driver_find_handle(i);
+      }
+   }
+   else if (string_is_equal(label, "bluetooth_driver"))
+   {
+      if (bluetooth_drivers[i])
+      {
+         const char *ident = bluetooth_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return bluetooth_drivers[i];
+      }
+   }
+   else if (string_is_equal(label, "wifi_driver"))
+   {
+      if (wifi_drivers[i])
+      {
+         const char *ident = wifi_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return wifi_drivers[i];
+      }
+   }
+
+   return NULL;
+}
+
+
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static enum rarch_shader_type shader_types[] =
