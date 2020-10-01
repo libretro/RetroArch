@@ -1151,6 +1151,10 @@ FRONTEND
 #include "../frontend/drivers/platform_dos.c"
 #endif
 
+#if defined(DINGUX)
+#include "../dingux/dingux_utils.c"
+#endif
+
 #include "../core_info.c"
 #include "../core_backup.c"
 

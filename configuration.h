@@ -455,6 +455,7 @@ typedef struct settings
       bool video_force_aspect;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
+      bool video_dingux_ipu_keep_aspect;
       bool video_scale_integer;
       bool video_shader_enable;
       bool video_shader_watch_files;

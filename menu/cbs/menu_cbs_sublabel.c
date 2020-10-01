@@ -358,6 +358,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quit_press_twice,              MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_crop_overscan,           MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_filter,                  MENU_ENUM_SUBLABEL_VIDEO_FILTER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_filter_remove,           MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_nickname,              MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_username,              MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_password,              MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD)
@@ -806,6 +807,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu,                         
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_information,                      MENU_ENUM_SUBLABEL_CORE_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disc_information,                      MENU_ENUM_SUBLABEL_DISC_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_aspect_ratio,                    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO)
+#if defined(DINGUX)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_ipu_keep_aspect,          MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_height,          MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_width,           MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_x,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X)
@@ -1798,6 +1802,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio);
             break;
+#if defined(DINGUX)
+         case MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_dingux_ipu_keep_aspect);
+            break;
+#endif
          case MENU_ENUM_LABEL_CORE_INFORMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_information);
             break;
@@ -3195,6 +3204,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter_remove);
             break;
          case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_crop_overscan);

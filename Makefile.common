@@ -1183,6 +1183,10 @@ ifeq ($(TARGET), retroarch_orbis)
           frontend/drivers/platform_orbis.o
 endif
 
+ifeq ($(DINGUX), 1)
+   OBJ += dingux/dingux_utils.o
+endif
+
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
         input/common/wayland_common.o \
@@ -2328,7 +2332,7 @@ endif
 ### Android Play Feature Delivery ###
 ### (Play Store build core        ###
 ###  downloader)                  ###
-###############WIP###################
+#####################################
 ifeq ($(ANDROID), 1)
    OBJ += play_feature_delivery/play_feature_delivery.o
 endif

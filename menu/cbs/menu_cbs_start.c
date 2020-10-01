@@ -110,10 +110,21 @@ static int action_start_video_filter_file_load(
    settings_t *settings = config_get_ptr();
 
    if (!settings)
-      return -1;
+      return menu_cbs_exit();
 
-   settings->paths.path_softfilter_plugin[0] = '\0';
-   command_event(CMD_EVENT_REINIT, NULL);
+   if (!string_is_empty(settings->paths.path_softfilter_plugin))
+   {
+      bool refresh = false;
+
+      /* Unload video filter */
+      settings->paths.path_softfilter_plugin[0] = '\0';
+      command_event(CMD_EVENT_REINIT, NULL);
+
+      /* Refresh menu */
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   }
+
    return 0;
 }
 

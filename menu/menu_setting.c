@@ -118,6 +118,10 @@
 #include <3ds/services/cfgu.h>
 #endif
 
+#if defined(DINGUX)
+#include "../dingux/dingux_utils.h"
+#endif
+
 #if defined(ANDROID)
 #include "../play_feature_delivery/play_feature_delivery.h"
 #endif
@@ -7124,6 +7128,11 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
          video_driver_set_filtering(1, settings->bools.video_ctx_scaling, settings->bools.video_ctx_scaling);
          break;
+#if defined(DINGUX)
+      case MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT:
+         dingux_ipu_set_aspect_ratio_enable(*setting->value.target.boolean);
+         break;
+#endif
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
             rarch_system_info_t *system = runloop_get_system_info();
@@ -10332,6 +10341,7 @@ static bool setting_append_list(
 
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.video_aspect_ratio_idx,
@@ -10478,6 +10488,26 @@ static bool setting_append_list(
                   list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+#if defined(DINGUX)
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_dingux_ipu_keep_aspect,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+                     DEFAULT_DINGUX_IPU_KEEP_ASPECT,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE);
+            }
+#endif
 
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
@@ -13805,6 +13835,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             }
 
+#if !defined(DINGUX)
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_rgui_aspect_ratio,
@@ -13841,6 +13872,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-1, 1, true, true);
 #endif
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+#endif
 
             CONFIG_UINT(
                   list, list_info,

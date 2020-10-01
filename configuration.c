@@ -522,10 +522,9 @@ static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROI
 static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif
 
-#if defined(_3DS) && defined(HAVE_RGUI)
+#if (defined(_3DS) || defined(DINGUX)) && defined(HAVE_RGUI)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
-#else
-#if defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
+#elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
 #elif defined(HAVE_OZONE)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
@@ -535,7 +534,6 @@ static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 #else
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
-#endif
 #endif
 
 /* All config related settings go here. */
@@ -1458,6 +1456,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, DEFAULT_VIDEO_SMOOTH, false);
    SETTING_BOOL("video_ctx_scaling",              &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
+#if defined(DINGUX)
+   SETTING_BOOL("video_dingux_ipu_keep_aspect",  &settings->bools.video_dingux_ipu_keep_aspect, true, DEFAULT_DINGUX_IPU_KEEP_ASPECT, false);
+#endif
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, DEFAULT_VIDEO_SHARED_CONTEXT, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);

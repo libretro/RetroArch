@@ -1369,6 +1369,14 @@ MSG_HASH(
    "Apply a CPU-powered video filter.\nNOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Remove Video Filter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Unload any active CPU-powered video filter."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Enable fullscreen over notch in Android devices"
 )
@@ -1579,6 +1587,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Custom Aspect Ratio'."
    )
+#if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Keep Aspect Ratio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Maintain 1:1 pixel aspect ratios when scaling content via the internal IPU. If disabled, images will be stretched to fill the entire display."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "Custom Aspect Ratio (X Position)"

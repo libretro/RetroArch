@@ -56,6 +56,10 @@
 #include <sys/system_properties.h>
 #endif
 
+#if defined(DINGUX)
+#include "../../dingux/dingux_utils.h"
+#endif
+
 #include <boolean.h>
 #include <retro_dirent.h>
 #include <retro_inline.h>
@@ -121,6 +125,7 @@ static char unix_cpu_model_name[64] = {0};
 
 /* /proc/meminfo parameters */
 #define PROC_MEMINFO_PATH              "/proc/meminfo"
+#define PROC_MEMINFO_MEM_TOTAL_TAG     "MemTotal:"
 #define PROC_MEMINFO_MEM_AVAILABLE_TAG "MemAvailable:"
 #define PROC_MEMINFO_MEM_FREE_TAG      "MemFree:"
 #define PROC_MEMINFO_BUFFERS_TAG       "Buffers:"
@@ -1176,7 +1181,7 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 
-#ifdef ANDROID
+#if defined(ANDROID)
    jint powerstate = ret;
    jint battery_level = 0;
    JNIEnv *env = jni_thread_getenv();
@@ -1195,6 +1200,25 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
    *percent = battery_level;
 
    ret = (enum frontend_powerstate)powerstate;
+#elif defined(DINGUX)
+   /* Dingux seems to have limited battery
+    * reporting capability - if we get a valid
+    * integer here, just assume that state is
+    * FRONTEND_POWERSTATE_ON_POWER_SOURCE
+    * (since most dingux devices are not meant
+    * to be used while charging...) */
+   int battery_level = dingux_get_battery_level();
+
+   if (battery_level < 0)
+      *percent = -1;
+   else
+   {
+      *percent = battery_level;
+      ret      = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+   }
+
+   /* 'Time left' reporting is unsupported */
+   *seconds = -1;
 #else
    if (frontend_unix_powerstate_check_acpi_sysfs(&ret, seconds, percent))
       return ret;
@@ -1737,7 +1761,11 @@ static void frontend_unix_get_env(int *argc,
    else if (home)
    {
       strlcpy(base_path, home, sizeof(base_path));
+#if defined(DINGUX)
+      strlcat(base_path, "/.retroarch", sizeof(base_path));
+#else
       strlcat(base_path, "/.config/retroarch", sizeof(base_path));
+#endif
    }
    else
       strcpy_literal(base_path, "retroarch");
@@ -2030,7 +2058,11 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    else if (home)
    {
       strlcpy(base_path, home, sizeof(base_path));
+#if defined(DINGUX)
+      strlcat(base_path, "/.retroarch", sizeof(base_path));
+#else
       strlcat(base_path, "/.config/retroarch", sizeof(base_path));
+#endif
    }
 
    if(!string_is_empty(base_path))
@@ -2141,9 +2173,42 @@ static void frontend_unix_exitspawn(char *s, size_t len, char *args)
 
 static uint64_t frontend_unix_get_mem_total(void)
 {
+#if defined(DINGUX)
+   char line[256];
+   unsigned long mem_total = 0;
+   FILE* meminfo_file      = NULL;
+
+   line[0] = '\0';
+
+   /* Open /proc/meminfo */
+   meminfo_file = fopen(PROC_MEMINFO_PATH, "r");
+
+   if (!meminfo_file)
+      return 0;
+
+   /* Parse lines
+    * (Note: virtual filesystem, so don't have to
+    *  worry about buffering file reads) */
+   while (fgets(line, sizeof(line), meminfo_file))
+   {
+      if (string_starts_with_size(line, PROC_MEMINFO_MEM_TOTAL_TAG,
+            STRLEN_CONST(PROC_MEMINFO_MEM_TOTAL_TAG)))
+      {
+         sscanf(line, PROC_MEMINFO_MEM_TOTAL_TAG " %lu kB", &mem_total);
+         break;
+      }
+   }
+
+   /* Close /proc/meminfo */
+   fclose(meminfo_file);
+   meminfo_file = NULL;
+
+   return (uint64_t)mem_total * 1024;
+#else
    uint64_t pages            = sysconf(_SC_PHYS_PAGES);
    uint64_t page_size        = sysconf(_SC_PAGE_SIZE);
    return pages * page_size;
+#endif
 }
 
 static uint64_t frontend_unix_get_mem_free(void)
