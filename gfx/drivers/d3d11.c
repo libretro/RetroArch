@@ -1522,6 +1522,7 @@ static bool d3d11_gfx_frame(
 #if 0
          D3D11ClearRenderTargetView(context, d3d11->pass[i].rt.rt_view, d3d11->clearcolor);
 #endif
+         d3d11_clear_scissor(d3d11, d3d11->pass[i].rt.desc.Width, d3d11->pass[i].rt.desc.Height);
          D3D11SetViewports(context, 1, &d3d11->pass[i].viewport);
 
          D3D11Draw(context, 4, 0);
