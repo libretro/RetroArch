@@ -168,7 +168,7 @@ void gfx_widget_set_generic_message(void *data,
 {
    dispgfx_widget_t *p_dispwidget            = (dispgfx_widget_t*)data;
    gfx_widget_generic_message_state_t *state = gfx_widget_generic_message_get_state();
-   unsigned last_video_width                 = gfx_widgets_get_last_video_width(p_dispwidget);
+   unsigned last_video_width                 = p_dispwidget->last_video_width;
    int text_width                            = 0;
    gfx_widget_font_data_t *font_msg_queue    = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
@@ -237,8 +237,8 @@ static void gfx_widget_generic_message_layout(
    dispgfx_widget_t *p_dispwidget            = (dispgfx_widget_t*)data;
    gfx_widget_generic_message_state_t *state = gfx_widget_generic_message_get_state();
 
-   unsigned last_video_width                 = gfx_widgets_get_last_video_width(p_dispwidget);
-   unsigned last_video_height                = gfx_widgets_get_last_video_height(p_dispwidget);
+   unsigned last_video_width                 = p_dispwidget->last_video_width;
+   unsigned last_video_height                = p_dispwidget->last_video_height;
    unsigned divider_width                    = p_dispwidget->divider_width_1px;
    unsigned widget_padding                   = 0;
    int text_width                            = 0;

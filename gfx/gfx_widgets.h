@@ -270,10 +270,6 @@ struct gfx_widget
 
 float* gfx_widgets_get_backdrop_orig(void);
 
-unsigned gfx_widgets_get_last_video_width(void *data);
-
-unsigned gfx_widgets_get_last_video_height(void *data);
-
 float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,
       const float image_width, const float image_height);

@@ -185,8 +185,8 @@ static void gfx_widget_progress_message_layout(
    float bar_padding;
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
    gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
-   unsigned last_video_width                  = gfx_widgets_get_last_video_width(p_dispwidget);
-   unsigned last_video_height                 = gfx_widgets_get_last_video_height(p_dispwidget);
+   unsigned last_video_width                  = p_dispwidget->last_video_width;
+   unsigned last_video_height                 = p_dispwidget->last_video_height;
    unsigned widget_padding                    = p_dispwidget->simple_widget_padding;
    gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
 

@@ -315,9 +315,9 @@ static void gfx_widget_volume_layout(
       void *data,
       bool is_threaded, const char *dir_assets, char *font_path)
 {
-   gfx_widget_volume_state_t* state     = gfx_widget_volume_get_ptr();
-   unsigned last_video_width            = gfx_widgets_get_last_video_width(data);
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
+   gfx_widget_volume_state_t* state     = gfx_widget_volume_get_ptr();
+   unsigned last_video_width            = p_dispwidget->last_video_width;
    gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
 
    state->widget_height                 = font_regular->line_height * 4;

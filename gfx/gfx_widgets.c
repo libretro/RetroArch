@@ -105,19 +105,6 @@ float* gfx_widgets_get_backdrop_orig(void)
    return gfx_widgets_backdrop_orig;
 }
 
-/* Messages queue */
-unsigned gfx_widgets_get_last_video_width(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->last_video_width;
-}
-
-unsigned gfx_widgets_get_last_video_height(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->last_video_height;
-}
-
 /* Widgets list */
 const static gfx_widget_t* const widgets[] = {
 #ifdef HAVE_SCREENSHOTS
