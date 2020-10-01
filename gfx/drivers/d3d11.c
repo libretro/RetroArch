@@ -1433,7 +1433,7 @@ static bool d3d11_gfx_frame(
 
    texture = d3d11->frame.last_texture_view;
 
-   if (d3d11->shader_preset)
+   if (texture && d3d11->shader_preset)
    {
       for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
@@ -1531,6 +1531,11 @@ static bool d3d11_gfx_frame(
       D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
    }
 
+   D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
+   D3D11SetViewports(context, 1, &d3d11->frame.viewport);
+
+   d3d11_clear_scissor(d3d11, video_width, video_height);
+
    if (texture)
    {
       d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
@@ -1538,14 +1543,8 @@ static bool d3d11_gfx_frame(
       D3D11SetPShaderSamplers(
             context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
+      D3D11Draw(context, 4, 0);
    }
-
-   D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
-   D3D11SetViewports(context, 1, &d3d11->frame.viewport);
-
-   d3d11_clear_scissor(d3d11, video_width, video_height);
-
-   D3D11Draw(context, 4, 0);
 
    D3D11SetBlendState(context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
