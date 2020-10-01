@@ -2294,22 +2294,18 @@ static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    xmb_handle_t *xmb        = (xmb_handle_t*)userdata;
 
+   if (!xmb)
+      return -1;
+
    switch (type)
    {
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
-         if (!xmb)
-            return -1;
          xmb->mouse_show = true;
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
-         if (!xmb)
-            return -1;
          xmb->mouse_show = false;
          break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
-         if (!xmb)
-            return -1;
-
          xmb_refresh_horizontal_list(xmb);
          break;
       default:
@@ -2772,7 +2768,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_EXPLORE_ITEM:
       {
          uintptr_t icon = menu_explore_get_entry_icon(type);
-         if (icon) return icon;
+         if (icon)
+            return icon;
          break;
       }
 #endif
@@ -3563,22 +3560,26 @@ static INLINE bool xmb_use_ps3_layout(
 static INLINE float xmb_get_scale_factor(
       settings_t *settings, bool use_ps3_layout, unsigned width)
 {
-   float menu_scale_factor = settings->floats.menu_scale_factor;
    float scale_factor;
+   float menu_scale_factor = settings->floats.menu_scale_factor;
 
    /* PS3 Layout */
    if (use_ps3_layout)
-      scale_factor = (menu_scale_factor * (float)width) / 1920.0f;
+      scale_factor = ((menu_scale_factor * (float)width) / 1920.0f);
    /* PSP Layout */
    else
+   {
 #ifdef _3DS
       scale_factor = menu_scale_factor / 4.0f;
 #else
       scale_factor = ((menu_scale_factor * (float)width) / 1920.0f) * 1.5f;
 #endif
+   }
 
    /* Apply safety limit */
-   return (scale_factor >= 0.1f) ? scale_factor : 0.1f;
+   if (scale_factor < 0.1f)
+      return 0.1f;
+   return scale_factor;
 }
 
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
