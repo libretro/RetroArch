@@ -2010,15 +2010,14 @@ bool gfx_widgets_ai_service_overlay_load(
 {
    if (p_dispwidget->ai_service_overlay_state == 0)
    {
-      bool res = gfx_widgets_reset_textures_list_buffer(
+      if (!gfx_widgets_reset_textures_list_buffer(
                &p_dispwidget->ai_service_overlay_texture, 
                TEXTURE_FILTER_MIPMAP_LINEAR, 
                (void *) buffer, buffer_len, image_type,
                &p_dispwidget->ai_service_overlay_width,
-               &p_dispwidget->ai_service_overlay_height);
-      if (res)
-         p_dispwidget->ai_service_overlay_state = 1;
-      return res;
+               &p_dispwidget->ai_service_overlay_height))
+         return false;
+      p_dispwidget->ai_service_overlay_state = 1;
    }
    return true;
 }
