@@ -682,7 +682,7 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
    if (add_opacity_to_wallpaper)
       gfx_display_set_alpha(draw->color, override_opacity);
 
-   if (dispctx && dispctx->get_default_mvp)
+   if (dispctx->get_default_mvp)
       draw->matrix_data = (math_matrix_4x4*)dispctx->get_default_mvp(
             userdata);
 }
