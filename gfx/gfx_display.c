@@ -130,17 +130,6 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    NULL,
 };
 
-static INLINE float gfx_display_scalef(float val,
-      float oldmin, float oldmax, float newmin, float newmax)
-{
-   return (((val - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin;
-}
-
-static INLINE float gfx_display_randf(float min, float max)
-{
-   return (rand() * ((max - min) / (double)RAND_MAX)) + min;
-}
-
 static float gfx_display_get_adjusted_scale_internal(
       gfx_display_t *p_disp,
       float base_scale, float scale_factor, unsigned width)
