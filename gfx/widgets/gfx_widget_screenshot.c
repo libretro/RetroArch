@@ -74,15 +74,15 @@ static gfx_widget_screenshot_state_t* gfx_widget_screenshot_get_ptr(void)
 
 static void gfx_widget_screenshot_fadeout(void *userdata)
 {
+   gfx_animation_ctx_entry_t entry;
    settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)userdata;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
-   gfx_animation_ctx_entry_t entry;
 
    entry.cb             = NULL;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &state->alpha;
-   entry.tag            = gfx_widgets_get_generic_tag(p_dispwidget);
+   entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
@@ -102,15 +102,15 @@ static void gfx_widget_screenshot_fadeout(void *userdata)
 
 static void gfx_widgets_play_screenshot_flash(void *data)
 {
+   gfx_animation_ctx_entry_t entry;
    settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
-   gfx_animation_ctx_entry_t entry;
 
    entry.cb             = gfx_widget_screenshot_fadeout;
    entry.easing_enum    = EASING_IN_QUAD;
    entry.subject        = &state->alpha;
-   entry.tag            = gfx_widgets_get_generic_tag(p_dispwidget);
+   entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
    entry.target_value   = 1.0f;
    entry.userdata       = p_dispwidget;
 
@@ -157,15 +157,15 @@ static void gfx_widget_screenshot_dispose(void *userdata)
 
 static void gfx_widget_screenshot_end(void *userdata)
 {
+   gfx_animation_ctx_entry_t entry;
    settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)userdata;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
-   gfx_animation_ctx_entry_t entry;
 
    entry.cb             = gfx_widget_screenshot_dispose;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &state->y;
-   entry.tag            = gfx_widgets_get_generic_tag(p_dispwidget);
+   entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
    entry.target_value   = -((float)state->height);
    entry.userdata       = NULL;
 
@@ -292,7 +292,7 @@ static void gfx_widget_screenshot_iterate(
    settings_t *settings = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
-   unsigned padding                     = gfx_widgets_get_padding(p_dispwidget);
+   unsigned padding                     = p_dispwidget->simple_widget_padding;
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
 
    /* Load screenshot and start its animation */

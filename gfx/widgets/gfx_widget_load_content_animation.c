@@ -529,7 +529,7 @@ static void gfx_widget_load_content_animation_layout(
 
    unsigned last_video_width                        = gfx_widgets_get_last_video_width(p_dispwidget);
    unsigned last_video_height                       = gfx_widgets_get_last_video_height(p_dispwidget);
-   unsigned widget_padding                          = gfx_widgets_get_padding(p_dispwidget);
+   unsigned widget_padding                          = p_dispwidget->simple_widget_padding;
 
    gfx_widget_font_data_t *font_regular             = &p_dispwidget->gfx_widget_fonts.regular;
    gfx_widget_font_data_t *font_bold                = &p_dispwidget->gfx_widget_fonts.bold;
@@ -585,7 +585,7 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
 
       unsigned last_video_width            = gfx_widgets_get_last_video_width(p_dispwidget);
-      unsigned widget_padding              = gfx_widgets_get_padding(p_dispwidget);
+      unsigned widget_padding              = p_dispwidget->simple_widget_padding;
 
       gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
       gfx_widget_font_data_t *font_bold    = &p_dispwidget->gfx_widget_fonts.bold;
@@ -665,7 +665,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
       gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
       gfx_widget_font_data_t *font_bold    = &p_dispwidget->gfx_widget_fonts.bold;
-      size_t msg_queue_size                = gfx_widgets_get_msg_queue_size(p_dispwidget);
+      size_t msg_queue_size                = p_dispwidget->current_msgs_size;
       gfx_display_t            *p_disp     = disp_get_ptr();
       gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
 

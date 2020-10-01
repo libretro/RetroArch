@@ -187,7 +187,7 @@ static void gfx_widget_progress_message_layout(
    gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
    unsigned last_video_width                  = gfx_widgets_get_last_video_width(p_dispwidget);
    unsigned last_video_height                 = gfx_widgets_get_last_video_height(p_dispwidget);
-   unsigned widget_padding                    = gfx_widgets_get_padding(p_dispwidget);
+   unsigned widget_padding                    = p_dispwidget->simple_widget_padding;
    gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
 
    /* Base widget layout */
@@ -236,8 +236,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       unsigned text_color                  = COLOR_TEXT_ALPHA(0xFFFFFFFF, (unsigned)(state->alpha * 255.0f));
 
       gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
-      size_t msg_queue_size                = gfx_widgets_get_msg_queue_size(p_dispwidget);
-
+      size_t msg_queue_size                = p_dispwidget->current_msgs_size;
       unsigned bar_width                   = state->bar_max_width;
       float *bar_color                     = state->bar_disabled_color;
 

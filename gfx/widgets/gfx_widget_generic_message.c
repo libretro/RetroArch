@@ -170,7 +170,7 @@ void gfx_widget_set_generic_message(void *data,
    gfx_widget_generic_message_state_t *state = gfx_widget_generic_message_get_state();
    unsigned last_video_width                 = gfx_widgets_get_last_video_width(p_dispwidget);
    int text_width                            = 0;
-   gfx_widget_font_data_t *font_msg_queue    = gfx_widgets_get_font_msg_queue(p_dispwidget);
+   gfx_widget_font_data_t *font_msg_queue    = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Ensure we have a valid message string */
    if (string_is_empty(msg))
@@ -239,12 +239,12 @@ static void gfx_widget_generic_message_layout(
 
    unsigned last_video_width                 = gfx_widgets_get_last_video_width(p_dispwidget);
    unsigned last_video_height                = gfx_widgets_get_last_video_height(p_dispwidget);
-   unsigned divider_width                    = gfx_widgets_get_divider_width(p_dispwidget);
+   unsigned divider_width                    = p_dispwidget->divider_width_1px;
    unsigned widget_padding                   = 0;
    int text_width                            = 0;
    const float base_aspect                   = 4.0f / 3.0f;
    float widget_margin                       = 0.0f;
-   gfx_widget_font_data_t *font_msg_queue    = gfx_widgets_get_font_msg_queue(p_dispwidget);
+   gfx_widget_font_data_t *font_msg_queue    = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Set padding values */
    state->text_padding = (unsigned)(((float)font_msg_queue->line_height * (2.0f / 3.0f)) + 0.5f);
@@ -409,20 +409,16 @@ static void gfx_widget_generic_message_frame(void *data, void *user_data)
 
    if (state->status != GFX_WIDGET_GENERIC_MESSAGE_IDLE)
    {
+      unsigned text_color;
+      float widget_alpha, bg_y, text_y;
       video_frame_info_t *video_info         = (video_frame_info_t*)data;
       dispgfx_widget_t *p_dispwidget         = (dispgfx_widget_t*)user_data;
 
       unsigned video_width                   = video_info->width;
       unsigned video_height                  = video_info->height;
       void *userdata                         = video_info->userdata;
-
-      gfx_widget_font_data_t *font_msg_queue = gfx_widgets_get_font_msg_queue(p_dispwidget);
-      size_t msg_queue_size                  = gfx_widgets_get_msg_queue_size(p_dispwidget);
-
-      unsigned text_color;
-      float widget_alpha;
-      float bg_y;
-      float text_y;
+      gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;
+      size_t msg_queue_size                  = p_dispwidget->current_msgs_size;
 
       /* Determine status-dependent opacity/position
        * values */

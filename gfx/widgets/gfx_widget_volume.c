@@ -108,7 +108,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       unsigned video_width                 = video_info->width;
       unsigned video_height                = video_info->height;
 
-      unsigned padding                     = gfx_widgets_get_padding(user_data);
+      unsigned padding                     = p_dispwidget->simple_widget_padding;
 
       float* backdrop_orig                 = gfx_widgets_get_backdrop_orig();
 

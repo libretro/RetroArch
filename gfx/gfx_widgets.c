@@ -100,55 +100,12 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget);
 static void gfx_widgets_layout(dispgfx_widget_t *p_dispwidget,
       bool is_threaded, const char *dir_assets, char *font_path);
 
-gfx_widget_font_data_t* gfx_widgets_get_font_bold(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return &p_dispwidget->gfx_widget_fonts.bold;
-}
-
-gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return &p_dispwidget->gfx_widget_fonts.msg_queue;
-}
-
 float* gfx_widgets_get_backdrop_orig(void)
 {
    return gfx_widgets_backdrop_orig;
 }
 
 /* Messages queue */
-
-uintptr_t gfx_widgets_get_generic_tag(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->gfx_widgets_generic_tag;
-}
-
-unsigned gfx_widgets_get_padding(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->simple_widget_padding;
-}
-
-unsigned gfx_widgets_get_divider_width(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->divider_width_1px;
-}
-
-unsigned gfx_widgets_get_height(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->simple_widget_height;
-}
-
-unsigned gfx_widgets_get_generic_message_height(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->generic_message_height;
-}
-
 unsigned gfx_widgets_get_last_video_width(void *data)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
@@ -159,12 +116,6 @@ unsigned gfx_widgets_get_last_video_height(void *data)
 {
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    return p_dispwidget->last_video_height;
-}
-
-size_t gfx_widgets_get_msg_queue_size(void *data)
-{
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   return p_dispwidget->current_msgs_size;
 }
 
 /* Widgets list */

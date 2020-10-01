@@ -162,7 +162,7 @@ void gfx_widget_set_libretro_message(void *data,
 {
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
    gfx_widget_libretro_message_state_t *state = gfx_widget_libretro_message_get_state();
-   gfx_widget_font_data_t *font_msg_queue     = gfx_widgets_get_font_msg_queue(p_dispwidget);
+   gfx_widget_font_data_t *font_msg_queue     = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Ensure we have a valid message string */
    if (string_is_empty(msg))
@@ -217,8 +217,8 @@ static void gfx_widget_libretro_message_layout(
    gfx_widget_libretro_message_state_t *state = gfx_widget_libretro_message_get_state();
 
    unsigned last_video_height                 = gfx_widgets_get_last_video_height(p_dispwidget);
-   unsigned divider_width                     = gfx_widgets_get_divider_width(p_dispwidget);
-   gfx_widget_font_data_t *font_msg_queue     = gfx_widgets_get_font_msg_queue(p_dispwidget);
+   unsigned divider_width                     = p_dispwidget->divider_width_1px;
+   gfx_widget_font_data_t *font_msg_queue     = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Set values that are independent of message length */
    state->bg_height    = font_msg_queue->line_height * 2;
@@ -349,9 +349,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
       unsigned video_height                  = video_info->height;
       void *userdata                         = video_info->userdata;
 
-      gfx_widget_font_data_t *font_msg_queue = gfx_widgets_get_font_msg_queue(p_dispwidget);
-      size_t msg_queue_size                  = gfx_widgets_get_msg_queue_size(p_dispwidget);
-
+      gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;
+      size_t msg_queue_size                  = p_dispwidget->current_msgs_size;
       float *bg_color                        = gfx_widgets_get_backdrop_orig();
       float bg_alpha;
       float bg_y;

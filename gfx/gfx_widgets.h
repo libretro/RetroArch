@@ -268,28 +268,11 @@ struct gfx_widget
    void (*frame)(void* data, void *userdata);
 };
 
-uintptr_t gfx_widgets_get_generic_tag(void *data);
-
-unsigned gfx_widgets_get_padding(void *data);
-
-unsigned gfx_widgets_get_divider_width(void *data);
-
-unsigned gfx_widgets_get_height(void *data);
-
-gfx_widget_font_data_t* gfx_widgets_get_font_bold(void *data);
-
-gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void *data);
-
 float* gfx_widgets_get_backdrop_orig(void);
 
 unsigned gfx_widgets_get_last_video_width(void *data);
 
 unsigned gfx_widgets_get_last_video_height(void *data);
-
-unsigned gfx_widgets_get_generic_message_height(void *data);
-
-/* Warning: not thread safe! */
-size_t gfx_widgets_get_msg_queue_size(void *data);
 
 float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,
