@@ -629,7 +629,8 @@ font_data_t *gfx_display_font_file(
    /* Font size must be at least 2, or font_init_first()
     * will generate a heap-buffer-overflow when using
     * many font drivers */
-   font_size = (font_size > 2.0f) ? font_size : 2.0f;
+   if (font_size < 2.0f)
+      font_size = 2.0f;
 
    if (!dispctx->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
