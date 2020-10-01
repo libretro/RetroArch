@@ -323,7 +323,9 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_playlistEntryDialog(NULL)
    ,m_statusMessageElapsedTimer()
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#ifdef HAVE_MENU
    ,m_shaderParamsDialog(new ShaderParamsDialog())
+#endif
 #endif
    ,m_coreOptionsDialog(new CoreOptionsDialog())
    ,m_networkManager(new QNetworkAccessManager(this))
@@ -683,7 +685,9 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(this, SIGNAL(gotStatusMessage(QString,unsigned,unsigned,bool)), this, SLOT(onGotStatusMessage(QString,unsigned,unsigned,bool)), Qt::AutoConnection);
    connect(this, SIGNAL(gotReloadPlaylists()), this, SLOT(onGotReloadPlaylists()), Qt::AutoConnection);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#ifdef HAVE_MENU
    connect(this, SIGNAL(gotReloadShaderParams()), this, SLOT(onGotReloadShaderParams()), Qt::AutoConnection);
+#endif
 #endif
    connect(this, SIGNAL(gotReloadCoreOptions()), this, SLOT(onGotReloadCoreOptions()), Qt::AutoConnection);
 
@@ -1128,6 +1132,7 @@ void MainWindow::onGotStatusMessage(
    }
 }
 
+#ifdef HAVE_MENU
 void MainWindow::deferReloadShaderParams()
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -1154,6 +1159,7 @@ void MainWindow::onGotReloadShaderParams()
       m_shaderParamsDialog->reload();
 #endif
 }
+#endif
 
 void MainWindow::onCoreOptionsClicked()
 {

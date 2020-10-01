@@ -693,9 +693,11 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
    {
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
       case CMD_EVENT_SHADER_PRESET_LOADED:
+#ifdef HAVE_MENU
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          RARCH_LOG("[Qt]: Reloading shader parameters.\n");
          win_handle->qtWindow->deferReloadShaderParams();
+#endif
 #endif
          break;
       default:
@@ -708,10 +710,12 @@ static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,
 
 static void ui_companion_qt_notify_refresh(void *data)
 {
+#ifdef HAVE_MENU
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    win_handle->qtWindow->deferReloadPlaylists();
+#endif
 }
 
 static void ui_companion_qt_log_msg(void *data, const char *msg)
