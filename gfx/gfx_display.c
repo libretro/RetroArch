@@ -20,8 +20,6 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-#define PARTICLES_COUNT            100
-
 /* Number of pixels corner-to-corner on a 1080p
  * display:
  * > sqrt((1920 * 1920) + (1080 * 1080))
