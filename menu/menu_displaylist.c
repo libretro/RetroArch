@@ -5633,6 +5633,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          {
+            settings_t *settings      = config_get_ptr();
             gfx_ctx_flags_t flags;
 
             if (video_display_server_get_flags(&flags))
@@ -5702,6 +5703,14 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_FILTER,
                      PARSE_ONLY_PATH, false) == 0)
                count++;
+
+            if (!string_is_empty(settings->paths.path_softfilter_plugin))
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE),
+                     MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE,
+                     MENU_SETTING_ACTION_VIDEO_FILTER_REMOVE, 0, 0))
+                  count++;
 #endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER,
@@ -7347,45 +7356,58 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          {
             settings_t *settings      = config_get_ptr();
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            switch (settings->uints.video_aspect_ratio_idx)
+
+#if defined(DINGUX)
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
             {
-               case ASPECT_RATIO_CONFIG:
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
-                           PARSE_ONLY_FLOAT, false) == 0)
-                     count++;
-                  break;
-               case ASPECT_RATIO_CUSTOM:
-                  if (!settings->bools.video_scale_integer)
-                  {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+            }
+            else
+#endif
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+               switch (settings->uints.video_aspect_ratio_idx)
+               {
+                  case ASPECT_RATIO_CONFIG:
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-                              PARSE_ONLY_INT, false) == 0)
+                              MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
+                              PARSE_ONLY_FLOAT, false) == 0)
+                        count++;
+                     break;
+                  case ASPECT_RATIO_CUSTOM:
+                     if (!settings->bools.video_scale_integer)
+                     {
+                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                                 MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
+                                 PARSE_ONLY_INT, false) == 0)
+                           count++;
+                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                                 MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+                                 PARSE_ONLY_INT, false) == 0)
+                           count++;
+                     }
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+                              PARSE_ONLY_UINT, false) == 0)
                         count++;
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-                              PARSE_ONLY_INT, false) == 0)
+                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+                              PARSE_ONLY_UINT, false) == 0)
                         count++;
-                  }
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-                           PARSE_ONLY_UINT, false) == 0)
-                     count++;
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-                           PARSE_ONLY_UINT, false) == 0)
-                     count++;
-                  break;
-               default:
-                  break;
+                     break;
+                  default:
+                     break;
+               }
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,

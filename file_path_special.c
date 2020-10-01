@@ -103,6 +103,14 @@ bool fill_pathname_application_data(char *s, size_t len)
             "Library/Application Support/RetroArch", len);
       return true;
    }
+#elif defined(DINGUX)
+   const char *appdata = getenv("HOME");
+
+   if (appdata)
+   {
+      fill_pathname_join(s, appdata, "/.retroarch", len);
+      return true;
+   }
 #elif !defined(RARCH_CONSOLE)
    const char *xdg     = getenv("XDG_CONFIG_HOME");
    const char *appdata = getenv("HOME");

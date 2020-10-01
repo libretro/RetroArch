@@ -9773,6 +9773,7 @@ static void materialui_list_insert(
             break;
          case MENU_SETTING_ACTION_CORE_DELETE:
          case MENU_SETTING_ACTION_CORE_DELETE_BACKUP:
+         case MENU_SETTING_ACTION_VIDEO_FILTER_REMOVE:
             node->icon_texture_index = MUI_TEXTURE_REMOVE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;

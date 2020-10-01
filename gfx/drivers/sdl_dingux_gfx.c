@@ -18,10 +18,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <SDL/SDL.h>
+#include <SDL/SDL_video.h>
+
 #include <retro_assert.h>
 #include <gfx/video_frame.h>
 #include <retro_assert.h>
-#include "../../verbosity.h"
+#include <string/stdstring.h>
+#include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -31,34 +35,242 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_video.h>
+#include "../../dingux/dingux_utils.h"
 
+#include "../../verbosity.h"
+#include "../../gfx/drivers_font_renderer/bitmap.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
+#define SDL_DINGUX_MENU_WIDTH  320
+#define SDL_DINGUX_MENU_HEIGHT 240
+
+#define SDL_DINGUX_NUM_FONT_GLYPHS 256
+
 #define VERBOSE 0
 
 typedef struct sdl_dingux_video
 {
-   bool rgb;
+   SDL_Surface *screen;
+   uint32_t font_colour32;
+   uint16_t font_colour16;
+   uint16_t menu_texture[SDL_DINGUX_MENU_WIDTH * SDL_DINGUX_MENU_HEIGHT];
+   bool font_lut[SDL_DINGUX_NUM_FONT_GLYPHS][FONT_WIDTH * FONT_HEIGHT];
+   bool rgb32;
+   bool vsync;
    bool menu_active;
    bool was_in_menu;
    bool quitting;
-   char menu_frame[320*240*32];
-   SDL_Surface *screen;
 } sdl_dingux_video_t;
+
+static void sdl_dingux_init_font_color(sdl_dingux_video_t *vid)
+{
+   settings_t *settings = config_get_ptr();
+   uint32_t red         = 0xFF;
+   uint32_t green       = 0xFF;
+   uint32_t blue        = 0xFF;
+
+   if (settings)
+   {
+      red   = (uint32_t)((settings->floats.video_msg_color_r * 255.0f) + 0.5f) & 0xFF;
+      green = (uint32_t)((settings->floats.video_msg_color_g * 255.0f) + 0.5f) & 0xFF;
+      blue  = (uint32_t)((settings->floats.video_msg_color_b * 255.0f) + 0.5f) & 0xFF;
+   }
+
+   /* Convert to XRGB8888 */
+   vid->font_colour32 = (red << 16) | (green << 8) | blue;
+
+   /* Convert to RGB565 */
+   red   = red   >> 3;
+   green = green >> 3;
+   blue  = blue  >> 3;
+
+   vid->font_colour16 = (red << 11) | (green << 6) | blue;
+}
+
+static void sdl_dingux_init_font_lut(sdl_dingux_video_t *vid)
+{
+   size_t symbol_index;
+   size_t i, j;
+
+   /* Loop over all possible characters */
+   for (symbol_index = 0;
+        symbol_index < SDL_DINGUX_NUM_FONT_GLYPHS;
+        symbol_index++)
+   {
+      for (j = 0; j < FONT_HEIGHT; j++)
+      {
+         for (i = 0; i < FONT_WIDTH; i++)
+         {
+            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+            unsigned offset  = (i + j * FONT_WIDTH) >> 3;
+
+            /* LUT value is 'true' if specified glyph
+             * position contains a pixel */
+            vid->font_lut[symbol_index][i + (j * FONT_WIDTH)] =
+                  (bitmap_bin[FONT_OFFSET(symbol_index) + offset] & rem) > 0;
+         }
+      }
+   }
+}
+
+static void sdl_dingux_blit_text16(
+      sdl_dingux_video_t *vid,
+      unsigned x, unsigned y,
+      const char *str)
+{
+   uint16_t *screen_buf         = (uint16_t*)vid->screen->pixels;
+   /* 16 bit - divide pitch by 2 */
+   uint16_t screen_stride       = (uint16_t)(vid->screen->pitch >> 1);
+   uint16_t screen_width        = vid->screen->w;
+   uint16_t screen_height       = vid->screen->h;
+   uint16_t shadow_color_buf[2] = {0};
+   uint16_t color_buf[2];
+
+   color_buf[0] = vid->font_colour16;
+   color_buf[1] = 0;
+
+   /* Check for out of bounds y coordinates */
+   if (y + FONT_HEIGHT + 1 >= screen_height)
+      return;
+
+   while (!string_is_empty(str))
+   {
+      /* Check for out of bounds x coordinates */
+      if (x + FONT_WIDTH_STRIDE + 1 >= screen_width)
+         return;
+
+      /* Deal with spaces first, for efficiency */
+      if (*str == ' ')
+         str++;
+      else
+      {
+         uint16_t i, j;
+         uint32_t symbol = utf8_walk(&str);
+
+         /* Stupid hack: 'oe' ligatures are not really
+          * standard extended ASCII, so we have to waste
+          * CPU cycles performing a conversion from the
+          * unicode values... */
+         if (symbol == 339) /* Latin small ligature oe */
+            symbol = 156;
+         if (symbol == 338) /* Latin capital ligature oe */
+            symbol = 140;
+
+         if (symbol >= SDL_DINGUX_NUM_FONT_GLYPHS)
+            continue;
+
+         for (j = 0; j < FONT_HEIGHT; j++)
+         {
+            uint32_t buff_offset = ((y + j) * screen_stride) + x;
+
+            for (i = 0; i < FONT_WIDTH; i++)
+            {
+               if (vid->font_lut[symbol][i + (j * FONT_WIDTH)])
+               {
+                  uint16_t *screen_buf_ptr = screen_buf + buff_offset + i;
+
+                  /* Text pixel + right shadow */
+                  memcpy(screen_buf_ptr, color_buf, sizeof(uint16_t));
+
+                  /* Bottom shadow */
+                  screen_buf_ptr += screen_stride;
+                  memcpy(screen_buf_ptr, shadow_color_buf, sizeof(uint16_t));
+               }
+            }
+         }
+      }
+
+      x += FONT_WIDTH_STRIDE;
+   }
+}
+
+static void sdl_dingux_blit_text32(
+      sdl_dingux_video_t *vid,
+      unsigned x, unsigned y,
+      const char *str)
+{
+   uint32_t *screen_buf         = (uint32_t*)vid->screen->pixels;
+   /* 32 bit - divide pitch by 4 */
+   uint32_t screen_stride       = (uint32_t)(vid->screen->pitch >> 2);
+   uint32_t screen_width        = vid->screen->w;
+   uint32_t screen_height       = vid->screen->h;
+   uint32_t shadow_color_buf[2] = {0};
+   uint32_t color_buf[2];
+
+   color_buf[0] = vid->font_colour32;
+   color_buf[1] = 0;
+
+   /* Check for out of bounds y coordinates */
+   if (y + FONT_HEIGHT + 1 >= screen_height)
+      return;
+
+   while (!string_is_empty(str))
+   {
+      /* Check for out of bounds x coordinates */
+      if (x + FONT_WIDTH_STRIDE + 1 >= screen_width)
+         return;
+
+      /* Deal with spaces first, for efficiency */
+      if (*str == ' ')
+         str++;
+      else
+      {
+         uint32_t i, j;
+         uint32_t symbol = utf8_walk(&str);
+
+         /* Stupid hack: 'oe' ligatures are not really
+          * standard extended ASCII, so we have to waste
+          * CPU cycles performing a conversion from the
+          * unicode values... */
+         if (symbol == 339) /* Latin small ligature oe */
+            symbol = 156;
+         if (symbol == 338) /* Latin capital ligature oe */
+            symbol = 140;
+
+         if (symbol >= SDL_DINGUX_NUM_FONT_GLYPHS)
+            continue;
+
+         for (j = 0; j < FONT_HEIGHT; j++)
+         {
+            uint32_t buff_offset = ((y + j) * screen_stride) + x;
+
+            for (i = 0; i < FONT_WIDTH; i++)
+            {
+               if (vid->font_lut[symbol][i + (j * FONT_WIDTH)])
+               {
+                  uint32_t *screen_buf_ptr = screen_buf + buff_offset + i;
+
+                  /* Text pixel + right shadow */
+                  memcpy(screen_buf_ptr, color_buf, sizeof(uint32_t));
+
+                  /* Bottom shadow */
+                  screen_buf_ptr += screen_stride;
+                  memcpy(screen_buf_ptr, shadow_color_buf, sizeof(uint32_t));
+               }
+            }
+         }
+      }
+
+      x += FONT_WIDTH_STRIDE;
+   }
+}
 
 static void sdl_dingux_gfx_free(void *data)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+
    if (!vid)
       return;
 
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+   /* It is good manners to leave IPU aspect
+    * ratio scaling enabled when shutting down */
+   dingux_ipu_set_aspect_ratio_enable(true);
 
    free(vid);
 }
@@ -66,15 +278,16 @@ static void sdl_dingux_gfx_free(void *data)
 static void *sdl_dingux_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   sdl_dingux_video_t *vid = NULL;
-   settings_t *settings = config_get_ptr();
+   sdl_dingux_video_t *vid         = NULL;
+   settings_t *settings            = config_get_ptr();
+   bool ipu_keep_aspect            = settings->bools.video_dingux_ipu_keep_aspect;
+   const char *input_joypad_driver = settings->arrays.input_joypad_driver;
+   uint32_t surface_flags          = (video->vsync) ?
+         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
+         (SDL_HWSURFACE | SDL_FULLSCREEN);
 
-    FILE* f = fopen("/sys/devices/platform/jz-lcd.0/allow_downscaling", "w");
-    if (f)
-    {
-       fprintf(f, "%d", 1);
-       fclose(f);
-    }
+   dingux_ipu_set_downscaling_enable(true);
+   dingux_ipu_set_aspect_ratio_enable(ipu_keep_aspect);
 
    if (SDL_WasInit(0) == 0)
    {
@@ -88,19 +301,34 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    if (!vid)
       return NULL;
 
-#ifdef VERBOSE
-   printf("sdl_dingux_gfx_init video %dx%d rgb32 %d smooth %d input_scale %u force_aspect %d fullscreen %d\n",
-           video->width, video->height, video->rgb32, video->smooth, video->input_scale, video->force_aspect, video->fullscreen);
+#if defined(VERBOSE)
+   RARCH_LOG("[sdl_dingux_gfx_init]\n"
+             "   video %dx%d\n"
+             "   rgb32 %d\n"
+             "   smooth %d\n"
+             "   input_scale %u\n"
+             "   force_aspect %d\n"
+             "   fullscreen %d\n"
+             "   vsync %d\n"
+             "   flags %u\n",
+         video->width, video->height, (int)video->rgb32, (int)video->smooth,
+         video->input_scale, (int)video->force_aspect, (int)video->fullscreen,
+         (int)video->vsync, surface_flags);
 #endif
 
-   vid->screen = SDL_SetVideoMode(320, 240, video->rgb32 ? 32 : 16, SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN);
+   vid->screen = SDL_SetVideoMode(
+         SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT,
+         video->rgb32 ? 32 : 16,
+         surface_flags);
+
    if (!vid->screen)
    {
       RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
       goto error;
    }
 
-   vid->rgb = video->rgb32;
+   vid->vsync       = video->vsync;
+   vid->rgb32       = video->rgb32;
    vid->menu_active = false;
    vid->was_in_menu = false;
 
@@ -108,20 +336,23 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      void *sdl_input = input_driver_init_wrap(&input_sdl,
-            settings->arrays.input_joypad_driver);
+      void *sdl_input = input_driver_init_wrap(
+            &input_sdl, input_joypad_driver);
 
       if (sdl_input)
       {
-         *input = &input_sdl;
+         *input      = &input_sdl;
          *input_data = sdl_input;
       }
       else
       {
-         *input = NULL;
+         *input      = NULL;
          *input_data = NULL;
       }
    }
+
+   sdl_dingux_init_font_color(vid);
+   sdl_dingux_init_font_lut(vid);
 
    return vid;
 
@@ -130,47 +361,75 @@ error:
    return NULL;
 }
 
-static void clear_screen(void* data)
-{
-   sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
-   SDL_FillRect(vid->screen, 0, 0);
-   SDL_Flip(vid->screen);
-   SDL_FillRect(vid->screen, 0, 0);
-   SDL_Flip(vid->screen);
-   SDL_FillRect(vid->screen, 0, 0);
-   SDL_Flip(vid->screen);
-}
-
 static void sdl_dingux_set_output(
       sdl_dingux_video_t* vid,
-      int width, int height, int pitch, bool rgb)
+      int width, int height, int pitch, bool rgb32)
 {
-#ifdef VERBOSE
-    printf("sdl_dingux_set_output current w %d h %d pitch %d new_w %d new_h %d pitch %d rgb %d\n",
-            vid->screen->w, vid->screen->h, vid->screen->pitch, width, height, pitch, (int)vid->rgb);
+   uint32_t surface_flags = (vid->vsync) ?
+         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
+         (SDL_HWSURFACE | SDL_FULLSCREEN);
+
+#if defined(VERBOSE)
+    RARCH_LOG("[sdl_dingux_set_output]\n"
+              "   current w %d h %d pitch %d\n"
+              "   new_w %d new_h %d pitch %d\n"
+              "   rgb32 %d\n"
+              "   vsync %d\n"
+              "   flags %u\n",
+            vid->screen->w, vid->screen->h, vid->screen->pitch,
+            width, height, pitch,
+            (int)rgb32, (int)vid->vsync, surface_flags);
 #endif
 
-    vid->screen = SDL_SetVideoMode(width, height, rgb ? 32 : 16, SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN);
-    if (!vid->screen)
-        RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+   vid->screen = SDL_SetVideoMode(
+         width, height, rgb32 ? 32 : 16,
+         surface_flags);
+
+   if (!vid->screen)
+      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
 }
 
-static void blit(uint32_t* d, uint32_t* s, int width, int height, int pitch)
+static void sdl_dingux_blit_frame16(uint16_t* dst, uint16_t* src,
+      unsigned width, unsigned height,
+      unsigned dst_pitch, unsigned src_pitch)
 {
-   unsigned i;
-   int skip = pitch/4 - width;
-   for (i = 0; i < height; i++)
+   uint16_t *in_ptr    = src;
+   uint16_t *out_ptr   = dst;
+   /* 16 bit - divide pitch by 2 */
+   uint16_t in_stride  = (uint16_t)(src_pitch >> 1);
+   uint16_t out_stride = (uint16_t)(dst_pitch >> 1);
+   size_t y;
+
+   for (y = 0; y < height; y++)
    {
-      unsigned j;
-      for (j = 0; j < width; j++)
-         *(d++) = *(s++);
-      s += skip;
+      memcpy(out_ptr, in_ptr, width * sizeof(uint16_t));
+      in_ptr  += in_stride;
+      out_ptr += out_stride;
    }
 }
 
-static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
-        unsigned height, uint64_t frame_count,
-        unsigned pitch, const char *msg, video_frame_info_t *video_info)
+static void sdl_dingux_blit_frame32(uint32_t* dst, uint32_t* src,
+      unsigned width, unsigned height,
+      unsigned dst_pitch, unsigned src_pitch)
+{
+   uint32_t *in_ptr    = src;
+   uint32_t *out_ptr   = dst;
+   /* 32 bit - divide pitch by 4 */
+   uint32_t in_stride  = (uint32_t)(src_pitch >> 2);
+   uint32_t out_stride = (uint32_t)(dst_pitch >> 2);
+   size_t y;
+
+   for (y = 0; y < height; y++)
+   {
+      memcpy(out_ptr, in_ptr, width * sizeof(uint32_t));
+      in_ptr  += in_stride;
+      out_ptr += out_stride;
+   }
+}
+
+static bool sdl_dingux_gfx_frame(void *data, const void *frame,
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 #ifdef HAVE_MENU
@@ -180,8 +439,13 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
    if (unlikely(!frame))
       return true;
 
-   if (unlikely((vid->screen->w != width || vid->screen->h != height) && !vid->menu_active))
-      sdl_dingux_set_output(vid, width, height, pitch, vid->rgb);
+   /* Update video mode if width/height have changed */
+   if (unlikely(
+         ((vid->screen->w != width) ||
+          (vid->screen->h != height)) &&
+               !vid->menu_active))
+      sdl_dingux_set_output(vid, width, height,
+            pitch, vid->rgb32);
 
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
@@ -189,21 +453,65 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (likely(!vid->menu_active))
    {
-      blit((uint32_t*)vid->screen->pixels,
-            (uint32_t*)frame,
-            vid->rgb ? width : width/2, height, pitch);
-      if (unlikely(vid->was_in_menu))
-         vid->was_in_menu = false;
+      /* Must always lock SDL surface before
+       * manipulating raw pixel buffer */
+      if (SDL_MUSTLOCK(vid->screen))
+         SDL_LockSurface(vid->screen);
+
+      /* Blit frame to SDL surface */
+      if (vid->rgb32)
+         sdl_dingux_blit_frame32(
+               (uint32_t*)vid->screen->pixels,
+               (uint32_t*)frame,
+               width, height,
+               vid->screen->pitch, pitch);
+      else
+         sdl_dingux_blit_frame16(
+               (uint16_t*)vid->screen->pixels,
+               (uint16_t*)frame,
+               width, height,
+               vid->screen->pitch, pitch);
+
+      vid->was_in_menu = false;
    }
    else
    {
+      /* If this is the first frame that the menu
+       * is active, update video mode */
       if (!vid->was_in_menu)
       {
-         sdl_dingux_set_output(vid, 320, 240, 320*2, false);
+         sdl_dingux_set_output(vid,
+               SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT,
+               SDL_DINGUX_MENU_WIDTH * sizeof(uint16_t), false);
+
          vid->was_in_menu = true;
       }
-      memcpy(vid->screen->pixels, vid->menu_frame, 320*240*2);
+
+      if (SDL_MUSTLOCK(vid->screen))
+         SDL_LockSurface(vid->screen);
+
+      /* Fast copy of menu texture to SDL surface */
+      memcpy(vid->screen->pixels, vid->menu_texture,
+            SDL_DINGUX_MENU_WIDTH * SDL_DINGUX_MENU_HEIGHT * sizeof(uint16_t));
    }
+
+   /* Print OSD text, if required */
+   if (msg)
+   {
+      /* If menu is active, colour depth is overriden
+       * to 16 bit */
+      if (vid->rgb32 && !vid->menu_active)
+         sdl_dingux_blit_text32(vid, FONT_WIDTH_STRIDE,
+               vid->screen->h - (FONT_HEIGHT + FONT_WIDTH_STRIDE), msg);
+      else
+         sdl_dingux_blit_text16(vid, FONT_WIDTH_STRIDE,
+               vid->screen->h - (FONT_HEIGHT + FONT_WIDTH_STRIDE), msg);
+   }
+
+   /* Pixel manipulation complete - unlock
+    * SDL surface */
+   if (SDL_MUSTLOCK(vid->screen))
+      SDL_UnlockSurface(vid->screen);
 
    SDL_Flip(vid->screen);
 
@@ -222,14 +530,36 @@ static void sdl_dingux_set_texture_enable(void *data, bool state, bool full_scre
 static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
 
-    int len = width * height * 2;
-    memcpy(vid->menu_frame, frame, len);
+   if (unlikely(
+         rgb32 ||
+         (width > SDL_DINGUX_MENU_WIDTH) ||
+         (height > SDL_DINGUX_MENU_HEIGHT)))
+      return;
+
+   memcpy(vid->menu_texture, frame, width * height * sizeof(uint16_t));
 }
 
+static void sdl_dingux_gfx_set_nonblock_state(void *data, bool toggle,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
+{
+   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   bool vsync              = !toggle;
 
-static void sdl_dingux_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+   if (!vid || !vid->screen)
+      return;
+
+   /* Check whether vsync status has changed */
+   if (vid->vsync != vsync)
+   {
+      vid->vsync = vsync;
+
+      /* Update video mode */
+      sdl_dingux_set_output(vid, vid->screen->w, vid->screen->h,
+            vid->screen->pitch, vid->rgb32);
+   }
+}
 
 static void sdl_dingux_gfx_check_window(sdl_dingux_video_t *vid)
 {
@@ -249,26 +579,48 @@ static void sdl_dingux_gfx_check_window(sdl_dingux_video_t *vid)
 static bool sdl_dingux_gfx_alive(void *data)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+
    sdl_dingux_gfx_check_window(vid);
    return !vid->quitting;
 }
 
-static bool sdl_dingux_gfx_focus(void *data) { return true; }
-static bool sdl_dingux_gfx_suppress_screensaver(void *data, bool enable) { return false; }
-static bool sdl_dingux_gfx_has_windowed(void *data) { return false; }
+static bool sdl_dingux_gfx_focus(void *data)
+{
+   return true;
+}
+
+static bool sdl_dingux_gfx_suppress_screensaver(void *data, bool enable)
+{
+   return false;
+}
+
+static bool sdl_dingux_gfx_has_windowed(void *data)
+{
+   return false;
+}
 
 static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+
    vp->x      = 0;
    vp->y      = 0;
    vp->width  = vp->full_width  = vid->screen->w;
    vp->height = vp->full_height = vid->screen->h;
 }
 
-static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling) { }
-static void sdl_dingux_apply_state_changes(void *data) { }
-static uint32_t sdl_dingux_get_flags(void *data) { return 0; }
+static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
+{
+}
+
+static void sdl_dingux_apply_state_changes(void *data)
+{
+}
+
+static uint32_t sdl_dingux_get_flags(void *data)
+{
+   return 0;
+}
 
 static const video_poke_interface_t sdl_dingux_poke_interface = {
    sdl_dingux_get_flags,
@@ -287,16 +639,23 @@ static const video_poke_interface_t sdl_dingux_poke_interface = {
    sdl_dingux_set_texture_frame,
    sdl_dingux_set_texture_enable,
    NULL,
-   NULL,//sdl_show_mouse,
-   NULL,//sdl_grab_mouse_toggle,
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL, /* sdl_show_mouse */
+   NULL, /* sdl_grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL  /* get_hw_render_interface */
 };
 
-static void sdl_dingux_get_poke_interface(void *data, const video_poke_interface_t **iface) { *iface = &sdl_dingux_poke_interface; }
+static void sdl_dingux_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   *iface = &sdl_dingux_poke_interface;
+}
+
 static bool sdl_dingux_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path) { return false; }
+      enum rarch_shader_type type, const char *path)
+{
+   return false;
+}
 
 video_driver_t video_sdl_dingux = {
    sdl_dingux_gfx_init,

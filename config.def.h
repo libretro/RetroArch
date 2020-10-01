@@ -177,8 +177,9 @@
 
 /* To start in Fullscreen, or not. */
 
-#ifdef HAVE_STEAM
-/* Start in fullscreen mode for Steam build */
+#if defined(HAVE_STEAM) || defined(DINGUX)
+/* Start in fullscreen mode for Steam and
+ * Dingux builds */
 #define DEFAULT_FULLSCREEN true
 #else
 #define DEFAULT_FULLSCREEN false
@@ -199,8 +200,13 @@
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
+#if defined(DINGUX)
+#define DEFAULT_FULLSCREEN_X 320
+#define DEFAULT_FULLSCREEN_Y 240
+#else
 #define DEFAULT_FULLSCREEN_X 0
 #define DEFAULT_FULLSCREEN_Y 0
+#endif
 
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
@@ -353,6 +359,12 @@
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_4_3
 #else
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
+#endif
+
+#if defined(DINGUX)
+/* Enables aspect ratio correction (1:1 PAR) when
+ * using the IPU hardware scaler in Dingux devices */
+#define DEFAULT_DINGUX_IPU_KEEP_ASPECT true
 #endif
 
 /* Save configuration file on exit. */

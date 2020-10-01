@@ -2996,6 +2996,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
    "aspect_ratio_index"
    )
+#if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "video_dingux_ipu_keep_aspect"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
    "video_black_frame_insertion"
@@ -3015,6 +3021,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FILTER,
    "video_filter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE,
+   "video_filter_remove"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FILTER_DIR,
