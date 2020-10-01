@@ -148,7 +148,9 @@ static float gfx_display_get_adjusted_scale_internal(
 #endif
 
    /* Ensure final scale is 'sane' */
-   return (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
+   if (adjusted_scale <= 0.0001f)
+      return 1.0f;
+   return adjusted_scale;
 }
 
 /* Check if the current menu driver is compatible
