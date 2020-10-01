@@ -1213,9 +1213,6 @@ void gfx_display_draw_cursor(
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   if (!cursor_visible)
-      return;
-
    coords.vertices      = 4;
    coords.vertex        = NULL;
    coords.tex_coord     = NULL;

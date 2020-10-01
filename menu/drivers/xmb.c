@@ -5281,18 +5281,19 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          && menu_mouse_enable;
 
       gfx_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
-      gfx_display_draw_cursor(
-            userdata,
-            video_width,
-            video_height,
-            cursor_visible,
-            &coord_white[0],
-            xmb->cursor_size,
-            xmb->textures.list[XMB_TEXTURE_POINTER],
-            xmb->pointer.x,
-            xmb->pointer.y,
-            video_width,
-            video_height);
+      if (cursor_visible)
+         gfx_display_draw_cursor(
+               userdata,
+               video_width,
+               video_height,
+               cursor_visible,
+               &coord_white[0],
+               xmb->cursor_size,
+               xmb->textures.list[XMB_TEXTURE_POINTER],
+               xmb->pointer.x,
+               xmb->pointer.y,
+               video_width,
+               video_height);
    }
 
    video_driver_set_viewport(video_width, video_height, false, true);

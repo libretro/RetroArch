@@ -6796,18 +6796,19 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       bool cursor_visible   = video_fullscreen 
          && menu_mouse_enable;
 
-      gfx_display_draw_cursor(
-            userdata,
-            video_width,
-            video_height,
-            cursor_visible,
-            color_white,
-            mui->cursor_size,
-            mui->textures.list[MUI_TEXTURE_POINTER],
-            mui->pointer.x,
-            mui->pointer.y,
-            video_width,
-            video_height);
+      if (cursor_visible)
+         gfx_display_draw_cursor(
+               userdata,
+               video_width,
+               video_height,
+               cursor_visible,
+               color_white,
+               mui->cursor_size,
+               mui->textures.list[MUI_TEXTURE_POINTER],
+               mui->pointer.x,
+               mui->pointer.y,
+               video_width,
+               video_height);
    }
 
    /* Undo any transparency adjustments caused

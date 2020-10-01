@@ -3034,18 +3034,19 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 
       gfx_display_set_alpha(stripes_coord_white, MIN(stripes->alpha, 1.00f));
 
-      gfx_display_draw_cursor(
-            userdata,
-            video_width,
-            video_height,
-            cursor_visible,
-            &stripes_coord_white[0],
-            stripes->cursor_size,
-            stripes->textures.list[STRIPES_TEXTURE_POINTER],
-            pointer.x,
-            pointer.y,
-            video_width,
-            video_height);
+      if (cursor_visible)
+         gfx_display_draw_cursor(
+               userdata,
+               video_width,
+               video_height,
+               cursor_visible,
+               &stripes_coord_white[0],
+               stripes->cursor_size,
+               stripes->textures.list[STRIPES_TEXTURE_POINTER],
+               pointer.x,
+               pointer.y,
+               video_width,
+               video_height);
    }
 
    video_driver_set_viewport(video_width, video_height, false, true);
