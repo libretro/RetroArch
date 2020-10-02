@@ -51,14 +51,9 @@ typedef struct gfx_widget_leaderboard_display_state gfx_widget_leaderboard_displ
 
 static gfx_widget_leaderboard_display_state_t p_w_leaderboard_display_st;
 
-static gfx_widget_leaderboard_display_state_t* gfx_widget_leaderboard_display_get_ptr(void)
-{
-   return &p_w_leaderboard_display_st;
-}
-
 static bool gfx_widget_leaderboard_display_init(bool video_is_threaded, bool fullscreen)
 {
-   gfx_widget_leaderboard_display_state_t* state = gfx_widget_leaderboard_display_get_ptr();
+   gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
    memset(state, 0, sizeof(*state));
 
    return true;
@@ -71,7 +66,7 @@ static void gfx_widget_leaderboard_display_free_all(gfx_widget_leaderboard_displ
 
 static void gfx_widget_leaderboard_display_free(void)
 {
-   gfx_widget_leaderboard_display_state_t* state = gfx_widget_leaderboard_display_get_ptr();
+   gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
    gfx_widget_leaderboard_display_free_all(state);
 
@@ -83,14 +78,14 @@ static void gfx_widget_leaderboard_display_free(void)
 
 static void gfx_widget_leaderboard_display_context_destroy(void)
 {
-   gfx_widget_leaderboard_display_state_t* state = gfx_widget_leaderboard_display_get_ptr();
+   gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
    gfx_widget_leaderboard_display_free_all(state);
 }
 
 static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 {
-   gfx_widget_leaderboard_display_state_t* state = gfx_widget_leaderboard_display_get_ptr();
+   gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
    /* if there's nothing to display, just bail */
    if (state->count == 0)
@@ -146,8 +141,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 {
-   gfx_widget_leaderboard_display_state_t* state = gfx_widget_leaderboard_display_get_ptr();
    int i;
+   gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
    SLOCK_LOCK(state->array_lock);
 

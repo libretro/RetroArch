@@ -92,11 +92,6 @@ static gfx_widget_progress_message_state_t p_w_progress_message_st = {
    false,                              /* active */
 };
 
-gfx_widget_progress_message_state_t *gfx_widget_progress_message_get_ptr(void)
-{
-   return &p_w_progress_message_st;
-}
-
 /* Callbacks */
 
 static void gfx_widget_progress_message_fadeout_cb(void *userdata)
@@ -133,7 +128,7 @@ void gfx_widget_set_progress_message(void *data,
 {
    gfx_timer_ctx_entry_t timer;
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
-   gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
 
@@ -184,7 +179,7 @@ static void gfx_widget_progress_message_layout(
 {
    float bar_padding;
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
-   gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    unsigned last_video_width                  = p_dispwidget->last_video_width;
    unsigned last_video_height                 = p_dispwidget->last_video_height;
    unsigned widget_padding                    = p_dispwidget->simple_widget_padding;
@@ -221,7 +216,7 @@ static void gfx_widget_progress_message_layout(
 
 static void gfx_widget_progress_message_frame(void *data, void *user_data)
 {
-   gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
 
    if (state->active)
    {
@@ -316,7 +311,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
 
 static void gfx_widget_progress_message_free(void)
 {
-   gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
 
    /* Kill any existing timer / animation */

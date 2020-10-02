@@ -81,11 +81,6 @@ static gfx_widget_volume_state_t p_w_volume_st = {
    false
 };
 
-gfx_widget_volume_state_t* gfx_widget_volume_get_ptr(void)
-{
-   return &p_w_volume_st;
-}
-
 static void gfx_widget_volume_frame(void* data, void *user_data)
 {
    static float pure_white[16]             = {
@@ -94,7 +89,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
    };
-   gfx_widget_volume_state_t* state        = gfx_widget_volume_get_ptr();
+   gfx_widget_volume_state_t *state        = &p_w_volume_st;
 
    if (state->alpha > 0.0f)
    {
@@ -274,8 +269,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
 
 static void gfx_widget_volume_timer_end(void *userdata)
 {
-   gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
    gfx_animation_ctx_entry_t entry;
+   gfx_widget_volume_state_t *state = &p_w_volume_st;
 
    entry.cb             = NULL;
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
@@ -294,8 +289,8 @@ static void gfx_widget_volume_timer_end(void *userdata)
 
 void gfx_widget_volume_update_and_show(float new_volume, bool mute)
 {
-   gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
    gfx_timer_ctx_entry_t entry;
+   gfx_widget_volume_state_t *state = &p_w_volume_st;
 
    gfx_animation_kill_by_tag(&state->tag);
 
@@ -317,7 +312,7 @@ static void gfx_widget_volume_layout(
       bool is_threaded, const char *dir_assets, char *font_path)
 {
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
-   gfx_widget_volume_state_t* state     = gfx_widget_volume_get_ptr();
+   gfx_widget_volume_state_t *state     = &p_w_volume_st;
    unsigned last_video_width            = p_dispwidget->last_video_width;
    gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
 
@@ -339,8 +334,8 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
       char* menu_png_path,
       char* widgets_png_path)
 {
-   gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
    size_t i;
+   gfx_widget_volume_state_t *state     = &p_w_volume_st;
 
    for (i = 0; i < ICON_LAST; i++)
       gfx_display_reset_textures_list(ICONS_NAMES[i], menu_png_path, &state->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
@@ -348,8 +343,8 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
 
 static void gfx_widget_volume_context_destroy(void)
 {
-   gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
    size_t i;
+   gfx_widget_volume_state_t *state     = &p_w_volume_st;
 
    for (i = 0; i < ICON_LAST; i++)
       video_driver_texture_unload(&state->textures[i]);
@@ -357,7 +352,7 @@ static void gfx_widget_volume_context_destroy(void)
 
 static void gfx_widget_volume_free(void)
 {
-   gfx_widget_volume_state_t* state = gfx_widget_volume_get_ptr();
+   gfx_widget_volume_state_t *state     = &p_w_volume_st;
 
    /* Kill all running animations */
    gfx_animation_kill_by_tag(&state->tag);

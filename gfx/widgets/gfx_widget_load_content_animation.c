@@ -158,16 +158,11 @@ static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st =
    false                               /* has_icon */
 };
 
-gfx_widget_load_content_animation_state_t *gfx_widget_load_content_animation_get_ptr(void)
-{
-   return &p_w_load_content_animation_st;
-}
-
 /* Utilities */
 
 static void gfx_widget_load_content_animation_reset(void)
 {
-   gfx_widget_load_content_animation_state_t *state = gfx_widget_load_content_animation_get_ptr();
+   gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
    uintptr_t alpha_tag                              = (uintptr_t)&state->alpha;
    uintptr_t slide_offset_tag                       = (uintptr_t)&state->slide_offset;
 
@@ -197,7 +192,7 @@ static void gfx_widget_load_content_animation_reset(void)
 
 static void gfx_widget_load_content_animation_load_icon(void)
 {
-   gfx_widget_load_content_animation_state_t *state = gfx_widget_load_content_animation_get_ptr();
+   gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    /* In all cases, unload any existing icon texture */
    if (state->icon_texture)
@@ -282,7 +277,7 @@ static void gfx_widget_load_content_animation_fade_in_cb(void *userdata)
 
 bool gfx_widget_start_load_content_animation(void)
 {
-   gfx_widget_load_content_animation_state_t *state = gfx_widget_load_content_animation_get_ptr();
+   gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    const char *content_path                         = path_get(RARCH_PATH_CONTENT);
    const char *core_path                            = path_get(RARCH_PATH_CORE);
@@ -525,7 +520,7 @@ static void gfx_widget_load_content_animation_layout(
       bool is_threaded, const char *dir_assets, char *font_path)
 {
    dispgfx_widget_t *p_dispwidget                   = (dispgfx_widget_t*)data;
-   gfx_widget_load_content_animation_state_t *state = gfx_widget_load_content_animation_get_ptr();
+   gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    unsigned last_video_width                        = p_dispwidget->last_video_width;
    unsigned last_video_height                       = p_dispwidget->last_video_height;
@@ -578,7 +573,7 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
-   gfx_widget_load_content_animation_state_t *state = gfx_widget_load_content_animation_get_ptr();
+   gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    if (state->status == GFX_WIDGET_LOAD_CONTENT_BEGIN)
    {
@@ -644,7 +639,7 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
 
 static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 {
-   gfx_widget_load_content_animation_state_t *state = gfx_widget_load_content_animation_get_ptr();
+   gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    if (state->status != GFX_WIDGET_LOAD_CONTENT_IDLE)
    {
@@ -934,7 +929,7 @@ static void gfx_widget_load_content_animation_context_reset(
       char* menu_png_path,
       char* widgets_png_path)
 {
-   gfx_widget_load_content_animation_state_t *state = gfx_widget_load_content_animation_get_ptr();
+   gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    /* Cache icon directory */
    if (string_is_empty(menu_png_path))
@@ -951,7 +946,7 @@ static void gfx_widget_load_content_animation_context_reset(
 
 static void gfx_widget_load_content_animation_context_destroy(void)
 {
-   gfx_widget_load_content_animation_state_t *state = gfx_widget_load_content_animation_get_ptr();
+   gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    /* Unload any icon texture */
    if (state->icon_texture)
