@@ -211,7 +211,7 @@ int ssl_socket_connect(void *state_data,
    if (socket_connect(state->fd, data, timeout_enable))
       return -1;
 
-   while (true)
+   for (;;)
    {
       if (!process_inner(state, true))
          return -1;
@@ -258,7 +258,7 @@ int ssl_socket_receive_all_blocking(void *state_data,
 
    socket_set_block(state->fd, true);
 
-   while (true)
+   for (;;)
    {
       bear_data = br_ssl_engine_recvapp_buf(&state->sc.eng, &bear_data_size);
       if (bear_data_size > size) bear_data_size = size;
@@ -284,7 +284,7 @@ int ssl_socket_send_all_blocking(void *state_data,
 
    socket_set_block(state->fd, true);
 
-   while (true)
+   for (;;)
    {
       bear_data = br_ssl_engine_sendapp_buf(&state->sc.eng, &bear_data_size);
       if (bear_data_size > size) bear_data_size = size;
@@ -294,8 +294,10 @@ int ssl_socket_send_all_blocking(void *state_data,
       data += bear_data_size;
       size -= bear_data_size;
 
-      if (size) process_inner(state, true);
-      else break;
+      if (size)
+         process_inner(state, true);
+      else
+         break;
    }
 
    br_ssl_engine_flush(&state->sc.eng, false);
