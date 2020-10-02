@@ -97,9 +97,14 @@ static void ozone_draw_cursor_slice(
    unsigned slice_new_h  = height + 20 * scale_factor;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   static float last_alpha           = 0.0f;
 
-   gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
-   gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
+   if (alpha != last_alpha)
+   {
+      gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
+      gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
+      last_alpha = alpha;
+   }
 
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
@@ -149,8 +154,14 @@ static void ozone_draw_cursor_fallback(
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
-   gfx_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
-   gfx_display_set_alpha(ozone->theme_dynamic.selection, alpha);
+   static float last_alpha           = 0.0f;
+
+   if (alpha != last_alpha)
+   {
+      gfx_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
+      gfx_display_set_alpha(ozone->theme_dynamic.selection, alpha);
+      last_alpha = alpha;
+   }
 
    /* Fill */
    gfx_display_draw_quad(
@@ -326,9 +337,16 @@ void ozone_draw_backdrop(
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
    };
+   static float last_alpha           = 0.0f;
+
    /* TODO: Replace this backdrop by a blur shader 
     * on the whole screen if available */
-   gfx_display_set_alpha(ozone_backdrop, alpha);
+   if (alpha != last_alpha)
+   {
+      gfx_display_set_alpha(ozone_backdrop, alpha);
+      last_alpha = alpha;
+   }
+
    gfx_display_draw_quad(
          userdata,
          video_width,
