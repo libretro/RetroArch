@@ -1201,6 +1201,9 @@ void gfx_display_draw_cursor(
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
+   if (!dispctx)
+      return;
+
    coords.vertices      = 4;
    coords.vertex        = NULL;
    coords.tex_coord     = NULL;
@@ -1217,15 +1220,12 @@ void gfx_display_draw_cursor(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
-   if (dispctx)
-   {
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      if (dispctx->draw)
-         dispctx->draw(&draw, userdata, video_width, video_height);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
-   }
+   if (dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
+   if (dispctx->draw)
+      dispctx->draw(&draw, userdata, video_width, video_height);
+   if (dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
 void gfx_display_push_quad(
