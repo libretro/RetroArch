@@ -489,6 +489,10 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    struct video_shader *video_shader = NULL;
    const char *pathData              = NULL;
    enum rarch_shader_type type       = RARCH_SHADER_NONE;
+#if !defined(HAVE_MENU)
+   settings_t *settings              = config_get_ptr();
+   const char *path_dir_video_shader = settings->paths.directory_video_shader;
+#endif
 
    getShaders(&menu_shader, &video_shader);
 
@@ -512,7 +516,11 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    path       = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
+#if defined(HAVE_MENU)
          menu_driver_get_last_shader_preset_dir(),
+#else
+         path_dir_video_shader,
+#endif
          filter);
 
    if (path.isEmpty())
@@ -522,8 +530,10 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    pathData   = pathArray.constData();
    type       = video_shader_parse_type(pathData);
 
+#if defined(HAVE_MENU)
    /* Cache selected shader parent directory */
    menu_driver_set_last_shader_preset_dir(pathData);
+#endif
 
    menu_shader_manager_set_preset(menu_shader, type, pathData, true);
 }
@@ -630,6 +640,10 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    struct video_shader *video_shader     = NULL;
    struct video_shader_pass *shader_pass = NULL;
    const char *pathData                  = NULL;
+#if !defined(HAVE_MENU)
+   settings_t *settings                  = config_get_ptr();
+   const char *path_dir_video_shader     = settings->paths.directory_video_shader;
+#endif
 
    getShaders(&menu_shader, &video_shader);
 
@@ -654,7 +668,11 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    path = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
+#if defined(HAVE_MENU)
          menu_driver_get_last_shader_pass_dir(),
+#else
+         path_dir_video_shader,
+#endif
          filter);
 
    if (path.isEmpty())
@@ -684,8 +702,10 @@ void ShaderParamsDialog::onShaderAddPassClicked()
          pathData,
          sizeof(shader_pass->source.path));
 
+#if defined(HAVE_MENU)
    /* Cache selected shader parent directory */
    menu_driver_set_last_shader_pass_dir(pathData);
+#endif
 
    video_shader_resolve_parameters(NULL, menu_shader);
 
@@ -955,7 +975,9 @@ void ShaderParamsDialog::buildLayout()
 {
    unsigned i;
    bool hasPasses                           = false;
+#if defined(HAVE_MENU)
    CheckableSettingsGroup *topSettingsGroup = NULL;
+#endif
    QPushButton *loadButton                  = NULL;
    QPushButton *saveButton                  = NULL;
    QPushButton *removeButton                = NULL;
@@ -1094,9 +1116,11 @@ void ShaderParamsDialog::buildLayout()
 
    connect(applyButton, SIGNAL(clicked()), this, SLOT(onShaderApplyClicked()));
 
+#if defined(HAVE_MENU)
    topSettingsGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE);
    topSettingsGroup->add(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES);
    topSettingsGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR);
+#endif
 
    topButtonLayout = new QHBoxLayout();
    topButtonLayout->addWidget(loadButton);
@@ -1105,7 +1129,9 @@ void ShaderParamsDialog::buildLayout()
    topButtonLayout->addWidget(removePassButton);
    topButtonLayout->addWidget(applyButton);
 
+#if defined(HAVE_MENU)
    m_layout->addWidget(topSettingsGroup);
+#endif
    m_layout->addLayout(topButtonLayout);
 
    /* NOTE: We assume that parameters are always grouped in order by the pass number, e.g., all parameters for pass 0 come first, then params for pass 1, etc. */
