@@ -7361,6 +7361,10 @@ unsigned menu_displaylist_build_list(
             if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;

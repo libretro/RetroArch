@@ -35,6 +35,10 @@ bool dingux_ipu_set_downscaling_enable(bool enable);
  * image to the full screen dimensions) */
 bool dingux_ipu_set_aspect_ratio_enable(bool enable);
 
+/* Enables/disables integer scaling when
+ * when using the IPU hardware scaler */
+bool dingux_ipu_set_integer_scaling_enable(bool enable);
+
 /* Fetches internal battery level */
 int dingux_get_battery_level(void);
 

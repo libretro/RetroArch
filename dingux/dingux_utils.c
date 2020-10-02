@@ -22,6 +22,7 @@
 
 #define DINGUX_ALLOW_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/allow_downscaling"
 #define DINGUX_KEEP_ASPECT_RATIO_FILE "/sys/devices/platform/jz-lcd.0/keep_aspect_ratio"
+#define DINGUX_INTEGER_SCALING_FILE   "/sys/devices/platform/jz-lcd.0/integer_scaling"
 #define DINGUX_BATTERY_CAPACITY_FILE  "/sys/class/power_supply/battery/capacity"
 
 /* Enables/disables downscaling when using
@@ -47,6 +48,22 @@ bool dingux_ipu_set_downscaling_enable(bool enable)
 bool dingux_ipu_set_aspect_ratio_enable(bool enable)
 {
    const char *path       = DINGUX_KEEP_ASPECT_RATIO_FILE;
+   const char *enable_str = enable ? "1" : "0";
+
+   /* Check whether file exists */
+   if (!path_is_valid(path))
+      return false;
+
+   /* Write enable state to file */
+   return filestream_write_file(
+         path, enable_str, 1);
+}
+
+/* Enables/disables integer scaling when
+ * when using the IPU hardware scaler */
+bool dingux_ipu_set_integer_scaling_enable(bool enable)
+{
+   const char *path       = DINGUX_INTEGER_SCALING_FILE;
    const char *enable_str = enable ? "1" : "0";
 
    /* Check whether file exists */
