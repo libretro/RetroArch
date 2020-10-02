@@ -47,17 +47,6 @@
 /* TODO/FIXME - global state - perhaps move outside this file */
 static float msg_queue_background[16]                    =
 COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f);
-static float msg_queue_info[16]                          =
-COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
-
-/* Color of first progress bar in a task message */
-static float msg_queue_task_progress_1[16]               = 
-COLOR_HEX_TO_FLOAT(0x397869, 1.0f);
-
-/* Color of second progress bar in a task message 
- * (for multiple tasks with same message) */
-static float msg_queue_task_progress_2[16]               = 
-COLOR_HEX_TO_FLOAT(0x317198, 1.0f);
 
 static float gfx_widgets_pure_white[16]                  = {
       1.00, 1.00, 1.00, 1.00,
@@ -1102,6 +1091,13 @@ static void gfx_widgets_draw_task_msg(
       unsigned video_width,
       unsigned video_height)
 {
+   /* Color of first progress bar in a task message */
+   static float msg_queue_task_progress_1[16]               = 
+      COLOR_HEX_TO_FLOAT(0x397869, 1.0f);
+   /* Color of second progress bar in a task message 
+    * (for multiple tasks with same message) */
+   static float msg_queue_task_progress_2[16]               = 
+      COLOR_HEX_TO_FLOAT(0x317198, 1.0f);
    unsigned text_color;
    unsigned bar_width;
 
@@ -1275,6 +1271,8 @@ static void gfx_widgets_draw_regular_msg(
       unsigned video_width,
       unsigned video_height)
 {
+   static float msg_queue_info[16]                          =
+      COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
    unsigned bar_width;
    unsigned text_color;
    uintptr_t icon = p_dispwidget->gfx_widgets_icons_textures[
