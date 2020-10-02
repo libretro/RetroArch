@@ -744,51 +744,50 @@ void gfx_display_draw_polygon(
       unsigned width, unsigned height,
       float *color)
 {
+   float vertex[8];
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (width == 0 || height == 0)
       return;
+   if (!dispctx)
+      return;
 
-   if (dispctx)
-   {
-      float vertex[8];
-      gfx_display_ctx_draw_t draw;
-      struct video_coords coords;
-      vertex[0]             = x1 / (float)width;
-      vertex[1]             = y1 / (float)height;
-      vertex[2]             = x2 / (float)width;
-      vertex[3]             = y2 / (float)height;
-      vertex[4]             = x3 / (float)width;
-      vertex[5]             = y3 / (float)height;
-      vertex[6]             = x4 / (float)width;
-      vertex[7]             = y4 / (float)height;
+   vertex[0]             = x1 / (float)width;
+   vertex[1]             = y1 / (float)height;
+   vertex[2]             = x2 / (float)width;
+   vertex[3]             = y2 / (float)height;
+   vertex[4]             = x3 / (float)width;
+   vertex[5]             = y3 / (float)height;
+   vertex[6]             = x4 / (float)width;
+   vertex[7]             = y4 / (float)height;
 
-      coords.vertices      = 4;
-      coords.vertex        = &vertex[0];
-      coords.tex_coord     = NULL;
-      coords.lut_tex_coord = NULL;
-      coords.color         = color;
+   coords.vertices       = 4;
+   coords.vertex         = &vertex[0];
+   coords.tex_coord      = NULL;
+   coords.lut_tex_coord  = NULL;
+   coords.color          = color;
 
-      draw.x            = 0;
-      draw.y            = 0;
-      draw.width        = width;
-      draw.height       = height;
-      draw.coords       = &coords;
-      draw.matrix_data  = NULL;
-      draw.texture      = gfx_display_white_texture;
-      draw.prim_type    = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-      draw.pipeline_id  = 0;
-      draw.scale_factor = 1.0f;
-      draw.rotation     = 0.0f;
+   draw.x                = 0;
+   draw.y                = 0;
+   draw.width            = width;
+   draw.height           = height;
+   draw.coords           = &coords;
+   draw.matrix_data      = NULL;
+   draw.texture          = gfx_display_white_texture;
+   draw.prim_type        = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline_id      = 0;
+   draw.scale_factor     = 1.0f;
+   draw.rotation         = 0.0f;
 
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      if (dispctx->draw)
-         dispctx->draw(&draw, userdata, video_width, video_height);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
-   }
+   if (dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
+   if (dispctx->draw)
+      dispctx->draw(&draw, userdata, video_width, video_height);
+   if (dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
 static void gfx_display_draw_texture(
