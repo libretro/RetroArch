@@ -155,6 +155,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                dispctx->blend_begin(video_info->userdata);
             gfx_widgets_draw_icon(
                video_info->userdata,
+               p_disp,
                video_width,
                video_height,
                state->height,
@@ -173,6 +174,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       {
          gfx_widgets_draw_icon(
             video_info->userdata,
+            p_disp,
             video_width,
             video_height,
             state->height,

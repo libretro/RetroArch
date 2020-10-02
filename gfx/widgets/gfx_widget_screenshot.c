@@ -208,6 +208,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    unsigned video_width                 = video_info->width;
    unsigned video_height                = video_info->height;
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
+   gfx_display_t            *p_disp     = disp_get_ptr();
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
    int padding                          = (state->height - (font_regular->line_height * 2.0f)) / 2.0f;
@@ -231,6 +232,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       gfx_display_set_alpha(pure_white, 1.0f);
       gfx_widgets_draw_icon(
             userdata,
+            p_disp,
             video_width,
             video_height,
             state->thumbnail_width,

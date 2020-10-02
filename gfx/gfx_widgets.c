@@ -528,6 +528,7 @@ static void gfx_widgets_msg_queue_kill(
 
 void gfx_widgets_draw_icon(
       void *userdata,
+      void *data_disp,
       unsigned video_width,
       unsigned video_height,
       unsigned icon_width,
@@ -541,7 +542,7 @@ void gfx_widgets_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_t            *p_disp  = (gfx_display_t*)data_disp;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!texture)
@@ -1051,6 +1052,7 @@ static int gfx_widgets_draw_indicator(
          dispctx->blend_begin(userdata);
       gfx_widgets_draw_icon(
             userdata,
+            p_disp,
             video_width,
             video_height,
             width, height,
@@ -1190,6 +1192,7 @@ static void gfx_widgets_draw_task_msg(
       dispctx->blend_begin(userdata);
    gfx_widgets_draw_icon(
          userdata,
+         p_disp,
          video_width,
          video_height,
          p_dispwidget->msg_queue_height / 2,
@@ -1307,6 +1310,7 @@ static void gfx_widgets_draw_regular_msg(
        * and prevent alignment issues, don't remove it */
       gfx_widgets_draw_icon(
             userdata,
+            p_disp,
             video_width,
             video_height,
             p_dispwidget->msg_queue_icon_size_x,
@@ -1366,6 +1370,7 @@ static void gfx_widgets_draw_regular_msg(
 
       gfx_widgets_draw_icon(
             userdata,
+            p_disp,
             video_width,
             video_height,
             p_dispwidget->msg_queue_icon_size_x,
@@ -1377,6 +1382,7 @@ static void gfx_widgets_draw_regular_msg(
 
       gfx_widgets_draw_icon(
             userdata,
+            p_disp,
             video_width,
             video_height,
             p_dispwidget->msg_queue_icon_size_x,
@@ -1388,6 +1394,7 @@ static void gfx_widgets_draw_regular_msg(
 
       gfx_widgets_draw_icon(
             userdata,
+            p_disp,
             video_width,
             video_height,
             p_dispwidget->msg_queue_internal_icon_size, p_dispwidget->msg_queue_internal_icon_size,

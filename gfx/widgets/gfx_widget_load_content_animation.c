@@ -796,6 +796,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
             gfx_widgets_draw_icon(
                   userdata,
+                  p_disp,
                   video_width,
                   video_height,
                   state->icon_size,
