@@ -61,6 +61,7 @@ typedef struct sdl_dingux_video
    bool font_lut[SDL_DINGUX_NUM_FONT_GLYPHS][FONT_WIDTH * FONT_HEIGHT];
    bool rgb32;
    bool vsync;
+   bool integer_scaling;
    bool menu_active;
    bool was_in_menu;
    bool quitting;
@@ -268,9 +269,11 @@ static void sdl_dingux_gfx_free(void *data)
 
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
-   /* It is good manners to leave IPU aspect
-    * ratio scaling enabled when shutting down */
+   /* It is good manners to leave IPU scaling
+    * parameters in the default state when
+    * shutting down */
    dingux_ipu_set_aspect_ratio_enable(true);
+   dingux_ipu_set_integer_scaling_enable(false);
 
    free(vid);
 }
@@ -281,6 +284,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    sdl_dingux_video_t *vid         = NULL;
    settings_t *settings            = config_get_ptr();
    bool ipu_keep_aspect            = settings->bools.video_dingux_ipu_keep_aspect;
+   bool ipu_integer_scaling        = settings->bools.video_scale_integer;
    const char *input_joypad_driver = settings->arrays.input_joypad_driver;
    uint32_t surface_flags          = (video->vsync) ?
          (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
@@ -288,6 +292,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    dingux_ipu_set_downscaling_enable(true);
    dingux_ipu_set_aspect_ratio_enable(ipu_keep_aspect);
+   dingux_ipu_set_integer_scaling_enable(ipu_integer_scaling);
 
    if (SDL_WasInit(0) == 0)
    {
@@ -327,10 +332,11 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
       goto error;
    }
 
-   vid->vsync       = video->vsync;
-   vid->rgb32       = video->rgb32;
-   vid->menu_active = false;
-   vid->was_in_menu = false;
+   vid->rgb32           = video->rgb32;
+   vid->vsync           = video->vsync;
+   vid->integer_scaling = ipu_integer_scaling;
+   vid->menu_active     = false;
+   vid->was_in_menu     = false;
 
    SDL_ShowCursor(SDL_DISABLE);
 
@@ -615,6 +621,19 @@ static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bo
 
 static void sdl_dingux_apply_state_changes(void *data)
 {
+   sdl_dingux_video_t *vid  = (sdl_dingux_video_t*)data;
+   settings_t *settings     = config_get_ptr();
+   bool ipu_integer_scaling = (settings) ? settings->bools.video_scale_integer : false;
+
+   if (!vid || !settings)
+      return;
+
+   /* Update integer scaling state, if required */
+   if (vid->integer_scaling != ipu_integer_scaling)
+   {
+      dingux_ipu_set_integer_scaling_enable(ipu_integer_scaling);
+      vid->integer_scaling = ipu_integer_scaling;
+   }
 }
 
 static uint32_t sdl_dingux_get_flags(void *data)
