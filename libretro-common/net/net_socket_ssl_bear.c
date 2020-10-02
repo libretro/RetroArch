@@ -24,8 +24,11 @@
 #include <net/net_socket.h>
 #include <encodings/base64.h>
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
+
 #include "../../deps/bearssl-0.6/inc/bearssl.h"
 
+/* TODO/FIXME - static global variables */
 static br_x509_trust_anchor TAs[500] = {};
 static size_t TAs_NUM = 0;
 
@@ -113,16 +116,17 @@ static void append_certs_pem_x509(char * certs_pem)
    void * cert_bin;
    int cert_bin_len;
    
-   while (true)
+   for (;;)
    {
       cert = strstr(cert_end, "-----BEGIN CERTIFICATE-----");
-      if (!cert) break;
-      cert += strlen("-----BEGIN CERTIFICATE-----");
-      cert_end = strstr(cert, "-----END CERTIFICATE-----");
-      
+      if (!cert)
+         break;
+      cert     += STRLEN_CONST("-----BEGIN CERTIFICATE-----");
+      cert_end  = strstr(cert, "-----END CERTIFICATE-----");
+
       *cert_end = '\0';
       cert = delete_linebreaks(cert);
-      
+
       cert_bin = unbase64(cert, cert_end-cert, &cert_bin_len);
       append_cert_x509(cert_bin, cert_bin_len);
       free(cert_bin);
