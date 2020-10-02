@@ -449,9 +449,7 @@ public slots:
    void reloadPlaylists();
    void deferReloadPlaylists();
    void onGotReloadPlaylists();
-#ifdef HAVE_MENU
    void onGotReloadShaderParams();
-#endif
    void onGotReloadCoreOptions();
    void showWelcomeScreen();
    void onIconViewClicked();
@@ -467,9 +465,7 @@ public slots:
    void updateRetroArchNightly();
    void onUpdateRetroArchFinished(bool success);
    void onThumbnailPackExtractFinished(bool success);
-#ifdef HAVE_MENU
    void deferReloadShaderParams();
-#endif
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
    void downloadAllThumbnails(QString system, QUrl url = QUrl());
    void downloadPlaylistThumbnails(QString playlistPath);
@@ -501,9 +497,7 @@ private slots:
    void onStopClicked();
    void onZoomValueChanged(int value);
    void onPlaylistFilesDropped(QStringList files);
-#ifdef HAVE_MENU
    void onShaderParamsClicked();
-#endif
    void onCoreOptionsClicked();
    void onShowErrorMessage(QString msg);
    void onShowInfoMessage(QString msg);
