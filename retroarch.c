@@ -18912,15 +18912,19 @@ static bool dynamic_verify_hw_context(
          if (!string_is_equal(video_ident, "vulkan"))
             return false;
          break;
+#if defined(HAVE_OPENGL_CORE)
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         if (!string_is_equal(video_ident, "glcore"))
+            return false;
+         break;
+#else
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+#endif
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
       case RETRO_HW_CONTEXT_OPENGL:
          if (!string_is_equal(video_ident, "gl"))
-            return false;
-         break;
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
-         if (!string_is_equal(video_ident, "glcore"))
             return false;
          break;
       case RETRO_HW_CONTEXT_DIRECT3D:
@@ -31611,6 +31615,9 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    switch (type)
    {
       case RETRO_HW_CONTEXT_OPENGL:
+#ifndef HAVE_OPENGL_CORE
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+#endif
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
