@@ -695,44 +695,42 @@ void gfx_display_draw_quad(
       unsigned width, unsigned height,
       float *color)
 {
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
    gfx_display_t            
       *p_disp              = disp_get_ptr();
    gfx_display_ctx_driver_t 
       *dispctx             = p_disp->dispctx;
 
-   if (dispctx)
-   {
-      gfx_display_ctx_draw_t draw;
-      struct video_coords coords;
+   if (w == 0 || h == 0)
+      return;
+   if (!dispctx)
+      return;
 
-      coords.vertices      = 4;
-      coords.vertex        = NULL;
-      coords.tex_coord     = NULL;
-      coords.lut_tex_coord = NULL;
-      coords.color         = color;
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = color;
 
-      draw.x               = x;
-      draw.y               = (int)height - y - (int)h;
-      draw.width           = w;
-      draw.height          = h;
-      draw.coords          = &coords;
-      draw.matrix_data     = NULL;
-      draw.texture         = gfx_display_white_texture;
-      draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-      draw.pipeline_id     = 0;
-      draw.scale_factor    = 1.0f;
-      draw.rotation        = 0.0f;
+   draw.x               = x;
+   draw.y               = (int)height - y - (int)h;
+   draw.width           = w;
+   draw.height          = h;
+   draw.coords          = &coords;
+   draw.matrix_data     = NULL;
+   draw.texture         = gfx_display_white_texture;
+   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline_id     = 0;
+   draw.scale_factor    = 1.0f;
+   draw.rotation        = 0.0f;
 
-      if (draw.height > 0 && draw.width > 0)
-      {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(data);
-         if (dispctx->draw)
-            dispctx->draw(&draw, data, video_width, video_height);
-         if (dispctx->blend_end)
-            dispctx->blend_end(data);
-      }
-   }
+   if (dispctx->blend_begin)
+      dispctx->blend_begin(data);
+   if (dispctx->draw)
+      dispctx->draw(&draw, data, video_width, video_height);
+   if (dispctx->blend_end)
+      dispctx->blend_end(data);
 }
 
 void gfx_display_draw_polygon(
@@ -748,6 +746,9 @@ void gfx_display_draw_polygon(
 {
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+
+   if (width == 0 || height == 0)
+      return;
 
    if (dispctx)
    {
@@ -781,15 +782,12 @@ void gfx_display_draw_polygon(
       draw.scale_factor = 1.0f;
       draw.rotation     = 0.0f;
 
-      if (draw.height > 0 && draw.width > 0)
-      {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-         if (dispctx->draw)
-            dispctx->draw(&draw, userdata, video_width, video_height);
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
-      }
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (dispctx->draw)
+         dispctx->draw(&draw, userdata, video_width, video_height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
 
@@ -805,6 +803,11 @@ static void gfx_display_draw_texture(
       gfx_display_ctx_draw_t *draw
       )
 {
+   if (w == 0 || h == 0)
+      return;
+   if (!dispctx || !dispctx->draw)
+      return;
+
    draw->width              = w;
    draw->height             = h;
    draw->prim_type          = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
@@ -813,9 +816,7 @@ static void gfx_display_draw_texture(
    draw->x                  = x;
    draw->y                  = height - y;
 
-   if (dispctx && dispctx->draw)
-      if (draw->width > 0 && draw->height > 0)
-         dispctx->draw(draw, userdata, video_width, video_height);
+   dispctx->draw(draw, userdata, video_width, video_height);
 }
 
 /* Draw the texture split into 9 sections, without scaling the corners.
@@ -909,6 +910,11 @@ void gfx_display_draw_texture_slice(
    float norm_x                 = x / (float)width;
    float norm_y                 = (height - y) / (float)height;
 
+   if (width == 0 || height == 0)
+      return;
+   if (!dispctx || !dispctx->draw)
+      return;
+
    /* the four vertices of the top-left corner of the image,
     * used as a starting point for all the other sections */
    V_BL[0] = norm_x;
@@ -977,9 +983,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1];
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 
    /* top-middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1000,9 +1004,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1];
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 
    /* top-right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1023,9 +1025,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width + tex_woff;
    tex_coord[7] = T_TR[1];
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 
    /* middle-left section */
    vert_coord[0] = V_BL[0];
@@ -1046,9 +1046,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 
    /* center section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1069,9 +1067,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 
    /* middle-right section */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1092,9 +1088,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 
    /* bottom-left corner */
    vert_coord[0] = V_BL[0];
@@ -1115,9 +1109,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 
    /* bottom-middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1138,9 +1130,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 
    /* bottom-right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1161,9 +1151,7 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   if (dispctx && dispctx->draw)
-      if (draw.width > 0 && draw.height > 0)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+   dispctx->draw(&draw, userdata, video_width, video_height);
 }
 
 void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw, void *data)
