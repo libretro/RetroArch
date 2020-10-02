@@ -323,6 +323,7 @@ void gfx_widget_volume_update_and_show(float new_volume,
 
 void gfx_widgets_iterate(
       void *data,
+      void *data_disp,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded);

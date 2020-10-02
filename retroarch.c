@@ -39313,6 +39313,7 @@ static enum runloop_state runloop_check_state(
       RUNLOOP_MSG_QUEUE_LOCK();
       gfx_widgets_iterate(
             &p_rarch->dispwidget_st,
+            &p_rarch->dispgfx,
             p_rarch->video_driver_width,
             p_rarch->video_driver_height,
             video_is_fullscreen,

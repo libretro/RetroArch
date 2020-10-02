@@ -890,6 +890,7 @@ static void gfx_widgets_layout(
 
 void gfx_widgets_iterate(
       void *data,
+      void *data_disp,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
@@ -900,7 +901,7 @@ void gfx_widgets_iterate(
     * factor have changed */
    float scale_factor               = 0.0f;
 #ifdef HAVE_XMB
-   gfx_display_t *p_disp            = disp_get_ptr();
+   gfx_display_t *p_disp            = (gfx_display_t*)data_disp;
    enum menu_driver_id_type type    = p_disp->menu_driver_id;
    if (type == MENU_DRIVER_ID_XMB)
       scale_factor                  = gfx_display_get_widget_pixel_scale(width, height, fullscreen);
