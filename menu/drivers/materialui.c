@@ -3224,7 +3224,8 @@ static bool materialui_render_process_entry_playlist_desktop(
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
-   bool is_selected  = (entry_idx == selection);
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+   bool is_selected                   = (entry_idx == selection);
    /* We want to load (and keep in memory)
     * thumbnails for the currently selected
     * entry *and* the last entry for which
@@ -3302,7 +3303,7 @@ static bool materialui_render_process_entry_playlist_desktop(
                   runtime_date_separator       =
                         (enum playlist_sublabel_last_played_date_separator_type)
                               settings->uints.menu_timedate_date_separator;
-            float fade_duration                = gfx_thumbnail_get_fade_duration();
+            float fade_duration                = p_gfx_thumb->fade_duration;
             const struct playlist_entry *entry = NULL;
             const char *core_name              = NULL;
             const char *runtime_str            = NULL;
@@ -5997,6 +5998,7 @@ static void materialui_hide_fullscreen_thumbnails(
       materialui_handle_t *mui, bool animate)
 {
    uintptr_t alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -6009,7 +6011,7 @@ static void materialui_hide_fullscreen_thumbnails(
       /* Configure fade out animation */
       animation_entry.easing_enum  = EASING_OUT_QUAD;
       animation_entry.tag          = alpha_tag;
-      animation_entry.duration     = gfx_thumbnail_get_fade_duration();
+      animation_entry.duration     = p_gfx_thumb->fade_duration;
       animation_entry.target_value = 0.0f;
       animation_entry.subject      = &mui->fullscreen_thumbnail_alpha;
       animation_entry.cb           = NULL;
@@ -6038,6 +6040,7 @@ static void materialui_show_fullscreen_thumbnails(
    uintptr_t                  alpha_tag = (uintptr_t)
       &mui->fullscreen_thumbnail_alpha;
    const char *thumbnail_label          = NULL;
+   gfx_thumbnail_state_t *p_gfx_thumb   = gfx_thumb_get_ptr();
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -6104,7 +6107,7 @@ static void materialui_show_fullscreen_thumbnails(
    /* Configure fade in animation */
    animation_entry.easing_enum  = EASING_OUT_QUAD;
    animation_entry.tag          = alpha_tag;
-   animation_entry.duration     = gfx_thumbnail_get_fade_duration();
+   animation_entry.duration     = p_gfx_thumb->fade_duration;
    animation_entry.target_value = 1.0f;
    animation_entry.subject      = &mui->fullscreen_thumbnail_alpha;
    animation_entry.cb           = NULL;
@@ -10292,9 +10295,10 @@ static void materialui_get_thumbnail_system(void *userdata, char *s, size_t len)
 
 static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
-   materialui_handle_t *mui = (materialui_handle_t*)userdata;
-   size_t selection         = menu_navigation_get_selection();
-   bool refresh_enabled     = false;
+   materialui_handle_t *mui           = (materialui_handle_t*)userdata;
+   size_t selection                   = menu_navigation_get_selection();
+   bool refresh_enabled               = false;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    if (!mui)
       return;
@@ -10318,7 +10322,7 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
    {
       file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
       materialui_node_t *node = NULL;
-      float stream_delay      = gfx_thumbnail_get_stream_delay();
+      float stream_delay      = p_gfx_thumb->stream_delay;
 
       if (!list)
          return;

@@ -144,18 +144,6 @@ void gfx_thumbnail_set_fade_duration(float duration);
  *   any 'thumbnail unavailable' notifications */
 void gfx_thumbnail_set_fade_missing(bool fade_missing);
 
-/* Getters */
-
-/* Fetches current streaming thumbnails request delay */
-float gfx_thumbnail_get_stream_delay(void);
-
-/* Fetches current 'fade in' animation duration */
-float gfx_thumbnail_get_fade_duration(void);
-
-/* Fetches current enable state for missing
- * thumbnail 'fade in' animations */
-bool gfx_thumbnail_get_fade_missing(bool fade_missing);
-
 /* Core interface */
 
 /* When called, prevents the handling of any pending

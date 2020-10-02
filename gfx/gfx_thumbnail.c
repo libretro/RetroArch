@@ -82,33 +82,6 @@ void gfx_thumbnail_set_fade_missing(bool fade_missing)
    p_gfx_thumb->fade_missing = fade_missing;
 }
 
-/* Getters */
-
-/* Fetches current streaming thumbnails request delay */
-float gfx_thumbnail_get_stream_delay(void)
-{
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
-
-   return p_gfx_thumb->stream_delay;
-}
-
-/* Fetches current 'fade in' animation duration */
-float gfx_thumbnail_get_fade_duration(void)
-{
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
-
-   return p_gfx_thumb->fade_duration;
-}
-
-/* Fetches current enable state for missing
- * thumbnail 'fade in' animations */
-bool gfx_thumbnail_get_fade_missing(bool fade_missing)
-{
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
-
-   return p_gfx_thumb->fade_missing;
-}
-
 /* Callbacks */
 
 /* Fade animation callback - simply resets thumbnail

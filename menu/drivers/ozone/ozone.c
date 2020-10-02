@@ -3782,8 +3782,9 @@ void ozone_font_flush(
 
 void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate)
 {
-   uintptr_t alpha_tag = (uintptr_t)
+   uintptr_t alpha_tag                = (uintptr_t)
       &ozone->animations.fullscreen_thumbnail_alpha;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -3796,7 +3797,7 @@ void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate)
       /* Configure fade out animation */
       animation_entry.easing_enum  = EASING_OUT_QUAD;
       animation_entry.tag          = alpha_tag;
-      animation_entry.duration     = gfx_thumbnail_get_fade_duration();
+      animation_entry.duration     = p_gfx_thumb->fade_duration;
       animation_entry.target_value = 0.0f;
       animation_entry.subject      = &ozone->animations.fullscreen_thumbnail_alpha;
       animation_entry.cb           = NULL;
@@ -3817,10 +3818,11 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
 {
    menu_entry_t selected_entry;
    gfx_animation_ctx_entry_t animation_entry;
-   const char *thumbnail_label      = NULL;
-   file_list_t *selection_buf       = menu_entries_get_selection_buf_ptr(0);
-   uintptr_t alpha_tag              = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
-   uintptr_t scroll_tag             = (uintptr_t)selection_buf;
+   const char *thumbnail_label        = NULL;
+   file_list_t *selection_buf         = menu_entries_get_selection_buf_ptr(0);
+   uintptr_t alpha_tag                = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
+   uintptr_t scroll_tag               = (uintptr_t)selection_buf;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -3904,7 +3906,7 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    /* Configure fade in animation */
    animation_entry.easing_enum  = EASING_OUT_QUAD;
    animation_entry.tag          = alpha_tag;
-   animation_entry.duration     = gfx_thumbnail_get_fade_duration();
+   animation_entry.duration     = p_gfx_thumb->fade_duration;
    animation_entry.target_value = 1.0f;
    animation_entry.subject      = &ozone->animations.fullscreen_thumbnail_alpha;
    animation_entry.cb           = NULL;
@@ -3920,8 +3922,10 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
 
 void ozone_toggle_metadata_override(ozone_handle_t *ozone)
 {
-   uintptr_t alpha_tag = (uintptr_t)&ozone->animations.left_thumbnail_alpha;
    gfx_animation_ctx_entry_t animation_entry;
+   uintptr_t alpha_tag                = (uintptr_t)
+      &ozone->animations.left_thumbnail_alpha;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -3929,7 +3933,7 @@ void ozone_toggle_metadata_override(ozone_handle_t *ozone)
    /* Set common animation parameters */
    animation_entry.easing_enum = EASING_OUT_QUAD;
    animation_entry.tag         = alpha_tag;
-   animation_entry.duration    = gfx_thumbnail_get_fade_duration();
+   animation_entry.duration    = p_gfx_thumb->fade_duration;
    animation_entry.subject     = &ozone->animations.left_thumbnail_alpha;
    animation_entry.cb          = NULL;
    animation_entry.userdata    = NULL;
