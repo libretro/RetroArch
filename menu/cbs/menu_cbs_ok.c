@@ -5880,20 +5880,14 @@ int action_cb_push_dropdown_item_resolution(const char *path,
    unsigned height      = 0;
    unsigned refreshrate = 0;
 
-   (void)label;
-   (void)type;
-   (void)idx;
-   (void)entry_idx;
-
-   snprintf(str, sizeof(str), "%s", path);
-
-   pch = strtok(str, "x");
+   strlcpy(str, path, sizeof(str));
+   pch            = strtok(str, "x");
    if (pch)
-      width = (unsigned)strtoul(pch, NULL, 0);
-   pch = strtok(NULL, " ");
+      width       = (unsigned)strtoul(pch, NULL, 0);
+   pch            = strtok(NULL, " ");
    if (pch)
-      height = (unsigned)strtoul(pch, NULL, 0);
-   pch = strtok(NULL, "(");
+      height      = (unsigned)strtoul(pch, NULL, 0);
+   pch            = strtok(NULL, "(");
    if (pch)
       refreshrate = (unsigned)strtoul(pch, NULL, 0);
 
@@ -5922,11 +5916,11 @@ static int action_ok_push_dropdown_item_video_shader_num_pass(const char *path,
    if (!shader)
       return menu_cbs_exit();
 
-   shader->passes             = idx;
+   shader->passes              = idx;
 
    video_shader_resolve_parameters(NULL, shader);
 
-   shader->modified           = true;
+   shader->modified            = true;
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 #else
@@ -5948,8 +5942,9 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev = &shader_info.data->parameters[entry_idx - offset];
-   param_menu = shader ? &shader->parameters [entry_idx - offset] : NULL;
+   param_prev    = &shader_info.data->parameters[entry_idx - offset];
+   if (shader)
+      param_menu = &shader->parameters [entry_idx - offset];
 
    if (!param_prev || !param_menu)
       return menu_cbs_exit();
@@ -5968,14 +5963,17 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 static int action_ok_push_dropdown_item_video_shader_param(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_push_dropdown_item_video_shader_param_generic(path, label, type,
+   return action_ok_push_dropdown_item_video_shader_param_generic(
+         path, label, type,
          idx, entry_idx, MENU_SETTINGS_SHADER_PARAMETER_0);
 }
 
-static int action_ok_push_dropdown_item_video_shader_preset_param(const char *path,
+static int action_ok_push_dropdown_item_video_shader_preset_param(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_push_dropdown_item_video_shader_param_generic(path, label, type,
+   return action_ok_push_dropdown_item_video_shader_param_generic(
+         path, label, type,
          idx, entry_idx, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 
@@ -5992,7 +5990,8 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
    return 0;
 }
 
-static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
+static int action_ok_push_dropdown_item_playlist_default_core(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    core_info_list_t *core_info_list = NULL;
@@ -6059,7 +6058,8 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(
 {
    playlist_t *playlist = playlist_get_cached();
 
-   playlist_set_label_display_mode(playlist, (enum playlist_label_display_mode)idx);
+   playlist_set_label_display_mode(playlist,
+         (enum playlist_label_display_mode)idx);
 
    /* In all cases, update file on disk */
    playlist_write_file(playlist);
@@ -6067,7 +6067,8 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int generic_set_thumbnail_mode(enum playlist_thumbnail_id thumbnail_id, size_t idx)
+static int generic_set_thumbnail_mode(
+      enum playlist_thumbnail_id thumbnail_id, size_t idx)
 {
    playlist_t *playlist = playlist_get_cached();
 
@@ -6081,13 +6082,15 @@ static int generic_set_thumbnail_mode(enum playlist_thumbnail_id thumbnail_id, s
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_item_playlist_right_thumbnail_mode(const char *path,
+static int action_ok_push_dropdown_item_playlist_right_thumbnail_mode(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_set_thumbnail_mode(PLAYLIST_THUMBNAIL_RIGHT, idx);
 }
 
-static int action_ok_push_dropdown_item_playlist_left_thumbnail_mode(const char *path,
+static int action_ok_push_dropdown_item_playlist_left_thumbnail_mode(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_set_thumbnail_mode(PLAYLIST_THUMBNAIL_LEFT, idx);
@@ -6105,7 +6108,8 @@ static int action_ok_push_dropdown_item_playlist_sort_mode(
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_item_manual_content_scan_system_name(const char *path,
+static int action_ok_push_dropdown_item_manual_content_scan_system_name(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char* system_name                                    = path;
@@ -6183,8 +6187,10 @@ static int action_ok_push_dropdown_item_input_description(const char *path,
       return menu_cbs_exit();
 
    /* Determine user/button indices */
-   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) 
+      / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) 
+      - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
    if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return menu_cbs_exit();
@@ -6195,7 +6201,8 @@ static int action_ok_push_dropdown_item_input_description(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_item_input_description_kbd(const char *path,
+static int action_ok_push_dropdown_item_input_description_kbd(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned key_id      = (unsigned)entry_idx;
@@ -6210,8 +6217,10 @@ static int action_ok_push_dropdown_item_input_description_kbd(const char *path,
       return menu_cbs_exit();
 
    /* Determine user/button indices */
-   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
-   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) 
+      / RARCH_FIRST_CUSTOM_BIND;
+   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) 
+      - RARCH_FIRST_CUSTOM_BIND * user_idx;
 
    if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return menu_cbs_exit();
@@ -6340,7 +6349,8 @@ static int action_ok_load_archive_detect_core(const char *path,
    return ret;
 }
 
-static int action_ok_help_send_debug_info(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+static int action_ok_help_send_debug_info(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    command_event(CMD_EVENT_SEND_DEBUG_INFO, NULL);
    return 0;
@@ -6388,7 +6398,8 @@ static int action_ok_video_resolution(const char *path,
          snprintf(msg, sizeof(msg),
                "Applying: %dx%d\n START to reset",
                width, height);
-      runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    return 0;
@@ -6450,7 +6461,8 @@ static int action_ok_shader_parameter_dropdown_box_list(const char *path,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PARAMETER);
 }
 
-static int action_ok_shader_preset_parameter_dropdown_box_list(const char *path,
+static int action_ok_shader_preset_parameter_dropdown_box_list(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_dropdown_box_list(idx, 
@@ -6471,7 +6483,8 @@ static int action_ok_manual_content_scan_core_name(const char *path,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME);
 }
 
-static int action_ok_video_shader_num_passes_dropdown_box_list(const char *path,
+static int action_ok_video_shader_num_passes_dropdown_box_list(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_dropdown_box_list(idx, 
@@ -6493,7 +6506,8 @@ static int action_ok_input_description_dropdown_box_list(const char *path,
       ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION);
 }
 
-static int action_ok_input_description_kbd_dropdown_box_list(const char *path,
+static int action_ok_input_description_kbd_dropdown_box_list(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_displaylist_push(
@@ -6699,7 +6713,8 @@ static int action_ok_netplay_enable_client(const char *path,
    }
    else
    {
-      line.label         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
+      line.label         = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
       line.label_setting = "no_setting";
       line.type          = 0;
       line.idx           = 0;
@@ -6719,10 +6734,8 @@ static int action_ok_netplay_disconnect(const char *path,
    generic_action_ok_command(CMD_EVENT_NETPLAY_DISCONNECT);
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
-
 #else
    return -1;
-
 #endif
 }
 
