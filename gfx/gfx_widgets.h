@@ -209,6 +209,7 @@ typedef struct dispgfx_widget
    unsigned divider_width_1px;
 
    float last_scale_factor;
+   float backdrop_orig[16];
 #ifdef HAVE_TRANSLATE
    unsigned ai_service_overlay_width;
    unsigned ai_service_overlay_height;
@@ -267,8 +268,6 @@ struct gfx_widget
     * -> draw the widget here */
    void (*frame)(void* data, void *userdata);
 };
-
-float* gfx_widgets_get_backdrop_orig(void);
 
 float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,

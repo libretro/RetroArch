@@ -55,13 +55,6 @@ static float gfx_widgets_pure_white[16]                  = {
       1.00, 1.00, 1.00, 1.00,
 };
 
-static float gfx_widgets_backdrop_orig[16]               = {
-   0.00, 0.00, 0.00, 0.75,
-   0.00, 0.00, 0.00, 0.75,
-   0.00, 0.00, 0.00, 0.75,
-   0.00, 0.00, 0.00, 0.75,
-};
-
 /* Icons */
 static const char 
 *gfx_widgets_icons_names[MENU_WIDGETS_ICON_LAST]         = {
@@ -85,11 +78,6 @@ static void INLINE gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 
    font_data->font        = NULL;
    font_data->usage_count = 0;
-}
-
-float *gfx_widgets_get_backdrop_orig(void)
-{
-   return gfx_widgets_backdrop_orig;
 }
 
 /* Widgets list */
@@ -1020,7 +1008,7 @@ static int gfx_widgets_draw_indicator(
 {
    unsigned width;
 
-   gfx_display_set_alpha(gfx_widgets_backdrop_orig, DEFAULT_BACKDROP);
+   gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
    if (icon)
    {
@@ -1032,7 +1020,7 @@ static int gfx_widgets_draw_indicator(
          top_right_x_advance - width, y,
          width, height,
          video_width, video_height,
-         gfx_widgets_backdrop_orig
+         p_dispwidget->backdrop_orig
       );
 
       gfx_display_set_alpha(gfx_widgets_pure_white, 1.0f);
@@ -1065,7 +1053,7 @@ static int gfx_widgets_draw_indicator(
             top_right_x_advance - width, y,
             width, height,
             video_width, video_height,
-            gfx_widgets_backdrop_orig
+            p_dispwidget->backdrop_orig
       );
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
@@ -1554,7 +1542,7 @@ void gfx_widgets_frame(void *data)
        * not bleed off the edge of the screen */
       status_text_x         = (status_text_x < 0) ? 0 : status_text_x;
 
-      gfx_display_set_alpha(gfx_widgets_backdrop_orig, DEFAULT_BACKDROP);
+      gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
       gfx_display_draw_quad(userdata,
             video_width,
@@ -1564,7 +1552,7 @@ void gfx_widgets_frame(void *data)
             p_dispwidget->simple_widget_height,
             video_width,
             video_height,
-            gfx_widgets_backdrop_orig
+            p_dispwidget->backdrop_orig
             );
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
@@ -1908,6 +1896,7 @@ bool gfx_widgets_init(uintptr_t widgets_active_ptr,
 
    if (!gfx_display_init_first_driver(video_is_threaded))
       goto error;
+   gfx_display_set_alpha(p_dispwidget->backdrop_orig, 0.75f);
 
    if (!p_dispwidget->widgets_inited)
    {

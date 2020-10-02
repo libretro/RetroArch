@@ -232,7 +232,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       unsigned video_height                = video_info->height;
       void *userdata                       = video_info->userdata;
 
-      float *backdrop_color                = gfx_widgets_get_backdrop_orig();
+      float *backdrop_color                = p_dispwidget->backdrop_orig;
       unsigned text_color                  = COLOR_TEXT_ALPHA(0xFFFFFFFF, (unsigned)(state->alpha * 255.0f));
 
       gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;

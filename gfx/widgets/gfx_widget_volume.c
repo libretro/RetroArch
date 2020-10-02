@@ -110,7 +110,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
 
       unsigned padding                     = p_dispwidget->simple_widget_padding;
 
-      float* backdrop_orig                 = gfx_widgets_get_backdrop_orig();
+      float* backdrop_orig                 = p_dispwidget->backdrop_orig;
 
       uintptr_t volume_icon                = 0;
       unsigned icon_size                   = state->textures[ICON_MED] ? state->widget_height : padding;

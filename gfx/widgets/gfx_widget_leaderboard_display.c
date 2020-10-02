@@ -113,7 +113,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       unsigned x;
       int i;
 
-      gfx_display_set_alpha(gfx_widgets_get_backdrop_orig(), DEFAULT_BACKDROP);
+      gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
 
       for (i = 0; i < state->count; ++i)
@@ -127,7 +127,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             video_width, video_height,
             (int)x, (int)y, widget_width, widget_height,
             video_width, video_height,
-            gfx_widgets_get_backdrop_orig());
+            p_dispwidget->backdrop_orig);
 
          /* Text */
          gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,

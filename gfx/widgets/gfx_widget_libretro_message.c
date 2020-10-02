@@ -351,7 +351,7 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 
       gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;
       size_t msg_queue_size                  = p_dispwidget->current_msgs_size;
-      float *bg_color                        = gfx_widgets_get_backdrop_orig();
+      float *bg_color                        = p_dispwidget->backdrop_orig;
       float bg_alpha;
       float bg_y;
 

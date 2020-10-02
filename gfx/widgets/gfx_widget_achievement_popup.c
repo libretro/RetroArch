@@ -133,7 +133,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 
       int scissor_me_timbers = 0;
 
-      gfx_display_set_alpha(gfx_widgets_get_backdrop_orig(), DEFAULT_BACKDROP);
+      gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
 
       /* Default icon */
@@ -146,7 +146,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             state->height,
             state->height,
             video_width, video_height,
-            gfx_widgets_get_backdrop_orig());
+            p_dispwidget->backdrop_orig);
 
          /* Icon */
          if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
@@ -209,7 +209,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          state->height,
          video_width,
          video_height,
-         gfx_widgets_get_backdrop_orig());
+         p_dispwidget->backdrop_orig);
 
       /* Title */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,

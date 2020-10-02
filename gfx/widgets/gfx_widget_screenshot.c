@@ -219,14 +219,14 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       char shotname[256];
       gfx_animation_ctx_ticker_t ticker;
 
-      gfx_display_set_alpha(gfx_widgets_get_backdrop_orig(), DEFAULT_BACKDROP);
+      gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
       gfx_display_draw_quad(userdata,
             video_width, video_height,
             0, state->y,
             state->width, state->height,
             video_width, video_height,
-            gfx_widgets_get_backdrop_orig()
+            p_dispwidget->backdrop_orig
             );
 
       gfx_display_set_alpha(pure_white, 1.0f);
