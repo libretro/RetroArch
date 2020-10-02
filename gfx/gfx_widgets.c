@@ -1277,11 +1277,16 @@ static void gfx_widgets_draw_regular_msg(
    unsigned text_color;
    uintptr_t icon = p_dispwidget->gfx_widgets_icons_textures[
       MENU_WIDGETS_ICON_INFO]; /* TODO: Real icon logic here */
+   static float last_alpha = 0.0f;
 
-   /* Icon */
-   gfx_display_set_alpha(msg_queue_info, msg->alpha);
-   gfx_display_set_alpha(gfx_widgets_pure_white, msg->alpha);
-   gfx_display_set_alpha(msg_queue_background, msg->alpha);
+   if (last_alpha != msg->alpha)
+   {
+      /* Icon */
+      gfx_display_set_alpha(msg_queue_info, msg->alpha);
+      gfx_display_set_alpha(gfx_widgets_pure_white, msg->alpha);
+      gfx_display_set_alpha(msg_queue_background, msg->alpha);
+      last_alpha = msg->alpha;
+   }
 
    if (!msg->unfolded || msg->unfolding)
    {
