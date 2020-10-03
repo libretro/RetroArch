@@ -94,7 +94,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
    static uint8_t ubo_scratch_data[768];
    static float t                   = 0.0f;
    gfx_display_t *p_disp            = disp_get_ptr();
-   float yflip                      = 0.0f;
+   float yflip                      = 1.0f;
    static struct video_coords blank_coords;
    float output_size[2];
    video_coord_array_t *ca          = NULL;
@@ -122,7 +122,6 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
          draw->backend_data_size          = 2 * sizeof(float);
 
          /* Match UBO layout in shader. */
-         yflip = 1.0f;
          memcpy(ubo_scratch_data, &t, sizeof(t));
          memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
          break;
@@ -146,8 +145,6 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
          /* Shader uses FragCoord, need to fix up. */
          if (draw->pipeline_id == VIDEO_SHADER_MENU_5)
             yflip = -1.0f;
-         else
-            yflip = 1.0f;
 
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
                + 2 * sizeof(float), &t, sizeof(t));
@@ -194,14 +191,14 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color                       = &vk_colors[0];
 
-   vk->vk_vp.x        = draw->x;
-   vk->vk_vp.y        = vk->context->swapchain_height - draw->y - draw->height;
-   vk->vk_vp.width    = draw->width;
-   vk->vk_vp.height   = draw->height;
-   vk->vk_vp.minDepth = 0.0f;
-   vk->vk_vp.maxDepth = 1.0f;
+   vk->vk_vp.x                    = draw->x;
+   vk->vk_vp.y                    = vk->context->swapchain_height - draw->y - draw->height;
+   vk->vk_vp.width                = draw->width;
+   vk->vk_vp.height               = draw->height;
+   vk->vk_vp.minDepth             = 0.0f;
+   vk->vk_vp.maxDepth             = 1.0f;
 
-   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vk->tracker.dirty             |= VULKAN_DIRTY_DYNAMIC_BIT;
 
    /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
     * an interleaved model to begin with ... */
