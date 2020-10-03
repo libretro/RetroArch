@@ -301,13 +301,9 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
       return NULL;
 
    if (latency < 8)
-      latency = 8; /* Do not allow shenanigans. */
+      latency  = 8; /* Do not allow shenanigans. */
 
-   bufsize = latency * rate / 1000;
-
-   RARCH_LOG("[XAudio2]: Requesting %u ms latency, using %d ms latency.\n",
-         latency, (int)bufsize * 1000 / rate);
-
+   bufsize     = latency * rate / 1000;
    xa->bufsize = bufsize * 2 * sizeof(float);
 
    xa->xa = xaudio2_new(rate, 2, xa->bufsize, device);
@@ -318,12 +314,15 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
       return NULL;
    }
 
+   RARCH_LOG("[XAudio2]: Requesting %u ms latency, using %d ms latency.\n",
+         latency, (int)bufsize * 1000 / rate);
+
    return xa;
 }
 
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
-   unsigned bytes;
+   unsigned bytes        = size;
    xa_t *xa              = (xa_t*)data;
    xaudio2_t *handle     = xa->xa;
    const uint8_t *buffer = (const uint8_t*)buf;
@@ -335,10 +334,8 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
       if (avail == 0)
          return 0;
       if (avail < size)
-         size = avail;
+         bytes = size = avail;
    }
-
-   bytes = size;
 
    while (bytes)
    {
