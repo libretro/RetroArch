@@ -50,6 +50,7 @@ enum gfx_widget_load_content_animation_status
 
 struct gfx_widget_load_content_animation_state
 {
+   gfx_display_t *p_disp;
    uintptr_t icon_texture;
    unsigned bg_shadow_height;
    unsigned margin_shadow_width;
@@ -105,7 +106,7 @@ struct gfx_widget_load_content_animation_state
 typedef struct gfx_widget_load_content_animation_state gfx_widget_load_content_animation_state_t;
 
 static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st = {
-
+   NULL,                               /* p_disp */
    0,                                  /* icon_texture */
    0,                                  /* bg_shadow_height */
    0,                                  /* margin_shadow_width */
@@ -659,7 +660,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
       gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
       gfx_widget_font_data_t *font_bold    = &p_dispwidget->gfx_widget_fonts.bold;
       size_t msg_queue_size                = p_dispwidget->current_msgs_size;
-      gfx_display_t            *p_disp     = disp_get_ptr();
+      gfx_display_t            *p_disp     = state->p_disp;
       gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
 
 #ifdef HAVE_MENU
@@ -963,10 +964,20 @@ static void gfx_widget_load_content_animation_free(void)
    gfx_widget_load_content_animation_reset();
 }
 
+static bool gfx_widget_load_content_animation_init(
+      bool video_is_threaded, bool fullscreen)
+{
+   gfx_widget_load_content_animation_state_t *state = 
+      &p_w_load_content_animation_st;
+
+   state->p_disp = disp_get_ptr();
+
+   return NULL;
+}
 /* Widget definition */
 
 const gfx_widget_t gfx_widget_load_content_animation = {
-   NULL, /* init */
+   gfx_widget_load_content_animation_init,
    gfx_widget_load_content_animation_free,
    gfx_widget_load_content_animation_context_reset,
    gfx_widget_load_content_animation_context_destroy,
