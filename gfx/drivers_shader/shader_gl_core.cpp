@@ -2247,7 +2247,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             param->initial = meta_param.initial;
             param->minimum = meta_param.minimum;
             param->maximum = meta_param.maximum;
-            param->step = meta_param.step;
+            param->step    = meta_param.step;
             chain->add_parameter(i, shader->num_parameters, meta_param.id);
             shader->num_parameters++;
          }
@@ -2281,8 +2281,8 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             ? GLSLANG_FILTER_CHAIN_LINEAR 
             : GLSLANG_FILTER_CHAIN_NEAREST;
       }
-      pass_info.address    = rarch_wrap_to_address(pass->wrap);
-      pass_info.max_levels = 1;
+      pass_info.address       = rarch_wrap_to_address(pass->wrap);
+      pass_info.max_levels    = 1;
 
       /* TODO: Expose max_levels in slangp.
        * CGP format is a bit awkward in that it uses mipmap_input,
@@ -2291,7 +2291,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
 
-      pass_info.mip_filter = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
+      pass_info.mip_filter    = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
          ? GLSLANG_FILTER_CHAIN_LINEAR 
          : GLSLANG_FILTER_CHAIN_NEAREST;
 
@@ -2303,18 +2303,23 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
 
       if (!pass->fbo.valid)
       {
-         pass_info.scale_type_x = i + 1 == shader->passes
-            ? GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT
-            : GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
-         pass_info.scale_type_y = i + 1 == shader->passes
-            ? GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT
-            : GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
-         pass_info.scale_x = 1.0f;
-         pass_info.scale_y = 1.0f;
-
-         if (i + 1 == shader->passes)
+         bool scale_viewport       = i + 1 == shader->passes;
+         if (scale_viewport)
          {
-            pass_info.rt_format = 0;
+            pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+            pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+         }
+         else
+         {
+            pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+            pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+         }
+         pass_info.scale_x         = 1.0f;
+         pass_info.scale_y         = 1.0f;
+
+         if (scale_viewport)
+         {
+            pass_info.rt_format    = 0;
 
             if (explicit_format)
                RARCH_WARN("[slang]: Using explicit format for last pass in chain,"
@@ -2343,17 +2348,17 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          switch (pass->fbo.type_x)
          {
             case RARCH_SCALE_INPUT:
-               pass_info.scale_x = pass->fbo.scale_x;
+               pass_info.scale_x      = pass->fbo.scale_x;
                pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
-               pass_info.scale_x = float(pass->fbo.abs_x);
+               pass_info.scale_x      = (float)(pass->fbo.abs_x);
                pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               pass_info.scale_x = pass->fbo.scale_x;
+               pass_info.scale_x      = pass->fbo.scale_x;
                pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
          }
@@ -2361,17 +2366,17 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          switch (pass->fbo.type_y)
          {
             case RARCH_SCALE_INPUT:
-               pass_info.scale_y = pass->fbo.scale_y;
+               pass_info.scale_y      = pass->fbo.scale_y;
                pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
-               pass_info.scale_y = float(pass->fbo.abs_y);
+               pass_info.scale_y      = (float)(pass->fbo.abs_y);
                pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               pass_info.scale_y = pass->fbo.scale_y;
+               pass_info.scale_y      = pass->fbo.scale_y;
                pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
          }
@@ -2427,16 +2432,8 @@ error:
 }
 
 struct video_shader *gl_core_filter_chain_get_preset(
-      gl_core_filter_chain_t *chain)
-{
-   return chain->get_shader_preset();
-}
-
-void gl_core_filter_chain_free(
-      gl_core_filter_chain_t *chain)
-{
-   delete chain;
-}
+      gl_core_filter_chain_t *chain) { return chain->get_shader_preset(); }
+void gl_core_filter_chain_free(gl_core_filter_chain_t *chain) { delete chain; }
 
 void gl_core_filter_chain_set_shader(
       gl_core_filter_chain_t *chain,
