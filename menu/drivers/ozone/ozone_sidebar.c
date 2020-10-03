@@ -3,7 +3,7 @@
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *  Copyright (C) 2018      - Alfredo Monclús
- *  Copyright (C) 2018      - natinusala
+ *  Copyright (C) 2018-2020 - natinusala
  *  Copyright (C) 2019      - Patrick Scheurenbrand
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -128,19 +128,19 @@ static void ozone_sidebar_collapse_end(void *userdata)
 static float ozone_sidebar_get_scroll_y(
       ozone_handle_t *ozone, unsigned video_height)
 {
-   float scroll_y                          = 
+   float scroll_y                          =
       ozone->animations.scroll_y_sidebar;
-   float selected_position_y               = 
+   float selected_position_y               =
       ozone_get_selected_sidebar_y_position(ozone);
-   float current_selection_middle_onscreen = 
-        ozone->dimensions.header_height 
-      + ozone->dimensions.spacer_1px 
-      + ozone->animations.scroll_y_sidebar 
-      + selected_position_y 
+   float current_selection_middle_onscreen =
+        ozone->dimensions.header_height
+      + ozone->dimensions.spacer_1px
+      + ozone->animations.scroll_y_sidebar
+      + selected_position_y
       + ozone->dimensions.sidebar_entry_height / 2.0f;
-   float bottom_boundary                   = 
-      (float)video_height 
-      - (ozone->dimensions.header_height + ozone->dimensions.spacer_1px) 
+   float bottom_boundary                   =
+      (float)video_height
+      - (ozone->dimensions.header_height + ozone->dimensions.spacer_1px)
       - ozone->dimensions.footer_height;
    float entries_middle                    = (float)video_height / 2.0f;
    float entries_height                    = ozone_get_sidebar_height(ozone);
@@ -171,7 +171,7 @@ void ozone_draw_sidebar(
    unsigned i, sidebar_height;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-   static const char* const 
+   static const char* const
       ticker_spacer              = OZONE_TICKER_SPACER;
    unsigned ticker_x_offset      = 0;
    settings_t *settings          = config_get_ptr();
@@ -305,10 +305,10 @@ void ozone_draw_sidebar(
             video_width,
             video_height,
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
-				entry_width - ozone->dimensions.spacer_5px,
-				ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
-				selection_old_y + ozone->animations.scroll_y_sidebar,
-				1-ozone->animations.cursor_alpha);
+            entry_width - ozone->dimensions.spacer_5px,
+            ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
+            selection_old_y + ozone->animations.scroll_y_sidebar,
+            1-ozone->animations.cursor_alpha);
 
    /* Menu tabs */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_padding_vertical;
