@@ -11488,6 +11488,10 @@ MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
    "Core deletion disabled - core is locked: "
    )
+MSG_HASH(
+   MSG_UNSUPPORTED_VIDEO_MODE,
+   "Unsupported video mode"
+   )
 
 /* Lakka */
 
