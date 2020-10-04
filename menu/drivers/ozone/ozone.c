@@ -3,7 +3,7 @@
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *  Copyright (C) 2018      - Alfredo Monclús
- *  Copyright (C) 2018      - natinusala
+ *  Copyright (C) 2018-2020 - natinusala
  *  Copyright (C) 2019      - Patrick Scheurenbrand
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -303,13 +303,13 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t selection = (ozone->cursor_mode) 
-               ? ozone_get_onscreen_category_selection(ozone) 
+            size_t selection = (ozone->cursor_mode)
+               ? ozone_get_onscreen_category_selection(ozone)
                : ozone->categories_selection_ptr;
 
             new_selection    = (int)(selection + 1);
 
-            if (new_selection >= (int)(ozone->system_tab_end 
+            if (new_selection >= (int)(ozone->system_tab_end
                      + horizontal_list_size + 1))
                new_selection = 0;
 
@@ -360,6 +360,8 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (ozone->cursor_in_sidebar)
          {
             new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            ozone_start_cursor_wiggle(ozone, MENU_ACTION_LEFT);
+
             break;
          }
          else if (ozone->depth > 1)
@@ -374,7 +376,11 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (!ozone->cursor_in_sidebar)
          {
             if (ozone->depth == 1)
+            {
                new_action = MENU_ACTION_NOOP;
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_RIGHT);
+            }
+
             break;
          }
 
@@ -606,6 +612,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->dimensions_sidebar_width              = 0.0f;
 
    ozone->num_search_terms_old                  = 0;
+
+   ozone->cursor_wiggle_state.wiggling          = false;
 
    ozone->thumbnail_path_data = gfx_thumbnail_path_init();
    if (!ozone->thumbnail_path_data)
@@ -1174,6 +1182,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->draw_old_list                = false;
       ozone->messagebox_state             = false;
       ozone->messagebox_state_old         = false;
+
+      ozone->cursor_wiggle_state.wiggling = false;
 
       /* Animations */
       ozone->animations.cursor_alpha   = 1.0f;
@@ -3957,6 +3967,76 @@ void ozone_toggle_metadata_override(ozone_handle_t *ozone)
    gfx_animation_push(&animation_entry);
 }
 
+void ozone_start_cursor_wiggle(ozone_handle_t* ozone, enum menu_action direction)
+{
+   /* Don't start another wiggle animation on top of another */
+   if (!ozone || ozone->cursor_wiggle_state.wiggling)
+      return;
+
+   /* Don't allow wiggling in invalid directions */
+   if (!(
+         direction == MENU_ACTION_UP ||
+         direction == MENU_ACTION_DOWN ||
+         direction == MENU_ACTION_LEFT ||
+         direction == MENU_ACTION_RIGHT
+   ))
+      return;
+
+   /* Start wiggling */
+   ozone->cursor_wiggle_state.start_time = menu_driver_get_current_time() / 1000;
+   ozone->cursor_wiggle_state.direction  = direction;
+   ozone->cursor_wiggle_state.amplitude  = rand() % 15 + 10;
+   ozone->cursor_wiggle_state.wiggling   = true;
+}
+
+static int ozone_wiggle(ozone_handle_t* ozone, float t)
+{
+   float a = ozone->cursor_wiggle_state.amplitude;
+
+   /* Damped sine wave */
+   float w = 0.8f;   /* period */
+   float c = 0.35f;  /* damp factor */
+   return roundf(a * exp(-(c * t)) * sin(w * t));
+}
+
+void ozone_apply_cursor_wiggle_offset(ozone_handle_t* ozone, int* x, size_t* y)
+{
+   retro_time_t cur_time;
+   retro_time_t t;
+
+   /* Don't do anything if we are not wiggling */
+   if (!ozone || !ozone->cursor_wiggle_state.wiggling)
+      return;
+
+   cur_time = menu_driver_get_current_time() / 1000;
+   t        = (cur_time - ozone->cursor_wiggle_state.start_time) / 10;
+
+   /* Has the animation ended? */
+   if (t >= OZONE_WIGGLE_DURATION)
+   {
+      ozone->cursor_wiggle_state.wiggling = false;
+      return;
+   }
+
+   /* Change cursor position depending on wiggle direction */
+   switch (ozone->cursor_wiggle_state.direction)
+   {
+      case MENU_ACTION_RIGHT:
+         *x += ozone_wiggle(ozone, t);
+         break;
+      case MENU_ACTION_LEFT:
+         *x -= ozone_wiggle(ozone, t);
+         break;
+      case MENU_ACTION_DOWN:
+         *y += ozone_wiggle(ozone, t);
+         break;
+      case MENU_ACTION_UP:
+         *y -= ozone_wiggle(ozone, t);
+         break;
+      default:
+         break;
+   }
+}
 
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */

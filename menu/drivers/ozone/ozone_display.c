@@ -3,7 +3,7 @@
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *  Copyright (C) 2018      - Alfredo Monclús
- *  Copyright (C) 2018      - natinusala
+ *  Copyright (C) 2018-2020 - natinusala
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -260,16 +260,24 @@ void ozone_draw_cursor(
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
+   int new_x    = x_offset;
+   size_t new_y = y;
+
+   /* Apply wiggle animation if needed */
+   if (ozone->cursor_wiggle_state.wiggling)
+      ozone_apply_cursor_wiggle_offset(ozone, &new_x, &new_y);
+
+   /* Draw the cursor */
    if (ozone->has_all_assets)
       ozone_draw_cursor_slice(ozone, userdata,
             video_width, video_height,
-            x_offset, width, height, y, alpha);
+            new_x, width, height, new_y, alpha);
    else
       ozone_draw_cursor_fallback(ozone,
             userdata,
             video_width,
             video_height,
-            x_offset, width, height, y, alpha);
+            new_x, width, height, new_y, alpha);
 }
 
 void ozone_draw_icon(
