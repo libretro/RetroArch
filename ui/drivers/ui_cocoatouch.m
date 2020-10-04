@@ -448,6 +448,28 @@ enum
       [self showGameView];
 }
 
+-(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+   NSFileManager *manager = [NSFileManager defaultManager];
+   NSError *error;
+   NSString *romPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/RetroArch/roms"];
+
+   if (![manager fileExistsAtPath:romPath])
+     if (![manager createDirectoryAtPath:romPath withIntermediateDirectories:NO attributes:nil error:&error])
+         NSLog(@"Error: Create folder failed %@", error);
+      
+   NSString *destination = [[romPath stringByAppendingString:@"/"] stringByAppendingString:(NSString*)url.path.lastPathComponent];
+   
+   // copy file to roms directory if its not already in documents directory
+   if ([url startAccessingSecurityScopedResource]) {
+      if (![[url path] containsString:NSHomeDirectory()])
+         if (![manager fileExistsAtPath:destination])
+            if (![manager copyItemAtPath:[url path] toPath:destination error:&error])
+               NSLog(@"Error: Copy of file failed %@", error);
+      [url stopAccessingSecurityScopedResource];
+   }
+   return true;
+}
+
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
    NSString *filename = (NSString*)url.path.lastPathComponent;
