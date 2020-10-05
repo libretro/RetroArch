@@ -656,7 +656,6 @@ void gfx_thumbnail_get_draw_dimensions(
 error:
    *draw_width  = 0.0f;
    *draw_height = 0.0f;
-   return;
 }
 
 /* Draws specified thumbnail with specified alignment
@@ -679,9 +678,13 @@ void gfx_thumbnail_draw(
       float alpha, float scale_factor,
       gfx_thumbnail_shadow_t *shadow)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    /* Sanity check */
    if (!thumbnail ||
        (width < 1) || (height < 1) || (alpha <= 0.0f) || (scale_factor <= 0.0f))
+      return;
+   if (!dispctx)
       return;
 
    /* Only draw thumbnail if it is available... */
@@ -695,8 +698,6 @@ void gfx_thumbnail_draw(
       float draw_height;
       float draw_x;
       float draw_y;
-      gfx_display_t            *p_disp  = disp_get_ptr();
-      gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
       float thumbnail_alpha     = thumbnail->alpha * alpha;
       float thumbnail_color[16] = {
          1.0f, 1.0f, 1.0f, 1.0f,
@@ -708,7 +709,7 @@ void gfx_thumbnail_draw(
       /* Set thumbnail opacity */
       if (thumbnail_alpha <= 0.0f)
          return;
-      else if (thumbnail_alpha < 1.0f)
+      if (thumbnail_alpha < 1.0f)
          gfx_display_set_alpha(thumbnail_color, thumbnail_alpha);
 
       /* Get thumbnail dimensions */
@@ -716,7 +717,7 @@ void gfx_thumbnail_draw(
             thumbnail, width, height, scale_factor,
             &draw_width, &draw_height);
 
-      if (dispctx && dispctx->blend_begin)
+      if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
 
       /* Perform 'rotation' step
@@ -795,7 +796,7 @@ void gfx_thumbnail_draw(
       {
          /* Sanity check */
          if ((shadow->type != GFX_THUMBNAIL_SHADOW_NONE) &&
-             (shadow->alpha > 0.0f))
+               (shadow->alpha > 0.0f))
          {
             float shadow_width;
             float shadow_height;
@@ -843,7 +844,7 @@ void gfx_thumbnail_draw(
 
             /* Draw shadow */
             if (draw.height > 0 && draw.width > 0)
-               if (dispctx && dispctx->draw)
+               if (dispctx->draw)
                   dispctx->draw(&draw, userdata, video_width, video_height);
          }
       }
@@ -856,13 +857,11 @@ void gfx_thumbnail_draw(
       draw.y       = draw_y;
 
       /* Draw thumbnail */
-      if (dispctx)
-      {
+      if (draw.height > 0 && draw.width > 0)
          if (dispctx->draw)
-            if (draw.height > 0 && draw.width > 0)
-               dispctx->draw(&draw, userdata, video_width, video_height);
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
-      }
+            dispctx->draw(&draw, userdata, video_width, video_height);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
