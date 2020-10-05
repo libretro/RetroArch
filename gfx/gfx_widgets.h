@@ -211,6 +211,7 @@ typedef struct dispgfx_widget
    float last_scale_factor;
    float backdrop_orig[16];
    float msg_queue_bg[16];
+   float pure_white[16];
 #ifdef HAVE_TRANSLATE
    unsigned ai_service_overlay_width;
    unsigned ai_service_overlay_height;
