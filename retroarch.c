@@ -12692,6 +12692,7 @@ global_t *global_get_ptr(void)
    return &p_rarch->g_extern;
 }
 
+#ifdef HAVE_THREADS
 /**
  * video_thread_get_ptr:
  * @drv                       : Found driver.
@@ -12711,6 +12712,7 @@ static void *video_thread_get_ptr(struct rarch_state *p_rarch)
       return thr->driver_data;
    return NULL;
 }
+#endif
 
 /**
  * video_driver_get_ptr:
