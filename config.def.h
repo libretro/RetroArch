@@ -37,6 +37,11 @@
 #include "gfx/common/ctr_common.h"
 #endif
 
+/* Required for OpenDingux IPU filter setting */
+#if defined(DINGUX)
+#include "dingux/dingux_utils.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -315,7 +320,7 @@
 #endif
 
 /* Smooths picture. */
-#if defined(_3DS) || defined(GEKKO) || defined(HW_RVL) || defined(PSP) || defined(VITA) || defined(SN_TARGET_PSP2) || defined(PS2) || defined(_XBOX)
+#if defined(_3DS) || defined(GEKKO) || defined(HW_RVL) || defined(PSP) || defined(VITA) || defined(SN_TARGET_PSP2) || defined(PS2) || defined(_XBOX) || defined(DINGUX)
 #define DEFAULT_VIDEO_SMOOTH true
 #else
 #define DEFAULT_VIDEO_SMOOTH false
@@ -365,6 +370,9 @@
 /* Enables aspect ratio correction (1:1 PAR) when
  * using the IPU hardware scaler in Dingux devices */
 #define DEFAULT_DINGUX_IPU_KEEP_ASPECT true
+/* Sets image filtering method when using the
+ * IPU hardware scaler in Dingux devices */
+#define DEFAULT_DINGUX_IPU_FILTER_TYPE DINGUX_IPU_FILTER_BICUBIC
 #endif
 
 /* Save configuration file on exit. */

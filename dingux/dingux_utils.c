@@ -20,10 +20,12 @@
 
 #include "dingux_utils.h"
 
-#define DINGUX_ALLOW_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/allow_downscaling"
-#define DINGUX_KEEP_ASPECT_RATIO_FILE "/sys/devices/platform/jz-lcd.0/keep_aspect_ratio"
-#define DINGUX_INTEGER_SCALING_FILE   "/sys/devices/platform/jz-lcd.0/integer_scaling"
-#define DINGUX_BATTERY_CAPACITY_FILE  "/sys/class/power_supply/battery/capacity"
+#define DINGUX_ALLOW_DOWNSCALING_FILE     "/sys/devices/platform/jz-lcd.0/allow_downscaling"
+#define DINGUX_KEEP_ASPECT_RATIO_FILE     "/sys/devices/platform/jz-lcd.0/keep_aspect_ratio"
+#define DINGUX_INTEGER_SCALING_FILE       "/sys/devices/platform/jz-lcd.0/integer_scaling"
+#define DINGUX_SHARPNESS_UPSCALING_FILE   "/sys/devices/platform/jz-lcd.0/sharpness_upscaling"
+#define DINGUX_SHARPNESS_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/sharpness_downscaling"
+#define DINGUX_BATTERY_CAPACITY_FILE      "/sys/class/power_supply/battery/capacity"
 
 /* Enables/disables downscaling when using
  * the IPU hardware scaler */
@@ -60,7 +62,7 @@ bool dingux_ipu_set_aspect_ratio_enable(bool enable)
 }
 
 /* Enables/disables integer scaling when
- * when using the IPU hardware scaler */
+ * using the IPU hardware scaler */
 bool dingux_ipu_set_integer_scaling_enable(bool enable)
 {
    const char *path       = DINGUX_INTEGER_SCALING_FILE;
@@ -73,6 +75,55 @@ bool dingux_ipu_set_integer_scaling_enable(bool enable)
    /* Write enable state to file */
    return filestream_write_file(
          path, enable_str, 1);
+}
+
+/* Sets the image filtering method when
+ * using the IPU hardware scaler */
+bool dingux_ipu_set_filter_type(enum dingux_ipu_filter_type filter_type)
+{
+   /* Sharpness settings range is [0,32]
+    * - 0:      nearest-neighbour
+    * - 1:      bilinear
+    * - 2...32: bicubic (translating to a sharpness
+    *                    factor of -0.25..-4.0 internally)
+    * Default bicubic sharpness factor is
+    * (-0.125 * 8) = -1.0 */
+   const char *upscaling_path   = DINGUX_SHARPNESS_UPSCALING_FILE;
+   const char *downscaling_path = DINGUX_SHARPNESS_DOWNSCALING_FILE;
+   const char *sharpness_str    = "8";
+   bool upscaling_success       = false;
+   bool downscaling_success     = false;
+
+   /* Check filter type */
+   switch (filter_type)
+   {
+      case DINGUX_IPU_FILTER_BILINEAR:
+         sharpness_str = "1";
+         break;
+      case DINGUX_IPU_FILTER_NEAREST:
+         sharpness_str = "0";
+         break;
+      default:
+         /* sharpness_str is already set to 8
+          * by default */
+         break;
+   }
+
+   /* Set upscaling sharpness */
+   if (path_is_valid(upscaling_path))
+      upscaling_success = filestream_write_file(
+         upscaling_path, sharpness_str, 1);
+   else
+      upscaling_success = false;
+
+   /* Set downscaling sharpness */
+   if (path_is_valid(downscaling_path))
+      downscaling_success = filestream_write_file(
+         downscaling_path, sharpness_str, 1);
+   else
+      downscaling_success = false;
+
+   return (upscaling_success && downscaling_success);
 }
 
 /* Fetches internal battery level */

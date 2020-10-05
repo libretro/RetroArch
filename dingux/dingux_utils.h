@@ -25,6 +25,19 @@
 
 RETRO_BEGIN_DECLS
 
+/* Specifies all possible image filtering
+ * methods when using the IPU hardware scaler
+ * > Note: We do not allow 'fine tuning' of the
+ *   bicubic sharpness factor, since anything
+ *   other than the default value looks terrible... */
+enum dingux_ipu_filter_type
+{
+   DINGUX_IPU_FILTER_BICUBIC = 0,
+   DINGUX_IPU_FILTER_BILINEAR,
+   DINGUX_IPU_FILTER_NEAREST,
+   DINGUX_IPU_FILTER_LAST
+};
+
 /* Enables/disables downscaling when using
  * the IPU hardware scaler */
 bool dingux_ipu_set_downscaling_enable(bool enable);
@@ -36,8 +49,12 @@ bool dingux_ipu_set_downscaling_enable(bool enable);
 bool dingux_ipu_set_aspect_ratio_enable(bool enable);
 
 /* Enables/disables integer scaling when
- * when using the IPU hardware scaler */
+ * using the IPU hardware scaler */
 bool dingux_ipu_set_integer_scaling_enable(bool enable);
+
+/* Sets the image filtering method when
+ * using the IPU hardware scaler */
+bool dingux_ipu_set_filter_type(enum dingux_ipu_filter_type filter_type);
 
 /* Fetches internal battery level */
 int dingux_get_battery_level(void);
