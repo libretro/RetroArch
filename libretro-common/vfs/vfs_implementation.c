@@ -975,6 +975,40 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       *size = (int32_t)buf.st_size;
 
    is_dir = (file_info & FILE_ATTRIBUTE_DIRECTORY);
+
+#elif defined(GEKKO)
+   /* On GEKKO platforms, paths cannot have
+    * trailing slashes - we must therefore
+    * remove them */
+   char *path_buf = NULL;
+   int stat_ret   = -1;
+   struct stat stat_buf;
+   size_t len;
+
+   if (string_is_empty(path))
+      return 0;
+
+   path_buf = strdup(path);
+   if (!path_buf)
+      return 0;
+
+   len = strlen(path_buf);
+   if (len > 0)
+      if (path_buf[len - 1] == '/')
+         path_buf[len - 1] = '\0';
+
+   stat_ret = stat(path_buf, &stat_buf);
+   free(path_buf);
+
+   if (stat_ret < 0)
+      return 0;
+
+   if (size)
+      *size             = (int32_t)stat_buf.st_size;
+
+   is_dir               = S_ISDIR(stat_buf.st_mode);
+   is_character_special = S_ISCHR(stat_buf.st_mode);
+
 #else
    /* Every other platform */
    struct stat buf;
