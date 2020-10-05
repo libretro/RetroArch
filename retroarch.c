@@ -12707,7 +12707,8 @@ global_t *global_get_ptr(void)
  **/
 static void *video_thread_get_ptr(struct rarch_state *p_rarch)
 {
-   const thread_video_t *thr   = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+   void *data                  = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+   const thread_video_t *thr   = (const thread_video_t*)data;
    if (thr)
       return thr->driver_data;
    return NULL;
