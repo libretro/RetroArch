@@ -44,10 +44,6 @@
 
 #define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.69f)
 
-/* TODO/FIXME - global state - perhaps move outside this file */
-static float msg_queue_background[16]                    =
-COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f);
-
 static float gfx_widgets_pure_white[16]                  = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
@@ -1135,7 +1131,7 @@ static void gfx_widgets_draw_task_msg(
          msg_queue_current_background = msg_queue_task_progress_2;
    else
       if (msg->task_count == 1)
-         msg_queue_current_background = msg_queue_background;
+         msg_queue_current_background = p_dispwidget->msg_queue_bg;
       else
          msg_queue_current_background = msg_queue_task_progress_1;
 
@@ -1272,7 +1268,7 @@ static void gfx_widgets_draw_regular_msg(
       /* Icon */
       gfx_display_set_alpha(msg_queue_info, msg->alpha);
       gfx_display_set_alpha(gfx_widgets_pure_white, msg->alpha);
-      gfx_display_set_alpha(msg_queue_background, msg->alpha);
+      gfx_display_set_alpha(p_dispwidget->msg_queue_bg, msg->alpha);
       last_alpha = msg->alpha;
    }
 
@@ -1309,7 +1305,7 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_icon_rect,
             p_dispwidget->msg_queue_spacing,
             (int)(video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y),
-            0, 1, msg_queue_background);
+            0, 1, p_dispwidget->msg_queue_bg);
 
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
@@ -1328,7 +1324,7 @@ static void gfx_widgets_draw_regular_msg(
          p_dispwidget->msg_queue_height,
          video_width,
          video_height,
-         msg_queue_background
+         p_dispwidget->msg_queue_bg
          );
 
    /* Text */
@@ -1897,6 +1893,22 @@ bool gfx_widgets_init(uintptr_t widgets_active_ptr,
    if (!gfx_display_init_first_driver(video_is_threaded))
       goto error;
    gfx_display_set_alpha(p_dispwidget->backdrop_orig, 0.75f);
+   p_dispwidget->msg_queue_bg[0]  = HEX_R(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[1]  = HEX_G(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[2]  = HEX_B(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[3]  = 1.0f;
+   p_dispwidget->msg_queue_bg[4]  = HEX_R(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[5]  = HEX_G(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[6]  = HEX_B(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[7]  = 1.0f;
+   p_dispwidget->msg_queue_bg[8]  = HEX_R(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[9]  = HEX_G(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[10] = HEX_B(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[11] = 1.0f;
+   p_dispwidget->msg_queue_bg[12] = HEX_R(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[13] = HEX_G(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[14] = HEX_B(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[15] = 1.0f;
 
    if (!p_dispwidget->widgets_inited)
    {
