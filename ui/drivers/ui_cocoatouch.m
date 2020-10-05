@@ -450,36 +450,18 @@ enum
 
 -(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
    NSFileManager *manager = [NSFileManager defaultManager];
-   NSError *error;
-   NSString *romPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/RetroArch/roms"];
-
-   if (![manager fileExistsAtPath:romPath])
-     if (![manager createDirectoryAtPath:romPath withIntermediateDirectories:NO attributes:nil error:&error])
-         NSLog(@"Error: Create folder failed %@", error);
-      
-   NSString *destination = [[romPath stringByAppendingString:@"/"] stringByAppendingString:(NSString*)url.path.lastPathComponent];
+   NSString     *filename = (NSString*)url.path.lastPathComponent;
+   NSError         *error = nil;
+   NSString  *destination = [self.documentsDirectory stringByAppendingPathComponent:filename];
    
-   // copy file to roms directory if its not already in documents directory
+   // copy file to documents directory if its not already inside of documents directory
    if ([url startAccessingSecurityScopedResource]) {
-      if (![[url path] containsString:NSHomeDirectory()])
+      if (![[url path] containsString: self.documentsDirectory])
          if (![manager fileExistsAtPath:destination])
             if (![manager copyItemAtPath:[url path] toPath:destination error:&error])
-               NSLog(@"Error: Copy of file failed %@", error);
+               printf("%s\n", [[error description] UTF8String]);
       [url stopAccessingSecurityScopedResource];
    }
-   return true;
-}
-
--(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
-{
-   NSString *filename = (NSString*)url.path.lastPathComponent;
-   NSError     *error = nil;
-
-   [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
-
-   if (error)
-      printf("%s\n", [[error description] UTF8String]);
-
    return true;
 }
 
