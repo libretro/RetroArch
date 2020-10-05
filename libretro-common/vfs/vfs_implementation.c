@@ -1024,6 +1024,28 @@ int retro_vfs_mkdir_impl(const char *dir)
    int ret = orbisMkdir(dir, 0755);
 #elif defined(__QNX__)
    int ret = mkdir(dir, 0777);
+#elif defined(GEKKO)
+   /* On GEKKO platforms, mkdir() fails if
+    * the path has a trailing slash. We must
+    * therefore remove it. */
+   int ret = -1;
+   if (!string_is_empty(dir))
+   {
+      char *dir_buf = strdup(dir);
+
+      if (dir_buf)
+      {
+         size_t len = strlen(dir_buf);
+
+         if (len > 0)
+            if (dir_buf[len - 1] == '/')
+               dir_buf[len - 1] = '\0';
+
+         ret = mkdir(dir_buf, 0750);
+
+         free(dir_buf);
+      }
+   }
 #else
    int ret = mkdir(dir, 0750);
 #endif
