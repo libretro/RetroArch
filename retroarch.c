@@ -1240,7 +1240,7 @@ static const camera_driver_t *camera_drivers[] = {
 #endif
 
 #ifdef HAVE_THREADS
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) ((VIDEO_DRIVER_IS_THREADED_INTERNAL() && !force) ? video_thread_get_ptr(NULL) : p_rarch->video_driver_data)
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) ((VIDEO_DRIVER_IS_THREADED_INTERNAL() && !force) ? video_thread_get_ptr(p_rarch) : p_rarch->video_driver_data)
 #else
 #define VIDEO_DRIVER_GET_PTR_INTERNAL(force) (p_rarch->video_driver_data)
 #endif
@@ -12690,6 +12690,26 @@ global_t *global_get_ptr(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    return &p_rarch->g_extern;
+}
+
+/**
+ * video_thread_get_ptr:
+ * @drv                       : Found driver.
+ *
+ * Gets the underlying video driver associated with the
+ * threaded video wrapper. Sets @drv to the found
+ * video driver.
+ *
+ * Returns: Video driver data of the video driver associated
+ * with the threaded wrapper (if successful). If not successful,
+ * NULL.
+ **/
+static void *video_thread_get_ptr(struct rarch_state *p_rarch)
+{
+   const thread_video_t *thr   = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+   if (thr)
+      return thr->driver_data;
+   return NULL;
 }
 
 /**
@@ -31671,10 +31691,14 @@ const char *video_driver_get_ident(void)
    struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->current_video)
       return NULL;
-
 #ifdef HAVE_THREADS
    if (VIDEO_DRIVER_IS_THREADED_INTERNAL())
-      return video_thread_get_ident();
+   {
+      const thread_video_t *thr   = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+      if (!thr || !thr->driver)
+         return NULL;
+      return thr->driver->ident;
+   }
 #endif
 
    return p_rarch->current_video->ident;
