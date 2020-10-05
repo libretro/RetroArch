@@ -350,6 +350,8 @@ static int explore_check_company_suffix(const char* p, bool search_reverse)
       if (p[-1] != ' ')
          return 0;
    }
+   if (p[0] == '\0' || p[1] == '\0' || p[2] == '\0')
+      return 0;
    p0     = p[0];
    p1     = p[1];
    p2     = p[2];
