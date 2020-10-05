@@ -1772,14 +1772,10 @@ static void d3d11_gfx_set_osd_msg(
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (d3d11)
-   {
       if (d3d11->sprites.enabled)
          font_driver_render_msg(d3d11,
                msg,
                (const struct font_params*)params, font);
-      else
-         printf("OSD msg: %s\n", msg);
-   }
 }
 
 static uintptr_t d3d11_gfx_load_texture(
