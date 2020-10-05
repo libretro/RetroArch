@@ -120,13 +120,12 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
    if (state->queue[state->queue_read_index].title)
    {
       const video_frame_info_t* video_info = (const video_frame_info_t*)data;
-      const unsigned video_width = video_info->width;
-      const unsigned video_height = video_info->height;
-
-      dispgfx_widget_t* p_dispwidget = (dispgfx_widget_t*)userdata;
-      const unsigned unfold_offet = ((1.0f - state->unfold) * state->width / 2);
-
-      int scissor_me_timbers = 0;
+      const unsigned video_width           = video_info->width;
+      const unsigned video_height          = video_info->height;
+      dispgfx_widget_t* p_dispwidget       = (dispgfx_widget_t*)userdata;
+      const unsigned unfold_offet          = ((1.0f - state->unfold) * 
+                                               state->width / 2);
+      int scissor_me_timbers               = 0;
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
@@ -244,7 +243,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
    SLOCK_UNLOCK(state->queue_lock);
 }
 
-static void gfx_widget_achievement_popup_free_current(gfx_widget_achievement_popup_state_t* state)
+static void gfx_widget_achievement_popup_free_current(
+      gfx_widget_achievement_popup_state_t* state)
 {
    if (state->queue[state->queue_read_index].title)
    {

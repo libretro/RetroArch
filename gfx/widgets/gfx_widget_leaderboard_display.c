@@ -59,17 +59,11 @@ static bool gfx_widget_leaderboard_display_init(bool video_is_threaded, bool ful
    return true;
 }
 
-static void gfx_widget_leaderboard_display_free_all(gfx_widget_leaderboard_display_state_t* state)
-{
-   state->count = 0;
-}
-
 static void gfx_widget_leaderboard_display_free(void)
 {
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
-   gfx_widget_leaderboard_display_free_all(state);
-
+   state->count      = 0;
 #ifdef HAVE_THREADS
    slock_free(state->array_lock);
    state->array_lock = NULL;
@@ -79,8 +73,7 @@ static void gfx_widget_leaderboard_display_free(void)
 static void gfx_widget_leaderboard_display_context_destroy(void)
 {
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
-
-   gfx_widget_leaderboard_display_free_all(state);
+   state->count      = 0;
 }
 
 static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
