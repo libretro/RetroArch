@@ -5075,6 +5075,38 @@ static void setting_get_string_representation_uint_video_3ds_display_mode(
 }
 #endif
 
+#if defined(DINGUX)
+static void setting_get_string_representation_uint_video_dingux_ipu_filter_type(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case DINGUX_IPU_FILTER_BICUBIC:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC),
+               len);
+         break;
+      case DINGUX_IPU_FILTER_BILINEAR:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR),
+               len);
+         break;
+      case DINGUX_IPU_FILTER_NEAREST:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST),
+               len);
+         break;
+   }
+}
+#endif
+
 /* A protected driver is such that the user cannot set to "null" using the UI.
  * Can prevent the user from locking him/herself out of the program. */
 static bool setting_is_protected_driver(rarch_setting_t *setting)
@@ -7126,13 +7158,11 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
       case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+#if defined(DINGUX)
+      case MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE:
+#endif
          video_driver_set_filtering(1, settings->bools.video_ctx_scaling, settings->bools.video_ctx_scaling);
          break;
-#if defined(DINGUX)
-      case MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT:
-         dingux_ipu_set_aspect_ratio_enable(*setting->value.target.boolean);
-         break;
-#endif
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
             rarch_system_info_t *system = runloop_get_system_info();
@@ -10506,6 +10536,10 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler,
                      SD_FLAG_NONE);
+               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
+                     list,
+                     list_info,
+                     CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             }
 #endif
 
@@ -10699,22 +10733,46 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 24, 1, true, true);
 #endif
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_smooth,
-                  MENU_ENUM_LABEL_VIDEO_SMOOTH,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-                  DEFAULT_VIDEO_SMOOTH,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+#if defined(DINGUX)
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            {
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_dingux_ipu_filter_type,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+                     DEFAULT_DINGUX_IPU_FILTER_TYPE,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_uint_video_dingux_ipu_filter_type;
+               menu_settings_list_current_add_range(list, list_info, 0, DINGUX_IPU_FILTER_LAST - 1, 1, true, true);
+               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            }
+            else
+#endif
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_smooth,
+                     MENU_ENUM_LABEL_VIDEO_SMOOTH,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+                     DEFAULT_VIDEO_SMOOTH,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE
+                     );
+               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            }
 
 #ifdef HAVE_ODROIDGO2
             CONFIG_BOOL(

@@ -194,6 +194,7 @@ typedef struct settings
       unsigned video_record_scale_factor;
       unsigned video_stream_scale_factor;
       unsigned video_3ds_display_mode;
+      unsigned video_dingux_ipu_filter_type;
 #ifdef HAVE_VIDEO_LAYOUT
       unsigned video_layout_selected_view;
 #endif

@@ -55,12 +55,14 @@ typedef struct sdl_dingux_video
    SDL_Surface *screen;
    unsigned frame_width;
    unsigned frame_height;
+   enum dingux_ipu_filter_type filter_type;
    uint32_t font_colour32;
    uint16_t font_colour16;
    uint16_t menu_texture[SDL_DINGUX_MENU_WIDTH * SDL_DINGUX_MENU_HEIGHT];
    bool font_lut[SDL_DINGUX_NUM_FONT_GLYPHS][FONT_WIDTH * FONT_HEIGHT];
    bool rgb32;
    bool vsync;
+   bool keep_aspect;
    bool integer_scaling;
    bool menu_active;
    bool was_in_menu;
@@ -313,8 +315,14 @@ static void sdl_dingux_gfx_free(void *data)
    /* It is good manners to leave IPU scaling
     * parameters in the default state when
     * shutting down */
-   dingux_ipu_set_aspect_ratio_enable(true);
-   dingux_ipu_set_integer_scaling_enable(false);
+   if (!vid->keep_aspect)
+      dingux_ipu_set_aspect_ratio_enable(true);
+
+   if (vid->integer_scaling)
+      dingux_ipu_set_integer_scaling_enable(false);
+
+   if (vid->filter_type != DINGUX_IPU_FILTER_BICUBIC)
+      dingux_ipu_set_filter_type(DINGUX_IPU_FILTER_BICUBIC);
 
    free(vid);
 }
@@ -322,18 +330,21 @@ static void sdl_dingux_gfx_free(void *data)
 static void *sdl_dingux_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   sdl_dingux_video_t *vid         = NULL;
-   settings_t *settings            = config_get_ptr();
-   bool ipu_keep_aspect            = settings->bools.video_dingux_ipu_keep_aspect;
-   bool ipu_integer_scaling        = settings->bools.video_scale_integer;
-   const char *input_joypad_driver = settings->arrays.input_joypad_driver;
-   uint32_t surface_flags          = (video->vsync) ?
+   sdl_dingux_video_t *vid                     = NULL;
+   settings_t *settings                        = config_get_ptr();
+   bool ipu_keep_aspect                        = settings->bools.video_dingux_ipu_keep_aspect;
+   bool ipu_integer_scaling                    = settings->bools.video_scale_integer;
+   enum dingux_ipu_filter_type ipu_filter_type = (enum dingux_ipu_filter_type)
+         settings->uints.video_dingux_ipu_filter_type;
+   const char *input_joypad_driver             = settings->arrays.input_joypad_driver;
+   uint32_t surface_flags                      = (video->vsync) ?
          (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
    dingux_ipu_set_downscaling_enable(true);
    dingux_ipu_set_aspect_ratio_enable(ipu_keep_aspect);
    dingux_ipu_set_integer_scaling_enable(ipu_integer_scaling);
+   dingux_ipu_set_filter_type(ipu_filter_type);
 
    if (SDL_WasInit(0) == 0)
    {
@@ -362,7 +373,9 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    vid->frame_height    = SDL_DINGUX_MENU_HEIGHT;
    vid->rgb32           = video->rgb32;
    vid->vsync           = video->vsync;
+   vid->keep_aspect     = ipu_keep_aspect;
    vid->integer_scaling = ipu_integer_scaling;
+   vid->filter_type     = ipu_filter_type;
    vid->menu_active     = false;
    vid->was_in_menu     = false;
    vid->quitting        = false;
@@ -688,16 +701,39 @@ static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
 
 static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
+   sdl_dingux_video_t *vid                     = (sdl_dingux_video_t*)data;
+   settings_t *settings                        = config_get_ptr();
+   enum dingux_ipu_filter_type ipu_filter_type = (settings) ?
+         (enum dingux_ipu_filter_type)settings->uints.video_dingux_ipu_filter_type :
+         DINGUX_IPU_FILTER_BICUBIC;
+
+   if (!vid || !settings)
+      return;
+
+   /* Update IPU filter setting, if required */
+   if (vid->filter_type != ipu_filter_type)
+   {
+      dingux_ipu_set_filter_type(ipu_filter_type);
+      vid->filter_type = ipu_filter_type;
+   }
 }
 
 static void sdl_dingux_apply_state_changes(void *data)
 {
    sdl_dingux_video_t *vid  = (sdl_dingux_video_t*)data;
    settings_t *settings     = config_get_ptr();
+   bool ipu_keep_aspect     = (settings) ? settings->bools.video_dingux_ipu_keep_aspect : true;
    bool ipu_integer_scaling = (settings) ? settings->bools.video_scale_integer : false;
 
    if (!vid || !settings)
       return;
+
+   /* Update 'keep aspect ratio' state, if required */
+   if (vid->keep_aspect != ipu_keep_aspect)
+   {
+      dingux_ipu_set_aspect_ratio_enable(ipu_keep_aspect);
+      vid->keep_aspect = ipu_keep_aspect;
+   }
 
    /* Update integer scaling state, if required */
    if (vid->integer_scaling != ipu_integer_scaling)
