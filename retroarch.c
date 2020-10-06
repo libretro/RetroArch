@@ -39598,18 +39598,46 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
-      bool frameadvance_pressed     = BIT256_GET(
-            current_bits, RARCH_FRAMEADVANCE);
-      bool pause_pressed            = BIT256_GET(
-            current_bits, RARCH_PAUSE_TOGGLE);
-      bool trig_frameadvance        = frameadvance_pressed && !old_frameadvance;
+      bool pause_pressed, frameadvance_pressed, trig_frameadvance;
+
+#ifdef HAVE_CHEEVOS
+      if (rcheevos_hardcore_active())
+      {
+         static int unpaused_frames = 0;
+
+         /* frame advance is not allowed when achievement hardcore is active */
+         frameadvance_pressed = false;
+         trig_frameadvance = false;
+
+         pause_pressed = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
+         if (!p_rarch->runloop_paused)
+         {
+            /* limit pause to approximately three times per second (depending on core framerate) */
+            if (unpaused_frames < 20)
+            {
+               ++unpaused_frames;
+               pause_pressed = false;
+            }
+         }
+         else
+         {
+            unpaused_frames = 0;
+         }
+      }
+      else
+#endif
+      {
+         pause_pressed = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
+         frameadvance_pressed = BIT256_GET(current_bits, RARCH_FRAMEADVANCE);
+         trig_frameadvance = frameadvance_pressed && !old_frameadvance;
+
+         /* FRAMEADVANCE will set us into pause mode. */
+         pause_pressed |= !p_rarch->runloop_paused
+            && trig_frameadvance;
+      }
 
       /* Check if libretro pause key was pressed. If so, pause or
        * unpause the libretro core. */
-
-      /* FRAMEADVANCE will set us into pause mode. */
-      pause_pressed                |= !p_rarch->runloop_paused
-         && trig_frameadvance;
 
       if (focused && pause_pressed && !old_pause_pressed)
          command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
