@@ -448,16 +448,20 @@ enum
       [self showGameView];
 }
 
--(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
-{
-   NSString *filename = (NSString*)url.path.lastPathComponent;
-   NSError     *error = nil;
-
-   [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
-
-   if (error)
-      printf("%s\n", [[error description] UTF8String]);
-
+-(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+   NSFileManager *manager = [NSFileManager defaultManager];
+   NSString     *filename = (NSString*)url.path.lastPathComponent;
+   NSError         *error = nil;
+   NSString  *destination = [self.documentsDirectory stringByAppendingPathComponent:filename];
+   
+   // copy file to documents directory if its not already inside of documents directory
+   if ([url startAccessingSecurityScopedResource]) {
+      if (![[url path] containsString: self.documentsDirectory])
+         if (![manager fileExistsAtPath:destination])
+            if (![manager copyItemAtPath:[url path] toPath:destination error:&error])
+               printf("%s\n", [[error description] UTF8String]);
+      [url stopAccessingSecurityScopedResource];
+   }
    return true;
 }
 
