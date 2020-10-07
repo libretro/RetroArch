@@ -6077,6 +6077,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "Achievements"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
+   "View achievements and related settings."
+   )
 
 /* Quick Menu > Options */
 
