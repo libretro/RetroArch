@@ -518,6 +518,7 @@ extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;
 extern input_device_driver_t xinput_joypad;
 extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t sdl_dingux_joypad;
 extern input_device_driver_t ps4_joypad;
 extern input_device_driver_t ps3_joypad;
 extern input_device_driver_t psp_joypad;
@@ -536,6 +537,7 @@ extern input_device_driver_t rwebpad_joypad;
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
+extern input_driver_t input_sdl_dingux;
 extern input_driver_t input_dinput;
 extern input_driver_t input_x;
 extern input_driver_t input_ps4;

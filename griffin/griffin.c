@@ -743,6 +743,9 @@ INPUT
 #elif defined(__WINRT__)
 #include "../input/drivers/xdk_xinput_input.c"
 #include "../input/drivers/uwp_input.c"
+#elif defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+#include "../input/drivers/sdl_dingux_input.c"
+#include "../input/drivers_joypad/sdl_dingux_joypad.c"
 #endif
 
 #ifdef HAVE_WAYLAND
