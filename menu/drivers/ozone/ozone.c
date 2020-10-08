@@ -565,6 +565,7 @@ static void ozone_menu_animation_update_time(
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
 {
+   unsigned i;
    bool fallback_color_theme           = false;
    unsigned width, height, color_theme = 0;
    ozone_handle_t *ozone               = NULL;
@@ -586,6 +587,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata = ozone;
+
+   for (i = 0; i < 15; i++)
+      ozone->pure_white[i]  = 1.00f;
 
    ozone->last_width        = width;
    ozone->last_height       = height;
@@ -1953,6 +1957,8 @@ static void ozone_draw_header(ozone_handle_t *ozone,
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   float *col                        = ozone->theme->entries_icon
+      ? ozone->theme->entries_icon : ozone->pure_white;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -2037,7 +2043,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
             14 * scale_factor, /* Where does this come from...? */
             video_width,
             video_height,
-            0, 1, ozone->theme->entries_icon);
+            0, 1, col);
    else
 #endif
       ozone_draw_icon(
@@ -2051,7 +2057,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
             (ozone->dimensions.header_height - logo_icon_size) / 2,
             video_width,
             video_height,
-            0, 1, ozone->theme->entries_icon);
+            0, 1, col);
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
 
@@ -2100,7 +2106,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
                0,
                video_width,
                video_height,
-               0, 1, ozone->theme->entries_icon);
+               0, 1, col);
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);
       }
@@ -2149,7 +2155,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
             0,
             video_width,
             video_height,
-            0, 1, ozone->theme->entries_icon);
+            0, 1, col);
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
@@ -2211,6 +2217,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          ozone->footer_labels.metadata_toggle.width - icon_size - (2.0f * icon_padding);
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   float *col                        = ozone->theme_dynamic.entries_icon
+      ? ozone->theme_dynamic.entries_icon : ozone->pure_white;
 
    /* Separator */
    gfx_display_draw_quad(
@@ -2246,7 +2254,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          icon_y,
          video_width,
          video_height,
-         0, 1, ozone->theme_dynamic.entries_icon);
+         0, 1, col);
 
    /* > back */
    ozone_draw_icon(
@@ -2261,7 +2269,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          back_x,
          icon_y,
          video_width,video_height,
-         0, 1, ozone->theme_dynamic.entries_icon);
+         0, 1, col);
 
    /* > search */
    ozone_draw_icon(
@@ -2274,7 +2282,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          search_x,
          icon_y,
          video_width,video_height,
-         0, 1, ozone->theme_dynamic.entries_icon);
+         0, 1, col);
 
    /* > fullscreen_thumbs */
    if (fullscreen_thumbnails_available)
@@ -2288,7 +2296,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
             fullscreen_thumbs_x,
             icon_y,
             video_width,video_height,
-            0, 1, ozone->theme_dynamic.entries_icon);
+            0, 1, col);
 
    /* > metadata_toggle */
    if (metadata_override_available)
@@ -2302,7 +2310,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
             metadata_toggle_x,
             icon_y,
             video_width,video_height,
-            0, 1, ozone->theme_dynamic.entries_icon);
+            0, 1, col);
 
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
@@ -2484,7 +2492,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
             video_height,
             0,
             1,
-            NULL);
+            ozone->pure_white);
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
@@ -2913,14 +2921,14 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    {
       bool cursor_visible   = video_fullscreen && menu_mouse_enable;
 
-      gfx_display_set_alpha(ozone_pure_white, 1.0f);
+      gfx_display_set_alpha(ozone->pure_white, 1.0f);
       if (cursor_visible)
          gfx_display_draw_cursor(
                userdata,
                video_width,
                video_height,
                cursor_visible,
-               ozone_pure_white,
+               ozone->pure_white,
                ozone->dimensions.cursor_size,
                ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_POINTER],
                ozone->pointer.x,

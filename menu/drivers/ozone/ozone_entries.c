@@ -67,6 +67,8 @@ static void ozone_draw_entry_value(
    /* check icon */
    if (entry->checked)
    {
+      float *col = ozone->theme_dynamic.entries_checkmark
+         ? ozone->theme_dynamic.entries_checkmark : ozone->pure_white;
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
       ozone_draw_icon(
@@ -82,7 +84,7 @@ static void ozone_draw_entry_value(
             video_height,
             0,
             1,
-            ozone->theme_dynamic.entries_checkmark);
+            col);
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
       return;
@@ -182,6 +184,8 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
    unsigned icon_size      = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   float                        *col = ozone->theme->entries_icon
+      ? ozone->theme->entries_icon : ozone->pure_white;
 
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
@@ -196,7 +200,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
          video_height/2 - icon_size/2 - y_offset,
          video_width,
          video_height,
-         0, 1, ozone->theme->entries_icon);
+         0, 1, col);
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
 
@@ -787,7 +791,7 @@ border_iterate:
          ))
             icon_color = ozone->theme_dynamic.entries_icon;
          else
-            icon_color = ozone_pure_white;
+            icon_color = ozone->pure_white;
 
          gfx_display_set_alpha(icon_color, alpha);
 
@@ -813,7 +817,7 @@ border_iterate:
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);
 
-         if (icon_color == ozone_pure_white)
+         if (icon_color == ozone->pure_white)
             gfx_display_set_alpha(icon_color, 1.0f);
 
          text_offset = 0;
@@ -1314,6 +1318,8 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
        * is available */
       if (metadata_override_enabled)
       {
+         float         *col = ozone->theme_dynamic.entries_icon
+            ? ozone->theme_dynamic.entries_icon : ozone->pure_white;
          /* Icon should be small and unobtrusive
           * > Make it 80% of the normal entry icon size */
          unsigned icon_size = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 0.8f);
@@ -1336,7 +1342,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_entry_icon_padding - icon_size,
                video_width,
                video_height,
-               0, 1, ozone->theme_dynamic.entries_icon);
+               0, 1, col);
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);
       }

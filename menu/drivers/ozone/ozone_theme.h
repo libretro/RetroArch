@@ -20,13 +20,6 @@
 #include "ozone.h"
 #include "ozone_texture.h"
 
-static float ozone_pure_white[16] = {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-};
-
 typedef struct ozone_theme
 {
    /* Background color */

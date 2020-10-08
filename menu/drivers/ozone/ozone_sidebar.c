@@ -323,6 +323,10 @@ void ozone_draw_sidebar(
       unsigned     icon    = ozone_system_tabs_icons[ozone->tabs[i]];
 
       uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
+      float *col           = (selected ? ozone->theme->text_selected : ozone->theme->entries_icon);
+
+      if (!col)
+         col               = ozone->pure_white;
 
       /* Icon */
       ozone_draw_icon(
@@ -338,7 +342,7 @@ void ozone_draw_sidebar(
             video_height,
             0,
             1,
-            (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+            col);
 
       value_idx = ozone_system_tabs_value[ozone->tabs[i]];
       title     = msg_hash_to_str(value_idx);
@@ -397,9 +401,13 @@ void ozone_draw_sidebar(
          uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
 
          ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, i);
+         float *col         = (selected ? ozone->theme->text_selected : ozone->theme->entries_icon);
 
          if (!node)
             goto console_iterate;
+
+         if (!col)
+            col             = ozone->pure_white;
 
          /* Icon */
          ozone_draw_icon(
@@ -415,7 +423,7 @@ void ozone_draw_sidebar(
                video_height,
                0,
                1,
-               (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+               col);
 
          /* Text */
          if (ozone->sidebar_collapsed)

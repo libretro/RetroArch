@@ -207,6 +207,7 @@ struct ozone_handle
    float dimensions_sidebar_width; /* animated field */
    float sidebar_offset;
    float last_scale_factor;
+   float pure_white[16];
 
    struct
    {

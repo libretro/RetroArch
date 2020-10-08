@@ -314,7 +314,7 @@ void ozone_draw_icon(
    coords.vertex        = NULL;
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
-   coords.color         = color ? (const float*)color : ozone_pure_white;
+   coords.color         = (const float*)color;
 
    draw.x               = x;
    draw.y               = height - y - icon_height;
@@ -529,7 +529,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
                   ozone->fonts.entries_label.line_ascender,
                   video_width,
                   video_height,
-                  ozone_pure_white);
+                  ozone->pure_white);
          }
       }
       else
