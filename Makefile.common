@@ -1522,7 +1522,9 @@ else ifeq ($(HAVE_SDL), 1)
 else ifeq ($(HAVE_SDL_DINGUX), 1)
    HAVE_SDL_COMMON = 1
    DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
-   OBJ += gfx/drivers/sdl_dingux_gfx.o
+   OBJ += gfx/drivers/sdl_dingux_gfx.o \
+          input/drivers/sdl_dingux_input.o \
+          input/drivers_joypad/sdl_dingux_joypad.o
    DEF_FLAGS += $(SDL_DINGUX_CFLAGS)
    LIBS += $(SDL_DINGUX_LIBS)
 endif

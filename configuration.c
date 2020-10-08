@@ -142,6 +142,7 @@ enum input_driver_enum
    INPUT_ANDROID            = AUDIO_RESAMPLER_NULL + 1,
    INPUT_SDL,
    INPUT_SDL2,
+   INPUT_SDL_DINGUX,
    INPUT_X,
    INPUT_WAYLAND,
    INPUT_DINPUT,
@@ -183,6 +184,7 @@ enum joypad_driver_enum
    JOYPAD_LINUXRAW,
    JOYPAD_ANDROID,
    JOYPAD_SDL,
+   JOYPAD_SDL_DINGUX,
    JOYPAD_DOS,
    JOYPAD_HID,
    JOYPAD_QNX,
@@ -424,6 +426,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SWITCH;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WII;
 #elif defined(WIIU)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WIIU;
+#elif defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL_DINGUX;
 #elif defined(HAVE_X11)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_X;
 #elif defined(HAVE_UDEV)
@@ -466,6 +470,8 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
 #elif defined(SWITCH)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SWITCH;
+#elif defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL_DINGUX;
 #elif defined(HAVE_DINPUT)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
 #elif defined(HAVE_UDEV)
@@ -902,6 +908,8 @@ const char *config_get_default_input(void)
          return "sdl";
       case INPUT_SDL2:
          return "sdl2";
+      case INPUT_SDL_DINGUX:
+         return "sdl_dingux";
       case INPUT_DINPUT:
          return "dinput";
       case INPUT_WINRAW:
@@ -990,6 +998,8 @@ const char *config_get_default_joypad(void)
 #else
          return "sdl";
 #endif
+      case JOYPAD_SDL_DINGUX:
+         return "sdl_dingux";
       case JOYPAD_HID:
          return "hid";
       case JOYPAD_QNX:

@@ -728,6 +728,9 @@ static input_driver_t *input_drivers[] = {
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
    &input_sdl,
 #endif
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+   &input_sdl_dingux,
+#endif
 #ifdef HAVE_DINPUT
    &input_dinput,
 #endif
@@ -842,6 +845,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #endif
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
    &sdl_joypad,
+#endif
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+   &sdl_dingux_joypad,
 #endif
 #ifdef __QNX__
    &qnx_joypad,
@@ -26998,7 +27004,11 @@ static bool input_driver_find_driver(struct rarch_state *p_rarch)
    i                              = (int)drv.len;
 
    if (i >= 0)
+   {
       p_rarch->current_input = (input_driver_t*)input_drivers[i];
+      RARCH_LOG("[Input]: Found input driver: \"%s\".\n",
+            p_rarch->current_input->ident);
+   }
    else
    {
       unsigned d;
