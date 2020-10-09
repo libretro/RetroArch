@@ -31,7 +31,7 @@
 
 #include "../../../configuration.h"
 
-enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
+static const enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
@@ -54,7 +54,7 @@ enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
 #endif
 };
 
-enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
+static const enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
    MENU_SETTINGS,
    MENU_SETTINGS_TAB,
    MENU_HISTORY_TAB,
@@ -77,7 +77,7 @@ enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
 #endif
 };
 
-enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
+static const enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
    MENU_ENUM_LABEL_MAIN_MENU,
    MENU_ENUM_LABEL_SETTINGS_TAB,
    MENU_ENUM_LABEL_HISTORY_TAB,
@@ -100,7 +100,7 @@ enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
 #endif
 };
 
-unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
+static const unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
    OZONE_TAB_TEXTURE_MAIN_MENU,
    OZONE_TAB_TEXTURE_SETTINGS,
    OZONE_TAB_TEXTURE_HISTORY,
