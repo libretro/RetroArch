@@ -1,0 +1,4 @@
+filter = dot_matrix_3x
+
+# Colour format: 0xRRGGBB
+dot_matrix_3x_grid_color = 0xADB8A0

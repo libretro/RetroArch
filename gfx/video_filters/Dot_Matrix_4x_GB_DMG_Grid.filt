@@ -1,0 +1,4 @@
+filter = dot_matrix_4x
+
+# Colour format: 0xRRGGBB
+dot_matrix_4x_grid_color = 0x5C8A00
