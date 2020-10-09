@@ -2260,8 +2260,11 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/lq2x.o \
           gfx/video_filters/phosphor2x.o \
           gfx/video_filters/normal2x.o \
+          gfx/video_filters/normal2x_width.o \
+          gfx/video_filters/normal2x_height.o \
           gfx/video_filters/scanline2x.o \
           gfx/video_filters/grid2x.o \
+          gfx/video_filters/grid3x.o \
           gfx/video_filters/gameboy3x.o \
           gfx/video_filters/gameboy4x.o \
           gfx/video_filters/dot_matrix_3x.o \

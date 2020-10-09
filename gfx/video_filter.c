@@ -280,8 +280,11 @@ extern const struct softfilter_implementation *twoxbr_get_implementation(softfil
 extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *normal2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *normal2x_width_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *normal2x_height_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scanline2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *grid2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *grid3x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *gameboy3x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *gameboy4x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *dot_matrix_3x_get_implementation(softfilter_simd_mask_t simd);
@@ -299,8 +302,11 @@ static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    epx_get_implementation,
    scale2x_get_implementation,
    normal2x_get_implementation,
+   normal2x_width_get_implementation,
+   normal2x_height_get_implementation,
    scanline2x_get_implementation,
    grid2x_get_implementation,
+   grid3x_get_implementation,
    gameboy3x_get_implementation,
    gameboy4x_get_implementation,
    dot_matrix_3x_get_implementation,
