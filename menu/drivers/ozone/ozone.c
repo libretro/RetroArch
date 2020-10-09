@@ -233,7 +233,80 @@ static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone)
             GFX_THUMBNAIL_RIGHT);
 }
 
+static bool ozone_is_current_entry_settings(size_t current_selection)
+{
+   menu_entry_t last_entry;
+   const char *entry_value;
 
+   unsigned entry_type                = 0;
+   enum msg_file_type entry_file_type = FILE_TYPE_NONE;
+
+   MENU_ENTRY_INIT(last_entry);
+   last_entry.path_enabled       = false;
+   last_entry.label_enabled      = false;
+   last_entry.rich_label_enabled = false;
+   last_entry.sublabel_enabled   = false;
+
+   menu_entry_get(&last_entry, 0, current_selection, NULL, true);
+
+   if (last_entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+      entry_value = last_entry.password_value;
+   else
+      entry_value = last_entry.value;
+
+   entry_file_type = msg_hash_to_file_type(msg_hash_calculate(entry_value));
+   entry_type      = last_entry.type;
+
+   /* Logic below taken from materialui_pointer_up_swipe_horz_default */
+   if (!string_is_empty(entry_value))
+   {
+      /* Toggle switch off */
+      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+          string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         return true;
+      }
+      /* Toggle switch on */
+      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+               string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+      {
+         return true;
+      }
+      /* Normal value text */
+      else
+      {
+         switch (entry_file_type)
+         {
+            case FILE_TYPE_IN_CARCHIVE:
+            case FILE_TYPE_MORE:
+            case FILE_TYPE_CORE:
+            case FILE_TYPE_DIRECT_LOAD:
+            case FILE_TYPE_RDB:
+            case FILE_TYPE_CURSOR:
+            case FILE_TYPE_PLAIN:
+            case FILE_TYPE_DIRECTORY:
+            case FILE_TYPE_MUSIC:
+            case FILE_TYPE_IMAGE:
+            case FILE_TYPE_MOVIE:
+               break;
+            case FILE_TYPE_COMPRESSED:
+               /* Note that we have to perform a backup check here,
+                * since the 'manual content scan - file extensions'
+                * setting may have a value of 'zip' or '7z' etc, which
+                * means it would otherwise get incorreclty identified as
+                * an archive file... */
+               if (entry_type != FILE_TYPE_CARCHIVE)
+                  return true;
+               break;
+            default:
+               return true;
+               break;
+         }
+      }
+   }
+
+   return false;
+}
 
 static enum menu_action ozone_parse_menu_entry_action(
       ozone_handle_t *ozone, enum menu_action action)
@@ -243,6 +316,11 @@ static enum menu_action ozone_parse_menu_entry_action(
    enum menu_action new_action   = action;
    file_list_t *selection_buf    = NULL;
    unsigned horizontal_list_size = 0;
+   settings_t *settings;
+   bool menu_navigation_wraparound_enable;
+   bool is_current_entry_settings;
+   size_t selection;
+   size_t selection_total;
 
    /* If fullscreen thumbnail view is active, any
     * valid menu action will disable it... */
@@ -282,6 +360,16 @@ static enum menu_action ozone_parse_menu_entry_action(
    ozone->messagebox_state    = false || menu_input_dialog_get_display_kb();
    selection_buf              = menu_entries_get_selection_buf_ptr(0);
    tag                        = (uintptr_t)selection_buf;
+   selection                  = menu_navigation_get_selection();
+   selection_total            = menu_entries_get_size();
+
+   settings                            = config_get_ptr();
+   menu_navigation_wraparound_enable   = settings->bools.menu_navigation_wraparound_enable;
+
+   /* Don't wiggle left or right if the current entry is a setting. This is
+      partially wrong because some settings don't use left and right to change their value, such as
+      free input fields (passwords...). This is good enough. */
+   is_current_entry_settings = ozone_is_current_entry_settings(selection);
 
    /* Scan user inputs */
    switch (action)
@@ -319,6 +407,10 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone->cursor_mode = false;
             break;
          }
+         else if (!menu_navigation_wraparound_enable && selection == selection_total - 1)
+         {
+            ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
+         }
 
          /* If pointer is active and current selection
           * is off screen, auto select *centre* item */
@@ -332,8 +424,8 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t selection   = (ozone->cursor_mode) 
-               ? ozone_get_onscreen_category_selection(ozone) 
+            size_t selection   = (ozone->cursor_mode)
+               ? ozone_get_onscreen_category_selection(ozone)
                : ozone->categories_selection_ptr;
             new_selection      = (int)selection - 1;
 
@@ -345,6 +437,10 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             ozone->cursor_mode = false;
             break;
+         }
+         else if (!menu_navigation_wraparound_enable && selection == 0)
+         {
+            ozone_start_cursor_wiggle(ozone, MENU_ACTION_UP);
          }
 
          /* If pointer is active and current selection
@@ -365,7 +461,17 @@ static enum menu_action ozone_parse_menu_entry_action(
             break;
          }
          else if (ozone->depth > 1)
+         {
+            if (!menu_navigation_wraparound_enable && selection == 0 && !is_current_entry_settings)
+            {
+               /* Pressing left goes up but faster, so
+                  wiggle up to say that there is nothing more upwards
+                  even though the user pressed the left button */
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
+            }
+
             break;
+         }
 
          ozone_go_to_sidebar(ozone, tag);
 
@@ -379,6 +485,13 @@ static enum menu_action ozone_parse_menu_entry_action(
             {
                new_action = MENU_ACTION_NOOP;
                ozone_start_cursor_wiggle(ozone, MENU_ACTION_RIGHT);
+            }
+            else if (!menu_navigation_wraparound_enable && selection == selection_total - 1 && !is_current_entry_settings)
+            {
+               /* Pressing right goes down but faster, so
+                  wiggle down to say that there is nothing more downwards
+                  even though the user pressed the right button */
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
             }
 
             break;
