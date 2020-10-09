@@ -31707,7 +31707,7 @@ const char *video_driver_get_ident(void)
 #ifdef HAVE_THREADS
    if (VIDEO_DRIVER_IS_THREADED_INTERNAL())
    {
-      const thread_video_t *thr   = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+      const thread_video_t *thr   = (const thread_video_t*)VIDEO_DRIVER_GET_PTR_INTERNAL(true);
       if (!thr || !thr->driver)
          return NULL;
       return thr->driver->ident;
