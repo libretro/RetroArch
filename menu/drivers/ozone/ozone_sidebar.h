@@ -20,8 +20,6 @@
 #ifndef _OZONE_SIDEBAR_H
 #define _OZONE_SIDEBAR_H
 
-#include "ozone_texture.h"
-
 enum
 {
    OZONE_SYSTEM_TAB_MAIN = 0,

@@ -21,7 +21,6 @@
 #define _OZONE_TEXTURE_H
 
 #include "ozone.h"
-#include "ozone_texture.h"
 
 #include "../../menu_driver.h"
 
