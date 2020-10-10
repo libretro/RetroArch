@@ -3736,7 +3736,7 @@ enum materialui_entry_value_type materialui_get_entry_value_type(
                 * since the 'manual content scan - file extensions'
                 * setting may have a value of 'zip' or '7z' etc, which
                 * means it would otherwise get incorreclty identified as
-                * an achive file... */
+                * an archive file... */
                if (entry_type != FILE_TYPE_CARCHIVE)
                   value_type = MUI_ENTRY_VALUE_TEXT;
                break;
