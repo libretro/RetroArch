@@ -172,17 +172,9 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    unsigned len                         = 0;
    unsigned i                           = 0;
    char vidPidString[32]                = {0};
-   char vidString[5]                    = {0};
-   char pidString[5]                    = {0};
    char report[USB_PACKET_CTRL_LEN + 1] = {0};
 
-   snprintf(vidString, sizeof(vidString), "%04x", vid);
-   snprintf(pidString, sizeof(pidString), "%04x", pid);
-
-   strlcat(vidPidString, "vid_", sizeof(vidPidString));
-   strlcat(vidPidString, vidString, sizeof(vidPidString));
-   strlcat(vidPidString, "&pid_", sizeof(vidPidString));
-   strlcat(vidPidString, pidString, sizeof(vidPidString));
+   snprintf(vidPidString, sizeof(vidPidString), "vid_%04x&pid_%04x", vid, pid);
 
    HidD_GetHidGuid(&guidDeviceInterface);
 
