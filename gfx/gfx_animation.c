@@ -41,6 +41,7 @@
 #define TICKER_PIXEL_PERIOD (16.666666666666668f)
 
 /* By default, this should be a NOOP */
+/* TODO/FIXME - static global variable */
 static update_time_cb update_time_callback = NULL;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
