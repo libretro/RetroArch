@@ -375,9 +375,9 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       const char *label, const char *str)
 {
    unsigned i;
-   const char *text;
    char message[2048];
-   unsigned text_color;
+   const char *text                    = str;
+   unsigned text_color                 = 0xffffffff;
    static float ozone_osk_backdrop[16] = {
       0.00, 0.00, 0.00, 0.15,
       0.00, 0.00, 0.00, 0.15,
@@ -468,12 +468,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          ozone_osk_backdrop);
 
    /* Placeholder & text*/
-   if (!draw_placeholder)
-   {
-      text        = str;
-      text_color  = 0xffffffff;
-   }
-   else
+   if (draw_placeholder)
    {
       text        = label;
       text_color  = ozone_theme_light.text_sublabel_rgba;
@@ -523,7 +518,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
                     margin 
                   + padding 
                   + y_offset 
-                  + ozone->fonts.entries_label.line_height - ozone->fonts.entries_label.line_ascender 
+                  + ozone->fonts.entries_label.line_height 
+                  - ozone->fonts.entries_label.line_ascender 
                   + ozone->dimensions.spacer_3px,
                   ozone->dimensions.spacer_1px,
                   ozone->fonts.entries_label.line_ascender,
