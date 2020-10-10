@@ -210,7 +210,8 @@ static void drm_surface_free(void *data, struct drm_surface **sp)
 /* Changes surface ratio only without recreating the buffers etc. */
 static void drm_surface_set_aspect(struct drm_surface *surface, float aspect)
 {
-	surface->aspect = aspect;
+   if (surface)
+      surface->aspect = aspect;
 }
 
 static void drm_surface_setup(void *data,  int src_width, int src_height,
@@ -922,7 +923,7 @@ static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
    /* Here we obtain the new aspect ratio. */
    float new_aspect = aspectratio_lut[aspect_ratio_idx].value;
 
-   if (_drmvars->current_aspect != new_aspect)
+   if (_drmvars && _drmvars->current_aspect != new_aspect)
    {
       _drmvars->current_aspect = new_aspect;
       drm_surface_set_aspect(_drmvars->main_surface, new_aspect);
