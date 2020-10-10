@@ -30379,8 +30379,8 @@ static void audio_driver_sample(int16_t left, int16_t right)
    }
 
    if (!(p_rarch->runloop_paused           ||
-		   !p_rarch->audio_driver_active
-         ))
+		   !p_rarch->audio_driver_active     ||
+		   !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
@@ -30404,7 +30404,8 @@ static void audio_driver_menu_sample(void)
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    bool check_flush                       = !(
          p_rarch->runloop_paused           ||
-         !p_rarch->audio_driver_active);
+         !p_rarch->audio_driver_active     ||
+         !p_rarch->audio_driver_output_samples_buf);
 
    while (sample_count > 1024)
    {
@@ -30489,7 +30490,8 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 
    if (!(
          p_rarch->runloop_paused           ||
-         !p_rarch->audio_driver_active))
+         !p_rarch->audio_driver_active     ||
+         !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
@@ -31365,7 +31367,8 @@ void audio_driver_frame_is_reverse(void)
 
    if (!(
           p_rarch->runloop_paused          ||
-         !p_rarch->audio_driver_active))
+         !p_rarch->audio_driver_active     ||
+         !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
