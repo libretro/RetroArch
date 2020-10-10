@@ -26,7 +26,6 @@
 #endif
 
 #include "../network/netplay/netplay.h"
-#include "../verbosity.h"
 
 #ifdef HAVE_NETWORKING
 struct nat_traversal_state_data
@@ -61,11 +60,9 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
    task_set_progress(task, 100);
    task_set_finished(task, true);
 }
-#endif
 
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
 {
-#ifdef HAVE_NETWORKING
    struct nat_traversal_state_data *ntsd;
    retro_task_t *task        = task_init();
 
@@ -92,7 +89,7 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
    task_queue_push(task);
 
    return true;
-#else
-   return false;
-#endif
 }
+#else
+bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port) { return false; }
+#endif
