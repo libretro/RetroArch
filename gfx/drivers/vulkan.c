@@ -1758,12 +1758,14 @@ static bool vulkan_frame(void *data, const void *frame,
    VK_BUFFER_CHAIN_DISCARD(buff_chain_ubo);
 
    /* Start recording the command buffer. */
-   vk->cmd                     = chain->cmd;
+   vk->cmd                                       = chain->cmd;
 
-   begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-   begin_info.pNext            = NULL;
-   begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-   begin_info.pInheritanceInfo = NULL;
+   begin_info.sType                              = 
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin_info.pNext                              = NULL;
+   begin_info.flags                              = 
+      VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.pInheritanceInfo                   = NULL;
 
    vkResetCommandBuffer(vk->cmd, 0);
 
