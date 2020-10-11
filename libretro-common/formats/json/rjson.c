@@ -719,7 +719,8 @@ enum rjson_type rjson_next(rjson_t *json)
                   continue;
                }
                json->input_p = p;
-               return _rjson_error_token(json, "expected ':' not %s after member name", tok);
+               return _rjson_error_token(json,
+                     "expected ':' not %s after member name", (enum _rjson_token)tok);
             }
             if (passed_token)
             {
@@ -749,7 +750,8 @@ enum rjson_type rjson_next(rjson_t *json)
                continue;
             }
             json->input_p = p;
-            return _rjson_error_token(json, "expected ',' or '}' not %s after member value", tok);
+            return _rjson_error_token(json,
+                  "expected ',' or '}' not %s after member value", (enum _rjson_token)tok);
          }
          else if (stack->type == RJSON_ARRAY)
          {
@@ -769,7 +771,8 @@ enum rjson_type rjson_next(rjson_t *json)
                continue;
             }
             json->input_p = p;
-            return _rjson_error_token(json, "expected ',' or ']' not %s in array", tok);
+            return _rjson_error_token(json,
+                  "expected ',' or ']' not %s in array", (enum _rjson_token)tok);
          }
          else
          {
@@ -781,7 +784,8 @@ enum rjson_type rjson_next(rjson_t *json)
             if (tok == _rJSON_TOK_EOF)
                return RJSON_DONE;
             if (!(json->option_flags & RJSON_OPTION_ALLOW_TRAILING_DATA))
-               return _rjson_error_token(json, "expected end of stream instead of %s", tok);
+               return _rjson_error_token(json,
+                     "expected end of stream instead of %s", (enum _rjson_token)tok);
             json->input_p--;
             return RJSON_DONE;
          }
@@ -806,7 +810,8 @@ enum rjson_type rjson_next(rjson_t *json)
             return _rjson_read_name(json, "alse", RJSON_FALSE);
          else if ((tok == _rJSON_TOK_NULL))
             return _rjson_read_name(json, "ull", RJSON_NULL);
-         else return _rjson_error_token(json, "unexpected %s in value", tok);
+         else return _rjson_error_token(json,
+               "unexpected %s in value", (enum _rjson_token)tok);
       }
    }
    return RJSON_ERROR;
@@ -992,12 +997,12 @@ bool rjson_check_context(rjson_t *json, unsigned int depth, ...)
 {
    va_list ap;
    const struct _rjson_stack *stack = json->stack, *stack_top = json->stack_top;
-   if (stack_top - stack != depth)
+   if ((unsigned int)(stack_top - stack) != depth)
       return false;
    va_start(ap, depth);
    while (++stack <= stack_top)
    {
-      if (va_arg(ap, enum rjson_type) == stack->type) continue;
+      if (va_arg(ap, int) == (int)stack->type) continue;
       va_end(ap);
       return false;
    }
@@ -1157,9 +1162,9 @@ struct rjsonwriter
    rjsonwriter_io_t io;
    void *user_data;
 
+   const char* error_text;
    char option_flags;
    char decimal_sep;
-   char* error_text;
 
    char inline_buf[1024];
 };
@@ -1248,7 +1253,7 @@ void rjsonwriter_raw(rjsonwriter_t *writer, const char *buf, int len)
       if (add > (unsigned int)len) add = (unsigned int)len;
       memcpy(writer->buf + writer->buf_num, buf, add);
       writer->buf_num += add;
-      if (len == add) return;
+      if ((unsigned int)len == add) return;
       rjsonwriter_flush(writer);
       len -= add;
       buf += add;
@@ -1310,7 +1315,8 @@ void rjsonwriter_add_string(rjsonwriter_t *writer, const char *value)
       if (c < 0x20 || c == '\"' || c == '\\' ||
             (c == '/' && p > value + 1 && p[-2] == '<'))
       {
-         char* esc, esc_buf[8], esc_len = 2;
+         char esc_buf[8], esc_len = 2;
+         const char* esc;
          if (raw != p - 1)
             rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
          switch (c)
@@ -1324,7 +1330,8 @@ void rjsonwriter_add_string(rjsonwriter_t *writer, const char *value)
             case '\\': esc = "\\\\"; break;
             case '/': esc = "\\/"; break;
             default:
-               snprintf((esc = esc_buf), sizeof(esc_buf), "\\u%04x", c);
+               snprintf(esc_buf, sizeof(esc_buf), "\\u%04x", c);
+               esc = esc_buf;
                esc_len = 6;
          }
          rjsonwriter_raw(writer, esc, esc_len);
