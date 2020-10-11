@@ -580,7 +580,7 @@ static enum rjson_type _rjson_read_name(rjson_t *json, const char *pattern, enum
    _rjson_char_t c;
    const char *p;
    for (p = pattern; *p; p++)
-      if (*p != (c = _rjson_char_get(json)))
+      if ((_rjson_char_t)*p != (c = _rjson_char_get(json)))
          return _rjson_error_char(json, "unexpected %s in value", c);
    return type;
 }
@@ -796,19 +796,19 @@ enum rjson_type rjson_next(rjson_t *json)
          stack->count++;
          /* This is optimal when there are many strings, otherwise a switch statement
           * or a function pointer table is better (depending on compiler/cpu) */
-         if      ((tok == _rJSON_TOK_STRING))
+         if      (tok == _rJSON_TOK_STRING)
             return _rjson_read_string(json);
-         else if ((tok == _rJSON_TOK_NUMBER))
+         else if (tok == _rJSON_TOK_NUMBER)
             return _rjson_read_number(json);
-         else if ((tok == _rJSON_TOK_OBJECT))
+         else if (tok == _rJSON_TOK_OBJECT)
             return _rjson_push_stack(json, _rJSON_TOK_OBJECT);
-         else if ((tok == _rJSON_TOK_ARRAY))
+         else if (tok == _rJSON_TOK_ARRAY)
             return _rjson_push_stack(json, _rJSON_TOK_ARRAY);
-         else if ((tok == _rJSON_TOK_TRUE))
+         else if (tok == _rJSON_TOK_TRUE)
             return _rjson_read_name(json, "rue", RJSON_TRUE);
-         else if ((tok == _rJSON_TOK_FALSE))
+         else if (tok == _rJSON_TOK_FALSE)
             return _rjson_read_name(json, "alse", RJSON_FALSE);
-         else if ((tok == _rJSON_TOK_NULL))
+         else if (tok == _rJSON_TOK_NULL)
             return _rjson_read_name(json, "ull", RJSON_NULL);
          else return _rjson_error_token(json,
                "unexpected %s in value", (enum _rjson_token)tok);
