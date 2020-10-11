@@ -29,7 +29,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
-#include <formats/jsonsax_full.h>
+#include <formats/rjson.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <time/rtime.h>
@@ -53,27 +53,19 @@
 
 typedef struct
 {
-   JSON_Parser parser;
-   JSON_Writer writer;
-   RFILE *file;
    char **current_entry_val;
    char *runtime_string;
    char *last_played_string;
 } RtlJSONContext;
 
-static JSON_Parser_HandlerResult RtlJSONObjectMemberHandler(
-      JSON_Parser parser,
-      char *s, size_t len,
-      JSON_StringAttributes attributes)
+static bool RtlJSONObjectMemberHandler(void *ctx, const char *s, size_t len)
 {
-   RtlJSONContext *p_ctx = (RtlJSONContext*)JSON_Parser_GetUserData(parser);
-   (void)attributes; /* unused */
+   RtlJSONContext *p_ctx = (RtlJSONContext*)ctx;
 
    if (p_ctx->current_entry_val)
    {
       /* something went wrong */
-      RARCH_ERR("JSON parsing failed at line %d.\n", __LINE__);
-      return JSON_Parser_Abort;
+      return false;
    }
 
    if (len)
@@ -85,15 +77,12 @@ static JSON_Parser_HandlerResult RtlJSONObjectMemberHandler(
       /* ignore unknown members */
    }
 
-   return JSON_Parser_Continue;
+   return true;
 }
 
-static JSON_Parser_HandlerResult RtlJSONStringHandler(
-      JSON_Parser parser,
-      char *s, size_t len, JSON_StringAttributes attributes)
+static bool RtlJSONStringHandler(void *ctx, const char *s, size_t len)
 {
-   RtlJSONContext *p_ctx = (RtlJSONContext*)JSON_Parser_GetUserData(parser);
-   (void)attributes; /* unused */
+   RtlJSONContext *p_ctx = (RtlJSONContext*)ctx;
 
    if (p_ctx->current_entry_val && len && !string_is_empty(s))
    {
@@ -106,42 +95,7 @@ static JSON_Parser_HandlerResult RtlJSONStringHandler(
 
    p_ctx->current_entry_val = NULL;
 
-   return JSON_Parser_Continue;
-}
-
-static JSON_Writer_HandlerResult RtlJSONOutputHandler(
-      JSON_Writer writer, const char *pBytes, size_t length)
-{
-   RtlJSONContext *context = (RtlJSONContext*)JSON_Writer_GetUserData(writer);
-   (void)writer; /* unused */
-
-   return filestream_write(context->file, pBytes, length) == length 
-      ? JSON_Writer_Continue 
-      : JSON_Writer_Abort;
-}
-
-static void RtlJSONLogError(RtlJSONContext *p_ctx)
-{
-   if (p_ctx->parser && JSON_Parser_GetError(p_ctx->parser) 
-         != JSON_Error_AbortedByHandler)
-   {
-      JSON_Error error            = JSON_Parser_GetError(p_ctx->parser);
-      JSON_Location errorLocation = { 0, 0, 0 };
-
-      (void)JSON_Parser_GetErrorLocation(p_ctx->parser, &errorLocation);
-      RARCH_ERR(
-            "Error: Invalid JSON at line %d, column %d (input byte %d) - %s.\n",
-            (int)errorLocation.line + 1,
-            (int)errorLocation.column + 1,
-            (int)errorLocation.byte,
-            JSON_ErrorString(error));
-   }
-   else if (p_ctx->writer && JSON_Writer_GetError(p_ctx->writer) 
-         != JSON_Error_AbortedByHandler)
-   {
-      RARCH_ERR("Error: could not write output - %s.\n",
-            JSON_ErrorString(JSON_Writer_GetError(p_ctx->writer)));
-   }
+   return true;
 }
 
 /* Initialisation */
@@ -162,6 +116,8 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    unsigned last_played_second = 0;
 
    RtlJSONContext context      = {0};
+   rjson_t* parser;
+
    /* Attempt to open log file */
    RFILE *file                 = filestream_open(runtime_log->path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -173,61 +129,41 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    }
 
    /* Initialise JSON parser */
-   context.runtime_string     = NULL;
-   context.last_played_string = NULL;
-   context.parser             = JSON_Parser_Create(NULL);
-   context.file               = file;
-
-   if (!context.parser)
+   parser = rjson_open_rfile(file);
+   if (!parser)
    {
       RARCH_ERR("Failed to create JSON parser.\n");
       goto end;
    }
 
    /* Configure parser */
-   JSON_Parser_SetAllowBOM(context.parser, JSON_True);
-   JSON_Parser_SetStringHandler(context.parser, &RtlJSONStringHandler);
-   JSON_Parser_SetObjectMemberHandler(context.parser,
-         &RtlJSONObjectMemberHandler);
-   JSON_Parser_SetUserData(context.parser, &context);
+   rjson_set_options(parser, RJSON_OPTION_ALLOW_UTF8BOM);
 
    /* Read file */
-   while (!filestream_eof(file))
+   if (rjson_parse(parser, &context,
+         RtlJSONObjectMemberHandler,
+         RtlJSONStringHandler,
+         NULL,                   /* unused number handler */
+         NULL, NULL, NULL, NULL, /* unused object/array handlers */
+         NULL, NULL)             /* unused boolean/null handlers */
+         != RJSON_DONE)
    {
-      /* Runtime log files are tiny - use small chunk size */
-      char chunk[128] = {0};
-      int64_t length  = filestream_read(file, chunk, sizeof(chunk));
-
-      /* Error checking... */
-      if (!length && !filestream_eof(file))
+      if (rjson_get_source_context_len(parser))
       {
-         RARCH_ERR("Failed to read runtime log file: %s\n", runtime_log->path);
-         JSON_Parser_Free(context.parser);
-         goto end;
+         RARCH_ERR("Error parsing chunk of runtime log file: %s\n---snip---\n%.*s\n---snip---\n",
+               runtime_log->path,
+               rjson_get_source_context_len(parser),
+               rjson_get_source_context_buf(parser));
       }
-
-      /* Parse chunk */
-      if (!JSON_Parser_Parse(context.parser, chunk,
-               (size_t)length, JSON_False))
-      {
-         RARCH_ERR("Error parsing chunk of runtime log file: %s\n---snip---\n%s\n---snip---\n", runtime_log->path, chunk);
-         RtlJSONLogError(&context);
-         JSON_Parser_Free(context.parser);
-         goto end;
-      }
-   }
-
-   /* Finalise parsing */
-   if (!JSON_Parser_Parse(context.parser, NULL, 0, JSON_True))
-   {
       RARCH_WARN("Error parsing runtime log file: %s\n", runtime_log->path);
-      RtlJSONLogError(&context);
-      JSON_Parser_Free(context.parser);
-      goto end;
+      RARCH_ERR("Error: Invalid JSON at line %d, column %d - %s.\n",
+            (int)rjson_get_source_line(parser),
+            (int)rjson_get_source_column(parser),
+            (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
    }
 
    /* Free parser */
-   JSON_Parser_Free(context.parser);
+   rjson_free(parser);
 
    /* Process string values read from JSON file */
 
@@ -1217,8 +1153,8 @@ void runtime_log_save(runtime_log_t *runtime_log)
    int n;
    char value_string[64]; /* 64 characters should be
                              enough for a very long runtime... :) */
-   RtlJSONContext context = {0};
    RFILE *file            = NULL;
+   rjsonwriter_t* writer;
 
    if (!runtime_log)
       return;
@@ -1236,34 +1172,25 @@ void runtime_log_save(runtime_log_t *runtime_log)
    }
 
    /* Initialise JSON writer */
-   context.writer = JSON_Writer_Create(NULL);
-   context.file   = file;
-
-   if (!context.writer)
+   writer = rjsonwriter_open_rfile(file);
+   if (!writer)
    {
       RARCH_ERR("Failed to create JSON writer.\n");
       goto end;
    }
 
-   /* Configure JSON writer */
-   JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
-   JSON_Writer_SetOutputHandler(context.writer, &RtlJSONOutputHandler);
-   JSON_Writer_SetUserData(context.writer, &context);
-
    /* Write output file */
-   JSON_Writer_WriteStartObject(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_start_object(writer);
+   rjsonwriter_add_newline(writer);
 
    /* > Version entry */
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "version",
-         STRLEN_CONST("version"), JSON_UTF8);
-   JSON_Writer_WriteColon(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, "1.0",
-         STRLEN_CONST("1.0"), JSON_UTF8);
-   JSON_Writer_WriteComma(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "version");
+   rjsonwriter_add_colon(writer);
+   rjsonwriter_add_space(writer);
+   rjsonwriter_add_string(writer, "1.0");
+   rjsonwriter_add_comma(writer);
+   rjsonwriter_add_newline(writer);
 
    /* > Runtime entry */
    value_string[0] = '\0';
@@ -1274,15 +1201,13 @@ void runtime_log_save(runtime_log_t *runtime_log)
    if ((n < 0) || (n >= 64))
       n = 0; /* Silence GCC warnings... */
 
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "runtime",
-         STRLEN_CONST("runtime"), JSON_UTF8);
-   JSON_Writer_WriteColon(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, value_string,
-         strlen(value_string), JSON_UTF8);
-   JSON_Writer_WriteComma(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "runtime");
+   rjsonwriter_add_colon(writer);
+   rjsonwriter_add_space(writer);
+   rjsonwriter_add_string(writer, value_string);
+   rjsonwriter_add_comma(writer);
+   rjsonwriter_add_newline(writer);
 
    /* > Last played entry */
    value_string[0] = '\0';
@@ -1295,21 +1220,22 @@ void runtime_log_save(runtime_log_t *runtime_log)
    if ((n < 0) || (n >= 64))
       n = 0; /* Silence GCC warnings... */
 
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "last_played",
-         STRLEN_CONST("last_played"), JSON_UTF8);
-   JSON_Writer_WriteColon(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, value_string,
-         strlen(value_string), JSON_UTF8);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "last_played");
+   rjsonwriter_add_colon(writer);
+   rjsonwriter_add_space(writer);
+   rjsonwriter_add_string(writer, value_string);
+   rjsonwriter_add_newline(writer);
 
    /* > Finalise */
-   JSON_Writer_WriteEndObject(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_end_object(writer);
+   rjsonwriter_add_newline(writer);
 
    /* Free JSON writer */
-   JSON_Writer_Free(context.writer);
+   if (!rjsonwriter_free(writer))
+   {
+      RARCH_ERR("Error writing runtime log file: %s\n", runtime_log->path);
+   }
 
 end:
    /* Close log file */
