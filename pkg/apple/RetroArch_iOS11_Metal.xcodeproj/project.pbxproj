@@ -147,7 +147,7 @@
 		92B9EB8024E0518700E6CFB2 /* net_http_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http_parse.h; sourceTree = "<group>"; };
 		92B9EB8124E0518700E6CFB2 /* retro_timers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_timers.h; sourceTree = "<group>"; };
 		92B9EB8324E0518700E6CFB2 /* m3u_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = m3u_file.h; sourceTree = "<group>"; };
-		92B9EB8424E0518700E6CFB2 /* jsonsax.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jsonsax.h; sourceTree = "<group>"; };
+		92B9EB8424E0518700E6CFB2 /* rjson.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rjson.h; sourceTree = "<group>"; };
 		92B9EB8524E0518700E6CFB2 /* rxml.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rxml.h; sourceTree = "<group>"; };
 		92B9EB8624E0518700E6CFB2 /* cdfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cdfs.h; sourceTree = "<group>"; };
 		92B9EB8724E0518700E6CFB2 /* rpng.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rpng.h; sourceTree = "<group>"; };
@@ -156,7 +156,6 @@
 		92B9EB8A24E0518700E6CFB2 /* logiqx_dat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = logiqx_dat.h; sourceTree = "<group>"; };
 		92B9EB8B24E0518700E6CFB2 /* rbmp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rbmp.h; sourceTree = "<group>"; };
 		92B9EB8C24E0518700E6CFB2 /* rwav.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rwav.h; sourceTree = "<group>"; };
-		92B9EB8D24E0518700E6CFB2 /* jsonsax_full.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jsonsax_full.h; sourceTree = "<group>"; };
 		92B9EB8E24E0518700E6CFB2 /* rjpeg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rjpeg.h; sourceTree = "<group>"; };
 		92B9EB9024E0518700E6CFB2 /* rglgen.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rglgen.h; sourceTree = "<group>"; };
 		92B9EB9124E0518700E6CFB2 /* glsym_es2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = glsym_es2.h; sourceTree = "<group>"; };
@@ -580,7 +579,7 @@
 			isa = PBXGroup;
 			children = (
 				92B9EB8324E0518700E6CFB2 /* m3u_file.h */,
-				92B9EB8424E0518700E6CFB2 /* jsonsax.h */,
+				92B9EB8424E0518700E6CFB2 /* rjson.h */,
 				92B9EB8524E0518700E6CFB2 /* rxml.h */,
 				92B9EB8624E0518700E6CFB2 /* cdfs.h */,
 				92B9EB8724E0518700E6CFB2 /* rpng.h */,
@@ -589,7 +588,6 @@
 				92B9EB8A24E0518700E6CFB2 /* logiqx_dat.h */,
 				92B9EB8B24E0518700E6CFB2 /* rbmp.h */,
 				92B9EB8C24E0518700E6CFB2 /* rwav.h */,
-				92B9EB8D24E0518700E6CFB2 /* jsonsax_full.h */,
 				92B9EB8E24E0518700E6CFB2 /* rjpeg.h */,
 			);
 			path = formats;

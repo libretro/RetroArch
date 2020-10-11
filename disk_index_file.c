@@ -23,7 +23,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
-#include <formats/jsonsax_full.h>
+#include <formats/rjson.h>
 
 #include "file_path_special.h"
 #include "verbosity.h"
@@ -37,25 +37,20 @@
 
 typedef struct
 {
-   JSON_Parser parser;
-   JSON_Writer writer;
-   RFILE *file;
    unsigned *current_entry_uint_val;
    char **current_entry_str_val;
    unsigned image_index;
    char *image_path;
 } DCifJSONContext;
 
-static JSON_Parser_HandlerResult DCifJSONObjectMemberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+static bool DCifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
 {
-   DCifJSONContext *pCtx = (DCifJSONContext*)JSON_Parser_GetUserData(parser);
-   (void)attributes; /* unused */
+   DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
    if (pCtx->current_entry_str_val)
    {
       /* something went wrong */
-      RARCH_ERR("[disk index file] JSON parsing failed at line %d.\n", __LINE__);
-      return JSON_Parser_Abort;
+      return false;
    }
 
    if (length)
@@ -67,13 +62,12 @@ static JSON_Parser_HandlerResult DCifJSONObjectMemberHandler(JSON_Parser parser,
       /* ignore unknown members */
    }
 
-   return JSON_Parser_Continue;
+   return true;
 }
 
-static JSON_Parser_HandlerResult DCifJSONNumberHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+static bool DCifJSONNumberHandler(void* context, const char *pValue, size_t length)
 {
-   DCifJSONContext *pCtx = (DCifJSONContext*)JSON_Parser_GetUserData(parser);
-   (void)attributes; /* unused */
+   DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
    if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
@@ -81,13 +75,12 @@ static JSON_Parser_HandlerResult DCifJSONNumberHandler(JSON_Parser parser, char 
 
    pCtx->current_entry_uint_val = NULL;
 
-   return JSON_Parser_Continue;
+   return true;
 }
 
-static JSON_Parser_HandlerResult DCifJSONStringHandler(JSON_Parser parser, char *pValue, size_t length, JSON_StringAttributes attributes)
+static bool DCifJSONStringHandler(void* context, const char *pValue, size_t length)
 {
-   DCifJSONContext *pCtx = (DCifJSONContext*)JSON_Parser_GetUserData(parser);
-   (void)attributes; /* unused */
+   DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
    if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
    {
@@ -100,35 +93,7 @@ static JSON_Parser_HandlerResult DCifJSONStringHandler(JSON_Parser parser, char 
 
    pCtx->current_entry_str_val = NULL;
 
-   return JSON_Parser_Continue;
-}
-
-static JSON_Writer_HandlerResult DCifJSONOutputHandler(JSON_Writer writer, const char *pBytes, size_t length)
-{
-   DCifJSONContext *context = (DCifJSONContext*)JSON_Writer_GetUserData(writer);
-   (void)writer; /* unused */
-
-   return filestream_write(context->file, pBytes, length) == length ? JSON_Writer_Continue : JSON_Writer_Abort;
-}
-
-static void DCifJSONLogError(DCifJSONContext *pCtx)
-{
-   if (pCtx->parser && JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
-   {
-      JSON_Error error            = JSON_Parser_GetError(pCtx->parser);
-      JSON_Location errorLocation = { 0, 0, 0 };
-
-      (void)JSON_Parser_GetErrorLocation(pCtx->parser, &errorLocation);
-      RARCH_ERR("[disk index file] Error: Invalid JSON at line %d, column %d (input byte %d) - %s.\n",
-            (int)errorLocation.line + 1,
-            (int)errorLocation.column + 1,
-            (int)errorLocation.byte,
-            JSON_ErrorString(error));
-   }
-   else if (pCtx->writer && JSON_Writer_GetError(pCtx->writer) != JSON_Error_AbortedByHandler)
-   {
-      RARCH_ERR("[disk index file] Error: could not write output - %s.\n", JSON_ErrorString(JSON_Writer_GetError(pCtx->writer)));
-   }
+   return true;
 }
 
 /******************/
@@ -156,6 +121,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    bool success            = false;
    DCifJSONContext context = {0};
    RFILE *file             = NULL;
+   rjson_t* parser;
 
    /* Sanity check */
    if (!disk_index_file)
@@ -183,66 +149,44 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    }
 
    /* Initialise JSON parser */
-   context.image_index = 0;
-   context.image_path  = NULL;
-   context.parser      = JSON_Parser_Create(NULL);
-   context.file        = file;
-
-   if (!context.parser)
+   parser = rjson_open_rfile(file);
+   if (!parser)
    {
       RARCH_ERR("[disk index file] Failed to create JSON parser.\n");
       goto end;
    }
 
    /* Configure parser */
-   JSON_Parser_SetAllowBOM(context.parser, JSON_True);
-   JSON_Parser_SetNumberHandler(context.parser,       &DCifJSONNumberHandler);
-   JSON_Parser_SetStringHandler(context.parser,       &DCifJSONStringHandler);
-   JSON_Parser_SetObjectMemberHandler(context.parser, &DCifJSONObjectMemberHandler);
-   JSON_Parser_SetUserData(context.parser, &context);
+   rjson_set_options(parser, RJSON_OPTION_ALLOW_UTF8BOM);
 
    /* Read file */
-   while (!filestream_eof(file))
+   if (rjson_parse(parser, &context,
+         DCifJSONObjectMemberHandler,
+         DCifJSONStringHandler,
+         DCifJSONNumberHandler,
+         NULL, NULL, NULL, NULL, /* unused object/array handlers */
+         NULL, NULL) /* unused boolean/null handlers */
+         != RJSON_DONE)
    {
-      /* Disk index files are tiny - use small chunk size */
-      char chunk[128] = {0};
-      int64_t length  = filestream_read(file, chunk, sizeof(chunk));
-
-      /* Error checking... */
-      if (!length && !filestream_eof(file))
+      if (rjson_get_source_context_len(parser))
       {
          RARCH_ERR(
-               "[disk index file] Failed to read disk index file: %s\n",
-               file_path);
-         JSON_Parser_Free(context.parser);
-         goto end;
+               "[disk index file] Error parsing chunk of disk index file: %s\n---snip---\n%.*s\n---snip---\n",
+               file_path,
+               rjson_get_source_context_len(parser),
+               rjson_get_source_context_buf(parser));
       }
-
-      /* Parse chunk */
-      if (!JSON_Parser_Parse(context.parser, chunk, (size_t)length, JSON_False))
-      {
-         RARCH_ERR(
-               "[disk index file] Error parsing chunk of disk index file: %s\n---snip---\n%s\n---snip---\n",
-               file_path, chunk);
-         DCifJSONLogError(&context);
-         JSON_Parser_Free(context.parser);
-         goto end;
-      }
-   }
-
-   /* Finalise parsing */
-   if (!JSON_Parser_Parse(context.parser, NULL, 0, JSON_True))
-   {
       RARCH_WARN(
             "[disk index file] Error parsing disk index file: %s\n",
             file_path);
-      DCifJSONLogError(&context);
-      JSON_Parser_Free(context.parser);
-      goto end;
+      RARCH_ERR("[disk index file] Error: Invalid JSON at line %d, column %d - %s.\n",
+            (int)rjson_get_source_line(parser),
+            (int)rjson_get_source_column(parser),
+            (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
    }
 
    /* Free parser */
-   JSON_Parser_Free(context.parser);
+   rjson_free(parser);
 
    /* Copy values read from JSON file */
    disk_index_file->image_index = context.image_index;
@@ -406,14 +350,10 @@ void disk_index_file_set(
 /* Saves specified disk index file to disk */
 bool disk_index_file_save(disk_index_file_t *disk_index_file)
 {
-   int n;
-   char value_string[32];
    const char *file_path;
-   DCifJSONContext context = {0};
+   rjsonwriter_t* writer;
    RFILE *file             = NULL;
    bool success            = false;
-
-   value_string[0] = '\0';
 
    /* Sanity check */
    if (!disk_index_file)
@@ -450,69 +390,53 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    }
 
    /* Initialise JSON writer */
-   context.writer = JSON_Writer_Create(NULL);
-   context.file   = file;
+   writer = rjsonwriter_open_rfile(file);
 
-   if (!context.writer)
+   if (!writer)
    {
       RARCH_ERR("[disk index file] Failed to create JSON writer.\n");
       goto end;
    }
 
-   /* Configure JSON writer */
-   JSON_Writer_SetOutputEncoding(context.writer, JSON_UTF8);
-   JSON_Writer_SetOutputHandler(context.writer, &DCifJSONOutputHandler);
-   JSON_Writer_SetUserData(context.writer, &context);
-
    /* Write output file */
-   JSON_Writer_WriteStartObject(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_start_object(writer);
+   rjsonwriter_add_newline(writer);
 
    /* > Version entry */
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "version",
-         STRLEN_CONST("version"), JSON_UTF8);
-   JSON_Writer_WriteColon(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, "1.0",
-         STRLEN_CONST("1.0"), JSON_UTF8);
-   JSON_Writer_WriteComma(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "version");
+   rjsonwriter_add_colon(writer);
+   rjsonwriter_add_space(writer);
+   rjsonwriter_add_string(writer, "1.0");
+   rjsonwriter_add_comma(writer);
+   rjsonwriter_add_newline(writer);
 
    /* > image index entry */
-   n = snprintf(
-         value_string, sizeof(value_string),
-         "%u", disk_index_file->image_index);
-   if ((n < 0) || (n >= 32))
-      n = 0; /* Silence GCC warnings... */
-
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "image_index",
-         STRLEN_CONST("image_index"), JSON_UTF8);
-   JSON_Writer_WriteColon(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteNumber(context.writer, value_string,
-         strlen(value_string), JSON_UTF8);
-   JSON_Writer_WriteComma(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "image_index");
+   rjsonwriter_add_colon(writer);
+   rjsonwriter_add_space(writer);
+   rjsonwriter_add_unsigned(writer, disk_index_file->image_index);
+   rjsonwriter_add_comma(writer);
+   rjsonwriter_add_newline(writer);
 
    /* > image path entry */
-   JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "image_path",
-         STRLEN_CONST("image_path"), JSON_UTF8);
-   JSON_Writer_WriteColon(context.writer);
-   JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer,
-         disk_index_file->image_path,
-         strlen(disk_index_file->image_path), JSON_UTF8);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "image_path");
+   rjsonwriter_add_colon(writer);
+   rjsonwriter_add_space(writer);
+   rjsonwriter_add_string(writer, disk_index_file->image_path);
+   rjsonwriter_add_newline(writer);
 
    /* > Finalise */
-   JSON_Writer_WriteEndObject(context.writer);
-   JSON_Writer_WriteNewLine(context.writer);
+   rjsonwriter_add_end_object(writer);
+   rjsonwriter_add_newline(writer);
 
    /* Free JSON writer */
-   JSON_Writer_Free(context.writer);
+   if (!rjsonwriter_free(writer))
+   {
+      RARCH_ERR("[disk index file] Error writing disk index file: %s\n", file_path);
+   }
 
    /* Changes have been written - record
     * is no longer considered to be in a

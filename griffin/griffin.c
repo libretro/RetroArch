@@ -57,8 +57,6 @@
 #endif
 #endif
 
-#define JSON_STATIC 1 /* must come before runtime_file, netplay_room_parse and jsonsax_full */
-
 #if _MSC_VER && !defined(__WINRT__)
 #include "../libretro-common/compat/compat_snprintf.c"
 #endif
@@ -193,7 +191,6 @@ ACHIEVEMENTS
 #include "../libretro-common/net/net_http.c"
 #endif
 
-#include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
@@ -1279,8 +1276,8 @@ THREAD
 #include "../audio/audio_thread_wrapper.c"
 #endif
 
-/* needed for both playlists and netplay lobbies */
-#include "../libretro-common/formats/json/jsonsax_full.c"
+/* needed for playlists, netplay lobbies and achievements */
+#include "../libretro-common/formats/json/rjson.c"
 
 /*============================================================
 NETPLAY
