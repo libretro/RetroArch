@@ -454,29 +454,18 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
    memset(&tex, 0, sizeof(tex));
 
-   info.imageType     = VK_IMAGE_TYPE_2D;
-   info.format        = format;
-   info.extent.width  = width;
-   info.extent.height = height;
-   info.extent.depth  = 1;
-   info.arrayLayers   = 1;
-   info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+   info.imageType          = VK_IMAGE_TYPE_2D;
+   info.format             = format;
+   info.extent.width       = width;
+   info.extent.height      = height;
+   info.extent.depth       = 1;
+   info.arrayLayers        = 1;
+   info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
+   info.mipLevels          = 1;
+   info.samples            = VK_SAMPLE_COUNT_1_BIT;
 
    buffer_info.size        = width * height * vulkan_format_to_bpp(format);
    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-   /* For simplicity, always build mipmaps for
-    * static textures, samplers can be used to enable it dynamically.
-    */
-   if (type == VULKAN_TEXTURE_STATIC)
-   {
-      info.mipLevels  = vulkan_num_miplevels(width, height);
-      tex.mipmap      = true;
-   }
-   else
-      info.mipLevels  = 1;
-
-   info.samples       = VK_SAMPLE_COUNT_1_BIT;
 
    if (type == VULKAN_TEXTURE_STREAMED)
    {
@@ -497,6 +486,11 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    switch (type)
    {
       case VULKAN_TEXTURE_STATIC:
+         /* For simplicity, always build mipmaps for
+          * static textures, samplers can be used to enable it dynamically.
+          */
+         info.mipLevels     = vulkan_num_miplevels(width, height);
+         tex.mipmap         = true;
          retro_assert(initial && "Static textures must have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
          info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -574,51 +568,54 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          tex.need_manual_cache_management =
             (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0;
+
+         /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
+          * so fallback to copy path. */
+         if (type == VULKAN_TEXTURE_STREAMED &&
+               (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+         {
+            /* Recreate texture but for STAGING this time ... */
+#ifdef VULKAN_DEBUG
+            RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
+#endif
+            type = VULKAN_TEXTURE_STAGING;
+            vkDestroyImage(device, tex.image, NULL);
+            tex.image          = (VkImage)NULL;
+            info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+            buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+            vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
+
+            alloc.allocationSize  = mem_reqs.size;
+            alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+                  &vk->context->memory_properties,
+                  mem_reqs.memoryTypeBits,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                  VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+         }
          break;
    }
 
-   /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
-    * so fallback to copy path. */
-   if (type == VULKAN_TEXTURE_STREAMED &&
-         (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
-          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
-   {
-      /* Recreate texture but for STAGING this time ... */
-#ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
-#endif
-      type = VULKAN_TEXTURE_STAGING;
-      vkDestroyImage(device, tex.image, NULL);
-      tex.image          = (VkImage)NULL;
-      info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-      buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-      vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
-      vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
-
-      alloc.allocationSize  = mem_reqs.size;
-      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
-            &vk->context->memory_properties,
-            mem_reqs.memoryTypeBits,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-            VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-   }
-
    /* We're not reusing the objects themselves. */
-   if (old && old->view != VK_NULL_HANDLE)
-      vkDestroyImageView(vk->context->device, old->view, NULL);
-   if (old && old->image != VK_NULL_HANDLE)
+   if (old)
    {
-      vkDestroyImage(vk->context->device, old->image, NULL);
+      if (old->view != VK_NULL_HANDLE)
+         vkDestroyImageView(vk->context->device, old->view, NULL);
+      if (old->image != VK_NULL_HANDLE)
+      {
+         vkDestroyImage(vk->context->device, old->image, NULL);
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
-      vulkan_track_dealloc(old->image);
+         vulkan_track_dealloc(old->image);
 #endif
+      }
+      if (old->buffer != VK_NULL_HANDLE)
+         vkDestroyBuffer(vk->context->device, old->buffer, NULL);
    }
-   if (old && old->buffer != VK_NULL_HANDLE)
-      vkDestroyBuffer(vk->context->device, old->buffer, NULL);
 
    /* We can pilfer the old memory and move it over to the new texture. */
    if (old &&
@@ -674,7 +671,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       vkCreateImageView(device, &view, NULL, &tex.view);
    }
    else
-      tex.view = VK_NULL_HANDLE;
+      tex.view        = VK_NULL_HANDLE;
 
    if (tex.image && info.tiling == VK_IMAGE_TILING_LINEAR)
       vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
