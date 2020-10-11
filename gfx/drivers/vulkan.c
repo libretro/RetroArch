@@ -1746,23 +1746,16 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Bookkeeping on start of frame. */
    struct vk_per_frame *chain                    = &vk->swapchain[frame_index];
    struct vk_image *backbuffer                   = &vk->backbuffers[swapchain_index];
+   struct vk_descriptor_manager *manager         = &chain->descriptor_manager;
+   struct vk_buffer_chain *buff_chain_vbo        = &chain->vbo;
+   struct vk_buffer_chain *buff_chain_ubo        = &chain->ubo;
 
    vk->chain                                     = chain;
    vk->backbuffer                                = backbuffer;
 
-   {
-      struct vk_descriptor_manager *manager = &chain->descriptor_manager;
-      VK_DESCRIPTOR_MANAGER_RESTART(manager);
-   }
-
-   {
-      struct vk_buffer_chain *buff_chain = &chain->vbo;
-      VK_BUFFER_CHAIN_DISCARD(buff_chain);
-   }
-   {
-      struct vk_buffer_chain *buff_chain = &chain->ubo;
-      VK_BUFFER_CHAIN_DISCARD(buff_chain);
-   }
+   VK_DESCRIPTOR_MANAGER_RESTART(manager);
+   VK_BUFFER_CHAIN_DISCARD(buff_chain_vbo);
+   VK_BUFFER_CHAIN_DISCARD(buff_chain_ubo);
 
    /* Start recording the command buffer. */
    vk->cmd                     = chain->cmd;
