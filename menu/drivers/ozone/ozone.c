@@ -2070,8 +2070,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   float *col                        = ozone->theme->entries_icon
-      ? ozone->theme->entries_icon : ozone->pure_white;
+   float *col                        = ozone->theme->entries_icon;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -2330,8 +2329,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          ozone->footer_labels.metadata_toggle.width - icon_size - (2.0f * icon_padding);
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   float *col                        = ozone->theme_dynamic.entries_icon
-      ? ozone->theme_dynamic.entries_icon : ozone->pure_white;
+   float *col                        = ozone->theme_dynamic.entries_icon;
 
    /* Separator */
    gfx_display_draw_quad(

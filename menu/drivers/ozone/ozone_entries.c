@@ -67,8 +67,7 @@ static void ozone_draw_entry_value(
    /* check icon */
    if (entry->checked)
    {
-      float *col = ozone->theme_dynamic.entries_checkmark
-         ? ozone->theme_dynamic.entries_checkmark : ozone->pure_white;
+      float *col = ozone->theme_dynamic.entries_checkmark;
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
       ozone_draw_icon(
@@ -184,8 +183,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
    unsigned icon_size      = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   float                        *col = ozone->theme->entries_icon
-      ? ozone->theme->entries_icon : ozone->pure_white;
+   float                        *col = ozone->theme->entries_icon;
 
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
@@ -1318,8 +1316,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
        * is available */
       if (metadata_override_enabled)
       {
-         float         *col = ozone->theme_dynamic.entries_icon
-            ? ozone->theme_dynamic.entries_icon : ozone->pure_white;
+         float         *col = ozone->theme_dynamic.entries_icon;
          /* Icon should be small and unobtrusive
           * > Make it 80% of the normal entry icon size */
          unsigned icon_size = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 0.8f);
