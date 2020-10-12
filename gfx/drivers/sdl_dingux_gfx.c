@@ -55,6 +55,7 @@ typedef struct sdl_dingux_video
    SDL_Surface *screen;
    unsigned frame_width;
    unsigned frame_height;
+   unsigned frame_padding;
    enum dingux_ipu_filter_type filter_type;
    uint32_t font_colour32;
    uint16_t font_colour16;
@@ -126,11 +127,15 @@ static void sdl_dingux_blit_text16(
       unsigned x, unsigned y,
       const char *str)
 {
+   /* Note: Cannot draw text in padding region
+    * (padding region is never cleared, so
+    * any text pixels would remain as garbage) */
    uint16_t *screen_buf         = (uint16_t*)vid->screen->pixels;
    /* 16 bit - divide pitch by 2 */
    uint16_t screen_stride       = (uint16_t)(vid->screen->pitch >> 1);
    uint16_t screen_width        = vid->screen->w;
    uint16_t screen_height       = vid->screen->h;
+   unsigned x_pos               = x + vid->frame_padding;
    uint16_t shadow_color_buf[2] = {0};
    uint16_t color_buf[2];
 
@@ -144,7 +149,8 @@ static void sdl_dingux_blit_text16(
    while (!string_is_empty(str))
    {
       /* Check for out of bounds x coordinates */
-      if (x + FONT_WIDTH_STRIDE + 1 >= screen_width)
+      if (x_pos + FONT_WIDTH_STRIDE + 1 >=
+            screen_width - vid->frame_padding)
          return;
 
       /* Deal with spaces first, for efficiency */
@@ -169,7 +175,7 @@ static void sdl_dingux_blit_text16(
 
          for (j = 0; j < FONT_HEIGHT; j++)
          {
-            uint32_t buff_offset = ((y + j) * screen_stride) + x;
+            uint32_t buff_offset = ((y + j) * screen_stride) + x_pos;
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
@@ -188,7 +194,7 @@ static void sdl_dingux_blit_text16(
          }
       }
 
-      x += FONT_WIDTH_STRIDE;
+      x_pos += FONT_WIDTH_STRIDE;
    }
 }
 
@@ -197,11 +203,15 @@ static void sdl_dingux_blit_text32(
       unsigned x, unsigned y,
       const char *str)
 {
+   /* Note: Cannot draw text in padding region
+    * (padding region is never cleared, so
+    * any text pixels would remain as garbage) */
    uint32_t *screen_buf         = (uint32_t*)vid->screen->pixels;
    /* 32 bit - divide pitch by 4 */
    uint32_t screen_stride       = (uint32_t)(vid->screen->pitch >> 2);
    uint32_t screen_width        = vid->screen->w;
    uint32_t screen_height       = vid->screen->h;
+   unsigned x_pos               = x + vid->frame_padding;
    uint32_t shadow_color_buf[2] = {0};
    uint32_t color_buf[2];
 
@@ -215,7 +225,8 @@ static void sdl_dingux_blit_text32(
    while (!string_is_empty(str))
    {
       /* Check for out of bounds x coordinates */
-      if (x + FONT_WIDTH_STRIDE + 1 >= screen_width)
+      if (x_pos + FONT_WIDTH_STRIDE + 1 >=
+            screen_width - vid->frame_padding)
          return;
 
       /* Deal with spaces first, for efficiency */
@@ -240,7 +251,7 @@ static void sdl_dingux_blit_text32(
 
          for (j = 0; j < FONT_HEIGHT; j++)
          {
-            uint32_t buff_offset = ((y + j) * screen_stride) + x;
+            uint32_t buff_offset = ((y + j) * screen_stride) + x_pos;
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
@@ -259,7 +270,7 @@ static void sdl_dingux_blit_text32(
          }
       }
 
-      x += FONT_WIDTH_STRIDE;
+      x_pos += FONT_WIDTH_STRIDE;
    }
 }
 
@@ -470,7 +481,10 @@ static void sdl_dingux_set_output(
       sdl_dingux_video_t* vid,
       unsigned width, unsigned height, bool rgb32)
 {
-   uint32_t surface_flags = (vid->vsync) ?
+   /* Surface width must be rounded up to
+    * the nearest multiple of 16 */
+   unsigned sanitized_width = (width + 0xF) & ~0xF;
+   uint32_t surface_flags   = (vid->vsync) ?
          (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
@@ -480,7 +494,7 @@ static void sdl_dingux_set_output(
 
    /* Attempt to change video mode */
    vid->screen = SDL_SetVideoMode(
-         vid->frame_width, vid->frame_height,
+         sanitized_width, vid->frame_height,
          rgb32 ? 32 : 16,
          surface_flags);
 
@@ -500,18 +514,43 @@ static void sdl_dingux_set_output(
             rgb32 ? 32 : 16,
             surface_flags);
 
-      vid->mode_valid = false;
+      vid->frame_padding = 0;
+      vid->mode_valid    = false;
    }
    else
+   {
+      /* Determine whether horizontal padding
+       * is required */
+      if (sanitized_width != width)
+      {
+         vid->frame_padding = (sanitized_width - width) >> 1;
+
+         /* To prevent garbage pixels in the padding
+          * region, must zero out pixel buffer */
+         if (SDL_MUSTLOCK(vid->screen))
+            SDL_LockSurface(vid->screen);
+
+         memset(vid->screen->pixels, 0,
+               vid->screen->w * vid->screen->w *
+                     (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
+
+         if (SDL_MUSTLOCK(vid->screen))
+            SDL_UnlockSurface(vid->screen);
+      }
+      else
+         vid->frame_padding = 0;
+
       vid->mode_valid = true;
+   }
 }
 
-static void sdl_dingux_blit_frame16(uint16_t* dst, uint16_t* src,
-      unsigned width, unsigned height,
-      unsigned dst_pitch, unsigned src_pitch)
+static void sdl_dingux_blit_frame16(sdl_dingux_video_t *vid,
+      uint16_t* src, unsigned width, unsigned height,
+      unsigned src_pitch)
 {
-   uint16_t *in_ptr  = src;
-   uint16_t *out_ptr = dst;
+   uint16_t *in_ptr   = src;
+   uint16_t *out_ptr  = (uint16_t*)vid->screen->pixels;
+   unsigned dst_pitch = vid->screen->pitch;
 
    /* If source and destination buffers have the
     * same pitch, perform fast copy of raw pixel data */
@@ -526,6 +565,10 @@ static void sdl_dingux_blit_frame16(uint16_t* dst, uint16_t* src,
       uint16_t out_stride = (uint16_t)(dst_pitch >> 1);
       size_t y;
 
+      /* If SDL surface has horizontal padding,
+       * shift output image to the right */
+      out_ptr += vid->frame_padding;
+
       for (y = 0; y < height; y++)
       {
          memcpy(out_ptr, in_ptr, width * sizeof(uint16_t));
@@ -535,12 +578,13 @@ static void sdl_dingux_blit_frame16(uint16_t* dst, uint16_t* src,
    }
 }
 
-static void sdl_dingux_blit_frame32(uint32_t* dst, uint32_t* src,
-      unsigned width, unsigned height,
-      unsigned dst_pitch, unsigned src_pitch)
+static void sdl_dingux_blit_frame32(sdl_dingux_video_t *vid,
+      uint32_t* src, unsigned width, unsigned height,
+      unsigned src_pitch)
 {
-   uint32_t *in_ptr    = src;
-   uint32_t *out_ptr   = dst;
+   uint32_t *in_ptr   = src;
+   uint32_t *out_ptr  = (uint32_t*)vid->screen->pixels;
+   unsigned dst_pitch = vid->screen->pitch;
 
    /* If source and destination buffers have the
     * same pitch, perform fast copy of raw pixel data */
@@ -554,6 +598,10 @@ static void sdl_dingux_blit_frame32(uint32_t* dst, uint32_t* src,
       uint32_t in_stride  = (uint32_t)(src_pitch >> 2);
       uint32_t out_stride = (uint32_t)(dst_pitch >> 2);
       size_t y;
+
+      /* If SDL surface has horizontal padding,
+       * shift output image to the right */
+      out_ptr += vid->frame_padding;
 
       for (y = 0; y < height; y++)
       {
@@ -599,17 +647,11 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
       {
          /* Blit frame to SDL surface */
          if (vid->rgb32)
-            sdl_dingux_blit_frame32(
-                  (uint32_t*)vid->screen->pixels,
-                  (uint32_t*)frame,
-                  width, height,
-                  vid->screen->pitch, pitch);
+            sdl_dingux_blit_frame32(vid, (uint32_t*)frame,
+                  width, height, pitch);
          else
-            sdl_dingux_blit_frame16(
-                  (uint16_t*)vid->screen->pixels,
-                  (uint16_t*)frame,
-                  width, height,
-                  vid->screen->pitch, pitch);
+            sdl_dingux_blit_frame16(vid, (uint16_t*)frame,
+                  width, height, pitch);
       }
       /* If current display mode is invalid,
        * just display an error message */
@@ -634,17 +676,15 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
          SDL_LockSurface(vid->screen);
 
       /* Blit menu texture to SDL surface */
-      sdl_dingux_blit_frame16(
-            (uint16_t*)vid->screen->pixels,
-            vid->menu_texture,
+      sdl_dingux_blit_frame16(vid, vid->menu_texture,
             SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT,
-            vid->screen->pitch, SDL_DINGUX_MENU_WIDTH * sizeof(uint16_t));
+            SDL_DINGUX_MENU_WIDTH * sizeof(uint16_t));
    }
 
    /* Print OSD text, if required */
    if (msg)
    {
-      /* If menu is active, colour depth is overriden
+      /* If menu is active, colour depth is overridden
        * to 16 bit */
       if (vid->rgb32 && !vid->menu_active)
          sdl_dingux_blit_text32(vid, FONT_WIDTH_STRIDE,
