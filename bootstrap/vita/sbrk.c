@@ -4,7 +4,6 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
 
-#define RAM_THRESHOLD 0x1000000 // Memory left to the system for threads and other internal stuffs
 
 int _newlib_heap_memblock;
 unsigned _newlib_heap_size;
@@ -57,6 +56,8 @@ void _init_vita_heap(void) {
 	SceKernelFreeMemorySizeInfo info;
 	info.size = sizeof(SceKernelFreeMemorySizeInfo);
 	sceKernelGetFreeMemorySize(&info);
+
+   printf("sceKernelGetFreeMemorySize %x\n", info.size_user);
 
 	if (&_newlib_heap_size_user != NULL) {
 		_newlib_heap_size = _newlib_heap_size_user;

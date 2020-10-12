@@ -57,6 +57,7 @@
 #endif
 
 #ifdef VITA
+#include "../../defines/psp_defines.h"
 static bool vgl_inited = false;
 #endif
 
@@ -280,7 +281,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 #ifdef VITA
    if (!vgl_inited)
    {
-      vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
+      vglInitExtended(0x1400000, full_x, full_y, RAM_THRESHOLD, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
       vglStartRendering();
       vgl_inited = true;

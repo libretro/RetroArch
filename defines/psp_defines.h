@@ -45,6 +45,8 @@ int sceClibPrintf ( const char * format, ... );
 #define PSP_FB_HEIGHT       544
 #define PSP_PITCH_PIXELS 1024
 
+#define RAM_THRESHOLD 0x2000000 // Memory left to the system for threads and other internal stuffs
+
 #elif defined(PSP)
 #define DisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync) sceDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync)
 
