@@ -4071,11 +4071,11 @@ static bool menu_input_key_bind_poll_find_trigger(
 
 #ifdef ANDROID
 static bool menu_input_key_bind_poll_find_hold(
+      struct rarch_state *p_rarch,
       struct menu_bind_state *new_state,
       struct retro_keybind * output)
 {
    unsigned i;
-   struct rarch_state *p_rarch = &rarch_st;
    unsigned        max_users   = p_rarch->input_driver_max_users;
 
    if (!new_state)
@@ -4232,7 +4232,7 @@ static bool menu_input_key_bind_iterate(
        * or we'll potentially bind joystick and mouse, etc.*/
       new_binds.buffer = *(new_binds.output);
 
-      if (menu_input_key_bind_poll_find_hold(&new_binds, &new_binds.buffer))
+      if (menu_input_key_bind_poll_find_hold(p_rarch, &new_binds, &new_binds.buffer))
       {
          /* Inhibit timeout*/
          rarch_timer_begin_new_time_us(&new_binds.timer_timeout,
@@ -6186,13 +6186,13 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 }
 
 static void menu_display_common_image_upload(
+      struct rarch_state *p_rarch,
       void *task_data,
       void *user_data,
       unsigned type)
 {
    menu_ctx_load_image_t load_image_info;
    struct texture_image      *img = (struct texture_image*)task_data;
-   struct rarch_state   *p_rarch  = &rarch_st;
 
    load_image_info.data           = img;
    load_image_info.type           = (enum menu_image_type)type;
@@ -6216,7 +6216,8 @@ void menu_display_handle_thumbnail_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   menu_display_common_image_upload(task_data, user_data,
+   struct rarch_state   *p_rarch  = &rarch_st;
+   menu_display_common_image_upload(p_rarch, task_data, user_data,
          MENU_IMAGE_THUMBNAIL);
 }
 
@@ -6225,7 +6226,8 @@ void menu_display_handle_left_thumbnail_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   menu_display_common_image_upload(task_data, user_data,
+   struct rarch_state   *p_rarch  = &rarch_st;
+   menu_display_common_image_upload(p_rarch, task_data, user_data,
          MENU_IMAGE_LEFT_THUMBNAIL);
 }
 #endif
@@ -6235,7 +6237,8 @@ void menu_display_handle_savestate_thumbnail_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   menu_display_common_image_upload(task_data, user_data,
+   struct rarch_state   *p_rarch  = &rarch_st;
+   menu_display_common_image_upload(p_rarch, task_data, user_data,
          MENU_IMAGE_SAVESTATE_THUMBNAIL);
 }
 
@@ -6247,7 +6250,8 @@ void menu_display_handle_wallpaper_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   menu_display_common_image_upload(task_data, user_data,
+   struct rarch_state   *p_rarch  = &rarch_st;
+   menu_display_common_image_upload(p_rarch, task_data, user_data,
          MENU_IMAGE_WALLPAPER);
 }
 
@@ -7391,9 +7395,9 @@ enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
 }
 
 static const char *menu_driver_get_last_shader_dir_int(
+      struct rarch_state *p_rarch,
       enum rarch_shader_type type, const char *shader_dir)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
    settings_t *settings         = p_rarch->configuration_settings;
    bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
    const char *video_shader_dir = settings->paths.directory_video_shader;
@@ -7429,7 +7433,7 @@ const char *menu_driver_get_last_shader_preset_dir(void)
       shader_dir = menu->last_shader_selection.preset_dir;
    }
 
-   return menu_driver_get_last_shader_dir_int(type, shader_dir);
+   return menu_driver_get_last_shader_dir_int(p_rarch, type, shader_dir);
 }
 
 const char *menu_driver_get_last_shader_pass_dir(void)
@@ -7445,7 +7449,7 @@ const char *menu_driver_get_last_shader_pass_dir(void)
       shader_dir = menu->last_shader_selection.pass_dir;
    }
 
-   return menu_driver_get_last_shader_dir_int(type, shader_dir);
+   return menu_driver_get_last_shader_dir_int(p_rarch, type, shader_dir);
 }
 
 #endif
@@ -9504,20 +9508,18 @@ static bool netplay_poll(
    switch (netplay->stall)
    {
       case NETPLAY_STALL_RUNNING_FAST:
+         if (netplay->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
+               > netplay->self_frame_count)
          {
-            if (netplay->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
-                  > netplay->self_frame_count)
+            netplay->stall = NETPLAY_STALL_NONE;
+            for (i = 0; i < netplay->connections_size; i++)
             {
-               netplay->stall = NETPLAY_STALL_NONE;
-               for (i = 0; i < netplay->connections_size; i++)
-               {
-                  struct netplay_connection *connection = &netplay->connections[i];
-                  if (connection->active && connection->stall)
-                     connection->stall = NETPLAY_STALL_NONE;
-               }
+               struct netplay_connection *connection = &netplay->connections[i];
+               if (connection->active && connection->stall)
+                  connection->stall = NETPLAY_STALL_NONE;
             }
-            break;
          }
+         break;
 
       case NETPLAY_STALL_SPECTATOR_WAIT:
          if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING || netplay->unread_frame_count > netplay->self_frame_count)
@@ -9721,13 +9723,11 @@ static int16_t netplay_input_state(netplay_t *netplay,
          return 0;
    }
 
-   delta = &netplay->buffer[ptr];
+   delta  = &netplay->buffer[ptr];
    istate = delta->resolved_input[port];
-   if (!istate || !istate->used)
+   if (!istate || !istate->used || istate->size == 0)
       return 0;
 
-   if (istate->size == 0)
-      return 0;
    curr_input_state = istate->data;
 
    switch (device)
@@ -9738,36 +9738,38 @@ static int16_t netplay_input_state(netplay_t *netplay,
          return ((1 << id) & curr_input_state[0]) ? 1 : 0;
 
       case RETRO_DEVICE_ANALOG:
+         if (istate->size == 3)
          {
-            uint32_t state;
-            if (istate->size != 3)
-               return 0;
-            state = curr_input_state[1 + idx];
+            uint32_t state = curr_input_state[1 + idx];
             return (int16_t)(uint16_t)(state >> (id * 16));
          }
-
+         break;
       case RETRO_DEVICE_MOUSE:
       case RETRO_DEVICE_LIGHTGUN:
-         if (istate->size != 2)
-            return 0;
-         if (id <= RETRO_DEVICE_ID_MOUSE_Y)
-            return (int16_t)(uint16_t)(curr_input_state[1] >> (id * 16));
-         return ((1 << id) & curr_input_state[0]) ? 1 : 0;
+         if (istate->size == 2)
+         {
+            if (id <= RETRO_DEVICE_ID_MOUSE_Y)
+               return (int16_t)(uint16_t)(curr_input_state[1] >> (id * 16));
+            return ((1 << id) & curr_input_state[0]) ? 1 : 0;
+         }
+         break;
       case RETRO_DEVICE_KEYBOARD:
          {
-            unsigned word, bit;
             unsigned key = netplay_key_hton(id);
-            if (key == NETPLAY_KEY_UNKNOWN)
-               return 0;
-            word = key / 32;
-            bit  = key % 32;
-            if (word <= istate->size)
-               return ((UINT32_C(1) << bit) & curr_input_state[word]) ? 1 : 0;
-            return 0;
+            if (key != NETPLAY_KEY_UNKNOWN)
+            {
+               unsigned word = key / 32;
+               unsigned bit  = key % 32;
+               if (word <= istate->size)
+                  return ((UINT32_C(1) << bit) & curr_input_state[word]) ? 1 : 0;
+            }
          }
+         break;
       default:
-         return 0;
+         break;
    }
+
+   return 0;
 }
 
 static void netplay_announce_cb(retro_task_t *task,
@@ -10861,14 +10863,12 @@ struct string_list *dir_list_new_special(const char *input_dir,
          exts = filter;
          break;
       case DIR_LIST_CORES:
-         {
-            ext_name[0]         = '\0';
+         ext_name[0]         = '\0';
 
-            if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
-               return NULL;
+         if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+            return NULL;
 
-            exts = ext_name;
-         }
+         exts = ext_name;
          break;
       case DIR_LIST_RECURSIVE:
          recursive = true;
@@ -35623,9 +35623,8 @@ static bool unserialize_hook(const void *buf, size_t size)
    return false;
 }
 
-static void add_input_state_hook(void)
+static void add_input_state_hook(struct rarch_state *p_rarch)
 {
-   struct rarch_state      *p_rarch = &rarch_st;
    struct retro_callbacks *cbs      = &p_rarch->retro_ctx;
 
    if (!p_rarch->input_state_callback_original)
@@ -35648,9 +35647,8 @@ static void add_input_state_hook(void)
    }
 }
 
-static void remove_input_state_hook(void)
+static void remove_input_state_hook(struct rarch_state *p_rarch)
 {
-   struct rarch_state      *p_rarch = &rarch_st;
    struct retro_callbacks *cbs      = &p_rarch->retro_ctx;
 
    if (p_rarch->input_state_callback_original)
@@ -35734,7 +35732,7 @@ static void runahead_remove_hooks(struct rarch_state *p_rarch)
       p_rarch->current_core.retro_unload_game = p_rarch->original_retro_unload;
       p_rarch->original_retro_unload          = NULL;
    }
-   remove_input_state_hook();
+   remove_input_state_hook(p_rarch);
 }
 
 static void runahead_destroy(struct rarch_state *p_rarch)
@@ -35780,7 +35778,7 @@ static void runahead_add_hooks(struct rarch_state *p_rarch)
       p_rarch->original_retro_unload          = p_rarch->current_core.retro_unload_game;
       p_rarch->current_core.retro_unload_game = unload_hook;
    }
-   add_input_state_hook();
+   add_input_state_hook(p_rarch);
 }
 
 /* Runahead Code */
