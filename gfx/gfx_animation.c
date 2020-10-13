@@ -2227,7 +2227,7 @@ void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
    gfx_animation_ctx_entry_t entry;
    uintptr_t tag        = (uintptr_t) timer;
 
-   gfx_timer_kill(timer);
+   gfx_animation_kill_by_tag(&tag);
 
    *timer               = 0.0f;
 

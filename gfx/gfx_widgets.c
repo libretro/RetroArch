@@ -394,6 +394,7 @@ static void gfx_widgets_msg_queue_free(
       disp_widget_msg_t *msg)
 {
    uintptr_t tag = (uintptr_t)msg;
+   uintptr_t hourglass_timer_tag = (uintptr_t)&msg->hourglass_timer;
 
    if (msg->task_ptr)
    {
@@ -408,7 +409,7 @@ static void gfx_widgets_msg_queue_free(
    }
 
    /* Kill all animations */
-   gfx_timer_kill(&msg->hourglass_timer);
+   gfx_animation_kill_by_tag(&hourglass_timer_tag);
    gfx_animation_kill_by_tag(&tag);
 
    /* Kill all timers */
