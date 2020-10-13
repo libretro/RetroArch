@@ -39,7 +39,6 @@ typedef void (*update_time_cb) (float *ticker_pixel_increment,
 enum gfx_animation_ctl_state
 {
    MENU_ANIMATION_CTL_NONE = 0,
-   MENU_ANIMATION_CTL_DEINIT,
    MENU_ANIMATION_CTL_CLEAR_ACTIVE,
    MENU_ANIMATION_CTL_SET_ACTIVE
 };
@@ -267,6 +266,8 @@ uint64_t gfx_animation_get_ticker_pixel_line_idx(void);
 void gfx_animation_set_update_time_cb(update_time_cb cb);
 
 void gfx_animation_unset_update_time_cb(void);
+
+void gfx_animation_deinit(gfx_animation_t *p_anim);
 
 gfx_animation_t *anim_get_ptr(void);
 

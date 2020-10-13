@@ -1153,13 +1153,15 @@ void gfx_animation_unset_update_time_cb(void)
    update_time_callback = NULL;
 }
 
-static void gfx_animation_update_time(
+bool gfx_animation_update(
       gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
-      unsigned video_width, unsigned video_height,
-      float _ticker_speed)
+      float _ticker_speed,
+      unsigned video_width,
+      unsigned video_height)
 {
+   unsigned i;
    const bool ticker_is_active                 = p_anim->ticker_is_active;
 
    static retro_time_t last_clock_update       = 0;
@@ -1186,11 +1188,11 @@ static void gfx_animation_update_time(
 
    /* Note: cur_time & old_time are in us (microseconds),
     * delta_time is in ms */
-   p_anim->cur_time   = current_time;
-   p_anim->delta_time = (p_anim->old_time == 0) 
+   p_anim->cur_time                            = current_time;
+   p_anim->delta_time                          = (p_anim->old_time == 0) 
       ? 0.0f 
       : (float)(p_anim->cur_time - p_anim->old_time) / 1000.0f;
-   p_anim->old_time   = p_anim->cur_time;
+   p_anim->old_time                            = p_anim->cur_time;
 
    if (((p_anim->cur_time - last_clock_update) > 1000000) /* 1000000 us == 1 second */
          && timedate_enable)
@@ -1263,24 +1265,6 @@ static void gfx_animation_update_time(
          ticker_pixel_line_accumulator -= (float)ticker_pixel_line_accumulator_uint;
       }
    }
-}
-
-bool gfx_animation_update(
-      gfx_animation_t *p_anim,
-      retro_time_t current_time,
-      bool timedate_enable,
-      float ticker_speed,
-      unsigned video_width,
-      unsigned video_height)
-{
-   unsigned i;
-
-   gfx_animation_update_time(
-         p_anim,
-         current_time,
-         timedate_enable,
-         video_width, video_height,
-         ticker_speed);
 
    p_anim->in_update       = true;
    p_anim->pending_deletes = false;
@@ -1351,7 +1335,7 @@ static void build_ticker_loop_string(
 {
    char tmp[PATH_MAX_LENGTH];
 
-   tmp[0] = '\0';
+   tmp[0]      = '\0';
    dest_str[0] = '\0';
 
    /* Copy 'trailing' chunk of source string, if required */
@@ -1404,8 +1388,6 @@ static void build_line_ticker_string(
          strlcat(dest_str, "\n", dest_str_len);
    }
 }
-
-
 
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 {
@@ -2209,17 +2191,21 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
    return true;
 }
 
+void gfx_animation_deinit(gfx_animation_t *p_anim)
+{
+   if (!p_anim)
+      return;
+   RBUF_FREE(p_anim->list);
+   RBUF_FREE(p_anim->pending);
+   memset(p_anim, 0, sizeof(*p_anim));
+}
+
 bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
 {
    gfx_animation_t *p_anim        = anim_get_ptr();
 
    switch (state)
    {
-      case MENU_ANIMATION_CTL_DEINIT:
-         RBUF_FREE(p_anim->list);
-         RBUF_FREE(p_anim->pending);
-         memset(p_anim, 0, sizeof(*p_anim));
-         break;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          p_anim->animation_is_active = false;
          p_anim->ticker_is_active    = false;

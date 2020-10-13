@@ -7566,7 +7566,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                memset(&system->info, 0, sizeof(struct retro_system_info));
             }
 
-            gfx_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
+            gfx_animation_deinit(&p_rarch->anim);
             gfx_display_free();
 
             menu_entries_settings_deinit(p_rarch);
