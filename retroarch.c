@@ -18958,13 +18958,19 @@ static bool dynamic_verify_hw_context(
          if (!string_is_equal(video_ident, "vulkan"))
             return false;
          break;
+#if defined(HAVE_OPENGL_CORE)
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         if (!string_is_equal(video_ident, "glcore"))
+            return false;
+         break;
+#else
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+#endif
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
       case RETRO_HW_CONTEXT_OPENGL:
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
-         if (!string_is_equal(video_ident, "gl") &&
-             !string_is_equal(video_ident, "glcore"))
+         if (!string_is_equal(video_ident, "gl"))
             return false;
          break;
       case RETRO_HW_CONTEXT_DIRECT3D:
@@ -31660,14 +31666,16 @@ static bool hw_render_context_is_d3d11(const struct retro_hw_render_callback* hw
 }
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
+#ifdef HAVE_OPENGL
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
    switch (type)
    {
       case RETRO_HW_CONTEXT_OPENGL:
-      case RETRO_HW_CONTEXT_OPENGLES2:
+#ifndef HAVE_OPENGL_CORE
       case RETRO_HW_CONTEXT_OPENGL_CORE:
+#endif
+      case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
          return true;
@@ -31676,6 +31684,13 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    }
 
    return false;
+}
+#endif
+
+#ifdef HAVE_OPENGL_CORE
+static bool hw_render_context_is_glcore(enum retro_hw_context_type type)
+{
+   return type == RETRO_HW_CONTEXT_OPENGL_CORE;
 }
 #endif
 
@@ -33161,36 +33176,39 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
       }
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
+#if defined(HAVE_OPENGL)
       if (hwr && hw_render_context_is_gl(hwr->context_type))
       {
          RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
-
-         /* If we have configured one of the HW render capable GL drivers, go with that. */
-         if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
-               !string_is_equal(settings->arrays.video_driver, "glcore"))
+         if (!string_is_equal(settings->arrays.video_driver, "gl"))
          {
             RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
             strlcpy(p_rarch->cached_video_driver,
-                  settings->arrays.video_driver,
-                  sizeof(p_rarch->cached_video_driver));
-#if defined(HAVE_OPENGL_CORE)
-            RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
+               settings->arrays.video_driver,
+               sizeof(p_rarch->cached_video_driver));
             configuration_set_string(settings,
-                  settings->arrays.video_driver, "glcore");
-            p_rarch->current_video = &video_gl_core;
-#else
-            RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
-            configuration_set_string(settings,
-                  settings->arrays.video_driver, "gl");
-            p_rarch->current_video = &video_gl2;
+               settings->arrays.video_driver,
+               "gl");
+         }
+         p_rarch->current_video = &video_gl2;
+      }
 #endif
-         }
-         else
+
+#if defined(HAVE_OPENGL_CORE)
+      if (hwr && hw_render_context_is_glcore(hwr->context_type))
+      {
+         RARCH_LOG("[Video]: Using HW render, OpenGL Core driver forced.\n");
+         if (!string_is_equal(settings->arrays.video_driver, "glcore"))
          {
-            RARCH_LOG("[Video]: Using configured \"%s\" driver for GL HW render.\n",
-                  settings->arrays.video_driver);
+            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
+            strlcpy(p_rarch->cached_video_driver,
+               settings->arrays.video_driver,
+               sizeof(p_rarch->cached_video_driver));
+            configuration_set_string(settings,
+               settings->arrays.video_driver,
+               "glcore");
          }
+         p_rarch->current_video = &video_gl_core;
       }
 #endif
 
@@ -34175,7 +34193,7 @@ static const gfx_ctx_driver_t *video_context_driver_init(
 {
    struct rarch_state *p_rarch = &rarch_st;
    settings_t       *settings  = p_rarch->configuration_settings;
-   bool  video_shared_context  = settings->bools.video_shared_context;
+   bool  video_shared_context  = settings->bools.video_shared_context || libretro_get_shared_context();
 
    if (!ctx->bind_api(data, api, major, minor))
    {
