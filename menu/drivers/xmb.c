@@ -3066,7 +3066,7 @@ static int xmb_draw_item(
    }
    else
    {
-      ticker.idx       = gfx_animation_get_ticker_idx();
+      ticker.idx       = p_anim->ticker_idx;
       ticker.type_enum = menu_ticker_type;
       ticker.spacer    = NULL;
    }
@@ -3292,7 +3292,7 @@ static int xmb_draw_item(
          else
          {
             line_ticker.type_enum = menu_ticker_type;
-            line_ticker.idx       = gfx_animation_get_ticker_idx();
+            line_ticker.idx       = p_anim->ticker_idx;
 
             line_ticker.line_len  = (size_t)(line_ticker_width);
             /* Note: max_lines should be calculated at runtime,

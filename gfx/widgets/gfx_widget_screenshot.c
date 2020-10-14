@@ -204,6 +204,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    unsigned video_height                = video_info->height;
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_display_t            *p_disp     = disp_get_ptr();
+   gfx_animation_t          *p_anim     = anim_get_ptr();
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
    int padding                          = (state->height - (font_regular->line_height * 2.0f)) / 2.0f;
@@ -246,7 +247,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             TEXT_ALIGN_LEFT,
             true);
 
-      ticker.idx        = gfx_animation_get_ticker_idx();
+      ticker.idx        = p_anim->ticker_idx;
       ticker.len        = state->shotname_length;
       ticker.s          = shotname;
       ticker.selected   = true;

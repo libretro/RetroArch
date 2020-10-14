@@ -2281,6 +2281,7 @@ static int stripes_draw_item(
    stripes_node_t *   node               = (stripes_node_t*)
       file_list_get_userdata_at_offset(list, i);
    settings_t *settings              = config_get_ptr();
+   gfx_animation_t *p_anim           = anim_get_ptr();
 
    /* Initial ticker configuration */
    ticker.type_enum = settings->uints.menu_ticker_type;
@@ -2400,7 +2401,7 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
-   ticker.idx      = gfx_animation_get_ticker_idx();
+   ticker.idx      = p_anim->ticker_idx;
    ticker.str      = ticker_str;
    ticker.selected = (i == current);
 
@@ -2436,7 +2437,7 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = 35 * stripes_scale_mod[7];
-   ticker.idx      = gfx_animation_get_ticker_idx();
+   ticker.idx      = p_anim->ticker_idx;
    ticker.selected = (i == current);
 
    if (!string_is_empty(entry->value))

@@ -668,7 +668,7 @@ border_iterate:
       }
       else
       {
-         ticker.idx                  = gfx_animation_get_ticker_idx();
+         ticker.idx                  = p_anim->ticker_idx;
          ticker.type_enum            = menu_ticker_type;
          ticker.spacer               = ticker_spacer;
       }
@@ -1170,7 +1170,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
          }
          else
          {
-            ticker.idx                       = gfx_animation_get_ticker_idx();
+            ticker.idx                       = p_anim->ticker_idx;
             ticker.type_enum                 = menu_ticker_type;
             ticker.spacer                    = ticker_spacer;
 

@@ -205,7 +205,7 @@ void ozone_draw_sidebar(
    }
    else
    {
-      ticker.idx                  = gfx_animation_get_ticker_idx();
+      ticker.idx                  = p_anim->ticker_idx;
       ticker.type_enum            = menu_ticker_type;
       ticker.spacer               = ticker_spacer;
    }

@@ -2241,15 +2241,3 @@ void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 
    gfx_animation_push(&entry);
 }
-
-uint64_t gfx_animation_get_ticker_idx(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->ticker_idx;
-}
-
-uint64_t gfx_animation_get_ticker_slow_idx(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->ticker_slow_idx;
-}

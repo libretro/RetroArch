@@ -253,10 +253,6 @@ void gfx_animation_push_delayed(unsigned delay, gfx_animation_ctx_entry_t *entry
 
 bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data);
 
-uint64_t gfx_animation_get_ticker_idx(void);
-
-uint64_t gfx_animation_get_ticker_slow_idx(void);
-
 void gfx_animation_set_update_time_cb(update_time_cb cb);
 
 void gfx_animation_unset_update_time_cb(void);
