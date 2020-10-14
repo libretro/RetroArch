@@ -2197,28 +2197,6 @@ void gfx_animation_deinit(gfx_animation_t *p_anim)
    memset(p_anim, 0, sizeof(*p_anim));
 }
 
-bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-
-   switch (state)
-   {
-      case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
-         p_anim->animation_is_active = false;
-         p_anim->ticker_is_active    = false;
-         break;
-      case MENU_ANIMATION_CTL_SET_ACTIVE:
-         p_anim->animation_is_active = true;
-         p_anim->ticker_is_active    = true;
-         break;
-      case MENU_ANIMATION_CTL_NONE:
-      default:
-         break;
-   }
-
-   return true;
-}
-
 void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 {
    gfx_animation_ctx_entry_t entry;

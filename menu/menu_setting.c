@@ -6826,6 +6826,7 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    double video_refresh_rate = 0.0;
    double deviation          = 0.0;
    unsigned sample_points    = 0;
+   gfx_animation_t *p_anim   = anim_get_ptr();
    if (!setting)
       return;
 
@@ -6834,7 +6835,7 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    {
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
-      gfx_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
+      GFX_ANIMATION_SET_ACTIVE(p_anim);
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);

@@ -1671,6 +1671,7 @@ static void ozone_render(void *data,
    unsigned language                = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
    ozone_handle_t *ozone            = (ozone_handle_t*)data;
    gfx_display_t *p_disp            = disp_get_ptr();
+   gfx_animation_t          *p_anim = anim_get_ptr();
    if (!ozone)
       return;
 
@@ -2044,7 +2045,7 @@ static void ozone_render(void *data,
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
    }
 
-   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
 static void ozone_draw_header(ozone_handle_t *ozone,

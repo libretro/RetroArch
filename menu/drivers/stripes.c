@@ -2620,9 +2620,10 @@ static void stripes_render(void *data,
 {
    size_t i;
    menu_input_pointer_t pointer;
-   settings_t   *settings   = config_get_ptr();
-   stripes_handle_t *stripes        = (stripes_handle_t*)data;
-   unsigned      end        = (unsigned)menu_entries_get_size();
+   settings_t   *settings    = config_get_ptr();
+   stripes_handle_t *stripes = (stripes_handle_t*)data;
+   unsigned      end         = (unsigned)menu_entries_get_size();
+   gfx_animation_t *p_anim   = anim_get_ptr();
 
    if (!stripes)
       return;
@@ -2661,7 +2662,7 @@ static void stripes_render(void *data,
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
    }
 
-   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
 static bool stripes_shader_pipeline_active(unsigned menu_shader_pipeline)

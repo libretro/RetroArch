@@ -3839,6 +3839,7 @@ static void xmb_render(void *data,
    settings_t *settings     = config_get_ptr();
    unsigned      end        = (unsigned)menu_entries_get_size();
    gfx_display_t *p_disp    = disp_get_ptr();
+   gfx_animation_t *p_anim  = anim_get_ptr();
 
    if (!xmb)
       return;
@@ -4009,7 +4010,7 @@ static void xmb_render(void *data,
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
    }
 
-   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
 static bool xmb_shader_pipeline_active(unsigned menu_shader_pipeline)

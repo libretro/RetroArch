@@ -3536,7 +3536,7 @@ static void rgui_render(void *data,
       rgui->bg_modified      = false;
 
    p_disp->framebuf_dirty    = true;
-   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 
    rgui->force_redraw        = false;
 

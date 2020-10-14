@@ -31,17 +31,22 @@ RETRO_BEGIN_DECLS
 
 #define ANIM_IS_ACTIVE(_p) ((_p)->animation_is_active || (_p)->ticker_is_active)
 
+#define GFX_ANIMATION_CLEAR_ACTIVE(anim) \
+{ \
+   (anim)->animation_is_active = false; \
+   (anim)->ticker_is_active    = false; \
+}
+
+#define GFX_ANIMATION_SET_ACTIVE(anim) \
+{ \
+   (anim)->animation_is_active = true; \
+   (anim)->ticker_is_active    = true; \
+}
+
 typedef void  (*tween_cb)  (void*);
 
 typedef void (*update_time_cb) (float *ticker_pixel_increment,
       unsigned width, unsigned height);
-
-enum gfx_animation_ctl_state
-{
-   MENU_ANIMATION_CTL_NONE = 0,
-   MENU_ANIMATION_CTL_CLEAR_ACTIVE,
-   MENU_ANIMATION_CTL_SET_ACTIVE
-};
 
 enum gfx_animation_easing_type
 {
@@ -250,8 +255,6 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag);
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry);
 
 void gfx_animation_push_delayed(unsigned delay, gfx_animation_ctx_entry_t *entry);
-
-bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data);
 
 void gfx_animation_set_update_time_cb(update_time_cb cb);
 
