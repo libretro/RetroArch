@@ -257,10 +257,6 @@ uint64_t gfx_animation_get_ticker_idx(void);
 
 uint64_t gfx_animation_get_ticker_slow_idx(void);
 
-uint64_t gfx_animation_get_ticker_pixel_idx(void);
-
-uint64_t gfx_animation_get_ticker_pixel_line_idx(void);
-
 void gfx_animation_set_update_time_cb(update_time_cb cb);
 
 void gfx_animation_unset_update_time_cb(void);

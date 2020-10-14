@@ -503,6 +503,7 @@ void ozone_draw_entries(
    float scale_factor      = ozone->last_scale_factor;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_animation_t          *p_anim  = anim_get_ptr();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -657,7 +658,7 @@ border_iterate:
       /* Initial ticker configuration */
       if (use_smooth_ticker)
       {
-         ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+         ticker_smooth.idx           = p_anim->ticker_pixel_idx;
          ticker_smooth.font          = ozone->fonts.entries_label.font;
          ticker_smooth.font_scale    = 1.0f;
          ticker_smooth.type_enum     = menu_ticker_type;
@@ -932,6 +933,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
    enum gfx_thumbnail_alignment left_thumbnail_alignment;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_animation_t          *p_anim  = anim_get_ptr();
 
    /* Background */
    if (!libretro_running || (menu_framebuffer_opacity >= 1.0f))
@@ -1153,7 +1155,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
          /* Initial ticker configuration */
          if (use_smooth_ticker)
          {
-            ticker_smooth.idx                = gfx_animation_get_ticker_pixel_idx();
+            ticker_smooth.idx                = p_anim->ticker_pixel_idx;
             ticker_smooth.font_scale         = 1.0f;
             ticker_smooth.type_enum          = menu_ticker_type;
             ticker_smooth.spacer             = ticker_spacer;

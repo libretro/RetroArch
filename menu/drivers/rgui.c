@@ -3610,7 +3610,7 @@ static void rgui_render(void *data,
     * with the following configuration: */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+      ticker_smooth.idx           = p_anim->ticker_pixel_idx;
       ticker_smooth.font          = NULL;
       ticker_smooth.glyph_width   = FONT_WIDTH_STRIDE;
       ticker_smooth.type_enum     = menu_ticker_type;

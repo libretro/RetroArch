@@ -2069,13 +2069,14 @@ static void ozone_draw_header(ozone_handle_t *ozone,
    enum gfx_animation_ticker_type
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_animation_t          *p_anim  = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    float *col                        = ozone->theme->entries_icon;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+      ticker_smooth.idx           = p_anim->ticker_pixel_idx;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = menu_ticker_type;
       ticker_smooth.spacer        = ticker_spacer;
@@ -2084,7 +2085,7 @@ static void ozone_draw_header(ozone_handle_t *ozone,
    }
    else
    {
-      ticker.idx                  = gfx_animation_get_ticker_idx();
+      ticker.idx                  = p_anim->ticker_idx;
       ticker.type_enum            = menu_ticker_type;
       ticker.spacer               = ticker_spacer;
    }
@@ -2330,6 +2331,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    float *col                        = ozone->theme_dynamic.entries_icon;
+   gfx_animation_t          *p_anim  = anim_get_ptr();
 
    /* Separator */
    gfx_display_draw_quad(
@@ -2540,7 +2542,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          /* Configure and run ticker */
          if (use_smooth_ticker)
          {
-            ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+            ticker_smooth.idx           = p_anim->ticker_pixel_idx;
             ticker_smooth.font_scale    = 1.0f;
             ticker_smooth.type_enum     = menu_ticker_type;
             ticker_smooth.spacer        = ticker_spacer;
@@ -2558,7 +2560,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          }
          else
          {
-            ticker.idx                  = gfx_animation_get_ticker_idx();
+            ticker.idx                  = p_anim->ticker_idx;
             ticker.type_enum            = menu_ticker_type;
             ticker.spacer               = ticker_spacer;
 

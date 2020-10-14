@@ -3051,11 +3051,12 @@ static int xmb_draw_item(
       settings->uints.menu_xmb_thumbnail_scale_factor;
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
+   gfx_animation_t *p_anim             = anim_get_ptr();
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+      ticker_smooth.idx           = p_anim->ticker_pixel_idx;
       ticker_smooth.font          = xmb->font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = menu_ticker_type;
@@ -3258,7 +3259,7 @@ static int xmb_draw_item(
          {
             line_ticker_smooth.fade_enabled         = true;
             line_ticker_smooth.type_enum            = menu_ticker_type;
-            line_ticker_smooth.idx                  = gfx_animation_get_ticker_pixel_line_idx();
+            line_ticker_smooth.idx                  = p_anim->ticker_pixel_line_idx;
 
             line_ticker_smooth.font                 = xmb->font2;
             line_ticker_smooth.font_scale           = 1.0f;
@@ -4266,6 +4267,7 @@ static void xmb_draw_fullscreen_thumbnails(
       bool menu_ticker_smooth           = settings->bools.menu_ticker_smooth;
       enum gfx_animation_ticker_type 
          menu_ticker_type               = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      gfx_animation_t *p_anim           = anim_get_ptr();
 
       /* Sanity check: Return immediately if this is
        * a menu without thumbnails and we are not currently
@@ -4467,7 +4469,7 @@ static void xmb_draw_fullscreen_thumbnails(
 
             title_buf[0] = '\0';
 
-            ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+            ticker_smooth.idx           = p_anim->ticker_pixel_idx;
             ticker_smooth.font          = xmb->font;
             ticker_smooth.font_scale    = 1.0f;
             ticker_smooth.type_enum     = menu_ticker_type;

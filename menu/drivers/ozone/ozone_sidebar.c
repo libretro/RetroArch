@@ -172,21 +172,22 @@ void ozone_draw_sidebar(
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const
-      ticker_spacer              = OZONE_TICKER_SPACER;
-   unsigned ticker_x_offset      = 0;
-   settings_t *settings          = config_get_ptr();
-   uint32_t text_alpha           = ozone->animations.sidebar_text_alpha 
+      ticker_spacer                  = OZONE_TICKER_SPACER;
+   unsigned ticker_x_offset          = 0;
+   settings_t *settings              = config_get_ptr();
+   uint32_t text_alpha               = ozone->animations.sidebar_text_alpha 
       * 255.0f;
-   bool use_smooth_ticker        = settings->bools.menu_ticker_smooth;
-   float scale_factor            = ozone->last_scale_factor;
+   bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
+   float scale_factor                = ozone->last_scale_factor;
    enum gfx_animation_ticker_type
-      menu_ticker_type           = (enum gfx_animation_ticker_type)
+      menu_ticker_type               = (enum gfx_animation_ticker_type)
       settings->uints.menu_ticker_type;
-   unsigned selection_y          = 0;
-   unsigned selection_old_y      = 0;
-   unsigned horizontal_list_size = 0;
+   unsigned selection_y              = 0;
+   unsigned selection_old_y          = 0;
+   unsigned horizontal_list_size     = 0;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_animation_t          *p_anim  = anim_get_ptr();
 
    if (!ozone->draw_sidebar)
       return;
@@ -194,7 +195,7 @@ void ozone_draw_sidebar(
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+      ticker_smooth.idx           = p_anim->ticker_pixel_idx;
       ticker_smooth.font          = ozone->fonts.sidebar.font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = menu_ticker_type;

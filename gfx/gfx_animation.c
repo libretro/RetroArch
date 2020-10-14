@@ -2253,15 +2253,3 @@ uint64_t gfx_animation_get_ticker_slow_idx(void)
    gfx_animation_t *p_anim        = anim_get_ptr();
    return p_anim->ticker_slow_idx;
 }
-
-uint64_t gfx_animation_get_ticker_pixel_idx(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->ticker_pixel_idx;
-}
-
-uint64_t gfx_animation_get_ticker_pixel_line_idx(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->ticker_pixel_line_idx;
-}

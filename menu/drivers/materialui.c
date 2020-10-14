@@ -6607,6 +6607,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_color_theme      = video_info->materialui_color_theme;
    bool video_fullscreen          = video_info->fullscreen;
    bool menu_mouse_enable         = video_info->menu_mouse_enable;
+   gfx_animation_t *p_anim        = anim_get_ptr();
 
    if (!mui)
       return;
@@ -6633,12 +6634,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    if (mui->use_smooth_ticker)
    {
-      mui->ticker_smooth.idx       = gfx_animation_get_ticker_pixel_idx();
+      mui->ticker_smooth.idx       = p_anim->ticker_pixel_idx;
       mui->ticker_smooth.type_enum = menu_ticker_type;
    }
    else
    {
-      mui->ticker.idx              = gfx_animation_get_ticker_idx();
+      mui->ticker.idx              = p_anim->ticker_idx;
       mui->ticker.type_enum        = menu_ticker_type;
    }
 
