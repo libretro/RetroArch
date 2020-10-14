@@ -341,7 +341,7 @@ static void gfx_widget_achievement_popup_unfold(void *userdata)
    timer.duration = MSG_QUEUE_ANIMATION_DURATION + CHEEVO_NOTIFICATION_DURATION;
    timer.userdata = NULL;
 
-   gfx_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start(&state->timer, &timer);
 }
 
 static void gfx_widget_achievement_popup_start(

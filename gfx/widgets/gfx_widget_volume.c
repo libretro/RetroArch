@@ -304,7 +304,7 @@ void gfx_widget_volume_update_and_show(float new_volume, bool mute)
    entry.duration    = VOLUME_DURATION;
    entry.userdata    = NULL;
 
-   gfx_timer_start(&state->timer, &entry);
+   gfx_animation_timer_start(&state->timer, &entry);
 }
 
 static void gfx_widget_volume_layout(

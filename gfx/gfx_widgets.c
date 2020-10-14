@@ -673,7 +673,7 @@ static void gfx_widgets_start_msg_expiration_timer(
    timer.duration = duration;
    timer.userdata = msg_widget;
 
-   gfx_timer_start(&msg_widget->expiration_timer, &timer);
+   gfx_animation_timer_start(&msg_widget->expiration_timer, &timer);
 
    msg_widget->expiration_timer_started = true;
 }
@@ -691,7 +691,7 @@ static void gfx_widgets_hourglass_end(void *userdata)
    timer.duration          = HOURGLASS_INTERVAL;
    timer.userdata          = msg;
 
-   gfx_timer_start(&msg->hourglass_timer, &timer);
+   gfx_animation_timer_start(&msg->hourglass_timer, &timer);
 }
 
 static void gfx_widgets_hourglass_tick(void *userdata)

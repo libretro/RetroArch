@@ -163,7 +163,7 @@ void gfx_widget_set_progress_message(void *data,
    timer.cb       = gfx_widget_progress_message_fadeout;
    timer.userdata = state;
 
-   gfx_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start(&state->timer, &timer);
 
    /* Set initial widget opacity */
    state->alpha  = 1.0f;

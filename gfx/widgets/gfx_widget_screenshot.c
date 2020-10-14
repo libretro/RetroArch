@@ -342,7 +342,7 @@ static void gfx_widget_screenshot_iterate(
 
       timer.userdata = p_dispwidget;
 
-      gfx_timer_start(&state->timer, &timer);
+      gfx_animation_timer_start(&state->timer, &timer);
 
       state->loaded       = true;
       state->filename[0]  = '\0';

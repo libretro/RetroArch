@@ -1000,7 +1000,7 @@ void gfx_animation_push_delayed(
    timer_entry.duration = delay;
    timer_entry.userdata = delayed_animation;
 
-   gfx_timer_start(&delayed_animation->timer, &timer_entry);
+   gfx_animation_timer_start(&delayed_animation->timer, &timer_entry);
 }
 
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
@@ -2197,7 +2197,7 @@ void gfx_animation_deinit(gfx_animation_t *p_anim)
    memset(p_anim, 0, sizeof(*p_anim));
 }
 
-void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
+void gfx_animation_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 {
    gfx_animation_ctx_entry_t entry;
    uintptr_t tag        = (uintptr_t) timer;

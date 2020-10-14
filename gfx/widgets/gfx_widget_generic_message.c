@@ -153,7 +153,7 @@ static void gfx_widget_generic_message_slide_in_cb(void *userdata)
    timer.cb       = gfx_widget_generic_message_wait_cb;
    timer.userdata = state;
 
-   gfx_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start(&state->timer, &timer);
    state->status = GFX_WIDGET_GENERIC_MESSAGE_WAIT;
 }
 

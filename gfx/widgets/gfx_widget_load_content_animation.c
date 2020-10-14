@@ -250,7 +250,7 @@ static void gfx_widget_load_content_animation_slide_cb(void *userdata)
    timer.cb       = gfx_widget_load_content_animation_wait_cb;
    timer.userdata = state;
 
-   gfx_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start(&state->timer, &timer);
    state->status = GFX_WIDGET_LOAD_CONTENT_WAIT;
 }
 
