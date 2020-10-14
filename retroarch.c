@@ -3340,8 +3340,8 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_LALT,          "Left Alt"},
    {RETROK_RMETA,         "Right Meta"},
    {RETROK_LMETA,         "Left Meta"},
-   {RETROK_LSUPER,        "Right Super"},
-   {RETROK_RSUPER,        "Left Super"},
+   {RETROK_RSUPER,        "Right Super"},
+   {RETROK_LSUPER,        "Left Super"},
    {RETROK_MODE,          "Mode"},
    {RETROK_COMPOSE,       "Compose"},
 

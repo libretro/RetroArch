@@ -870,9 +870,9 @@ static LRESULT CALLBACK wnd_proc_common(
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
             if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |=  RETROKMOD_CTRL;
+               mod |= RETROKMOD_CTRL;
             if (GetKeyState(VK_MENU)    & 0x80)
-               mod |=  RETROKMOD_ALT;
+               mod |= RETROKMOD_ALT;
             if (GetKeyState(VK_CAPITAL) & 0x81)
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
@@ -948,9 +948,9 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
             if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |=  RETROKMOD_CTRL;
+               mod |= RETROKMOD_CTRL;
             if (GetKeyState(VK_MENU)    & 0x80)
-               mod |=  RETROKMOD_ALT;
+               mod |= RETROKMOD_ALT;
             if (GetKeyState(VK_CAPITAL) & 0x81)
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
@@ -1039,9 +1039,9 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
             if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |=  RETROKMOD_CTRL;
+               mod |= RETROKMOD_CTRL;
             if (GetKeyState(VK_MENU)    & 0x80)
-               mod |=  RETROKMOD_ALT;
+               mod |= RETROKMOD_ALT;
             if (GetKeyState(VK_CAPITAL) & 0x81)
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)

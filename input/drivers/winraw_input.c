@@ -105,6 +105,7 @@ static BOOL winraw_set_keyboard_input(HWND window)
    rid.hwndTarget  = window;
    rid.usUsagePage = 0x01; /* generic desktop */
    rid.usUsage     = 0x06; /* keyboard */
+   rid.dwFlags    |= RIDEV_NOHOTKEYS; /* disable win keys while focused */
 
    return RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
 }
