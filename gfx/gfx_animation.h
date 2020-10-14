@@ -229,8 +229,6 @@ typedef struct gfx_animation gfx_animation_t;
 
 void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry);
 
-void gfx_timer_kill(gfx_timer_t *timer);
-
 bool gfx_animation_update(
       gfx_animation_t *p_anim,
       retro_time_t current_time,

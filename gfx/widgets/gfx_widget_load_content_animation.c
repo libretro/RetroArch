@@ -166,9 +166,10 @@ static void gfx_widget_load_content_animation_reset(void)
    gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
    uintptr_t alpha_tag                              = (uintptr_t)&state->alpha;
    uintptr_t slide_offset_tag                       = (uintptr_t)&state->slide_offset;
+   uintptr_t timer_tag                              = (uintptr_t)&state->timer;
 
    /* Kill any existing timers/animations */
-   gfx_timer_kill(&state->timer);
+   gfx_animation_kill_by_tag(&timer_tag);
    gfx_animation_kill_by_tag(&alpha_tag);
    gfx_animation_kill_by_tag(&slide_offset_tag);
 

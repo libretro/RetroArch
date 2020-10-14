@@ -249,7 +249,8 @@ void gfx_widgets_msg_queue_push(
       {
          if (msg_widget->expiration_timer_started)
          {
-            gfx_timer_kill(&msg_widget->expiration_timer);
+            uintptr_t _tag = (uintptr_t)&msg_widget->expiration_timer;
+            gfx_animation_kill_by_tag(&_tag);
             msg_widget->expiration_timer_started = false;
          }
 
@@ -414,7 +415,10 @@ static void gfx_widgets_msg_queue_free(
 
    /* Kill all timers */
    if (msg->expiration_timer_started)
-      gfx_timer_kill(&msg->expiration_timer);
+   {
+      uintptr_t _tag = (uintptr_t)&msg->expiration_timer;
+      gfx_animation_kill_by_tag(&_tag);
+   }
 
    /* Free it */
    if (msg->msg)

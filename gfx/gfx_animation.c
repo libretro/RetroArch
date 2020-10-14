@@ -2242,12 +2242,6 @@ void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
    gfx_animation_push(&entry);
 }
 
-void gfx_timer_kill(gfx_timer_t *timer)
-{
-   uintptr_t tag = (uintptr_t) timer;
-   gfx_animation_kill_by_tag(&tag);
-}
-
 uint64_t gfx_animation_get_ticker_idx(void)
 {
    gfx_animation_t *p_anim        = anim_get_ptr();

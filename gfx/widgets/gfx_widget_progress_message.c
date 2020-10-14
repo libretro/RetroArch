@@ -131,6 +131,7 @@ void gfx_widget_set_progress_message(void *data,
    gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
+   uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Ensure we have a valid message string */
    if (string_is_empty(message))
@@ -154,7 +155,7 @@ void gfx_widget_set_progress_message(void *data,
          1.0f);
 
    /* Kill any existing timer/animation */
-   gfx_timer_kill(&state->timer);
+   gfx_animation_kill_by_tag(&timer_tag);
    gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Start new message timer */
@@ -313,9 +314,10 @@ static void gfx_widget_progress_message_free(void)
 {
    gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
+   uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Kill any existing timer / animation */
-   gfx_timer_kill(&state->timer);
+   gfx_animation_kill_by_tag(&timer_tag);
    gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Deactivate widget */

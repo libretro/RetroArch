@@ -97,9 +97,10 @@ static void gfx_widget_libretro_message_reset(bool cancel_pending)
 {
    gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
+   uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Kill any existing timers/animations */
-   gfx_timer_kill(&state->timer);
+   gfx_animation_kill_by_tag(&timer_tag);
    gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Reset status */
