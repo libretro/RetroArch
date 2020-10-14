@@ -272,29 +272,26 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-static void gfx_animation_ticker_generic(uint64_t idx,
-      size_t max_width, size_t *offset, size_t *width)
+static size_t gfx_animation_ticker_generic(uint64_t idx,
+      size_t max_width, size_t *width)
 {
-   int ticker_period     = (int)(2 * (*width - max_width) + 4);
-   int phase             = idx % ticker_period;
+   int ticker_period           = (int)(2 * (*width - max_width) + 4);
+   int phase                   = idx % ticker_period;
+   const int phase_left_stop   = 2;
+   int phase_left_moving       = (int)(phase_left_stop + (*width - max_width));
+   int phase_right_stop        = phase_left_moving + 2;
 
-   int phase_left_stop   = 2;
-   int phase_left_moving = (int)(phase_left_stop + (*width - max_width));
-   int phase_right_stop  = phase_left_moving + 2;
-
-   int left_offset       = phase - phase_left_stop;
-   int right_offset      = (int)((*width - max_width) - (phase - phase_right_stop));
+   *width                      = max_width;
 
    if (phase < phase_left_stop)
-      *offset = 0;
-   else if (phase < phase_left_moving)
-      *offset = left_offset;
+      return 0;
+   else if (phase < phase_left_moving) /* left offset */
+      return (phase - phase_left_stop);
    else if (phase < phase_right_stop)
-      *offset = *width - max_width;
-   else
-      *offset = right_offset;
+      return (*width - max_width);
 
-   *width = max_width;
+   /* right offset */
+   return (size_t)(int)((*width - max_width) - (phase - phase_right_stop));
 }
 
 static void gfx_animation_ticker_loop(uint64_t idx,
@@ -1424,46 +1421,41 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
    switch (ticker->type_enum)
    {
       case TICKER_TYPE_LOOP:
-      {
-         size_t offset1, offset2, offset3;
-         size_t width1, width2, width3;
-         
-         gfx_animation_ticker_loop(
-               ticker->idx,
-               ticker->len,
-               str_len, utf8len(ticker->spacer),
-               &offset1, &width1,
-               &offset2, &width2,
-               &offset3, &width3);
-         
-         build_ticker_loop_string(
-               ticker->str, ticker->spacer,
-               offset1, width1,
-               offset2, width2,
-               offset3, width3,
-               ticker->s, PATH_MAX_LENGTH);
-         
+         {
+            size_t offset1, offset2, offset3;
+            size_t width1, width2, width3;
+
+            gfx_animation_ticker_loop(
+                  ticker->idx,
+                  ticker->len,
+                  str_len, utf8len(ticker->spacer),
+                  &offset1, &width1,
+                  &offset2, &width2,
+                  &offset3, &width3);
+
+            build_ticker_loop_string(
+                  ticker->str, ticker->spacer,
+                  offset1, width1,
+                  offset2, width2,
+                  offset3, width3,
+                  ticker->s, PATH_MAX_LENGTH);
+         }
          break;
-      }
       case TICKER_TYPE_BOUNCE:
       default:
-      {
-         size_t offset  = 0;
-         
-         gfx_animation_ticker_generic(
-               ticker->idx,
-               ticker->len,
-               &offset,
-               &str_len);
-         
-         utf8cpy(
-               ticker->s,
-               PATH_MAX_LENGTH,
-               utf8skip(ticker->str, offset),
-               str_len);
-         
+         {
+            size_t offset = gfx_animation_ticker_generic(
+                  ticker->idx,
+                  ticker->len,
+                  &str_len);
+
+            utf8cpy(
+                  ticker->s,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->str, offset),
+                  str_len);
+         }
          break;
-      }
    }
 
    p_anim->ticker_is_active = true;
