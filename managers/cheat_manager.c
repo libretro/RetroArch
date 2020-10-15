@@ -623,7 +623,7 @@ void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
       return;
 
    cheat_st->cheats[i].state = !cheat_st->cheats[i].state;
-   cheat_manager_update(&cheat_manager_state, i);
+   cheat_manager_update(cheat_st, i);
 
    if (apply_cheats_after_toggle)
       cheat_manager_apply_cheats();
@@ -637,7 +637,7 @@ void cheat_manager_toggle(void)
 
    cheat_st->cheats[cheat_st->ptr].state ^= true;
    cheat_manager_apply_cheats();
-   cheat_manager_update(&cheat_manager_state, cheat_st->ptr);
+   cheat_manager_update(cheat_st, cheat_st->ptr);
 }
 
 void cheat_manager_index_next(void)
@@ -647,7 +647,7 @@ void cheat_manager_index_next(void)
       return;
 
    cheat_st->ptr = (cheat_st->ptr + 1) % cheat_st->size;
-   cheat_manager_update(&cheat_manager_state, cheat_st->ptr);
+   cheat_manager_update(cheat_st, cheat_st->ptr);
 }
 
 void cheat_manager_index_prev(void)
@@ -661,7 +661,7 @@ void cheat_manager_index_prev(void)
    else
       cheat_st->ptr--;
 
-   cheat_manager_update(&cheat_manager_state, cheat_st->ptr);
+   cheat_manager_update(cheat_st, cheat_st->ptr);
 }
 
 const char *cheat_manager_get_code(unsigned i)
