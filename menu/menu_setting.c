@@ -2762,6 +2762,7 @@ static int setting_action_ok_uint(
    return 0;
 }
 
+#if defined(HAVE_GFX_WIDGETS)
 static int setting_string_action_left_string_options(
    rarch_setting_t* setting, size_t idx, bool wraparound)
 {
@@ -2835,6 +2836,7 @@ static int setting_action_ok_mapped_string(
     * the mapping happens in menu_displaylist_ctl */
    return setting_action_ok_uint(setting, idx, wraparound);
 }
+#endif
 
 static void setting_get_string_representation_streaming_mode(
       rarch_setting_t *setting,
