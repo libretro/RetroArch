@@ -93,7 +93,7 @@ typedef struct
 } gfx_thumbnail_shadow_t;
 
 /* Structure containing all gfx_thumbnail
- * global variables */
+ * variables */
 struct gfx_thumbnail_state
 {
    /* Due to the asynchronous nature of thumbnail

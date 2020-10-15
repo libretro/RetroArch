@@ -480,8 +480,8 @@ ozone_theme_t *ozone_themes[] = {
 
 };
 
+const unsigned ozone_themes_count           = sizeof(ozone_themes) / sizeof(ozone_themes[0]);
 /* TODO/FIXME - global variables referenced outside */
-unsigned ozone_themes_count                 = sizeof(ozone_themes) / sizeof(ozone_themes[0]);
 unsigned last_color_theme                   = 0;
 bool last_use_preferred_system_color_theme  = false;
 ozone_theme_t *ozone_default_theme          = &ozone_theme_dark; /* also used as a tag for cursor animation */

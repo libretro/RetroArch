@@ -68,7 +68,7 @@ extern ozone_theme_t ozone_theme_twilight_zone;
 extern ozone_theme_t *ozone_themes[];
 
 /* TODO/FIXME - global variables referenced outside */
-extern unsigned ozone_themes_count;
+extern const unsigned ozone_themes_count;
 extern unsigned last_color_theme;
 extern bool last_use_preferred_system_color_theme;
 extern ozone_theme_t *ozone_default_theme;
