@@ -15752,7 +15752,9 @@ static bool command_event_main_state(
 
    if (push_msg)
       runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg);
+
+   if (!string_is_empty(msg))
+      RARCH_LOG("%s\n", msg);
 
    return ret;
 }
