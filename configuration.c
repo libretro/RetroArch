@@ -1514,10 +1514,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("core_updater_show_experimental_cores", &settings->bools.network_buildbot_show_experimental_cores, true, DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES, false);
    SETTING_BOOL("core_updater_auto_backup",      &settings->bools.core_updater_auto_backup, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP, false);
    SETTING_BOOL("camera_allow",                  &settings->bools.camera_allow, true, false, false);
-   SETTING_BOOL("discord_allow",                  &settings->bools.discord_enable, true, false, false);
+   SETTING_BOOL("discord_allow",                 &settings->bools.discord_enable, true, false, false);
 #if defined(VITA)
-   SETTING_BOOL("input_backtouch_enable",         &settings->bools.input_backtouch_enable, false, false, false);
-   SETTING_BOOL("input_backtouch_toggle",         &settings->bools.input_backtouch_toggle, false, false, false);
+   SETTING_BOOL("input_backtouch_enable",        &settings->bools.input_backtouch_enable, false, false, false);
+   SETTING_BOOL("input_backtouch_toggle",        &settings->bools.input_backtouch_toggle, false, false, false);
 #endif
 #if TARGET_OS_IPHONE
    SETTING_BOOL("small_keyboard_enable",         &settings->bools.input_small_keyboard_enable, true, false, false);
@@ -1545,52 +1545,56 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, false, false);
    SETTING_BOOL("menu_ticker_smooth",            &settings->bools.menu_ticker_smooth, true, DEFAULT_MENU_TICKER_SMOOTH, false);
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, false, false);
-   SETTING_BOOL("settings_show_drivers",      &settings->bools.settings_show_drivers, true, DEFAULT_SETTINGS_SHOW_DRIVERS, false);
-   SETTING_BOOL("settings_show_video",      &settings->bools.settings_show_video, true, DEFAULT_SETTINGS_SHOW_VIDEO, false);
-   SETTING_BOOL("settings_show_audio",      &settings->bools.settings_show_audio, true, DEFAULT_SETTINGS_SHOW_AUDIO, false);
-   SETTING_BOOL("settings_show_input",      &settings->bools.settings_show_input, true, DEFAULT_SETTINGS_SHOW_INPUT, false);
-   SETTING_BOOL("settings_show_latency",      &settings->bools.settings_show_latency, true, DEFAULT_SETTINGS_SHOW_LATENCY, false);
-   SETTING_BOOL("settings_show_core",      &settings->bools.settings_show_core, true, DEFAULT_SETTINGS_SHOW_CORE, false);
-   SETTING_BOOL("settings_show_configuration",      &settings->bools.settings_show_configuration, true, DEFAULT_SETTINGS_SHOW_CONFIGURATION, false);
-   SETTING_BOOL("settings_show_saving",      &settings->bools.settings_show_saving, true, DEFAULT_SETTINGS_SHOW_SAVING, false);
-   SETTING_BOOL("settings_show_logging",     &settings->bools.settings_show_logging, true, DEFAULT_SETTINGS_SHOW_LOGGING, false);
-   SETTING_BOOL("settings_show_frame_throttle",      &settings->bools.settings_show_frame_throttle, true, DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE, false);
-   SETTING_BOOL("settings_show_recording",      &settings->bools.settings_show_recording, true, DEFAULT_SETTINGS_SHOW_RECORDING, false);
-   SETTING_BOOL("settings_show_onscreen_display",      &settings->bools.settings_show_onscreen_display, true, DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY, false);
-   SETTING_BOOL("settings_show_user_interface",      &settings->bools.settings_show_user_interface, true, DEFAULT_SETTINGS_SHOW_USER_INTERFACE, false);
-   SETTING_BOOL("settings_show_ai_service",      &settings->bools.settings_show_ai_service, true, DEFAULT_SETTINGS_SHOW_AI_SERVICE, false);
-   SETTING_BOOL("settings_show_power_management",      &settings->bools.settings_show_power_management, true, DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT, false);
-   SETTING_BOOL("settings_show_achievements",      &settings->bools.settings_show_achievements, true, DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS, false);
-   SETTING_BOOL("settings_show_network",      &settings->bools.settings_show_network, true, DEFAULT_SETTINGS_SHOW_NETWORK, false);
-   SETTING_BOOL("settings_show_playlists",      &settings->bools.settings_show_playlists, true, DEFAULT_SETTINGS_SHOW_PLAYLISTS, false);
-   SETTING_BOOL("settings_show_user",      &settings->bools.settings_show_user, true, DEFAULT_SETTINGS_SHOW_USER, false);
-   SETTING_BOOL("settings_show_directory",      &settings->bools.settings_show_directory, true, DEFAULT_SETTINGS_SHOW_DIRECTORY, false);
-   SETTING_BOOL("quick_menu_show_resume_content",      &settings->bools.quick_menu_show_resume_content, true, DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT, false);
-   SETTING_BOOL("quick_menu_show_restart_content",      &settings->bools.quick_menu_show_restart_content, true, DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT, false);
-   SETTING_BOOL("quick_menu_show_close_content",      &settings->bools.quick_menu_show_close_content, true, DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT, false);
-   SETTING_BOOL("quick_menu_show_recording",      &settings->bools.quick_menu_show_recording, true, quick_menu_show_recording, false);
-   SETTING_BOOL("quick_menu_show_streaming",      &settings->bools.quick_menu_show_streaming, true, quick_menu_show_streaming, false);
-   SETTING_BOOL("quick_menu_show_save_load_state",      &settings->bools.quick_menu_show_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE, false);
-   SETTING_BOOL("quick_menu_show_take_screenshot",      &settings->bools.quick_menu_show_take_screenshot, true, DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT, false);
-   SETTING_BOOL("quick_menu_show_undo_save_load_state", &settings->bools.quick_menu_show_undo_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE, false);
-   SETTING_BOOL("quick_menu_show_add_to_favorites",     &settings->bools.quick_menu_show_add_to_favorites, true, quick_menu_show_add_to_favorites, false);
-   SETTING_BOOL("quick_menu_show_start_recording",      &settings->bools.quick_menu_show_start_recording, true, quick_menu_show_start_recording, false);
-   SETTING_BOOL("quick_menu_show_start_streaming",      &settings->bools.quick_menu_show_start_streaming, true, quick_menu_show_start_streaming, false);
-   SETTING_BOOL("quick_menu_show_set_core_association", &settings->bools.quick_menu_show_set_core_association, true, quick_menu_show_set_core_association, false);
-   SETTING_BOOL("quick_menu_show_reset_core_association", &settings->bools.quick_menu_show_reset_core_association, true, quick_menu_show_reset_core_association, false);
-   SETTING_BOOL("quick_menu_show_options",       &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
-   SETTING_BOOL("quick_menu_show_controls",      &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
-   SETTING_BOOL("quick_menu_show_cheats",        &settings->bools.quick_menu_show_cheats, true, quick_menu_show_cheats, false);
-   SETTING_BOOL("quick_menu_show_shaders",       &settings->bools.quick_menu_show_shaders, true, quick_menu_show_shaders, false);
-   SETTING_BOOL("quick_menu_show_save_core_overrides",  &settings->bools.quick_menu_show_save_core_overrides, true, quick_menu_show_save_core_overrides, false);
-   SETTING_BOOL("quick_menu_show_save_game_overrides",  &settings->bools.quick_menu_show_save_game_overrides, true, quick_menu_show_save_game_overrides, false);
-   SETTING_BOOL("quick_menu_show_save_content_dir_overrides",  &settings->bools.quick_menu_show_save_content_dir_overrides, true, quick_menu_show_save_content_dir_overrides, false);
-   SETTING_BOOL("quick_menu_show_information",   &settings->bools.quick_menu_show_information, true, quick_menu_show_information, false);
+
+   SETTING_BOOL("settings_show_drivers",          &settings->bools.settings_show_drivers, true, DEFAULT_SETTINGS_SHOW_DRIVERS, false);
+   SETTING_BOOL("settings_show_video",            &settings->bools.settings_show_video, true, DEFAULT_SETTINGS_SHOW_VIDEO, false);
+   SETTING_BOOL("settings_show_audio",            &settings->bools.settings_show_audio, true, DEFAULT_SETTINGS_SHOW_AUDIO, false);
+   SETTING_BOOL("settings_show_input",            &settings->bools.settings_show_input, true, DEFAULT_SETTINGS_SHOW_INPUT, false);
+   SETTING_BOOL("settings_show_latency",          &settings->bools.settings_show_latency, true, DEFAULT_SETTINGS_SHOW_LATENCY, false);
+   SETTING_BOOL("settings_show_core",             &settings->bools.settings_show_core, true, DEFAULT_SETTINGS_SHOW_CORE, false);
+   SETTING_BOOL("settings_show_configuration",    &settings->bools.settings_show_configuration, true, DEFAULT_SETTINGS_SHOW_CONFIGURATION, false);
+   SETTING_BOOL("settings_show_saving",           &settings->bools.settings_show_saving, true, DEFAULT_SETTINGS_SHOW_SAVING, false);
+   SETTING_BOOL("settings_show_logging",          &settings->bools.settings_show_logging, true, DEFAULT_SETTINGS_SHOW_LOGGING, false);
+   SETTING_BOOL("settings_show_file_browser",     &settings->bools.settings_show_file_browser, true, DEFAULT_SETTINGS_SHOW_FILE_BROWSER, false);
+   SETTING_BOOL("settings_show_frame_throttle",   &settings->bools.settings_show_frame_throttle, true, DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE, false);
+   SETTING_BOOL("settings_show_recording",        &settings->bools.settings_show_recording, true, DEFAULT_SETTINGS_SHOW_RECORDING, false);
+   SETTING_BOOL("settings_show_onscreen_display", &settings->bools.settings_show_onscreen_display, true, DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY, false);
+   SETTING_BOOL("settings_show_user_interface",   &settings->bools.settings_show_user_interface, true, DEFAULT_SETTINGS_SHOW_USER_INTERFACE, false);
+   SETTING_BOOL("settings_show_ai_service",       &settings->bools.settings_show_ai_service, true, DEFAULT_SETTINGS_SHOW_AI_SERVICE, false);
+   SETTING_BOOL("settings_show_accessibility",    &settings->bools.settings_show_accessibility, true, DEFAULT_SETTINGS_SHOW_ACCESSIBILITY, false);
+   SETTING_BOOL("settings_show_power_management", &settings->bools.settings_show_power_management, true, DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT, false);
+   SETTING_BOOL("settings_show_achievements",     &settings->bools.settings_show_achievements, true, DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS, false);
+   SETTING_BOOL("settings_show_network",          &settings->bools.settings_show_network, true, DEFAULT_SETTINGS_SHOW_NETWORK, false);
+   SETTING_BOOL("settings_show_playlists",        &settings->bools.settings_show_playlists, true, DEFAULT_SETTINGS_SHOW_PLAYLISTS, false);
+   SETTING_BOOL("settings_show_user",             &settings->bools.settings_show_user, true, DEFAULT_SETTINGS_SHOW_USER, false);
+   SETTING_BOOL("settings_show_directory",        &settings->bools.settings_show_directory, true, DEFAULT_SETTINGS_SHOW_DIRECTORY, false);
+
+   SETTING_BOOL("quick_menu_show_resume_content",             &settings->bools.quick_menu_show_resume_content, true, DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT, false);
+   SETTING_BOOL("quick_menu_show_restart_content",            &settings->bools.quick_menu_show_restart_content, true, DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT, false);
+   SETTING_BOOL("quick_menu_show_close_content",              &settings->bools.quick_menu_show_close_content, true, DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT, false);
+   SETTING_BOOL("quick_menu_show_recording",                  &settings->bools.quick_menu_show_recording, true, quick_menu_show_recording, false);
+   SETTING_BOOL("quick_menu_show_streaming",                  &settings->bools.quick_menu_show_streaming, true, quick_menu_show_streaming, false);
+   SETTING_BOOL("quick_menu_show_save_load_state",            &settings->bools.quick_menu_show_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE, false);
+   SETTING_BOOL("quick_menu_show_take_screenshot",            &settings->bools.quick_menu_show_take_screenshot, true, DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT, false);
+   SETTING_BOOL("quick_menu_show_undo_save_load_state",       &settings->bools.quick_menu_show_undo_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE, false);
+   SETTING_BOOL("quick_menu_show_add_to_favorites",           &settings->bools.quick_menu_show_add_to_favorites, true, quick_menu_show_add_to_favorites, false);
+   SETTING_BOOL("quick_menu_show_start_recording",            &settings->bools.quick_menu_show_start_recording, true, quick_menu_show_start_recording, false);
+   SETTING_BOOL("quick_menu_show_start_streaming",            &settings->bools.quick_menu_show_start_streaming, true, quick_menu_show_start_streaming, false);
+   SETTING_BOOL("quick_menu_show_set_core_association",       &settings->bools.quick_menu_show_set_core_association, true, quick_menu_show_set_core_association, false);
+   SETTING_BOOL("quick_menu_show_reset_core_association",     &settings->bools.quick_menu_show_reset_core_association, true, quick_menu_show_reset_core_association, false);
+   SETTING_BOOL("quick_menu_show_options",                    &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
+   SETTING_BOOL("quick_menu_show_controls",                   &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
+   SETTING_BOOL("quick_menu_show_cheats",                     &settings->bools.quick_menu_show_cheats, true, quick_menu_show_cheats, false);
+   SETTING_BOOL("quick_menu_show_shaders",                    &settings->bools.quick_menu_show_shaders, true, quick_menu_show_shaders, false);
+   SETTING_BOOL("quick_menu_show_save_core_overrides",        &settings->bools.quick_menu_show_save_core_overrides, true, quick_menu_show_save_core_overrides, false);
+   SETTING_BOOL("quick_menu_show_save_game_overrides",        &settings->bools.quick_menu_show_save_game_overrides, true, quick_menu_show_save_game_overrides, false);
+   SETTING_BOOL("quick_menu_show_save_content_dir_overrides", &settings->bools.quick_menu_show_save_content_dir_overrides, true, quick_menu_show_save_content_dir_overrides, false);
+   SETTING_BOOL("quick_menu_show_information",                &settings->bools.quick_menu_show_information, true, quick_menu_show_information, false);
 #ifdef HAVE_NETWORKING
-   SETTING_BOOL("quick_menu_show_download_thumbnails",   &settings->bools.quick_menu_show_download_thumbnails, true, quick_menu_show_download_thumbnails, false);
+   SETTING_BOOL("quick_menu_show_download_thumbnails",        &settings->bools.quick_menu_show_download_thumbnails, true, quick_menu_show_download_thumbnails, false);
 #endif
    SETTING_BOOL("kiosk_mode_enable",             &settings->bools.kiosk_mode_enable, true, DEFAULT_KIOSK_MODE_ENABLE, false);
-   SETTING_BOOL("menu_use_preferred_system_color_theme",         &settings->bools.menu_use_preferred_system_color_theme, true, DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, false);
+   SETTING_BOOL("menu_use_preferred_system_color_theme", &settings->bools.menu_use_preferred_system_color_theme, true, DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, false);
    SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, content_show_settings, false);
    SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, content_show_favorites, false);
 #ifdef HAVE_IMAGEVIEWER
@@ -1617,9 +1621,9 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("menu_show_information",         &settings->bools.menu_show_information, true, menu_show_information, false);
    SETTING_BOOL("menu_show_configurations",      &settings->bools.menu_show_configurations, true, menu_show_configurations, false);
-   SETTING_BOOL("menu_show_latency",      &settings->bools.menu_show_latency, true, true, false);
-   SETTING_BOOL("menu_show_rewind",      &settings->bools.menu_show_rewind, true, true, false);
-   SETTING_BOOL("menu_show_overlays",      &settings->bools.menu_show_overlays, true, true, false);
+   SETTING_BOOL("menu_show_latency",             &settings->bools.menu_show_latency, true, true, false);
+   SETTING_BOOL("menu_show_rewind",              &settings->bools.menu_show_rewind, true, true, false);
+   SETTING_BOOL("menu_show_overlays",            &settings->bools.menu_show_overlays, true, true, false);
 #ifdef HAVE_VIDEO_LAYOUT
    SETTING_BOOL("menu_show_video_layout",        &settings->bools.menu_show_video_layout, true, true, false);
 #endif

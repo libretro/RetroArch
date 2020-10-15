@@ -525,14 +525,17 @@ DEFAULT_TITLE_MACRO(action_get_playlist_manager_list,           MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_input_hotkey_binds_settings_list,MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS)
 DEFAULT_TITLE_MACRO(action_get_driver_settings_list,            MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_core_settings_list,              MENU_ENUM_LABEL_VALUE_CORE_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_video_settings_list,             MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_video_fullscreen_mode_settings_list,     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_video_windowed_mode_settings_list,     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_video_scaling_settings_list,     MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_video_output_settings_list,      MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_video_synchronization_settings_list,      MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_input_menu_settings_list,      MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_input_haptic_feedback_settings_list,      MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS)
+
+DEFAULT_TITLE_MACRO(action_get_video_settings_list,                 MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_video_fullscreen_mode_settings_list, MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_video_windowed_mode_settings_list,   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_video_scaling_settings_list,         MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_video_output_settings_list,          MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_video_synchronization_settings_list, MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS)
+
+DEFAULT_TITLE_MACRO(action_get_input_menu_settings_list,            MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_input_haptic_feedback_settings_list, MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS)
+
 DEFAULT_TITLE_MACRO(action_get_crt_switchres_settings_list,     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_configuration_settings_list,     MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_load_disc_list,                  MENU_ENUM_LABEL_VALUE_LOAD_DISC)
@@ -540,32 +543,32 @@ DEFAULT_TITLE_MACRO(action_get_dump_disc_list,                  MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_saving_settings_list,            MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_logging_settings_list,           MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_frame_throttle_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_frame_time_counter_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_frame_time_counter_settings_list, MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_rewind_settings_list,            MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_cheat_details_settings_list,     MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_cheat_search_settings_list,      MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_display_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_views_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS)
 #ifdef HAVE_VIDEO_LAYOUT
 DEFAULT_TITLE_MACRO(action_get_onscreen_video_layout_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS)
 #endif
 DEFAULT_TITLE_MACRO(action_get_menu_views_settings_list,        MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_settings_views_settings_list,  MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_settings_views_settings_list,    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_quick_menu_views_settings_list,  MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_menu_settings_list,              MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_user_interface_settings_list,    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_ai_service_settings_list,    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_accessibility_settings_list,    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_ai_service_settings_list,        MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_accessibility_settings_list,     MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_power_management_settings_list,  MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_menu_sounds_list,                MENU_ENUM_LABEL_VALUE_MENU_SOUNDS)
 DEFAULT_TITLE_MACRO(action_get_menu_file_browser_settings_list, MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_retro_achievements_settings_list,MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_bluetooth_settings_list,         MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_wifi_settings_list,              MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_network_hosting_settings_list,           MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_subsystem_settings_list,           MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_network_hosting_settings_list,   MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_subsystem_settings_list,         MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_network_settings_list,           MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_netplay_lan_scan_settings_list,  MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS)
 #ifdef HAVE_LAKKA
@@ -576,12 +579,13 @@ DEFAULT_TITLE_MACRO(action_get_directory_settings_list,         MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_privacy_settings_list,           MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_midi_settings_list,              MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_updater_settings_list,           MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_audio_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_audio_resampler_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_audio_output_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_audio_synchronization_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS)
+
+DEFAULT_TITLE_MACRO(action_get_audio_settings_list,                 MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_audio_resampler_settings_list,       MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_audio_output_settings_list,          MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_audio_synchronization_settings_list, MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS)
 #ifdef HAVE_AUDIOMIXER
-DEFAULT_TITLE_MACRO(action_get_audio_mixer_settings_list,       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_audio_mixer_settings_list,           MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS)
 #endif
 DEFAULT_TITLE_MACRO(action_get_input_settings_list,             MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_latency_settings_list,           MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS)
@@ -591,7 +595,7 @@ DEFAULT_TITLE_MACRO(action_get_load_content_special,            MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_cursor_manager_list,             MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER)
 DEFAULT_TITLE_MACRO(action_get_database_manager_list,           MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER)
 DEFAULT_TITLE_MACRO(action_get_system_information_list,         MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION)
-DEFAULT_TITLE_MACRO(action_get_disc_information_list,        MENU_ENUM_LABEL_VALUE_DISC_INFORMATION)
+DEFAULT_TITLE_MACRO(action_get_disc_information_list,           MENU_ENUM_LABEL_VALUE_DISC_INFORMATION)
 DEFAULT_TITLE_MACRO(action_get_network_information_list,        MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION)
 DEFAULT_TITLE_MACRO(action_get_settings_list,                   MENU_ENUM_LABEL_VALUE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_title_information_list,          MENU_ENUM_LABEL_VALUE_INFORMATION_LIST)
@@ -874,7 +878,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST,                   action_get_menu_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST,         action_get_user_interface_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST,             action_get_ai_service_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST,             action_get_accessibility_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST,          action_get_accessibility_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST,       action_get_power_management_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST,                     action_get_menu_sounds_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST,      action_get_menu_file_browser_settings_list},
@@ -882,8 +886,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST,              action_get_bluetooth_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,                   action_get_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST,                action_get_updater_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST,                action_get_network_hosting_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST,                action_get_subsystem_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST,        action_get_network_hosting_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST,              action_get_subsystem_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST,                action_get_network_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST,       action_get_netplay_lan_scan_settings_list},
 #ifdef HAVE_LAKKA
@@ -902,9 +906,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,                           action_get_title_deferred_video_list},
       {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,                 action_get_driver_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,                  action_get_audio_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST,                  action_get_audio_resampler_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST,                  action_get_audio_output_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,                  action_get_audio_synchronization_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST,        action_get_audio_resampler_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST,           action_get_audio_output_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,  action_get_audio_synchronization_settings_list},
 #ifdef HAVE_AUDIOMIXER
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST,            action_get_audio_mixer_settings_list},
 #endif
@@ -918,13 +922,13 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST,                action_get_user_accounts_youtube_list},
       {MENU_ENUM_LABEL_ONLINE_UPDATER,                                action_get_online_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST,              action_get_recording_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST,              action_get_video_scaling_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST,              action_get_video_output_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST,              action_get_video_synchronization_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST,              action_get_input_menu_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST,              action_get_input_haptic_feedback_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_WINDOWED_MODE_SETTINGS_LIST,              action_get_video_windowed_mode_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST,              action_get_video_fullscreen_mode_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST,          action_get_video_scaling_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST,           action_get_video_output_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST,  action_get_video_synchronization_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST,             action_get_input_menu_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST,  action_get_input_haptic_feedback_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_WINDOWED_MODE_SETTINGS_LIST,    action_get_video_windowed_mode_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST,  action_get_video_fullscreen_mode_settings_list},
       {MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, action_get_sideload_core_list},
       {MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST, action_get_title_deferred_database_manager_list},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST, action_get_title_deferred_cursor_manager_list},

@@ -4603,6 +4603,10 @@ MSG_HASH(
    "settings_show_logging"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SETTINGS_SHOW_FILE_BROWSER,
+   "settings_show_file_browser"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE,
    "settings_show_frame_throttle"
    )
@@ -4621,6 +4625,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE,
    "settings_show_ai_service"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   "settings_show_accessibility"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
