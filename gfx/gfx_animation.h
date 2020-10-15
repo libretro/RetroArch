@@ -219,6 +219,8 @@ struct gfx_animation
    uint64_t ticker_pixel_line_idx; /* updated every frame */
    retro_time_t cur_time;
    retro_time_t old_time;
+   update_time_cb updatetime_cb;   /* ptr alignment */
+                                   /* By default, this should be a NOOP */
    struct tween* list;
    struct tween* pending;
 
@@ -256,10 +258,6 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag);
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry);
 
 void gfx_animation_push_delayed(unsigned delay, gfx_animation_ctx_entry_t *entry);
-
-void gfx_animation_set_update_time_cb(update_time_cb cb);
-
-void gfx_animation_unset_update_time_cb(void);
 
 void gfx_animation_deinit(gfx_animation_t *p_anim);
 

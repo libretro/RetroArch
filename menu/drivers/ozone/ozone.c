@@ -683,6 +683,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    unsigned width, height, color_theme = 0;
    ozone_handle_t *ozone               = NULL;
    settings_t *settings                = config_get_ptr();
+   gfx_animation_t *p_anim             = anim_get_ptr();
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
    const char *directory_assets        = settings->paths.directory_assets;
 
@@ -863,7 +864,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
        APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
 
    last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
-   gfx_animation_set_update_time_cb(ozone_menu_animation_update_time);
+   p_anim->updatetime_cb = ozone_menu_animation_update_time;
 
    return menu;
 
@@ -878,14 +879,15 @@ error:
 
    if (menu)
       free(menu);
-   gfx_animation_unset_update_time_cb();
+   p_anim->updatetime_cb = NULL;
 
    return NULL;
 }
 
 static void ozone_free(void *data)
 {
-   ozone_handle_t *ozone = (ozone_handle_t*) data;
+   ozone_handle_t *ozone   = (ozone_handle_t*) data;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
    if (ozone)
    {
@@ -913,7 +915,7 @@ static void ozone_free(void *data)
 
    font_driver_bind_block(NULL, NULL);
 
-   gfx_animation_unset_update_time_cb();
+   p_anim->updatetime_cb = NULL;
 }
 
 static void ozone_update_thumbnail_image(void *data)

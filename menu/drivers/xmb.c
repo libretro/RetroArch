@@ -5546,6 +5546,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    int i;
    xmb_handle_t *xmb          = NULL;
    settings_t *settings       = config_get_ptr();
+   gfx_animation_t *p_anim    = anim_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
    float scale_value          = settings->floats.menu_scale_factor * 100.0f;
 
@@ -5681,7 +5682,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->last_use_ps3_layout = xmb->use_ps3_layout;
    xmb->last_scale_factor   = xmb_get_scale_factor(settings, xmb->use_ps3_layout, width);
 
-   gfx_animation_set_update_time_cb(xmb_menu_animation_update_time);
+   p_anim->updatetime_cb    = xmb_menu_animation_update_time;
 
    return menu;
 
@@ -5691,13 +5692,14 @@ error:
    xmb_free_list_nodes(&xmb->horizontal_list, false);
    file_list_deinitialize(&xmb->selection_buf_old);
    file_list_deinitialize(&xmb->horizontal_list);
-   gfx_animation_unset_update_time_cb();
+   p_anim->updatetime_cb    = NULL;
    return NULL;
 }
 
 static void xmb_free(void *data)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   xmb_handle_t       *xmb = (xmb_handle_t*)data;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
    if (xmb)
    {
@@ -5723,7 +5725,7 @@ static void xmb_free(void *data)
 
    font_driver_bind_block(NULL, NULL);
 
-   gfx_animation_unset_update_time_cb();
+   p_anim->updatetime_cb    = NULL;
 }
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)

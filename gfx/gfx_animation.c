@@ -40,10 +40,6 @@
  * */
 #define TICKER_PIXEL_PERIOD (16.666666666666668f)
 
-/* By default, this should be a NOOP */
-/* TODO/FIXME - static global variable */
-static update_time_cb update_time_callback = NULL;
-
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
 static float easing_linear(float t, float b, float c, float d)
@@ -1144,16 +1140,6 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    return true;
 }
 
-void gfx_animation_set_update_time_cb(update_time_cb cb)
-{
-   update_time_callback = cb;
-}
-
-void gfx_animation_unset_update_time_cb(void)
-{
-   update_time_callback = NULL;
-}
-
 bool gfx_animation_update(
       gfx_animation_t *p_anim,
       retro_time_t current_time,
@@ -1241,8 +1227,8 @@ bool gfx_animation_update(
        *   to handle video scaling as it pleases - a callback
        *   function set by the menu driver is thus used to
        *   perform menu-specific scaling adjustments */
-      if (update_time_callback)
-         update_time_callback(&ticker_pixel_increment,
+      if (p_anim->updatetime_cb)
+         p_anim->updatetime_cb(&ticker_pixel_increment,
                video_width, video_height);
 
       /* > Update accumulators */
@@ -2194,6 +2180,8 @@ void gfx_animation_deinit(gfx_animation_t *p_anim)
       return;
    RBUF_FREE(p_anim->list);
    RBUF_FREE(p_anim->pending);
+   if (p_anim->updatetime_cb)
+      p_anim->updatetime_cb = NULL;
    memset(p_anim, 0, sizeof(*p_anim));
 }
 

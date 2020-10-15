@@ -4714,6 +4714,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui_t               *rgui = NULL;
    settings_t *settings       = config_get_ptr();
    gfx_display_t    *p_disp   = disp_get_ptr();
+   gfx_animation_t *p_anim    = anim_get_ptr();
 #if defined(DINGUX)
    unsigned aspect_ratio_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
@@ -4821,7 +4822,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * not handle struct initialisation correctly...) */
    memset(&rgui->pointer, 0, sizeof(menu_input_pointer_t));
    
-   gfx_animation_set_update_time_cb(rgui_menu_animation_update_time);
+   p_anim->updatetime_cb = rgui_menu_animation_update_time;
 
    return menu;
 
@@ -4833,13 +4834,14 @@ error:
    rgui_thumbnail_free(&mini_left_thumbnail);
    if (menu)
       free(menu);
-   gfx_animation_unset_update_time_cb();
+   p_anim->updatetime_cb = NULL;
    return NULL;
 }
 
 static void rgui_free(void *data)
 {
-   rgui_t *rgui = (rgui_t*)data;
+   rgui_t            *rgui = (rgui_t*)data;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
    if (rgui)
    {
@@ -4866,7 +4868,7 @@ static void rgui_free(void *data)
       rgui_upscale_buf.data = NULL;
    }
 
-   gfx_animation_unset_update_time_cb();
+   p_anim->updatetime_cb    = NULL;
 }
 
 static void rgui_set_texture(void)

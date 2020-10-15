@@ -7619,6 +7619,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;
    settings_t *settings                   = config_get_ptr();
+   gfx_animation_t     *p_anim            = anim_get_ptr();
    materialui_handle_t *mui               = NULL;
    static const char* const ticker_spacer = MUI_TICKER_SPACER;
    menu_handle_t *menu                    = (menu_handle_t*)
@@ -7735,19 +7736,20 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->textures.playlist.icons = NULL;
    materialui_refresh_playlist_icon_list(mui);
 
-   gfx_animation_set_update_time_cb(materialui_menu_animation_update_time);
+   p_anim->updatetime_cb = materialui_menu_animation_update_time;
 
    return menu;
 error:
    if (menu)
       free(menu);
-   gfx_animation_unset_update_time_cb();
+   p_anim->updatetime_cb = NULL;
    return NULL;
 }
 
 static void materialui_free(void *data)
 {
-   materialui_handle_t *mui   = (materialui_handle_t*)data;
+   materialui_handle_t *mui    = (materialui_handle_t*)data;
+   gfx_animation_t     *p_anim = anim_get_ptr();
 
    if (!mui)
       return;
@@ -7766,7 +7768,7 @@ static void materialui_free(void *data)
 
    materialui_free_playlist_icon_list(mui);
 
-   gfx_animation_unset_update_time_cb();
+   p_anim->updatetime_cb = NULL;
 }
 
 static void materialui_context_bg_destroy(materialui_handle_t *mui)
