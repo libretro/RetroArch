@@ -30,7 +30,7 @@
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 
 #ifdef HAVE_REWIND
-#include "../../managers/state_manager.h"
+#include "../../state_manager.h"
 #endif
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -1003,14 +1003,10 @@ typedef struct MTLALIGN(16)
 
 #ifdef HAVE_REWIND
       if (state_manager_frame_is_reversed())
-      {
          _engine.pass[i].frame_direction = -1;
-      }
       else
 #else
-      {
          _engine.pass[i].frame_direction = 1;
-      }
 #endif
 
       for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)

@@ -29,25 +29,25 @@
 #include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "config.h"
 #endif
 
 #ifdef HAVE_MENU
-#include "../menu/menu_driver.h"
+#include "menu/menu_driver.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
+#include "cheevos/cheevos.h"
 #endif
 
 #include "cheat_manager.h"
 
-#include "../msg_hash.h"
-#include "../configuration.h"
-#include "../retroarch.h"
-#include "../dynamic.h"
-#include "../core.h"
-#include "../verbosity.h"
+#include "msg_hash.h"
+#include "configuration.h"
+#include "retroarch.h"
+#include "dynamic.h"
+#include "core.h"
+#include "verbosity.h"
 
 /* TODO/FIXME - public global variables */
 cheat_manager_t cheat_manager_state;

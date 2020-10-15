@@ -227,7 +227,7 @@ MD5
 CHEATS
 ============================================================ */
 #ifdef HAVE_CHEATS
-#include "../managers/cheat_manager.c"
+#include "../cheat_manager.c"
 #endif
 #include "../libretro-common/hash/rhash.c"
 
@@ -1104,7 +1104,7 @@ CONFIGURATION
 STATE MANAGER
 ============================================================ */
 #ifdef HAVE_REWIND
-#include "../managers/state_manager.c"
+#include "../state_manager.c"
 #endif
 
 /*============================================================

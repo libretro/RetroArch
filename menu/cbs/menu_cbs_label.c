@@ -21,7 +21,7 @@
 #include "../menu_cbs.h"
 #include "../../file_path_special.h"
 #ifdef HAVE_CHEATS
-#include "../../managers/cheat_manager.h"
+#include "../../cheat_manager.h"
 #endif
 
 #ifndef BIND_ACTION_LABEL

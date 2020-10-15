@@ -35,7 +35,7 @@
 
 #include "shader_glsl.h"
 #ifdef HAVE_REWIND
-#include "../../managers/state_manager.h"
+#include "../../state_manager.h"
 #endif
 #include "../../core.h"
 #include "../../verbosity.h"

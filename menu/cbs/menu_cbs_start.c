@@ -33,9 +33,9 @@
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
-#include "../../managers/core_option_manager.h"
+#include "../../core_option_manager.h"
 #ifdef HAVE_CHEATS
-#include "../../managers/cheat_manager.h"
+#include "../../cheat_manager.h"
 #endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"

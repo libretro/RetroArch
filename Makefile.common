@@ -272,7 +272,7 @@ OBJ += \
 
 ifeq ($(HAVE_REWIND), 1)
 DEFINES += -DHAVE_REWIND
-OBJ     += managers/state_manager.o
+OBJ     += state_manager.o
 endif
 
 OBJ += \
@@ -286,7 +286,7 @@ OBJ += \
 
 ifeq ($(HAVE_CHEATS), 1)
    DEFINES += -DHAVE_CHEATS
-   OBJ     += managers/cheat_manager.o
+   OBJ     += cheat_manager.o
 endif
 
 OBJ += \

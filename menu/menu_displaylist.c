@@ -84,9 +84,9 @@
 #include "../defaults.h"
 #include "../verbosity.h"
 #ifdef HAVE_CHEATS
-#include "../managers/cheat_manager.h"
+#include "../cheat_manager.h"
 #endif
-#include "../managers/core_option_manager.h"
+#include "../core_option_manager.h"
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../core.h"

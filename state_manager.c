@@ -28,13 +28,13 @@
 #include <compat/intrinsics.h>
 
 #include "state_manager.h"
-#include "../msg_hash.h"
-#include "../core.h"
-#include "../retroarch.h"
-#include "../verbosity.h"
+#include "msg_hash.h"
+#include "core.h"
+#include "retroarch.h"
+#include "verbosity.h"
 
 #ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay.h"
+#include "network/netplay/netplay.h"
 #endif
 
 /* This makes Valgrind throw errors if a core overflows its savestate size. */

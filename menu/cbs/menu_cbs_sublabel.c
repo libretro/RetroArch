@@ -23,7 +23,7 @@
 #include "../menu_cbs.h"
 
 #include "../../retroarch.h"
-#include "../../managers/core_option_manager.h"
+#include "../../core_option_manager.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos.h"
@@ -45,7 +45,7 @@
 #include "../../core_updater_list.h"
 #endif
 #ifdef HAVE_CHEATS
-#include "../../managers/cheat_manager.h"
+#include "../../cheat_manager.h"
 #endif
 #include "../../tasks/tasks_internal.h"
 

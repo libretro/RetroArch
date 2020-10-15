@@ -232,12 +232,12 @@
 #include "core.h"
 #include "configuration.h"
 #include "list_special.h"
-#include "managers/core_option_manager.h"
+#include "core_option_manager.h"
 #ifdef HAVE_CHEATS
-#include "managers/cheat_manager.h"
+#include "cheat_manager.h"
 #endif
 #ifdef HAVE_REWIND
-#include "managers/state_manager.h"
+#include "state_manager.h"
 #endif
 #ifdef HAVE_AUDIOMIXER
 #include "tasks/task_audio_mixer.h"

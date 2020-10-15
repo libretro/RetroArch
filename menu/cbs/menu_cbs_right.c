@@ -35,7 +35,7 @@
 #include "../../core.h"
 #include "../../core_info.h"
 #ifdef HAVE_CHEATS
-#include "../../managers/cheat_manager.h"
+#include "../../cheat_manager.h"
 #endif
 #include "../../file_path_special.h"
 #include "../../retroarch.h"

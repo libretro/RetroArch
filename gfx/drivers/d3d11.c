@@ -47,7 +47,7 @@
 #include "../video_shader_parse.h"
 #include "../drivers_shader/slang_process.h"
 #ifdef HAVE_REWIND
-#include "../../managers/state_manager.h"
+#include "../../state_manager.h"
 #endif
 
 #include "../common/d3d_common.h"

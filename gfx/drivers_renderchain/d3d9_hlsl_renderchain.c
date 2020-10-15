@@ -33,7 +33,7 @@
 #include "../common/d3d9_common.h"
 
 #include "../video_shader_parse.h"
-#include "../../managers/state_manager.h"
+#include "../../state_manager.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 

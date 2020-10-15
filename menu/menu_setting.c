@@ -96,7 +96,7 @@
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
 #ifdef HAVE_CHEATS
-#include "../managers/cheat_manager.h"
+#include "../cheat_manager.h"
 #endif
 #include "../verbosity.h"
 #include "../playlist.h"

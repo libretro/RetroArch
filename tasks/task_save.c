@@ -55,7 +55,7 @@
 #include "../verbosity.h"
 #include "tasks_internal.h"
 #ifdef HAVE_CHEATS
-#include "../managers/cheat_manager.h"
+#include "../cheat_manager.h"
 #endif
 
 #if defined(HAVE_LIBNX) || defined(_3DS)

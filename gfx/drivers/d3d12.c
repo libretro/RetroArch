@@ -34,7 +34,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #ifdef HAVE_REWIND
-#include "../../managers/state_manager.h"
+#include "../../state_manager.h"
 #endif
 
 #ifdef HAVE_MENU
