@@ -2808,7 +2808,9 @@ static bool gl2_frame(void *data, const void *frame,
    bool use_rgba                       = video_info->use_rgba;
    bool statistics_show                = video_info->statistics_show;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
+#ifndef EMSCRIPTEN
    unsigned black_frame_insertion      = video_info->black_frame_insertion;
+#endif
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state; 
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
@@ -4509,15 +4511,16 @@ static void gl2_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    GLuint glid;
-   gl_t *gl                     = (gl_t*)data;
    if (!id)
       return;
 
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      if (gl->ctx_driver->make_current)
-         gl->ctx_driver->make_current(false);
+      gl_t *gl = (gl_t*)data;
+      if (gl && gl->ctx_driver)
+         if (gl->ctx_driver->make_current)
+            gl->ctx_driver->make_current(false);
    }
 #endif
 
