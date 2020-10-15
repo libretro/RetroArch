@@ -479,33 +479,22 @@ int64_t cloud_storage_get_file_size(char *local_file)
 void cloud_storage_add_request_body_data(
    char *filename,
    size_t offset,
-   size_t max_size,
+   size_t segment_length,
    struct http_request_t *request)
 {
    RFILE *file;
-   int64_t file_size;
    uint8_t *body;
-   size_t body_len;
 
    file = filestream_open(filename, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   file_size = filestream_get_size(file);
-
-   if (max_size > 0 && file_size - offset > max_size)
-   {
-      body_len = max_size;
-   } else
-   {
-      body_len = file_size - offset;
-   }
 
    if (offset > 0)
    {
       filestream_seek(file, offset, SEEK_SET);
    }
 
-   body = malloc(body_len);
-   filestream_read(file, body, body_len);
+   body = malloc(segment_length);
+   filestream_read(file, body, segment_length);
    filestream_close(file);
 
-   net_http_request_set_body(request, body, body_len);
+   net_http_request_set_body(request, body, segment_length);
 }

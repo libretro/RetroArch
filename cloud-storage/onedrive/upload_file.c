@@ -23,8 +23,10 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#include <net/net_http.h>
+#include <rest/rest.h>
+
 #include "../cloud_storage.h"
-#include "../rest-lib/rest_api.h"
 #include "../json.h"
 #include "../driver_utils.h"
 #include "onedrive_internal.h"
@@ -35,25 +37,16 @@
 #define CONTENT_TYPE "application/octet-stream"
 #define UPLOAD_URL_KEY "uploadUrl"
 
-struct cloud_storage_onedrive_upload_file_state_t
-{
-   cloud_storage_item_t *remote_dir;
-   cloud_storage_item_t *remote_file;
-   char *local_file;
-   char *upload_url;
-   int64_t file_size;
-   int64_t offset;
-};
-
-static void upload_file_part(struct cloud_storage_operation_state_t *state);
-
-static void update_remote_file_metadata(
-   uint8_t *data,
-   size_t data_len,
+static void _process_metadata_response(
+   struct http_response_t *response,
    cloud_storage_item_t *remote_file)
 {
+   uint8_t *data;
+   size_t data_len;
    char *json_str;
    struct json_node_t *json;
+
+   data = net_http_response_get_data(response, &data_len, false);
 
    json_str = (char *)malloc(data_len + 1);
    json_str[data_len] = '\0';
@@ -115,48 +108,10 @@ static void update_remote_file_metadata(
    free(json_str);
 }
 
-static void upload_file_part_success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
+static void _add_http_headers_data(int64_t file_size, int64_t offset, int64_t upload_segment_length, struct http_request_t *request)
 {
-   struct cloud_storage_onedrive_upload_file_state_t *extra_state;
-
-   extra_state = (struct cloud_storage_onedrive_upload_file_state_t *)state->extra_state;
-
-   if (extra_state->offset + MAX_BYTES_PER_SEGMENT < extra_state->file_size)
-   {
-      extra_state->offset += MAX_BYTES_PER_SEGMENT;
-      upload_file_part(state);
-   } else
-   {
-      uint8_t *data;
-      size_t data_len;
-      char *json_str;
-
-      data = net_http_response_get_data(response, &data_len, false);
-      update_remote_file_metadata(data, data_len, extra_state->remote_file);
-
-      state->result = extra_state->remote_file;
-      state->callback(state, true);
-
-      state->complete = true;
-   }
-}
-
-static void add_http_headers_data(int64_t file_size, int64_t offset, struct http_request_t *request)
-{
-   int64_t upload_segment_length;
    char *range_str;
    char *content_len_str;
-
-   if (file_size - offset > MAX_BYTES_PER_SEGMENT)
-   {
-      upload_segment_length = MAX_BYTES_PER_SEGMENT;
-   } else
-   {
-      upload_segment_length = file_size - offset;
-   }
 
    range_str = (char *)calloc(105, sizeof(char));
    content_len_str = (char *)calloc(33, sizeof(char));
@@ -172,123 +127,55 @@ static void add_http_headers_data(int64_t file_size, int64_t offset, struct http
 #endif
 
    net_http_request_set_header(request, "Content-Range", range_str, true);
-   net_http_request_set_header(request, "Content-Length", content_len_str, true);
 
    free(range_str);
    free(content_len_str);
 }
 
-static void upload_file_part(struct cloud_storage_operation_state_t *state)
+static struct http_request_t *_create_multipart_upload_part_request(
+   char *upload_url,
+   char *local_file,
+   int64_t file_size,
+   int64_t offset)
 {
    struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
-   struct cloud_storage_onedrive_upload_file_state_t *extra_state;
+   int64_t upload_segment_length;
 
-   extra_state = (struct cloud_storage_onedrive_upload_file_state_t *)state->extra_state;
+   if (file_size - offset > MAX_BYTES_PER_SEGMENT)
+   {
+      upload_segment_length = MAX_BYTES_PER_SEGMENT;
+   } else
+   {
+      upload_segment_length = file_size - offset;
+   }
 
    http_request = net_http_request_new();
-   net_http_request_set_url(http_request, extra_state->upload_url);
+   net_http_request_set_url(http_request, upload_url);
    net_http_request_set_method(http_request, "PUT");
-   add_http_headers_data(extra_state->file_size, extra_state->offset, http_request);
-   cloud_storage_add_request_body_data(extra_state->local_file, extra_state->offset, MAX_BYTES_PER_SEGMENT, http_request);
+   _add_http_headers_data(file_size, offset, upload_segment_length, http_request);
+   cloud_storage_add_request_body_data(local_file, offset, upload_segment_length, http_request);
 
    net_http_request_set_log_request_body(http_request, false);
    net_http_request_set_log_response_body(http_request, true);
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, upload_file_part_success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 201, false, upload_file_part_success_handler, state);
-
-   onedrive_rest_execute_request(rest_request, state);
+   return http_request;
 }
 
-static void start_file_upload_success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
+static bool _upload_simple(cloud_storage_item_t *remote_dir, cloud_storage_item_t *remote_file, char *local_file, int64_t file_size)
 {
-   uint8_t *data;
-   size_t data_len;
-   struct json_node_t *json;
-   char *json_str;
-   struct json_map_t *file;
-   char *location;
-   struct cloud_storage_onedrive_upload_file_state_t *extra_state;
-   char *tmp_str;
-   size_t tmp_str_len;
-
-   extra_state = (struct cloud_storage_onedrive_upload_file_state_t *)state->extra_state;
-
-   data = net_http_response_get_data(response, &data_len, false);
-
-   json_str = (char *)malloc(data_len + 1);
-   json_str[data_len] = '\0';
-   memcpy(json_str, data, data_len);
-
-   json = string_to_json(json_str);
-   if (json->node_type == OBJECT_VALUE && json_map_get_value_string(json->value.map_value, UPLOAD_URL_KEY, &tmp_str, &tmp_str_len))
-   {
-      extra_state->upload_url = (char *)calloc(tmp_str_len + 1, sizeof(char));
-      strncpy(extra_state->upload_url, tmp_str, tmp_str_len);
-
-      upload_file_part(state);
-   } else
-   {
-      state->callback(state, false);
-      state->complete = true;
-   }
-}
-
-static void simple_file_upload_success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   cloud_storage_file_t *uploaded_file;
-   uint8_t *data;
-   size_t data_len;
-   struct json_node_t *json;
-   char *json_str;
-   char *file_id;
-   size_t file_id_length;
-   struct cloud_storage_onedrive_upload_file_state_t *extra_state;
-
-   extra_state = (struct cloud_storage_onedrive_upload_file_state_t *)state->extra_state;
-
-   if (extra_state->upload_url)
-   {
-      free(extra_state->upload_url);
-      extra_state->upload_url = NULL;
-   }
-   extra_state->offset = 0;
-
-   data = net_http_response_get_data(response, &data_len, false);
-   update_remote_file_metadata(data, data_len, extra_state->remote_file);
-
-   state->result = extra_state->remote_file;
-   state->callback(state, true);
-
-   state->complete = true;
-}
-
-static void start_file_upload_simple(cloud_storage_operation_state_t *state)
-{
-   char *local_filename;
    char *url;
    struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
-   struct cloud_storage_onedrive_upload_file_state_t *extra_state;
-
-   extra_state = (struct cloud_storage_onedrive_upload_file_state_t *)state->extra_state;
+   rest_request_t *rest_request;
+   struct http_response_t *http_response;
+   bool uploaded = false;
 
    http_request = net_http_request_new();
-   if (extra_state->remote_file->id)
+   if (remote_file->id)
    {
       url = cloud_storage_join_strings(
          NULL,
          DRIVE_ITEMS_URL,
-         "/",
-         extra_state->remote_file->id,
+         remote_file->id,
          "/content",
          NULL
       );
@@ -297,10 +184,9 @@ static void start_file_upload_simple(cloud_storage_operation_state_t *state)
       url = cloud_storage_join_strings(
          NULL,
          DRIVE_ITEMS_URL,
-         "/",
-         extra_state->remote_dir->id,
+         remote_dir->id,
          ":/",
-         extra_state->remote_file->name,
+         remote_file->name,
          ":/content",
          NULL
       );
@@ -311,46 +197,56 @@ static void start_file_upload_simple(cloud_storage_operation_state_t *state)
 
    net_http_request_set_method(http_request, "PUT");
    net_http_request_set_header(http_request, "Content-Type", CONTENT_TYPE, true);
-   cloud_storage_add_request_body_data(extra_state->local_file, 0, 0, http_request);
+   cloud_storage_add_request_body_data(local_file, 0, file_size, http_request);
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, simple_file_upload_success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 201, false, simple_file_upload_success_handler, state);
-   onedrive_rest_execute_request(rest_request, state);
+   rest_request = rest_request_new(http_request);
+   http_response = onedrive_rest_execute_request(rest_request);
+
+   if (!http_response)
+   {
+      goto complete;
+   }
+
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+      case 201:
+         _process_metadata_response(http_response, remote_file);
+         uploaded = true;
+      default:
+         break;
+   }
+
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+   rest_request_free(rest_request);
+
+   return uploaded;
 }
 
-static void start_file_upload_multipart(cloud_storage_operation_state_t *state)
+static struct http_request_t *_create_start_upload_multipart_request(
+   cloud_storage_item_t *remote_dir,
+   cloud_storage_item_t *remote_file)
 {
-   char *parent_folder_id;
+   struct http_request_t *http_request;
    char *url;
    char *body;
    size_t body_len;
-   struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
-   struct cloud_storage_onedrive_upload_file_state_t *extra_state;
-
-   extra_state = (struct cloud_storage_onedrive_upload_file_state_t *)state->extra_state;
 
    http_request = net_http_request_new();
-   if (extra_state->remote_file->id)
-   {
-      url = cloud_storage_join_strings(
-         NULL,
-         DRIVE_ITEMS_URL,
-         "/",
-         extra_state->remote_file->id,
-         NULL
-      );
-   } else
-   {
-      url = cloud_storage_join_strings(
-         NULL,
-         DRIVE_ITEMS_URL,
-         "/",
-         extra_state->remote_dir->id,
-         NULL
-      );
-   }
+   url = cloud_storage_join_strings(
+      NULL,
+      "https://graph.microsoft.com/v1.0/me/drive/special/approot",
+      ":/",
+      remote_dir->name,
+      "/",
+      remote_file->name,
+      ":/createUploadSession",
+      NULL
+   );
 
    net_http_request_set_url(http_request, url);
    free(url);
@@ -359,74 +255,156 @@ static void start_file_upload_multipart(cloud_storage_operation_state_t *state)
    body = cloud_storage_join_strings(
       &body_len,
       "{\"item\": {\"@microsoft.graph.conflictBehavior\": \"fail\", \"name\": \"",
-      extra_state->remote_file->name,
+      remote_file->name,
       "\"}}",
       NULL
    );
+   net_http_request_set_header(http_request, "Content-Type", "application/json", true);
    net_http_request_set_body(http_request, (uint8_t *)body, body_len);
-   free(body);
 
    net_http_request_set_log_request_body(http_request, true);
    net_http_request_set_log_response_body(http_request, true);
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, start_file_upload_success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 201, false, start_file_upload_success_handler, state);
-   onedrive_rest_execute_request(rest_request, state);
+   return http_request;
 }
 
-static void free_extra_state(void *extra_state_ptr)
+static char *_process_start_multipart_response(
+   struct http_response_t *response)
 {
-   struct cloud_storage_onedrive_upload_file_state_t *extra_state;
+   uint8_t *data;
+   size_t data_len;
+   struct json_node_t *json;
+   char *json_str;
+   char *tmp_str;
+   size_t tmp_str_len;
+   char *upload_url;
 
-   extra_state = (struct cloud_storage_onedrive_upload_file_state_t *)extra_state_ptr;
+   data = net_http_response_get_data(response, &data_len, false);
 
-   free(extra_state->local_file);
+   json_str = (char *)malloc(data_len + 1);
+   json_str[data_len] = '\0';
+   memcpy(json_str, data, data_len);
 
-   if (extra_state->upload_url)
+   json = string_to_json(json_str);
+   if (json && json->node_type == OBJECT_VALUE && json_map_get_value_string(json->value.map_value, UPLOAD_URL_KEY, &tmp_str, &tmp_str_len))
    {
-      free(extra_state->upload_url);
+      upload_url = (char *)calloc(tmp_str_len + 1, sizeof(char));
+      strncpy(upload_url, tmp_str, tmp_str_len);
    }
 
-   if (extra_state->remote_file && !extra_state->remote_file->id)
+   if (json)
    {
-      cloud_storage_item_free(extra_state->remote_file);
+      json_node_free(json);
    }
+   free(json_str);
 
-   free(extra_state);
+   return upload_url;
 }
 
-void cloud_storage_onedrive_upload_file(
+static bool _upload_multipart(
    cloud_storage_item_t *remote_dir,
    cloud_storage_item_t *remote_file,
    char *local_file,
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_operation_callback callback)
+   int64_t file_size)
+{
+   char *parent_folder_id;
+   char *url;
+   char *body;
+   size_t body_len;
+   struct http_request_t *http_request;
+   rest_request_t *rest_request;
+   struct http_response_t *http_response;
+   char *upload_url;
+   int64_t offset = 0;
+   bool uploaded = false;
+
+   http_request = _create_start_upload_multipart_request(remote_dir, remote_file);
+   rest_request = rest_request_new(http_request);
+   http_response = onedrive_rest_execute_request(rest_request);
+
+   if (!http_response)
+   {
+      goto complete;
+   }
+
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+      case 201:
+         upload_url = _process_start_multipart_response(http_response);
+         break;
+      default:
+         goto complete;
+   }
+
+   while (offset < file_size)
+   {
+      int64_t upload_segment_length;
+
+      net_http_response_free(http_response);
+      rest_request_free(rest_request);
+
+      if (offset + MAX_BYTES_PER_SEGMENT <= file_size)
+      {
+         upload_segment_length = MAX_BYTES_PER_SEGMENT;
+      } else
+      {
+         upload_segment_length = file_size - offset;
+      }
+
+      http_request = _create_multipart_upload_part_request(upload_url, local_file, file_size, offset);
+      rest_request = rest_request_new(http_request);
+      http_response = onedrive_rest_execute_request(rest_request);
+
+      if (!http_response)
+      {
+         goto complete;
+      }
+
+      switch (net_http_response_get_status(http_response))
+      {
+         case 200:
+         case 201:
+         case 202:
+            break;
+         default:
+            goto complete;
+      }
+
+      offset += upload_segment_length;
+   }
+
+   _process_metadata_response(http_response, remote_file);
+
+   uploaded = true;
+
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+   rest_request_free(rest_request);
+
+   return uploaded;
+}
+
+bool cloud_storage_onedrive_upload_file(
+   cloud_storage_item_t *remote_dir,
+   cloud_storage_item_t *remote_file,
+   char *local_file)
 {
    struct http_request_t *http_request;
-   cloud_storage_operation_state_t *state;
-   struct cloud_storage_onedrive_upload_file_state_t *extra_state;
-   rest_api_request_t *rest_request;
+   rest_request_t *rest_request;
    size_t filename_len;
    int64_t file_size;
 
-   extra_state = (struct cloud_storage_onedrive_upload_file_state_t *)calloc(1, sizeof(struct cloud_storage_onedrive_upload_file_state_t));
-   extra_state->remote_dir = remote_dir;
-   extra_state->remote_file = remote_file;
-   extra_state->local_file = local_file;
-   extra_state->file_size = cloud_storage_get_file_size(local_file);
+   file_size = cloud_storage_get_file_size(local_file);
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->continuation_data = continuation_data;
-   state->callback = callback;
-   state->extra_state = extra_state;
-   state->free_extra_state = free_extra_state;
-
-   if (extra_state->file_size > MAX_BYTES_PER_SEGMENT)
+   if (file_size > MAX_BYTES_PER_SEGMENT)
    {
-      start_file_upload_multipart(state);
+      return _upload_multipart(remote_dir, remote_file, local_file, file_size);
    } else
    {
-      start_file_upload_simple(state);
+      return _upload_simple(remote_dir, remote_file, local_file, file_size);
    }
 }

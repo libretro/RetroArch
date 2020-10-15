@@ -23,59 +23,27 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <configuration.h>
+#include <net/net_http.h>
+#include <rest/rest.h>
 #include <string/stdstring.h>
 
 #include "../cloud_storage.h"
-#include "../rest-lib/rest_api.h"
 #include "../json.h"
 #include "../driver_utils.h"
 #include "google.h"
 #include "google_internal.h"
 
-static void free_provider_data(void *provider_data)
+char *_google_access_token = NULL;
+time_t _google_access_token_expiration_time = 0;
+
+static bool _ready_for_request()
 {
-   struct cloud_storage_google_provider_data_t *google_provider_data;
+   settings_t *settings;
 
-   google_provider_data = (struct cloud_storage_google_provider_data_t *)provider_data;
+   settings = config_get_ptr();
 
-   if (google_provider_data->access_token)
-   {
-      free(google_provider_data->access_token);
-   }
-
-   free(google_provider_data);
-}
-
-static void *initialize(settings_t *settings)
-{
-   struct cloud_storage_google_provider_data_t *provider_data;
-
-   provider_data = (struct cloud_storage_google_provider_data_t *)calloc(1, sizeof(struct cloud_storage_google_provider_data_t));
-   cloud_storage_load_access_token("google", &(provider_data->access_token), &(provider_data->access_token_expiration_time));
-
-   if (strlen(settings->arrays.cloud_storage_google_refresh_token) > 0)
-   {
-      provider_data->refresh_token = settings->arrays.cloud_storage_google_refresh_token;
-   }
-
-   return provider_data;
-}
-
-static cloud_storage_status_response_t get_status(cloud_storage_provider_state_t *provider_state)
-{
-   struct cloud_storage_google_provider_data_t *provider_data;
-
-   provider_data = (struct cloud_storage_google_provider_data_t *)provider_state->provider_data;
-   if (!provider_data->refresh_token)
-   {
-      return CLOUD_STORAGE_STATUS_NOT_READY;
-   } else if (!provider_data->access_token || time(NULL) >= provider_data->access_token_expiration_time - 5)
-   {
-      return CLOUD_STORAGE_STATUS_NEED_AUTHENTICATION;
-   } else
-   {
-      return CLOUD_STORAGE_STATUS_READY;
-   }
+   return strlen(settings->arrays.cloud_storage_google_refresh_token) > 0;
 }
 
 cloud_storage_item_t *cloud_storage_google_parse_file_from_json(struct json_map_t file_json)
@@ -126,6 +94,8 @@ cloud_storage_item_t *cloud_storage_google_parse_file_from_json(struct json_map_
       }
    }
 
+   metadata->last_sync_time = time(NULL);
+
    return metadata;
 
 cleanup:
@@ -152,14 +122,8 @@ cloud_storage_provider_t *cloud_storage_google_create()
 
    provider = (cloud_storage_provider_t *)malloc(sizeof(cloud_storage_provider_t));
 
-   provider->max_retries = 2;
-   provider->retry_delays = (time_t *)malloc(2 * sizeof(time_t));
-   provider->retry_delays[0] = 1;
-   provider->retry_delays[1] = 10;
-
-   provider->initialize = initialize;
    provider->need_authorization = true;
-   provider->get_status = get_status;
+   provider->ready_for_request = _ready_for_request;
    provider->authenticate = cloud_storage_google_authenticate;
    provider->authorize = cloud_storage_google_authorize;
    provider->list_files = cloud_storage_google_list_files;
@@ -174,101 +138,37 @@ cloud_storage_provider_t *cloud_storage_google_create()
    return provider;
 }
 
-static void internal_server_error_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *operation_state)
-{
-   operation_state->complete = true;
-
-   operation_state->callback(
-      operation_state,
-      false);
-}
-
-static void intermediate_auth_callback(
-   cloud_storage_continuation_data_t *continuation_data,
-   bool success,
-   void *data)
-{
-   rest_api_request_t *request;
-
-   request = (rest_api_request_t *)data;
-   rest_api_request_execute(request);
-}
-
-static void clear_access_token(struct cloud_storage_google_provider_data_t *provider_data)
-{
-   if (provider_data->access_token)
-   {
-      free(provider_data->access_token);
-   }
-
-   provider_data->access_token_expiration_time = 0;
-}
-
-static void auth_failed_response_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   struct cloud_storage_google_provider_data_t *provider_data;
-
-   provider_data = (struct cloud_storage_google_provider_data_t *)state->continuation_data->provider_state->provider_data;
-
-   clear_access_token(provider_data);
-   cloud_storage_google_authenticate(
-      state->continuation_data,
-      intermediate_auth_callback,
-      request
-   );
-}
-
-static void default_response_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   state->complete = true;
-
-   state->callback(
-      state,
-      false);
-}
-
-void cloud_storage_google_add_authorization_header(
-   struct cloud_storage_google_provider_data_t *provider_data,
-   struct http_request_t *request)
+bool cloud_storage_google_add_authorization_header(
+   rest_request_t *rest_request)
 {
    char *value;
 
-   value = (char *)calloc(8 + strlen(provider_data->access_token), sizeof(char));
-   strcpy(value, "Bearer ");
-   strcpy(value + 7, provider_data->access_token);
-
-   net_http_request_set_header(request, "Authorization", value, true);
-   free(value);
-}
-
-void google_rest_execute_request(
-   rest_api_request_t *rest_request,
-   cloud_storage_operation_state_t *state)
-{
-   struct http_request_t *http_request;
-   struct cloud_storage_google_provider_data_t *provider_data;
-
-   provider_data = (struct cloud_storage_google_provider_data_t *)state->continuation_data->provider_state->provider_data;
-
-   cloud_storage_google_add_authorization_header(
-      provider_data,
-      rest_api_get_http_request(rest_request));
-
-   rest_api_request_set_response_handler(rest_request, 500, true, internal_server_error_handler, state);
-   rest_api_request_set_response_handler(rest_request, 401, false, auth_failed_response_handler, state);
-   if (!rest_api_request_get_default_callback(rest_request))
+   if (_google_access_token && time(NULL) - 30 > _google_access_token_expiration_time)
    {
-      rest_api_request_set_default_response_handler(rest_request, true, default_response_handler, state);
+      free(_google_access_token);
    }
 
-   rest_api_request_execute(rest_request);
+   if (!_google_access_token && !cloud_storage_google_authenticate())
+   {
+      return false;
+   }
+
+   value = (char *)calloc(8 + strlen(_google_access_token), sizeof(char));
+   strcpy(value, "Bearer ");
+   strcpy(value + 7, _google_access_token);
+
+   rest_request_set_header(rest_request, "Authorization", value, true);
+   free(value);
+
+   return true;
+}
+
+struct http_response_t *google_rest_execute_request(rest_request_t *rest_request)
+{
+   if (!cloud_storage_google_add_authorization_header(rest_request))
+   {
+      return NULL;
+   }
+
+   return rest_request_execute(rest_request);
 }

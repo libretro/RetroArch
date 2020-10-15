@@ -24,12 +24,13 @@
 #include <stdlib.h>
 
 #include <configuration.h>
+#include <file/file_path.h>
 #include <retroarch.h>
 #include <retro_dirent.h>
-#include <file/file_path.h>
+#include <rhash.h>
+#include <rthreads/rthreads.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
-#include <rhash.h>
 
 #include "cloud_storage.h"
 #include "hex.h"
@@ -37,101 +38,201 @@
 #include "google/google.h"
 #include "onedrive/onedrive.h"
 
-static cloud_storage_provider_t *providers[1];
-static size_t cloud_storage_providers_count;
-static cloud_storage_provider_state_t *active_provider_state;
+struct _operation_queue_item;
+struct _operation_queue_item
+{
+   enum
+   {
+      SYNC_FILES,
+      UPLOAD_FILE,
+      DOWNLOAD_FILE
+   } operation;
 
-static bool initialized = false;
+   union
+   {
+      struct
+      {
+         folder_type_t folder_type;
+      } sync;
 
-#define VERIFY_INITIALIZED { \
-   if (!initialized) { \
-      cloud_storage_init(); \
-      initialized = true; \
-   } \
+      struct
+      {
+         folder_type_t folder_type;
+         char *local_file;
+      } upload;
+
+      struct
+      {
+         folder_type_t folder_type;
+         cloud_storage_item_t *remote_file;
+      } download;
+   } operation_parameters;
+
+   struct _operation_queue_item *next;
+};
+
+static bool _shutdown = true;
+static cloud_storage_provider_t *_providers[3];
+
+cloud_storage_item_t *_game_saves = NULL;
+cloud_storage_item_t *_game_states = NULL;
+
+static struct _operation_queue_item *_operation_queue = NULL;
+static slock_t *_operation_queue_mutex;
+
+static scond_t *_operation_condition;
+static sthread_t *_operation_thread;
+
+static void _sync_files_execute(folder_type_t folder_type);
+
+static void _upload_file_execute(folder_type_t folder_type, char *file_name);
+
+static void _free_operation_queue(struct _operation_queue_item *queue)
+{
+   struct _operation_queue_item *next_item;
+
+   while (queue)
+   {
+      switch (queue->operation)
+      {
+         case UPLOAD_FILE:
+            if (queue->operation_parameters.upload.local_file)
+            {
+               free(queue->operation_parameters.upload.local_file);
+            }
+            break;
+         case DOWNLOAD_FILE:
+            if (queue->operation_parameters.download.remote_file)
+            {
+               cloud_storage_item_free(queue->operation_parameters.download.remote_file);
+            }
+            break;
+         default:
+            break;
+      }
+
+      next_item = queue->next;
+      free(queue);
+      queue = next_item;
+   }
 }
 
-static void sync_files_callback(
-   cloud_storage_operation_state_t *operation_state,
-   bool succeeded);
-
-static void free_continuation_data(cloud_storage_continuation_data_t *continuation_data)
+static void _operation_thread_loop(void *user_data)
 {
-   free(continuation_data);
+   while (!_shutdown)
+   {
+      struct _operation_queue_item *task;
+
+      slock_lock(_operation_queue_mutex);
+
+      scond_wait_timeout(_operation_condition, _operation_queue_mutex, 500);
+      if (_shutdown)
+      {
+         slock_unlock(_operation_queue_mutex);
+         continue;
+      }
+
+      task = _operation_queue;
+      if (_operation_queue)
+      {
+         _operation_queue = NULL;
+      }
+
+      slock_unlock(_operation_queue_mutex);
+
+      while (task)
+      {
+         struct _operation_queue_item *next_task;
+
+         next_task = task->next;
+         task->next = NULL;
+
+         switch (task->operation)
+         {
+            case SYNC_FILES:
+               _sync_files_execute(task->operation_parameters.sync.folder_type);
+               break;
+            case UPLOAD_FILE:
+               _upload_file_execute(task->operation_parameters.upload.folder_type, task->operation_parameters.upload.local_file);
+               break;
+            case DOWNLOAD_FILE:
+               break;
+         }
+
+         _free_operation_queue(task);
+         task = next_task;
+      }
+   }
+
+   if (_operation_queue)
+   {
+      _free_operation_queue(_operation_queue);;
+   }
 }
 
-static void free_operation_state(cloud_storage_operation_state_t *operation_state)
+static cloud_storage_provider_t *_get_active_provider()
 {
-   free(operation_state);
+   settings_t *settings;
+
+   settings = config_get_ptr();
+   return _providers[settings->uints.cloud_storage_provider];
 }
 
 void cloud_storage_init(void)
 {
    settings_t *settings;
+   struct _operation_queue_item *sync_item;
 
-   providers[0] = cloud_storage_google_create();
-   providers[1] = cloud_storage_onedrive_create();
-   providers[2] = NULL;
+   _providers[0] = cloud_storage_google_create();
+   _providers[1] = cloud_storage_onedrive_create();
+   _providers[2] = NULL;
    //providers[2] = cloud_storage_aws_create();
-
-   initialized = true;
 
    settings = config_get_ptr();
    cloud_storage_set_active_provider(settings->uints.cloud_storage_provider);
+
+   _operation_queue_mutex = slock_new();
+   _operation_condition = scond_new();
+
+   _shutdown = false;
+   _operation_thread = sthread_create(_operation_thread_loop, NULL);
+
+   if (_get_active_provider()->ready_for_request())
+   {
+      slock_lock(_operation_queue_mutex);
+
+      sync_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
+      sync_item->operation = SYNC_FILES;
+      sync_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_SAVES;
+      sync_item->next = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
+      sync_item->next->operation = SYNC_FILES;
+      sync_item->next->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_STATES;
+
+      _operation_queue = sync_item;
+      scond_signal(_operation_condition);
+      scond_signal(_operation_condition);
+
+      slock_unlock(_operation_queue_mutex);
+   }
 }
 
-static cloud_storage_provider_t *get_active_provider(settings_t *settings)
+void cloud_storage_shutdown(void)
 {
-   return providers[settings->uints.cloud_storage_provider];
+   if (_shutdown)
+   {
+      return;
+   }
+
+   slock_lock(_operation_queue_mutex);
+   _shutdown = true;
+   scond_signal(_operation_condition);
+
+   slock_unlock(_operation_queue_mutex);
+
+   sthread_join(_operation_thread);
 }
 
-static bool have_local_dir(folder_type_t folder_type)
-{
-   global_t *global = global_get_ptr();
-   char *config_value;
-
-   if (!global)
-   {
-      return false;
-   }
-
-   if (folder_type == CLOUD_STORAGE_GAME_SAVES)
-   {
-      config_value = global->name.savefile;
-   } else if (folder_type == CLOUD_STORAGE_GAME_STATES)
-   {
-      config_value = global->name.savestate;
-   } else
-   {
-      return false;
-   }
-
-   if (config_value)
-   {
-      char *directory;
-      struct RDIR *dir;
-
-      directory = (char *)calloc(strlen(config_value) + 1, sizeof(char));
-      strcpy(directory, config_value);
-      path_remove_extension(directory);
-
-      dir = retro_opendir(directory);
-      if (!dir)
-      {
-         free(directory);
-         return false;
-      } else
-      {
-         retro_closedir(dir);
-         free(directory);
-         return true;
-      }
-   } else
-   {
-      return false;
-   }
-}
-
-static char *get_md5_hash(char *absolute_filename)
+static char *_get_md5_hash(char *absolute_filename)
 {
    RFILE *file;
    uint8_t *buffer;
@@ -167,7 +268,7 @@ static char *get_md5_hash(char *absolute_filename)
    return checksum_str;
 }
 
-static char *get_sha1_hash(char *absolute_filename)
+static char *_get_sha1_hash(char *absolute_filename)
 {
    char *checksum_str;
 
@@ -182,7 +283,7 @@ static char *get_sha1_hash(char *absolute_filename)
    }
 }
 
-static char *get_sha256_hash(char *absolute_filename)
+static char *_get_sha256_hash(char *absolute_filename)
 {
    RFILE *file;
    struct sha256_ctx sha;
@@ -217,184 +318,119 @@ static char *get_sha256_hash(char *absolute_filename)
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 
-   checksum_str = (char *)calloc(41, sizeof(char));
+   checksum_str = (char *)calloc(65, sizeof(char));
    for (i = 0; i < 32; i++)
    {
-      snprintf(checksum_str + 2 * i, 3, "%02x", (unsigned)shahash.u8[i]);
+      snprintf(checksum_str + 2 * i, 3, "%02X", (unsigned)shahash.u8[i]);
    }
 
    return checksum_str;
 }
 
-static bool file_need_download(
-   folder_type_t folder_type,
-   cloud_storage_item_t *item)
+static char *_clean_directory_path(char *dir_name)
 {
-   cloud_storage_item_t *remote_file;
-   char *raw_dir;
-   char *local_dir;
-   char *absolute_filename;
-   size_t absolute_filename_len;
-   char *checksum_str = NULL;
-   global_t *global;
-
-   global = global_get_ptr();
-
-   if (item->item_type == CLOUD_STORAGE_FOLDER)
-   {
-      return false;
-   }
-
-   if (folder_type == CLOUD_STORAGE_GAME_STATES)
-   {
-      raw_dir = global->name.savestate;
-   } else
-   {
-      raw_dir = global->name.savefile;
-   }
-   local_dir = (char *)calloc(strlen(raw_dir) + 1, sizeof(char));
-   strcpy(local_dir, raw_dir);
-   path_remove_extension(local_dir);
-
-   absolute_filename_len = strlen(local_dir) + strlen(item->name) + 2;
-   absolute_filename = (char *)calloc(absolute_filename_len, sizeof(char));
-   fill_pathname_join(absolute_filename, local_dir, item->name, absolute_filename_len);
-   free(local_dir);
-
-   switch (item->type_data.file.hash_type)
-   {
-      case MD5:
-         checksum_str = get_md5_hash(absolute_filename);
-         break;
-      case SHA1:
-         checksum_str = get_sha1_hash(absolute_filename);
-         break;
-      case SHA256:
-         checksum_str = get_sha256_hash(absolute_filename);
-         break;
-   }
-
-   if (!checksum_str)
-   {
-      return true;
-   } else if (!strcmp(checksum_str, item->type_data.file.hash_value))
-   {
-      free(checksum_str);
-      return false;
-   } else
-   {
-      free(checksum_str);
-      return true;
-   }
-}
-
-static cloud_storage_upload_item_t *get_upload_list(
-   cloud_storage_provider_state_t *provider_state,
-   folder_type_t folder_type)
-{
-   global_t *global = global_get_ptr();
-   char *dir_name;
-   struct RDIR *dir;
-   char *filename;
-   cloud_storage_upload_item_t *upload_list = NULL;
-   cloud_storage_upload_item_t *current_item;
-
-   if (!global)
-   {
-      return NULL;
-   }
-
-   if (folder_type == CLOUD_STORAGE_GAME_SAVES && strlen(global->name.savefile) > 0)
-   {
-      dir_name = (char *)calloc(strlen(global->name.savefile) + 1, sizeof(char));
-      strcpy(dir_name, global->name.savefile);
-   } else if (folder_type == CLOUD_STORAGE_GAME_STATES && strlen(global->name.savestate) > 0)
-   {
-      dir_name = (char *)calloc(strlen(global->name.savestate) + 1, sizeof(char));
-      strcpy(dir_name, global->name.savestate);
-   } else
-   {
-      return NULL;
-   }
+   size_t i;
 
    dir_name = path_remove_extension(dir_name);
-
-   dir = retro_opendir(dir_name);
-   while (dir != NULL && retro_readdir(dir))
+   for (i = strlen(dir_name) - 1;i >= 0 && dir_name[i] == '/';i--)
    {
-      char *filename = (char *)retro_dirent_get_name(dir);
-      if (strcmp(filename, ".") && strcmp(filename, ".."))
-      {
-         current_item = (cloud_storage_upload_item_t *)malloc(sizeof(cloud_storage_upload_item_t));
-         current_item->local_file = (char *)calloc(strlen(filename) + 1, sizeof(char));
-         strcpy(current_item->local_file, filename);
-         current_item->next = upload_list;
-         upload_list = current_item;
-      }
+      dir_name[i] = '\0';
    }
 
-   free(dir_name);
-
-   return upload_list;
+   return dir_name;
 }
 
-static bool file_need_upload(folder_type_t folder_type, cloud_storage_item_t *folder, char *local_file)
+static char *_get_absolute_filename(folder_type_t folder_type, char *filename)
 {
-   cloud_storage_item_t *remote_file;
-   char *checksum_str = NULL;
-   bool need_upload;
    global_t *global;
-   char *raw_dir;
-   char *dir_name;
+   char *raw_folder;
+   char *folder;
    char *absolute_filename;
    size_t absolute_filename_len;
 
-   for (remote_file = folder->type_data.folder.children;remote_file;remote_file = remote_file->next)
+   global = global_get_ptr();
+   raw_folder = folder_type == CLOUD_STORAGE_GAME_STATES ? global->name.savestate : global->name.savefile;
+   if (strlen(raw_folder) == 0)
    {
-      if (!strcmp(local_file, remote_file->name))
+      return NULL;
+   }
+
+   folder = (char *)malloc(strlen(raw_folder) + 1);
+   strcpy(folder, raw_folder);
+   folder = _clean_directory_path(folder);
+
+   absolute_filename_len = strlen(folder) + strlen(filename) + 2;
+   absolute_filename = (char *)calloc(strlen(folder) + strlen(filename) + 2, sizeof(char));
+   fill_pathname_join(absolute_filename, folder, filename, absolute_filename_len);
+
+   free(folder);
+
+   return absolute_filename;
+}
+
+static cloud_storage_item_t *_get_remote_file_for_local_file(
+   folder_type_t folder_type,
+   char *local_file)
+{
+   cloud_storage_item_t *folder;
+   cloud_storage_item_t *file;
+
+   if (folder_type == CLOUD_STORAGE_GAME_SAVES)
+   {
+      folder = _game_saves;
+   } else
+   {
+      folder = _game_states;
+   }
+
+   if (!folder)
+   {
+      return NULL;
+   }
+
+   for (file = folder->type_data.folder.children;file != NULL;file = file->next)
+   {
+      if (file->item_type == CLOUD_STORAGE_FILE && !strcmp(local_file, file->name))
       {
-         break;
+         return file;
       }
    }
+
+   return NULL;
+}
+
+static bool _file_need_upload(folder_type_t folder_type, char *local_file, cloud_storage_item_t *remote_file)
+{
+   char *checksum_str = NULL;
+   bool need_upload;
+   char *absolute_filename;
 
    if (!remote_file)
    {
       return true;
    }
 
-   global = global_get_ptr();
+   absolute_filename = _get_absolute_filename(folder_type, local_file);
 
-   if (folder->item_type == CLOUD_STORAGE_FOLDER)
+   if (!absolute_filename)
    {
       return false;
-   }
-
-   if (folder_type == CLOUD_STORAGE_GAME_STATES)
+   } else if (path_is_directory(absolute_filename))
    {
-      raw_dir = global->name.savestate;
-   } else
-   {
-      raw_dir = global->name.savefile;
+      free(absolute_filename);
+      return false;
    }
-   dir_name = (char *)calloc(strlen(raw_dir) + 1, sizeof(char));
-   strcpy(dir_name, raw_dir);
-   path_remove_extension(dir_name);
-
-   absolute_filename_len = strlen(dir_name) + strlen(local_file) + 2;
-   absolute_filename = (char *)calloc(absolute_filename_len, sizeof(char));
-   fill_pathname_join(absolute_filename, dir_name, local_file, absolute_filename_len);
-   free(dir_name);
 
    switch (remote_file->type_data.file.hash_type)
    {
       case MD5:
-         checksum_str = get_md5_hash(absolute_filename);
+         checksum_str = _get_md5_hash(absolute_filename);
          break;
       case SHA1:
-         checksum_str = get_sha1_hash(absolute_filename);
+         checksum_str = _get_sha1_hash(absolute_filename);
          break;
       case SHA256:
-         checksum_str = get_sha256_hash(absolute_filename);
+         checksum_str = _get_sha256_hash(absolute_filename);
          break;
    }
 
@@ -403,747 +439,546 @@ static bool file_need_upload(folder_type_t folder_type, cloud_storage_item_t *fo
    return need_upload;
 }
 
-static void sync_files_get_folder_metadata(
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_provider_t *provider,
-   folder_type_t folder_type)
+static void _upload_file(folder_type_t folder_type, char *local_file, cloud_storage_item_t *remote_file)
 {
-   char *folder_name;
-
-   continuation_data->operation_data.sync_files.phase = GET_FOLDER_METADATA;
-
-   provider->get_folder_metadata(
-      folder_type == CLOUD_STORAGE_GAME_STATES ? GAME_STATES_FOLDER_NAME : GAME_SAVES_FOLDER_NAME,
-      continuation_data,
-      sync_files_callback
-   );
-}
-
-static void sync_files_create_folder(
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_provider_t *provider,
-   folder_type_t folder_type)
-{
-   continuation_data->operation_data.sync_files.phase = CREATE_FOLDER;
-
-   provider->create_folder(
-      folder_type == CLOUD_STORAGE_GAME_STATES ? GAME_STATES_FOLDER_NAME : GAME_SAVES_FOLDER_NAME,
-      continuation_data,
-      sync_files_callback);
-}
-
-static void sync_files_list_folder(
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_provider_t *provider,
-   cloud_storage_provider_state_t *provider_state,
-   folder_type_t folder_type)
-{
-   cloud_storage_item_t *folder;
-
-   if (provider_state->game_states->type_data.folder.children)
-   {
-      cloud_storage_item_free(provider_state->game_states->type_data.folder.children);
-      provider_state->game_states->type_data.folder.children = NULL;
-   }
-
-   continuation_data->operation_data.sync_files.phase = LISTING_FOLDER;
-
-   folder = folder_type == CLOUD_STORAGE_GAME_STATES ? provider_state->game_states : provider_state->game_saves;
-
-   provider->list_files(
-      folder,
-      continuation_data,
-      sync_files_callback
-   );
-}
-
-static void sync_files_download_file(
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_provider_t *provider,
-   cloud_storage_provider_state_t *provider_state,
-   folder_type_t folder_type)
-{
-   global_t *global;
-   char *local_file;
-   char *local_folder;
-   char *config_value;
-
-   global = global_get_ptr();
-
-   continuation_data->operation_data.sync_files.phase = DOWNLOADING_ITEMS;
-   config_value = folder_type == CLOUD_STORAGE_GAME_STATES ? global->name.savestate : global->name.savefile;
-   local_folder = (char *)calloc(strlen(config_value) + 1, sizeof(char));
-   strcpy(local_folder, config_value);
-   path_remove_extension(local_folder);
-
-   local_file = (char *)calloc(strlen(local_folder) + strlen(continuation_data->operation_data.sync_files.files_to_download->name) + 2, sizeof(char));
-   strcpy(local_file, local_folder);
-   local_file[strlen(local_file)] = '/';
-   strcpy(local_file + strlen(local_folder) + 1, continuation_data->operation_data.sync_files.files_to_download->name);
-
-   free(local_folder);
-
-   provider->download_file(
-      continuation_data->operation_data.sync_files.files_to_download,
-      local_file,
-      continuation_data,
-      sync_files_callback
-   );
-}
-
-static char *get_absolute_filename(folder_type_t folder_type, char *filename)
-{
-   global_t *global = global_get_ptr();
-   char *raw_folder;
-   char *folder;
    char *absolute_filename;
+   cloud_storage_item_t *remote_folder;
 
-   global = global_get_ptr();
-   raw_folder = folder_type == CLOUD_STORAGE_GAME_STATES ? global->name.savestate : global->name.savefile;
-   folder = (char *)malloc(strlen(raw_folder) + 1);
-   strcpy(folder, raw_folder);
-   path_remove_extension(folder);
-
-   absolute_filename = (char *)calloc(strlen(folder) + strlen(filename) + 2, sizeof(char));
-   strcpy(absolute_filename, folder);
-   absolute_filename[strlen(folder)] = '/';
-   strcpy(absolute_filename + strlen(folder) + 1, filename);
-
-   free(folder);
-
-   return absolute_filename;
-}
-
-static void sync_files_upload_item(
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_provider_t *provider,
-   cloud_storage_provider_state_t *provider_state,
-   folder_type_t folder_type)
-{
-   cloud_storage_item_t *folder;
-   cloud_storage_item_t *remote_file;
-   char *file_name;
-
-   folder = folder_type == CLOUD_STORAGE_GAME_STATES ?
-      continuation_data->provider_state->game_states : continuation_data->provider_state->game_saves;
-
-   file_name = continuation_data->operation_data.sync_files.upload_items->local_file;
-   for (remote_file = folder->type_data.folder.children;remote_file;remote_file = remote_file->next)
+   if (folder_type == CLOUD_STORAGE_GAME_SAVES)
    {
-      if (!strcmp(remote_file->name, file_name))
-      {
-         break;
-      }
-   }
-
-   if (!remote_file)
-   {
-      remote_file = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
-      remote_file->name = (char *)calloc(strlen(file_name) + 1, sizeof(char));
-      strcpy(remote_file->name, file_name);
-      remote_file->item_type = CLOUD_STORAGE_FILE;
-   }
-
-   continuation_data->operation_data.sync_files.phase = UPLOADING_ITEMS;
-   provider->upload_file(
-      folder,
-      remote_file,
-      get_absolute_filename(folder_type, file_name),
-      continuation_data,
-      sync_files_callback
-   );
-}
-
-static void sync_files_auth_callback(
-   cloud_storage_continuation_data_t *continuation_data,
-   bool success,
-   void *data)
-{
-   if (!success)
-   {
-      free_continuation_data(continuation_data);
+      remote_folder = _game_saves;
    } else
    {
-      cloud_storage_operation_state_t *new_operation_state;
-
-      new_operation_state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-      new_operation_state->continuation_data = continuation_data;
-
-      sync_files_callback(new_operation_state, true);
+      remote_folder = _game_states;
    }
+
+   absolute_filename = _get_absolute_filename(folder_type, local_file);
+   if (!absolute_filename)
+   {
+      return;
+   } else if (path_is_directory(absolute_filename))
+   {
+      free(absolute_filename);
+      return;
+   }
+
+   _get_active_provider()->upload_file(
+      remote_folder,
+      remote_file,
+      absolute_filename
+   );
+
+   free(absolute_filename);
 }
 
-static cloud_storage_provider_status_t sync_files_preprocess(
-   cloud_storage_operation_state_t *operation_state,
-   bool succeeded)
+static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_storage_item_t *other)
 {
-   settings_t *settings;
-   cloud_storage_provider_t *provider;
-
-   settings = config_get_ptr();
-   provider = get_active_provider(settings);
-
-   switch (provider->get_status(operation_state->continuation_data->provider_state))
+   if (item_to_update->name)
    {
-      case CLOUD_STORAGE_STATUS_NOT_READY:
-         free_continuation_data(operation_state->continuation_data);
-         free_operation_state(operation_state);
-         return CLOUD_STORAGE_STATUS_NOT_READY;
-      case CLOUD_STORAGE_STATUS_NEED_AUTHENTICATION:
-         {
-            cloud_storage_continuation_data_t *continuation_data;
-
-            continuation_data = operation_state->continuation_data;
-            free_operation_state(operation_state);
-            provider->authenticate(continuation_data, sync_files_auth_callback, continuation_data);
-            return CLOUD_STORAGE_STATUS_NEED_AUTHENTICATION;
-         }
-      default:
-         return CLOUD_STORAGE_STATUS_READY;
-   }
-}
-
-static bool sync_files_process_response(
-   cloud_storage_operation_state_t *operation_state,
-   bool succeeded,
-   folder_type_t folder_type,
-   bool folder_exists)
-{
-   cloud_storage_continuation_data_t *continuation_data;
-
-   if (!succeeded)
-   {
-      return false;
+      free(item_to_update->name);
+      item_to_update->name = NULL;
    }
 
-   continuation_data = operation_state->continuation_data;
-
-   switch (continuation_data->operation_data.sync_files.phase)
+   if (other->name)
    {
-      case NOT_STARTED:
-         break;
-      case GET_FOLDER_METADATA:
-      case CREATE_FOLDER:
-         if (operation_state->result)
-         {
-            if (folder_type == CLOUD_STORAGE_GAME_STATES)
-            {
-               continuation_data->provider_state->game_states = operation_state->result;
-            } else
-            {
-               continuation_data->provider_state->game_saves = operation_state->result;
-            }
-         }
-         break;
-      case LISTING_FOLDER:
-         if (operation_state->result)
-         {
-            if (folder_type == CLOUD_STORAGE_GAME_STATES)
-            {
-               continuation_data->provider_state->game_states->type_data.folder.children = operation_state->result;
-            } else
-            {
-               continuation_data->provider_state->game_saves->type_data.folder.children = operation_state->result;
-            }
-         }
-         break;
-      case DOWNLOADING_ITEMS:
-         if (continuation_data->operation_data.sync_files.files_to_download)
-         {
-            cloud_storage_item_t *item_to_delete;
-
-            item_to_delete = continuation_data->operation_data.sync_files.files_to_download;
-            continuation_data->operation_data.sync_files.files_to_download =
-               continuation_data->operation_data.sync_files.files_to_download->next;
-            item_to_delete->next = NULL;
-            cloud_storage_item_free(item_to_delete);
-         }
-         break;
-      case UPLOADING_ITEMS:
-         if (continuation_data->operation_data.sync_files.upload_items)
-         {
-            cloud_storage_upload_item_t *item_to_delete;
-
-            item_to_delete = continuation_data->operation_data.sync_files.upload_items;
-            continuation_data->operation_data.sync_files.upload_items =
-               continuation_data->operation_data.sync_files.upload_items->next;
-            free(item_to_delete->local_file);
-            free(item_to_delete);
-         }
-         break;
+      item_to_update->name = (char *)calloc(strlen(other->name) + 1, sizeof(char));
+      strcpy(item_to_update->name, other->name);
    }
 
-   return true;
-}
-
-static void sync_files_next_download(cloud_storage_continuation_data_t *continuation_data)
-{
-   while (continuation_data->operation_data.sync_files.files_to_download)
+   if (item_to_update->item_type == CLOUD_STORAGE_FILE)
    {
-      if (file_need_download(
-         continuation_data->operation_data.sync_files.current_folder_type,
-         continuation_data->operation_data.sync_files.files_to_download))
+      if (item_to_update->type_data.file.download_url)
       {
-         return;
-      } else
-      {
-         cloud_storage_item_t *item_to_remove;
-
-         item_to_remove = continuation_data->operation_data.sync_files.files_to_download;
-         continuation_data->operation_data.sync_files.files_to_download =
-            continuation_data->operation_data.sync_files.files_to_download->next;
-         item_to_remove->next = NULL;
-         cloud_storage_item_free(item_to_remove);
+         free(item_to_update->type_data.file.download_url);
+         item_to_update->type_data.file.download_url = NULL;
       }
-   }
-}
 
-static void sync_files_next_upload(cloud_storage_continuation_data_t *continuation_data)
-{
-   while (continuation_data->operation_data.sync_files.upload_items)
-   {
-      folder_type_t folder_type;
-      cloud_storage_item_t *folder;
-
-      folder_type = continuation_data->operation_data.sync_files.current_folder_type;
-      folder = folder_type == CLOUD_STORAGE_GAME_STATES ?
-         continuation_data->provider_state->game_states : continuation_data->provider_state->game_saves;
-
-      if (file_need_upload(folder_type, folder, continuation_data->operation_data.sync_files.upload_items->local_file))
+      if (item_to_update->type_data.file.hash_value)
       {
-         return;
-      } else
-      {
-         cloud_storage_upload_item_t *item_to_remove;
-
-         item_to_remove = continuation_data->operation_data.sync_files.upload_items;
-         continuation_data->operation_data.sync_files.upload_items =
-            continuation_data->operation_data.sync_files.upload_items->next;
-         free(item_to_remove->local_file);
-         free(item_to_remove);
-      }
-   }
-}
-
-static void sync_files_update_phase(cloud_storage_continuation_data_t *continuation_data, bool previous_operation_success)
-{
-   switch (continuation_data->operation_data.sync_files.phase)
-   {
-      case NOT_STARTED:
-         continuation_data->operation_data.sync_files.phase = GET_FOLDER_METADATA;
-         return;
-      case GET_FOLDER_METADATA:
-         {
-            folder_type_t folder_type;
-            cloud_storage_item_t *folder;
-
-            folder_type = continuation_data->operation_data.sync_files.current_folder_type;
-            folder = folder_type == CLOUD_STORAGE_GAME_STATES ?
-               continuation_data->provider_state->game_states : continuation_data->provider_state->game_saves;
-            if (folder)
-            {
-               continuation_data->operation_data.sync_files.phase = LISTING_FOLDER;
-            } else
-            {
-               continuation_data->operation_data.sync_files.phase = CREATE_FOLDER;
-            }
-            return;
-         }
-      default:
-         break;
-   }
-
-   switch (continuation_data->operation_data.sync_files.phase)
-   {
-      case CREATE_FOLDER:
-         if (previous_operation_success)
-         {
-            continuation_data->operation_data.sync_files.phase = UPLOADING_ITEMS;
-         } else
-         {
-            continuation_data->operation_data.sync_files.phase = NOT_STARTED;
-         }
-
-         return;
-      case LISTING_FOLDER:
-         {
-            folder_type_t folder_type;
-            cloud_storage_item_t *folder;
-
-            folder_type = continuation_data->operation_data.sync_files.current_folder_type;
-            folder = folder_type == CLOUD_STORAGE_GAME_STATES ?
-               continuation_data->provider_state->game_states : continuation_data->provider_state->game_saves;
-
-            continuation_data->operation_data.sync_files.files_to_download = cloud_storage_clone_item_list(folder->type_data.folder.children);
-            sync_files_next_download(continuation_data);
-
-            if (continuation_data->operation_data.sync_files.files_to_download)
-            {
-               continuation_data->operation_data.sync_files.phase = DOWNLOADING_ITEMS;
-               return;
-            }
-
-            continuation_data->operation_data.sync_files.upload_items = get_upload_list(
-               continuation_data->provider_state,
-               continuation_data->operation_data.sync_files.current_folder_type
-            );
-            sync_files_next_upload(continuation_data);
-
-            if (continuation_data->operation_data.sync_files.upload_items)
-            {
-               continuation_data->operation_data.sync_files.phase = UPLOADING_ITEMS;
-               return;
-            }
-
-            continuation_data->operation_data.sync_files.phase = NOT_STARTED;
-            return;
-         }
-      case DOWNLOADING_ITEMS:
-         {
-            cloud_storage_item_t *item_to_remove;
-
-            item_to_remove = continuation_data->operation_data.sync_files.files_to_download;
-            continuation_data->operation_data.sync_files.files_to_download = continuation_data->operation_data.sync_files.files_to_download->next;
-            item_to_remove->next = NULL;
-            cloud_storage_item_free(item_to_remove);
-            sync_files_next_download(continuation_data);
-
-            if (continuation_data->operation_data.sync_files.files_to_download)
-            {
-               return;
-            }
-
-            continuation_data->operation_data.sync_files.upload_items = get_upload_list(
-               continuation_data->provider_state,
-               continuation_data->operation_data.sync_files.current_folder_type
-            );
-            sync_files_next_upload(continuation_data);
-
-            if (continuation_data->operation_data.sync_files.upload_items)
-            {
-               continuation_data->operation_data.sync_files.phase = UPLOADING_ITEMS;
-               return;
-            }
-
-            continuation_data->operation_data.sync_files.phase = NOT_STARTED;
-            return;
-         }
-      case UPLOADING_ITEMS:
-         {
-            cloud_storage_upload_item_t * item_to_remove;
-
-            item_to_remove = continuation_data->operation_data.sync_files.upload_items;
-            continuation_data->operation_data.sync_files.upload_items = continuation_data->operation_data.sync_files.upload_items->next;
-            free(item_to_remove->local_file);
-            free(item_to_remove);
-            sync_files_next_upload(continuation_data);
-
-            if (continuation_data->operation_data.sync_files.upload_items)
-            {
-               continuation_data->operation_data.sync_files.phase = UPLOADING_ITEMS;
-               return;
-            }
-
-            continuation_data->operation_data.sync_files.phase = NOT_STARTED;
-            return;
-         }
-      default:
-         return;
-   }
-}
-
-static void sync_files_callback(
-   cloud_storage_operation_state_t *operation_state,
-   bool succeeded)
-{
-   folder_type_t folder_type;
-   settings_t *settings;
-   cloud_storage_provider_t *provider;
-   bool previous_operation_success;
-
-   switch (sync_files_preprocess(operation_state, succeeded))
-   {
-      case CLOUD_STORAGE_STATUS_NOT_READY:
-         return;
-      case CLOUD_STORAGE_STATUS_NEED_AUTHENTICATION:
-         return;
-      case CLOUD_STORAGE_STATUS_READY:
-         break;
-   }
-
-   folder_type = operation_state->continuation_data->operation_data.sync_files.current_folder_type;
-
-   previous_operation_success = sync_files_process_response(operation_state, succeeded, folder_type, have_local_dir(folder_type));
-   sync_files_update_phase(operation_state->continuation_data, previous_operation_success);
-
-   if (operation_state->continuation_data->operation_data.sync_files.phase == NOT_STARTED)
-   {
-      if (folder_type == CLOUD_STORAGE_GAME_STATES && have_local_dir(CLOUD_STORAGE_GAME_SAVES))
-      {
-         folder_type = CLOUD_STORAGE_GAME_SAVES;
-         operation_state->continuation_data->operation_data.sync_files.current_folder_type = folder_type;
-         sync_files_update_phase(operation_state->continuation_data, true);
+         free(item_to_update->type_data.file.hash_value);
+         item_to_update->type_data.file.hash_value = NULL;
       }
    }
 
-   settings = config_get_ptr();
-   provider = get_active_provider(settings);
-
-   switch (operation_state->continuation_data->operation_data.sync_files.phase)
+   item_to_update->item_type = other->item_type;
+   if (other->item_type == CLOUD_STORAGE_FILE)
    {
-      case NOT_STARTED:
-         break;
-      case GET_FOLDER_METADATA:
-         sync_files_get_folder_metadata(
-            operation_state->continuation_data,
-            provider,
-            folder_type
-         );
-         return;
-      case CREATE_FOLDER:
-         sync_files_create_folder(
-            operation_state->continuation_data,
-            provider,
-            folder_type
-         );
-         return;
-      case LISTING_FOLDER:
-         sync_files_list_folder(
-            operation_state->continuation_data,
-            provider,
-            operation_state->continuation_data->provider_state,
-            folder_type
-         );
-         return;
-      case DOWNLOADING_ITEMS:
-         sync_files_download_file(
-            operation_state->continuation_data,
-            provider,
-            operation_state->continuation_data->provider_state,
-            folder_type
-         );
-         return;
-      case UPLOADING_ITEMS:
-         sync_files_upload_item(
-            operation_state->continuation_data,
-            provider,
-            operation_state->continuation_data->provider_state,
-            folder_type
-         );
-         return;
-   }
-
-   free_continuation_data(operation_state->continuation_data);
-}
-
-void cloud_storage_authorize(
-   unsigned provider_id,
-   void (*callback)(bool success))
-{
-   cloud_storage_provider_t *provider;
-   global_t *global;
-   settings_t *settings;
-
-   VERIFY_INITIALIZED
-
-   global = global_get_ptr();
-   settings = config_get_ptr();
-
-   providers[provider_id]->authorize(settings, global, callback);
-}
-
-void cloud_storage_sync_files(void)
-{
-   cloud_storage_continuation_data_t *continuation_data;
-   cloud_storage_operation_state_t *operation_state;
-
-   VERIFY_INITIALIZED
-
-   continuation_data = malloc(sizeof(cloud_storage_continuation_data_t));
-   continuation_data->provider_state = active_provider_state;
-   continuation_data->operation_type = CLOUD_STORAGE_SYNC;
-   continuation_data->operation_data.sync_files.current_folder_type = CLOUD_STORAGE_GAME_STATES;
-   continuation_data->operation_data.sync_files.upload_items = NULL;
-   continuation_data->provider_state->game_states = NULL;
-   continuation_data->provider_state->game_saves = NULL;
-   continuation_data->operation_data.sync_files.phase = NOT_STARTED;
-   continuation_data->operation_data.sync_files.files_to_download = NULL;
-
-   operation_state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   operation_state->continuation_data = continuation_data;
-
-   sync_files_callback(operation_state, true);
-}
-
-static cloud_storage_item_t *get_existing_item_metadata(
-   cloud_storage_item_t *folder,
-   char *name)
-{
-   cloud_storage_item_t *item;
-
-   if (!folder)
-   {
-      return NULL;
-   }
-
-   for (item = folder->type_data.folder.children;item;item = item->next)
-   {
-      if (!strcmp(name, item->name))
+      if (other->type_data.file.download_url)
       {
-         return item;
+         item_to_update->type_data.file.download_url = (char *)calloc(strlen(other->type_data.file.download_url) + 1, sizeof(char));
+         strcpy(item_to_update->type_data.file.download_url, other->type_data.file.download_url);
       }
+
+      item_to_update->type_data.file.hash_type = other->type_data.file.hash_type;
+
+      if (other->type_data.file.hash_value)
+      {
+         item_to_update->type_data.file.hash_value = (char *)calloc(strlen(other->type_data.file.hash_value) + 1, sizeof(char));
+         strcpy(item_to_update->type_data.file.hash_value, other->type_data.file.hash_value);
+      }
+   } else
+   {
+      item_to_update->type_data.folder.children = other->type_data.folder.children;
    }
-
-   return NULL;
 }
 
-static void upload_file_callback(
-   cloud_storage_operation_state_t *operation_state,
-   bool succeeded)
-{
-}
-
-void cloud_storage_upload_file(folder_type_t folder_type, char *filename)
+static void _sync_files_upload(folder_type_t folder_type)
 {
    global_t *global;
-   char *config_value;
+   cloud_storage_item_t *remote_folder;
+   char *raw_dir;
    char *dir_name;
-   char *absolute_filename;
-   size_t absolute_filename_len;
-   settings_t *settings;
-   cloud_storage_provider_t *provider;
-   cloud_storage_status_response_t provider_status;
-   cloud_storage_continuation_data_t *continuation_data;
-   cloud_storage_item_t *folder;
-   cloud_storage_item_t *remote_item;
-
-   VERIFY_INITIALIZED
+   struct RDIR *dir;
+   char *filename;
 
    global = global_get_ptr();
-   config_value = folder_type == CLOUD_STORAGE_GAME_STATES ? global->name.savestate : global->name.savefile;
-   dir_name = (char *)calloc(strlen(config_value) + 1, sizeof(char));
-   strcpy(dir_name, config_value);
-   path_remove_extension(dir_name);
-
-   absolute_filename_len = strlen(dir_name) + strlen(filename) + 2;
-   absolute_filename = (char *)calloc(absolute_filename_len, sizeof(char));
-   fill_pathname_join(absolute_filename, dir_name, filename, absolute_filename_len);
-
-   free(dir_name);
-
-   settings = config_get_ptr();
-   provider = get_active_provider(settings);
-
-   provider = get_active_provider(settings);
-   provider_status = provider->get_status(active_provider_state);
-
-   if (provider_status != CLOUD_STORAGE_STATUS_READY)
+   if (!global)
    {
       return;
    }
 
-   continuation_data = malloc(sizeof(cloud_storage_continuation_data_t));
-   continuation_data->provider_state = active_provider_state;
-   continuation_data->operation_type = CLOUD_STORAGE_UPLOAD_FILE;
-
-   folder = folder_type == CLOUD_STORAGE_GAME_STATES ? continuation_data->provider_state->game_states : continuation_data->provider_state->game_saves;
-
-   continuation_data->operation_type = CLOUD_STORAGE_UPLOAD;
-   continuation_data->operation_data.upload_file.file_to_upload = get_existing_item_metadata(
-      folder,
-      filename
-   );
-
-   if (!continuation_data->operation_data.upload_file.file_to_upload)
+   switch (folder_type)
    {
-      continuation_data->operation_data.upload_file.file_to_upload = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
-      continuation_data->operation_data.upload_file.file_to_upload->name = filename;
-      continuation_data->operation_data.upload_file.file_to_upload->item_type = CLOUD_STORAGE_FILE;
+      case CLOUD_STORAGE_GAME_SAVES:
+         remote_folder = _game_saves;
+         raw_dir = global->name.savefile;
+         break;
+      case CLOUD_STORAGE_GAME_STATES:
+         remote_folder = _game_states;
+         raw_dir = global->name.savestate;
+         break;
+      default:
+         return;
    }
 
-   for (remote_item = folder->type_data.folder.children;remote_item;remote_item = remote_item->next)
+   if (!remote_folder || strlen(raw_dir) == 0)
    {
-      if (!strcmp(filename, remote_item->name))
+      return;
+   }
+
+   dir_name = (char *)calloc(strlen(raw_dir) + 1, sizeof(char));
+   strcpy(dir_name, raw_dir);
+   dir_name = _clean_directory_path(dir_name);
+
+   dir = retro_opendir(dir_name);
+   while (dir != NULL && retro_readdir(dir))
+   {
+      char *filename = (char *)retro_dirent_get_name(dir);
+      if (strcmp(filename, ".") && strcmp(filename, ".."))
       {
+         cloud_storage_item_t *remote_file;
+         bool new_file = false;
+
+         remote_file = _get_remote_file_for_local_file(folder_type, filename);
+         if (remote_file && remote_file->item_type == CLOUD_STORAGE_FOLDER)
+         {
+            continue;
+         } else if (remote_file)
+         {
+            cloud_storage_item_t *current_metadata;
+
+            if (remote_file->last_sync_time < time(NULL) - 30)
+            {
+               current_metadata = _get_active_provider()->get_file_metadata(remote_file);
+               _update_existing_item(remote_file, current_metadata);
+               cloud_storage_item_free(current_metadata);
+            }
+         } else
+         {
+            remote_file = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
+            remote_file->item_type = CLOUD_STORAGE_FILE;
+            remote_file->name = (char *)calloc(strlen(filename) + 1, sizeof(char));
+            strcpy(remote_file->name, filename);
+
+            new_file = true;
+         }
+
+         if (new_file || _file_need_upload(folder_type, filename, remote_file))
+         {
+            _upload_file(folder_type, filename, remote_file);
+
+            if (new_file)
+            {
+               if (!remote_folder->type_data.folder.children)
+               {
+                  remote_folder->type_data.folder.children = remote_file;
+               } else
+               {
+                  cloud_storage_item_t *last_item;
+
+                  for (last_item = remote_folder->type_data.folder.children;last_item->next != NULL;last_item = last_item->next);
+
+                  last_item->next = remote_file;
+               }
+               
+            }
+         }
+      }
+   }
+
+   free(dir_name);
+}
+
+static bool _have_local_file_for_remote_file(
+   folder_type_t folder_type,
+   cloud_storage_item_t *remote_file)
+{
+   global_t *global = global_get_ptr();
+   char *dir_name = NULL;
+   struct RDIR *dir;
+   bool found = false;
+
+   if (!global)
+   {
+      return false;
+   }
+
+   switch (folder_type)
+   {
+      case CLOUD_STORAGE_GAME_SAVES:
+         if (strlen(global->name.savefile) > 0)
+         {
+            dir_name = (char *)calloc(strlen(global->name.savefile) + 1, sizeof(char));
+            strcpy(dir_name, global->name.savefile);
+         }
+         break;
+      case CLOUD_STORAGE_GAME_STATES:
+         if (strlen(global->name.savestate) > 0)
+         {
+            dir_name = (char *)calloc(strlen(global->name.savestate) + 1, sizeof(char));
+            strcpy(dir_name, global->name.savestate);
+         }
+         break;
+      default:
+         return false;
+   }
+
+   if (!dir_name)
+   {
+      return false;
+   }
+
+   dir_name = _clean_directory_path(dir_name);
+
+   dir = retro_opendir(dir_name);
+   while (dir != NULL && retro_readdir(dir))
+   {
+      char *filename = (char *)retro_dirent_get_name(dir);
+      if (strcmp(filename, ".") && strcmp(filename, "..") && !strcmp(filename, remote_file->name))
+      {
+         found = true;
          break;
       }
    }
 
-   if (!remote_item)
-   {
-      remote_item = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
-      remote_item->item_type = CLOUD_STORAGE_FILE;
-      remote_item->name = (char *)calloc(strlen(filename) + 1, sizeof(char));
-      strcpy(remote_item->name, filename);
+   free(dir_name);
+   return found;
+}
 
-      remote_item->next = folder->type_data.folder.children;
-      folder->type_data.folder.children = remote_item;
+static bool _file_need_download(char *local_file, cloud_storage_item_t *remote_file)
+{
+   char *checksum_str = NULL;
+   bool need_upload;
+   char *raw_dir;
+
+   if (!path_is_valid(local_file))
+   {
+      return true;
    }
 
-   provider->upload_file(
-      folder_type == CLOUD_STORAGE_GAME_STATES ? continuation_data->provider_state->game_states : continuation_data->provider_state->game_saves,
-      remote_item,
-      dir_name,
-      continuation_data,
-      upload_file_callback
+   if (path_is_directory(local_file))
+   {
+      return false;
+   }
+
+   switch (remote_file->type_data.file.hash_type)
+   {
+      case MD5:
+         checksum_str = _get_md5_hash(local_file);
+         break;
+      case SHA1:
+         checksum_str = _get_sha1_hash(local_file);
+         break;
+      case SHA256:
+         checksum_str = _get_sha256_hash(local_file);
+         break;
+   }
+
+   need_upload = strcmp(checksum_str, remote_file->type_data.file.hash_value) != 0;
+   free(checksum_str);
+   return need_upload;
+}
+
+static void _download_file(char *local_file, cloud_storage_item_t *remote_file)
+{
+   _get_active_provider()->download_file(
+      remote_file,
+      local_file
    );
+}
+
+static void _sync_files_download(folder_type_t folder_type)
+{
+   cloud_storage_item_t *remote_folder;
+   cloud_storage_item_t *remote_file;
+
+   if (folder_type == CLOUD_STORAGE_GAME_SAVES)
+   {
+      remote_folder = _game_saves;
+   } else if (folder_type == CLOUD_STORAGE_GAME_STATES)
+   {
+      remote_folder = _game_states;
+   } else
+   {
+      return;
+   }
+
+   if (!remote_folder)
+   {
+      return;
+   }
+
+   for (remote_file = remote_folder->type_data.folder.children;remote_file != NULL;remote_file = remote_file->next)
+   {
+      char *local_file;
+      bool need_download = false;
+      cloud_storage_item_t *current_metadata;
+
+      if (remote_file->last_sync_time < time(NULL) - 30)
+      {
+         current_metadata = _get_active_provider()->get_file_metadata(remote_file);
+         if (!current_metadata)
+         {
+            continue;
+         }
+         _update_existing_item(remote_file, current_metadata);
+      }
+
+      local_file = _get_absolute_filename(folder_type, remote_file->name);
+
+      if (_have_local_file_for_remote_file(folder_type, remote_file))
+      {
+         need_download = _file_need_download(local_file, remote_file);
+      } else
+      {
+         need_download = true;
+      }
+
+      if (need_download)
+      {
+         _download_file(local_file, remote_file);
+      }
+   }
+}
+
+static bool _prepare_folder(folder_type_t folder_type)
+{
+   char *folder_name;
+   cloud_storage_item_t **folder;
+
+   switch (folder_type)
+   {
+      case CLOUD_STORAGE_GAME_SAVES:
+         folder_name = GAME_SAVES_FOLDER_NAME;
+         folder = &_game_saves;
+         break;
+      case CLOUD_STORAGE_GAME_STATES:
+         folder_name = GAME_STATES_FOLDER_NAME;
+         folder = &_game_states;
+         break;
+      default:
+         return false;
+   }
+
+   if (*folder == NULL)
+   {
+      *folder = _get_active_provider()->get_folder_metadata(folder_name);
+      if (*folder)
+      {
+         _get_active_provider()->list_files(*folder);
+         return true;
+      } else
+      {
+         *folder = _get_active_provider()->create_folder(folder_name);
+         return *folder != NULL;
+      }
+   } else
+   {
+      return true;
+   }
+}
+
+static void _sync_files_execute(folder_type_t folder_type)
+{
+   if (!_prepare_folder(folder_type))
+   {
+      return;
+   }
+
+   _sync_files_upload(folder_type);
+   _sync_files_download(folder_type);
+}
+
+static void _free_operation_queue_item(struct _operation_queue_item *queue_item)
+{
+   switch (queue_item->operation)
+   {
+      case UPLOAD_FILE:
+         free(queue_item->operation_parameters.upload.local_file);
+         break;
+      default:
+         break;
+   }
+
+   free(queue_item);
+}
+
+void cloud_storage_sync_files(void)
+{
+   struct _operation_queue_item *queue_item;
+   struct _operation_queue_item *previous_queue_item = NULL;
+
+   slock_lock(_operation_queue_mutex);
+
+   if (!_get_active_provider()->ready_for_request())
+   {
+      slock_unlock(_operation_queue_mutex);
+      return;
+   }
+
+   for (queue_item = _operation_queue;queue_item != NULL;queue_item = queue_item->next)
+   {
+      if (queue_item->operation == UPLOAD_FILE || queue_item->operation == DOWNLOAD_FILE)
+      {
+         if (!previous_queue_item)
+         {
+            _free_operation_queue_item(queue_item);
+         } else
+         {
+            struct _operation_queue_item *next_item;
+
+            next_item = queue_item->next;
+            _free_operation_queue_item(queue_item);
+            previous_queue_item->next = next_item;
+            queue_item = next_item;
+         }
+
+         continue;
+      }
+
+      previous_queue_item = queue_item;
+   }
+
+   queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
+   queue_item->operation = SYNC_FILES;
+   queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_SAVES;
+   if (previous_queue_item)
+   {
+      previous_queue_item->next = queue_item;
+   } else
+   {
+      _operation_queue = queue_item;
+   }
+   previous_queue_item = queue_item;
+
+   queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
+   queue_item->operation = SYNC_FILES;
+   queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_STATES;
+   previous_queue_item->next = queue_item;
+
+   scond_signal(_operation_condition);
+
+   slock_unlock(_operation_queue_mutex);
+}
+
+static void _upload_file_execute(folder_type_t folder_type, char *file_name)
+{
+   cloud_storage_item_t *remote_file;
+
+   if (!_prepare_folder(folder_type))
+   {
+      return;
+   }
+
+   remote_file = _get_remote_file_for_local_file(folder_type, file_name);
+   if (_file_need_upload(folder_type, file_name, remote_file))
+   {
+      _upload_file(folder_type, file_name, remote_file);
+   }
+}
+
+void cloud_storage_upload_file(folder_type_t folder_type, char *file_name)
+{
+   struct _operation_queue_item *queue_item;
+   struct _operation_queue_item *previous_queue_item = NULL;
+
+   slock_lock(_operation_queue_mutex);
+
+   if (!_get_active_provider()->ready_for_request())
+   {
+      slock_unlock(_operation_queue_mutex);
+      return;
+   }
+
+   for (queue_item = _operation_queue;queue_item != NULL;queue_item = queue_item->next)
+   {
+      switch (queue_item->operation)
+      {
+         case SYNC_FILES:
+            goto complete;
+         case UPLOAD_FILE:
+            if (queue_item->operation_parameters.upload.folder_type && !strcmp(file_name, queue_item->operation_parameters.upload.local_file))
+            {
+               goto complete;
+            }
+            break;
+         case DOWNLOAD_FILE:
+            continue;
+      }
+
+      previous_queue_item = queue_item;
+   }
+
+   queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
+   queue_item->operation = UPLOAD_FILE;
+   queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_SAVES;
+   queue_item->operation_parameters.upload.local_file = (char *)calloc(strlen(file_name) + 1, sizeof(char));
+   strcpy(queue_item->operation_parameters.upload.local_file, file_name);
+   if (previous_queue_item)
+   {
+      previous_queue_item->next = queue_item;
+   } else
+   {
+      _operation_queue = queue_item;
+   }
+
+   scond_signal(_operation_condition);
+
+complete:
+   slock_unlock(_operation_queue_mutex);
 }
 
 void cloud_storage_set_active_provider(unsigned provider_id)
 {
-   settings_t *settings;
-   cloud_storage_provider_t *provider;
-
-   VERIFY_INITIALIZED
-
-   settings = config_get_ptr();
-   provider = get_active_provider(settings);
-
-   if (active_provider_state)
+   if (_game_saves)
    {
-      cloud_storage_item_t *item;
-      cloud_storage_item_t *next;
-
-      active_provider_state->free_data(active_provider_state->provider_data);
-
-      item = active_provider_state->game_states;
-      while (item)
-      {
-         next = item->next;
-         cloud_storage_item_free(item);
-         item = next;
-      }
-
-      item = active_provider_state->game_saves;
-      while (item)
-      {
-         next = item->next;
-         cloud_storage_item_free(item);
-         item = next;
-      }
-   } else
-   {
-      active_provider_state = (cloud_storage_provider_state_t *)malloc(sizeof(cloud_storage_provider_state_t));
+      cloud_storage_item_free(_game_saves);
+      _game_saves = NULL;
    }
 
-   active_provider_state->backoff_end = 0;
-   active_provider_state->retry_count = 0;
-   active_provider_state->status = CLOUD_STORAGE_PROVIDER_READY;
-   active_provider_state->game_states = NULL;
-   active_provider_state->game_saves = NULL;
-   active_provider_state->provider_data = provider->initialize(settings);
-   active_provider_state->free_data = provider->free_provider_data;
+   if (_game_states)
+   {
+      cloud_storage_item_free(_game_states);
+      _game_states = NULL;
+   }
 }
 
 bool cloud_storage_need_authorization(void)
 {
-   settings_t *settings;
-   cloud_storage_provider_t *provider;
+   return _get_active_provider()->need_authorization;
+}
 
-   VERIFY_INITIALIZED
-
-   settings = config_get_ptr();
-   provider = get_active_provider(settings);
-
-   return provider->need_authorization;
+void cloud_storage_authorize(void (*callback)(bool success))
+{
+   _get_active_provider()->authorize(callback);
 }

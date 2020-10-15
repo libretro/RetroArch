@@ -22,14 +22,16 @@
 
 #include <stdlib.h>
 
+#include <net/net_http.h>
+#include <rest/rest.h>
+
 #include "../cloud_storage.h"
-#include "../rest-lib/rest_api.h"
 #include "../driver_utils.h"
 #include "google_internal.h"
 
 #define DELETE_FILE_URL_BASE "https://www.googleapis.com/drive/v3/files/"
 
-static struct http_request_t *get_http_request(char *file_id)
+static struct http_request_t *_get_http_request(char *file_id)
 {
    char *url;
    struct http_request_t *request;
@@ -48,34 +50,37 @@ static struct http_request_t *get_http_request(char *file_id)
    return request;
 }
 
-static void success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   cloud_storage_file_t *deleted_file;
-
-   state->callback(state, true);
-   state->complete = true;
-}
-
-void cloud_storage_google_delete_file(
-   cloud_storage_item_t *file,
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_operation_callback callback)
+bool cloud_storage_google_delete_file(cloud_storage_item_t *file)
 {
    struct http_request_t *http_request;
-   cloud_storage_operation_state_t *state;
-   rest_api_request_t *rest_request;
+   rest_request_t *rest_request;
+   struct http_response_t *http_response = NULL;
+   bool deleted = false;
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->continuation_data = continuation_data;
-   state->callback = callback;
+   http_request = _get_http_request(file->id);
+   rest_request = rest_request_new(http_request);
 
-   http_request = get_http_request(file->id);
+   http_response = google_rest_execute_request(rest_request);
+   if (!http_response)
+   {
+      goto complete;
+   }
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, success_handler, state);
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+         deleted = true;
+         break;
+      default:
+         break;
+   }
 
-   google_rest_execute_request(rest_request, state);
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+   rest_request_free(rest_request);
+
+   return deleted;
 }

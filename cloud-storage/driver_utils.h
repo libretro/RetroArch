@@ -53,7 +53,7 @@ int64_t cloud_storage_get_file_size(char *local_file);
 void cloud_storage_add_request_body_data(
    char *filename,
    size_t offset,
-   size_t max_size,
+   size_t segment_length,
    struct http_request_t *request
 );
 

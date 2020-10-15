@@ -20,11 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <rest/rest.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#include <net/net_http.h>
+#include <rest/rest.h>
+
 #include "../cloud_storage.h"
-#include "../rest-lib/rest_api.h"
 #include "../json.h"
 #include "../driver_utils.h"
 #include "google_internal.h"
@@ -32,95 +35,60 @@
 #define UPLOAD_FILE_URL "https://www.googleapis.com/upload/drive/v3/files"
 #define MAX_BYTES_PER_SEGMENT 262144
 
-struct cloud_storage_google_upload_file_state_t
-{
-   cloud_storage_item_t *remote_dir;
-   cloud_storage_item_t *remote_file;
-   char *local_file;
-   char *upload_url;
-   int64_t file_size;
-   int64_t offset;
-};
-
-static void upload_file_part(struct cloud_storage_operation_state_t *state);
-
-static void upload_file_part_success_handler(
-   rest_api_request_t *request,
+static void _process_upload_file_part_response(
    struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
+   cloud_storage_item_t *remote_file)
 {
    struct json_node_t *json;
    char *json_str;
-   struct cloud_storage_google_upload_file_state_t *extra_state;
 
-   extra_state = (struct cloud_storage_google_upload_file_state_t *)state->extra_state;
+   char *file_id;
+   size_t file_id_length;
+   char *md5;
+   size_t md5_length;
+   uint8_t *data;
+   size_t data_len;
 
-   if (extra_state->offset + MAX_BYTES_PER_SEGMENT < extra_state->file_size)
+   data = net_http_response_get_data(response, &data_len, false);
+
+   json_str = (char *)malloc(data_len + 1);
+   json_str[data_len] = '\0';
+   memcpy(json_str, data, data_len);
+
+   json = string_to_json(json_str);
+   if (json)
    {
-      extra_state->offset += MAX_BYTES_PER_SEGMENT;
-      upload_file_part(state);
-   } else
-   {
-      char *file_id;
-      size_t file_id_length;
-      char *md5;
-      size_t md5_length;
-      uint8_t *data;
-      size_t data_len;
-
-      data = net_http_response_get_data(response, &data_len, false);
-
-      json_str = (char *)malloc(data_len + 1);
-      json_str[data_len] = '\0';
-      memcpy(json_str, data, data_len);
-
-      json = string_to_json(json_str);
-      if (json)
+      if (!remote_file->id && json_map_get_value_string(json->value.map_value, "id", &file_id, &file_id_length))
       {
-         if (!extra_state->remote_file->id && json_map_get_value_string(json->value.map_value, "id", &file_id, &file_id_length))
-         {
-            extra_state->remote_file->id = (char *)calloc(file_id_length + 1, sizeof(char));
-            strncpy(extra_state->remote_file->id, file_id, file_id_length);
-         }
-
-         if (extra_state->remote_file->type_data.file.hash_value)
-         {
-            free(extra_state->remote_file->type_data.file.hash_value);
-         }
-
-         extra_state->remote_file->type_data.file.hash_type = MD5;
-         if (json_map_get_value_string(json->value.map_value, "md5Checksum", &md5, &md5_length))
-         {
-            extra_state->remote_file->type_data.file.hash_value = (char *)calloc(md5_length + 1, sizeof(char));
-            strncpy(extra_state->remote_file->type_data.file.hash_value, md5, md5_length);
-         }
+         remote_file->id = (char *)calloc(file_id_length + 1, sizeof(char));
+         strncpy(remote_file->id, file_id, file_id_length);
       }
 
-      if (json)
+      if (remote_file->type_data.file.hash_value)
       {
-         json_node_free(json);
+         free(remote_file->type_data.file.hash_value);
       }
-      free(json_str);
 
-      state->result = extra_state->remote_file;
-      state->callback(state, true);
+      remote_file->type_data.file.hash_type = MD5;
+      if (json_map_get_value_string(json->value.map_value, "md5Checksum", &md5, &md5_length))
+      {
+         remote_file->type_data.file.hash_value = (char *)calloc(md5_length + 1, sizeof(char));
+         strncpy(remote_file->type_data.file.hash_value, md5, md5_length);
+      }
 
-      state->complete = true;
+      json_node_free(json);
    }
+
+   free(json_str);
 }
 
-static void add_http_headers_data(int64_t file_size, int64_t offset, struct http_request_t *request)
+static void _add_http_headers_data(
+   int64_t file_size,
+   int64_t offset,
+   int64_t upload_segment_length,
+   struct http_request_t *request)
 {
-   int64_t upload_segment_length;
    char *range_str;
-
-   if (file_size - offset > MAX_BYTES_PER_SEGMENT)
-   {
-      upload_segment_length = MAX_BYTES_PER_SEGMENT;
-   } else
-   {
-      upload_segment_length = file_size - offset;
-   }
 
    range_str = (char *)calloc(105, sizeof(char));
 
@@ -136,61 +104,55 @@ static void add_http_headers_data(int64_t file_size, int64_t offset, struct http
    free(range_str);
 }
 
-static void upload_file_part(struct cloud_storage_operation_state_t *state)
+static rest_request_t *_create_upload_file_part_request(
+   char *upload_url,
+   int64_t file_size,
+   int64_t offset,
+   int64_t upload_segment_length,
+   char *local_file)
 {
    struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
-   struct cloud_storage_google_upload_file_state_t *extra_state;
-
-   extra_state = (struct cloud_storage_google_upload_file_state_t *)state->extra_state;
 
    http_request = net_http_request_new();
-   net_http_request_set_url(http_request, extra_state->upload_url);
+   net_http_request_set_url(http_request, upload_url);
    net_http_request_set_method(http_request, "PUT");
-   add_http_headers_data(extra_state->file_size, extra_state->offset, http_request);
-   cloud_storage_add_request_body_data(extra_state->local_file, extra_state->offset, MAX_BYTES_PER_SEGMENT, http_request);
+   _add_http_headers_data(file_size, offset, upload_segment_length, http_request);
+   cloud_storage_add_request_body_data(local_file, offset, upload_segment_length, http_request);
 
    net_http_request_set_log_request_body(http_request, false);
    net_http_request_set_log_response_body(http_request, true);
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, upload_file_part_success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 201, false, upload_file_part_success_handler, state);
-
-   google_rest_execute_request(rest_request, state);
+   return rest_request_new(http_request);
 }
 
-static void start_file_upload_success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
+static char *_process_start_file_upload(struct http_response_t *http_response)
 {
    char *location;
-   struct cloud_storage_google_upload_file_state_t *extra_state;
-   rest_api_request_t *rest_request;
+   char *upload_url;
 
-   extra_state = (struct cloud_storage_google_upload_file_state_t *)state->extra_state;
+   location = net_http_response_get_header_first_value(http_response, "Location");
+   upload_url = (char *)calloc(strlen(location) + 1, sizeof(char));
+   strcpy(upload_url, location);
 
-   location = net_http_response_get_header_first_value(response, "Location");
-   extra_state->upload_url = (char *)calloc(strlen(location) + 1, sizeof(char));
-   strcpy(extra_state->upload_url, location);
-
-   upload_file_part(state);
+   return upload_url;
 }
 
-static void start_file_upload(cloud_storage_operation_state_t *state)
+static rest_request_t *_create_start_file_upload_request(
+   cloud_storage_item_t *remote_dir,
+   cloud_storage_item_t *remote_file,
+   int64_t file_size,
+   char *local_file
+)
 {
    char *file_size_str;
    char *body;
    size_t body_len;
    struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
-   struct cloud_storage_google_upload_file_state_t *extra_state;
-
-   extra_state = (struct cloud_storage_google_upload_file_state_t *)state->extra_state;
+   rest_request_t *rest_request;
+   struct http_response_t *http_response;
 
    http_request = net_http_request_new();
-   if (extra_state->remote_file->id)
+   if (remote_file->id)
    {
       char *url;
 
@@ -198,7 +160,7 @@ static void start_file_upload(cloud_storage_operation_state_t *state)
          NULL,
          UPLOAD_FILE_URL,
          "/",
-         extra_state->remote_file->id,
+         remote_file->id,
          NULL
       );
       net_http_request_set_url(http_request, url);
@@ -211,8 +173,7 @@ static void start_file_upload(cloud_storage_operation_state_t *state)
       net_http_request_set_method(http_request, "POST");
    }
 
-   extra_state->file_size = cloud_storage_get_file_size(extra_state->local_file);
-   extra_state->offset = 0;
+   file_size = cloud_storage_get_file_size(local_file);
 
    net_http_request_set_url_param(http_request, "uploadType", "resumable", true);
 
@@ -221,20 +182,20 @@ static void start_file_upload(cloud_storage_operation_state_t *state)
 #if defined(_WIN32) || (_WIN64)
    snprintf(file_size_str, 33, "%" PRIuPTR, (long long)extra_state->file_size);
 #else
-   snprintf(file_size_str, 33, "%lld", (long long)extra_state->file_size);
+   snprintf(file_size_str, 33, "%lld", (long long)file_size);
 #endif
    net_http_request_set_header(http_request, "X-Upload-Content-Length", file_size_str, true);
    net_http_request_set_header(http_request, "Content-Type", "application/json; charset=UTF-8", true);
    free(file_size_str);
 
-   if (extra_state->remote_file->id == NULL)
+   if (remote_file->id == NULL)
    {
       body = cloud_storage_join_strings(
          &body_len,
          "{\"name\": \"",
-         extra_state->remote_file->name,
+         remote_file->name,
          "\", \"parents\": [\"",
-         extra_state->remote_dir->id,
+         remote_dir->id,
          "\"]}",
          NULL);
    } else
@@ -242,7 +203,7 @@ static void start_file_upload(cloud_storage_operation_state_t *state)
       body = cloud_storage_join_strings(
          &body_len,
          "{\"name\":\"",
-         extra_state->remote_file->name,
+         remote_file->name,
          "\"}",
          NULL);
    }
@@ -252,58 +213,90 @@ static void start_file_upload(cloud_storage_operation_state_t *state)
    net_http_request_set_log_request_body(http_request, true);
    net_http_request_set_log_response_body(http_request, true);
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, start_file_upload_success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 201, false, start_file_upload_success_handler, state);
-
-   google_rest_execute_request(rest_request, state);
+   return rest_request_new(http_request);
 }
 
-static void free_extra_state(void *extra_state_ptr)
-{
-   struct cloud_storage_google_upload_file_state_t *extra_state;
-
-   extra_state = (struct cloud_storage_google_upload_file_state_t *)extra_state_ptr;
-
-   free(extra_state->local_file);
-
-   if (extra_state->upload_url)
-   {
-      free(extra_state->upload_url);
-   }
-
-   if (extra_state->remote_file && !extra_state->remote_file->id)
-   {
-      cloud_storage_item_free(extra_state->remote_file);
-   }
-
-   free(extra_state);
-}
-
-void cloud_storage_google_upload_file(
+bool cloud_storage_google_upload_file(
    cloud_storage_item_t *remote_dir,
    cloud_storage_item_t *remote_file,
-   char *local_file,
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_operation_callback callback)
+   char *local_file)
 {
-   struct http_request_t *http_request;
-   cloud_storage_operation_state_t *state;
-   struct cloud_storage_google_upload_file_state_t *extra_state;
-   rest_api_request_t *rest_request;
-   size_t filename_len;
+   rest_request_t *rest_request;
+   struct http_response_t *http_response;
    int64_t file_size;
+   int64_t offset = 0;
+   char *upload_url;
+   bool uploaded = false;
 
-   extra_state = (struct cloud_storage_google_upload_file_state_t *)calloc(1, sizeof(struct cloud_storage_google_upload_file_state_t));
-   extra_state->remote_dir = remote_dir;
-   extra_state->remote_file = remote_file;
-   extra_state->local_file = local_file;
+   file_size = cloud_storage_get_file_size(local_file);
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->continuation_data = continuation_data;
-   state->callback = callback;
-   state->extra_state = extra_state;
-   state->free_extra_state = free_extra_state;
+   rest_request = _create_start_file_upload_request(remote_dir, remote_file, file_size, local_file);
+   http_response = google_rest_execute_request(rest_request);
+   if (!http_response)
+   {
+      goto complete;
+   }
 
-   start_file_upload(state);
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+      case 201:
+         upload_url = _process_start_file_upload(http_response);
+         break;
+      default:
+         goto complete;
+   }
+   net_http_response_free(http_response);
+   rest_request_free(rest_request);
+
+   while (offset < file_size)
+   {
+      int64_t upload_segment_length;
+
+      if (file_size - offset > MAX_BYTES_PER_SEGMENT)
+      {
+         upload_segment_length = MAX_BYTES_PER_SEGMENT;
+      } else
+      {
+         upload_segment_length = file_size - offset;
+      }
+
+      rest_request = _create_upload_file_part_request(
+         upload_url,
+         file_size,
+         offset,
+         upload_segment_length,
+         local_file);
+
+      offset += upload_segment_length;
+
+      http_response = google_rest_execute_request(rest_request);
+      if (!http_response)
+      {
+         goto complete;
+      }
+
+      switch (net_http_response_get_status(http_response))
+      {
+         case 200:
+         case 201:
+         case 308:
+            if (offset == file_size)
+            {
+               _process_upload_file_part_response(http_response, remote_file);
+               uploaded = true;
+            }
+         default:
+            break;
+      }
+   }
+
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+   rest_request_free(rest_request);
+
+   return uploaded;
 }

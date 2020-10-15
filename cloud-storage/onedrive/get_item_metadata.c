@@ -22,8 +22,10 @@
 
 #include <stdlib.h>
 
+#include <net/net_http.h>
+#include <rest/rest.h>
+
 #include "../cloud_storage.h"
-#include "../rest-lib/rest_api.h"
 #include "../json.h"
 #include "../driver_utils.h"
 #include "onedrive_internal.h"
@@ -31,7 +33,7 @@
 #define LIST_FILES_URL "https://graph.microsoft.com/v1.0/me/drive/special/approot"
 #define BY_ID_URL "https://graph.microsoft.com/v1.0/me/drive/items/"
 
-static struct http_request_t *create_folder_http_request(char *folder_name)
+static struct http_request_t *_create_folder_http_request(char *folder_name)
 {
    struct http_request_t *request;
    char *parent_folder_id;
@@ -57,7 +59,7 @@ static struct http_request_t *create_folder_http_request(char *folder_name)
    return request;
 }
 
-static struct http_request_t *create_file_by_id_http_request(cloud_storage_item_t *file)
+static struct http_request_t *_create_file_by_id_http_request(cloud_storage_item_t *file)
 {
    struct http_request_t *request;
    char *url;
@@ -82,7 +84,7 @@ static struct http_request_t *create_file_by_id_http_request(cloud_storage_item_
    return request;
 }
 
-static struct http_request_t *create_file_by_name_http_request(
+static struct http_request_t *_create_file_by_name_http_request(
    char *filename,
    cloud_storage_item_t *folder)
 {
@@ -110,19 +112,7 @@ static struct http_request_t *create_file_by_name_http_request(
    return request;
 }
 
-static void not_found_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   state->callback(state, true);
-   state->complete = true;
-}
-
-static void success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
+static cloud_storage_item_t *_process_metadata_response(struct http_response_t *response)
 {
    char *json_text;
    struct json_node_t *json;
@@ -153,75 +143,63 @@ static void success_handler(
 
    free(json_text);
 
-   state->result = metadata;
-   state->callback(state, true);
-
-   state->complete = true;
+   return metadata;
 }
 
-void cloud_storage_onedrive_get_folder_metadata(
-   char *folder_name,
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_operation_callback callback)
+static cloud_storage_item_t *_execute_get_metadata_request(struct http_request_t *http_request)
 {
-   cloud_storage_operation_state_t *state;
-   struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
+   rest_request_t *rest_request;
+   struct http_response_t *http_response = NULL;
+   cloud_storage_item_t *metadata = NULL;
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->continuation_data = continuation_data;
-   state->callback = callback;
+   rest_request = rest_request_new(http_request);
+   http_response = onedrive_rest_execute_request(rest_request);
+   if (!http_response)
+   {
+      goto complete;
+   }
 
-   http_request = create_folder_http_request(folder_name);
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+         metadata = _process_metadata_response(http_response);
+         break;
+      default:
+         break;
+   }
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 404, false, not_found_handler, state);
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+   rest_request_free(rest_request);
 
-   onedrive_rest_execute_request(rest_request, state);
+   return metadata;
 }
 
-void cloud_storage_onedrive_get_file_metadata(
-   cloud_storage_item_t *file,
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_operation_callback callback)
+cloud_storage_item_t *cloud_storage_onedrive_get_folder_metadata(char *folder_name)
 {
-   cloud_storage_operation_state_t *state;
    struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->continuation_data = continuation_data;
-   state->callback = callback;
-
-   http_request = create_file_by_id_http_request(file);
-
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 404, false, not_found_handler, state);
-
-   onedrive_rest_execute_request(rest_request, state);
+   http_request = _create_folder_http_request(folder_name);
+   return _execute_get_metadata_request(http_request);
 }
 
-void cloud_storage_onedrive_get_file_metadata_by_name(
+cloud_storage_item_t *cloud_storage_onedrive_get_file_metadata(cloud_storage_item_t *file)
+{
+   struct http_request_t *http_request;
+
+   http_request = _create_file_by_id_http_request(file);
+   return _execute_get_metadata_request(http_request);
+}
+
+cloud_storage_item_t *cloud_storage_onedrive_get_file_metadata_by_name(
    cloud_storage_item_t *folder,
-   char *filename,
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_operation_callback callback)
+   char *filename)
 {
-   cloud_storage_operation_state_t *state;
    struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->continuation_data = continuation_data;
-   state->callback = callback;
-
-   http_request = create_file_by_name_http_request(filename, folder);
-
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 404, false, not_found_handler, state);
-
-   onedrive_rest_execute_request(rest_request, state);
+   http_request = _create_file_by_name_http_request(filename, folder);
+   return _execute_get_metadata_request(http_request);
 }

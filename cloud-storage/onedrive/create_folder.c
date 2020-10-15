@@ -22,15 +22,17 @@
 
 #include <stdlib.h>
 
+#include <net/net_http.h>
+#include <rest/rest.h>
+
 #include "../cloud_storage.h"
-#include "../rest-lib/rest_api.h"
 #include "../json.h"
 #include "../driver_utils.h"
 #include "onedrive_internal.h"
 
 #define CREATE_FILE_URL "https://graph.microsoft.com/v1.0/me/drive/special/approot/children"
 
-static cloud_storage_item_t *parse_create_folder_response(
+static cloud_storage_item_t *_parse_create_folder_response(
    char *folder_name,
    uint8_t *response,
    size_t response_len)
@@ -81,43 +83,14 @@ cleanup:
    return metadata;
 }
 
-static void success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   uint8_t *response_data;
-   size_t response_len;
-
-   response_data = net_http_response_get_data(response, &response_len, false);
-   state->result = parse_create_folder_response((char *)state->extra_state, response_data, response_len);
-
-   if (state->result)
-   {
-      state->callback(state, true);
-   } else
-   {
-      state->callback(state, false);
-   }
-
-   state->complete = true;
-}
-
-static void free_extra_state(void *extra_state)
-{
-   free(extra_state);
-}
-
-void cloud_storage_onedrive_create_folder(
-   char *folder_name,
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_operation_callback callback)
+cloud_storage_item_t *cloud_storage_onedrive_create_folder(char *folder_name)
 {
    char *body;
    size_t body_len;
    struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
-   cloud_storage_operation_state_t *state;
+   rest_request_t *rest_request;
+   struct http_response_t *http_response = NULL;
+   cloud_storage_item_t *new_folder = NULL;
 
    http_request = net_http_request_new();
 
@@ -138,15 +111,35 @@ void cloud_storage_onedrive_create_folder(
    net_http_request_set_log_request_body(http_request, true);
    net_http_request_set_log_response_body(http_request, true);
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->continuation_data = continuation_data;
-   state->callback = callback;
-   state->extra_state = folder_name;
-   state->free_extra_state = free_extra_state;
+   rest_request = rest_request_new(http_request);
+   http_response = onedrive_rest_execute_request(rest_request);
+   if (!http_response)
+   {
+      goto complete;
+   }
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, success_handler, state);
-   rest_api_request_set_response_handler(rest_request, 201, false, success_handler, state);
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+      case 201:
+         {
+            uint8_t *response_data;
+            size_t response_len;
 
-   onedrive_rest_execute_request(rest_request, state);
+            response_data = net_http_response_get_data(http_response, &response_len, false);
+            new_folder = _parse_create_folder_response(folder_name, response_data, response_len);
+            break;
+         }
+      default:
+         break;
+   }
+
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+   rest_request_free(rest_request);
+
+   return new_folder;
 }

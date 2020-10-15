@@ -25,7 +25,6 @@
 
 #include <retro_common_api.h>
 
-#include "../../configuration.h"
 #include "../cloud_storage.h"
 
 RETRO_BEGIN_DECLS

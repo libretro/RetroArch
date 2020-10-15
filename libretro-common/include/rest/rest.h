@@ -1,7 +1,7 @@
-/* Copyright  (C) 2020 The RetroArch team
+/* Copyright  (C) 2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (google.h).
+ * The following license statement only applies to this file (rest.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,16 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _GOOGLE_H
-#define _GOOGLE_H
+#ifndef _REST_H
+#define _REST_H
+
+#include <boolean.h>
+#include <stddef.h>
+#include <time.h>
 
 #include <retro_common_api.h>
 
-#include "../cloud_storage.h"
+#include <net/net_http.h>
 
 RETRO_BEGIN_DECLS
 
-cloud_storage_provider_t *cloud_storage_google_create();
+typedef struct rest_request_t rest_request_t;
+
+typedef struct rest_retry_policy_t rest_retry_policy_t;
+
+rest_retry_policy_t *rest_retry_policy_new(
+   int *status_codes,
+   size_t status_codes_len,
+   time_t *delays,
+   size_t delays_len);
+
+rest_request_t *rest_request_new(struct http_request_t *http_request);
+
+void rest_request_set_header(rest_request_t *request, char *name, char *value, bool replace);
+
+void rest_request_free(rest_request_t *request);
+
+void rest_request_set_retry_policy(
+   rest_request_t *request,
+   rest_retry_policy_t *retry_policy);
+
+struct http_response_t *rest_request_execute(rest_request_t *request);
 
 RETRO_END_DECLS
 

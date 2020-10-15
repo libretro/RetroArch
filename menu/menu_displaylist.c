@@ -6915,7 +6915,7 @@ unsigned menu_displaylist_build_list(
          {
             settings_t      *settings     = config_get_ptr();
 
-            cloud_storage_authorize(settings->uints.cloud_storage_provider, authorize_callback);
+            cloud_storage_authorize(authorize_callback);
 
             switch (settings->uints.cloud_storage_provider)
             {

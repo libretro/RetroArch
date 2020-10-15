@@ -22,16 +22,17 @@
 
 #include <boolean.h>
 
+#include <net/net_http.h>
+#include <rest/rest.h>
 #include <streams/file_stream.h>
 
 #include "../cloud_storage.h"
-#include "../rest-lib/rest_api.h"
 #include "../driver_utils.h"
 #include "google_internal.h"
 
 #define DOWNLOAD_FILES_URL "https://www.googleapis.com/drive/v3/files/"
 
-static struct http_request_t *create_http_request(char *file_id)
+static struct http_request_t *_create_http_request(char *file_id)
 {
    struct http_request_t *http_request;
    char *url;
@@ -51,58 +52,48 @@ static struct http_request_t *create_http_request(char *file_id)
    return http_request;
 }
 
-static void download_files_success_callback(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   uint8_t *data;
-   size_t data_len;
-
-   data = net_http_response_get_data(response, &data_len, false);
-   cloud_storage_save_file((char *)state->extra_state, data, data_len);
-
-   state->callback(state, true);
-   state->complete = true;
-}
-
-static void failure_callback(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   state->callback(state, false);
-   state->complete = true;
-}
-
-static void free_extra_state(void *extra_state)
-{
-   free(extra_state);
-}
-
-void cloud_storage_google_download_file(
+bool cloud_storage_google_download_file(
    cloud_storage_item_t *file_to_download,
-   char *local_file,
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_operation_callback callback)
+   char *local_file)
 {
    char *url;
-   cloud_storage_operation_state_t *state;
    struct http_request_t *http_request;
-   rest_api_request_t *rest_request;
+   rest_request_t *rest_request;
+   struct http_response_t *http_response;
+   bool downloaded = false;
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->continuation_data = continuation_data;
-   state->callback = callback;
-   state->extra_state = local_file;
-   state->free_extra_state = free_extra_state;
+   http_request = _create_http_request(file_to_download->id);
+   rest_request = rest_request_new(http_request);
 
-   http_request = create_http_request(file_to_download->id);
+   http_response = google_rest_execute_request(rest_request);
+   if (!http_response)
+   {
+      goto complete;
+   }
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, download_files_success_callback, state);
-   rest_api_request_set_response_handler(rest_request, 400, false, failure_callback, state);
-   rest_api_request_set_response_handler(rest_request, 404, false, failure_callback, state);
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+         {
+            uint8_t *data;
+            size_t data_len;
 
-   google_rest_execute_request(rest_request, state);
+            data = net_http_response_get_data(http_response, &data_len, false);
+            cloud_storage_save_file(local_file, data, data_len);
+
+            downloaded = true;
+            break;
+         }
+      default:
+         break;
+   }
+
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+   rest_request_free(rest_request);
+
+   return downloaded;
 }

@@ -22,9 +22,10 @@
 
 #include <stdlib.h>
 
+#include <net/net_http.h>
+#include <rest/rest.h>
 #include <string/stdstring.h>
 
-#include "../rest-lib/rest_api.h"
 #include "../cloud_storage.h"
 #include "../driver_utils.h"
 #include "onedrive_internal.h"
@@ -37,26 +38,10 @@
 #define GRANT_TYPE_PARAM_NAME "grant_type"
 #define GRANT_TYPE_PARAM_VALUE "refresh_token"
 
-struct authenticate_extra_state_t
-{
-   cloud_storage_authenticate_callback callback;
-   void *data;
-};
+extern char *_onedrive_access_token;
+extern time_t _onedrive_access_token_expiration_time;
 
-static void get_new_access_token_failure_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   struct authenticate_extra_state_t *extra_state;
-
-   extra_state = (struct authenticate_extra_state_t *)state->extra_state;
-   extra_state->callback(state->continuation_data, false, extra_state->data);
-
-   state->complete = true;
-}
-
-static void parse_access_token_reponse(struct json_node_t *json, char **new_access_token, time_t *expiration_time)
+static void _parse_access_token_reponse(struct json_node_t *json, char **new_access_token, time_t *expiration_time)
 {
    char *parsed_access_token;
    size_t token_length;
@@ -83,7 +68,7 @@ static void parse_access_token_reponse(struct json_node_t *json, char **new_acce
    *expiration_time = time(NULL) + expires_in;
 }
 
-static uint8_t *refresh_token_request_body(size_t *request_body_len)
+static uint8_t *_refresh_token_request_body(size_t *request_body_len)
 {
    size_t name_lengths[5];
    size_t value_lengths[5];
@@ -130,10 +115,7 @@ static uint8_t *refresh_token_request_body(size_t *request_body_len)
    return (uint8_t *)request_body;
 }
 
-static void get_new_access_token_success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
+static bool _process_response(struct http_response_t *response)
 {
    uint8_t *data;
    size_t data_len;
@@ -141,10 +123,6 @@ static void get_new_access_token_success_handler(
    struct json_node_t *json;
    char *new_access_token = NULL;
    time_t expiration_time;
-   struct cloud_storage_onedrive_provider_data_t *provider_data;
-   struct authenticate_extra_state_t *extra_state;
-
-   provider_data = (struct cloud_storage_onedrive_provider_data_t *)state->continuation_data->provider_state->provider_data;
 
    data = net_http_response_get_data(response, &data_len, false);
    json_text = (char *)malloc(data_len + 1);
@@ -154,74 +132,77 @@ static void get_new_access_token_success_handler(
    json = string_to_json(json_text);
    if (json)
    {
-      parse_access_token_reponse(json, &new_access_token, &expiration_time);
+      _parse_access_token_reponse(json, &new_access_token, &expiration_time);
       free(json_text);
       json_node_free(json);
       if (new_access_token)
       {
          struct http_request_t *original_http_request;
 
-         provider_data->access_token = new_access_token;
-         provider_data->access_token_expiration_time = expiration_time;
+         _onedrive_access_token = new_access_token;
+         _onedrive_access_token_expiration_time = expiration_time;
          cloud_storage_save_access_token("onedrive", new_access_token, expiration_time);
+         return true;
       }
    }
 
-   extra_state = (struct authenticate_extra_state_t *)state->extra_state;
-   extra_state->callback(state->continuation_data, true, extra_state->data);
-
-   state->complete = true;
+   return false;
 }
 
-static void free_authenticate_extra_state(void *extra_state)
-{
-   free(extra_state);
-}
-
-void cloud_storage_onedrive_authenticate(
-   cloud_storage_continuation_data_t *continuation_data,
-   cloud_storage_authenticate_callback callback,
-   void *callback_data)
+static struct http_request_t *_create_http_request()
 {
    struct http_request_t *http_request;
    uint8_t *body;
    size_t body_len;
-   rest_api_request_t *rest_request;
-   struct cloud_storage_onedrive_provider_data_t *provider_data;
-   cloud_storage_operation_state_t *operation_state;
-   struct authenticate_extra_state_t *extra_state;
-
-   provider_data = (struct cloud_storage_onedrive_provider_data_t *)continuation_data->provider_state->provider_data;
-
-   if (provider_data->access_token)
-   {
-      free(provider_data->access_token);
-   }
-   provider_data->access_token_expiration_time = 0;
 
    http_request = net_http_request_new();
    net_http_request_set_url(http_request, REFRESH_TOKEN_URL);
    net_http_request_set_method(http_request, "POST");
    net_http_request_set_header(http_request, "Content-Type", "application/x-www-form-urlencoded", true);
 
-   body = refresh_token_request_body(&body_len);
+   body = _refresh_token_request_body(&body_len);
    net_http_request_set_body(http_request, body, body_len);
 
    net_http_request_set_log_request_body(http_request, true);
    net_http_request_set_log_response_body(http_request, true);
 
-   operation_state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   operation_state->continuation_data = continuation_data;
+   return http_request;
+}
 
-   extra_state = (struct authenticate_extra_state_t *)calloc(1, sizeof(struct authenticate_extra_state_t *));
-   extra_state->callback = callback;
-   extra_state->data = callback_data;
-   operation_state->extra_state = extra_state;
-   operation_state->free_extra_state = free_authenticate_extra_state;
+bool cloud_storage_onedrive_authenticate(void)
+{
+   struct http_request_t *http_request;
+   struct http_response_t *http_response;
+   uint8_t *body;
+   size_t body_len;
+   rest_request_t *rest_request;
+   bool authenticated = false;
 
-   rest_request = rest_api_request_new(http_request);
-   rest_api_request_set_response_handler(rest_request, 200, false, get_new_access_token_success_handler, operation_state);
-   rest_api_request_set_response_handler(rest_request, 500, true, get_new_access_token_failure_handler, operation_state);
-   rest_api_request_set_default_response_handler(rest_request, false, get_new_access_token_failure_handler, operation_state);
-   rest_api_request_execute(rest_request);
+   http_request = _create_http_request();
+
+   rest_request = rest_request_new(http_request);
+   http_response = rest_request_execute(rest_request);
+   if (!http_response)
+   {
+      goto complete;
+   }
+
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+         authenticated = _process_response(http_response);
+         break;
+      default:
+         goto complete;
+   }
+
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+
+   rest_request_free(rest_request);
+
+   return authenticated;
 }

@@ -23,26 +23,24 @@
 #include <boolean.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
-#include <process.h>
 #include <winsock2.h>
-#else
-#include <pthread.h>
 #endif
 
-#include <sys/types.h>
 #include <net/net_socket.h>
 #include <net/net_compat.h>
 #include <net/open_browser.h>
+#include <rest/rest.h>
+#include <rthreads/rthreads.h>
 
 #include <configuration.h>
 
 #include "../../command.h"
 
 #include "../cloud_storage.h"
-#include "../rest-lib/rest_api.h"
 #include "../json.h"
 #include "../driver_utils.h"
 #include "google_internal.h"
@@ -59,23 +57,45 @@ struct authorize_state_t
    int port;
    SOCKET sockfd;
    void (*callback)(bool success);
-   struct cloud_storage_google_provider_data_t *provider_data;
 };
 
-static bool listen_for_response_thread(struct authorize_state_t *authorize_state);
+static rest_retry_policy_t *retry_policy = NULL;
+extern char *_google_access_token;
+extern time_t _google_access_token_expiration_time;
 
-authorization_status_t cloud_storage_google_authorize(
-   settings_t *settings,
-   void *google_state_ptr,
-   void (*callback)(bool success)
-)
+static bool _listen_for_response_thread(struct authorize_state_t *authorize_state);
+
+static rest_retry_policy_t *_get_retry_policy()
 {
+   if (!retry_policy)
+   {
+      int *status_codes;
+      time_t *delays;
+
+      status_codes = (int *)calloc(1, sizeof(int));
+      status_codes[0] = 500;
+      delays = (time_t *)calloc(3, sizeof(time_t));
+      delays[0] = 1;
+      delays[1] = 2;
+      delays[2] = 5;
+
+      retry_policy = rest_retry_policy_new(status_codes, 1, delays, 3);
+   }
+
+   return retry_policy;
+}
+
+authorization_status_t cloud_storage_google_authorize(void (*callback)(bool success))
+{
+   settings_t *settings;
    int port;
    char url[URL_MAX_LENGTH];
    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
    char *code_verifier;
    int i;
    struct authorize_state_t *authorize_state;
+
+   settings = config_get_ptr();
 
    if (strlen(settings->arrays.cloud_storage_google_refresh_token) > 0)
    {
@@ -99,9 +119,8 @@ authorization_status_t cloud_storage_google_authorize(
    authorize_state->code_verifier = code_verifier;
    authorize_state->port = -1;
    authorize_state->callback = callback;
-   authorize_state->provider_data = (struct cloud_storage_google_provider_data_t *)google_state_ptr;
 
-   if (!listen_for_response_thread(authorize_state))
+   if (!_listen_for_response_thread(authorize_state))
    {
       free(code_verifier);
       return AUTH_FAILED;
@@ -125,7 +144,7 @@ authorization_status_t cloud_storage_google_authorize(
    return AUTH_PENDING_ASYNC;
 }
 
-static bool parse_request(char *request, size_t len, char **code)
+static bool _parse_request(char *request, size_t len, char **code)
 {
    char *path;
    char *line_end = NULL;
@@ -228,31 +247,8 @@ static bool parse_request(char *request, size_t len, char **code)
    return false;
 }
 
-static void get_tokens_failure_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
+static void _process_get_tokens_response(struct http_response_t *response)
 {
-   struct authorize_state_t *authorize_state;
-
-   authorize_state = (struct authorize_state_t *)state->extra_state;
-
-   authorize_state->callback(false);
-
-   if (authorize_state->code_verifier)
-   {
-      free(authorize_state->code_verifier);
-   }
-   free(authorize_state);
-   free(state);
-}
-
-static void get_tokens_success_handler(
-   rest_api_request_t *request,
-   struct http_response_t *response,
-   cloud_storage_operation_state_t *state)
-{
-   struct authorize_state_t *authorize_state;
    char *json_text;
    uint8_t *bytes;
    size_t bytes_len;
@@ -260,9 +256,6 @@ static void get_tokens_success_handler(
    char *access_token = NULL;
    char *refresh_token = NULL;
    time_t access_token_expiration_time = 0;
-   bool success = false;
-
-   authorize_state = (struct authorize_state_t *)state->extra_state;
 
    bytes = net_http_response_get_data(response, &bytes_len, false);
 
@@ -308,12 +301,13 @@ static void get_tokens_success_handler(
 
       command_event(CMD_EVENT_MENU_SAVE_CONFIG, NULL);
 
-      success = true;
-
       settings = config_get_ptr();
       strcpy(settings->arrays.cloud_storage_google_refresh_token, refresh_token);
       free(refresh_token);
       refresh_token = NULL;
+
+      _google_access_token = access_token;
+      _google_access_token_expiration_time = access_token_expiration_time;
 
       cloud_storage_save_access_token("google", access_token, access_token_expiration_time);
       access_token = NULL;
@@ -330,23 +324,6 @@ cleanup:
       free(json_text);
    }
 
-   authorize_state->callback(success);
-
-   if (authorize_state)
-   {
-      if (authorize_state->code_verifier)
-      {
-         free(authorize_state->code_verifier);
-      }
-
-      free(authorize_state);
-   }
-
-   if (state)
-   {
-      free(state);
-   }
-
    if (access_token)
    {
       free(access_token);
@@ -358,14 +335,14 @@ cleanup:
    }
 }
 
-static void get_tokens(char *code, struct authorize_state_t *authorize_state)
+static void _get_tokens(char *code, struct authorize_state_t *authorize_state)
 {
-   rest_api_request_t *request;
+   rest_request_t *rest_request;
    struct http_request_t *http_request;
+   struct http_response_t *http_response;
    settings_t *settings;
    char *body;
    size_t body_len;
-   cloud_storage_operation_state_t *state;
 
    http_request = net_http_request_new();
    net_http_request_set_url(http_request, "https://oauth2.googleapis.com/token");
@@ -388,26 +365,37 @@ static void get_tokens(char *code, struct authorize_state_t *authorize_state)
    free(authorize_state->code_verifier);
    authorize_state->code_verifier = NULL;
 
-   state = (cloud_storage_operation_state_t *)calloc(1, sizeof(cloud_storage_operation_state_t));
-   state->extra_state = authorize_state;
-
    net_http_request_set_body(http_request, (uint8_t *)body, body_len);
    net_http_request_set_log_request_body(http_request, true);
    net_http_request_set_log_response_body(http_request, true);
 
-   request = rest_api_request_new(http_request);
-   rest_api_request_set_default_response_handler(request, false, get_tokens_failure_handler, state);
-   rest_api_request_set_response_handler(request, 500, true, get_tokens_failure_handler, state);
-   rest_api_request_set_response_handler(request, 200, false, get_tokens_success_handler, state);
+   rest_request = rest_request_new(http_request);
+   rest_request_set_retry_policy(rest_request, _get_retry_policy());
 
-   rest_api_request_execute(request);
+   http_response = rest_request_execute(rest_request);
+   if (!http_response)
+   {
+      goto complete;
+   }
+
+   switch (net_http_response_get_status(http_response))
+   {
+      case 200:
+         _process_get_tokens_response(http_response);
+         break;
+      default:
+         break;
+   }
+
+complete:
+   if (http_response)
+   {
+      net_http_response_free(http_response);
+   }
+   rest_request_free(rest_request);
 }
 
-#if defined(_WIN32) || defined(_Win64)
-static void listen_for_response(void *data)
-#else
-static void *listen_for_response(void *data)
-#endif
+static void _listen_for_response(void *data)
 {
    int on;
    struct addrinfo hints;
@@ -514,9 +502,9 @@ process_request:
    socket_close(authorize_state->sockfd);
    authorize_state->sockfd = 0;
 
-   if (parse_request(request, request_offset, &code))
+   if (_parse_request(request, request_offset, &code))
    {
-      get_tokens(code, authorize_state);
+      _get_tokens(code, authorize_state);
 
       if (code)
       {
@@ -539,11 +527,7 @@ process_request:
          freeaddrinfo(server_addr);
       }
 
-#if defined(_WIN32) || defined(_WIN64)
       return;
-#else
-      pthread_exit(NULL);
-#endif
    }
 
 cleanup:
@@ -581,14 +565,9 @@ cleanup:
       }
       free(authorize_state);
    }
-#if defined(_WIN32) || defined(_WIN64)
-   return;
-#else
-   pthread_exit(NULL);
-#endif
 }
 
-static bool listen_for_response_thread(struct authorize_state_t *authorize_state)
+static bool _listen_for_response_thread(struct authorize_state_t *authorize_state)
 {
    u_long on = 1;
    struct addrinfo hints;
@@ -656,12 +635,7 @@ static bool listen_for_response_thread(struct authorize_state_t *authorize_state
       return false;
    } else
    {
-#if defined(_WIN32) || defined(_WIN64)
-      _beginthread(listen_for_response, 0, authorize_state);
-#else
-      pthread_t thread;
-      pthread_create(&thread, NULL, listen_for_response, authorize_state);
-#endif
+      sthread_create(_listen_for_response, authorize_state);
       return true;
    }
 }

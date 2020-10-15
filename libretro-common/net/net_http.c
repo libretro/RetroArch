@@ -799,21 +799,38 @@ static int net_http_new_socket(struct http_connection_t *conn)
 static void net_http_send_bytes(
       struct http_socket_state_t *sock_state, bool *error, const uint8_t *bytes, size_t bytes_len)
 {
+   size_t offset = 0;
+
    if (*error)
       return;
+
+   while (offset < bytes_len)
+   {
+      size_t bytes_to_send;
+
+      if (offset + (1 << 14) > bytes_len)
+      {
+         bytes_to_send = bytes_len - offset;
+      } else
+      {
+         bytes_to_send = 1 << 14;
+      }
 #ifdef HAVE_SSL
-   if (sock_state->ssl)
-   {
-      if (!ssl_socket_send_all_blocking(
-               sock_state->ssl_ctx, bytes, bytes_len, true))
-         *error = true;
-   }
-   else
+      if (sock_state->ssl)
+      {
+         if (!ssl_socket_send_all_blocking(
+                  sock_state->ssl_ctx, bytes + offset, bytes_to_send, true))
+            *error = true;
+      } else
+      {
 #endif
-   {
-      if (!socket_send_all_blocking(
-               sock_state->fd, bytes, bytes_len, true))
-         *error = true;
+         if (!socket_send_all_blocking(
+                  sock_state->fd, bytes + offset, bytes_to_send, true))
+            *error = true;
+#ifdef HAVE_SSL
+      }
+#endif
+      offset += bytes_to_send;
    }
 }
 
