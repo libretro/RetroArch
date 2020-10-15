@@ -110,6 +110,7 @@ static void reset_IOP()
 static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   int i;
    create_path_names();
 
 #ifndef IS_SALAMANDER
@@ -139,7 +140,6 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
       }
    }
 #endif
-   int i;
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
       const char *dir_path = g_defaults.dirs[i];
@@ -178,19 +178,23 @@ static void frontend_ps2_init(void *data)
    SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
 
    /* Initializes audsrv library */
-   if (audsrv_init()) {
+   if (audsrv_init())
+   {
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
    /* Initializes pad libraries
       Must be init with 0 as parameter*/
-   if (mtapInit() != 1) {
+   if (mtapInit() != 1)
+   {
       RARCH_ERR("mtapInit library not initalizated\n");
    }
-   if (padInit(0) != 1) {
+   if (padInit(0) != 1)
+   {
       RARCH_ERR("padInit library not initalizated\n");
    }
-   if (mtapPortOpen(0) != 1) {
+   if (mtapPortOpen(0) != 1)
+   {
       RARCH_ERR("mtapPortOpen library not initalizated\n");
    }
 #endif
