@@ -2131,6 +2131,9 @@ struct rarch_state
 
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
+#ifdef HAVE_REWIND
+   struct state_manager_rewind_state rewind_st;
+#endif
    input_keyboard_line_t keyboard_line; /* ptr alignment */
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
@@ -2937,6 +2940,16 @@ struct netplay_room* netplay_get_host_room(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    return &p_rarch->netplay_host_room;
+}
+#endif
+
+#ifdef HAVE_REWIND
+bool state_manager_frame_is_reversed(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   struct state_manager_rewind_state 
+                       *rewind_st = &p_rarch->rewind_st;
+   return rewind_st->frame_is_reversed;
 }
 #endif
 
@@ -16348,7 +16361,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_REWIND
-         state_manager_event_deinit();
+         state_manager_event_deinit(&p_rarch->rewind_st);
 #endif
          break;
       case CMD_EVENT_REWIND_INIT:
@@ -16369,7 +16382,8 @@ bool command_event(enum event_command cmd, void *data)
                         RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
                {
-                  state_manager_event_init((unsigned)rewind_buf_size);
+                  state_manager_event_init(&p_rarch->rewind_st,
+                        (unsigned)rewind_buf_size);
                }
             }
          }
@@ -16947,7 +16961,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind & SRAM autosave if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit();
+            state_manager_event_deinit(&p_rarch->rewind_st);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -16989,7 +17003,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled
                TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit();
+            state_manager_event_deinit(&p_rarch->rewind_st);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -17029,7 +17043,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit();
+            state_manager_event_deinit(&p_rarch->rewind_st);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -39848,6 +39862,7 @@ static enum runloop_state runloop_check_state(
       s[0]           = '\0';
 
       rewinding      = state_manager_check_rewind(
+            &p_rarch->rewind_st,
             BIT256_GET(current_bits, RARCH_REWIND),
             settings->uints.rewind_granularity,
             p_rarch->runloop_paused,

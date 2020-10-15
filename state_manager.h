@@ -26,13 +26,50 @@
 
 RETRO_BEGIN_DECLS
 
+struct state_manager
+{
+   uint8_t *data;
+   /* Reading and writing is done here here. */
+   uint8_t *head;
+   /* If head comes close to this, discard a frame. */
+   uint8_t *tail;
+
+   uint8_t *thisblock;
+   uint8_t *nextblock;
+#if STRICT_BUF_SIZE
+   uint8_t *debugblock;
+   size_t debugsize;
+#endif
+
+   size_t capacity;
+   /* This one is rounded up from reset::blocksize. */
+   size_t blocksize;
+   /* size_t + (blocksize + 131071) / 131072 *
+    * (blocksize + u16 + u16) + u16 + u32 + size_t
+    * (yes, the math is a bit ugly). */
+   size_t maxcompsize;
+
+   unsigned entries;
+   bool thisblock_valid;
+};
+
 typedef struct state_manager state_manager_t;
+
+struct state_manager_rewind_state
+{
+   /* Rewind support. */
+   state_manager_t *state;
+   size_t size;
+   bool frame_is_reversed;
+};
 
 bool state_manager_frame_is_reversed(void);
 
-void state_manager_event_deinit(void);
+void state_manager_event_deinit(
+      struct state_manager_rewind_state *rewind_st);
 
-void state_manager_event_init(unsigned rewind_buffer_size);
+void state_manager_event_init(struct state_manager_rewind_state *rewind_st,
+      unsigned rewind_buffer_size);
 
 /**
  * check_rewind:
@@ -40,7 +77,9 @@ void state_manager_event_init(unsigned rewind_buffer_size);
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
-bool state_manager_check_rewind(bool pressed,
+bool state_manager_check_rewind(
+      struct state_manager_rewind_state *rewind_st,
+      bool pressed,
       unsigned rewind_granularity, bool is_paused,
       char *s, size_t len, unsigned *time);
 

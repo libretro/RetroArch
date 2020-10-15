@@ -62,40 +62,6 @@
 #include <emmintrin.h>
 #endif
 
-struct state_manager
-{
-   uint8_t *data;
-   /* Reading and writing is done here here. */
-   uint8_t *head;
-   /* If head comes close to this, discard a frame. */
-   uint8_t *tail;
-
-   uint8_t *thisblock;
-   uint8_t *nextblock;
-#if STRICT_BUF_SIZE
-   uint8_t *debugblock;
-   size_t debugsize;
-#endif
-
-   size_t capacity;
-   /* This one is rounded up from reset::blocksize. */
-   size_t blocksize;
-   /* size_t + (blocksize + 131071) / 131072 *
-    * (blocksize + u16 + u16) + u16 + u32 + size_t
-    * (yes, the math is a bit ugly). */
-   size_t maxcompsize;
-
-   unsigned entries;
-   bool thisblock_valid;
-};
-
-struct state_manager_rewind_state
-{
-   /* Rewind support. */
-   state_manager_t *state;
-   size_t size;
-};
-
 /* Format per frame (pseudocode): */
 #if 0
 size nextstart;
@@ -115,10 +81,6 @@ repeat {
 }
 size thisstart;
 #endif
-
-/* TODO/FIXME - static public global variables */
-static struct state_manager_rewind_state rewind_state;
-static bool frame_is_reversed                         = false;
 
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
@@ -606,13 +568,15 @@ static void state_manager_capacity(state_manager_t *state,
 }
 #endif
 
-void state_manager_event_init(unsigned rewind_buffer_size)
+void state_manager_event_init(
+      struct state_manager_rewind_state *rewind_st,
+      unsigned rewind_buffer_size)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
    void *state          = NULL;
 
-   if (rewind_state.state)
+   if (!rewind_st || rewind_st->state)
       return;
 
    if (audio_driver_has_callback())
@@ -623,9 +587,9 @@ void state_manager_event_init(unsigned rewind_buffer_size)
 
    core_serialize_size(&info);
 
-   rewind_state.size = info.size;
+   rewind_st->size = info.size;
 
-   if (!rewind_state.size)
+   if (!rewind_st->size)
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_REWIND_INIT_FAILED_THREADED_AUDIO));
@@ -636,36 +600,35 @@ void state_manager_event_init(unsigned rewind_buffer_size)
          msg_hash_to_str(MSG_REWIND_INIT),
          (unsigned)(rewind_buffer_size / 1000000));
 
-   rewind_state.state = state_manager_new(rewind_state.size,
+   rewind_st->state = state_manager_new(rewind_st->size,
          rewind_buffer_size);
 
-   if (!rewind_state.state)
+   if (!rewind_st->state)
       RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
 
-   state_manager_push_where(rewind_state.state, &state);
+   state_manager_push_where(rewind_st->state, &state);
 
    serial_info.data = state;
-   serial_info.size = rewind_state.size;
+   serial_info.size = rewind_st->size;
 
    core_serialize(&serial_info);
 
-   state_manager_push_do(rewind_state.state);
+   state_manager_push_do(rewind_st->state);
 }
 
-bool state_manager_frame_is_reversed(void)
+void state_manager_event_deinit(
+      struct state_manager_rewind_state *rewind_st)
 {
-   return frame_is_reversed;
-}
+   if (!rewind_st)
+      return;
 
-void state_manager_event_deinit(void)
-{
-   if (rewind_state.state)
+   if (rewind_st->state)
    {
-      state_manager_free(rewind_state.state);
-      free(rewind_state.state);
+      state_manager_free(rewind_st->state);
+      free(rewind_st->state);
    }
-   rewind_state.state = NULL;
-   rewind_state.size  = 0;
+   rewind_st->state = NULL;
+   rewind_st->size  = 0;
 }
 
 /**
@@ -674,7 +637,9 @@ void state_manager_event_deinit(void)
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
-bool state_manager_check_rewind(bool pressed,
+bool state_manager_check_rewind(
+      struct state_manager_rewind_state *rewind_st,
+      bool pressed,
       unsigned rewind_granularity, bool is_paused,
       char *s, size_t len, unsigned *time)
 {
@@ -684,13 +649,16 @@ bool state_manager_check_rewind(bool pressed,
    bool was_reversed    = false;
 #endif
 
-   if (frame_is_reversed)
+   if (!rewind_st)
+      return false;
+
+   if (rewind_st->frame_is_reversed)
    {
 #ifdef HAVE_NETWORKING
       was_reversed = true;
 #endif
       audio_driver_frame_is_reverse();
-      frame_is_reversed = false;
+      rewind_st->frame_is_reversed = false;
    }
 
    if (first)
@@ -699,14 +667,14 @@ bool state_manager_check_rewind(bool pressed,
       return false;
    }
 
-   if (!rewind_state.state)
+   if (!rewind_st->state)
       return false;
 
    if (pressed)
    {
       const void *buf    = NULL;
 
-      if (state_manager_pop(rewind_state.state, &buf))
+      if (state_manager_pop(rewind_st->state, &buf))
       {
          retro_ctx_serialize_info_t serial_info;
 
@@ -716,7 +684,7 @@ bool state_manager_check_rewind(bool pressed,
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_PUSH, NULL);
 #endif
 
-         frame_is_reversed = true;
+         rewind_st->frame_is_reversed = true;
 
          audio_driver_setup_rewind();
 
@@ -726,7 +694,7 @@ bool state_manager_check_rewind(bool pressed,
          ret                    = true;
 
          serial_info.data_const = buf;
-         serial_info.size       = rewind_state.size;
+         serial_info.size       = rewind_st->size;
 
          core_unserialize(&serial_info);
 
@@ -738,7 +706,7 @@ bool state_manager_check_rewind(bool pressed,
       {
          retro_ctx_serialize_info_t serial_info;
          serial_info.data_const = buf;
-         serial_info.size       = rewind_state.size;
+         serial_info.size       = rewind_st->size;
          core_unserialize(&serial_info);
 
 #ifdef HAVE_NETWORKING
@@ -773,14 +741,14 @@ bool state_manager_check_rewind(bool pressed,
          retro_ctx_serialize_info_t serial_info;
          void *state = NULL;
 
-         state_manager_push_where(rewind_state.state, &state);
+         state_manager_push_where(rewind_st->state, &state);
 
          serial_info.data = state;
-         serial_info.size = rewind_state.size;
+         serial_info.size = rewind_st->size;
 
          core_serialize(&serial_info);
 
-         state_manager_push_do(rewind_state.state);
+         state_manager_push_do(rewind_st->state);
       }
    }
 
