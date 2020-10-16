@@ -874,7 +874,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 
 	// Free buffer if already existing.
 	if (gpu_buffers[idx].ptr != NULL)
-		mempool_free(gpu_buffers[idx].ptr, type);
+		vgl_mem_free(gpu_buffers[idx].ptr, type);
 
 	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, &type);
 	gpu_buffers[idx].size = size;
