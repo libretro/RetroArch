@@ -8,6 +8,8 @@ stages:
 
 build-retroarch-windows-x64:
   stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     - retroarch.exe
@@ -15,11 +17,13 @@ build-retroarch-windows-x64:
   dependencies: []
   script:
     - "./configure --host=x86_64-w64-mingw32"
-    - "make -j10"
+    - "make -j$NUMPROC"
     - "mv retroarch retroarch.exe"
 
 build-retroarch-linux-x64:
   stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     - retroarch
@@ -27,11 +31,13 @@ build-retroarch-linux-x64:
   dependencies: []
   script:
     - "./configure"
-    - "make -j10"
+    - "make -j$NUMPROC"
 
 build-static-retroarch-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
   stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  retroarch-precompiled/
@@ -42,7 +48,7 @@ build-static-retroarch-libnx-aarch64:
     - build-static-retroarch-dummy-libnx-aarch64
   script:
     # Allow failure since we don't have a core
-    - "make -f Makefile.libnx -j10 ||:"
+    - "make -f Makefile.libnx -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
@@ -50,6 +56,8 @@ build-static-retroarch-libnx-aarch64:
 build-static-retroarch-dummy-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
   stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  retroarch_switch.nro
@@ -57,11 +65,13 @@ build-static-retroarch-dummy-libnx-aarch64:
     expire_in: 1 month
   dependencies: []
   script:
-    - "make -f Makefile.libnx -j10 HAVE_STATIC_DUMMY=1"
+    - "make -f Makefile.libnx -j$NUMPROC HAVE_STATIC_DUMMY=1"
 
 build-static-retroarch-vita:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest
   stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  retroarch-precompiled/
@@ -69,7 +79,7 @@ build-static-retroarch-vita:
   dependencies: []
   script:
     # Allow failure since we don't have a core
-    - "make -f Makefile.vita -j10 ||:"
+    - "make -f Makefile.vita -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
@@ -84,7 +94,25 @@ build-static-retroarch-ps2:
   dependencies: []
   script:
     # Allow failure since we don't have a core
-    - "make -f Makefile.ps2 ||:"
+    # PS2 makefile for now doesn't allow -jX so this is why is hardcoded to -j1
+    - "make -f Makefile.ps2 -j1 ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
+build-static-retroarch-psp:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 1 day
+  dependencies: []
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.psp1 -jNUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
@@ -95,6 +123,7 @@ trigger_static-cores:
   - build-static-retroarch-libnx-aarch64
   - build-static-retroarch-vita
   - build-static-retroarch-ps2
+  - build-static-retroarch-psp
   dependencies: []
   script:
     # Dummy for now
