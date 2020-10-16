@@ -429,7 +429,7 @@ void glEnd(void) {
 	}
 
 	// Checking if we have to write a texture
-	if ((server_texture_unit >= 0) && (tex_unit->enabled) && (model_uv != NULL) && (tex_unit->textures[texture2d_idx].valid)) {
+	if ((server_texture_unit >= 0) && (tex_unit->enabled) && (model_uv != NULL) && (textures[texture2d_idx].valid)) {
 		// Setting proper vertex and fragment programs
 		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
@@ -474,7 +474,7 @@ void glEnd(void) {
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
 
 		// Setting in use texture
-		sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
 
 		// Properly generating vertices, uv map and indices buffers
 		vector3f *vertices;
