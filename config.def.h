@@ -542,12 +542,12 @@ static const bool menu_show_core_updater       = false;
 static const bool menu_show_core_updater       = true;
 #endif
 static const bool menu_show_legacy_thumbnail_updater = false;
-static const bool menu_show_sublabels          = true;
+static const bool menu_show_sublabels                = true;
+static const bool menu_dynamic_wallpaper_enable      = true;
+static const bool menu_scroll_fast                   = false;
 
-static const bool menu_scroll_fast             = false;
-
-#define DEFAULT_MENU_TICKER_TYPE                 (TICKER_TYPE_LOOP)
-static const float menu_ticker_speed           = 2.0f;
+#define DEFAULT_MENU_TICKER_TYPE (TICKER_TYPE_LOOP)
+static const float menu_ticker_speed        = 2.0f;
 
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
@@ -601,6 +601,7 @@ static const unsigned xmb_menu_layout       = 0;
 #endif
 static const unsigned xmb_icon_theme        = XMB_ICON_THEME_MONOCHROME;
 static const unsigned xmb_theme             = XMB_THEME_ELECTRIC_BLUE;
+static const unsigned xmb_animation         = 0;
 
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
 #define DEFAULT_XMB_SHADOWS_ENABLE false
