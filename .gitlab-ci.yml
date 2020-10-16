@@ -69,7 +69,7 @@ build-static-retroarch-vita:
   dependencies: []
   script:
     # Allow failure since we don't have a core
-    - "make -f Makefile.vita -j10 ||:"
+    - "make -f Makefile.vita -j$(($(nproc)/3)) ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
@@ -89,12 +89,28 @@ build-static-retroarch-ps2:
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
+build-static-retroarch-psp:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
+  stage: prepare-for-static-cores
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 1 day
+  dependencies: []
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.psp1 -j$(($(nproc)/3)) ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
 trigger_static-cores:
   stage: trigger-static-cores
   needs:
   - build-static-retroarch-libnx-aarch64
   - build-static-retroarch-vita
   - build-static-retroarch-ps2
+  - build-static-retroarch-psp
   dependencies: []
   script:
     # Dummy for now
