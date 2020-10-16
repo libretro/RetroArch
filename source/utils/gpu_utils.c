@@ -27,6 +27,7 @@
 #ifndef MIN
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) < (b)) ? (b) : (a))
+#define CEIL(a) ((a - (int)a) == 0 ? (int)a : (int)a + 1)
 #endif
 
 // VRAM usage setting
@@ -81,6 +82,23 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 			continue;
 		extract_block(src + offs_y * 16 + offs_x * w * 16, w, block);
 		stb_compress_dxt_block(dst, block, isdxt5, STB_DXT_HIGHQUAL);
+		dst += isdxt5 ? 16 : 8;
+	}
+}
+
+void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5, int ispvrt2bpp) {
+	int blocksize = isdxt5 ? 16 : 8;
+
+	int s = MAX(w, h);
+	uint32_t num_blocks = (s * s) / 16;
+	uint64_t d, offs_x, offs_y;
+	for (d = 0; d < num_blocks; d++) {
+		d2xy_morton(d, &offs_x, &offs_y);
+		if (offs_x * 4 >= h)
+			continue;
+		if (offs_y * (ispvrt2bpp ? 8 : 4) >= w)
+			continue;
+		memcpy(dst, src + offs_y * blocksize + offs_x * (w / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
 		dst += isdxt5 ? 16 : 8;
 	}
 }
@@ -306,7 +324,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	}
 }
 
-void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
+void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid)
 		gpu_free_texture(tex);
@@ -316,9 +334,37 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	int tex_size = w * h;
-	if (alignment == 8)
-		tex_size /= 2;
+
+	int tex_size = 0;
+	switch (format) {
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+		tex_size = (MAX(w, 8) * MAX(h, 8) * 2 + 7) / 8;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+		tex_size = (MAX(w, 8) * MAX(h, 8) * 4 + 7) / 8;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+		tex_size = CEIL(w / 8.0) * CEIL(h / 4.0) * 8.0;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
+		tex_size = CEIL(w / 4.0) * CEIL(h / 4.0) * 8.0;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
+		tex_size = (w * h) / 2;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+		tex_size = w * h;
+		break;
+	}
+
+#ifndef SKIP_ERROR_HANDLING
+	// Check the given texture data size.
+	if (image_size != 0 && image_size != tex_size) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
 
 	// Allocating texture data buffer
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
@@ -329,23 +375,45 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
 		if (data != NULL) {
-			//void *tmp = malloc(w * h * 4);
-			//void *tmp2 = malloc(tex_size);
-			/*int i, j;
-			uint8_t *src = (uint8_t *)data;
-			uint32_t *dst = (uint32_t*)tmp;
-			for (i = 0; i < h * w; i++) {
-				uint32_t clr = read_cb(src);
-				writeRGBA(dst++, src);
-				src += src_bpp;
-			}*/
+			if (read_cb != NULL) {
+				//void *tmp = malloc(w * h * 4);
+				//void *tmp2 = malloc(tex_size);
+				/*int i, j;
+				uint8_t *src = (uint8_t *)data;
+				uint32_t *dst = (uint32_t*)tmp;
+				for (i = 0; i < h * w; i++) {
+					uint32_t clr = read_cb(src);
+					writeRGBA(dst++, src);
+					src += src_bpp;
+				}*/
 
-			// Performing swizzling and DXT compression
-			dxt_compress(texture_data, (void *)data, w, h, alignment == 16);
+				// Performing swizzling and DXT compression
+				dxt_compress(texture_data, (void *)data, w, h, alignment == 16);
 
-			//swizzle(texture_data, tmp2, w, h, alignment << 3);
-			//free(tmp);
-			//free(tmp2);
+				//swizzle(texture_data, tmp2, w, h, alignment << 3);
+				//free(tmp);
+				//free(tmp2);
+			} else {
+				// Perform swizzling if necessary.
+				switch (format) {
+				case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+				case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+					memcpy_neon(texture_data, data, tex_size);
+					break;
+				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+					swizzle_compressed_texture(texture_data, (void *)data, w, h, 1, 0);
+					break;
+				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+					swizzle_compressed_texture(texture_data, (void *)data, w, h, 0, 1);
+					break;
+				default:
+					swizzle_compressed_texture(texture_data, (void *)data, w, h, 0, 0);
+					break;
+				}
+			}
+
 		} else
 			memset(texture_data, 0, tex_size);
 

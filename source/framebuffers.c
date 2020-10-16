@@ -137,12 +137,11 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	}
 
 	// Aliasing to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	texture *tex = &tex_unit->textures[tex_id];
+	texture *tex = &textures[tex_id];
 
 	// Extracting texture sizes
-	int tex_w = sceGxmTextureGetWidth(&tex->gxm_tex);
-	int tex_h = sceGxmTextureGetHeight(&tex->gxm_tex);
+	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
+	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
 
 	// Detecting requested attachment
 	switch (attachment) {
@@ -155,13 +154,13 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			tex_w,
-			tex_h,
-			tex_w,
+			fb->width,
+			fb->height,
+			fb->width,
 			sceGxmTextureGetData(&tex->gxm_tex));
 
 		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
-		initDepthStencilBuffer(tex_w, tex_h, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr, &fb->depth_buffer_mem_type, &fb->stencil_buffer_mem_type);
+		initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr, &fb->depth_buffer_mem_type, &fb->stencil_buffer_mem_type);
 
 		// Creating rendertarget
 		SceGxmRenderTargetParams renderTargetParams;
@@ -174,6 +173,30 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		renderTargetParams.multisampleLocations = 0;
 		renderTargetParams.driverMemBlock = -1;
 		sceGxmCreateRenderTarget(&renderTargetParams, &fb->target);
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
+/* vgl* */
+
+void vglTexImageDepthBuffer(GLenum target) {
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture *tex = &textures[texture2d_idx];
+	
+	switch (target) {
+	case GL_TEXTURE_2D:
+		{
+			if (active_read_fb)
+				sceGxmTextureInitLinear(&tex->gxm_tex, active_read_fb->depth_buffer_addr, SCE_GXM_TEXTURE_FORMAT_DF32M, active_read_fb->width, active_read_fb->height, 0);
+			else
+				sceGxmTextureInitLinear(&tex->gxm_tex, gxm_depth_surface_addr, SCE_GXM_TEXTURE_FORMAT_DF32M, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
+			tex->valid = 1;
+		}
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

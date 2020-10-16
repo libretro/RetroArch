@@ -26,7 +26,8 @@
 #define _SHARED_H_
 
 // Internal constants
-#define TEXTURES_NUM 4096 // Available textures per texture unit
+#define TEXTURES_NUM 16384 // Available textures
+#define COMPRESSED_TEXTURE_FORMATS_NUM 9 // The number of supported texture formats.
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
@@ -104,9 +105,17 @@ extern GLboolean use_extra_mem;
 void LOG(const char *format, ...);
 #endif
 
-// Depending on SDK, that could be or not defined
+// Logging callback for vitaShaRK
+#if defined(HAVE_SHARK) && defined(HAVE_SHARK_LOG)
+void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
+#endif
+
+// Depending on SDK, these could be or not defined
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))
+#endif
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
 extern uint8_t use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot
@@ -131,6 +140,7 @@ extern float fullscreen_z_scale;
 extern SceGxmContext *gxm_context; // sceGxm context instance
 extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
+extern void *gxm_depth_surface_addr; // Depth surface memblock starting address
 extern uint8_t system_app_mode; // Flag for system app mode usage
 
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix

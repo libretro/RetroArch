@@ -28,8 +28,10 @@
 uint32_t readR(void *data);
 uint32_t readRG(void *data);
 uint32_t readRGB(void *data);
+uint32_t readBGR(void *data);
 uint32_t readRGB565(void *data);
 uint32_t readRGBA(void *data);
+uint32_t readBGRA(void *data);
 uint32_t readRGBA5551(void *data);
 uint32_t readRGBA4444(void *data);
 
@@ -38,6 +40,8 @@ void writeR(void *data, uint32_t color);
 void writeRG(void *data, uint32_t color);
 void writeRA(void *data, uint32_t color);
 void writeRGB(void *data, uint32_t color);
+void writeBGR(void *data, uint32_t color);
 void writeRGBA(void *data, uint32_t color);
+void writeBGRA(void *data, uint32_t color);
 
 #endif

@@ -42,7 +42,7 @@ static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock s
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
 static void *gxm_shader_patcher_fragment_usse_addr; // Shader Patcher fragment USSE memblock starting address
 
-static void *gxm_depth_surface_addr; // Depth surface memblock starting address
+void *gxm_depth_surface_addr; // Depth surface memblock starting address
 static void *gxm_stencil_surface_addr; // Stencil surface memblock starting address
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 
@@ -109,9 +109,13 @@ void initGxm(void) {
 	// Initializing runtime shader compiler
 	if (use_shark) {
 #ifdef HAVE_SHARK
-		if (shark_init(NULL) >= 0)
+		if (shark_init(NULL) >= 0) {
 			is_shark_online = 1;
-		else
+#ifdef HAVE_SHARK_LOG
+			shark_install_log_cb(shark_log_cb);
+			shark_set_warnings_level(SHARK_WARN_MAX);
+#endif
+		} else
 #endif
 			is_shark_online = 0;
 	}
