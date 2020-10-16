@@ -112,7 +112,7 @@ build-static-retroarch-psp:
   dependencies: []
   script:
     # Allow failure since we don't have a core
-    - "make -f Makefile.psp1 -jNUMPROC ||:"
+    - "make -f Makefile.psp1 -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
