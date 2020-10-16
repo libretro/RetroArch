@@ -995,6 +995,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
             case MENU_ENUM_LABEL_EXPLORE_ITEM:
+            case MENU_ENUM_LABEL_NO_SETTINGS_FOUND:
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:

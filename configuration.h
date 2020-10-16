@@ -613,11 +613,13 @@ typedef struct settings
       bool settings_show_configuration;
       bool settings_show_saving;
       bool settings_show_logging;
+      bool settings_show_file_browser;
       bool settings_show_frame_throttle;
       bool settings_show_recording;
       bool settings_show_onscreen_display;
       bool settings_show_user_interface;
       bool settings_show_ai_service;
+      bool settings_show_accessibility;
       bool settings_show_power_management;
       bool settings_show_achievements;
       bool settings_show_network;
