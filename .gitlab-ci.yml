@@ -111,6 +111,8 @@ build-static-retroarch-psp:
     expire_in: 1 day
   dependencies: []
   script:
+    # We need to boostrap before compile
+    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
     # Allow failure since we don't have a core
     - "make -f Makefile.psp1 -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
