@@ -2156,6 +2156,7 @@ struct rarch_state
    gfx_display_t              dispgfx;                   /* ptr alignment */
    input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
    struct retro_frame_time_callback runloop_frame_time;  /* ptr alignment */
+   struct retro_audio_buffer_status_callback runloop_audio_buffer_status; /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
    struct retro_audio_callback audio_callback;           /* ptr alignment */
    retro_keyboard_event_t runloop_key_event;             /* ptr alignment */
@@ -19891,6 +19892,21 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
+      {
+         const struct retro_audio_buffer_status_callback *info =
+            (const struct retro_audio_buffer_status_callback*)data;
+
+         RARCH_LOG("[Environ]: SET_AUDIO_BUFFER_STATUS_CALLBACK.\n");
+
+         if (info)
+            p_rarch->runloop_audio_buffer_status.callback = info->callback;
+         else
+            p_rarch->runloop_audio_buffer_status.callback = NULL;
+
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE:
       {
          struct retro_rumble_interface *iface =
@@ -20880,6 +20896,8 @@ static void uninit_libretro_symbols(
       retroarch_deinit_core_options(p_rarch);
    retroarch_system_info_free(p_rarch);
    retroarch_frame_time_free(p_rarch);
+   memset(&p_rarch->runloop_audio_buffer_status, 0,
+         sizeof(struct retro_audio_buffer_status_callback));
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
 
@@ -38049,6 +38067,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          p_rarch->runloop_autosave         = false;
          retroarch_frame_time_free(p_rarch);
+         memset(&p_rarch->runloop_audio_buffer_status, 0,
+               sizeof(struct retro_audio_buffer_status_callback));
          break;
       case RARCH_CTL_IS_IDLE:
          return p_rarch->runloop_idle;
@@ -40077,6 +40097,45 @@ int runloop_iterate(void)
       }
 
       p_rarch->runloop_frame_time.callback(delta);
+   }
+
+   /* Update audio buffer occupancy if buffer status
+    * callback is in use by the core */
+   if (p_rarch->runloop_audio_buffer_status.callback)
+   {
+      bool audio_buf_active        = false;
+      unsigned audio_buf_occupancy = 0;
+      bool audio_buf_underrun      = false;
+
+      if (!(p_rarch->runloop_paused       ||
+            !p_rarch->audio_driver_active ||
+            !p_rarch->audio_driver_output_samples_buf) &&
+          p_rarch->current_audio->write_avail &&
+          p_rarch->audio_driver_context_audio_data &&
+          p_rarch->audio_driver_buffer_size)
+      {
+         size_t audio_buf_avail = p_rarch->current_audio->write_avail(
+               p_rarch->audio_driver_context_audio_data);
+
+         audio_buf_avail = (audio_buf_avail > p_rarch->audio_driver_buffer_size) ?
+               p_rarch->audio_driver_buffer_size : audio_buf_avail;
+
+         audio_buf_occupancy = (unsigned)(100 - (audio_buf_avail * 100) /
+               p_rarch->audio_driver_buffer_size);
+
+         /* Elsewhere, we standardise on a 'low water mark'
+          * of 25% of the total audio buffer size - use
+          * the same metric here (can be made more sophisticated
+          * if required - i.e. determine buffer occupancy in
+          * terms of usec, and weigh this against the expected
+          * frame time) */
+         audio_buf_underrun  = audio_buf_occupancy < 25;
+
+         audio_buf_active    = true;
+      }
+
+      p_rarch->runloop_audio_buffer_status.callback(
+            audio_buf_active, audio_buf_occupancy, audio_buf_underrun);
    }
 
    switch ((enum runloop_state)runloop_check_state(p_rarch,
