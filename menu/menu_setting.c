@@ -3993,6 +3993,7 @@ static void setting_get_string_representation_uint_rgui_particle_effect(
    }
 }
 
+#ifdef HAVE_XMB
 static void setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -4055,6 +4056,7 @@ static void setting_get_string_representation_uint_menu_xmb_animation_horizontal
          break;
    }
 }
+#endif
 
 static void setting_get_string_representation_uint_menu_ticker_type(
       rarch_setting_t *setting,
@@ -12277,7 +12279,7 @@ static bool setting_append_list(
                &settings->uints.video_stream_port,
                MENU_ENUM_LABEL_UDP_STREAM_PORT,
                MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-               1,
+               RARCH_STREAM_DEFAULT_PORT,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -13704,7 +13706,7 @@ static bool setting_append_list(
                   &settings->bools.menu_dynamic_wallpaper_enable,
                   MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,
                   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
-                  true,
+                  menu_dynamic_wallpaper_enable,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -14049,6 +14051,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
+#ifdef HAVE_XMB
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
@@ -14082,7 +14085,7 @@ static bool setting_append_list(
                   &settings->uints.menu_xmb_animation_horizontal_highlight,
                   MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
                   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
-                  DEFAULT_MENU_TICKER_TYPE,
+                  DEFAULT_XMB_ANIMATION,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -14099,7 +14102,7 @@ static bool setting_append_list(
                   &settings->uints.menu_xmb_animation_move_up_down,
                   MENU_ENUM_LABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
                   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-                  DEFAULT_MENU_TICKER_TYPE, /* TODO/FIXME - is this correct? */
+                  DEFAULT_XMB_ANIMATION,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -14116,7 +14119,7 @@ static bool setting_append_list(
                   &settings->uints.menu_xmb_animation_opening_main_menu,
                   MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
                   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-                  DEFAULT_MENU_TICKER_TYPE,
+                  DEFAULT_XMB_ANIMATION,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -14128,6 +14131,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
          }
+#endif
 
          CONFIG_UINT(
                list, list_info,
