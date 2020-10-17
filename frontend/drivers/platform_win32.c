@@ -568,11 +568,6 @@ static int frontend_win32_parse_drive_list(void *data, bool load_content)
 static void frontend_win32_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   const char *tmp_dir = getenv("TMP");
-   if (!string_is_empty(tmp_dir))
-      fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CACHE],
-         tmp_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
-
    gfx_set_dwm();
 
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],

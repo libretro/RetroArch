@@ -1542,7 +1542,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
    SETTING_BOOL("menu_show_sublabels",           &settings->bools.menu_show_sublabels, true, menu_show_sublabels, false);
-   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, menu_dynamic_wallpaper_enable, false);
+   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, false, false);
    SETTING_BOOL("menu_ticker_smooth",            &settings->bools.menu_ticker_smooth, true, DEFAULT_MENU_TICKER_SMOOTH, false);
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, false, false);
 
@@ -1924,9 +1924,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("split_joycon_p8", &settings->uints.input_split_joycon[7], true, 0, false);
 #endif
 #ifdef HAVE_XMB
-   SETTING_UINT("menu_xmb_animation_opening_main_menu",    &settings->uints.menu_xmb_animation_opening_main_menu, true, xmb_animation, false);
-   SETTING_UINT("menu_xmb_animation_horizontal_highlight", &settings->uints.menu_xmb_animation_horizontal_highlight, true, xmb_animation, false);
-   SETTING_UINT("menu_xmb_animation_move_up_down",         &settings->uints.menu_xmb_animation_move_up_down, true, xmb_animation, false);
+   SETTING_UINT("menu_xmb_animation_opening_main_menu",   &settings->uints.menu_xmb_animation_opening_main_menu, true, 0 /* TODO/FIXME - implement */, false);
+   SETTING_UINT("menu_xmb_animation_horizontal_highlight",   &settings->uints.menu_xmb_animation_horizontal_highlight, true, 0 /* TODO/FIXME - implement */, false);
+   SETTING_UINT("menu_xmb_animation_move_up_down",   &settings->uints.menu_xmb_animation_move_up_down, true, 0 /* TODO/FIXME - implement */, false);
    SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
    SETTING_UINT("xmb_layout",                   &settings->uints.menu_xmb_layout, true, xmb_menu_layout, false);
    SETTING_UINT("xmb_theme",                    &settings->uints.menu_xmb_theme, true, xmb_icon_theme, false);
@@ -1991,8 +1991,8 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("midi_volume",                  &settings->uints.midi_volume, true, midi_volume, false);
 
    SETTING_UINT("video_stream_port",            &settings->uints.video_stream_port,    true, RARCH_STREAM_DEFAULT_PORT, false);
-   SETTING_UINT("video_record_quality",            &settings->uints.video_record_quality,    true, RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY, false);
-   SETTING_UINT("video_stream_quality",            &settings->uints.video_stream_quality,    true, RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY, false);
+   SETTING_UINT("video_record_quality",            &settings->uints.video_record_quality,    true, RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY, false);
+   SETTING_UINT("video_stream_quality",            &settings->uints.video_stream_quality,    true, RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY, false);
    SETTING_UINT("video_record_scale_factor",            &settings->uints.video_record_scale_factor,    true, 1, false);
    SETTING_UINT("video_stream_scale_factor",            &settings->uints.video_stream_scale_factor,    true, 1, false);
    SETTING_UINT("video_windowed_position_x",            &settings->uints.window_position_x,    true, 0, false);
@@ -2421,7 +2421,7 @@ void config_set_defaults(void *data)
 #endif
    *settings->paths.path_record_config     = '\0';
    *settings->paths.path_stream_config     = '\0';
-   *settings->paths.path_stream_url        = '\0';
+   *settings->paths.path_stream_url     = '\0';
    *settings->paths.path_softfilter_plugin = '\0';
 
    *settings->paths.directory_content_history = '\0';
@@ -2580,15 +2580,6 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->paths.log_dir,
             g_defaults.dirs[DEFAULT_DIR_LOGS]);
-
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]))
-      fill_pathname_expand_special(global->record.output_dir,
-            g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
-            sizeof(global->record.output_dir));
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]))
-      fill_pathname_expand_special(global->record.config_dir,
-            g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
-            sizeof(global->record.config_dir));
 
    if (!string_is_empty(g_defaults.path_config))
    {
