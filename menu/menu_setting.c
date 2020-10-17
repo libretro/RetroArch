@@ -3993,7 +3993,6 @@ static void setting_get_string_representation_uint_rgui_particle_effect(
    }
 }
 
-#ifdef HAVE_XMB
 static void setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -4056,7 +4055,6 @@ static void setting_get_string_representation_uint_menu_xmb_animation_horizontal
          break;
    }
 }
-#endif
 
 static void setting_get_string_representation_uint_menu_ticker_type(
       rarch_setting_t *setting,
@@ -14079,7 +14077,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 #endif
 
-#ifdef HAVE_XMB
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_xmb_animation_horizontal_highlight,
@@ -14131,7 +14128,6 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
          }
-#endif
 
          CONFIG_UINT(
                list, list_info,
