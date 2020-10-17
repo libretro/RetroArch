@@ -23,7 +23,7 @@
 
 #include "../shared.h"
 
-#define MEM_ALIGNMENT 8 // seems to be enough, set to 16 if something explodes
+#define MEM_ALIGNMENT 16
 
 typedef struct tm_block_s {
 	struct tm_block_s *next; // next block in list (either free or allocated)

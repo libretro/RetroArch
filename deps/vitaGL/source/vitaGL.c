@@ -116,6 +116,7 @@ const SceGxmProgram *texture2d_rgba_fragment_program;
 
 typedef struct gpubuffer {
 	void *ptr;
+	int32_t size;
 } gpubuffer;
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
@@ -291,15 +292,15 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 	DISPLAY_STRIDE = ALIGN(DISPLAY_WIDTH, 64);
 
 	// Adjusting default values for internal viewport
-	x_port  = DISPLAY_WIDTH_FLOAT / 2.0f;
+	x_port = DISPLAY_WIDTH_FLOAT / 2.0f;
 	x_scale = x_port;
 	y_scale = -(DISPLAY_HEIGHT_FLOAT / 2.0f);
-	y_port  = -y_scale;
+	y_port = -y_scale;
 	fullscreen_x_port = x_port;
 	fullscreen_x_scale = x_scale;
 	fullscreen_y_port = y_port;
 	fullscreen_y_scale = y_scale;
-	
+
 	// Init viewport state
 	gl_viewport.x = 0;
 	gl_viewport.y = 0;
@@ -675,18 +676,21 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 	// Init texture units
 	int i, j;
 	for (i = 0; i < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS; i++) {
-		for (j = 0; j < TEXTURES_NUM; j++) {
-			texture_units[i].textures[j].used = 0;
-			texture_units[i].textures[j].valid = 0;
-		}
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id = 0;
 		texture_units[i].enabled = GL_FALSE;
 		texture_units[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 		texture_units[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+		texture_units[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 		texture_units[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 		texture_units[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-		texture_units[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1) 
+		texture_units[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
+	}
+
+	// Init texture slots
+	for (j = 0; j < TEXTURES_NUM; j++) {
+		textures[j].used = 0;
+		textures[j].valid = 0;
 	}
 
 	// Init custom shaders
@@ -697,7 +701,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		buffers[i] = BUFFERS_ADDR + i;
 		gpu_buffers[i].ptr = NULL;
 	}
-	
+
 	// Init scissor test state
 	resetScissorTestRegion();
 
@@ -712,7 +716,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
 	// Initializing sceGxm
 	initGxm();
-	
+
 	// Getting max allocatable CDRAM and RAM memory
 	if (system_app_mode) {
 		SceAppMgrBudgetInfo info;
@@ -838,17 +842,13 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 			if (gpu_buffers[idx].ptr != NULL) {
 				vgl_mem_free(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
 				gpu_buffers[idx].ptr = NULL;
+				gpu_buffers[idx].size = 0;
 			}
 		}
 	}
 }
 
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage) {
-#ifndef SKIP_ERROR_HANDLING
-	if (size < 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
 	int idx = 0;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
@@ -861,9 +861,58 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	vglMemType type = VGL_MEM_VRAM;
+#ifndef SKIP_ERROR_HANDLING
+	if (size < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	if (idx < 0) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+	vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
+
+	// Free buffer if already existing.
+	if (gpu_buffers[idx].ptr != NULL)
+		vgl_mem_free(gpu_buffers[idx].ptr, type);
+
 	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, &type);
+	gpu_buffers[idx].size = size;
+
+#ifndef SKIP_ERROR_HANDLING
+	if (gpu_buffers[idx].ptr == NULL) {
+		gpu_buffers[idx].size = 0;
+		SET_GL_ERROR(GL_OUT_OF_MEMORY)
+	}
+#endif
+
 	memcpy_neon(gpu_buffers[idx].ptr, data, size);
+}
+
+void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data) {
+	int idx = 0;
+	switch (target) {
+	case GL_ARRAY_BUFFER:
+		idx = vertex_array_unit;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		idx = index_array_unit;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+#ifndef SKIP_ERROR_HANDLING
+	if ((size < 0) || (offset < 0) || ((offset + size) > gpu_buffers[idx].size)) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	if (idx < 0) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	memcpy_neon(gpu_buffers[idx].ptr + offset, data, size);
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
@@ -1305,7 +1354,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			}
 
 			if (tex_unit->texture_array_state) {
-				if (!(tex_unit->textures[texture2d_idx].valid))
+				if (!(textures[texture2d_idx].valid))
 					return;
 				if (tex_unit->color_array_state) {
 					sceGxmSetVertexProgram(gxm_context, texture2d_rgba_vertex_program_patched);
@@ -1368,7 +1417,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
 				}
-				sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
+				sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
 				vector3f *vertices = NULL;
 				vector2f *uv_map = NULL;
 				vector4f *colors = NULL;
@@ -1597,7 +1646,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			}
 
 			if (tex_unit->texture_array_state) {
-				if (!(tex_unit->textures[texture2d_idx].valid))
+				if (!(textures[texture2d_idx].valid))
 					return;
 				if (tex_unit->color_array_state) {
 					sceGxmSetVertexProgram(gxm_context, texture2d_rgba_vertex_program_patched);
@@ -1660,7 +1709,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
 				}
-				sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
+				sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
 				vector3f *vertices = NULL;
 				vector2f *uv_map = NULL;
 				vector4f *colors = NULL;
@@ -2057,10 +2106,15 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	if (!skip_draw) {
 		if (cur_program != 0) {
 			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
-			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
+
+			// TEXUNIT1 support for custom shaders
+			texture_unit *tex_unit2 = &texture_units[client_texture_unit + 1];
+			int texture2d_idx2 = tex_unit2->tex_id;
+			if (textures[texture2d_idx2].valid)
+				sceGxmSetFragmentTexture(gxm_context, 1, &textures[texture2d_idx2].gxm_tex);
+
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
-			vert_uniforms = NULL;
-			frag_uniforms = NULL;
 		} else {
 			if (tex_unit->vertex_array_state) {
 				if (mvp_modified) {
@@ -2068,7 +2122,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 					mvp_modified = GL_FALSE;
 				}
 				if (tex_unit->texture_array_state) {
-					if (!(tex_unit->textures[texture2d_idx].valid))
+					if (!(textures[texture2d_idx].valid))
 						return;
 					if (tex_unit->color_array_state) {
 						if (tex_unit->color_object_type == GL_FLOAT)
@@ -2139,7 +2193,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
 					}
-					sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
+					sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 					sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
 					if (tex_unit->color_array_state)
@@ -2187,4 +2241,8 @@ void vglFree(void *addr) {
 
 void vglUseExtraMem(GLboolean use) {
 	use_extra_mem = use;
+}
+
+GLboolean vglHasRuntimeShaderCompiler(void) {
+	return is_shark_online;
 }

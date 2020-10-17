@@ -24,6 +24,7 @@
 #include "shared.h"
 
 texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
+texture textures[TEXTURES_NUM]; // Available texture slots
 palette *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
 
@@ -47,9 +48,9 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	// Reserving a texture and returning its id if available
 	int i, j = 0;
 	for (i = 0; i < TEXTURES_NUM; i++) {
-		if (!(tex_unit->textures[i].used)) {
+		if (!(textures[i].used)) {
 			res[j++] = i;
-			tex_unit->textures[i].used = 1;
+			textures[i].used = 1;
 		}
 		if (j >= n)
 			break;
@@ -86,8 +87,8 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	int j;
 	for (j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
-		tex_unit->textures[i].used = 0;
-		gpu_free_texture(&tex_unit->textures[i]);
+		textures[i].used = 0;
+		gpu_free_texture(&textures[i]);
 	}
 }
 
@@ -95,7 +96,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &tex_unit->textures[texture2d_idx];
+	texture *tex = &textures[texture2d_idx];
 
 	SceGxmTextureFormat tex_format;
 	uint8_t data_bpp = 0;
@@ -152,6 +153,20 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			break;
 		}
 		break;
+	case GL_BGR:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 3;
+			if (internalFormat == GL_BGR)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readBGR;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
 	case GL_RGB:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
@@ -164,6 +179,20 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		case GL_UNSIGNED_SHORT_5_6_5:
 			data_bpp = 2;
 			read_cb = readRGB565;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
+	case GL_BGRA:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 4;
+			if (internalFormat == GL_BGRA)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readBGRA;
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -210,9 +239,17 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			write_cb = writeRGB;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
 			break;
+		case GL_BGR:
+			write_cb = writeBGR;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB;
+			break;
 		case GL_RGBA:
 			write_cb = writeRGBA;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+			break;
+		case GL_BGRA:
+			write_cb = writeBGRA;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 			break;
 		case GL_LUMINANCE:
 			write_cb = writeR;
@@ -251,17 +288,16 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			if (tex->write_cb)
 				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
 			else
-				gpu_alloc_compressed_texture(width, height, tex_format, data, tex, data_bpp, read_cb);
-		else {
+				gpu_alloc_compressed_texture(width, height, tex_format, 0, data, tex, data_bpp, read_cb);
+		else
 			gpu_alloc_mipmaps(level, tex);
-			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
-		}
 
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
 		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
+		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex_unit->mip_filter);
 		sceGxmTextureSetLodBias(&tex->gxm_tex, tex_unit->lod_bias);
 
 		// Setting palette if the format requests one
@@ -279,7 +315,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *target_texture = &tex_unit->textures[texture2d_idx];
+	texture *target_texture = &textures[texture2d_idx];
 
 	// Calculating implicit texture stride and start address of requested texture modification
 	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
@@ -363,6 +399,17 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		}
 		break;
+	case GL_BGR:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 3;
+			read_cb = readBGR;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
 	case GL_RGBA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
@@ -382,6 +429,17 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		}
 		break;
+	case GL_BGRA:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 4;
+			read_cb = readBGRA;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
 	}
 
 	switch (target) {
@@ -392,8 +450,14 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		case GL_RGB:
 			write_cb = writeRGB;
 			break;
+		case GL_BGR:
+			write_cb = writeBGR;
+			break;
 		case GL_RGBA:
 			write_cb = writeRGBA;
+			break;
+		case GL_BGRA:
+			write_cb = writeBGRA;
 			break;
 		case GL_LUMINANCE:
 			write_cb = writeR;
@@ -421,6 +485,84 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			ptr = ptr_line + stride;
 			ptr_line = ptr;
 		}
+
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
+void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture *tex = &textures[texture2d_idx];
+
+	SceGxmTextureFormat tex_format;
+
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// Checking if texture dimensions are not a power of two
+	if (((width & (width - 1)) != 0) || ((height & (height - 1)) != 0)) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// Ensure imageSize isn't zero.
+	if (imageSize == 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	switch (target) {
+	case GL_TEXTURE_2D:
+		// Detecting proper write callback and texture format
+		switch (internalFormat) {
+		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
+			break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
+			break;
+		case GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR;
+			break;
+		case GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+
+		// Allocating texture/mipmaps depending on user call
+		tex->type = internalFormat;
+		gpu_alloc_compressed_texture(width, height, tex_format, imageSize, data, tex, 0, NULL);
+
+		// Setting texture parameters
+		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
+		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
+		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
+		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
+		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex_unit->mip_filter);
+		sceGxmTextureSetLodBias(&tex->gxm_tex, tex_unit->lod_bias);
 
 		break;
 	default:
@@ -462,7 +604,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &tex_unit->textures[texture2d_idx];
+	texture *tex = &textures[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
@@ -470,18 +612,28 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		case GL_TEXTURE_MIN_FILTER: // Min filter
 			switch (param) {
 			case GL_NEAREST: // Point
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 				break;
 			case GL_LINEAR: // Linear
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
-			case GL_NEAREST_MIPMAP_NEAREST: // TODO: Implement this
+			case GL_NEAREST_MIPMAP_NEAREST:
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
 				break;
-			case GL_LINEAR_MIPMAP_NEAREST: // TODO: Implement this
+			case GL_LINEAR_MIPMAP_NEAREST:
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
 				break;
-			case GL_NEAREST_MIPMAP_LINEAR: // TODO: Implement this
+			case GL_NEAREST_MIPMAP_LINEAR:
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
 				break;
-			case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
+			case GL_LINEAR_MIPMAP_LINEAR:
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
@@ -491,19 +643,11 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag Filter
 			switch (param) {
-			case GL_NEAREST: // Point
+			case GL_NEAREST:
 				tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 				break;
-			case GL_LINEAR: // Linear
+			case GL_LINEAR:
 				tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_NEAREST: // TODO: Implement this
-				break;
-			case GL_LINEAR_MIPMAP_NEAREST: // TODO: Implement this
-				break;
-			case GL_NEAREST_MIPMAP_LINEAR: // TODO: Implement this
-				break;
-			case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
@@ -543,7 +687,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
 				break;
 			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
-				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
@@ -570,23 +714,44 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &tex_unit->textures[texture2d_idx];
+	texture *tex = &textures[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
 		switch (pname) {
 		case GL_TEXTURE_MIN_FILTER: // Min Filter
-			if (param == GL_NEAREST)
-				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT; // Point
-			if (param == GL_LINEAR)
-				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR; // Linear
+			if (param == GL_NEAREST) {
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+			}
+			if (param == GL_LINEAR) {
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			}
+			if (param == GL_NEAREST_MIPMAP_NEAREST) {
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
+			}
+			if (param == GL_LINEAR_MIPMAP_NEAREST) {
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
+			}
+			if (param == GL_NEAREST_MIPMAP_LINEAR) {
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
+			}
+			if (param == GL_LINEAR_MIPMAP_LINEAR) {
+				tex_unit->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
+			}
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
+			sceGxmTextureSetMipFilter(&tex->gxm_tex, tex_unit->mip_filter);
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag filter
 			if (param == GL_NEAREST)
-				tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT; // Point
+				tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 			else if (param == GL_LINEAR)
-				tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR; // Linear
+				tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
@@ -608,7 +773,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 			else if (param == GL_MIRRORED_REPEAT)
 				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR; // Mirror
 			else if (param == GL_MIRROR_CLAMP_EXT)
-				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
+				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
@@ -640,7 +805,7 @@ void glGenerateMipmap(GLenum target) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &tex_unit->textures[texture2d_idx];
+	texture *tex = &textures[texture2d_idx];
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if current texture is valid
@@ -659,7 +824,8 @@ void glGenerateMipmap(GLenum target) {
 		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
 		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
-		sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
+		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex_unit->mip_filter);
+		sceGxmTextureSetLodBias(&tex->gxm_tex, tex_unit->lod_bias);
 
 		break;
 	default:
@@ -760,11 +926,29 @@ void *vglGetTexDataPointer(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &tex_unit->textures[texture2d_idx];
+	texture *tex = &textures[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
 		return tex->data;
+		break;
+	default:
+		vgl_error = GL_INVALID_ENUM;
+		break;
+	}
+
+	return NULL;
+}
+
+SceGxmTexture *vglGetGxmTexture(GLenum target) {
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture *tex = &textures[texture2d_idx];
+
+	switch (target) {
+	case GL_TEXTURE_2D:
+		return &tex->gxm_tex;
 		break;
 	default:
 		vgl_error = GL_INVALID_ENUM;

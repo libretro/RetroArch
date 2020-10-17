@@ -29,6 +29,8 @@ Direct OpenGL Usage:<br>
 [Daedalus X64](https://github.com/Rinnegatamante/daedalusx64-vitagl) - Port of Daedalus X64 (N64 Emulator)<br>
 [RetroArch](https://github.com/libretro/RetroArch) - Vita's GL1 video driver of RetroArch<br>
 [vitaET](https://github.com/Rinnegatamante/vitaET) - Port of ET:Legacy (Wolfenstein: Enemy Territory)<br>
+[flycast](https://github.com/Rinnegatamante/flycast) - Port of flycast (Dreamcast Emulator)<br>
+[AvP Gold](https://github.com/Rinnegatamante/AvP-Gold-Vita) - Port of Aliens versus Predator: Gold Edition<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>

@@ -29,6 +29,17 @@
 
 #define convert_u16_to_u32_cspace(color, lshift, rshift, mask) ((((color << lshift) >> rshift) & mask) * 0xFF) / mask
 
+// Read callback for 32bpp unsigned ABGR format
+uint32_t readBGRA(void *data) {
+	uint32_t res;
+	memcpy_neon(&res, data, 4);
+	uint8_t *p = (uint8_t *)&res;
+	uint8_t tmp = p[0];
+	p[0] = p[2];
+	p[2] = tmp;
+	return res;
+}
+
 // Read callback for 32bpp unsigned RGBA format
 uint32_t readRGBA(void *data) {
 	uint32_t res;
@@ -66,9 +77,20 @@ uint32_t readRGB565(void *data) {
 	uint32_t r, g, b;
 	memcpy_neon(&clr, data, 2);
 	r = convert_u16_to_u32_cspace(clr,   0, 11, 0x1F);
-	g = convert_u16_to_u32_cspace(clr,   5, 11, 0x3F);
+	g = convert_u16_to_u32_cspace(clr,   5, 10, 0x3F);
 	b = convert_u16_to_u32_cspace(clr,  11, 11, 0x1F);
 	return ((0xFF << 24) | (b << 16) | (g << 8) | r);
+}
+
+// Read callback for 24bpp unsigned BGR format
+uint32_t readBGR(void *data) {
+	uint32_t res = 0xFFFFFFFF;
+	uint8_t *src = (uint8_t *)data;
+	uint8_t *dst = (uint8_t *)res;
+	dst[0] = src[2];
+	dst[1] = src[1];
+	dst[2] = src[0];
+	return res;
 }
 
 // Read callback for 24bpp unsigned RGB format
@@ -97,9 +119,27 @@ void writeRGBA(void *data, uint32_t color) {
 	memcpy_neon(data, &color, 4);
 }
 
+// Write callback for 32bpp unsigned BGRA format
+void writeBGRA(void *data, uint32_t color) {
+	memcpy_neon(data, &color, 4);
+	uint8_t *p = (uint8_t *)data;
+	uint8_t tmp = p[0];
+	p[0] = p[2];
+	p[2] = tmp;
+}
+
 // Write callback for 24bpp unsigned RGB format
 void writeRGB(void *data, uint32_t color) {
 	memcpy_neon(data, &color, 3);
+}
+
+// Write callback for 24bpp unsigned BGR format
+void writeBGR(void *data, uint32_t color) {
+	uint8_t *src = (uint8_t *)&color;
+	uint8_t *dst = (uint8_t *)data;
+	dst[0] = src[2];
+	dst[1] = src[1];
+	dst[2] = src[0];
 }
 
 // Write callback for 16bpp unsigned RG format
