@@ -2762,7 +2762,6 @@ static int setting_action_ok_uint(
    return 0;
 }
 
-#if defined(HAVE_GFX_WIDGETS)
 static int setting_string_action_left_string_options(
    rarch_setting_t* setting, size_t idx, bool wraparound)
 {
@@ -2829,6 +2828,7 @@ static int setting_string_action_right_string_options(
    return -1;
 }
 
+#if defined(HAVE_GFX_WIDGETS)
 static int setting_action_ok_mapped_string(
    rarch_setting_t* setting, size_t idx, bool wraparound)
 {
