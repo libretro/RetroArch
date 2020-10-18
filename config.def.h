@@ -542,12 +542,12 @@ static const bool menu_show_core_updater       = false;
 static const bool menu_show_core_updater       = true;
 #endif
 static const bool menu_show_legacy_thumbnail_updater = false;
-static const bool menu_show_sublabels          = true;
+static const bool menu_show_sublabels                = true;
+static const bool menu_dynamic_wallpaper_enable      = true;
+static const bool menu_scroll_fast                   = false;
 
-static const bool menu_scroll_fast             = false;
-
-#define DEFAULT_MENU_TICKER_TYPE                 (TICKER_TYPE_LOOP)
-static const float menu_ticker_speed           = 2.0f;
+#define DEFAULT_MENU_TICKER_TYPE (TICKER_TYPE_LOOP)
+static const float menu_ticker_speed        = 2.0f;
 
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
@@ -590,6 +590,8 @@ static const bool content_show_playlists    = true;
 #endif
 
 #ifdef HAVE_XMB
+#define DEFAULT_XMB_ANIMATION 0
+
 static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
 static const unsigned menu_font_color_green = 255;

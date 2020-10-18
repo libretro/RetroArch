@@ -22259,6 +22259,10 @@ static bool recording_init(
       else
       {
          const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+         /* Fallback to core name if started without content */
+         if (string_is_empty(game_name))
+            game_name = p_rarch->runloop_system.info.library_name;
+
          if (video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
          {
             fill_str_dated_filename(buf, game_name,
