@@ -10985,20 +10985,32 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_shader_delay,
-                  MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-                  DEFAULT_SHADER_DELAY,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            /* Unlike all other shader-related menu entries
+             * (which appear in the shaders quick menu, and
+             * are thus hidden automatically on platforms
+             * without shader support), VIDEO_SHADER_DELAY
+             * is shown in 'Settings > Video'. It therefore
+             * requires an explicit guard to prevent display
+             * on unsupported platforms */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            if (video_shader_any_supported())
+            {
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_shader_delay,
+                     MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+                     DEFAULT_SHADER_DELAY,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            }
+#endif
 
             CONFIG_BOOL(
                   list, list_info,
