@@ -513,6 +513,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dynamic_wallpaper,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_device,                  MENU_ENUM_SUBLABEL_AUDIO_DEVICE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_output_rate,             MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin,              MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin_remove,       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_exclusive_mode,   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_float_format,     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_sh_buffer_length, MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH)
@@ -2772,6 +2773,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #endif
          case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_dsp_plugin);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_dsp_plugin_remove);
             break;
          case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_output_rate);

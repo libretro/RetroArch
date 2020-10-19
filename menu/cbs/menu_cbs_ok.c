@@ -2990,6 +2990,30 @@ static int action_ok_video_filter_remove(const char *path,
    return 0;
 }
 
+static int action_ok_audio_dsp_plugin_remove(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return menu_cbs_exit();
+
+   if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
+   {
+      bool refresh = false;
+
+      /* Unload dsp plugin filter */
+      settings->paths.path_audio_dsp_plugin[0] = '\0';
+      command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
+
+      /* Refresh menu */
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   }
+
+   return 0;
+}
+
 #ifdef HAVE_CHEATS
 static void menu_input_st_string_cb_cheat_file_save_as(
       void *userdata, const char *str)
@@ -8026,6 +8050,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_VIDEO_FILTER_REMOVE:
             BIND_ACTION_OK(cbs, action_ok_video_filter_remove);
+            break;
+         case MENU_SETTING_ACTION_AUDIO_DSP_PLUGIN_REMOVE:
+            BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin_remove);
             break;
          default:
             return -1;

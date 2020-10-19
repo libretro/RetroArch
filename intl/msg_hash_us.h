@@ -1814,6 +1814,14 @@ MSG_HASH(
    "Audio DSP plugin that processes audio before it's sent to the driver."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "Remove DSP Plugin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "Unload any active audio DSP plugin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    "WASAPI Exclusive Mode"
    )

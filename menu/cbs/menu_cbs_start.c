@@ -128,6 +128,31 @@ static int action_start_video_filter_file_load(
    return 0;
 }
 
+static int action_start_audio_dsp_plugin_file_load(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return menu_cbs_exit();
+
+   if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
+   {
+      bool refresh = false;
+
+      /* Unload dsp plugin filter */
+      settings->paths.path_audio_dsp_plugin[0] = '\0';
+      command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
+
+      /* Refresh menu */
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   }
+
+   return 0;
+}
+
 static int generic_action_start_performance_counters(struct retro_perf_counter **counters,
       unsigned offset, unsigned type, const char *label)
 {
@@ -614,6 +639,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_START(cbs, action_start_video_filter_file_load);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
+            BIND_ACTION_START(cbs, action_start_audio_dsp_plugin_file_load);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

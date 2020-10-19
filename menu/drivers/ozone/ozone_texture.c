@@ -249,6 +249,7 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_DELETE_PLAYLIST:
       case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST:
       case MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE:
+      case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_CORE_LOCK:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
