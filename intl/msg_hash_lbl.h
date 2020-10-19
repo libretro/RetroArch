@@ -87,6 +87,10 @@ MSG_HASH(
    "audio_dsp_plugin"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "audio_dsp_plugin_remove"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_ENABLE,
    "audio_enable"
    )
