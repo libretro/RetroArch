@@ -5049,7 +5049,7 @@ int generic_menu_entry_action(
           string_is_equal(menu->deferred_path, content_path))
          menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
 
-      command_event(CMD_EVENT_UNLOAD_CORE, 0);
+      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
       menu_entries_flush_stack(menu_flush_to, 0);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       menu_navigation_set_selection(0);
@@ -16340,10 +16340,10 @@ bool command_event(enum event_command cmd, void *data)
          if (!p_rarch->menu_driver_alive)
          {
             p_rarch->menu_driver_state.pending_close_content = true;
-            command_event(CMD_EVENT_MENU_TOGGLE, 0);
+            command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
 #else
-         command_event(CMD_EVENT_QUIT, 0);
+         command_event(CMD_EVENT_QUIT, NULL);
 #endif
          break;
       case CMD_EVENT_QUIT:
