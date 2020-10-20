@@ -2260,6 +2260,7 @@ struct rarch_state
 #endif
    unsigned runloop_pending_windowed_scale;
    unsigned runloop_max_frames;
+   unsigned runloop_audio_latency;
    unsigned fastforward_after_frames;
 
 #ifdef HAVE_MENU
@@ -15884,6 +15885,13 @@ static void retroarch_frame_time_free(struct rarch_state *p_rarch)
    p_rarch->runloop_max_frames       = 0;
 }
 
+static void retroarch_audio_buffer_status_free(struct rarch_state *p_rarch)
+{
+   memset(&p_rarch->runloop_audio_buffer_status, 0,
+         sizeof(struct retro_audio_buffer_status_callback));
+   p_rarch->runloop_audio_latency = 0;
+}
+
 static void retroarch_system_info_free(struct rarch_state *p_rarch)
 {
    rarch_system_info_t        *sys_info   = &p_rarch->runloop_system;
@@ -19907,6 +19915,74 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY:
+      {
+         unsigned audio_latency_default = settings->uints.audio_latency;
+         unsigned audio_latency_current =
+               (p_rarch->runloop_audio_latency > audio_latency_default) ?
+                     p_rarch->runloop_audio_latency : audio_latency_default;
+         unsigned audio_latency_new;
+
+         RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY.\n");
+
+         /* Sanitise input latency value */
+         p_rarch->runloop_audio_latency    = 0;
+         if (data)
+            p_rarch->runloop_audio_latency = *(const unsigned*)data;
+         if (p_rarch->runloop_audio_latency > 512)
+         {
+            RARCH_WARN("[Environ]: Requested audio latency of %u ms - limiting to maximum of 512 ms.\n",
+                  p_rarch->runloop_audio_latency);
+            p_rarch->runloop_audio_latency = 512;
+         }
+
+         /* Determine new set-point latency value */
+         if (p_rarch->runloop_audio_latency >= audio_latency_default)
+            audio_latency_new = p_rarch->runloop_audio_latency;
+         else
+         {
+            if (p_rarch->runloop_audio_latency != 0)
+               RARCH_WARN("[Environ]: Requested audio latency of %u ms is less than frontend default of %u ms."
+                     " Using frontend default...\n",
+                     p_rarch->runloop_audio_latency, audio_latency_default);
+
+            audio_latency_new = audio_latency_default;
+         }
+
+         /* Check whether audio driver requires reinitialisation
+          * (Identical to RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO,
+          * without video driver initialisation) */
+         if (audio_latency_new != audio_latency_current)
+         {
+            bool video_fullscreen = settings->bools.video_fullscreen;
+            int reinit_flags      = DRIVERS_CMD_ALL &
+                  ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK | DRIVER_MENU_MASK);
+
+            RARCH_LOG("[Environ]: Setting audio latency to %u ms.\n", audio_latency_new);
+
+            command_event(CMD_EVENT_REINIT, &reinit_flags);
+            video_driver_set_aspect_ratio();
+
+            /* Cannot continue recording with different parameters.
+             * Take the easiest route out and just restart the recording. */
+            if (p_rarch->recording_data)
+            {
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
+                     2, 180, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+               command_event(CMD_EVENT_RECORD_INIT, NULL);
+            }
+
+            /* Hide mouse cursor in fullscreen mode */
+            if (video_fullscreen)
+               video_driver_hide_mouse();
+         }
+
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE:
       {
          struct retro_rumble_interface *iface =
@@ -20896,8 +20972,7 @@ static void uninit_libretro_symbols(
       retroarch_deinit_core_options(p_rarch);
    retroarch_system_info_free(p_rarch);
    retroarch_frame_time_free(p_rarch);
-   memset(&p_rarch->runloop_audio_buffer_status, 0,
-         sizeof(struct retro_audio_buffer_status_callback));
+   retroarch_audio_buffer_status_free(p_rarch);
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
 
@@ -30047,6 +30122,8 @@ static bool audio_driver_init_internal(
    bool audio_sync         = settings->bools.audio_sync;
    bool audio_rate_control = settings->bools.audio_rate_control;
    float slowmotion_ratio  = settings->floats.slowmotion_ratio;
+   unsigned audio_latency  = (p_rarch->runloop_audio_latency > settings->uints.audio_latency) ?
+         p_rarch->runloop_audio_latency : settings->uints.audio_latency;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf     = NULL;
 #endif
@@ -30107,7 +30184,7 @@ static bool audio_driver_init_internal(
                *settings->arrays.audio_device
                ? settings->arrays.audio_device : NULL,
                settings->uints.audio_out_rate, &new_rate,
-               settings->uints.audio_latency,
+               audio_latency,
                settings->uints.audio_block_frames,
                p_rarch->current_audio))
       {
@@ -30122,7 +30199,7 @@ static bool audio_driver_init_internal(
          p_rarch->current_audio->init(*settings->arrays.audio_device ?
                settings->arrays.audio_device : NULL,
                settings->uints.audio_out_rate,
-               settings->uints.audio_latency,
+               audio_latency,
                settings->uints.audio_block_frames,
                &new_rate);
    }
@@ -38067,8 +38144,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          p_rarch->runloop_autosave         = false;
          retroarch_frame_time_free(p_rarch);
-         memset(&p_rarch->runloop_audio_buffer_status, 0,
-               sizeof(struct retro_audio_buffer_status_callback));
+         retroarch_audio_buffer_status_free(p_rarch);
          break;
       case RARCH_CTL_IS_IDLE:
          return p_rarch->runloop_idle;
