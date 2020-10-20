@@ -384,6 +384,14 @@ enum playlist_entry_remove_enable_type
    PLAYLIST_ENTRY_REMOVE_ENABLE_LAST
 };
 
+enum quit_on_close_content_type
+{
+   QUIT_ON_CLOSE_CONTENT_DISABLED = 0,
+   QUIT_ON_CLOSE_CONTENT_ENABLED,
+   QUIT_ON_CLOSE_CONTENT_CLI,
+   QUIT_ON_CLOSE_CONTENT_LAST
+};
+
 RETRO_END_DECLS
 
 #endif

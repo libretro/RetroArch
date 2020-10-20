@@ -2073,6 +2073,10 @@ MSG_HASH(
    "menu_insert_disk_resume"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,
+   "quit_on_close_content"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PAUSE_NONACTIVE,
    "pause_nonactive"
    )

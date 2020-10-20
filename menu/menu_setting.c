@@ -6340,6 +6340,27 @@ static void setting_get_string_representation_uint_libretro_log_level(
    }
 }
 
+static void setting_get_string_representation_uint_quit_on_close_content(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case QUIT_ON_CLOSE_CONTENT_DISABLED:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         break;
+      case QUIT_ON_CLOSE_CONTENT_ENABLED:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+         break;
+      case QUIT_ON_CLOSE_CONTENT_CLI:
+         strlcpy(s, "CLI", len);
+         break;
+   }
+}
+
 enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting)
 {
    if (!setting)
@@ -13780,6 +13801,22 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED
                );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.quit_on_close_content,
+               MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,
+               MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+               DEFAULT_QUIT_ON_CLOSE_CONTENT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_quit_on_close_content;
+         menu_settings_list_current_add_range(list, list_info, 0, QUIT_ON_CLOSE_CONTENT_LAST-1, 1, true, true);
 
          CONFIG_BOOL(
                list, list_info,

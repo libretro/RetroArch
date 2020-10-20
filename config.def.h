@@ -559,6 +559,8 @@ static const bool menu_savestate_resume     = false;
 
 #define DEFAULT_MENU_INSERT_DISK_RESUME true
 
+#define DEFAULT_QUIT_ON_CLOSE_CONTENT QUIT_ON_CLOSE_CONTENT_DISABLED
+
 static const bool content_show_settings     = true;
 static const bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER
