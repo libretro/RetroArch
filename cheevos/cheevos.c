@@ -65,6 +65,7 @@
 #include "../msg_hash.h"
 #include "../retroarch.h"
 #include "../core.h"
+#include "../core_option_manager.h"
 #include "../version.h"
 
 #include "../frontend/frontend_driver.h"
@@ -1429,6 +1430,11 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
       /* activate hardcore */
       locals->hardcore_active = true;
 
+      /* if one or more invalid settings is enabled, abort*/
+      rcheevos_validate_config_settings();
+      if (!locals->hardcore_active)
+         return;
+
       if (locals->loaded)
       {
          const char* msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
@@ -1497,6 +1503,140 @@ void rcheevos_hardcore_enabled_changed(void)
 
       /* update leaderboard state flags */
       rcheevos_leaderboards_enabled_changed();
+   }
+}
+
+typedef struct rc_disallowed_setting_t
+{
+   const char* setting;
+   const char* value;
+} rc_disallowed_setting_t;
+
+typedef struct rc_disallowed_core_settings_t
+{
+   const char* library_name;
+   const rc_disallowed_setting_t* disallowed_settings;
+} rc_disallowed_core_settings_t;
+
+static const rc_disallowed_setting_t _rc_disallowed_dolphin_settings[] = {
+   { "dolphin_cheats_enabled", "enabled" },
+   { NULL, NULL }
+};
+
+static const rc_disallowed_setting_t _rc_disallowed_ecwolf_settings[] = {
+   { "ecwolf-invulnerability", "enabled" },
+   { NULL, NULL }
+};
+
+static const rc_disallowed_setting_t _rc_disallowed_fbneo_settings[] = {
+   { "fbneo-allow-patched-romsets", "enabled" },
+   { "fbneo-cheat-*", "!Disabled" },
+   { NULL, NULL }
+};
+
+static const rc_disallowed_setting_t _rc_disallowed_gpgx_settings[] = {
+   { "genesis_plus_gx_lock_on", "action replay (pro)" },
+   { "genesis_plus_gx_lock_on", "game genie" },
+   { NULL, NULL }
+};
+
+static const rc_disallowed_setting_t _rc_disallowed_ppsspp_settings[] = {
+   { "ppsspp_cheats", "enabled" },
+   { NULL, NULL }
+};
+
+static const rc_disallowed_core_settings_t rc_disallowed_core_settings[] = {
+   { "dolphin-emu", _rc_disallowed_dolphin_settings },
+   { "ecwolf", _rc_disallowed_ecwolf_settings },
+   { "FinalBurn Neo", _rc_disallowed_fbneo_settings },
+   { "Genesis Plus GX", _rc_disallowed_gpgx_settings },
+   { "PPSSPP", _rc_disallowed_ppsspp_settings },
+   { NULL, NULL }
+};
+
+static int rcheevos_match_value(const char* val, const char* match)
+{
+   if (*match == '!')
+      return !string_is_equal_case_insensitive(val, &match[1]);
+
+   return string_is_equal_case_insensitive(val, match);
+}
+
+void rcheevos_validate_config_settings(void)
+{
+   const rc_disallowed_core_settings_t* core_filter = rc_disallowed_core_settings;
+   struct retro_system_info* system = runloop_get_libretro_system_info();
+   if (!system->library_name || !rcheevos_hardcore_active())
+      return;
+
+   while (core_filter->library_name)
+   {
+      if (string_is_equal(core_filter->library_name, system->library_name))
+      {
+         core_option_manager_t* coreopts = NULL;
+
+         if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+         {
+            const rc_disallowed_setting_t* disallowed_setting = core_filter->disallowed_settings;
+            const char* key;
+            const char* val;
+            int i;
+            int allowed = 1;
+            size_t key_len;
+
+            for (; disallowed_setting->setting; ++disallowed_setting)
+            {
+               key = disallowed_setting->setting;
+               key_len = strlen(key);
+               if (key[key_len - 1] == '*')
+               {
+                  for (i = 0; i < coreopts->size; i++)
+                  {
+                     if (string_starts_with_size(coreopts->opts[i].key, key, key_len - 1))
+                     {
+                        val = core_option_manager_get_val(coreopts, i);
+                        if (rcheevos_match_value(val, disallowed_setting->value))
+                        {
+                           key = coreopts->opts[i].key;
+                           allowed = 0;
+                           break;
+                        }
+                     }
+                  }
+               }
+               else
+               {
+                  for (i = 0; i < coreopts->size; i++)
+                  {
+                     if (string_is_equal(coreopts->opts[i].key, key))
+                     {
+                        val = core_option_manager_get_val(coreopts, i);
+                        if (rcheevos_match_value(val, disallowed_setting->value))
+                        {
+                           allowed = 0;
+                           break;
+                        }
+                     }
+                  }
+               }
+            }
+
+            if (!allowed)
+            {
+               char buffer[256];
+               snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
+               CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
+               rcheevos_pause_hardcore();
+
+               runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            }
+         }
+
+         break;
+      }
+
+      ++core_filter;
    }
 }
 
@@ -2417,6 +2557,7 @@ bool rcheevos_load(const void *data)
 
    /* reset hardcore mode and leaderboard settings based on configs */
    rcheevos_hardcore_enabled_changed();
+   rcheevos_validate_config_settings();
    rcheevos_leaderboards_enabled_changed();
 
    coro = (rcheevos_coro_t*)calloc(1, sizeof(*coro));

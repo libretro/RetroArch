@@ -18511,7 +18511,7 @@ bool core_option_manager_get_visible(core_option_manager_t *opt,
 void core_option_manager_set_val(core_option_manager_t *opt,
       size_t idx, size_t val_idx)
 {
-   struct core_option *option= NULL;
+   struct core_option *option = NULL;
 
    if (!opt)
       return;
@@ -18522,6 +18522,24 @@ void core_option_manager_set_val(core_option_manager_t *opt,
    option->index = val_idx % option->vals->size;
 
    opt->updated  = true;
+   rcheevos_validate_config_settings();
+}
+
+static void core_option_manager_adjust_val(core_option_manager_t* opt,
+   size_t idx, int adjustment)
+{
+   struct core_option* option = NULL;
+
+   if (!opt)
+      return;
+   if (idx >= opt->size)
+      return;
+
+   option = (struct core_option*)&opt->opts[idx];
+   option->index = (option->index + option->vals->size + adjustment) % option->vals->size;
+
+   opt->updated = true;
+   rcheevos_validate_config_settings();
 }
 
 /**
@@ -18540,6 +18558,8 @@ void core_option_manager_set_default(core_option_manager_t *opt, size_t idx)
 
    opt->opts[idx].index = opt->opts[idx].default_index;
    opt->updated         = true;
+
+   rcheevos_validate_config_settings();
 }
 
 static struct retro_core_option_definition *core_option_manager_get_definitions(
@@ -38099,20 +38119,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
           * Options wrap around.
           */
          {
-            struct core_option *option        = NULL;
-            unsigned              *idx        = (unsigned*)data;
+            unsigned *idx = (unsigned*)data;
             if (!idx || !p_rarch->runloop_core_options)
                return false;
-            option                            = (struct core_option*)
-               &p_rarch->runloop_core_options->opts[*idx];
-
-            if (option)
-            {
-               option->index                  =
-                  (option->index + option->vals->size - 1) %
-                  option->vals->size;
-               p_rarch->runloop_core_options->updated  = true;
-            }
+            core_option_manager_adjust_val(p_rarch->runloop_core_options, *idx, -1);
          }
          break;
       case RARCH_CTL_CORE_OPTION_NEXT:
@@ -38121,21 +38131,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
           * Options wrap around.
           */
          {
-            struct core_option *option       = NULL;
-            unsigned *idx                    = (unsigned*)data;
-
+            unsigned* idx = (unsigned*)data;
             if (!idx || !p_rarch->runloop_core_options)
                return false;
-
-            option                           =
-               (struct core_option*)&p_rarch->runloop_core_options->opts[*idx];
-
-            if (option)
-            {
-               option->index                          =
-                  (option->index + 1) % option->vals->size;
-               p_rarch->runloop_core_options->updated = true;
-            }
+            core_option_manager_adjust_val(p_rarch->runloop_core_options, *idx, 1);
          }
          break;
 
