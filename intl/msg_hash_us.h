@@ -3852,6 +3852,14 @@ MSG_HASH(
    "Automatically close the menu and resume content after inserting or loading a new disc."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "Quit on Close Content"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "Automatically quit RetroArch when closing content. 'CLI' quits only when content is launched via command line."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Mouse Support"
    )
