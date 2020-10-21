@@ -8065,7 +8065,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].offset_by     = -1;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_state_slot;
-         menu_settings_list_current_add_range(list, list_info, -1, 0, 1, true, false);
+         menu_settings_list_current_add_range(list, list_info, -1, 999, 1, true, true);
 
          CONFIG_ACTION(
                list, list_info,
