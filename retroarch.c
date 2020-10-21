@@ -16308,11 +16308,12 @@ bool command_event(enum event_command cmd, void *data)
 
             if (is_inited)
             {
+#ifdef HAVE_MENU
                if (  (settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_CLI && global->launched_from_cli)
                    || settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_ENABLED
                   )
                   command_event(CMD_EVENT_QUIT, NULL);
-
+#endif
                if (!task_push_start_dummy_core(&content_info))
                   return false;
             }
