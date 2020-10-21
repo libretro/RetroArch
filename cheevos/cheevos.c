@@ -1530,13 +1530,12 @@ static const rc_disallowed_setting_t _rc_disallowed_ecwolf_settings[] = {
 
 static const rc_disallowed_setting_t _rc_disallowed_fbneo_settings[] = {
    { "fbneo-allow-patched-romsets", "enabled" },
-   { "fbneo-cheat-*", "!Disabled" },
+   { "fbneo-cheat-*", "!,Disabled,0 - Disabled" },
    { NULL, NULL }
 };
 
 static const rc_disallowed_setting_t _rc_disallowed_gpgx_settings[] = {
-   { "genesis_plus_gx_lock_on", "action replay (pro)" },
-   { "genesis_plus_gx_lock_on", "game genie" },
+   { "genesis_plus_gx_lock_on", ",action replay (pro),game genie" },
    { NULL, NULL }
 };
 
@@ -1556,9 +1555,43 @@ static const rc_disallowed_core_settings_t rc_disallowed_core_settings[] = {
 
 static int rcheevos_match_value(const char* val, const char* match)
 {
-   if (*match == '!')
-      return !string_is_equal_case_insensitive(val, &match[1]);
+   /* if value starts with a comma, it's a CSV list of potential matches */
+   if (*match == ',')
+   {
+      do
+      {
+         const char* ptr = ++match;
+         int size;
 
+         while (*match && *match != ',')
+            ++match;
+
+         size = match - ptr;
+         if (val[size] == '\0')
+         {
+            if (string_is_equal_fast(ptr, val, size))
+            {
+               return true;
+            }
+            else
+            {
+               char buffer[128];
+               memcpy(buffer, ptr, size);
+               buffer[size] = '\0';
+               if (string_is_equal_case_insensitive(buffer, val))
+                  return true;
+            }
+         }
+      } while (*match == ',');
+
+      return false;
+   }
+
+   /* a leading exclamation point means the provided value(s) are not forbidden (are allowed) */
+   if (*match == '!')
+      return !rcheevos_match_value(val, &match[1]);
+
+   /* just a single value, attempt to match it */
    return string_is_equal_case_insensitive(val, match);
 }
 
@@ -1619,17 +1652,19 @@ void rcheevos_validate_config_settings(void)
                      }
                   }
                }
-            }
 
-            if (!allowed)
-            {
-               char buffer[256];
-               snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
-               CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
-               rcheevos_pause_hardcore();
+               if (!allowed)
+               {
+                  char buffer[256];
+                  snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
+                  CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
+                  rcheevos_pause_hardcore();
 
-               runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+                  runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+
+                  break;
+               }
             }
          }
 
