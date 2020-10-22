@@ -13721,41 +13721,27 @@ static void handle_translation_cb(
                curr_state = 0;
             }
             else if (string_is_equal(found_string, "image"))
-            {
                curr_state = 1;
-               free(found_string);
-            }
             else if (string_is_equal(found_string, "sound"))
-            {
                curr_state = 2;
-               free(found_string);
-            }
             else if (string_is_equal(found_string, "text"))
-            {
                curr_state = 3;
-               free(found_string);
-            }
             else if (string_is_equal(found_string, "error"))
-            {
                curr_state = 4;
-               free(found_string);
-            }
             else if (string_is_equal(found_string, "auto"))
-            {
                curr_state = 5;
-               free(found_string);
-            }
             else if (string_is_equal(found_string, "press"))
-            {
                curr_state = 6;
-               free(found_string);
-            }
             else
-            {
-              curr_state = 0;
-              free(found_string);
-            }
+               curr_state = 0;
+
             start = -1;
+
+            if (found_string)
+            {
+               free(found_string);
+               found_string = NULL;
+            }
          }
       }
       i++;
@@ -13766,8 +13752,13 @@ static void handle_translation_cb(
 #ifdef DEBUG
       RARCH_LOG("No text found...\n");
 #endif
-      if (!text_string)
-         text_string = (char*)malloc(15);
+      if (text_string)
+      {
+         free(text_string);
+         text_string = NULL;
+      }
+
+      text_string = (char*)malloc(15);
 
       strlcpy(text_string, err_string, 15);
 #ifdef HAVE_GFX_WIDGETS
@@ -13989,15 +13980,6 @@ static void handle_translation_cb(
    if (raw_sound_data)
    {
       audio_mixer_stream_params_t params;
-      nbio_buf_t *task_data       = (nbio_buf_t*)malloc(sizeof(nbio_buf_t));
-      nbio_buf_t *img             = (nbio_buf_t*)task_data;
-
-      task_data->buf              = raw_sound_data;
-      task_data->bufsize          = new_sound_size;
-      task_data->path             = NULL;
-
-      if (!img)
-         return;
 
       params.volume               = 1.0f;
       params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_MANUAL; /* user->slot_selection_type; */
@@ -14005,18 +13987,18 @@ static void handle_translation_cb(
       params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM; /* user->stream_type; */
       params.type                 = AUDIO_MIXER_TYPE_WAV;
       params.state                = AUDIO_STREAM_STATE_PLAYING;
-      params.buf                  = img->buf;
-      params.bufsize              = img->bufsize;
+      params.buf                  = raw_sound_data;
+      params.bufsize              = new_sound_size;
       params.cb                   = NULL;
       params.basename             = NULL;
 
       audio_driver_mixer_add_stream(&params);
 
-      if (img->path)
-         free(img->path);
-      if (params.basename)
-         free(params.basename);
-      free(img);
+      if (raw_sound_data)
+      {
+         free(raw_sound_data);
+         raw_sound_data = NULL;
+      }
    }
 #endif
 
@@ -14127,6 +14109,8 @@ finish:
       free(err_string);
    if (text_string)
       free(text_string);
+   if (found_string)
+      free(found_string);
    if (raw_output_data)
       free(raw_output_data);
 
@@ -14537,10 +14521,10 @@ static bool run_translation_service(
          if (rf3[i] == '\"')
             rf3[i] = ' ';
       }
-      json_length = 11 + out_length + 15 + system_label_len;
+      json_length = 11 + out_length + 15 + system_label_len + 2;
    }
    else
-      json_length = 11 + out_length + 1;
+      json_length = 11 + out_length + 2;
 
    state_son        = (char*)malloc(state_son_length);
 
@@ -14596,6 +14580,8 @@ static bool run_translation_service(
    if (!json_buffer)
       goto finish;
 
+   json_buffer[json_length - 1] = '\0';
+
    /* Image data */
    memcpy(json_buffer, (const void*)rf1, 11 * sizeof(uint8_t));
    memcpy(json_buffer + 11, bmp64_buffer, out_length * sizeof(uint8_t));
@@ -14611,6 +14597,7 @@ static bool run_translation_service(
    if (rf3)
    {
       size_t system_label_len = strlen(system_label);
+
       memcpy(json_buffer + curr_length,
             (const void*)rf3,
             (15 + system_label_len) * sizeof(uint8_t));
@@ -31041,6 +31028,12 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    {
       case AUDIO_MIXER_TYPE_WAV:
          handle = audio_mixer_load_wav(buf, (int32_t)params->bufsize);
+         /* WAV is a special case - input buffer is not
+          * free()'d when sound playback is complete (it is
+          * converted to a PCM buffer, which is free()'d instead),
+          * so have to do it here */
+         free(buf);
+         buf = NULL;
          break;
       case AUDIO_MIXER_TYPE_OGG:
          handle = audio_mixer_load_ogg(buf, (int32_t)params->bufsize);

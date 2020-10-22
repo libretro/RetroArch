@@ -95,7 +95,8 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
 
          rwav->subchunk2size = data[40] | data[41] << 8 | data[42] << 16 | data[43] << 24;
 
-         if (rwav->subchunk2size > iter->size - 44)
+         if ((rwav->subchunk2size < 1) ||
+             (rwav->subchunk2size > iter->size - 44))
             return RWAV_ITERATE_ERROR; /* too few bytes in buffer */
 
          samples = malloc(rwav->subchunk2size);

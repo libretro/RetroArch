@@ -2631,7 +2631,7 @@ static bool accessibility_speak_unix(int speed,
    {
       /* check if old pid is running */
       if (is_narrator_running_unix())
-         return true;
+         goto end;
    }
 
    if (speak_pid > 0)
@@ -2665,6 +2665,12 @@ static bool accessibility_speak_unix(int speed,
       cmd[3] = (char*)speak_text;
       execvp("espeak", cmd);
    }
+
+end:
+   if (voice_out)
+      free(voice_out);
+   if (speed_out)
+      free(speed_out);
    return true;
 }
 #endif
