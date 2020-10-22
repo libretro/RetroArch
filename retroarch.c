@@ -2549,6 +2549,7 @@ struct rarch_state
    bool input_driver_block_hotkey;
    bool input_driver_block_libretro_input;
    bool input_driver_nonblock_state;
+   bool input_driver_grab_mouse_state;
 
 #ifdef HAVE_MENU
    bool menu_input_dialog_keyboard_display;
@@ -15794,6 +15795,26 @@ static bool command_event_resize_windowed_scale(struct rarch_state *p_rarch)
    return true;
 }
 
+static bool input_driver_grab_mouse(struct rarch_state *p_rarch)
+{
+   if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
+      return false;
+
+   p_rarch->current_input->grab_mouse(p_rarch->current_input_data, true);
+   p_rarch->input_driver_grab_mouse_state = true;
+   return true;
+}
+
+static bool input_driver_ungrab_mouse(struct rarch_state *p_rarch)
+{
+   if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
+      return false;
+
+   p_rarch->current_input->grab_mouse(p_rarch->current_input_data, false);
+   p_rarch->input_driver_grab_mouse_state = false;
+   return true;
+}
+
 static void command_event_reinit(struct rarch_state *p_rarch,
       const int flags)
 {
@@ -15822,7 +15843,10 @@ static void command_event_reinit(struct rarch_state *p_rarch,
 #ifdef HAVE_MENU
    p_rarch->dispgfx.framebuf_dirty = true;
    if (video_fullscreen)
+   {
+      input_driver_grab_mouse(p_rarch);
       video_driver_hide_mouse();
+   }
    if (p_rarch->menu_driver_alive && p_rarch->current_video->set_nonblock_state)
       p_rarch->current_video->set_nonblock_state(
             p_rarch->video_driver_data, false,
@@ -15931,24 +15955,6 @@ static bool libretro_get_system_info(
       const char *path,
       struct retro_system_info *info,
       bool *load_no_content);
-
-static bool input_driver_grab_mouse(struct rarch_state *p_rarch)
-{
-   if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
-      return false;
-
-   p_rarch->current_input->grab_mouse(p_rarch->current_input_data, true);
-   return true;
-}
-
-static bool input_driver_ungrab_mouse(struct rarch_state *p_rarch)
-{
-   if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
-      return false;
-
-   p_rarch->current_input->grab_mouse(p_rarch->current_input_data, false);
-   return true;
-}
 
 #ifdef HAVE_RUNAHEAD
 static void runahead_clear_variables(struct rarch_state *p_rarch)
@@ -17164,9 +17170,15 @@ bool command_event(enum event_command cmd, void *data)
              * reinitialize to be safe. */
             command_event(CMD_EVENT_REINIT, NULL);
             if (video_fullscreen)
+            {
+               input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
+            }
             else
+            {
+               input_driver_ungrab_mouse(p_rarch);
                video_driver_show_mouse();
+            }
 
             p_rarch->rarch_is_switching_display_mode = false;
 
@@ -17328,7 +17340,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GRAB_MOUSE_TOGGLE:
          {
             bool ret = false;
-            static bool grab_mouse_state  = false;
+            bool grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
 
             grab_mouse_state = !grab_mouse_state;
 
@@ -17340,9 +17352,9 @@ bool command_event(enum event_command cmd, void *data)
             if (!ret)
                return false;
 
-            RARCH_LOG("%s: %s.\n",
+            RARCH_LOG("%s => %s\n",
                   msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
-                  grab_mouse_state ? "yes" : "no");
+                  grab_mouse_state ? "on" : "off");
 
             if (grab_mouse_state)
                video_driver_hide_mouse();
@@ -17385,9 +17397,11 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
-               input_driver_ungrab_mouse(p_rarch);
                if (!video_fullscreen)
+               {
+                  input_driver_ungrab_mouse(p_rarch);
                   video_driver_show_mouse();
+               }
                p_rarch->input_driver_block_hotkey               = false;
                p_rarch->keyboard_mapping_blocked                = false;
                if (mode != -1)
@@ -19983,7 +19997,10 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
             /* Hide mouse cursor in fullscreen mode */
             if (video_fullscreen)
+            {
+               input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
+            }
          }
 
          break;
@@ -20146,7 +20163,10 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             /* Hide mouse cursor in fullscreen after
              * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
             if (video_fullscreen)
+            {
+               input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
+            }
 
             return true;
          }
@@ -32558,6 +32578,12 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
+
+   if (video.fullscreen)
+   {
+      input_driver_grab_mouse(p_rarch);
+      video_driver_hide_mouse();
+   }
 
    return true;
 
