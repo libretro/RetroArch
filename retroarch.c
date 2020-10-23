@@ -18537,7 +18537,10 @@ void core_option_manager_set_val(core_option_manager_t *opt,
    option->index = val_idx % option->vals->size;
 
    opt->updated  = true;
+
+#ifdef HAVE_CHEEVOS
    rcheevos_validate_config_settings();
+#endif
 }
 
 static void core_option_manager_adjust_val(core_option_manager_t* opt,
@@ -18554,7 +18557,10 @@ static void core_option_manager_adjust_val(core_option_manager_t* opt,
    option->index = (option->index + option->vals->size + adjustment) % option->vals->size;
 
    opt->updated = true;
+
+#ifdef HAVE_CHEEVOS
    rcheevos_validate_config_settings();
+#endif
 }
 
 /**
@@ -18574,7 +18580,9 @@ void core_option_manager_set_default(core_option_manager_t *opt, size_t idx)
    opt->opts[idx].index = opt->opts[idx].default_index;
    opt->updated         = true;
 
+#ifdef HAVE_CHEEVOS
    rcheevos_validate_config_settings();
+#endif
 }
 
 static struct retro_core_option_definition *core_option_manager_get_definitions(
