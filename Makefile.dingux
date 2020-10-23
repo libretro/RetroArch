@@ -76,7 +76,8 @@ OPK_NAME = retroarch.opk
 
 OBJ :=
 LINK := $(CXX)
-DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -ffast-math -fomit-frame-pointer -fdata-sections
+DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -ffast-math -fomit-frame-pointer
+DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DDINGUX=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
 DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE
@@ -84,7 +85,7 @@ LIBS := -ldl -lz -lrt -lcrypto -lssl -ludev -pthread
 CFLAGS :=
 CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS :=
-LDFLAGS := -flto
+LDFLAGS := -flto -Wl,--gc-sections
 INCLUDE_DIRS = -I/opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/include
 LIBRARY_DIRS = -L/opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/lib
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
