@@ -3081,10 +3081,10 @@ static unsigned menu_displaylist_parse_playlists(
 
    if (!horizontal)
    {
-      const char *menu_ident = menu_driver_ident();
       bool show_add_content  = false;
-
 #if defined(HAVE_XMB) || defined(HAVE_OZONE)
+      const char *menu_ident = menu_driver_ident();
+
       if (string_is_equal(menu_ident, "xmb") ||
           string_is_equal(menu_ident, "ozone"))
          show_add_content = settings->bools.menu_content_show_add;
@@ -11495,8 +11495,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             settings_t      *settings      = config_get_ptr();
             rarch_system_info_t *sys_info  = runloop_get_system_info();
-            const char *menu_ident         = menu_driver_ident();
             bool show_add_content          = false;
+#if defined(HAVE_RGUI) || defined(HAVE_MATERIALUI) || defined(HAVE_OZONE) || defined(HAVE_XMB)
+            const char *menu_ident         = menu_driver_ident();
+#endif
 
             if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
@@ -11569,6 +11571,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 #endif
 
+#if defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
             if ((string_is_equal(menu_ident, "rgui") ||
                  string_is_equal(menu_ident, "glui")) &&
                   settings->bools.menu_content_show_playlists)
@@ -11578,6 +11581,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_PLAYLISTS_TAB,
                      MENU_SETTING_ACTION, 0, 0))
                   count++;
+#endif
 
 #if defined(HAVE_XMB) || defined(HAVE_OZONE)
             if (string_is_equal(menu_ident, "xmb") ||
