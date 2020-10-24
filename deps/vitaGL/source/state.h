@@ -161,7 +161,7 @@ extern GLfloat pol_units; // Current units for glPolygonOffset
 
 // Texture Units
 extern texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
-extern texture textures[TEXTURES_NUM]; // Available texture slots
+extern texture vgl_textures[TEXTURES_NUM]; // Available texture slots
 extern int8_t server_texture_unit; // Current in use server side texture unit
 extern int8_t client_texture_unit; // Current in use client side texture unit
 extern palette *color_table; // Current in-use color table
