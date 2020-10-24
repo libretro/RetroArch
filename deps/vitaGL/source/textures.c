@@ -24,7 +24,7 @@
 #include "shared.h"
 
 texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
-texture textures[TEXTURES_NUM]; // Available texture slots
+texture vgl_textures[TEXTURES_NUM]; // Available texture slots
 palette *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
 
@@ -48,9 +48,9 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	// Reserving a texture and returning its id if available
 	int i, j = 0;
 	for (i = 0; i < TEXTURES_NUM; i++) {
-		if (!(textures[i].used)) {
+		if (!(vgl_textures[i].used)) {
 			res[j++] = i;
-			textures[i].used = 1;
+			vgl_textures[i].used = 1;
 		}
 		if (j >= n)
 			break;
@@ -83,12 +83,12 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	// Aliasing to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 
-	// Deallocating given textures and invalidating used texture ids
+	// Deallocating given vgl_textures and invalidating used texture ids
 	int j;
 	for (j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
-		textures[i].used = 0;
-		gpu_free_texture(&textures[i]);
+		vgl_textures[i].used = 0;
+		gpu_free_texture(&vgl_textures[i]);
 	}
 }
 
@@ -96,7 +96,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &vgl_textures[texture2d_idx];
 
 	SceGxmTextureFormat tex_format;
 	uint8_t data_bpp = 0;
@@ -315,7 +315,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *target_texture = &textures[texture2d_idx];
+	texture *target_texture = &vgl_textures[texture2d_idx];
 
 	// Calculating implicit texture stride and start address of requested texture modification
 	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
@@ -497,7 +497,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &vgl_textures[texture2d_idx];
 
 	SceGxmTextureFormat tex_format;
 
@@ -604,7 +604,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &vgl_textures[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
@@ -714,7 +714,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &vgl_textures[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
@@ -805,7 +805,7 @@ void glGenerateMipmap(GLenum target) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &vgl_textures[texture2d_idx];
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if current texture is valid
@@ -926,7 +926,7 @@ void *vglGetTexDataPointer(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &vgl_textures[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
@@ -944,7 +944,7 @@ SceGxmTexture *vglGetGxmTexture(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &vgl_textures[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
