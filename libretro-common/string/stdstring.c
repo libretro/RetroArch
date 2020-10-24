@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <ctype.h>
+#include <string.h>
 
 #include <string/stdstring.h>
 #include <encodings/utf.h>
