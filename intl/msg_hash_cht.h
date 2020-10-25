@@ -1292,6 +1292,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    "在邊緣加入輕量的模糊以降低鋸齒狀邊緣。這個選項只會輕微的影響效能。"
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "自動延遲渲染"
@@ -1414,10 +1416,6 @@ MSG_HASH(
    "以全螢幕模式開始"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "由全螢幕模式啟動。能夠在運作模式下變更。能夠由命令提示自字元中一個開關覆寫設定。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "無邊框視窗全螢幕模式"
    )
@@ -1465,10 +1463,6 @@ MSG_HASH(
    "記住視窗位置與大小"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "記憶視窗的大小及位置，本項設定優先於視窗縮放選項"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "視窗寬度"
    )
@@ -1507,6 +1501,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "如果長寬比設定為「自訂長寬比」，畫面比例 (長/寬) 可以為浮點數。"
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "自定義畫面X"
@@ -2088,10 +2084,6 @@ MSG_HASH(
    "螢幕鍵盤(切換)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "螢幕鍵盤開關 開啟/關閉"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "顯示FPS(切換)"
    )
@@ -2482,16 +2474,8 @@ MSG_HASH(
    "影像佈局"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "調整影像佈局"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "螢幕通知"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "調整螢幕通知"
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -3078,10 +3062,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
    "密碼"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "輸入Retro Achievements 的密碼."
-   )
 
 /* Settings > User > Accounts > YouTube */
 
@@ -3508,10 +3488,6 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
-   "按下左鍵或右鍵以改變數值"
-   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 

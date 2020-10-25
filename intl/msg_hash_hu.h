@@ -256,6 +256,8 @@ MSG_HASH(
 
 /* Settings > Video */
 
+#if defined(DINGUX)
+#endif
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -271,6 +273,8 @@ MSG_HASH(
 
 /* Settings > Video > Scaling */
 
+#if defined(DINGUX)
+#endif
 
 /* Settings > Video > Synchronization */
 

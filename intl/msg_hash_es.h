@@ -1004,7 +1004,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   "Núcleo"
+   "Núcleos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
@@ -1316,6 +1316,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    "Aplica un ligero desenfoque a la imagen para suavizar los bordes de los píxeles. Esta opción apenas afecta al rendimiento."
    )
+#if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Interpolación de imagen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Especifica el método de interpolación de imagen usado para escalar contenidos mediante la IPU interna. Se recomienda usar Bicúbica o Bilineal si se aplican filtros de vídeo procesados por la CPU. Esta opción no afecta al rendimiento."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "Bicúbica"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Bilineal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Vecino más cercano"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "Retrasar carga automática de shaders"
@@ -1331,6 +1353,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "Aplica un filtro de vídeo procesado por la CPU.\nNOTA: Puede afectar en gran medida al rendimiento. Algunos filtros de vídeo solo funcionan con núcleos que utilicen 16 o 32 bits de color."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Quitar filtro de vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Descarga cualquier filtro de vídeo por CPU que esté activo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
@@ -1543,6 +1573,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "Indica el valor en coma flotante (ancho/alto) de la relación de aspecto si se ha elegido la opción «Personalizado»."
    )
+#if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Mantener relación de aspecto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Preserva las relaciones de aspecto de píxeles 1:1 al escalar contenidos mediante la IPU interna. Si se desactiva esta opción, se estirarán las imágenes para que ocupen la totalidad de la pantalla."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "Relación de aspecto personalizada (posición X)"
@@ -1732,6 +1772,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    "Plugin de audio DSP que procesa el audio antes de enviarlo al controlador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "Quitar plugin DSP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "Descarga cualquier plugin de audio DSP que esté activo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -1968,7 +2016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-   "Entrada auxiliar de sensores"
+   "Entrada de sensores auxiliares"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
@@ -3082,7 +3130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
-   "Cada vez que aumentes o disminuyas el tamaño del búfer de rebobinado, cambiará en función de esta cantidad."
+   "Cada vez que aumentes o disminuyas el valor del tamaño del búfer de rebobinado, cambiará en función de esta cantidad."
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -3336,7 +3384,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
-   "Compensa la superposición en el eje horizontal al utilizar una orientación de pantalla horizontal. Los valores positivos desplazarán la superposición hacia la derecha, y los negativos, hacia la izquierda."
+   "Compensa la superposición en el eje horizontal al utilizar una orientación de pantalla horizontal. Los valores positivos desplazarán la superposición hacia la derecha y los negativos hacia la izquierda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
@@ -3344,7 +3392,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "Compensa la superposición en el eje vertical al utilizar una orientación de pantalla horizontal. Los valores positivos desplazarán la superposición hacia arriba, y los negativos, hacia abajo."
+   "Compensa la superposición en el eje vertical al utilizar una orientación de pantalla horizontal. Los valores positivos desplazarán la superposición hacia arriba y los negativos hacia abajo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
@@ -3384,7 +3432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
-   "Compensa la superposición en el eje horizontal al utilizar una orientación de pantalla vertical. Los valores positivos desplazarán la superposición hacia la derecha, y los negativos, hacia la izquierda."
+   "Compensa la superposición en el eje horizontal al utilizar una orientación de pantalla vertical. Los valores positivos desplazarán la superposición hacia la derecha y los negativos hacia la izquierda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
@@ -3392,7 +3440,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
-   "Compensa la superposición en el eje vertical al utilizar una orientación de pantalla vertical. Los valores positivos desplazarán la superposición hacia arriba, y los negativos, hacia abajo."
+   "Compensa la superposición en el eje vertical al utilizar una orientación de pantalla vertical. Los valores positivos desplazarán la superposición hacia arriba y los negativos hacia abajo."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -3750,6 +3798,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
    "Cierra el menú y reanuda el contenido automáticamente tras introducir o cargar un disco nuevo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "Salir al cerrar un contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "Cierra RetroArch automáticamente en cuanto se cierre un contenido. Al seleccionar «CLI», el programa se cerrará solo cuando el contenido haya sido iniciado mediante línea de comandos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
@@ -4235,7 +4291,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "Muestra las opciones de superposición."
+   "Muestra las opciones de superposiciones."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
@@ -4357,6 +4413,14 @@ MSG_HASH(
    "Muestra la opción «Registros» en la pantalla de Ajustes."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
+   "Mostrar Explorador de archivos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
+   "Muestra la opción «Explorador de archivos» en la pantalla de Ajustes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
    "Mostrar Regulación de fotogramas"
    )
@@ -4395,6 +4459,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
    "Muestra la opción «Servicio de IA» en la pantalla de Ajustes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
+   "Mostrar Accesibilidad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   "Muestra la opción «Accesibilidad» en la pantalla de Ajustes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
@@ -5165,7 +5237,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Desbloquea logros en los juegos clásicos. Para más información, visita http://retroachievements.org."
+   "Desbloquea logros en los juegos clásicos. Para más información, visita https://retroachievements.org."
    )
 
 /* Settings > User > Accounts > RetroAchievements */
@@ -5184,7 +5256,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "Introduce la contraseña de tu cuenta de RetroAchievements."
+   "Introduce la contraseña de tu cuenta de RetroAchievements. Longitud máxima: 255 caracteres."
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -5965,6 +6037,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "Logros"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
+   "Ver los logros y los ajustes relacionados."
+   )
 
 /* Quick Menu > Options */
 
@@ -6592,7 +6668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pausa los logros en esta sesión (Se activarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
+   "Pausa los logros en esta sesión (se activarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -6600,7 +6676,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Reanuda los logros en esta sesión (Se desactivarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
+   "Reanuda los logros en esta sesión (se desactivarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
    )
 
 /* Quick Menu > Information */
@@ -7075,6 +7151,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
    "No compatible"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
+   "Solo rastreadores"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
+   "Solo notificaciones"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DONT_CARE,
    "Irrelevante"
@@ -8744,11 +8828,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
-   "Ocultar descripciones de entrada sin asignar de los núcleos"
+   "Ocultar descriptores de entrada sin asignar especificados en núcleos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
-   "Mostrar etiquetas de descripción de entrada"
+   "Mostrar etiquetas descriptoras de entrada"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
@@ -10769,6 +10853,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
    "Eliminación de núcleo desactivada, el núcleo está protegido: "
+   )
+MSG_HASH(
+   MSG_UNSUPPORTED_VIDEO_MODE,
+   "Modo de vídeo no soportado"
    )
 
 /* Lakka */

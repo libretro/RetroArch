@@ -292,6 +292,10 @@ MSG_HASH(
    "Anova todos os núcleos instalados á última versión dispoñible."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Mudar os núcleos pola versión da Play Store"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Anovador de miniaturas"
    )
@@ -871,6 +875,14 @@ MSG_HASH(
    "Cambiar os controladores empregados polo sistema."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   "Latencia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   "Núcleo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
    "Gravación"
    )
@@ -956,6 +968,8 @@ MSG_HASH(
 
 /* Settings > Video */
 
+#if defined(DINGUX)
+#endif
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -971,6 +985,8 @@ MSG_HASH(
 
 /* Settings > Video > Scaling */
 
+#if defined(DINGUX)
+#endif
 
 /* Settings > Video > Synchronization */
 

@@ -57,7 +57,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Pääse nopeasti kaikkiin peliin liittyviin asetuksiin."
+   "Siirry nopeasti kaikkiin peliin liittyviin asetuksiin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -1304,6 +1304,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    "Lisää kuvaan hiukan sumeutta pikseleiden reunojen pehmentämiseen. Tällä asetuksella on erittäin pieni vaikutus suorituskykyyn."
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "Automaattisen varjostimen viive"
@@ -1426,10 +1428,6 @@ MSG_HASH(
    "Käynnistä koko näytön tilassa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Käynnistää koko näytön tilassa. Voi muuttaa suorituksen aikana. Komentoriviargumentti voi ohittaa tämän"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Ikkunoitu koko näytön tila"
    )
@@ -1477,10 +1475,6 @@ MSG_HASH(
    "Muista ikkunan sijainti ja koko"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Muista ikkunan sijainti ja koko, tällä on etusija Ikkunan skaalauksen yli"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Ikkunan leveys"
    )
@@ -1519,6 +1513,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "Liukulukuarvo videon kuvasuhteeseen (leveys / korkeus), käytetään jos Kuvasuhde on 'Mukautettu kuvasuhde'."
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "Mukautettu kuvasuhde (X-sijainti)"
@@ -2170,10 +2166,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
    "Näyttönäppäimistö (päälle/pois)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Ottaa käyttöön tai poistaa käytöstä näyttönäppäimistön"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -4242,6 +4234,10 @@ MSG_HASH(
    "16:10 (keskitetty)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (keskitetty)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "POIS"
    )
@@ -5635,8 +5631,28 @@ MSG_HASH(
    "libretro-API:n versio"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Bluetooth-skannaus valmistui."
+   )
+MSG_HASH(
+   MSG_WIFI_SCAN_COMPLETE,
+   "Wi-Fi-skannaus valmistui."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Skannataan bluetooth-laitteita..."
+   )
+MSG_HASH(
+   MSG_SCANNING_WIRELESS_NETWORKS,
+   "Skannataan langattomia verkkoja..."
+   )
+MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
    "Skannataan verkkopelin isäntiä..."
+   )
+MSG_HASH(
+   MSG_PREPARING_FOR_CONTENT_SCAN,
+   "Valmistellaan sisällön skannausta..."
    )
 MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
