@@ -109,15 +109,26 @@ extern char** __system_argv;
 void __attribute__((noreturn)) __libctru_exit(int rc)
 {
    u32 tmp = 0;
+   int size = 0;
 
    if (__system_argv)
       free(__system_argv);
 
    /* Unmap the linear heap */
-   svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size, MEMOP_FREE, 0x0);
+   /* Do this 1MB at a time to avoid kernel panics, see https://github.com/LumaTeam/Luma3DS/issues/1504 */
+   while (__linear_heap_size > 0) {
+      size = __linear_heap_size < 0x100000 ? __linear_heap_size : 0x100000;
+      __linear_heap_size -= size;
+      svcControlMemory(&tmp, __linear_heap + __linear_heap_size, 0x0, size, MEMOP_FREE, 0x0);
+   }
 
    /* Unmap the application heap */
-   svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_FREE, 0x0);
+   /* Do this 1MB at a time to avoid kernel panics */
+   while (__heap_size > 0) {
+      size = __heap_size < 0x100000 ? __heap_size : 0x100000;
+      __heap_size -= size;
+      svcControlMemory(&tmp, __heapBase + __heap_size, 0x0, size, MEMOP_FREE, 0x0);
+   }
 
    if (__stack_size_extra)
       svcControlMemory(&tmp, __stack_bottom, 0x0, __stack_size_extra, MEMOP_FREE, 0x0);
