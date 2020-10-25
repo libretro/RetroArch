@@ -180,6 +180,7 @@
 #include <encodings/base64.h>
 #include <formats/rbmp.h>
 #include <formats/rpng.h>
+#include <formats/rjson.h>
 #include "translation_defines.h"
 #endif
 
@@ -13607,10 +13608,8 @@ static void handle_translation_cb(
       void *user_data, const char *error)
 {
    size_t pitch;
-   char curr;
    unsigned width, height;
    unsigned image_width, image_height;
-   char* body_copy                   = NULL;
    uint8_t* raw_output_data          = NULL;
    char* raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
@@ -13624,14 +13623,12 @@ static void handle_translation_cb(
    void* raw_image_data_alpha        = NULL;
    void* raw_sound_data              = NULL;
    int retval                        = 0;
-   int i                             = 0;
-   int start                         = -1;
-   char* found_string                = NULL;
+   rjson_t* json                     = NULL;
+   int json_current_key              = 0;
    char* err_string                  = NULL;
    char* text_string                 = NULL;
    char* auto_string                 = NULL;
    char* key_string                  = NULL;
-   int curr_state                    = 0;
    struct rarch_state *p_rarch       = &rarch_st;
    settings_t* settings              = p_rarch->configuration_settings;
    bool was_paused                   = p_rarch->runloop_paused;
@@ -13655,96 +13652,66 @@ static void handle_translation_cb(
    if (!data || error)
       goto finish;
 
-   data->data = (char*)realloc(data->data, data->len + 1);
-   if (!data->data)
+   json = rjson_open_buffer(data->data, data->len);
+   if (!json)
       goto finish;
 
-   data->data[data->len] = '\0';
-
    /* Parse JSON body for the image and sound data */
-   body_copy = strdup(data->data);
-
    for (;;)
    {
-      curr = (char)*(body_copy+i);
-      if (curr == '\0')
-          break;
-      if (curr == '\"')
+      static const char* keys[] = { "image", "sound", "text", "error", "auto", "press" };
+
+      const char* string;
+      size_t string_len;
+
+      enum rjson_type json_type = rjson_next(json);
+      if (json_type == RJSON_DONE || json_type == RJSON_ERROR) break;
+      if (json_type != RJSON_STRING) continue;
+      if (rjson_get_context_type(json) != RJSON_OBJECT) continue;
+      string = rjson_get_string(json, &string_len);
+
+      if ((rjson_get_context_count(json) & 1) == 1)
       {
-         if (start == -1)
-            start = i;
-         else
+         int i;
+         json_current_key = -1;
+         for (i = 0; i != (sizeof(keys)/sizeof(keys[0])); i++)
          {
-            size_t found_string_len;
-            found_string = (char*)malloc(i-start+1);
-            strlcpy(found_string, body_copy+start+1, i-start);
-
-            found_string_len = strlen(found_string);
-
-            if (curr_state == 1)/*image*/
+            if (string_is_equal(string, keys[i]))
             {
-               raw_image_file_data = (char*)unbase64(found_string,
-                    found_string_len,
-                    &new_image_size);
-               curr_state = 0;
-            }
-#ifdef HAVE_AUDIOMIXER
-            else if (curr_state == 2)
-            {
-               raw_sound_data = (void*)unbase64(found_string,
-                    found_string_len, &new_sound_size);
-               curr_state = 0;
-            }
-#endif
-            else if (curr_state == 3)
-            {
-               text_string = (char*)malloc(i-start+1);
-               strlcpy(text_string, body_copy+start+1, i-start);
-               curr_state = 0;
-            }
-            else if (curr_state == 4)
-            {
-               err_string = (char*)malloc(i-start+1);
-               strlcpy(err_string, body_copy+start+1, i-start);
-               curr_state = 0;
-            }
-            else if (curr_state == 5)
-            {
-               auto_string = (char*)malloc(i-start+1);
-               strlcpy(auto_string, body_copy+start+1, i-start);
-               curr_state = 0;
-            }
-            else if (curr_state == 6)
-            {
-               key_string = (char*)malloc(i-start+1);
-               strlcpy(key_string, body_copy+start+1, i-start);
-               curr_state = 0;
-            }
-            else if (string_is_equal(found_string, "image"))
-               curr_state = 1;
-            else if (string_is_equal(found_string, "sound"))
-               curr_state = 2;
-            else if (string_is_equal(found_string, "text"))
-               curr_state = 3;
-            else if (string_is_equal(found_string, "error"))
-               curr_state = 4;
-            else if (string_is_equal(found_string, "auto"))
-               curr_state = 5;
-            else if (string_is_equal(found_string, "press"))
-               curr_state = 6;
-            else
-               curr_state = 0;
-
-            start = -1;
-
-            if (found_string)
-            {
-               free(found_string);
-               found_string = NULL;
+               json_current_key = i;
+               break;
             }
          }
       }
-      i++;
+      else
+      {
+         switch (json_current_key)
+         {
+            case 0: /* image */
+               raw_image_file_data = (char*)unbase64(string,
+                    string_len, &new_image_size);
+               break;
+#ifdef HAVE_AUDIOMIXER
+            case 1: /* sound */
+               raw_sound_data = (void*)unbase64(string,
+                    string_len, &new_sound_size);
+               break;
+#endif
+            case 2: /* text */
+               text_string = strdup(string);
+               break;
+            case 3: /* error */
+               err_string = strdup(string);
+               break;
+            case 4: /* auto */
+               auto_string = strdup(string);
+               break;
+            case 5: /* press */
+               key_string = strdup(string);
+               break;
+         }
+         json_current_key = -1;
+      }
    }
 
    if (string_is_equal(err_string, "No text found."))
@@ -14095,8 +14062,8 @@ finish:
    if (user_data)
       free(user_data);
 
-   if (body_copy)
-      free(body_copy);
+   if (json)
+      rjson_free(json);
    if (raw_image_file_data)
       free(raw_image_file_data);
    if (raw_image_data_alpha)
@@ -14109,8 +14076,6 @@ finish:
       free(err_string);
    if (text_string)
       free(text_string);
-   if (found_string)
-      free(found_string);
    if (raw_output_data)
       free(raw_output_data);
 
@@ -14322,16 +14287,10 @@ static bool run_translation_service(
    uint8_t *bmp_buffer                   = NULL;
    uint64_t buffer_bytes                 = 0;
    char *bmp64_buffer                    = NULL;
-   char *json_buffer                     = NULL;
+   rjsonwriter_t* jsonwriter             = NULL;
+   const char *json_buffer               = NULL;
 
-   int out_length                        = 0;
-   int json_length                       = 0;
-   const char *rf1                       = "{\"image\": \"";
-   const char *rf2                       = "\"}\0";
-   char *rf3                             = NULL;
-   char *state_son                       = NULL;
-   int state_son_length                  = 177;
-   int curr_length                       = 0;
+   int bmp64_length                      = 0;
    bool TRANSLATE_USE_BMP                = false;
    bool use_overlay                      = false;
 
@@ -14500,120 +14459,75 @@ static bool run_translation_service(
 
    bmp64_buffer    = base64((void *)bmp_buffer,
          sizeof(uint8_t)*buffer_bytes,
-         &out_length);
+         &bmp64_length);
 
    if (!bmp64_buffer)
       goto finish;
 
+   jsonwriter = rjsonwriter_open_memory();
+   if (!jsonwriter)
+      goto finish;
+
+   rjsonwriter_add_start_object(jsonwriter);
+   rjsonwriter_add_space(jsonwriter);
+   rjsonwriter_add_string(jsonwriter, "image");
+   rjsonwriter_add_colon(jsonwriter);
+   rjsonwriter_add_space(jsonwriter);
+   rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_length);
+
    /* Form request... */
    if (system_label)
    {
-      unsigned i;
-      size_t system_label_len = strlen(system_label);
+      rjsonwriter_add_comma(jsonwriter);
+      rjsonwriter_add_space(jsonwriter);
+      rjsonwriter_add_string(jsonwriter, "label");
+      rjsonwriter_add_colon(jsonwriter);
+      rjsonwriter_add_space(jsonwriter);
+      rjsonwriter_add_string(jsonwriter, system_label);
+   }
 
-      /* include game label if provided */
-      rf3 = (char *)malloc(15 + system_label_len);
-      memcpy(rf3, ", \"label\": \"", 12*sizeof(uint8_t));
-      memcpy(rf3 + 12, system_label, system_label_len);
-      memcpy(rf3 + 12 + system_label_len, "\"}\0", 3*sizeof(uint8_t));
-      for (i = 12; i < system_label_len + 12; i++)
+   rjsonwriter_add_comma(jsonwriter);
+   rjsonwriter_add_space(jsonwriter);
+   rjsonwriter_add_string(jsonwriter, "state");
+   rjsonwriter_add_colon(jsonwriter);
+   rjsonwriter_add_space(jsonwriter);
+   rjsonwriter_add_start_object(jsonwriter);
+   rjsonwriter_add_space(jsonwriter);
+   rjsonwriter_add_string(jsonwriter, "paused");
+   rjsonwriter_add_colon(jsonwriter);
+   rjsonwriter_add_space(jsonwriter);
+   rjsonwriter_add_unsigned(jsonwriter, (paused ? 1 : 0));
+   {
+      static const char* state_labels[] = { "b", "y", "select", "start", "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3" };
+      int i;
+      for (i = 0; i != (sizeof(state_labels)/sizeof(state_labels[0])); i++)
       {
-         if (rf3[i] == '\"')
-            rf3[i] = ' ';
-      }
-      json_length = 11 + out_length + 15 + system_label_len + 2;
-   }
-   else
-      json_length = 11 + out_length + 2;
-
-   state_son        = (char*)malloc(state_son_length);
-
-   memcpy(state_son, ", \"state\": {\"paused\": 0, \"a\": 0, \"b\": 0, \"select\": 0, \"start\": 0, \"up\": 0, \"down\": 0, \"left\": 0, \"right\": 0, \"x\": 0, \"y\": 0, \"l\": 0, \"r\":0, \"l2\": 0, \"r2\": 0, \"l3\":0, \"r3\": 0}}\0",
-         state_son_length * sizeof(uint8_t));
-
-   if (paused)
-      state_son[22] = '1';
-
+         rjsonwriter_add_comma(jsonwriter);
+         rjsonwriter_add_space(jsonwriter);
+         rjsonwriter_add_string(jsonwriter, state_labels[i]);
+         rjsonwriter_add_colon(jsonwriter);
+         rjsonwriter_add_space(jsonwriter);
+         rjsonwriter_add_unsigned(jsonwriter,
 #ifdef HAVE_ACCESSIBILITY
-#ifdef HAVE_TRANSLATE
-   if (p_rarch->ai_gamepad_state[8]) /* a */
-      state_son[30] = '1';
-   if (p_rarch->ai_gamepad_state[0]) /* b */
-      state_son[38] = '1';
-   if (p_rarch->ai_gamepad_state[2]) /* select */
-      state_son[51] = '1';
-   if (p_rarch->ai_gamepad_state[3]) /* start */
-      state_son[63] = '1';
-
-   if (p_rarch->ai_gamepad_state[4]) /* up */
-      state_son[72] = '1';
-   if (p_rarch->ai_gamepad_state[5]) /* down */
-      state_son[83] = '1';
-   if (p_rarch->ai_gamepad_state[6]) /* left */
-      state_son[94] = '1';
-   if (p_rarch->ai_gamepad_state[7]) /* right */
-      state_son[106] = '1';
-
-   if (p_rarch->ai_gamepad_state[9]) /* x */
-      state_son[114] = '1';
-   if (p_rarch->ai_gamepad_state[1]) /* y */
-      state_son[122] = '1';
-   if (p_rarch->ai_gamepad_state[10]) /* l */
-      state_son[130] = '1';
-   if (p_rarch->ai_gamepad_state[11]) /* r */
-      state_son[138] = '1';
-
-   if (p_rarch->ai_gamepad_state[12]) /* l2 */
-      state_son[147] = '1';
-   if (p_rarch->ai_gamepad_state[13]) /* r2 */
-      state_son[156] = '1';
-   if (p_rarch->ai_gamepad_state[14]) /* l3 */
-      state_son[165] = '1';
-   if (p_rarch->ai_gamepad_state[15]) /* r3 */
-      state_son[174] = '1';
+               (p_rarch->ai_gamepad_state[i] ? 1 : 0)
+#else
+               0
 #endif
-#endif
+               );
+      }
+   }
+   rjsonwriter_add_space(jsonwriter);
+   rjsonwriter_add_end_object(jsonwriter);
+   rjsonwriter_add_space(jsonwriter);
+   rjsonwriter_add_end_object(jsonwriter);
 
-   json_length += state_son_length;
-
-   json_buffer = (char*)malloc(json_length);
+   json_buffer = rjsonwriter_get_memory_buffer(jsonwriter, NULL);
    if (!json_buffer)
-      goto finish;
-
-   json_buffer[json_length - 1] = '\0';
-
-   /* Image data */
-   memcpy(json_buffer, (const void*)rf1, 11 * sizeof(uint8_t));
-   memcpy(json_buffer + 11, bmp64_buffer, out_length * sizeof(uint8_t));
-   memcpy(json_buffer + 11 + out_length, "\"", 1 * sizeof(uint8_t));
-   curr_length =        11 + out_length + 1;
-
-   /* State data */
-   memcpy(json_buffer + curr_length, state_son,
-         state_son_length * sizeof(uint8_t));
-   curr_length += state_son_length;
-
-   /* System Label */
-   if (rf3)
-   {
-      size_t system_label_len = strlen(system_label);
-
-      memcpy(json_buffer + curr_length,
-            (const void*)rf3,
-            (15 + system_label_len) * sizeof(uint8_t));
-      curr_length += 15 + system_label_len;
-   }
-   else
-   {
-      memcpy(json_buffer + curr_length,
-            (const void*)rf2,
-            3 * sizeof(uint8_t));
-      curr_length += 3;
-   }
+      goto finish; /* ran out of memory */
 
 #ifdef DEBUG
    if (p_rarch->ai_service_auto != 2)
-      RARCH_LOG("Request size: %d\n", out_length);
+      RARCH_LOG("Request size: %d\n", bmp64_length);
 #endif
    {
       char separator  = '?';
@@ -14730,14 +14644,10 @@ finish:
 
    if (bmp64_buffer)
       free(bmp64_buffer);
-   if (rf3)
-      free(rf3);
    if (system_label)
       free(system_label);
-   if (json_buffer)
-      free(json_buffer);
-   if (state_son)
-      free(state_son);
+   if (jsonwriter)
+      rjsonwriter_free(jsonwriter);
    return !error;
 }
 #endif
