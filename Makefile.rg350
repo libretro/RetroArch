@@ -130,8 +130,8 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 define DESKTOP_ENTRY
 [Desktop Entry]
-Name=retroarch
-Comment=Retroarch
+Name=RetroArch
+Comment=Frontend for emulators, game engines
 Exec=retroarch
 Terminal=false
 Type=Application
