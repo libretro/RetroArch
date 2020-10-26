@@ -1303,7 +1303,7 @@ void rjsonwriter_raw(rjsonwriter_t *writer, const char *buf, int len)
       buf += add;
       if (writer->buf_num + len <= writer->buf_cap)
       {
-         memcpy(writer->buf, buf, len);
+         memcpy(writer->buf + writer->buf_num, buf, len);
          writer->buf_num += len;
       }
       else if (writer->io(buf, len, writer->user_data) != len)
