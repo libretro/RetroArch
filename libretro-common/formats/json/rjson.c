@@ -1163,8 +1163,8 @@ struct rjsonwriter
    void *user_data;
 
    const char* error_text;
-   char option_flags;
-   char decimal_sep;
+   char option_flags, decimal_sep;
+   bool buf_is_output, final_flush;
 
    char inline_buf[1024];
 };
@@ -1178,9 +1178,9 @@ rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data)
    writer->buf_num = 0;
    writer->buf_cap = sizeof(writer->inline_buf);
 
-   writer->option_flags = 0;
-   writer->decimal_sep = 0;
    writer->error_text = NULL;
+   writer->option_flags = writer->decimal_sep = 0;
+   writer->buf_is_output = writer->final_flush = false;
 
    writer->io = io;
    writer->user_data = user_data;
@@ -1208,9 +1208,53 @@ rjsonwriter_t *rjsonwriter_open_rfile(RFILE *rfile)
    return rjsonwriter_open_user(_rjsonwriter_rfile_io, rfile);
 }
 
+static int _rjsonwriter_memory_io(const void* buf, int len, void *user)
+{
+   rjsonwriter_t *writer = (rjsonwriter_t *)user;
+   bool is_append    = (buf != writer->buf);
+   bool can_realloc  = (writer->buf != writer->inline_buf);
+   int new_cap       = writer->buf_num + (is_append ? len : 0) + 512;
+   if (!writer->final_flush && (is_append || new_cap > writer->buf_cap))
+   {
+      char* new_buf = (char*)(can_realloc ? realloc(writer->buf, new_cap) : malloc(new_cap));
+      if (!new_buf) return 0;
+      if (!can_realloc) memcpy(new_buf, writer->buf, writer->buf_num);
+      if (is_append)
+      {
+         memcpy(new_buf + writer->buf_num, buf, len);
+         writer->buf_num += len;
+      }
+      writer->buf = new_buf;
+      writer->buf_cap = new_cap;
+   }
+   return len;
+}
+
+rjsonwriter_t *rjsonwriter_open_memory()
+{
+   rjsonwriter_t *writer = rjsonwriter_open_user(_rjsonwriter_memory_io, NULL);
+   if (!writer) return NULL;
+   writer->user_data = writer;
+   writer->buf_is_output = true;
+   return writer;
+}
+
+char* rjsonwriter_get_memory_buffer(rjsonwriter_t *writer, int* len)
+{
+   if (writer->io != _rjsonwriter_memory_io || writer->error_text)
+      return NULL;
+   if (writer->buf_num == writer->buf_cap)
+      rjsonwriter_flush(writer);
+   writer->buf[writer->buf_num] = '\0';
+   if (len) *len = writer->buf_num;
+   return writer->buf;
+}
+
 bool rjsonwriter_free(rjsonwriter_t *writer)
 {
-   bool res = rjsonwriter_flush(writer);
+   bool res;
+   writer->final_flush = true;
+   res = rjsonwriter_flush(writer);
    if (writer->buf != writer->inline_buf)
       free(writer->buf);
    free(writer);
@@ -1227,7 +1271,8 @@ bool rjsonwriter_flush(rjsonwriter_t *writer)
    if (writer->buf_num && !writer->error_text && writer->io(writer->buf,
             writer->buf_num, writer->user_data) != writer->buf_num)
       writer->error_text = "output error";
-   writer->buf_num = 0;
+   if (!writer->buf_is_output || writer->error_text)
+      writer->buf_num = 0;
    return !writer->error_text;
 }
 
@@ -1245,25 +1290,25 @@ void rjsonwriter_raw(rjsonwriter_t *writer, const char *buf, int len)
       if (buf[0] > ' ' ||
             !(writer->option_flags & RJSONWRITER_OPTION_SKIP_WHITESPACE))
          writer->buf[writer->buf_num++] = buf[0];
-      return;
    }
-   if (writer->buf_num > 0 || len < writer->buf_cap)
+   else
    {
-      unsigned int add = (unsigned int)(writer->buf_cap - writer->buf_num);
-      if (add > (unsigned int)len) add = (unsigned int)len;
+      int add = writer->buf_cap - writer->buf_num;
+      if (add > len) add = len;
       memcpy(writer->buf + writer->buf_num, buf, add);
       writer->buf_num += add;
-      if ((unsigned int)len == add) return;
+      if (len == add) return;
       rjsonwriter_flush(writer);
       len -= add;
       buf += add;
+      if (writer->buf_num + len <= writer->buf_cap)
+      {
+         memcpy(writer->buf + writer->buf_num, buf, len);
+         writer->buf_num += len;
+      }
+      else if (writer->io(buf, len, writer->user_data) != len)
+         writer->error_text = "output error";
    }
-   if (len < writer->buf_cap)
-   {
-      memcpy(writer->buf, buf, len);
-      writer->buf_num += len;
-   }
-   else writer->io(buf, len, writer->user_data);
 }
 
 void rjsonwriter_rawf(rjsonwriter_t *writer, const char *fmt, ...)
@@ -1283,23 +1328,47 @@ void rjsonwriter_rawf(rjsonwriter_t *writer, const char *fmt, ...)
       return;
    }
    rjsonwriter_flush(writer);
-   if (need >= writer->buf_cap)
+   if (writer->buf_num + need >= writer->buf_cap)
    {
-      char* newbuf = (char*)malloc(need + 1);
+      int newcap = writer->buf_num + need + 1;
+      char* newbuf = (char*)malloc(newcap);
       if (!newbuf)
       {
          if (!writer->error_text) writer->error_text = "out of memory";
          return;
       }
+      if (writer->buf_num) memcpy(newbuf, writer->buf, writer->buf_num);
       if (writer->buf != writer->inline_buf)
          free(writer->buf);
       writer->buf = newbuf;
-      writer->buf_cap = need + 1;
+      writer->buf_cap = newcap;
    }
    va_start(ap2, fmt);
-   vsnprintf(writer->buf, writer->buf_cap, fmt, ap2);
+   vsnprintf(writer->buf + writer->buf_num, writer->buf_cap - writer->buf_num, fmt, ap2);
    va_end(ap2);
-   writer->buf_num = need;
+   writer->buf_num += need;
+}
+
+void _rjsonwriter_add_escaped(rjsonwriter_t *writer, unsigned char c)
+{
+   char esc_buf[8], esc_len = 2;
+   const char* esc;
+   switch (c)
+   {
+      case '\b': esc = "\\b"; break;
+      case '\t': esc = "\\t"; break;
+      case '\n': esc = "\\n"; break;
+      case '\f': esc = "\\f"; break;
+      case '\r': esc = "\\r"; break;
+      case '\"': esc = "\\\""; break;
+      case '\\': esc = "\\\\"; break;
+      case '/': esc = "\\/"; break;
+      default:
+         snprintf(esc_buf, sizeof(esc_buf), "\\u%04x", c);
+         esc = esc_buf;
+         esc_len = 6;
+   }
+   rjsonwriter_raw(writer, esc, esc_len);
 }
 
 void rjsonwriter_add_string(rjsonwriter_t *writer, const char *value)
@@ -1312,35 +1381,31 @@ void rjsonwriter_add_string(rjsonwriter_t *writer, const char *value)
    {
       /* forward slash is special, it should be escaped if the previous character
        * was a < (intended to avoid having </script> html tags in JSON files) */
-      if (c < 0x20 || c == '\"' || c == '\\' ||
-            (c == '/' && p > value + 1 && p[-2] == '<'))
-      {
-         char esc_buf[8], esc_len = 2;
-         const char* esc;
-         if (raw != p - 1)
-            rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
-         switch (c)
-         {
-            case '\b': esc = "\\b"; break;
-            case '\t': esc = "\\t"; break;
-            case '\n': esc = "\\n"; break;
-            case '\f': esc = "\\f"; break;
-            case '\r': esc = "\\r"; break;
-            case '\"': esc = "\\\""; break;
-            case '\\': esc = "\\\\"; break;
-            case '/': esc = "\\/"; break;
-            default:
-               snprintf(esc_buf, sizeof(esc_buf), "\\u%04x", c);
-               esc = esc_buf;
-               esc_len = 6;
-         }
-         rjsonwriter_raw(writer, esc, esc_len);
-         raw = p;
-      }
+      if (c >= 0x20 && c != '\"' && c != '\\' &&
+            (c != '/' || p < value + 2 || p[-2] != '<')) continue;
+      if (raw != p - 1) rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
+      _rjsonwriter_add_escaped(writer, c);
+      raw = p;
    }
-   if (raw != p - 1)
-      rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
+   if (raw != p - 1) rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
    string_end:
+   rjsonwriter_raw(writer, "\"", 1);
+}
+
+void rjsonwriter_add_string_len(rjsonwriter_t *writer, const char *value, int len)
+{
+   const char *p = (const char*)value, *raw = p, *end = p + len;
+   rjsonwriter_raw(writer, "\"", 1);
+   while (p != end)
+   {
+      unsigned char c = (unsigned char)*p++;
+      if (c >= 0x20 && c != '\"' && c != '\\' &&
+            (c != '/' || p < value + 2 || p[-2] != '<')) continue;
+      if (raw != p - 1) rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
+      _rjsonwriter_add_escaped(writer, c);
+      raw = p;
+   }
+   if (raw != end) rjsonwriter_raw(writer, raw, (int)(end - raw));
    rjsonwriter_raw(writer, "\"", 1);
 }
 
@@ -1365,20 +1430,16 @@ void rjsonwriter_add_double(rjsonwriter_t *writer, double value)
 
 void rjsonwriter_add_spaces(rjsonwriter_t *writer, int count)
 {
-   int add;
-   if (count <= 0 || (writer->option_flags & RJSONWRITER_OPTION_SKIP_WHITESPACE))
-      return;
-   for (; (add = (count > 8 ? 8 : count)) != 0; count -= add)
-      rjsonwriter_raw(writer, "        ", add);
+   if (!(writer->option_flags & RJSONWRITER_OPTION_SKIP_WHITESPACE))
+      for (; count > 0; count -= 8)
+         rjsonwriter_raw(writer, "        ", (count > 8 ? 8 : count));
 }
 
 void rjsonwriter_add_tabs(rjsonwriter_t *writer, int count)
 {
-   int add;
-   if (count <= 0 || (writer->option_flags & RJSONWRITER_OPTION_SKIP_WHITESPACE))
-      return;
-   for (; (add = (count > 8 ? 8 : count)) != 0; count -= add)
-      rjsonwriter_raw(writer, "\t\t\t\t\t\t\t\t", add);
+   if (!(writer->option_flags & RJSONWRITER_OPTION_SKIP_WHITESPACE))
+      for (; count > 0; count -= 8)
+         rjsonwriter_raw(writer, "\t\t\t\t\t\t\t\t", (count > 8 ? 8 : count));
 }
 
 #undef _rJSON_EOF
