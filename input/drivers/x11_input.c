@@ -41,7 +41,6 @@ typedef struct x11_input
    int mouse_last_x, mouse_last_y;
    char state[32];
    bool mouse_l, mouse_r, mouse_m;
-   bool grab_mouse;
 } x11_input_t;
 
 /* Public global variable */
@@ -665,43 +664,23 @@ static void x_input_poll(void *data)
       x11->mouse_l  = mask & Button1Mask;
       x11->mouse_m  = mask & Button2Mask;
       x11->mouse_r  = mask & Button3Mask;
-
-      /* Somewhat hacky, but seem to do the job. */
-      if (x11->grab_mouse && video_has_focus)
-      {
-         int mid_w, mid_h;
-         struct video_viewport vp;
-
-         vp.x                        = 0;
-         vp.y                        = 0;
-         vp.width                    = 0;
-         vp.height                   = 0;
-         vp.full_width               = 0;
-         vp.full_height              = 0;
-
-         video_driver_get_viewport_info(&vp);
-
-         mid_w = vp.full_width  >> 1;
-         mid_h = vp.full_height >> 1;
-
-         if (x11->mouse_x != mid_w || x11->mouse_y != mid_h)
-         {
-            XWarpPointer(x11->display, None,
-                  x11->win, 0, 0, 0, 0,
-                  mid_w, mid_h);
-            XSync(x11->display, False);
-         }
-         x11->mouse_last_x = mid_w;
-         x11->mouse_last_y = mid_h;
-      }
    }
 }
 
 static void x_grab_mouse(void *data, bool state)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   if (x11)
-      x11->grab_mouse = state;
+   if (!x11)
+      return;
+
+   if (state)
+   {
+      XGrabPointer(x11->display, x11->win, False,
+                   ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+                   GrabModeAsync, GrabModeAsync, x11->win, None, CurrentTime);
+   }
+   else
+      XUngrabPointer(x11->display, CurrentTime);
 }
 
 static uint64_t x_input_get_capabilities(void *data)
