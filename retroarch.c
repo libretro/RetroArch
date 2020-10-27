@@ -15740,10 +15740,7 @@ static void command_event_reinit(struct rarch_state *p_rarch,
 #ifdef HAVE_MENU
    p_rarch->dispgfx.framebuf_dirty = true;
    if (video_fullscreen)
-   {
-      input_driver_grab_mouse(p_rarch);
       video_driver_hide_mouse();
-   }
    if (p_rarch->menu_driver_alive && p_rarch->current_video->set_nonblock_state)
       p_rarch->current_video->set_nonblock_state(
             p_rarch->video_driver_data, false,
@@ -17068,13 +17065,15 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_REINIT, NULL);
             if (video_fullscreen)
             {
-               input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
+               if (!settings->bools.video_windowed_fullscreen)
+                  input_driver_grab_mouse(p_rarch);
             }
             else
             {
-               input_driver_ungrab_mouse(p_rarch);
                video_driver_show_mouse();
+               if (!settings->bools.video_windowed_fullscreen)
+                  input_driver_ungrab_mouse(p_rarch);
             }
 
             p_rarch->rarch_is_switching_display_mode = false;
@@ -19923,10 +19922,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
             /* Hide mouse cursor in fullscreen mode */
             if (video_fullscreen)
-            {
-               input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
-            }
          }
 
          break;
@@ -20089,10 +20085,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             /* Hide mouse cursor in fullscreen after
              * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
             if (video_fullscreen)
-            {
-               input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
-            }
 
             return true;
          }
@@ -32513,8 +32506,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    if (video.fullscreen)
    {
-      input_driver_grab_mouse(p_rarch);
       video_driver_hide_mouse();
+      if (!settings->bools.video_windowed_fullscreen)
+         input_driver_grab_mouse(p_rarch);
    }
 
    return true;
