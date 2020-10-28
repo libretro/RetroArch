@@ -973,7 +973,7 @@ static bool gfx_widget_load_content_animation_init(
 
    state->p_disp = disp_get_ptr();
 
-   return NULL;
+   return false;
 }
 /* Widget definition */
 
