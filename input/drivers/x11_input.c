@@ -39,6 +39,7 @@ typedef struct x11_input
 
    int mouse_x, mouse_y;
    int mouse_last_x, mouse_last_y;
+   bool mouse_grabbed;
    char state[32];
    bool mouse_l, mouse_r, mouse_m;
 } x11_input_t;
@@ -664,6 +665,44 @@ static void x_input_poll(void *data)
       x11->mouse_l  = mask & Button1Mask;
       x11->mouse_m  = mask & Button2Mask;
       x11->mouse_r  = mask & Button3Mask;
+
+      /* Major grab kludge required to circumvent
+       * absolute pointer area limitation
+       * AND to be able to use mouse in menu
+       */
+      if (x11->mouse_grabbed && video_has_focus)
+      {
+         int new_x = win_x, new_y = win_y;
+         int margin = 0;
+         float margin_pct = 0.05f;
+         struct video_viewport vp;
+
+         video_driver_get_viewport_info(&vp);
+
+         margin = ((vp.full_height < vp.full_width) ? vp.full_height : vp.full_width) * margin_pct;
+
+         if (win_x + 1 > vp.full_width - margin)
+            new_x = vp.full_width - margin;
+         else if (win_x + 1 < margin)
+            new_x = margin;
+
+         if (win_y + 1 > vp.full_height - margin)
+            new_y = vp.full_height - margin;
+         else if (win_y + 1 < margin)
+            new_y = margin;
+
+         if (new_x != win_x || new_y != win_y)
+         {
+            XWarpPointer(x11->display, None, x11->win,
+                         0, 0, 0 ,0,
+                         new_x, new_y);
+
+            XSync(x11->display, False);
+         }
+
+         x11->mouse_last_x = new_x + x11->mouse_last_x - x11->mouse_x;
+         x11->mouse_last_y = new_y + x11->mouse_last_y - x11->mouse_y;
+      }
    }
 }
 
@@ -672,6 +711,8 @@ static void x_grab_mouse(void *data, bool state)
    x11_input_t *x11 = (x11_input_t*)data;
    if (!x11)
       return;
+
+   x11->mouse_grabbed = state;
 
    if (state)
    {
