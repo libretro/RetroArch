@@ -665,7 +665,7 @@ int retro_vfs_mkdir_impl(const char *dir)
    Platform::String^ parent_path_str;
    Platform::String^ dir_name_str;
    wchar_t *dir_name_wide, *parent_path_wide;
-   char *dir_local, *tmp, *dir_name;
+   char *dir_local, *tmp;
    char parent_path[PATH_MAX_LENGTH];
    char dir_name[PATH_MAX_LENGTH];
 	if (!dir || !*dir)
