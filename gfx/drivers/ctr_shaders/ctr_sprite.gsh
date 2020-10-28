@@ -5,6 +5,7 @@
 .constf  _N1N1   (-1.0, 1.0, -1.0, 1.0)
 
 ; Inputs
+.alias rotate           b0
 .alias sprite_coords    v0
 .alias tex_frame_coords v1    ;(0.0, 1.0, w/tex_w, 1.0 - h/tex_h)
 
@@ -26,25 +27,45 @@
    setemit 0
       mov pos.xy, top_left.xy
       mov pos.zw, _N1N1
-      mov texcoord.xy, tex_top_left.xy
+
+      ifu rotate
+         mov texcoord.xy, tex_top_right.xy
+      .else
+         mov texcoord.xy, tex_top_left.xy
+      .end
    emit
 
    setemit 1
       mov pos.xy, bottom_left.xy
       mov pos.zw, _N1N1
-      mov texcoord.xy, tex_bottom_left.xy
+
+      ifu rotate
+         mov texcoord.xy, tex_top_left.xy
+      .else
+         mov texcoord.xy, tex_bottom_left.xy
+      .end
    emit
 
    setemit 2, prim inv
       mov pos.xy, bottom_right.xy
       mov pos.zw, _N1N1
-      mov texcoord.xy, tex_bottom_right.xy
+
+      ifu rotate
+         mov texcoord.xy, tex_bottom_left.xy
+      .else
+         mov texcoord.xy, tex_bottom_right.xy
+      .end
    emit
 
    setemit 1, prim
       mov pos.xy, top_right.xy
       mov pos.zw, _N1N1
-      mov texcoord.xy, tex_top_right.xy
+
+      ifu rotate
+         mov texcoord.xy, tex_bottom_right.xy
+      .else
+         mov texcoord.xy, tex_top_right.xy
+      .end
    emit
 
    end

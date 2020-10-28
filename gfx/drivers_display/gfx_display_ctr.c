@@ -49,6 +49,7 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
    ctr_set_scale_vector(&scale_vector,
          CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
          texture->width, texture->height);
+   GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
    ctrGuSetVertexShaderFloatUniform(0, (float*)&scale_vector, 1);
 
    if ((ctr->vertex_cache.size - (ctr->vertex_cache.current 
