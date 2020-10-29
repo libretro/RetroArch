@@ -252,6 +252,9 @@ static INLINE void rjsonwriter_add_colon(rjsonwriter_t *writer)
 static INLINE void rjsonwriter_add_comma(rjsonwriter_t *writer)
       { rjsonwriter_raw(writer, ",", 1); }
 
+static INLINE void rjsonwriter_add_bool(rjsonwriter_t *writer, bool value)
+      { rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5)); }
+
 /* Functions to add whitespace characters */
 /* These do nothing with the option RJSONWRITER_OPTION_SKIP_WHITESPACE */
 static INLINE void rjsonwriter_add_newline(rjsonwriter_t *writer)

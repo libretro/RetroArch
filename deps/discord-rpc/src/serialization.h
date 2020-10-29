@@ -1,24 +1,15 @@
 #pragma once
 
-#include <stdint.h>
-
 #ifdef _MSC_VER
-#pragma warning(push)
-
-#pragma warning(disable : 4061) /* enum is not explicitly handled by a case label */
-#pragma warning(disable : 4365) /* signed/unsigned mismatch */
-#pragma warning(disable : 4464) /* relative include path contains */
-#pragma warning(disable : 4668) /* is not defined as a preprocessor macro */
-#pragma warning(disable : 6313) /* Incorrect operator */
-#endif                          /* _MSC_VER */
-
-#include "rapidjson/document.h"
-#include "rapidjson/stringbuffer.h"
-#include "rapidjson/writer.h"
-
-#ifdef _MSC_VER
-#pragma warning(pop)
+/* avoid deprecated warning about strdup */
+#define _CRT_NONSTDC_NO_DEPRECATE
 #endif /* _MSC_VER */
+
+#include <stdint.h>
+#include <string.h> /* memcpy/strlen/strcmp/strdup */
+#include <stdlib.h> /* malloc/realloc/free */
+
+#include <formats/rjson.h>
 
 /* if only there was a standard library function for this */
 template <size_t Len>
@@ -50,156 +41,208 @@ size_t JsonWriteUnsubscribeCommand(char* dest, size_t maxLen, int nonce, const c
 
 size_t JsonWriteJoinReply(char* dest, size_t maxLen, const char* userId, int reply, int nonce);
 
-/* I want to use as few allocations as I can get away with, and to do that with RapidJson, you need
- * to supply some of your own allocators for stuff rather than use the defaults
- */
-
-class LinearAllocator
+class JsonWriter
 {
+   char* buf;
+   size_t buf_len;
+   size_t buf_cap;
+
+   rjsonwriter_t* writer;
+   bool need_comma;
+
+   static int writer_io(const void* inbuf, int inlen, void *user_data)
+   {
+       JsonWriter* self = (JsonWriter*)user_data;
+       size_t buf_remain = (self->buf_cap - self->buf_len);
+       if ((size_t)inlen > buf_remain) inlen = (int)buf_remain;
+       memcpy(self->buf + self->buf_len, inbuf, inlen);
+       self->buf_len += inlen;
+       self->buf[self->buf_len - (self->buf_len == self->buf_cap ? 1 : 0)] = '\0';
+       return inlen;
+   }
+
    public:
-      char* buffer_;
-      char* end_;
-      LinearAllocator() { }
-      LinearAllocator(char* buffer, size_t size)
-         : buffer_(buffer)
-           , end_(buffer + size) { }
-      static const bool kNeedFree = false;
-      void* Malloc(size_t size)
-      {
-         char* res = buffer_;
-         buffer_ += size;
-         if (buffer_ > end_)
-         {
-            buffer_ = res;
-            return nullptr;
-         }
-         return res;
-      }
-      void* Realloc(void* originalPtr, size_t originalSize, size_t newSize)
-      {
-         if (newSize == 0)
-            return nullptr;
-         return Malloc(newSize);
-      }
-      static void Free(void* ptr)
-      {
-         /* shrug */
-         (void)ptr;
-      }
-};
-
-template <size_t Size>
-class FixedLinearAllocator : public LinearAllocator {
-public:
-    char fixedBuffer_[Size];
-    FixedLinearAllocator()
-      : LinearAllocator(fixedBuffer_, Size) { }
-    static const bool kNeedFree = false;
-};
-
-/* wonder why this isn't a thing already, maybe I missed it */
-class DirectStringBuffer {
-public:
-    using Ch = char;
-    char* buffer_;
-    char* end_;
-    char* current_;
-
-    DirectStringBuffer(char* buffer, size_t maxLen)
-      : buffer_(buffer)
-      , end_(buffer + maxLen)
-      , current_(buffer) { }
-
-    void Put(char c)
-    {
-       if (current_ < end_)
-          *current_++ = c;
-    }
-    void Flush() {}
-    size_t GetSize() const { return (size_t)(current_ - buffer_); }
-};
-
-using MallocAllocator = rapidjson::CrtAllocator;
-using PoolAllocator = rapidjson::MemoryPoolAllocator<MallocAllocator>;
-using UTF8 = rapidjson::UTF8<char>;
-/* Writer appears to need about 16 bytes per nested object level (with 64bit size_t) */
-using StackAllocator = FixedLinearAllocator<2048>;
-constexpr size_t WriterNestingLevels = 2048 / (2 * sizeof(size_t));
-using JsonWriterBase =
-  rapidjson::Writer<DirectStringBuffer, UTF8, UTF8, StackAllocator, rapidjson::kWriteNoFlags>;
-class JsonWriter : public JsonWriterBase
-{
-   public:
-      DirectStringBuffer stringBuffer_;
-      StackAllocator stackAlloc_;
-
       JsonWriter(char* dest, size_t maxLen)
-         : JsonWriterBase(stringBuffer_, &stackAlloc_, WriterNestingLevels)
-           , stringBuffer_(dest, maxLen)
-           , stackAlloc_()
-   {
-   }
+         : buf(dest), buf_len(0), buf_cap(maxLen),
+           need_comma(false)
+      {
+          writer = rjsonwriter_open_user(writer_io, this);
+      }
 
-      size_t Size() const { return stringBuffer_.GetSize(); }
+      ~JsonWriter()
+      {
+          rjsonwriter_free(writer);
+      }
+
+      size_t Size()
+      {
+          rjsonwriter_flush(writer);
+          return buf_len;
+      }
+
+      void WriteComma()
+      {
+          if (!need_comma) return;
+          rjsonwriter_add_comma(writer);
+          need_comma = false;
+      }
+
+      void StartObject()
+      {
+          WriteComma();
+          rjsonwriter_add_start_object(writer);
+      }
+
+      void StartArray()
+      {
+          WriteComma();
+          rjsonwriter_add_start_array(writer);
+      }
+
+      void EndObject()
+      {
+          rjsonwriter_add_end_object(writer);
+          need_comma = true;
+      }
+
+      void EndArray()
+      {
+          rjsonwriter_add_end_array(writer);
+          need_comma = true;
+      }
+
+      void Key(const char* key)
+      {
+          WriteComma();
+          rjsonwriter_add_string(writer, key);
+          rjsonwriter_add_colon(writer);
+      }
+
+      void String(const char* val)
+      {
+          WriteComma();
+          rjsonwriter_add_string(writer, val);
+          need_comma = true;
+      }
+
+      void Int(int val)
+      {
+          WriteComma();
+          rjsonwriter_add_int(writer, val);
+          need_comma = true;
+      }
+
+      void Int64(int64_t val)
+      {
+          WriteComma();
+          char num[24], *pEnd = num + 24, *p = pEnd;
+          if (!val)
+          {
+              *(--p) = '0';
+          }
+          else if (val < 0)
+          {
+              for (; val; val /= 10)
+                  *(--p) = '0' - (char)(val % 10);
+              *(--p) = '-';
+          }
+          else
+          {
+              for (; val; val /= 10)
+                  *(--p) = '0' + (char)(val % 10);
+          }
+          rjsonwriter_raw(writer, p, (int)(pEnd - p));
+          need_comma = true;
+      }
+
+      void Bool(bool val)
+      {
+          WriteComma();
+          rjsonwriter_add_bool(writer, val);
+          need_comma = true;
+      }
 };
 
-using JsonDocumentBase = rapidjson::GenericDocument<UTF8, PoolAllocator, StackAllocator>;
-class JsonDocument : public JsonDocumentBase
+class JsonDocument
 {
+      size_t json_cap;
+      enum { kDefaultChunkCapacity = 32 * 1024 };
+
    public:
-      static const int kDefaultChunkCapacity = 32 * 1024;
-      /* json parser will use this buffer first, then allocate more if needed; I seriously doubt we
-       * send any messages that would use all of this, though. */
-      char parseBuffer_[32 * 1024];
-      MallocAllocator mallocAllocator_;
-      PoolAllocator poolAllocator_;
-      StackAllocator stackAllocator_;
+      size_t json_length;
+      char* json_data;
+
       JsonDocument()
-         : JsonDocumentBase(rapidjson::kObjectType,
-               &poolAllocator_,
-               sizeof(stackAllocator_.fixedBuffer_),
-               &stackAllocator_)
-           , poolAllocator_(parseBuffer_, sizeof(parseBuffer_), kDefaultChunkCapacity, &mallocAllocator_)
-           , stackAllocator_()
-   {
-   }
+         : json_cap(kDefaultChunkCapacity), json_length(0),
+           json_data((char*)malloc(kDefaultChunkCapacity))
+      { }
+
+      ~JsonDocument()
+      {
+          free(json_data);
+      }
+
+      void ParseInsitu(const char* input)
+      {
+          size_t input_len = strlen(input);
+          while (json_length + input_len >= json_cap)
+          {
+              json_cap += kDefaultChunkCapacity;
+              json_data = (char*)realloc(json_data, json_cap);
+          }
+          memcpy(json_data + json_length, input, input_len);
+          json_length += input_len;
+          json_data[json_length] = '\0';
+      }
 };
 
-using JsonValue = rapidjson::GenericValue<UTF8, PoolAllocator>;
-
-inline JsonValue* GetObjMember(JsonValue* obj, const char* name)
+class JsonReader
 {
-   if (obj)
-   {
-      auto member = obj->FindMember(name);
-      if (member != obj->MemberEnd() && member->value.IsObject())
-         return &member->value;
-   }
-   return nullptr;
-}
+      rjson_t* reader;
 
-inline int GetIntMember(JsonValue* obj,
-      const char* name,
-      int notFoundDefault = 0)
-{
-   if (obj)
-   {
-      auto member = obj->FindMember(name);
-      if (member != obj->MemberEnd() && member->value.IsInt())
-         return member->value.GetInt();
-   }
-   return notFoundDefault;
-}
+   public:
+      const char* key;
+      unsigned int depth;
 
-inline const char* GetStrMember(JsonValue* obj,
-      const char* name,
-      const char* notFoundDefault = nullptr)
-{
-   if (obj)
-   {
-      auto member = obj->FindMember(name);
-      if (member != obj->MemberEnd() && member->value.IsString())
-         return member->value.GetString();
-   }
-   return notFoundDefault;
-}
+      JsonReader(JsonDocument& doc)
+         : reader(rjson_open_buffer(doc.json_data, doc.json_length))
+      { }
+
+      ~JsonReader()
+      {
+          rjson_free(reader);
+      }
+
+      bool NextKey()
+      {
+          for (;;)
+          {
+              enum rjson_type json_type = rjson_next(reader);
+              if (json_type == RJSON_DONE || json_type == RJSON_ERROR) return false;
+              if (json_type != RJSON_STRING) continue;
+              if (rjson_get_context_type(reader) != RJSON_OBJECT) continue;
+              if ((rjson_get_context_count(reader) & 1) != 1) continue;
+              depth = rjson_get_context_depth(reader);
+              key = rjson_get_string(reader, NULL);
+              return true;
+          }
+      }
+
+      const char* NextString(const char* default_val)
+      {
+          return (rjson_next(reader) != RJSON_STRING ? default_val :
+                       rjson_get_string(reader, NULL));
+      }
+
+      void NextStrDup(char** val)
+      {
+          if (rjson_next(reader) == RJSON_STRING)
+              *val = strdup(rjson_get_string(reader, NULL));
+      }
+
+      void NextInt(int* val)
+      {
+          if (rjson_next(reader) == RJSON_NUMBER)
+              *val = rjson_get_int(reader);
+      }
+};
