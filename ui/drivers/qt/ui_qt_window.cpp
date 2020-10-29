@@ -177,7 +177,7 @@ void TreeView::selectionChanged(const QItemSelection &selected, const QItemSelec
 }
 
 TableView::TableView(QWidget *parent) :
-   QTableView(parent)
+   QTreeView(parent)
 {
 }
 
@@ -247,6 +247,22 @@ void LogTextEdit::appendMessage(const QString& text)
    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
 
+QVariant FileSystemProxyModel::data(const QModelIndex &index, int role) const
+{
+   if (role == Qt::SizeHintRole)
+      return QSize(1, 22);
+
+   return QSortFilterProxyModel::data(index, role);
+}
+
+QVariant FileSystemProxyModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+   if (role == Qt::DecorationRole)
+      return QVariant();
+
+   return QSortFilterProxyModel::headerData(section, orientation, role);
+}
+
 /* only accept indexes from current path. https://www.qtcentre.org/threads/50700-QFileSystemModel-and-QSortFilterProxyModel-don-t-work-well-together */
 bool FileSystemProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
@@ -277,7 +293,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_listWidget(new ListWidget(this))
    ,m_centralWidget(new QStackedWidget(this))
    ,m_tableView(new TableView(this))
-   ,m_fileTableView(new QTableView(this))
+   ,m_fileTableView(new TableView(this))
    ,m_playlistViews(new FileDropWidget(this))
    ,m_searchWidget(new QWidget(this))
    ,m_searchLineEdit(new QLineEdit(this))
@@ -482,24 +498,22 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_tableView->setAlternatingRowColors(true);
    m_tableView->setModel(m_proxyModel);
+   m_tableView->setRootIsDecorated(false);
    m_tableView->setSortingEnabled(true);
-   m_tableView->verticalHeader()->setVisible(false);
-   m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-   m_tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+   m_tableView->setUniformRowHeights(true);
    m_tableView->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
    m_tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
    m_tableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-   m_tableView->horizontalHeader()->setStretchLastSection(true);
+   m_tableView->header()->setStretchLastSection(true);
    m_tableView->setWordWrap(false);
 
-   m_fileTableView->setModel(m_fileModel);
+   m_fileTableView->setModel(m_proxyFileModel);
    m_fileTableView->sortByColumn(0, Qt::AscendingOrder);
    m_fileTableView->setSortingEnabled(true);
    m_fileTableView->setAlternatingRowColors(true);
-   m_fileTableView->verticalHeader()->setVisible(false);
-   m_fileTableView->setSelectionMode(QAbstractItemView::SingleSelection);
-   m_fileTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-   m_fileTableView->horizontalHeader()->setStretchLastSection(true);
+   m_fileTableView->setRootIsDecorated(false);
+   m_fileTableView->setUniformRowHeights(true);
+   m_fileTableView->header()->setStretchLastSection(true);
    m_fileTableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
    m_fileTableView->setWordWrap(false);
 
@@ -559,8 +573,6 @@ MainWindow::MainWindow(QWidget *parent) :
    m_dirTree->setModel(m_dirModel);
    m_dirTree->setSelectionMode(QAbstractItemView::SingleSelection);
    m_dirTree->header()->setVisible(false);
-
-   m_fileTableView->setModel(m_proxyFileModel);
 
    if (m_dirModel->columnCount() > 3)
    {
@@ -785,15 +797,6 @@ void MainWindow::onFileSystemDirLoaded(const QString &path)
 
       emit scrollToDownloads(path);
    }
-}
-
-/* workaround for columns being resized */
-void MainWindow::onFileBrowserTableDirLoaded(const QString &path)
-{
-   if (path.isEmpty())
-      return;
-
-   m_fileTableView->horizontalHeader()->restoreState(m_fileTableHeaderState);
 }
 
 QVector<QPair<QString, QString> > MainWindow::getPlaylists()
@@ -1727,7 +1730,6 @@ void MainWindow::selectBrowserDir(QString path)
    {
       QModelIndex sourceIndex = m_fileModel->setRootPath(path);
       QModelIndex proxyIndex  = m_proxyFileModel->mapFromSource(sourceIndex);
-      m_fileTableHeaderState  = m_fileTableView->horizontalHeader()->saveState();
 
       if (proxyIndex.isValid())
          m_fileTableView->setRootIndex(proxyIndex);
@@ -2651,7 +2653,7 @@ TableView* MainWindow::contentTableView()
    return m_tableView;
 }
 
-QTableView* MainWindow::fileTableView()
+QTreeView* MainWindow::fileTableView()
 {
    return m_fileTableView;
 }
@@ -3002,7 +3004,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
       m_settings->setValue("last_tab", m_browserAndPlaylistTabWidget->currentIndex());
 
    m_settings->setValue("view_type", getCurrentViewTypeString());
-   m_settings->setValue("file_browser_table_headers", m_fileTableView->horizontalHeader()->saveState());
+   m_settings->setValue("file_browser_table_headers", m_fileTableView->header()->saveState());
    m_settings->setValue("icon_view_zoom", m_lastZoomSliderValue);
    m_settings->setValue("icon_view_thumbnail_type", getCurrentThumbnailTypeString());
    m_settings->setValue("options_dialog_geometry", m_viewOptionsDialog->saveGeometry());
