@@ -37,11 +37,18 @@ void RpcConnection::Open()
        JsonDocument message;
        if (Read(message))
        {
-          const char *cmd = GetStrMember(&message, "cmd");
-          const char *evt = GetStrMember(&message, "evt");
-          if (cmd && evt 
-                && !strcmp(cmd, "DISPATCH") 
-                && !strcmp(evt, "READY"))
+          bool cmdDispatch = false;
+          bool evtReady    = false;
+
+          for (JsonReader r(message); r.NextKey();)
+          {
+              if (r.depth == 1 && !strcmp(r.key, "cmd"))
+                  cmdDispatch = !strcmp(r.NextString(""), "DISPATCH");
+              else if (r.depth == 1 && !strcmp(r.key, "evt"))
+                  evtReady = !strcmp(r.NextString(""), "READY");
+          }
+
+          if (cmdDispatch && evtReady)
           {
              state = State::Connected;
              if (onConnect)
@@ -124,8 +131,15 @@ bool RpcConnection::Read(JsonDocument& message)
         {
            case Opcode::Close:
               message.ParseInsitu(readFrame.message);
-              lastErrorCode = GetIntMember(&message, "code");
-              StringCopy(lastErrorMessage, GetStrMember(&message, "message", ""));
+              lastErrorCode = 0;
+              lastErrorMessage[0] = '\0';
+              for (JsonReader r(message); r.NextKey();)
+              {
+                  if (r.depth == 1 && !strcmp(r.key, "code"))
+                      r.NextInt(&lastErrorCode);
+                  else if (r.depth == 1 && !strcmp(r.key, "message"))
+                      StringCopy(lastErrorMessage, r.NextString(""));
+              }
               Close();
               return false;
            case Opcode::Frame:
