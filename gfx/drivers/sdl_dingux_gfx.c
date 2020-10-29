@@ -26,6 +26,7 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -50,8 +51,11 @@
 
 #define SDL_DINGUX_NUM_FONT_GLYPHS 256
 
+#define SDL_DINGUX_FF_FRAME_TIME_MIN 16667
+
 typedef struct sdl_dingux_video
 {
+   retro_time_t last_frame_time;
    SDL_Surface *screen;
    unsigned frame_width;
    unsigned frame_height;
@@ -461,6 +465,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    vid->was_in_menu     = false;
    vid->quitting        = false;
    vid->mode_valid      = true;
+   vid->last_frame_time = 0;
 
    SDL_ShowCursor(SDL_DISABLE);
 
@@ -617,15 +622,31 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
-#ifdef HAVE_MENU
-   bool menu_is_alive      = video_info->menu_is_alive;
-#endif
 
    if (unlikely(!frame))
       return true;
 
+   /* If fast forward is currently active, we may
+    * push frames at an 'unlimited' rate. Since the
+    * display has a fixed refresh rate of 60 Hz, this
+    * represents wasted effort. We therefore drop any
+    * 'excess' frames in this case.
+    * (Note that we *only* do this when fast forwarding.
+    * Attempting this trick while running content normally
+    * will cause bad frame pacing) */
+   if (unlikely(video_info->input_driver_nonblock_state))
+   {
+      retro_time_t current_time = cpu_features_get_time_usec();
+
+      if ((current_time - vid->last_frame_time) <
+            SDL_DINGUX_FF_FRAME_TIME_MIN)
+         return true;
+
+      vid->last_frame_time = current_time;
+   }
+
 #ifdef HAVE_MENU
-   menu_driver_frame(menu_is_alive, video_info);
+   menu_driver_frame(video_info->menu_is_alive, video_info);
 #endif
 
    if (likely(!vid->menu_active))
@@ -739,11 +760,37 @@ static void sdl_dingux_gfx_set_nonblock_state(void *data, bool toggle,
    /* Check whether vsync status has changed */
    if (vid->vsync != vsync)
    {
-      vid->vsync = vsync;
+      unsigned current_width  = vid->frame_width;
+      unsigned current_height = vid->frame_height;
+      vid->vsync              = vsync;
 
       /* Update video mode */
+
+      /* Note that a tedious workaround is required...
+       * - Calling SDL_SetVideoMode() with the currently
+       *   set width, height and pixel format can randomly
+       *   become a noop even if the surface flags change.
+       * - Since all we are doing here is changing the VSYNC
+       *   parameter (which just modifies surface flags), this
+       *   means the VSYNC toggle may not be registered...
+       * - This is a huge problem when enabling fast forward,
+       *   because VSYNC ON effectively limits maximum frame
+       *   rate - if we push frames too rapidly, the OS chokes
+       *   and the display freezes.
+       * We have to ensure that the VSYNC state change is
+       * applied in all cases. We can only do this by forcing
+       * a 'real' video mode update, which means adjusting the
+       * video resolution. We therefore end up calling
+       * sdl_dingux_set_output() *twice*, setting the dimensions
+       * to an arbitrary value before restoring the actual
+       * desired width/height */
       sdl_dingux_set_output(vid,
-            vid->frame_width, vid->frame_height, vid->rgb32);
+            current_width,
+            (current_height > 4) ? (current_height - 2) : 16,
+            vid->rgb32);
+
+      sdl_dingux_set_output(vid,
+            current_width, current_height, vid->rgb32);
    }
 }
 
