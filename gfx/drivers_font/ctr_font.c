@@ -230,6 +230,7 @@ static void ctr_font_render_line(
    if (v == ctr->vertex_cache.current)
       return;
 
+   GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
    ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector, 1);
    GSPGPU_FlushDataCache(ctr->vertex_cache.current,
          (v - ctr->vertex_cache.current) * sizeof(ctr_vertex_t));
