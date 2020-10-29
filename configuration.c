@@ -3655,7 +3655,7 @@ bool config_load_remap(const char *directory_input_remapping,
    settings_t *settings                   = config_get_ptr();
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
 
-   if (string_is_empty(core_name) || string_is_empty(game_name))
+   if (string_is_empty(core_name))
       return false;
 
    /* Remap directory: remap_directory.
