@@ -27,6 +27,7 @@
 #include <math.h>
 #include <string.h>
 
+#include <retro_environment.h>
 #include <retro_inline.h>
 #include <filters.h>
 #include <memalign.h>
