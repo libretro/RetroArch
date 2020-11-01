@@ -678,6 +678,8 @@ typedef struct ui_window_qt
    MainWindow *qtWindow;
 } ui_window_qt_t;
 
+QStringList string_split_to_qt(QString str, char delim);
+
 RETRO_END_DECLS
 
 #endif
