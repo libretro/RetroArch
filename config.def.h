@@ -1142,7 +1142,11 @@ static const int default_content_favorites_size = 200;
 
 /* Default scale factor for non-frambuffer-based display
  * drivers and display widgets */
+#if defined(VITA)
+#define DEFAULT_MENU_SCALE_FACTOR 1.5f
+#else
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
+#endif
 /* Specifies whether display widgets should be scaled
  * automatically using the default menu scale factor */
 #define DEFAULT_MENU_WIDGET_SCALE_AUTO true
