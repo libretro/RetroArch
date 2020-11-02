@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include <encodings/utf.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 

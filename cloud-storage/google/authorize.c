@@ -26,8 +26,8 @@
 #include <sys/types.h>
 
 #if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
 #endif
 
 #include <net/net_socket.h>

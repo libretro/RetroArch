@@ -180,7 +180,7 @@ static rest_request_t *_create_start_file_upload_request(
    net_http_request_set_header(http_request, "X-Upload-Content-Type", "application/octet-stream", true);
    file_size_str = (char *)calloc(33, sizeof(char));
 #if defined(_WIN32) || (_WIN64)
-   snprintf(file_size_str, 33, "%" PRIuPTR, (long long)extra_state->file_size);
+   snprintf(file_size_str, 33, "%" PRIuPTR, (long long)file_size);
 #else
    snprintf(file_size_str, 33, "%lld", (long long)file_size);
 #endif
