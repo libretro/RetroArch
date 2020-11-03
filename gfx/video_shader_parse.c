@@ -603,19 +603,20 @@ bool video_shader_write_referenced_preset(const char *path,
                                           const struct video_shader *shader)
 {
    unsigned i;
-   bool ret = false;
-   bool continue_saving_reference = true;
-   char preset_dir[PATH_MAX_LENGTH];
-   config_file_t *conf;
-   char *absolute_root_preset_path = (char*)malloc(PATH_MAX_LENGTH);
-   char *absolute_new_preset_basedir = (char*)malloc(PATH_MAX_LENGTH);
-   char *relative_root_preset_path = (char*)malloc(PATH_MAX_LENGTH);
+   config_file_t *conf               = NULL;
+   bool ret                          = false;
+   bool continue_saving_reference    = true;
+   char *preset_dir                  = (char*)malloc(PATH_MAX_LENGTH);
+   char *absolute_root_preset_path   = (char*)malloc(PATH_MAX_LENGTH);
+   char *relative_root_preset_path   = (char*)malloc(PATH_MAX_LENGTH);
+   char *absolute_new_preset_basedir = NULL;
    
-   preset_dir[0] = '\0';
-   absolute_new_preset_basedir = strdup(path);
-   path_basedir(absolute_new_preset_basedir);
+   preset_dir[0]                = '\0';
    absolute_root_preset_path[0] = '\0';
    relative_root_preset_path[0] = '\0';
+   absolute_new_preset_basedir  = strdup(path);
+
+   path_basedir(absolute_new_preset_basedir);
 
    /* Get the absolute path to the root preset, this is the one which is used in the #reference directive */
    strlcpy(absolute_root_preset_path, shader->path, PATH_MAX_LENGTH);
@@ -631,21 +632,6 @@ bool video_shader_write_referenced_preset(const char *path,
    {
       RARCH_WARN("[Shaders-Save Reference]: Saving Full Preset because we can't save a preset "
                  "which would reference itself.\n");
-      continue_saving_reference = false;
-   }
-
-   /* Auto-shaders can be written as copies or references.
-   * If we write a reference to a copy, we could then overwrite the copy 
-   * with any reference, thus creating a reference to a reference.
-   * To prevent this, we disallow saving references to auto-shaders. */
-   fill_pathname_join(preset_dir,
-                     shader_dir,
-                     "presets",
-                     sizeof(preset_dir));
-   if (continue_saving_reference && !strncmp(preset_dir, absolute_root_preset_path, strlen(preset_dir)))
-   {
-      RARCH_WARN("[Shaders-Save Reference]: Saving Full Preset because we can't save a "
-                 "reference to an auto-loaded shader (E.G. Game Preset, Core Preset).\n");
       continue_saving_reference = false;
    }
 
@@ -674,7 +660,7 @@ bool video_shader_write_referenced_preset(const char *path,
       /* Create a new EMPTY config */
       conf = config_file_new_alloc();
       if (!(conf))
-         return false;
+         goto end;
       conf->path = strdup(path);
 
       /* Add the reference path to the config */
@@ -879,21 +865,18 @@ bool video_shader_write_referenced_preset(const char *path,
             /* If the shader has textures */
             if (shader->luts)
             {
-               char *shader_tex_path       = (char*)malloc(3*PATH_MAX_LENGTH);
-               char *shader_tex_relative_path   = shader_tex_path +   PATH_MAX_LENGTH;
-               char *shader_tex_base_path  = shader_tex_path + 2*PATH_MAX_LENGTH;
-               char *referenced_tex_absolute_path     = (char*)malloc(PATH_MAX_LENGTH);
-               char *referenced_tex_path              = (char*)malloc(PATH_MAX_LENGTH);
-               size_t tex_size = 4096 * sizeof(char);
-               char *textures  = (char*)malloc(tex_size);
+               char *shader_tex_path              = (char*)malloc(PATH_MAX_LENGTH);
+               char *shader_tex_relative_path     = (char*)malloc(PATH_MAX_LENGTH);
+               char *shader_tex_base_path         = (char*)malloc(PATH_MAX_LENGTH);
+               char *referenced_tex_absolute_path = (char*)malloc(PATH_MAX_LENGTH);
+               char *referenced_tex_path          = (char*)malloc(PATH_MAX_LENGTH);
                unsigned i;
 
-               shader_tex_path[0] = '\0';
-               shader_tex_relative_path[0] = '\0';
-               shader_tex_base_path[0] = '\0';
-               textures[0] = '\0';
+               shader_tex_path[0]              = '\0';
+               shader_tex_relative_path[0]     = '\0';
+               shader_tex_base_path[0]         = '\0';
                referenced_tex_absolute_path[0] = '\0';
-               referenced_tex_path[0] = '\0';
+               referenced_tex_path[0]          = '\0';
 
                for (i = 0; i < shader->luts; i++)
                {
@@ -928,6 +911,12 @@ bool video_shader_write_referenced_preset(const char *path,
                      }
                   }
                }
+
+               free(shader_tex_path);
+               free(shader_tex_relative_path);
+               free(shader_tex_base_path);
+               free(referenced_tex_absolute_path);
+               free(referenced_tex_path);
             }
             /* Write the file, return will be true if successful */
             ret = config_file_write(conf, path, false);
@@ -937,10 +926,18 @@ bool video_shader_write_referenced_preset(const char *path,
                           "Full Preset Will be Saved instead of Simple Preset\n", path);
          }
          config_file_free(root_conf);
+         free(root_shader);
       }
       config_file_free(conf);
    }
+
+end:
+
+   free(preset_dir);
+   free(absolute_root_preset_path);
    free(relative_root_preset_path);
+   free(absolute_new_preset_basedir);
+
    return ret;
 }
 
@@ -1009,123 +1006,139 @@ bool video_shader_write_preset(const char *path,
  **/
 bool override_config_values(config_file_t *conf, config_file_t *override_conf)
 {
-      int return_val                = 0;
-      size_t param_size             = 4096 * sizeof(char);
-      const char *id                = NULL;
-      char *save                    = NULL;
-      size_t path_size              = PATH_MAX_LENGTH;
-      char *override_texture_path   = (char*)malloc(path_size);
-      char *resolved_path           = (char*)malloc(path_size);
-      char *textures_in_conf        = (char*)malloc(param_size);
-      size_t tmp_size               = PATH_MAX_LENGTH;
-      char *tmp                     = (char*)malloc(3*tmp_size);
-      char *tmp_rel                 = tmp + tmp_size;
-      char *tmp_base                = tmp + 2*tmp_size;
-      struct config_entry_list *override_entry    = NULL;
-      char *override_parameters     = (char*)malloc(param_size);
+   int return_val                = 0;
+   size_t param_size             = 4096 * sizeof(char);
+   const char *id                = NULL;
+   char *save                    = NULL;
+   size_t path_size              = PATH_MAX_LENGTH;
+   char *override_texture_path   = (char*)malloc(path_size);
+   char *resolved_path           = (char*)malloc(path_size);
+   char *textures_in_conf        = (char*)malloc(param_size);
+   size_t tmp_size               = PATH_MAX_LENGTH;
+   char *tmp                     = (char*)malloc(3*tmp_size);
+   char *tmp_rel                 = tmp + tmp_size;
+   char *tmp_base                = tmp + 2*tmp_size;
+   struct config_entry_list *override_entry    = NULL;
+   char *override_parameters     = (char*)malloc(param_size);
 
-      override_parameters[0]        = '\0';
-      textures_in_conf[0]           = '\0';
-      strlcpy(tmp_base, conf->path, tmp_size);
+   override_parameters[0]        = '\0';
+   textures_in_conf[0]           = '\0';
+   strlcpy(tmp_base, conf->path, tmp_size);
 
-      if (conf == NULL || override_conf == NULL) return 0;
+   if (conf == NULL || override_conf == NULL) return 0;
 
-      /* ---------------------------------------------------------------------------------
-       * ------------- Resolve Override texture paths to absolute paths-------------------
-       * --------------------------------------------------------------------------------- */
+   /* ---------------------------------------------------------------------------------
+    * ------------- Resolve Override texture paths to absolute paths-------------------
+    * --------------------------------------------------------------------------------- */
 
-      /* ensure we use a clean base like the shader passes and texture paths do */
-      path_resolve_realpath(tmp_base, tmp_size, false);
-      path_basedir(tmp_base);
+   /* ensure we use a clean base like the shader passes and texture paths do */
+   path_resolve_realpath(tmp_base, tmp_size, false);
+   path_basedir(tmp_base);
 
-      /* If there are textures in the referenced config */
-      if (config_get_array(conf, "textures", textures_in_conf, param_size))
+   /* If there are textures in the referenced config */
+   if (config_get_array(conf, "textures", textures_in_conf, param_size))
+   {
+      for ( id = strtok_r(textures_in_conf, ";", &save);
+            id;
+            id = strtok_r(NULL, ";", &save))
       {
-         for ( id = strtok_r(textures_in_conf, ";", &save); 
-               id; 
-               id = strtok_r(NULL, ";", &save))
+         /* Get the texture path from the override config */
+         if (config_get_path(override_conf, id, override_texture_path, path_size))
          {
-            /* Get the texture path from the override config */
-            if (config_get_path(override_conf, id, override_texture_path, path_size))
-            {
-               /* Resolve the texture's path relative to the override config */
-               if (!path_is_absolute(override_texture_path))
-                  fill_pathname_resolve_relative(resolved_path, 
-                                                override_conf->path, 
-                                                override_texture_path, 
-                                                PATH_MAX_LENGTH);
-               else
-                  strlcpy(resolved_path, override_texture_path, path_size);
+            /* Resolve the texture's path relative to the override config */
+            if (!path_is_absolute(override_texture_path))
+               fill_pathname_resolve_relative(resolved_path,
+                     override_conf->path,
+                     override_texture_path,
+                     PATH_MAX_LENGTH);
+            else
+               strlcpy(resolved_path, override_texture_path, path_size);
 
-               path_relative_to(tmp_rel, resolved_path, tmp_base, tmp_size);
-               config_set_path(override_conf, id, tmp_rel);
+            path_relative_to(tmp_rel, resolved_path, tmp_base, tmp_size);
+            config_set_path(override_conf, id, tmp_rel);
 
-               return_val = 1;
-            }
-         }
-      }
-      
-      /* ---------------------------------------------------------------------------------
-       * -------------Update Parameter List to include Override Parameters----------------
-       * --------------------------------------------------------------------------------- */
-
-      /* If there is a 'parameters' entry in the override config we want to add these parameters
-       * to the referenced config if they are not already there */
-      if (config_get_array(override_conf, "parameters", override_parameters, param_size))
-      {
-         /* Get the string for the parameters from the root config */
-         char *parameters      = NULL;
-         parameters            = (char*)malloc(param_size);
-         parameters[0]         = '\0';
-
-         /* If there are is no parameters entry in the root config, add one */
-         if (!config_get_array(conf, "parameters", parameters, param_size))
-         {
-            config_set_string(conf, "parameters", "");
-            config_get_array(conf, "parameters", parameters, param_size);
-         }
-
-         /* Step through each parameter in override config */
-         for ( id = strtok_r(override_parameters, ";", &save);
-               id; 
-               id = strtok_r(NULL, ";", &save))
-            {
-               /* If the parameter is not in the root config's parameter list add it */
-               if (!strstr(parameters, id))
-               {
-                  strlcat(parameters, ";", param_size);
-                  strlcat(parameters, id, param_size);
-                  return_val = 1;
-               }
-            }
-         config_set_string(conf, "parameters", strdup(parameters));
-
-         free(parameters);
-      }
-
-      /* ---------------------------------------------------------------------------------
-       * ------------- Update entries to match the override entries ----------------------
-       * --------------------------------------------------------------------------------- */
-
-      for (override_entry = override_conf->entries; override_entry; override_entry = override_entry->next)
-      {
-         /* Only override an entry if the it's key is not "parameters", and not in list of textures */
-         if (!string_is_empty(override_entry->key) && !string_is_equal(override_entry->key, "parameters") && !string_is_equal(override_entry->key, "textures"))
-         {
-            RARCH_LOG("[Shaders-Load Reference]:  Entry overridden %s = %s.\n", 
-                        override_entry->key, override_entry->value);
-            config_set_string(conf, override_entry->key, strdup(override_entry->value));
             return_val = 1;
          }
       }
+   }
 
-      free(tmp);
-      free(resolved_path);
-      free(override_texture_path);
-      free(override_parameters);
-      free(textures_in_conf);
+   /* ---------------------------------------------------------------------------------
+    * -------------Update Parameter List to include Override Parameters----------------
+    * --------------------------------------------------------------------------------- */
 
-      return return_val;
+   /* If there is a 'parameters' entry in the override config we want to add these parameters
+    * to the referenced config if they are not already there */
+   if (config_get_array(override_conf, "parameters", override_parameters, param_size))
+   {
+      /* Get the string for the parameters from the root config */
+      char *parameters           = NULL;
+      const char *override_id    = NULL;
+      char *override_save        = NULL;
+      bool param_found           = false;
+      
+      parameters            = (char*)malloc(param_size);
+      parameters[0]         = '\0';
+   
+      /* If there are is no parameters entry in the root config, add one */
+      if (!config_get_array(conf, "parameters", parameters, param_size))
+      {
+         config_set_string(conf, "parameters", "");
+         config_get_array(conf, "parameters", parameters, param_size);
+      }
+
+      /* Step through each parameter in override config */
+      for ( override_id = strtok_r(override_parameters, ";", &override_save);
+            override_id;
+            override_id = strtok_r(NULL, ";", &override_save))
+      {
+         /* Check all ids in the parameters array to see if the 
+          * override id is already there */
+         for ( id = strtok_r(parameters, ";", &save);
+               id;
+               id = strtok_r(NULL, ";", &save))
+            if (string_is_equal(id, override_id))
+            {
+               param_found = true;
+               break;
+            }
+
+         /* If the parameter is not in the config's parameter list yet add it */
+         if (!param_found)
+         {
+            strlcat(parameters, ";", param_size);
+            strlcat(parameters, override_id, param_size);
+            return_val = 1;
+         }
+         param_found = false;
+      }
+      config_set_string(conf, "parameters", parameters);
+
+      free(parameters);
+   }
+
+   /* ---------------------------------------------------------------------------------
+    * ------------- Update entries to match the override entries ----------------------
+    * --------------------------------------------------------------------------------- */
+
+   for (override_entry = override_conf->entries; override_entry; override_entry = override_entry->next)
+   {
+      /* Only override an entry if the it's key is not "parameters", and not in list of textures */
+      if (!string_is_empty(override_entry->key) && !string_is_equal(override_entry->key, "parameters") && !string_is_equal(override_entry->key, "textures"))
+      {
+         RARCH_LOG("[Shaders-Load Reference]:  Entry overridden %s = %s.\n",
+                     override_entry->key, override_entry->value);
+         config_set_string(conf, override_entry->key, override_entry->value);
+         return_val = 1;
+      }
+   }
+
+   free(tmp);
+   free(resolved_path);
+   free(override_texture_path);
+   free(override_parameters);
+   free(textures_in_conf);
+
+   return return_val;
 }
 
 /**

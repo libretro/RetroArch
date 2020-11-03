@@ -181,7 +181,7 @@ static char *config_file_strip_comment(char *str)
          *str = '\0';
          return ++comment;
       }
-      
+
       /* Comment character occurs at an offset:
        * Search for the start of a string literal value */
       literal_start = strchr(str, '\"');
@@ -463,24 +463,26 @@ static bool config_file_parse_line(config_file_t *conf,
    if (comment)
    {
       config_file_t sub_conf;
+      bool include_found       = false;
+      bool reference_found     = false;
       char real_path[PATH_MAX_LENGTH];
       char *path               = NULL;
       char *include_line       = NULL;
       char *reference_line     = NULL;
 
-      /* Starting a line with an 'include' directive
-       * appends a sub-config file
-       * > All other comments are ignored */
-      if (!string_starts_with_size(comment, "include ",
-               STRLEN_CONST("include ")) &&
-          !string_starts_with_size(comment, "reference ",
-               STRLEN_CONST("reference ")))
+      include_found = string_starts_with_size(comment, "include ",
+                                          STRLEN_CONST("include "));
+      reference_found = string_starts_with_size(comment, "reference ",
+                                          STRLEN_CONST("reference "));
+
+      /* All comments except those starting with the include or 
+       * reference directive are ignored */
+      if (!include_found && !reference_found)
          return false;
 
       /* Starting a line with an 'include' directive
        * appends a sub-config file */
-      if (string_starts_with_size(comment, "include ",
-         STRLEN_CONST("include ")))
+      if (include_found)
       {
          include_line = comment + STRLEN_CONST("include ");
 
@@ -492,8 +494,8 @@ static bool config_file_parse_line(config_file_t *conf,
          if (!path)
             return false;
 
-      if (     string_is_empty(path)
-            || conf->include_depth >= MAX_INCLUDE_DEPTH)
+         if (     string_is_empty(path)
+               || conf->include_depth >= MAX_INCLUDE_DEPTH)
          {
             free(path);
             return false;
@@ -508,22 +510,22 @@ static bool config_file_parse_line(config_file_t *conf,
          switch (config_file_load_internal(&sub_conf, real_path,
             conf->include_depth + 1, cb))
          {
-         case 0:
-            /* Pilfer internal list. */
-            config_file_add_child_list(conf, &sub_conf);
-            /* fall-through to deinitialize */
-         case -1:
-            config_file_deinitialize(&sub_conf);
-            break;
-         case 1:
-         default:
-            break;
+            case 0:
+               /* Pilfer internal list. */
+               config_file_add_child_list(conf, &sub_conf);
+               /* fall-through to deinitialize */
+            case -1:
+               config_file_deinitialize(&sub_conf);
+               break;
+            case 1:
+            default:
+               break;
          }
       }
 
-      /* If it's a 'reference' directive */
-      if (string_starts_with_size(comment, "reference ",
-         STRLEN_CONST("reference ")))
+      /* Starting a line with an 'reference' directive
+       * sets the reference path */
+      if (reference_found)
       {
          reference_line = comment + STRLEN_CONST("reference ");
 
@@ -648,13 +650,19 @@ static int config_file_from_string_internal(
 
 void config_file_set_reference_path(config_file_t *conf, char *path)
 {
-   if (conf)
+   /* If a relative path the input path is desired the caller is
+    * responsible for preparing and supplying the relative path*/
+   if (!conf)
+      return;
+
+   if (conf->reference)
    {
-      /* Assumes if you wanted a relative path the input path  is
-       * already relative to the config
-      */
-      conf->reference = strdup(path);
+      free(conf->reference);
+      conf->reference = NULL;
    }
+
+
+   conf->reference = strdup(path);
 }
 
 bool config_file_deinitialize(config_file_t *conf)
@@ -694,6 +702,9 @@ bool config_file_deinitialize(config_file_t *conf)
       if (hold)
          free(hold);
    }
+
+   if (conf->reference)
+      free(conf->reference);
 
    if (conf->path)
       free(conf->path);
