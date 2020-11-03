@@ -1135,6 +1135,89 @@ char **net_http_headers_get_values(struct http_headers_t *headers, const char *n
    return values;
 }
 
+static void log_body(bool request, char *body, size_t length)
+{
+   char *carriageReturn;
+   char *newline;
+
+   carriageReturn = (char *)memchr(body, '\r', length);
+   newline = (char *)memchr(body, '\n', length);
+
+   while (length > 0)
+   {
+      char *end;
+
+      if (carriageReturn && newline && carriageReturn < newline)
+      {
+         end = carriageReturn;
+      } else if (newline)
+      {
+         end = newline;
+      } else if (carriageReturn)
+      {
+         end = carriageReturn;
+      } else {
+         end = body + length;
+      }
+
+      if (end - body > MAX_LOG_LINE_LENGTH)
+      {
+         if (request)
+         {
+            RARCH_LOG("[HTTP] >> %.60s ...\n", body);
+         } else
+         {
+            RARCH_LOG("[HTTP] << %.60s ...\n", body);
+         }
+
+         body += 60;
+         length -= 60;
+      } else
+      {
+         char *fmt_string;
+
+         fmt_string = (char *)calloc(30, sizeof(char));
+         if (request)
+         {
+            snprintf(fmt_string, 19, "[HTTP] >> %%.%lus\n", (unsigned long)(end - body));
+         } else
+         {
+            snprintf(fmt_string, 19, "[HTTP] << %%.%lus\n", (unsigned long)(end - body));
+         }
+
+         RARCH_LOG(fmt_string, body);
+         free(fmt_string);
+
+         if (carriageReturn && newline && newline > carriageReturn)
+         {
+            length -= newline - body + 1;
+            body = newline;
+            body += 1;
+            carriageReturn = (char *)memchr(body, '\r', length);
+            newline = (char *)memchr(body, '\n', length);
+         } else if (carriageReturn)
+         {
+            length -= carriageReturn - body + 1;
+            body = carriageReturn;
+            body += 1;
+            carriageReturn = (char *)memchr(body, '\r', length);
+            newline = (char *)memchr(body, '\n', length);
+         } else if (newline)
+         {
+            length -= newline - body + 1;
+            body = newline;
+            body += 1;
+            carriageReturn = (char *)memchr(body, '\r', length);
+            newline = (char *)memchr(body, '\n', length);
+         } else
+         {
+            body += length;
+            length = 0;
+         }
+      }
+   }
+}
+
 struct http_t *net_http_new(struct http_connection_t *conn)
 {
    bool error            = false;
@@ -1305,26 +1388,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 #ifdef HAVE_DEBUG
       if (conn->request->log_request)
       {
-         int i = 0;
-
-         while (i * MAX_LOG_LINE_LENGTH < conn->request->data_len)
-         {
-            if ((i + 1) * MAX_LOG_LINE_LENGTH > conn->request->data_len)
-            {
-               char *fmt_string;
-
-               fmt_string = (char *)calloc(30, sizeof(char));
-               snprintf(fmt_string, 19, "[HTTP] >> %%.%lus\n", conn->request->data_len - (i *  MAX_LOG_LINE_LENGTH));
-
-               RARCH_LOG(fmt_string, (char *)(conn->request->data + (i * MAX_LOG_LINE_LENGTH)));
-               free(fmt_string);
-            } else
-            {
-               RARCH_LOG("[HTTP] >> %.60s ...\n", (char *)(conn->request->data + (i * MAX_LOG_LINE_LENGTH)));
-            }
-
-            i++;
-         }
+         log_body(true, (char *)conn->request->data, conn->request->data_len);
       }
 #endif
       net_http_send_bytes(&conn->sock_state, &error, conn->request->data, conn->request->data_len);
@@ -1637,26 +1701,7 @@ parse_again:
 #ifdef HAVE_DEBUG
       if (state->bodytype != T_NONE && state->log_response_body)
       {
-         int i = 0;
-
-         while (i * MAX_LOG_LINE_LENGTH < state->len)
-         {
-            if ((i + 1) * MAX_LOG_LINE_LENGTH > state->len)
-            {
-               char *fmt_string;
-
-               fmt_string = (char *)calloc(30, sizeof(char));
-               snprintf(fmt_string, 19, "[HTTP] << %%.%lus\n", state->len - (i *  MAX_LOG_LINE_LENGTH));
-
-               RARCH_LOG(fmt_string, (char *)(state->data + (i * MAX_LOG_LINE_LENGTH)));
-               free(fmt_string);
-            } else
-            {
-               RARCH_LOG("[HTTP] << %.60s ...\n", (char *)(state->data + (i * MAX_LOG_LINE_LENGTH)));
-            }
-
-            i++;
-         }
+         log_body(false, (char *)state->data, state->len);
       } else if (state->bodytype != T_NONE)
       {
          RARCH_LOG("[HTTP] << ## omitted ##\n");
