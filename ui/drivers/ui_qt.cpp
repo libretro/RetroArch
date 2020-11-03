@@ -776,7 +776,7 @@ QStringList string_split_to_qt(QString str, char delim)
       int spl = str.indexOf(delim, at);
 
       /* Store split into list of extensions */
-      list << str.mid(at, (spl < 0 ? str.length() : spl));
+      list << str.mid(at, (spl < 0 ? -1 : spl - at));
 
       /* No more splits */
       if (spl < 0)
