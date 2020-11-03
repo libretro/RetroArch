@@ -99,8 +99,8 @@ matrix:
       android:
         components:
           - tools
-          - build-tools-28.0.3
-          - android-28
+          - build-tools-29.0.3
+          - android-29
       install:
         - echo y | sdkmanager "ndk-bundle"
       before_script:
