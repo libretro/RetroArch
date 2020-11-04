@@ -1084,15 +1084,15 @@ bool override_config_values(config_file_t *conf, config_file_t *override_conf)
       }
 
       /* Step through each parameter in override config */
-         for ( id = strtok_r(override_parameters, ";", &save);
-               id; 
-               id = strtok_r(NULL, ";", &save))
-            {
-               /* Add the parameter to the parameter list */
-               strlcat(parameters, ";", param_size);
-               strlcat(parameters, id, param_size);
-               return_val = 1;
-            }
+      for ( id = strtok_r(override_parameters, ";", &save);
+            id; 
+            id = strtok_r(NULL, ";", &save))
+      {
+         /* Add the parameter to the parameter list */
+         strlcat(parameters, ";", param_size);
+         strlcat(parameters, id, param_size);
+         return_val = 1;
+      }
       config_set_string(conf, "parameters", parameters);
 
       free(parameters);

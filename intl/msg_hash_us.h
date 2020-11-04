@@ -6676,7 +6676,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   "Save Simple Preset"
+   "Simple Presets"
    )
    
 MSG_HASH(
