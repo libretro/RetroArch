@@ -1597,7 +1597,8 @@ static int rcheevos_match_value(const char* val, const char* match)
 
 void rcheevos_validate_config_settings(void)
 {
-   const rc_disallowed_core_settings_t* core_filter = rc_disallowed_core_settings;
+   const rc_disallowed_core_settings_t 
+      *core_filter                  = rc_disallowed_core_settings;
    struct retro_system_info* system = runloop_get_libretro_system_info();
    if (!system->library_name || !rcheevos_hardcore_active())
       return;
@@ -1610,29 +1611,35 @@ void rcheevos_validate_config_settings(void)
 
          if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
          {
-            const rc_disallowed_setting_t* disallowed_setting = core_filter->disallowed_settings;
-            const char* key;
-            const char* val;
             int i;
-            int allowed = 1;
-            size_t key_len;
+            const char *key               = NULL;
+            const char *val               = NULL;
+            const rc_disallowed_setting_t
+               *disallowed_setting        = core_filter->disallowed_settings;
+            int allowed                   = 1;
 
             for (; disallowed_setting->setting; ++disallowed_setting)
             {
-               key = disallowed_setting->setting;
-               key_len = strlen(key);
+               key            = disallowed_setting->setting;
+               size_t key_len = strlen(key);
+
                if (key[key_len - 1] == '*')
                {
                   for (i = 0; i < coreopts->size; i++)
                   {
-                     if (string_starts_with_size(coreopts->opts[i].key, key, key_len - 1))
+                     if (string_starts_with_size(
+                              coreopts->opts[i].key, key, key_len - 1))
                      {
-                        val = core_option_manager_get_val(coreopts, i);
-                        if (rcheevos_match_value(val, disallowed_setting->value))
+                        const char* val =core_option_manager_get_val(coreopts, i);
+                        if (val)
                         {
-                           key = coreopts->opts[i].key;
-                           allowed = 0;
-                           break;
+                           if (rcheevos_match_value(
+                                    val, disallowed_setting->value))
+                           {
+                              key = coreopts->opts[i].key;
+                              allowed = 0;
+                              break;
+                           }
                         }
                      }
                   }
