@@ -11,7 +11,7 @@
  *  PURPOSE.  See the GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ *  If not, see <http:www.gnu.org/licenses/>.
  */
 
 #include <stdlib.h>
@@ -1072,9 +1072,6 @@ bool override_config_values(config_file_t *conf, config_file_t *override_conf)
    {
       /* Get the string for the parameters from the root config */
       char *parameters           = NULL;
-      const char *override_id    = NULL;
-      char *override_save        = NULL;
-      bool param_found           = false;
       
       parameters            = (char*)malloc(param_size);
       parameters[0]         = '\0';
@@ -1087,30 +1084,15 @@ bool override_config_values(config_file_t *conf, config_file_t *override_conf)
       }
 
       /* Step through each parameter in override config */
-      for ( override_id = strtok_r(override_parameters, ";", &override_save);
-            override_id;
-            override_id = strtok_r(NULL, ";", &override_save))
-      {
-         /* Check all ids in the parameters array to see if the 
-          * override id is already there */
-         for ( id = strtok_r(parameters, ";", &save);
-               id;
+         for ( id = strtok_r(override_parameters, ";", &save);
+               id; 
                id = strtok_r(NULL, ";", &save))
-            if (string_is_equal(id, override_id))
             {
-               param_found = true;
-               break;
+               /* Add the parameter to the parameter list */
+               strlcat(parameters, ";", param_size);
+               strlcat(parameters, id, param_size);
+               return_val = 1;
             }
-
-         /* If the parameter is not in the config's parameter list yet add it */
-         if (!param_found)
-         {
-            strlcat(parameters, ";", param_size);
-            strlcat(parameters, override_id, param_size);
-            return_val = 1;
-         }
-         param_found = false;
-      }
       config_set_string(conf, "parameters", parameters);
 
       free(parameters);
