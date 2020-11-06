@@ -52,6 +52,9 @@
 
 #include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
+#include "../../gfx/drivers_font_renderer/bitmapkor.h"
+#include "../../gfx/drivers_font_renderer/bitmapjpn.h"
+#include "../../gfx/drivers_font_renderer/bitmapchn.h"
 
 /* Thumbnail additions */
 #include "../../gfx/gfx_thumbnail_path.h"
@@ -2555,6 +2558,77 @@ static void blit_line_regular(
    while (!string_is_empty(message))
    {
       unsigned i, j;
+#if 1
+      uint32_t symbol = utf8_walk(&message);
+      if (symbol < RGUI_NUM_FONT_GLYPHS_REGULAR)
+      {
+         if (symbol != ' ')
+         {
+            for (j = 0; j < FONT_HEIGHT; j++)
+	    {
+               unsigned buff_offset = ((y + j) * fb_width) + x;
+
+               for (i = 0; i < FONT_WIDTH; i++)
+               {
+                  if (rgui->font_lut[symbol][i + (j * FONT_WIDTH)])
+                     *(frame_buf_data + buff_offset + i) = color;
+               }
+            }
+         }
+         x += FONT_WIDTH_STRIDE;
+      }
+      else if (symbol >= 0xac00 && symbol <= 0xd7a3) // hangul
+      {
+         for (j = 0; j < FONT_KOR_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_KOR_WIDTH; i++)
+            {
+               uint8_t rem = 1 << ((i + j * FONT_KOR_WIDTH) & 7);
+               unsigned offset  = (i + j * FONT_KOR_WIDTH) >> 3;
+
+               if ((bitmap_kor_bin[FONT_KOR_OFFSET(symbol-0xac00) + offset] & rem) > 0)
+                  *(frame_buf_data + buff_offset + i) = color;
+            }
+         }
+         x += FONT_KOR_WIDTH_STRIDE;
+      }
+      else if (symbol >= 0x3040 && symbol <= 0x30ff) // japanese
+      {
+         for (j = 0; j < FONT_JPN_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_JPN_WIDTH; i++)
+            {
+               uint8_t rem = 1 << ((i + j * FONT_JPN_WIDTH) & 7);
+               unsigned offset  = (i + j * FONT_JPN_WIDTH) >> 3;
+
+               if ((bitmap_jpn_bin[FONT_JPN_OFFSET(symbol-0x3040) + offset] & rem) > 0)
+                  *(frame_buf_data + buff_offset + i) = color;
+            }
+         }
+         x += FONT_JPN_WIDTH_STRIDE;
+      }
+      else if (symbol >= 0x4e00 && symbol <= 0x9fff) // chinese
+      {
+         for (j = 0; j < FONT_CHN_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_CHN_WIDTH; i++)
+            {
+               uint8_t rem = 1 << ((i + j * FONT_CHN_WIDTH) & 7);
+               unsigned offset  = (i + j * FONT_CHN_WIDTH) >> 3;
+
+               if ((bitmap_chn_bin[FONT_CHN_OFFSET(symbol-0x4e00) + offset] & rem) > 0)
+                  *(frame_buf_data + buff_offset + i) = color;
+            }
+         }
+         x += FONT_CHN_WIDTH_STRIDE;
+      }
+#else
       uint8_t symbol = (uint8_t)*message++;
 
       if (symbol >= RGUI_NUM_FONT_GLYPHS_REGULAR)
@@ -2575,6 +2649,7 @@ static void blit_line_regular(
       }
 
       x += FONT_WIDTH_STRIDE;
+#endif	  
    }
 }
 
@@ -2596,6 +2671,113 @@ static void blit_line_regular_shadow(
    while (!string_is_empty(message))
    {
       unsigned i, j;
+#if 1
+      uint32_t symbol = utf8_walk(&message);
+      if (symbol < RGUI_NUM_FONT_GLYPHS_REGULAR)
+      {
+         if (symbol != ' ')
+         {
+            for (j = 0; j < FONT_HEIGHT; j++)
+	    {
+               unsigned buff_offset = ((y + j) * fb_width) + x;
+
+               for (i = 0; i < FONT_WIDTH; i++)
+               {
+                  if (rgui->font_lut[symbol][i + (j * FONT_WIDTH)])
+                  {
+                     uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                     /* Text pixel + right shadow */
+                     memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                     /* Bottom shadow */
+                     frame_buf_ptr += fb_width;
+                     memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+                  }
+               }
+            }
+         }
+         x += FONT_WIDTH_STRIDE;
+      }
+      else if (symbol >= 0xac00 && symbol <= 0xd7a3) // hangul
+      {
+         for (j = 0; j < FONT_KOR_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_KOR_WIDTH; i++)
+            {
+               uint8_t rem = 1 << ((i + j * FONT_KOR_WIDTH) & 7);
+               unsigned offset  = (i + j * FONT_KOR_WIDTH) >> 3;
+
+               if ((bitmap_kor_bin[FONT_KOR_OFFSET(symbol-0xac00) + offset] & rem) > 0)
+               {
+                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+               }
+            }
+         }
+         x += FONT_KOR_WIDTH_STRIDE;
+      }
+      else if (symbol >= 0x3040 && symbol <= 0x30ff) // japanese
+      {
+         for (j = 0; j < FONT_JPN_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_JPN_WIDTH; i++)
+            {
+               uint8_t rem = 1 << ((i + j * FONT_JPN_WIDTH) & 7);
+               unsigned offset  = (i + j * FONT_JPN_WIDTH) >> 3;
+
+               if ((bitmap_jpn_bin[FONT_JPN_OFFSET(symbol-0x3040) + offset] & rem) > 0)
+               {
+                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+               }
+            }
+         }
+         x += FONT_JPN_WIDTH_STRIDE;
+      }
+      else if (symbol >= 0x4e00 && symbol <= 0x9fff) // chinese
+      {
+         for (j = 0; j < FONT_CHN_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_CHN_WIDTH; i++)
+            {
+               uint8_t rem = 1 << ((i + j * FONT_CHN_WIDTH) & 7);
+               unsigned offset  = (i + j * FONT_CHN_WIDTH) >> 3;
+
+               if ((bitmap_chn_bin[FONT_CHN_OFFSET(symbol-0x4e00) + offset] & rem) > 0)
+               {
+                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+               }
+            }
+         }
+         x += FONT_CHN_WIDTH_STRIDE;
+      }
+#else
       uint8_t symbol = (uint8_t)*message++;
 
       if (symbol >= RGUI_NUM_FONT_GLYPHS_REGULAR)
@@ -2625,6 +2807,7 @@ static void blit_line_regular_shadow(
       }
 
       x += FONT_WIDTH_STRIDE;
+#endif	  
    }
 }
 
