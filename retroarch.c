@@ -2730,6 +2730,7 @@ static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NUL
 #endif
       DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
       DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
+      DECLARE_META_BIND(2, runahead_toggle,       RARCH_RUNAHEAD_TOGGLE,       MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE),
       DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
 
@@ -12978,6 +12979,7 @@ static const struct cmd_map map[] = {
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
    { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
+   { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
    { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
    { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
@@ -15987,6 +15989,37 @@ bool command_event(enum event_command cmd, void *data)
          {
             streaming_set_state(true);
             command_event(CMD_EVENT_RECORD_INIT, NULL);
+         }
+         break;
+      case CMD_EVENT_RUNAHEAD_TOGGLE:
+         settings->bools.run_ahead_enabled = !(settings->bools.run_ahead_enabled);
+
+         char msg[256];
+         msg[0] = '\0';
+
+         if (!settings->bools.run_ahead_enabled)
+         {
+            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_DISABLED),
+            1, 100, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         else if (!settings->bools.run_ahead_secondary_instance)
+         {
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
+            settings->uints.run_ahead_frames);
+
+            runloop_msg_queue_push(
+            msg, 1, 100, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         else
+         {
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
+            settings->uints.run_ahead_frames);
+
+            runloop_msg_queue_push(
+            msg, 1, 100, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
       case CMD_EVENT_RECORDING_TOGGLE:
@@ -39691,11 +39724,14 @@ static enum runloop_state runloop_check_state(
    /* Check if we have pressed the recording toggle button */
    HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE, true, NULL);
 
-   /* Check if we have pressed the AI Service toggle button */
-   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
-
    /* Check if we have pressed the streaming toggle button */
    HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE, true, NULL);
+
+   /* Check if we have pressed the Run-Ahead toggle button */
+   HOTKEY_CHECK(RARCH_RUNAHEAD_TOGGLE, CMD_EVENT_RUNAHEAD_TOGGLE, true, NULL);
+
+   /* Check if we have pressed the AI Service toggle button */
+   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
 
    if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
