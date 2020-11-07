@@ -204,6 +204,22 @@ check_lib()
 	return 0
 }
 
+# unbreak_msys_libs:
+# The purpose of this function is to correct broken pkg-config flags and
+# otherwise on msys.
+# $* Arguments of the command to run
+unbreak_msys_libs()
+{ $* | tr ' ' '\n' | while read line; do
+    if [ ! -f "$line" ] && (echo "$line" | grep '^[a-zA-Z]:\/.*\/lib.*\.a$' >/dev/null); then
+      echo -n "$line " | sed 's/^[a-zA-Z]:\/.*\/lib\(.*\)\.a/-l\1/g'
+    else
+      echo -n "$line "
+    fi
+  done
+
+  return 0
+}
+
 # check_pkgconf:
 # If available uses $PKG_CONF_PATH to find a library.
 # $1 = HAVE_$1
@@ -211,6 +227,7 @@ check_lib()
 # $3 = version [checked only if non-empty]
 # $4 = critical error message [checked only if non-empty]
 # $5 = force check_lib when true [checked only if non-empty, set by check_val]
+# $6 = Use static libraries? [checked only if non-empty]
 check_pkgconf()
 {	add_opt "$1"
 	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
@@ -236,6 +253,12 @@ check_pkgconf()
 	answer='no'
 	version='no'
 
+	if [ -n "$6" ]; then
+		staticflag="--static"
+	else
+		staticflag=""
+	fi
+
 	for pkgnam in $(printf %s "${2#* }"); do
 		[ "$answer" = 'yes' ] && break
 		printf %s "$MSG $pkgnam$ECHOBUF ... "
@@ -243,9 +266,17 @@ check_pkgconf()
 			if "$PKG_CONF_PATH" --atleast-version="$pkgver" "$pkgnam"; then
 				answer='yes'
 				version="$("$PKG_CONF_PATH" --modversion "$pkgnam")"
-				eval "${1}_CFLAGS=\"$("$PKG_CONF_PATH" --cflags "$pkgnam")\""
-				eval "${1}_LIBS=\"$("$PKG_CONF_PATH" --libs "$pkgnam")\""
+				eval "${1}_CFLAGS=\"$("$PKG_CONF_PATH" $staticflag --cflags "$pkgnam")\""
 				eval "${1}_VERSION=\"$pkgver\""
+
+				# If we are running on Msys, it has broken pkg-config files for static
+				# libraries. We need to manually go through and correct these.
+        if [ -n "$staticflag" ] && (uname -o | grep -i "msys" >/dev/null 2>&1); then
+          eval "${1}_LIBS=\"$(unbreak_msys_libs "$PKG_CONF_PATH" $staticflag --libs "$pkgnam")\""
+        else
+          eval "${1}_LIBS=\"$("$PKG_CONF_PATH" $staticflag --libs "$pkgnam")\""
+        fi
+
 				break
 			fi
 		done

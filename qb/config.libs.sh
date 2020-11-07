@@ -273,12 +273,16 @@ check_enabled CXX DISCORD discord 'The C++ compiler is' false
 check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 
 if [ "$HAVE_QT" != 'no' ]; then
-   check_pkgconf QT5CORE Qt5Core 5.2
-   check_pkgconf QT5GUI Qt5Gui 5.2
-   check_pkgconf QT5WIDGETS Qt5Widgets 5.2
-   check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
-   check_pkgconf QT5NETWORK Qt5Network 5.2
-   #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
+   if [ "$HAVE_STATIC_QT" != 'no' ]; then
+      USING_STATIC_QT='yes'
+   fi
+
+   check_pkgconf QT5CORE Qt5Core 5.2 "" "" "$USING_STATIC_QT"
+   check_pkgconf QT5GUI Qt5Gui 5.2 "" "" "$USING_STATIC_QT"
+   check_pkgconf QT5WIDGETS Qt5Widgets 5.2 "" "" "$USING_STATIC_QT"
+   check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2 "" "" "$USING_STATIC_QT"
+   check_pkgconf QT5NETWORK Qt5Network 5.2 "" "" "$USING_STATIC_QT"
+   #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4 "" "" "$USING_STATIC_QT"
 
    # pkg-config is needed to reliably find Qt5 libraries.
 

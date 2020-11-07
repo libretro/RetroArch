@@ -17,6 +17,17 @@
 #include <QApplication>
 #include <QAbstractEventDispatcher>
 
+// Needed for Static QT builds
+#ifdef HAVE_STATIC_QT
+#include <QtPlugin>
+
+#ifdef _WIN32
+Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
+#else
+#error No statically imported QT Plugin.
+#endif
+#endif
+
 #ifndef CXX_BUILD
 extern "C" {
 #endif

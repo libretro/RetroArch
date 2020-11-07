@@ -190,3 +190,4 @@ HAVE_NETWORK_VIDEO=no
 HAVE_STEAM=no              # Enable Steam build
 HAVE_ODROIDGO2=no          # ODROID-GO Advance rotation support (requires librga)
 HAVE_GIT_VERSION=yes       # Git version support
+HAVE_STATIC_QT=no          # Use static QT instead (requires Static QT to be in pkg-config)
