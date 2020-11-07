@@ -1,5 +1,8 @@
 /* 이 폰트는 히힛마스터님에 의해 생성되었습니다. 
  * 생성일 : 2020.11.03
+ * 폰트명 : 갈무리(galmuri)
+ * 입수 경로 : https://tbh.kr/galmuri
+ * 갈무리는 SIL 오픈 폰트 라이선스 1.1에 따라 이용할 수 있으며 그 자체로 판매되지 않는 한 자유롭게 사용, 연구, 수정, 재배포할 수 있습니다.
  */
 
 #ifndef __RARCH_FONT_BITMAPKOR_H
@@ -10,7 +13,7 @@
 /* FONT_HEIGHT_BASELINE_OFFSET:
  * Distance in pixels from top of character
  * to baseline */
-#define FONT_KOR_HEIGHT_BASELINE_OFFSET 0
+#define FONT_KOR_HEIGHT_BASELINE_OFFSET 8
 #define FONT_KOR_WIDTH_STRIDE (FONT_KOR_WIDTH + 1)
 #define FONT_KOR_HEIGHT_STRIDE (FONT_KOR_HEIGHT + 1)
 
