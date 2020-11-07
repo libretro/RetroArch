@@ -1620,8 +1620,9 @@ void rcheevos_validate_config_settings(void)
 
             for (; disallowed_setting->setting; ++disallowed_setting)
             {
+               size_t key_len;
                key            = disallowed_setting->setting;
-               size_t key_len = strlen(key);
+               key_len        = strlen(key);
 
                if (key[key_len - 1] == '*')
                {
