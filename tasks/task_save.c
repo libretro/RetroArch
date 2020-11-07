@@ -860,7 +860,11 @@ static void task_load_handler(retro_task_t *task)
    {
       if (state->autoload)
       {
+#ifdef __CELLOS_LV2__
+         char *msg = (char*)malloc(8192 * sizeof(char));
+#else
          char msg[8192];
+#endif
 
          msg[0] = '\0';
 
@@ -871,6 +875,9 @@ static void task_load_handler(retro_task_t *task)
                state->path,
                msg_hash_to_str(MSG_FAILED));
          task_set_error(task, strdup(msg));
+#ifdef __CELLOS_LV2__
+         free(msg);
+#endif
       }
       else
          task_set_error(task, strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE)));
