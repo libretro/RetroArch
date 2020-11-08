@@ -708,10 +708,17 @@ static int database_info_list_iterate_found_match(
       const char *archive_name
       )
 {
+#ifdef __CELLOS_LV2__
+   char* db_crc = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char* db_playlist_base_str = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char* db_playlist_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char* entry_path_str = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+#else
    char db_crc[PATH_MAX_LENGTH];
    char db_playlist_base_str[PATH_MAX_LENGTH];
    char db_playlist_path[PATH_MAX_LENGTH];
    char entry_path_str[PATH_MAX_LENGTH];
+#endif
    char *hash                     = NULL;
    playlist_t   *playlist         = NULL;
    const char         *db_path    =
@@ -826,6 +833,12 @@ static int database_info_list_iterate_found_match(
       db_state->list->elems[0] = entry;
    }
 
+#ifdef __CELLOS_LV2__
+   free(db_crc);
+   free(db_playlist_base_str);
+   free(db_playlist_path);
+   free(entry_path_str);
+#endif
    return 0;
 }
 
