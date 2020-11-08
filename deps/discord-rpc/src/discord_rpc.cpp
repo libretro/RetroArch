@@ -68,7 +68,7 @@ static User connectedUser;
 static Backoff ReconnectTimeMs(500, 60 * 1000);
 static auto NextConnect = std::chrono::system_clock::now();
 
-static void UpdateReconnectTime(void)
+static void update_reconnect_time(void)
 {
    NextConnect = std::chrono::system_clock::now() +
       std::chrono::duration<int64_t, std::milli>{ReconnectTimeMs.nextDelay()};
@@ -83,7 +83,7 @@ extern "C" void Discord_UpdateConnection(void)
     {
         if (std::chrono::system_clock::now() >= NextConnect)
         {
-            UpdateReconnectTime();
+            update_reconnect_time();
             Connection->Open();
         }
     }
@@ -203,13 +203,12 @@ extern "C" void Discord_UpdateConnection(void)
         if (QueuedPresence.length)
         {
            QueuedMessage local;
-           {
-              std::lock_guard<std::mutex> guard(PresenceMutex);
-              local.length = QueuedPresence.length;
-              if (local.length)
-                 memcpy(local.buffer, QueuedPresence.buffer, local.length);
-              QueuedPresence.length = 0;
-           }
+           std::lock_guard<std::mutex> guard(PresenceMutex);
+           local.length = QueuedPresence.length;
+           if (local.length)
+              memcpy(local.buffer, QueuedPresence.buffer, local.length);
+           QueuedPresence.length = 0;
+
            if (!Connection->Write(local.buffer, local.length))
            {
               /* if we fail to send, requeue */
@@ -285,34 +284,38 @@ extern "C" void Discord_Initialize(
     if (Connection)
         return;
 
-    Connection = RpcConnection::Create(applicationId);
+    Connection            = RpcConnection::Create(applicationId);
     Connection->onConnect = [](JsonDocument& readyMessage)
     {
-        Discord_UpdateHandlers(&QueuedHandlers);
         char *userId        = NULL;
         char *username      = NULL;
         char *avatar        = NULL;
         char *discriminator = NULL;
+        bool in_data        = false;
+        bool in_user        = false;
 
-        bool in_data = false, in_user = false;
+        Discord_UpdateHandlers(&QueuedHandlers);
+
         for (JsonReader r(readyMessage); r.NextKey();)
         {
-            if (r.depth == 1)
-            {
-                in_data = !strcmp(r.key,"data");
-                in_user = false;
-            }
-            else if (r.depth == 2 && in_data)
-            {
-                in_user = !strcmp(r.key, "user");
-            }
-            else if (r.depth == 3 && in_user)
-            {
-                if      (!strcmp(r.key, "id"           )) r.NextStrDup(&userId);
-                else if (!strcmp(r.key, "username"     )) r.NextStrDup(&username);
-                else if (!strcmp(r.key, "avatar"       )) r.NextStrDup(&avatar);
-                else if (!strcmp(r.key, "discriminator")) r.NextStrDup(&discriminator);
-            }
+           if (r.depth == 1)
+           {
+              in_data = !strcmp(r.key,"data");
+              in_user = false;
+           }
+           else if (r.depth == 2 && in_data)
+              in_user = !strcmp(r.key, "user");
+           else if (r.depth == 3 && in_user)
+           {
+              if      (!strcmp(r.key, "id"           ))
+                 r.NextStrDup(&userId);
+              else if (!strcmp(r.key, "username"     ))
+                 r.NextStrDup(&username);
+              else if (!strcmp(r.key, "avatar"       ))
+                 r.NextStrDup(&avatar);
+              else if (!strcmp(r.key, "discriminator"))
+                 r.NextStrDup(&discriminator);
+           }
         }
 
         if (userId && username)
@@ -329,10 +332,14 @@ extern "C" void Discord_Initialize(
         WasJustConnected.exchange(true);
         ReconnectTimeMs.reset();
 
-        if (userId       ) free(userId       );
-        if (username     ) free(username     );
-        if (avatar       ) free(avatar       );
-        if (discriminator) free(discriminator);
+        if (userId)
+           free(userId);
+        if (username)
+           free(username);
+        if (avatar)
+           free(avatar);
+        if (discriminator)
+           free(discriminator);
     };
     Connection->onDisconnect = [](int err, const char* message)
     {
@@ -343,7 +350,7 @@ extern "C" void Discord_Initialize(
             Handlers = {};
         }
         WasJustDisconnected.exchange(true);
-        UpdateReconnectTime();
+        update_reconnect_time();
     };
 }
 
@@ -353,18 +360,17 @@ extern "C" void Discord_Shutdown(void)
         return;
     Connection->onConnect    = nullptr;
     Connection->onDisconnect = nullptr;
-    Handlers = {};
+    Handlers                 = {};
 
     RpcConnection::Destroy(Connection);
 }
 
 extern "C" void  Discord_UpdatePresence(const DiscordRichPresence* presence)
 {
-    {
-        std::lock_guard<std::mutex> guard(PresenceMutex);
-        QueuedPresence.length = JsonWriteRichPresenceObj(
-          QueuedPresence.buffer, sizeof(QueuedPresence.buffer), Nonce++, Pid, presence);
-    }
+   std::lock_guard<std::mutex> guard(PresenceMutex);
+   QueuedPresence.length = JsonWriteRichPresenceObj(
+         QueuedPresence.buffer, sizeof(QueuedPresence.buffer),
+         Nonce++, Pid, presence);
 }
 
 extern "C" void Discord_ClearPresence(void)
@@ -372,7 +378,8 @@ extern "C" void Discord_ClearPresence(void)
     Discord_UpdatePresence(nullptr);
 }
 
-extern "C" void Discord_Respond(const char* userId, /* DISCORD_REPLY_ */ int reply)
+extern "C" void Discord_Respond(const char* userId,
+      /* DISCORD_REPLY_ */ int reply)
 {
     /* if we are not connected, let's not batch up stale messages for later */
     if (!Connection || !Connection->IsOpen())
@@ -449,16 +456,14 @@ extern "C" void Discord_RunCallbacks(void)
      */
     while (JoinAskQueue.HavePendingSends())
     {
-        auto req = JoinAskQueue.GetNextSendMessage();
-        {
-            std::lock_guard<std::mutex> guard(HandlerMutex);
-            if (Handlers.joinRequest)
-            {
-                DiscordUser du{req->userId, req->username, req->discriminator, req->avatar};
-                Handlers.joinRequest(&du);
-            }
-        }
-        JoinAskQueue.CommitSend();
+       auto req = JoinAskQueue.GetNextSendMessage();
+       std::lock_guard<std::mutex> guard(HandlerMutex);
+       if (Handlers.joinRequest)
+       {
+          DiscordUser du{req->userId, req->username, req->discriminator, req->avatar};
+          Handlers.joinRequest(&du);
+       }
+       JoinAskQueue.CommitSend();
     }
 
     if (!isConnected)
