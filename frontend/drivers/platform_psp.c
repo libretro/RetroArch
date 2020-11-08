@@ -324,6 +324,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
    char argp[512] = {0};
    SceSize   args = 0;
+   int ret;
 
 #if !defined(VITA)
    strlcpy(argp, eboot_path, sizeof(argp));
@@ -342,7 +343,6 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 #if defined(VITA)
    RARCH_LOG("Attempt to load executable: %d [%s].\n", args, argp);
-   int ret;
 #ifdef IS_SALAMANDER
    sceAppMgrGetAppParam(boot_params);
    if (strstr(boot_params,"psgm:play"))
