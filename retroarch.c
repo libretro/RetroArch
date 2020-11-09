@@ -24548,41 +24548,43 @@ static void input_driver_poll(void)
                {
                   unsigned remap_button            =
                      settings->uints.input_keymapper_ids[i][j];
-                  bool remap_valid                 = 
-                     remap_button != RETROK_UNKNOWN;
-                  if (remap_valid)
-                  {
-                     unsigned current_button_value = 
-                        BIT256_GET_PTR(p_new_state, j);
+                  bool remap_valid                 =
+                     remap_button != RETROK_UNKNOWN &&
+                     !handle->keys[remap_button / 32];
+
+                  if (!remap_valid)
+                     continue;
+
+                  unsigned current_button_value =
+                     BIT256_GET_PTR(p_new_state, j);
 
 #ifdef HAVE_OVERLAY
-                     if (poll_overlay && i == 0)
-                     {
-                        input_overlay_state_t *ol_state  = 
-                           overlay_pointer 
-                           ? &overlay_pointer->overlay_state 
-                           : NULL;
-                        if (ol_state)
-                           current_button_value |= 
-                              BIT256_GET(ol_state->buttons, j);
-                     }
+                  if (poll_overlay && i == 0)
+                  {
+                     input_overlay_state_t *ol_state  =
+                        overlay_pointer
+                        ? &overlay_pointer->overlay_state
+                        : NULL;
+                     if (ol_state)
+                        current_button_value |=
+                           BIT256_GET(ol_state->buttons, j);
+                  }
 #endif
-                     if ((current_button_value == 1) 
-                           && (j != remap_button))
-                     {
-                        MAPPER_SET_KEY (handle,
-                              remap_button);
-                        input_keyboard_event(true,
-                              remap_button,
-                              0, 0, RETRO_DEVICE_KEYBOARD);
-                        continue;
-                     }
-
-                     /* Release keyboard event*/
-                     input_keyboard_event(false,
+                  if ((current_button_value == 1)
+                        && (j != remap_button))
+                  {
+                     MAPPER_SET_KEY (handle,
+                           remap_button);
+                     input_keyboard_event(true,
                            remap_button,
                            0, 0, RETRO_DEVICE_KEYBOARD);
+                     continue;
                   }
+
+                  /* Release keyboard event*/
+                  input_keyboard_event(false,
+                        remap_button,
+                        0, 0, RETRO_DEVICE_KEYBOARD);
                }
                break;
 
