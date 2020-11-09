@@ -1053,11 +1053,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       if (entry)
       {
          /* An entry corresponding to 'key' already exists
-          * > Check if it's read only */
-         if (entry->readonly)
-            return;
-
-         /* Check whether value is currently set */
+          * > Check whether value is currently set */
          if (entry->value)
          {
             /* Do nothing if value is unchanged */
@@ -1069,9 +1065,12 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
             free(entry->value);
          }
 
-         /* Update value */
-         entry->value   = strdup(val);
-         conf->modified = true;
+         /* Update value
+          * > Note that once a value is set, it
+          *   is no longer considered 'read only' */
+         entry->value    = strdup(val);
+         entry->readonly = false;
+         conf->modified  = true;
          return;
       }
    }
@@ -1245,14 +1244,6 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
-   while (includes)
-   {
-      char cad[256];
-      snprintf(cad, sizeof(cad), 
-            "#include %s\n", includes->path);
-      orbisWrite(fd, cad, strlen(cad));
-      includes = includes->next;
-   }
 
    list          = config_file_merge_sort_linked_list(
          (struct config_entry_list*)conf->entries,
@@ -1270,6 +1261,21 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
       }
       list = list->next;
    }
+
+   /* Config files are read from the top down - if
+    * duplicate entries are found then the topmost
+    * one in the list takes precedence. This means
+    * '#include' directives must go *after* individual
+    * config entries, otherwise they will override
+    * any custom-set values */
+   while (includes)
+   {
+      char cad[256];
+      snprintf(cad, sizeof(cad),
+            "#include %s\n", includes->path);
+      orbisWrite(fd, cad, strlen(cad));
+      includes = includes->next;
+   }
 }
 #endif
 
@@ -1277,12 +1283,6 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
-
-   while (includes)
-   {
-      fprintf(file, "#include \"%s\"\n", includes->path);
-      includes = includes->next;
-   }
 
    if (sort)
       list = config_file_merge_sort_linked_list(
@@ -1298,6 +1298,18 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
       if (!list->readonly && list->key)
          fprintf(file, "%s = \"%s\"\n", list->key, list->value);
       list = list->next;
+   }
+
+   /* Config files are read from the top down - if
+    * duplicate entries are found then the topmost
+    * one in the list takes precedence. This means
+    * '#include' directives must go *after* individual
+    * config entries, otherwise they will override
+    * any custom-set values */
+   while (includes)
+   {
+      fprintf(file, "#include \"%s\"\n", includes->path);
+      includes = includes->next;
    }
 }
 
