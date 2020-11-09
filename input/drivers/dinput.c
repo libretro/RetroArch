@@ -81,6 +81,7 @@ struct dinput_input
    int mouse_x;
    int mouse_y;
    uint8_t state[256];
+   bool shift_l, shift_r, alt_l;
    bool doubleclick_on_titlebar;
    bool mouse_l, mouse_r, mouse_m, mouse_b4, mouse_b5, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
 };
@@ -181,6 +182,50 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
+static void dinput_keyboard_mods(struct dinput_input *di, int mod)
+{
+   switch (mod)
+   {
+      case RETROKMOD_SHIFT:
+         {
+            unsigned vk_shift_l = GetAsyncKeyState(VK_LSHIFT) >> 1;
+            unsigned vk_shift_r = GetAsyncKeyState(VK_RSHIFT) >> 1;
+
+            if ( (vk_shift_l && !di->shift_l) ||
+                (!vk_shift_l && di->shift_l))
+            {
+               input_keyboard_event(vk_shift_l, RETROK_LSHIFT,
+                     0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
+               di->shift_l = !di->shift_l;
+            }
+
+            if ( (vk_shift_r && !di->shift_r) ||
+                (!vk_shift_r && di->shift_r))
+            {
+               input_keyboard_event(vk_shift_r, RETROK_RSHIFT,
+                     0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
+               di->shift_r = !di->shift_r;
+            }
+         }
+         break;
+
+      case RETROKMOD_ALT:
+         {
+            unsigned vk_alt_l = GetAsyncKeyState(VK_LMENU) >> 1;
+
+            if (vk_alt_l && !di->alt_l)
+               di->alt_l = !di->alt_l;
+            else if (!vk_alt_l && di->alt_l)
+            {
+               input_keyboard_event(vk_alt_l, RETROK_LALT,
+                     0, RETROKMOD_ALT, RETRO_DEVICE_KEYBOARD);
+               di->alt_l = !di->alt_l;
+            }
+         }
+         break;
+   }
+}
+
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
@@ -211,6 +256,12 @@ static void dinput_poll(void *data)
                *kb_state = 0;
          }
       }
+      else
+         /* Shifts only when window focused */
+         dinput_keyboard_mods(di, RETROKMOD_SHIFT);
+
+      /* Left alt keyup when unfocused, to prevent alt-tab sticky */
+      dinput_keyboard_mods(di, RETROKMOD_ALT);
    }
 
    if (di->mouse)
