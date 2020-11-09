@@ -1003,6 +1003,7 @@ FILTERS
 #include "../gfx/video_filters/normal2x.c"
 #include "../gfx/video_filters/normal2x_width.c"
 #include "../gfx/video_filters/normal2x_height.c"
+#include "../gfx/video_filters/normal4x.c"
 #include "../gfx/video_filters/scanline2x.c"
 #include "../gfx/video_filters/grid2x.c"
 #include "../gfx/video_filters/grid3x.c"
