@@ -282,6 +282,7 @@ extern const struct softfilter_implementation *scale2x_get_implementation(softfi
 extern const struct softfilter_implementation *normal2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *normal2x_width_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *normal2x_height_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *normal4x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scanline2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *grid2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *grid3x_get_implementation(softfilter_simd_mask_t simd);
@@ -304,6 +305,7 @@ static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    normal2x_get_implementation,
    normal2x_width_get_implementation,
    normal2x_height_get_implementation,
+   normal4x_get_implementation,
    scanline2x_get_implementation,
    grid2x_get_implementation,
    grid3x_get_implementation,

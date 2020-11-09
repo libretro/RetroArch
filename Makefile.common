@@ -2261,6 +2261,7 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/normal2x.o \
           gfx/video_filters/normal2x_width.o \
           gfx/video_filters/normal2x_height.o \
+          gfx/video_filters/normal4x.o \
           gfx/video_filters/scanline2x.o \
           gfx/video_filters/grid2x.o \
           gfx/video_filters/grid3x.o \
