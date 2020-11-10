@@ -15992,34 +15992,37 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_RUNAHEAD_TOGGLE:
-         settings->bools.run_ahead_enabled = !(settings->bools.run_ahead_enabled);
-
-         char msg[256];
-         msg[0] = '\0';
-
-         if (!settings->bools.run_ahead_enabled)
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_DISABLED),
-            1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         }
-         else if (!settings->bools.run_ahead_secondary_instance)
-         {
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
-            settings->uints.run_ahead_frames);
+            char msg[256];
+            msg[0] = '\0';
 
-            runloop_msg_queue_push(
-            msg, 1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         }
-         else
-         {
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
-            settings->uints.run_ahead_frames);
+            settings->bools.run_ahead_enabled = 
+               !(settings->bools.run_ahead_enabled);
 
-            runloop_msg_queue_push(
-            msg, 1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            if (!settings->bools.run_ahead_enabled)
+            {
+               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_DISABLED),
+                     1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+            else if (!settings->bools.run_ahead_secondary_instance)
+            {
+               snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
+                     settings->uints.run_ahead_frames);
+
+               runloop_msg_queue_push(
+                     msg, 1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+            else
+            {
+               snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
+                     settings->uints.run_ahead_frames);
+
+               runloop_msg_queue_push(
+                     msg, 1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
          }
          break;
       case CMD_EVENT_RECORDING_TOGGLE:
@@ -24546,6 +24549,7 @@ static void input_driver_poll(void)
             case RETRO_DEVICE_KEYBOARD:
                for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
                {
+                  unsigned current_button_value;
                   unsigned remap_button            =
                      settings->uints.input_keymapper_ids[i][j];
                   bool remap_valid                 =
@@ -24555,7 +24559,7 @@ static void input_driver_poll(void)
                   if (!remap_valid)
                      continue;
 
-                  unsigned current_button_value =
+                  current_button_value =
                      BIT256_GET_PTR(p_new_state, j);
 
 #ifdef HAVE_OVERLAY
