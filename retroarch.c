@@ -2730,6 +2730,7 @@ static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NUL
 #endif
       DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
       DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
+      DECLARE_META_BIND(2, runahead_toggle,       RARCH_RUNAHEAD_TOGGLE,       MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE),
       DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
 
@@ -12982,6 +12983,7 @@ static const struct cmd_map map[] = {
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
    { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
+   { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
    { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
    { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
@@ -15993,6 +15995,37 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RECORD_INIT, NULL);
          }
          break;
+      case CMD_EVENT_RUNAHEAD_TOGGLE:
+         settings->bools.run_ahead_enabled = !(settings->bools.run_ahead_enabled);
+
+         char msg[256];
+         msg[0] = '\0';
+
+         if (!settings->bools.run_ahead_enabled)
+         {
+            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_DISABLED),
+            1, 100, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         else if (!settings->bools.run_ahead_secondary_instance)
+         {
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
+            settings->uints.run_ahead_frames);
+
+            runloop_msg_queue_push(
+            msg, 1, 100, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         else
+         {
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
+            settings->uints.run_ahead_frames);
+
+            runloop_msg_queue_push(
+            msg, 1, 100, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         break;
       case CMD_EVENT_RECORDING_TOGGLE:
          if (recording_is_enabled())
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -18846,6 +18879,22 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 
 #if defined(HAVE_OPENGLES3)
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+#ifndef HAVE_OPENGLES3_2
+         if (major == 3 && minor == 2)
+         {
+            RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
+                  major, minor);
+            return false;
+         }
+#endif
+#if !defined(HAVE_OPENGLES3_2) && !defined(HAVE_OPENGLES3_1)
+         if (major == 3 && minor == 1)
+         {
+            RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
+                  major, minor);
+            return false;
+         }
+#endif
          RARCH_LOG("Requesting OpenGLES%u.%u context.\n",
                major, minor);
          break;
@@ -24503,41 +24552,43 @@ static void input_driver_poll(void)
                {
                   unsigned remap_button            =
                      settings->uints.input_keymapper_ids[i][j];
-                  bool remap_valid                 = 
-                     remap_button != RETROK_UNKNOWN;
-                  if (remap_valid)
-                  {
-                     unsigned current_button_value = 
-                        BIT256_GET_PTR(p_new_state, j);
+                  bool remap_valid                 =
+                     remap_button != RETROK_UNKNOWN &&
+                     !handle->keys[remap_button / 32];
+
+                  if (!remap_valid)
+                     continue;
+
+                  unsigned current_button_value =
+                     BIT256_GET_PTR(p_new_state, j);
 
 #ifdef HAVE_OVERLAY
-                     if (poll_overlay && i == 0)
-                     {
-                        input_overlay_state_t *ol_state  = 
-                           overlay_pointer 
-                           ? &overlay_pointer->overlay_state 
-                           : NULL;
-                        if (ol_state)
-                           current_button_value |= 
-                              BIT256_GET(ol_state->buttons, j);
-                     }
+                  if (poll_overlay && i == 0)
+                  {
+                     input_overlay_state_t *ol_state  =
+                        overlay_pointer
+                        ? &overlay_pointer->overlay_state
+                        : NULL;
+                     if (ol_state)
+                        current_button_value |=
+                           BIT256_GET(ol_state->buttons, j);
+                  }
 #endif
-                     if ((current_button_value == 1) 
-                           && (j != remap_button))
-                     {
-                        MAPPER_SET_KEY (handle,
-                              remap_button);
-                        input_keyboard_event(true,
-                              remap_button,
-                              0, 0, RETRO_DEVICE_KEYBOARD);
-                        continue;
-                     }
-
-                     /* Release keyboard event*/
-                     input_keyboard_event(false,
+                  if ((current_button_value == 1)
+                        && (j != remap_button))
+                  {
+                     MAPPER_SET_KEY (handle,
+                           remap_button);
+                     input_keyboard_event(true,
                            remap_button,
                            0, 0, RETRO_DEVICE_KEYBOARD);
+                     continue;
                   }
+
+                  /* Release keyboard event*/
+                  input_keyboard_event(false,
+                        remap_button,
+                        0, 0, RETRO_DEVICE_KEYBOARD);
                }
                break;
 
@@ -39679,11 +39730,14 @@ static enum runloop_state runloop_check_state(
    /* Check if we have pressed the recording toggle button */
    HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE, true, NULL);
 
-   /* Check if we have pressed the AI Service toggle button */
-   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
-
    /* Check if we have pressed the streaming toggle button */
    HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE, true, NULL);
+
+   /* Check if we have pressed the Run-Ahead toggle button */
+   HOTKEY_CHECK(RARCH_RUNAHEAD_TOGGLE, CMD_EVENT_RUNAHEAD_TOGGLE, true, NULL);
+
+   /* Check if we have pressed the AI Service toggle button */
+   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
 
    if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);

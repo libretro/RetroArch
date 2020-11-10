@@ -27,6 +27,7 @@ typedef struct _zlib_allocator zlib_allocator;
 struct _zlib_allocator
 {
 	UINT32 *				allocptr[MAX_ZLIB_ALLOCS];
+	UINT32 *				allocptr2[MAX_ZLIB_ALLOCS];
 };
 
 typedef struct _zlib_codec_data zlib_codec_data;

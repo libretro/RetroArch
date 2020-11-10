@@ -324,6 +324,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
    char argp[512] = {0};
    SceSize   args = 0;
+   int ret;
 
 #if !defined(VITA)
    strlcpy(argp, eboot_path, sizeof(argp));
@@ -346,21 +347,25 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    sceAppMgrGetAppParam(boot_params);
    if (strstr(boot_params,"psgm:play"))
    {
-      int ret;
-      char *param1 = strstr(boot_params, "&param=")+7;
+      char *param1 = strstr(boot_params, "&param=");
       char *param2 = strstr(boot_params, "&param2=");
-      memcpy(core_name, param1, param2 - param1);
-      core_name[param2-param1] = 0;
-      sprintf(argp, param2 + 8);
-      ret = sceAppMgrLoadExec(core_name, (char * const*)((const char*[]){argp, 0}), NULL);
-      RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+      if (param1 != NULL && param2 != NULL)
+      {
+         param1 += 7;
+         memcpy(core_name, param1, param2 - param1);
+         core_name[param2-param1] = 0;
+         sprintf(argp, param2 + 8);
+         ret = sceAppMgrLoadExec(core_name, (char * const*)((const char*[]){argp, 0}), NULL);
+         RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+         goto exit;
+      }
+      RARCH_LOG("Required boot params missing. Continue nornal boot.");
    }
-   else
 #endif
-   {
-      int ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
-      RARCH_LOG("Attempt to load executable: [%d].\n", ret);
-   }
+   ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
+   RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+exit:
+   return;
 #else
    exitspawn_kernel(path, args, argp);
 #endif

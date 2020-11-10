@@ -173,10 +173,11 @@ static void *alsa_thread_init(const char *device,
    TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, 0));
 
    TRY_ALSA(snd_pcm_hw_params_malloc(&params));
+   TRY_ALSA(snd_pcm_hw_params_any(alsa->pcm, params));
+
    alsa->has_float = alsathread_find_float_format(alsa->pcm, params);
    format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
-   TRY_ALSA(snd_pcm_hw_params_any(alsa->pcm, params));
    TRY_ALSA(snd_pcm_hw_params_set_access(
             alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED));
    TRY_ALSA(snd_pcm_hw_params_set_format(alsa->pcm, params, format));

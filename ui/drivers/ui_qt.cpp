@@ -764,3 +764,26 @@ ui_companion_driver_t ui_companion_qt = {
    &ui_application_qt,
    "qt",
 };
+
+QStringList string_split_to_qt(QString str, char delim)
+{
+   int at;
+   QStringList list = QStringList();
+
+   for (at = 0;;)
+   {
+      /* Find next split */
+      int spl = str.indexOf(delim, at);
+
+      /* Store split into list of extensions */
+      list << str.mid(at, (spl < 0 ? -1 : spl - at));
+
+      /* No more splits */
+      if (spl < 0)
+         break;
+
+      at = spl + 1;
+   }
+
+   return list;
+}

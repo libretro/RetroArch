@@ -225,6 +225,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Toggle between recording and not.");
              break;
+          case RARCH_RUNAHEAD_TOGGLE:
+             snprintf(s, len,
+                   "Toggles Run-Ahead mode on/off.");
+             break;
           default:
              if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
