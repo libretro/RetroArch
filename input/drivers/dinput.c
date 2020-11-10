@@ -161,7 +161,7 @@ static void *dinput_init(const char *joypad_driver)
    {
       IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
       IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
-            (HWND)video_driver_window_get(), DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+            (HWND)video_driver_window_get(), DISCL_NONEXCLUSIVE | DISCL_FOREGROUND | DISCL_NOWINKEY);
       IDirectInputDevice8_Acquire(di->keyboard);
    }
 
