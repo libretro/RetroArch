@@ -8064,7 +8064,9 @@ bool menu_shader_manager_init(void)
    video_shader_driver_get_current_shader(&shader_info);
 
    if (shader_info.data)
-      path_shader = shader_info.data->path;
+      /* Use the path of the originally loaded preset because it could
+       * have been a preset with a #reference in it to another preset */
+      path_shader = shader_info.data->loaded_preset_path;
    else
       path_shader = retroarch_get_shader_preset();
 
@@ -8196,9 +8198,10 @@ clear:
 }
 
 static bool menu_shader_manager_save_preset_internal(
-      const struct video_shader *shader, const char *basename,
+      const struct video_shader *shader, 
+      const char *basename,
       const char *dir_video_shader,
-      bool apply, bool save_reference,
+      bool apply, 
       const char **target_dirs,
       size_t num_target_dirs)
 {
@@ -8209,6 +8212,10 @@ static bool menu_shader_manager_save_preset_internal(
    char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
 
+   struct rarch_state  *p_rarch  = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
+   bool save_reference   = settings->bools.video_shader_preset_save_reference_enable;
+
    fullname[0] = buffer[0]        = '\0';
 
    if (!shader || !shader->passes)
@@ -8218,9 +8225,6 @@ static bool menu_shader_manager_save_preset_internal(
 
    if (type == RARCH_SHADER_NONE)
       return false;
-
-   if (shader->modified)
-      save_reference = false;
 
    if (!string_is_empty(basename))
    {
@@ -8397,7 +8401,7 @@ static bool menu_shader_manager_operate_auto_preset(
          return menu_shader_manager_save_preset_internal(
                shader, file,
                dir_video_shader,
-               apply, true,
+               apply,
                auto_preset_dirs,
                ARRAY_SIZE(auto_preset_dirs));
       case AUTO_SHADER_OP_REMOVE:
@@ -8547,7 +8551,7 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    return menu_shader_manager_save_preset_internal(
          shader, basename,
          dir_video_shader,
-         apply, false,
+         apply,
          preset_dirs,
          ARRAY_SIZE(preset_dirs));
 }

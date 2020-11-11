@@ -153,7 +153,13 @@ struct video_shader
    unsigned variables;
 
    char prefix[64];
+
+   /* Path to the root preset */
    char path[PATH_MAX_LENGTH];
+
+   /* Path to the original preset loaded, if this is a preset with the #reference
+    * directive then this will be different than the path*/
+   char loaded_preset_path[PATH_MAX_LENGTH];
 
    bool modern; /* Only used for XML shaders. */
    /* indicative of whether shader was modified - 

@@ -2893,6 +2893,11 @@ static int generic_action_ok_shader_preset_save(const char *path,
          return 0;
    }
 
+   /* Save Auto Preset and have it immediately reapply the preset
+    * TODO: This seems necessary so that the loaded shader gains a link to the file saved 
+    * But this is slow and seems like a redundant way to do this 
+    * It seems like it would be better to just set the path and shader_preset_loaded 
+    * on the current shader */
    if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type,
             dir_video_shader, dir_menu_config,
             true))
