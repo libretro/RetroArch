@@ -119,20 +119,18 @@ static void grid2x_work_cb_xrgb8888(void *data, void *thread_data)
       uint32_t *out_ptr = output;
       for (x = 0; x < thr->width; ++x)
       {
-         /* Note: We process the 'padding' bits as though they
-          * matter (they don't), since this deals with any potential
-          * byte swapping issues */
          uint32_t *out_line_ptr  = out_ptr;
          uint32_t color          = *(input + x);
-         uint32_t p              = (color >> 24 & 0xFF); /* Padding bits */
-         uint32_t r              = (color >> 16 & 0xFF);
-         uint32_t g              = (color >>  8 & 0xFF);
-         uint32_t b              = (color       & 0xFF);
-         uint32_t scanline_color =
-               ((p - (p >> 2)) << 24) |
-               ((r - (r >> 2)) << 16) |
-               ((g - (g >> 2)) <<  8) |
-               ((b - (b >> 2))      );
+
+         /* Scanline colour is color * 0.75
+          * > First pass: 50:50 mix of color:0 */
+         uint32_t scanline_color = (color + (color & 0x1010101)) >> 1;
+         /* > Second pass: 50:50 mix of color:(color:0)
+          *   => Gives ((1 + 0.5) / 2) = 0.75 */
+         scanline_color = (color + scanline_color + ((color ^ scanline_color) & 0x1010101)) >> 1;
+
+         /* c.f "Mixing Packed RGB Pixels Efficiently"
+          * http://blargg.8bitalley.com/info/rgb_mixing.html */
 
          /* Row 1: <colour><scanline> */
          *out_line_ptr       = color;
@@ -167,13 +165,16 @@ static void grid2x_work_cb_rgb565(void *data, void *thread_data)
       {
          uint16_t *out_line_ptr  = out_ptr;
          uint16_t color          = *(input + x);
-         uint16_t r              = (color >> 11 & 0x1F);
-         uint16_t g              = (color >>  6 & 0x1F);
-         uint16_t b              = (color       & 0x1F);
-         uint16_t scanline_color =
-               ((r - (r >> 2)) << 11) |
-               ((g - (g >> 2)) <<  6) |
-               ((b - (b >> 2))      );
+
+         /* Scanline colour is color * 0.75
+          * > First pass: 50:50 mix of color:0 */
+         uint16_t scanline_color = (color + (color & 0x821)) >> 1;
+         /* > Second pass: 50:50 mix of color:(color:0)
+          *   => Gives ((1 + 0.5) / 2) = 0.75 */
+         scanline_color = (color + scanline_color + ((color ^ scanline_color) & 0x821)) >> 1;
+
+         /* c.f "Mixing Packed RGB Pixels Efficiently"
+          * http://blargg.8bitalley.com/info/rgb_mixing.html */
 
          /* Row 1: <colour><scanline> */
          *out_line_ptr       = color;
