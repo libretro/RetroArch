@@ -65,6 +65,7 @@ HAVE_NETPLAYDISCOVERY=yes  # Add netplay discovery (room creation, etc.)
 HAVE_MINIUPNPC=auto        # Mini UPnP client library (for NAT traversal)
 HAVE_BUILTINMINIUPNPC=auto # Bake in Mini UPnP client library (for NAT traversal)
 C89_BUILTINMINIUPNPC=no
+HAVE_CLOUD_STORAGE=yes     # Cloud storage support
 HAVE_D3D8=no               # Direct3D 8 support
 HAVE_D3D9=auto             # Direct3D 9 support
 C89_D3D9=no

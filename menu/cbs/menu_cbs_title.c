@@ -592,8 +592,10 @@ DEFAULT_TITLE_MACRO(action_get_netplay_lan_scan_settings_list,  MENU_ENUM_LABEL_
 #ifdef HAVE_LAKKA
 DEFAULT_TITLE_MACRO(action_get_lakka_services_list,             MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES)
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
 DEFAULT_TITLE_MACRO(action_get_cloud_storage_settings_list,     MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_cloud_storage_authorize_list,    MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_AUTHORIZE)
+#endif
 DEFAULT_TITLE_MACRO(action_get_user_settings_list,              MENU_ENUM_LABEL_VALUE_USER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_directory_settings_list,         MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_privacy_settings_list,           MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS)
@@ -912,8 +914,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST,              action_get_subsystem_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST,                action_get_network_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST,       action_get_netplay_lan_scan_settings_list},
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
       {MENU_ENUM_LABEL_DEFERRED_CLOUD_STORAGE_SETTINGS_LIST,          action_get_cloud_storage_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CLOUD_STORAGE_AUTHORIZE_LIST,         action_get_cloud_storage_authorize_list},
+#endif
 #ifdef HAVE_LAKKA
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST,                  action_get_lakka_services_list},
 #endif

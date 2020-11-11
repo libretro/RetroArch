@@ -49,8 +49,10 @@
 #include "../network/netplay/netplay_discovery.h"
 #include "../core_updater_list.h"
 
+#ifdef HAVE_CLOUD_STORAGE
 #include "../cloud-storage/cloud_storage.h"
 #include <net/open_browser.h>
+#endif
 #endif
 
 #ifdef HAVE_LAKKA_SWITCH
@@ -5084,6 +5086,7 @@ static unsigned menu_displaylist_populate_subsystem(
    return count;
 }
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
 static void authorize_callback(bool success)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -5112,6 +5115,7 @@ static void authorize_callback(bool success)
       }
    }
 }
+#endif
 
 unsigned menu_displaylist_build_list(
       file_list_t *list,
@@ -6889,6 +6893,7 @@ unsigned menu_displaylist_build_list(
 #endif
          }
          break;
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
       case DISPLAYLIST_CLOUD_STORAGE_SETTINGS_LIST:
          {
             settings_t      *settings      = config_get_ptr();
@@ -6954,6 +6959,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#endif
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
 #ifdef HAVE_CHEATS
          {
@@ -8251,7 +8257,9 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_WIFI_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_NETWORK_SETTINGS,            PARSE_ACTION, true},
+#ifdef HAVE_CLOUD_STORAGE
                {MENU_ENUM_LABEL_CLOUD_STORAGE_SETTINGS,      PARSE_ACTION, true},
+#endif
                {MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,   PARSE_ACTION, true},
 #endif
                {MENU_ENUM_LABEL_LAKKA_SERVICES,              PARSE_ACTION, true},
@@ -11186,8 +11194,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
       case DISPLAYLIST_CLOUD_STORAGE_SETTINGS_LIST:
       case DISPLAYLIST_CLOUD_STORAGE_AUTHORIZE_LIST:
+#endif
       case DISPLAYLIST_OPTIONS_CHEATS:
       case DISPLAYLIST_NETWORK_INFO:
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:

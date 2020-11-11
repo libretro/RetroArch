@@ -74,6 +74,9 @@ struct _operation_queue_item
 static bool _shutdown = true;
 static cloud_storage_provider_t *_providers[3];
 
+static char _game_saves_config_value[8192] = "";
+static char _game_states_config_value[8192] = "";
+
 cloud_storage_item_t *_game_saves = NULL;
 cloud_storage_item_t *_game_states = NULL;
 
@@ -199,20 +202,7 @@ void cloud_storage_init(void)
 
    if (_get_active_provider()->ready_for_request())
    {
-      slock_lock(_operation_queue_mutex);
-
-      sync_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
-      sync_item->operation = SYNC_FILES;
-      sync_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_SAVES;
-      sync_item->next = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
-      sync_item->next->operation = SYNC_FILES;
-      sync_item->next->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_STATES;
-
-      _operation_queue = sync_item;
-      scond_signal(_operation_condition);
-      scond_signal(_operation_condition);
-
-      slock_unlock(_operation_queue_mutex);
+      cloud_storage_sync_files();
    }
 }
 
@@ -678,7 +668,7 @@ static bool _have_local_file_for_remote_file(
 static bool _file_need_download(char *local_file, cloud_storage_item_t *remote_file)
 {
    char *checksum_str = NULL;
-   bool need_upload;
+   bool need_download;
    char *raw_dir;
 
    if (!path_is_valid(local_file))
@@ -704,9 +694,9 @@ static bool _file_need_download(char *local_file, cloud_storage_item_t *remote_f
          break;
    }
 
-   need_upload = strcmp(checksum_str, remote_file->type_data.file.hash_value) != 0;
+   need_download = strcmp(checksum_str, remote_file->type_data.file.hash_value) != 0;
    free(checksum_str);
-   return need_upload;
+   return need_download;
 }
 
 static void _download_file(char *local_file, cloud_storage_item_t *remote_file)
@@ -835,8 +825,28 @@ static void _free_operation_queue_item(struct _operation_queue_item *queue_item)
 
 void cloud_storage_sync_files(void)
 {
-   struct _operation_queue_item *queue_item;
+   bool sync_saves;
+   bool sync_states;
+   global_t *global = global_get_ptr();
+   struct _operation_queue_item *queue_item = NULL;
    struct _operation_queue_item *previous_queue_item = NULL;
+
+   sync_saves = strcmp(_game_saves_config_value, global->name.savefile) != 0;
+   sync_states = strcmp(_game_states_config_value, global->name.savestate) != 0;
+
+   if (!sync_saves && !sync_states)
+   {
+      return;
+   }
+
+   if (sync_saves)
+   {
+      strcpy(_game_saves_config_value, global->name.savefile);
+   }
+   if (sync_states)
+   {
+      strcpy(_game_states_config_value, global->name.savestate);
+   }
 
    slock_lock(_operation_queue_mutex);
 
@@ -869,22 +879,35 @@ void cloud_storage_sync_files(void)
       previous_queue_item = queue_item;
    }
 
-   queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
-   queue_item->operation = SYNC_FILES;
-   queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_SAVES;
-   if (previous_queue_item)
+   if (sync_saves)
    {
-      previous_queue_item->next = queue_item;
-   } else
-   {
-      _operation_queue = queue_item;
+      queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
+      queue_item->operation = SYNC_FILES;
+      queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_SAVES;
+      if (previous_queue_item)
+      {
+         previous_queue_item->next = queue_item;
+      } else
+      {
+         _operation_queue = queue_item;
+      }
+      previous_queue_item = queue_item;
    }
-   previous_queue_item = queue_item;
 
-   queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
-   queue_item->operation = SYNC_FILES;
-   queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_STATES;
-   previous_queue_item->next = queue_item;
+   if (sync_states)
+   {
+      queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
+      queue_item->operation = SYNC_FILES;
+      queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_STATES;
+      if (previous_queue_item)
+      {
+         previous_queue_item->next = queue_item;
+      } else
+      {
+         _operation_queue = queue_item;
+      }
+      previous_queue_item = queue_item;
+   }
 
    scond_signal(_operation_condition);
 

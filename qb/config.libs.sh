@@ -203,6 +203,7 @@ check_enabled NETWORKING DISCORD discord 'Networking is' false
 check_enabled NETWORKING MINIUPNPC miniupnpc 'Networking is' false
 check_enabled NETWORKING SSL ssl 'Networking is' false
 check_enabled NETWORKING TRANSLATE OCR 'Networking is' false
+check_enabled NETWORKING CLOUD_STORAGE cloud-storage 'Networking is' false
 check_enabled NETWORKING HAVE_NETPLAYDISCOVERY 'Netplay discovery' 'Networking is' false
 
 check_enabled NETWORKING NETWORKGAMEPAD 'the networked game pad' 'Networking is' true
@@ -211,10 +212,10 @@ check_enabled MINIUPNPC BUILTINMINIUPNPC 'builtin miniupnpc' 'miniupnpc is' true
 check_lib '' MINIUPNPC '-lminiupnpc'
 check_lib '' STDIN_CMD "$CLIB" fcntl
 
-if [ "$HAVE_NETWORK_CMD" = "yes" ] || [ "$HAVE_STDIN_CMD" = "yes" ]; then
-   add_opt COMMAND yes
+if [ "$HAVE_NETWORKING" = "yes" ]; then
+   add_opt CLOUD_STORAGE yes
 else
-   add_opt COMMAND no
+   add_opt CLOUD_STORAGE no
 fi
 
 check_lib '' GETOPT_LONG "$CLIB" getopt_long

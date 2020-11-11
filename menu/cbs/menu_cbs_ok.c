@@ -392,10 +392,12 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY;
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST;
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
       case ACTION_OK_DL_CLOUD_STORAGE_SETTINGS_LIST:
           return MENU_ENUM_LABEL_DEFERRED_CLOUD_STORAGE_SETTINGS_LIST;
       case ACTION_OK_DL_CLOUD_STORAGE_AUTHORIZE_LIST:
           return MENU_ENUM_LABEL_DEFERRED_CLOUD_STORAGE_AUTHORIZE_LIST;
+#endif
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST;
       case ACTION_OK_DL_USER_SETTINGS_LIST:
@@ -1298,8 +1300,10 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_WIFI_NETWORKS_LIST:
       case ACTION_OK_DL_NETPLAY:
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
       case ACTION_OK_DL_CLOUD_STORAGE_SETTINGS_LIST:
       case ACTION_OK_DL_CLOUD_STORAGE_AUTHORIZE_LIST:
+#endif
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
       case ACTION_OK_DL_USER_SETTINGS_LIST:
       case ACTION_OK_DL_DIRECTORY_SETTINGS_LIST:
@@ -5302,8 +5306,10 @@ DEFAULT_ACTION_OK_FUNC(action_ok_bluetooth_list, ACTION_OK_DL_BLUETOOTH_SETTINGS
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_networks_list, ACTION_OK_DL_WIFI_NETWORKS_LIST)
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
 DEFAULT_ACTION_OK_FUNC(action_ok_cloud_storage_list, ACTION_OK_DL_CLOUD_STORAGE_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_cloud_storage_authorize_list, ACTION_OK_DL_CLOUD_STORAGE_AUTHORIZE_LIST)
+#endif
 DEFAULT_ACTION_OK_FUNC(action_ok_cursor_manager_list, ACTION_OK_DL_CURSOR_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push_detect_core, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE)
@@ -7319,8 +7325,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,        action_ok_pl_entry_content_thumbnails},
          {MENU_ENUM_LABEL_UPDATE_LAKKA,                        action_ok_lakka_list},
          {MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,               action_ok_push_netplay_refresh_rooms},
+#ifdef HAVE_CLOUD_STORAGE
          {MENU_ENUM_LABEL_CLOUD_STORAGE_SETTINGS,              action_ok_cloud_storage_list},
          {MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE,             action_ok_cloud_storage_authorize_list},
+#endif
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
          {MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,      action_ok_onscreen_video_layout_list},
