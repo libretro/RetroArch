@@ -1207,11 +1207,22 @@ void rcheevos_populate_menu(void* data)
 
    if (i == 0)
    {
-      menu_entries_append_enum(info->list,
+      if (!settings->arrays.cheevos_token[0])
+      {
+         menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN),
+            msg_hash_to_str(MENU_ENUM_LABEL_NOT_LOGGED_IN),
+            MENU_ENUM_LABEL_NOT_LOGGED_IN,
+            FILE_TYPE_NONE, 0, 0);
+      }
+      else
+      {
+         menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY),
             MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
             FILE_TYPE_NONE, 0, 0);
+      }
    }
 #endif
 }
