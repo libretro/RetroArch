@@ -24871,7 +24871,8 @@ static int16_t input_state_device(
                {
                   p_rarch->input_driver_turbo_btns.turbo_pressed[port] |= (1 << 31);
                   /* Toggle turbo for selected buttons. */
-                  if (!p_rarch->input_driver_turbo_btns.enable[port])
+                  if (p_rarch->input_driver_turbo_btns.enable[port]
+                      != (1 << settings->uints.input_turbo_default_button))
                   {
                      static const int button_map[]={
                         RETRO_DEVICE_ID_JOYPAD_B,
