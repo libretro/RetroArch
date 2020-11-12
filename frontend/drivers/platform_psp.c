@@ -324,7 +324,6 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
    char argp[512] = {0};
    SceSize   args = 0;
-   int ret;
 
 #if !defined(VITA)
    strlcpy(argp, eboot_path, sizeof(argp));
@@ -349,23 +348,49 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    {
       char *param1 = strstr(boot_params, "&param=");
       char *param2 = strstr(boot_params, "&param2=");
+
+      /* copy path to core_name for normal boot */
+      strlcpy(core_name, path, sizeof(core_name));
+
       if (param1 != NULL && param2 != NULL)
       {
-         param1 += 7;
-         memcpy(core_name, param1, param2 - param1);
-         core_name[param2-param1] = 0;
-         sprintf(argp, param2 + 8);
-         ret = sceAppMgrLoadExec(core_name, (char * const*)((const char*[]){argp, 0}), NULL);
-         RARCH_LOG("Attempt to load executable: [%d].\n", ret);
-         goto exit;
+         if (param2 > param1 && (param2 - (param1+7) < sizeof(core_name)) && strlen(param2+8) < sizeof(argp))
+         {
+            /* handle case where param2 follows param1 */
+            param1 += 7;
+            memcpy(core_name, param1, param2 - param1);
+            core_name[param2-param1] = 0;
+            sprintf(argp, param2 + 8);
+            args = strlen(argp);
+         }
+         else if (param1 > param2 && (param1 - (param2+8) < sizeof(argp)) && strlen(param1+7) < sizeof(core_name))
+         {
+            /* handle case where param1 follows param2 */
+            param2 += 8;
+            memcpy(argp, param2, param1 - param2);
+            argp[param1-param2] = 0;
+            sprintf(core_name, param1 + 7);
+            args = strlen(argp);
+         }
+         else
+         {
+            RARCH_LOG("Boot params are too long. Continue normal boot.");
+         }
       }
-      RARCH_LOG("Required boot params missing. Continue nornal boot.");
+      else
+      {
+         RARCH_LOG("Required boot params missing. Continue nornal boot.");
+      }
+      
+      int ret =  sceAppMgrLoadExec(core_name, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
+      RARCH_LOG("Attempt to load executable: [%d].\n", ret);
    }
+   else
 #endif
-   ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
-   RARCH_LOG("Attempt to load executable: [%d].\n", ret);
-exit:
-   return;
+   {
+      int ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
+      RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+   }
 #else
    exitspawn_kernel(path, args, argp);
 #endif
