@@ -152,6 +152,13 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
    BITS_GET_ELEM_PTR(a, 0) = (bits); \
 }
 
+#define BITS_COPY64_PTR(a,bits) \
+{ \
+   BIT128_CLEAR_ALL_PTR(a); \
+   BITS_GET_ELEM_PTR(a, 0) = (bits); \
+   BITS_GET_ELEM_PTR(a, 1) = (bits >> 32); \
+}
+
 /* Helper macros and struct to keep track of many booleans. */
 /* This struct has 256 bits. */
 typedef struct
