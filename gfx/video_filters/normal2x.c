@@ -121,15 +121,17 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
       {
          uint32_t *out_line_ptr = out_ptr;
          uint32_t color         = *(input + x);
+         uint32_t row_color[2];
+
+         row_color[0] = color;
+         row_color[1] = color;
 
          /* Row 1 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
-         out_line_ptr       += out_stride;
+         memcpy(out_line_ptr, row_color, sizeof(row_color));
+         out_line_ptr += out_stride;
 
          /* Row 2 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
+         memcpy(out_line_ptr, row_color, sizeof(row_color));
 
          out_ptr += 2;
       }
@@ -155,15 +157,17 @@ static void normal2x_work_cb_rgb565(void *data, void *thread_data)
       {
          uint16_t *out_line_ptr = out_ptr;
          uint16_t color         = *(input + x);
+         uint16_t row_color[2];
+
+         row_color[0] = color;
+         row_color[1] = color;
 
          /* Row 1 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
-         out_line_ptr       += out_stride;
+         memcpy(out_line_ptr, row_color, sizeof(row_color));
+         out_line_ptr += out_stride;
 
          /* Row 2 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
+         memcpy(out_line_ptr, row_color, sizeof(row_color));
 
          out_ptr += 2;
       }
